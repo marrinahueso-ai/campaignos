@@ -1,0 +1,133 @@
+"use client";
+
+import { CampaignWorkspaceTabs } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import { CampaignCommunicationPlanStep } from "@/components/event-workspace/CampaignCommunicationPlanStep";
+import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
+import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
+import { CampaignReviewPublishStep } from "@/components/event-workspace/CampaignReviewPublishStep";
+import { CampaignPublishedStep } from "@/components/event-workspace/CampaignPublishedStep";
+import { EventWorkspaceHero } from "@/components/event-workspace/EventWorkspaceHero";
+import type { AiAssistantStatus } from "@/lib/ai";
+import type { CampaignProgressSnapshot } from "@/lib/campaign-progress/types";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
+import type { EventAssetVersion } from "@/types/event-workspace";
+import type { EventNextStep } from "@/lib/event-workspace/get-next-helpful-action";
+import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
+import type { CommunicationStrategy } from "@/types/communication-strategy";
+import type {
+  EventAsset,
+  ActivityLogEntry,
+  StepCommunicationDraft,
+} from "@/types/event-workspace";
+import type { Event } from "@/types";
+import type { CommunicationPlaybook, EventPlaybookData } from "@/types/playbooks";
+import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
+import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+
+interface EventWorkspaceCampaignLayoutProps {
+  event: Event;
+  eventId: string;
+  organizationName?: string | null;
+  nextStep: EventNextStep;
+  artwork: HeroArtworkSelection | null;
+  campaignProgress: CampaignProgressSnapshot;
+  communicationStrategy: CommunicationStrategy;
+  playbookData: EventPlaybookData;
+  availablePlaybooks: CommunicationPlaybook[];
+  stepDrafts: StepCommunicationDraft[];
+  metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
+  assets: EventAsset[];
+  assetVersions: Record<string, EventAssetVersion[]>;
+  metaPublishBundles: MetaPublishBundle[];
+  timeline: ActivityLogEntry[];
+  aiStatus: AiAssistantStatus;
+  userRole: CampaignRole;
+  ownership: EventRosterOwnership;
+  approvalRoles: ApprovalRoleOption[];
+  defaultApprovalRoleId: string | null;
+  showRoleSimulator?: boolean;
+  eventDetailsChanged?: boolean;
+}
+
+export function EventWorkspaceCampaignLayout({
+  event,
+  eventId,
+  organizationName = null,
+  nextStep,
+  artwork,
+  campaignProgress,
+  communicationStrategy,
+  playbookData,
+  metaSocialCaptionMilestones,
+  assets,
+  metaPublishBundles,
+  timeline,
+  aiStatus,
+  userRole,
+  ownership,
+  approvalRoles,
+  defaultApprovalRoleId,
+}: EventWorkspaceCampaignLayoutProps) {
+  return (
+    <div className="space-y-6">
+      <EventWorkspaceHero
+        event={event}
+        nextStep={nextStep}
+        artwork={artwork}
+        compact
+        campaignProgress={campaignProgress}
+      />
+
+      <CampaignWorkspaceTabs
+        defaultStep="plan"
+        plan={
+          <CampaignCommunicationPlanStep
+            eventId={eventId}
+            communicationStrategy={communicationStrategy}
+            eventType={event.eventType}
+            approvalOrganizationRoleId={event.approvalOrganizationRoleId}
+            defaultApprovalRoleId={defaultApprovalRoleId}
+            approvalRoles={approvalRoles}
+            ownership={ownership}
+            assets={assets}
+            assignedSteps={playbookData.steps}
+          />
+        }
+        artwork={
+          <CampaignCreativeTab
+            eventId={eventId}
+            event={event}
+            organizationName={organizationName}
+            eventType={event.eventType}
+            communicationStrategy={communicationStrategy}
+            communicationSteps={playbookData.steps}
+            assets={assets}
+          />
+        }
+        schedule={
+          <CampaignScheduleStep
+            eventId={eventId}
+            metaPublishBundles={metaPublishBundles}
+            metaSocialCaptionMilestones={metaSocialCaptionMilestones}
+            aiStatus={aiStatus}
+            userRole={userRole}
+          />
+        }
+        publish={
+          <CampaignReviewPublishStep
+            eventId={eventId}
+            metaPublishBundles={metaPublishBundles}
+          />
+        }
+        published={
+          <CampaignPublishedStep
+            metaPublishBundles={metaPublishBundles}
+            timeline={timeline}
+          />
+        }
+      />
+    </div>
+  );
+}

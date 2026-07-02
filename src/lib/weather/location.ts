@@ -1,0 +1,70 @@
+import type { Organization } from "@/types";
+import type { OrganizationLocation } from "@/lib/weather/types";
+
+const CITY_STATE_ABBR =
+  /^([^,]+),\s*([A-Za-z]{2,})\s*(?:\d{5}(?:-\d{4})?)?$/;
+
+const CITY_STATE_NAME =
+  /^([^,]+),\s*([A-Za-z][A-Za-z\s.]{1,28})$/;
+
+/**
+ * Derives a city/state label from organization fields (no schema changes).
+ * Prefers district when it looks like "City, ST" or "City, State".
+ */
+export function parseOrganizationLocation(
+  organization: Organization | null,
+): OrganizationLocation | null {
+  if (!organization) return null;
+
+  const district = organization.district?.trim();
+  if (district) {
+    const abbrMatch = district.match(CITY_STATE_ABBR);
+    if (abbrMatch) {
+      const city = abbrMatch[1]!.trim();
+      const state = normalizeState(abbrMatch[2]!.trim());
+      return {
+        label: `${city}, ${state}`,
+        city,
+        state,
+        query: `${city}, ${state}, US`,
+      };
+    }
+
+    const nameMatch = district.match(CITY_STATE_NAME);
+    if (nameMatch) {
+      const city = nameMatch[1]!.trim();
+      const state = normalizeState(nameMatch[2]!.trim());
+      if (state.length >= 2 && state.length <= 20) {
+        return {
+          label: `${city}, ${state}`,
+          city,
+          state,
+          query: `${city}, ${state}, US`,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeState(value: string): string {
+  if (value.length === 2) {
+    return value.toUpperCase();
+  }
+  return value
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+export function formatWeatherLine(
+  location: OrganizationLocation | null,
+  weather: { temperatureF: number; condition: string } | null,
+): string {
+  if (!location || !weather) {
+    return "Local weather unavailable";
+  }
+
+  return `${location.label} · ${Math.round(weather.temperatureF)}° · ${weather.condition}`;
+}

@@ -1,0 +1,20 @@
+/** CampaignOS calm design tokens — mirrors CSS variables in globals.css */
+export const COS_TOKENS = {
+  bg: "#FCFCFA",
+  card: "#FFFFFF",
+  text: "#1F2937",
+  muted: "#64748B",
+  border: "#E7ECEB",
+  primary: "#4F46E5",
+  primaryHover: "#4338CA",
+  success: "#6F8F72",
+  successBg: "#EEF3EE",
+  successText: "#4A6B4D",
+  info: "#DDECF8",
+  infoText: "#3D5A73",
+  warning: "#E7D9B8",
+  warningText: "#6B5E3D",
+  error: "#C97B63",
+  errorBg: "#F5E8E4",
+  errorText: "#9E5340",
+} as const;

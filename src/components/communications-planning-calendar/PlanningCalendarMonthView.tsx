@@ -1,0 +1,146 @@
+"use client";
+
+import { useCallback, useState, useTransition } from "react";
+import { reschedulePlanningItemAction } from "@/lib/communications-calendar/planning-actions";
+import { UnifiedCalendarDayContent } from "@/components/unified-calendar/UnifiedCalendarDayContent";
+import {
+  DRAG_MIME,
+  parseDragPayload,
+} from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
+import { getMonthGridDates } from "@/lib/communications-calendar/workload";
+import { cn } from "@/lib/utils/cn";
+import { getTodayDateString, normalizeDateOnly, parseLocalDate } from "@/lib/utils/dates";
+import type { PlanningCalendarItem } from "@/types/communications-calendar";
+
+interface PlanningCalendarMonthViewProps {
+  items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[];
+  year: number;
+  month: number;
+  onSelectItem: (item: PlanningCalendarItem) => void;
+  onRescheduled: () => void;
+}
+
+export function PlanningCalendarMonthView({
+  items,
+  year,
+  month,
+  onSelectItem,
+  onRescheduled,
+}: PlanningCalendarMonthViewProps) {
+  const today = getTodayDateString();
+  const dates = getMonthGridDates(year, month);
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const itemsByDate = groupItemsByDate(items);
+
+  const handleDrop = useCallback(
+    (date: string, event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setDropTarget(null);
+      const raw = event.dataTransfer.getData(DRAG_MIME);
+      const payload = parseDragPayload(raw);
+      if (!payload || payload.sourceType === undefined) return;
+
+      startTransition(async () => {
+        const result = await reschedulePlanningItemAction({
+          sourceType: payload.sourceType,
+          sourceId: payload.sourceId,
+          newDate: date,
+          eventId: payload.eventId,
+          timelineStepId: payload.timelineStepId,
+          channel: payload.channel,
+        });
+        if (result.success) onRescheduled();
+      });
+    },
+    [onRescheduled],
+  );
+
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm",
+        isPending && "opacity-80",
+      )}
+    >
+      <div className="grid grid-cols-7 border-b border-cos-border bg-cos-bg/60">
+        {weekdays.map((day) => (
+          <div
+            key={day}
+            className="px-3 py-3 text-center text-xs font-medium text-cos-muted"
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7">
+        {dates.map((date) => {
+          const dateObj = parseLocalDate(date);
+          const inMonth = dateObj.getMonth() === month;
+          const dayItems = itemsByDate.get(date) ?? [];
+
+          return (
+            <div
+              key={date}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+                setDropTarget(date);
+              }}
+              onDragLeave={() => setDropTarget((current) => (current === date ? null : current))}
+              onDrop={(event) => handleDrop(date, event)}
+              className={cn(
+                "min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0 transition-colors duration-200",
+                !inMonth && "bg-cos-bg/40",
+                dropTarget === date && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
+              )}
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <span
+                  className={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
+                    date === today
+                      ? "bg-cos-primary text-white shadow-sm"
+                      : inMonth
+                        ? "text-cos-text"
+                        : "text-cos-muted/60",
+                  )}
+                >
+                  {dateObj.getDate()}
+                </span>
+                {dayItems.length > 0 && (
+                  <span className="text-[10px] font-medium text-cos-muted">
+                    {dayItems.length}
+                  </span>
+                )}
+              </div>
+
+              <UnifiedCalendarDayContent
+                items={dayItems}
+                onSelectItem={onSelectItem}
+                compact
+                itemLimit={5}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function groupItemsByDate(
+  items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[],
+): Map<string, typeof items> {
+  const map = new Map<string, typeof items>();
+  for (const item of items) {
+    const dateKey = normalizeDateOnly(item.scheduledDate);
+    const list = map.get(dateKey) ?? [];
+    list.push(item);
+    map.set(dateKey, list);
+  }
+  return map;
+}
