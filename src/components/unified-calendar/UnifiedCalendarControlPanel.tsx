@@ -42,6 +42,10 @@ interface UnifiedCalendarControlPanelProps {
   periodLabel: string;
   activeLayers: Set<CalendarLayerId>;
   upcomingItems: PlanningCalendarItem[];
+  importCleanup?: {
+    schoolYearLabel: string;
+    eventCount: number;
+  } | null;
   showImportList?: boolean;
   onViewChange: (view: PlanningCalendarView) => void;
   onPrevious: () => void;
@@ -56,6 +60,7 @@ export function UnifiedCalendarControlPanel({
   periodLabel,
   activeLayers,
   upcomingItems,
+  importCleanup,
   showImportList = true,
   onViewChange,
   onPrevious,
@@ -93,6 +98,14 @@ export function UnifiedCalendarControlPanel({
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-cos-muted">
             Events and Meta posts on one timeline — filter layers, browse by month, or open
             Agenda for the full list.
+            {importCleanup && importCleanup.eventCount > 0 && (
+              <>
+                {" "}
+                <span className="text-cos-muted/80">
+                  {importCleanup.eventCount} events on {importCleanup.schoolYearLabel}.
+                </span>
+              </>
+            )}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">

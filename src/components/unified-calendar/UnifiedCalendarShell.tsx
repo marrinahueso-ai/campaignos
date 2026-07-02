@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarImportCleanupPanel } from "@/components/unified-calendar/CalendarImportCleanupPanel";
 import { CalendarImportPlanList } from "@/components/unified-calendar/CalendarImportPlanList";
 import { UnifiedCalendarControlPanel } from "@/components/unified-calendar/UnifiedCalendarControlPanel";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
@@ -179,18 +178,12 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-5 pb-8">
-      {data.importCleanup && (
-        <CalendarImportCleanupPanel
-          schoolYearLabel={data.importCleanup.schoolYearLabel}
-          eventCount={data.importCleanup.eventCount}
-        />
-      )}
-
       <UnifiedCalendarControlPanel
         view={view}
         periodLabel={periodLabel}
         activeLayers={activeLayers}
         upcomingItems={upcomingItems}
+        importCleanup={data.importCleanup}
         onViewChange={setView}
         onPrevious={goPrevious}
         onNext={goNext}

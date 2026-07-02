@@ -192,7 +192,16 @@ export function CalendarImportPlanList({
         </p>
         <p className="mt-1 text-sm text-cos-muted">
           All imported events for the active school year. Select rows to remove bad
-          imports, or clear everything to start fresh.
+          imports, or{" "}
+          <button
+            type="button"
+            onClick={handleClearAll}
+            disabled={isPending}
+            className="text-cos-muted underline-offset-2 hover:text-red-600 hover:underline disabled:opacity-50"
+          >
+            {isPending ? "clearing…" : "clear all to start fresh"}
+          </button>
+          .
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {COMMUNICATION_STRATEGY_OPTIONS.map((option) => {
@@ -245,17 +254,6 @@ export function CalendarImportPlanList({
           >
             <Trash2 className="h-4 w-4" />
             Delete selected
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={handleClearAll}
-            disabled={isPending || events.length === 0}
-          >
-            <Trash2 className="h-4 w-4" />
-            Clear all calendar events
           </Button>
         </div>
       </div>
