@@ -4,10 +4,14 @@ import {
 import { fetchUnifiedCalendarRawData } from "@/lib/communications-calendar/unified-calendar-raw";
 import { resolveTodayPlanningWindow } from "@/lib/communications-calendar/planning-date-window";
 import { fetchPlanningRawDataForEvents } from "@/lib/communications-calendar/planning-raw";
-import { getLatestCalendarImport, getImportedEventsForCalendarList } from "@/lib/calendar-import/queries";
+import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
+import {
+  getCalendarWindowEventCount,
+  getImportedEventsForCalendarList,
+} from "@/lib/calendar-import/queries";
 import { getEventsInDateRange } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
-import { createClient } from "@/lib/supabase/server";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { PlanningCalendarData } from "@/types/communications-calendar";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
@@ -15,28 +19,28 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
   const organization = await getLatestOrganization();
   const schoolYear = organization?.schoolYear ?? null;
 
-  const [raw, latestImport, importedList] = await Promise.all([
+  const activeSchoolYear = organization
+    ? await getActiveSchoolYear(organization.id)
+    : null;
+
+  const [raw, importedList] = await Promise.all([
     fetchUnifiedCalendarRawData(schoolYear),
-    getLatestCalendarImport(),
     getImportedEventsForCalendarList(),
   ]);
 
   let importCleanup: PlanningCalendarData["importCleanup"] = null;
 
-  if (latestImport?.importedAt) {
-    const supabase = await createClient();
-    const { count } = await supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("calendar_import_id", latestImport.id);
-
-    if ((count ?? 0) > 0) {
-      importCleanup = {
-        importId: latestImport.id,
-        filename: latestImport.filename,
-        importedCount: count ?? 0,
-      };
-    }
+  const schoolYearLabel = resolveCalendarSchoolYearLabel({
+    activeSchoolYearLabel: activeSchoolYear?.label,
+    organizationSchoolYear: organization?.schoolYear,
+  });
+  const eventCount = await getCalendarWindowEventCount(schoolYearLabel);
+  if (eventCount > 0) {
+    importCleanup = {
+      schoolYearId: activeSchoolYear?.id ?? null,
+      schoolYearLabel: schoolYearLabel ?? "your calendar",
+      eventCount,
+    };
   }
 
   return {
@@ -44,6 +48,7 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     importCleanup,
     importedEvents: importedList.events,
     importListFilename: importedList.filename,
+    activeSchoolYearId: activeSchoolYear?.id ?? null,
   };
 }
 

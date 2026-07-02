@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CalendarReviewCategoryBadge } from "@/components/calendar-review/CalendarReviewBadges";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
@@ -22,6 +22,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import {
+  bulkDeleteEventsAction,
+  clearCalendarWindowEventsAction,
+} from "@/lib/calendar-import/actions";
 import { updateEventPlanTypeAction } from "@/lib/events/actions";
 import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
 import { formatEventDate } from "@/lib/utils/dates";
@@ -39,12 +43,14 @@ export function CalendarImportPlanList({
 }: CalendarImportPlanListProps) {
   const router = useRouter();
   const [events, setEvents] = useState(initialEvents);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setEvents(initialEvents);
+    setSelectedIds(new Set());
   }, [initialEvents]);
 
   const counts = useMemo(() => {
@@ -57,6 +63,29 @@ export function CalendarImportPlanList({
     }
     return byStrategy;
   }, [events]);
+
+  const selectedCount = selectedIds.size;
+  const allSelected = events.length > 0 && selectedCount === events.length;
+
+  function toggleSelected(eventId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
+  }
+
+  function handleSelectAll() {
+    setSelectedIds(new Set(events.map((event) => event.id)));
+  }
+
+  function handleClearSelection() {
+    setSelectedIds(new Set());
+  }
 
   function handleStrategyChange(eventId: string, strategy: CommunicationStrategy) {
     setError(null);
@@ -80,19 +109,74 @@ export function CalendarImportPlanList({
     });
   }
 
+  function handleDeleteSelected() {
+    if (selectedCount === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${selectedCount} selected event${selectedCount === 1 ? "" : "s"}? This cannot be undone.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    const ids = Array.from(selectedIds);
+
+    startTransition(async () => {
+      const result = await bulkDeleteEventsAction(ids);
+      if (!result.success) {
+        setError(result.error ?? "Unable to delete selected events.");
+        return;
+      }
+
+      setEvents((current) => current.filter((event) => !selectedIds.has(event.id)));
+      setSelectedIds(new Set());
+      router.refresh();
+    });
+  }
+
+  function handleClearAll() {
+    if (events.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Remove all ${events.length} events from your calendar and campaigns? This cannot be undone.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const result = await clearCalendarWindowEventsAction();
+      if (!result.success) {
+        setError(result.error ?? "Unable to clear calendar events.");
+        return;
+      }
+
+      setEvents([]);
+      setSelectedIds(new Set());
+      router.refresh();
+    });
+  }
+
   if (events.length === 0) {
     return (
       <Card className="border-dashed">
         <CardHeader className="items-center py-12 text-center">
-          <CardTitle>No imported events yet</CardTitle>
+          <CardTitle>No calendar events yet</CardTitle>
           <CardDescription className="max-w-md">
-            Upload a school calendar, review the dates, then import them here. After
-            import, this list lets you set each date&apos;s plan type.
+            Sync your subscribe feed or upload a school calendar PDF, review the dates,
+            then import them here.
           </CardDescription>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button href="/calendar/import">Import calendar</Button>
-            <Button href="/calendar/review" variant="secondary">
-              Review latest upload
+            <Button href="/settings" variant="secondary">
+              Sync subscribe feed
             </Button>
           </div>
         </CardHeader>
@@ -104,11 +188,11 @@ export function CalendarImportPlanList({
     <div className="space-y-4">
       <div className="rounded-2xl border border-cos-border bg-cos-card px-5 py-4">
         <p className="text-sm font-medium text-cos-text">
-          {events.length} events from {filename ?? "your import"}
+          {events.length} events for {filename ?? "this school year"}
         </p>
         <p className="mt-1 text-sm text-cos-muted">
-          Set plan type for each row — calendar-only dates stay view-only; full
-          campaigns and reminders appear on the Campaigns page.
+          All imported events for the active school year. Select rows to remove bad
+          imports, or clear everything to start fresh.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {COMMUNICATION_STRATEGY_OPTIONS.map((option) => {
@@ -125,6 +209,57 @@ export function CalendarImportPlanList({
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-xl border border-cos-border bg-cos-bg px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-cos-muted">
+          {selectedCount > 0 ? (
+            <span>
+              <span className="font-medium text-cos-text">{selectedCount}</span> selected
+            </span>
+          ) : (
+            <span>Select rows to delete individual events.</span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {!allSelected ? (
+            <Button type="button" variant="secondary" size="sm" onClick={handleSelectAll} disabled={isPending}>
+              Select all
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleClearSelection}
+              disabled={isPending}
+            >
+              Clear selection
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={handleDeleteSelected}
+            disabled={isPending || selectedCount === 0}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete selected
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={handleClearAll}
+            disabled={isPending || events.length === 0}
+          >
+            <Trash2 className="h-4 w-4" />
+            Clear all calendar events
+          </Button>
+        </div>
+      </div>
+
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
@@ -133,7 +268,7 @@ export function CalendarImportPlanList({
 
       <Card padding="none" className="overflow-hidden">
         <CardHeader className="border-b border-cos-border px-6 py-5">
-          <CardTitle>Imported events</CardTitle>
+          <CardTitle>School year events</CardTitle>
           <CardDescription>
             Change plan type anytime. Upgrading to a campaign creates the communication
             workspace automatically.
@@ -142,6 +277,9 @@ export function CalendarImportPlanList({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10">
+                <span className="sr-only">Select</span>
+              </TableHead>
               <TableHead>Event</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Category</TableHead>
@@ -152,6 +290,15 @@ export function CalendarImportPlanList({
           <TableBody>
             {events.map((event) => (
               <TableRow key={event.id}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(event.id)}
+                    onChange={() => toggleSelected(event.id)}
+                    aria-label={`Select ${event.title}`}
+                    className="h-4 w-4 rounded border-cos-border"
+                  />
+                </TableCell>
                 <TableCell className="font-medium text-cos-text">{event.title}</TableCell>
                 <TableCell>{formatEventDate(event.date)}</TableCell>
                 <TableCell>

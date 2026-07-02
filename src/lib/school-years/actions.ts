@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { syncSchoolYearSubscribeFeed } from "@/lib/calendar-import/sync-subscribe-feed";
+import {
+  validateCalendarSubscribeUrl,
+} from "@/lib/calendar-import/fetch-subscribe-feed";
 import {
   activateSchoolYear,
   closeSchoolYearAndStartNext,
@@ -73,9 +77,14 @@ export async function saveCalendarSubscribeUrlAction(
   schoolYearId: string,
   calendarSubscribeUrl: string,
 ): Promise<{ error: string | null; success: boolean }> {
+  const validation = validateCalendarSubscribeUrl(calendarSubscribeUrl);
+  if (!validation.valid) {
+    return { error: validation.error, success: false };
+  }
+
   const saved = await updateSchoolYearSubscribeUrl(
     schoolYearId,
-    calendarSubscribeUrl,
+    validation.normalized || null,
   );
 
   if (!saved) {
@@ -84,6 +93,65 @@ export async function saveCalendarSubscribeUrlAction(
 
   revalidatePath("/settings");
   return { error: null, success: true };
+}
+
+function revalidateCalendarSubscribePaths() {
+  revalidatePath("/settings");
+  revalidatePath("/calendar");
+  revalidatePath("/calendar/review");
+  revalidatePath("/calendar/import");
+  revalidatePath("/dashboard");
+}
+
+export async function syncCalendarSubscribeFeedAction(
+  schoolYearId: string,
+): Promise<{
+  success: boolean;
+  error: string | null;
+  importId: string | null;
+  added: number;
+  skipped: number;
+}> {
+  const organization = await getLatestOrganization();
+  if (!organization) {
+    return {
+      success: false,
+      error: "Complete school setup first.",
+      importId: null,
+      added: 0,
+      skipped: 0,
+    };
+  }
+
+  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  if (!activeSchoolYear || activeSchoolYear.id !== schoolYearId) {
+    return {
+      success: false,
+      error: "Set an active school year before syncing the calendar feed.",
+      importId: null,
+      added: 0,
+      skipped: 0,
+    };
+  }
+
+  const result = await syncSchoolYearSubscribeFeed({
+    organizationId: organization.id,
+    organizationSchoolYear: organization.schoolYear,
+    schoolYear: activeSchoolYear,
+    autoImport: false,
+  });
+
+  if (result.success) {
+    revalidateCalendarSubscribePaths();
+  }
+
+  return {
+    success: result.success,
+    error: result.error,
+    importId: result.importId,
+    added: result.added,
+    skipped: result.skipped,
+  };
 }
 
 export async function ensureOrganizationSchoolYearAction(

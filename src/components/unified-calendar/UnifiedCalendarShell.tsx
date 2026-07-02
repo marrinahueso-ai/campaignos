@@ -181,9 +181,8 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
     <div className="mx-auto max-w-[1600px] space-y-5 pb-8">
       {data.importCleanup && (
         <CalendarImportCleanupPanel
-          importId={data.importCleanup.importId}
-          filename={data.importCleanup.filename}
-          importedCount={data.importCleanup.importedCount}
+          schoolYearLabel={data.importCleanup.schoolYearLabel}
+          eventCount={data.importCleanup.eventCount}
         />
       )}
 

@@ -6,22 +6,33 @@ import { extractCalendarFileText } from "@/lib/calendar-import/extract-text";
 import {
   deleteEventsByIds,
   deleteEventsForCalendarImport,
+  deleteCalendarWindowEvents,
   insertImportedEvents,
+  resetAllCalendarImportsForOrganization,
+  resetCalendarImportsForSchoolYear,
   saveCalendarReviewEvents,
   updateCalendarImportParseStatus,
   updateEventCommunicationStrategy,
   uploadCalendarImportFile,
 } from "@/lib/calendar-import/mutations";
 import {
+  buildCalendarEventDedupeKeySet,
+  filterDuplicateReviewEvents,
+} from "@/lib/calendar-import/event-dedup";
+import {
   parseCalendarTextWithAi,
   refineCalendarEventsWithAi,
   mapParsedEvents,
 } from "@/lib/calendar-import/parse-events";
-import { countDateMentions, mergeRawEvents } from "@/lib/calendar-import/extract-date-lines";
+import { countDateMentions } from "@/lib/calendar-import/extract-date-lines";
 import { generateText } from "@/lib/ai/provider";
+import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
 import {
   getCalendarImportById,
+  getCalendarWindowEventCount,
+  getExistingCalendarEventKeysForWindow,
   getLatestCalendarImport,
+  getCalendarWindowEventsForDedup,
 } from "@/lib/calendar-import/queries";
 import { initializeEventWorkspace } from "@/lib/event-workspace/mutations";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
@@ -33,6 +44,8 @@ import {
   getImportEventPreferencesMap,
   upsertImportPreferencesFromReviewEvents,
 } from "@/lib/calendar-import/import-preferences";
+import { parseIcsToReviewEvents } from "@/lib/calendar-import/parse-ics";
+import { normalizeCalendarReviewEvents } from "@/lib/calendar-import/review-event-normalize";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { CalendarReviewEvent } from "@/types/calendar-review";
@@ -86,6 +99,39 @@ export async function parseCalendarImportAction(
   }
 
   const organization = await getLatestOrganization();
+
+  if (importRecord.fileType === "ics") {
+    const events = parseIcsToReviewEvents(
+      extracted.text,
+      organization?.schoolYear,
+    );
+
+    if (!events.length) {
+      await updateCalendarImportParseStatus(importId, {
+        parseStatus: "failed",
+        parseError: "No events were found in the ICS calendar file.",
+        extractedText: extracted.text,
+      });
+      return { events: [], error: "No events were found in the ICS calendar file." };
+    }
+
+    let normalizedEvents = events;
+    if (organization) {
+      const preferences = await getImportEventPreferencesMap(organization.id);
+      normalizedEvents = applyImportPreferencesToEvents(events, preferences);
+    }
+
+    await updateCalendarImportParseStatus(importId, {
+      parseStatus: "parsed",
+      parseError: null,
+      extractedText: extracted.text,
+      parsedEvents: normalizedEvents,
+    });
+
+    revalidateCalendarPaths();
+    return { events: normalizedEvents, error: null };
+  }
+
   const parsed = await parseCalendarTextWithAi(
     extracted.text,
     organization?.schoolYear,
@@ -172,26 +218,39 @@ export async function refineCalendarReviewAction(
 export async function importCalendarEventsAction(
   importId: string,
   events: CalendarReviewEvent[],
-): Promise<{ importedCount: number; error: string | null }> {
+): Promise<{ importedCount: number; skippedCount: number; error: string | null }> {
   const importRecord = await getCalendarImportById(importId);
 
   if (!importRecord) {
-    return { importedCount: 0, error: "Calendar upload not found." };
+    return { importedCount: 0, skippedCount: 0, error: "Calendar upload not found." };
   }
 
   if (importRecord.parseStatus === "imported") {
-    return { importedCount: 0, error: "This calendar has already been imported." };
+    return {
+      importedCount: 0,
+      skippedCount: 0,
+      error: "This calendar has already been imported.",
+    };
   }
 
   if (events.length === 0) {
-    return { importedCount: 0, error: "No events selected to import." };
+    return { importedCount: 0, skippedCount: 0, error: "No events selected to import." };
   }
 
-  const inserted = await insertImportedEvents(events, importId);
+  const { events: inserted, skippedCount } = await insertImportedEvents(events, importId);
 
   if (!inserted.length) {
+    if (skippedCount > 0) {
+      return {
+        importedCount: 0,
+        skippedCount,
+        error: null,
+      };
+    }
+
     return {
       importedCount: 0,
+      skippedCount: 0,
       error: "Unable to import events. Please try again.",
     };
   }
@@ -209,7 +268,7 @@ export async function importCalendarEventsAction(
   }
 
   revalidateCalendarPaths();
-  return { importedCount: inserted.length, error: null };
+  return { importedCount: inserted.length, skippedCount, error: null };
 }
 
 export async function deleteImportedCalendarEventsAction(
@@ -241,6 +300,55 @@ export async function bulkDeleteEventsAction(
 
   revalidateCalendarPaths();
   return { error: null, success: true };
+}
+
+export async function clearCalendarWindowEventsAction(): Promise<{
+  success: boolean;
+  error: string | null;
+  deletedCount: number;
+}> {
+  const organization = await getLatestOrganization();
+  if (!organization) {
+    return { success: false, error: "Complete school setup first.", deletedCount: 0 };
+  }
+
+  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  const schoolYearLabel = resolveCalendarSchoolYearLabel({
+    activeSchoolYearLabel: activeSchoolYear?.label,
+    organizationSchoolYear: organization.schoolYear,
+  });
+
+  const deletedCount = await getCalendarWindowEventCount(schoolYearLabel);
+  if (deletedCount === 0) {
+    return { success: true, error: null, deletedCount: 0 };
+  }
+
+  const { ok, deletedCount: removed } = await deleteCalendarWindowEvents(
+    schoolYearLabel,
+  );
+  if (!ok) {
+    return {
+      success: false,
+      error: "Unable to clear calendar events.",
+      deletedCount: 0,
+    };
+  }
+
+  await resetAllCalendarImportsForOrganization(organization.id);
+  if (activeSchoolYear) {
+    await resetCalendarImportsForSchoolYear(activeSchoolYear.id);
+  }
+
+  revalidateCalendarPaths();
+  revalidatePath("/settings");
+  return { success: true, error: null, deletedCount: removed };
+}
+
+/** @deprecated Use clearCalendarWindowEventsAction — kept for settings panel param. */
+export async function clearSchoolYearCalendarEventsAction(
+  _schoolYearId: string,
+): Promise<{ success: boolean; error: string | null; deletedCount: number }> {
+  return clearCalendarWindowEventsAction();
 }
 
 export async function uploadCalendarFileAction(
@@ -323,6 +431,20 @@ export async function findMissingCalendarEventsAction(
   const text = importRecord.extractedText;
   const expectedDates = countDateMentions(text);
 
+  const activeSchoolYear = organization
+    ? await getActiveSchoolYear(organization.id)
+    : null;
+  const schoolYearLabel = resolveCalendarSchoolYearLabel({
+    activeSchoolYearLabel: activeSchoolYear?.label,
+    organizationSchoolYear: organization?.schoolYear,
+  });
+  const existingOnCalendar = await getCalendarWindowEventsForDedup(schoolYearLabel);
+
+  const knownEvents = [
+    ...currentEvents.map((event) => ({ name: event.name, date: event.date })),
+    ...existingOnCalendar.map((event) => ({ name: event.title, date: event.date })),
+  ];
+
   const result = await generateText({
     systemPrompt: `You find dated school calendar entries that were missed in a first pass.
 
@@ -333,15 +455,11 @@ Return ONLY valid JSON:
   ]
 }
 
-Include ONLY events that are in the document but NOT in the existing list.`,
+Include ONLY events that are in the document but NOT in the existing list (review list or already on the calendar).`,
     userPrompt: `School year: ${organization?.schoolYear ?? "unknown"}
 Document date mentions detected: about ${expectedDates}
-Existing parsed events (${currentEvents.length}):
-${JSON.stringify(
-  currentEvents.map((event) => ({ name: event.name, date: event.date })),
-  null,
-  2,
-)}
+Known events — review list plus events already on the calendar (${knownEvents.length}):
+${JSON.stringify(knownEvents, null, 2)}
 
 Document text:
 ${text.slice(0, 80_000)}
@@ -372,17 +490,17 @@ Return every missing dated event.`,
     };
   }
 
-  const mergedRaw = mergeRawEvents(
-    currentEvents.map((event) => ({
-      name: event.name,
-      date: event.date,
-      category: event.category,
-      status: event.status,
-    })),
-    missingRaw,
+  const missingMapped = mapParsedEvents(missingRaw, organization?.schoolYear);
+  const existingKeys = await getExistingCalendarEventKeysForWindow(schoolYearLabel);
+  const reviewKeys = buildCalendarEventDedupeKeySet(
+    currentEvents.map((event) => ({ name: event.name, date: event.date })),
   );
-
-  const events = mapParsedEvents(mergedRaw, organization?.schoolYear);
+  const combinedKeys = new Set([...existingKeys, ...reviewKeys]);
+  const { newEvents } = filterDuplicateReviewEvents(missingMapped, combinedKeys);
+  const events = normalizeCalendarReviewEvents([
+    ...currentEvents,
+    ...newEvents,
+  ]);
   await saveCalendarReviewEvents(importId, events);
   revalidateCalendarPaths();
 

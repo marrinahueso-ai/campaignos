@@ -1,5 +1,6 @@
 import { getAuthUser } from "@/lib/auth/queries";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { redirect } from "next/navigation";
 import { StudioHomePage } from "@/components/marketing/StudioHomePage";
 
@@ -16,12 +17,13 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+
   const user = await getAuthUser();
   if (user) {
-    redirect("/");
+    redirect(safeNextPath(params.next) ?? "/dashboard");
   }
 
-  const params = await searchParams;
   const invitePreview = params.invite
     ? await getInvitePreview(params.invite)
     : null;
@@ -31,6 +33,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       invitePreview={invitePreview}
       inviteToken={params.invite ?? null}
       authError={params.error ?? null}
+      nextPath={params.next ?? null}
     />
   );
 }

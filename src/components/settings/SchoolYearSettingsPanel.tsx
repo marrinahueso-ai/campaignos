@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -14,14 +15,17 @@ import {
   activateSchoolYearAction,
   closeSchoolYearAndBeginNextAction,
   saveCalendarSubscribeUrlAction,
+  syncCalendarSubscribeFeedAction,
   type SchoolYearSettingsData,
 } from "@/lib/school-years/actions";
+import { clearCalendarWindowEventsAction } from "@/lib/calendar-import/actions";
 
 interface SchoolYearSettingsPanelProps {
   initialData: SchoolYearSettingsData;
 }
 
 export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanelProps) {
+  const router = useRouter();
   const [data, setData] = useState(initialData);
   const [nextYearLabel, setNextYearLabel] = useState("");
   const [subscribeUrl, setSubscribeUrl] = useState(
@@ -82,6 +86,74 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
     });
   }
 
+  function handleSyncSubscribeFeed() {
+    if (!data.activeSchoolYear) {
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await syncCalendarSubscribeFeedAction(data.activeSchoolYear!.id);
+
+      if (!result.success) {
+        setError(result.error ?? "Unable to sync calendar feed.");
+        return;
+      }
+
+      if (result.importId) {
+        if (result.added === 0 && result.skipped > 0) {
+          setMessage(
+            `Feed synced — all ${result.skipped} events are already on your calendar.`,
+          );
+          router.refresh();
+          return;
+        }
+
+        if (result.skipped > 0) {
+          setMessage(
+            `Feed synced — ${result.added} new events ready to review (${result.skipped} already on calendar).`,
+          );
+        }
+
+        router.push(`/calendar/review?import=${result.importId}`);
+        return;
+      }
+
+      setMessage("Calendar feed synced.");
+    });
+  }
+
+  function handleClearCalendar() {
+    const eventLabel =
+      data.activeSchoolYear?.label ?? data.organizationSchoolYearLabel ?? "your calendar";
+    const confirmed = window.confirm(
+      `Remove all calendar and campaign events for ${eventLabel}? This cannot be undone. Sync your feed or upload a PDF afterward.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+
+    startTransition(async () => {
+      const result = await clearCalendarWindowEventsAction();
+      if (!result.success) {
+        setError(result.error ?? "Unable to clear calendar events.");
+        return;
+      }
+
+      setMessage(
+        result.deletedCount > 0
+          ? `Cleared ${result.deletedCount} calendar events for ${eventLabel}.`
+          : "Calendar is already empty.",
+      );
+      router.refresh();
+    });
+  }
+
   function handleActivateYear(schoolYearId: string) {
     setError(null);
     setMessage(null);
@@ -98,6 +170,10 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
 
   const activeLabel =
     data.activeSchoolYear?.label ?? data.organizationSchoolYearLabel ?? "Not set";
+
+  const savedSubscribeUrl = data.activeSchoolYear?.calendarSubscribeUrl?.trim() ?? "";
+  const canSyncFeed =
+    Boolean(savedSubscribeUrl) && subscribeUrl.trim() === savedSubscribeUrl;
 
   return (
     <Card>
@@ -126,18 +202,38 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
             value={subscribeUrl}
             onChange={(event) => setSubscribeUrl(event.target.value)}
             placeholder="https://calendar.google.com/calendar/ical/..."
-            hint="Optional — save your district or school calendar feed to keep dates updated."
+            hint="Optional — Google Calendar ICS or webcal:// URLs. New events auto-import daily at 6:00 AM UTC. Use Sync now for an immediate pull to review."
             disabled={isPending || !data.activeSchoolYear}
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={handleSaveSubscribeUrl}
-            disabled={isPending || !data.activeSchoolYear}
-          >
-            Save subscribe feed
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleSaveSubscribeUrl}
+              disabled={isPending || !data.activeSchoolYear}
+            >
+              Save subscribe feed
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSyncSubscribeFeed}
+              disabled={isPending || !data.activeSchoolYear || !canSyncFeed}
+            >
+              Sync calendar feed now
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="text-red-700 hover:bg-red-50"
+              onClick={handleClearCalendar}
+              disabled={isPending || !data.activeSchoolYear}
+            >
+              Clear calendar for this school year
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-3 border border-cos-border p-4">

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCalendarPlanningWindow } from "@/lib/calendar-import/calendar-window";
 import { mapCalendarImportRow } from "@/lib/organizations/mappers";
 import { toEventInsert } from "@/lib/events/mappers";
 import { mapEventRow } from "@/lib/events/mappers";
@@ -9,6 +10,10 @@ import type { CalendarImport, CalendarImportRow, CreateEventInput, Event, EventR
 import type { CalendarReviewEvent } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
+import {
+  buildCalendarEventDedupeKeySet,
+  filterDuplicateReviewEvents,
+} from "@/lib/calendar-import/event-dedup";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
@@ -62,9 +67,10 @@ export async function saveCalendarReviewEvents(
 export async function insertImportedEvents(
   events: CalendarReviewEvent[],
   calendarImportId: string,
-): Promise<Event[]> {
+  existingKeys?: Set<string>,
+): Promise<{ events: Event[]; skippedCount: number }> {
   if (events.length === 0) {
-    return [];
+    return { events: [], skippedCount: 0 };
   }
 
   const supabase = await createClient();
@@ -74,7 +80,32 @@ export async function insertImportedEvents(
     ? await getActiveSchoolYear(organizationId)
     : null;
 
-  const rows = events.map((event) => {
+  let dedupeKeys = existingKeys;
+  if (!dedupeKeys && activeSchoolYear) {
+    const { data: existingRows } = await supabase
+      .from("events")
+      .select("title, date")
+      .eq("school_year_id", activeSchoolYear.id)
+      .neq("status", "archived");
+
+    dedupeKeys = buildCalendarEventDedupeKeySet(
+      (existingRows ?? []).map((row) => ({
+        title: row.title as string,
+        date: row.date as string,
+      })),
+    );
+  }
+
+  const { newEvents, skippedCount } = filterDuplicateReviewEvents(
+    events,
+    dedupeKeys ?? new Set(),
+  );
+
+  if (newEvents.length === 0) {
+    return { events: [], skippedCount };
+  }
+
+  const rows = newEvents.map((event) => {
     const input: CreateEventInput = {
       title: event.name,
       description: `Imported from school calendar (${event.category}).`,
@@ -101,7 +132,7 @@ export async function insertImportedEvents(
 
   if (error || !data) {
     console.error("Failed to insert imported events:", error?.message);
-    return [];
+    return { events: [], skippedCount };
   }
 
   const inserted = (data as EventRow[]).map(mapEventRow);
@@ -120,7 +151,7 @@ export async function insertImportedEvents(
     });
   }
 
-  return inserted;
+  return { events: inserted, skippedCount };
 }
 
 async function getImportOrganizationId(
@@ -167,6 +198,88 @@ export async function deleteEventsForCalendarImport(
   }
 
   return true;
+}
+
+export async function deleteEventsForSchoolYear(
+  schoolYearId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("events")
+    .delete()
+    .eq("school_year_id", schoolYearId);
+
+  if (error) {
+    console.error("Failed to delete school year calendar events:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
+/** Delete every event currently visible on the calendar (planning window). */
+export async function deleteCalendarWindowEvents(
+  schoolYearLabel: string | null | undefined,
+): Promise<{ ok: boolean; deletedCount: number }> {
+  const window = getCalendarPlanningWindow(schoolYearLabel);
+  const supabase = await createClient();
+
+  const { data: rows, error: selectError } = await supabase
+    .from("events")
+    .select("id")
+    .gte("date", window.startDate)
+    .lte("date", window.endDate)
+    .neq("status", "archived");
+
+  if (selectError) {
+    console.error("Failed to list calendar window events:", selectError.message);
+    return { ok: false, deletedCount: 0 };
+  }
+
+  const eventIds = (rows ?? []).map((row) => row.id as string);
+  if (eventIds.length === 0) {
+    return { ok: true, deletedCount: 0 };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("events")
+    .delete()
+    .in("id", eventIds);
+
+  if (deleteError) {
+    console.error("Failed to delete calendar window events:", deleteError.message);
+    return { ok: false, deletedCount: 0 };
+  }
+
+  return { ok: true, deletedCount: eventIds.length };
+}
+
+export async function resetAllCalendarImportsForOrganization(
+  organizationId: string,
+): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from("calendar_imports")
+    .update({
+      parse_status: "parsed",
+      imported_at: null,
+    })
+    .eq("organization_id", organizationId)
+    .eq("parse_status", "imported");
+}
+
+export async function resetCalendarImportsForSchoolYear(
+  schoolYearId: string,
+): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from("calendar_imports")
+    .update({
+      parse_status: "parsed",
+      imported_at: null,
+    })
+    .eq("school_year_id", schoolYearId)
+    .eq("parse_status", "imported");
 }
 
 export async function updateEventCommunicationStrategy(
@@ -261,6 +374,58 @@ export async function uploadCalendarImportFile(
     return {
       importRecord: null,
       error: "Unable to save calendar upload. Please try again.",
+    };
+  }
+
+  return {
+    importRecord: mapCalendarImportRow(data as CalendarImportRow),
+    error: null,
+  };
+}
+
+export async function createCalendarImportFromIcsText(
+  organizationId: string,
+  icsText: string,
+  filename: string,
+): Promise<{ importRecord: CalendarImport | null; error: string | null }> {
+  const supabase = await createClient();
+  const safeFilename = filename.trim() || "calendar-subscribe.ics";
+  const storagePath = `${organizationId}/${Date.now()}-${safeFilename}`;
+  const buffer = Buffer.from(icsText, "utf-8");
+
+  const { error: uploadError } = await supabase.storage
+    .from(CALENDAR_UPLOADS_BUCKET)
+    .upload(storagePath, buffer, {
+      contentType: "text/calendar",
+      upsert: true,
+    });
+
+  if (uploadError) {
+    console.error("Failed to upload ICS calendar feed:", uploadError.message);
+    return {
+      importRecord: null,
+      error: "Unable to save calendar feed. Please try again.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("calendar_imports")
+    .insert({
+      organization_id: organizationId,
+      filename: safeFilename,
+      file_type: "ics",
+      upload_status: "uploaded",
+      storage_path: storagePath,
+      parse_status: "pending",
+    })
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    console.error("Failed to save calendar import from feed:", error?.message);
+    return {
+      importRecord: null,
+      error: "Unable to save calendar feed import. Please try again.",
     };
   }
 

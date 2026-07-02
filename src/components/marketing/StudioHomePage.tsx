@@ -13,6 +13,7 @@ interface StudioHomePageProps {
   inviteToken?: string | null;
   authError?: string | null;
   userEmail?: string | null;
+  nextPath?: string | null;
 }
 
 const highlights = [
@@ -38,13 +39,14 @@ export function StudioHomePage({
   inviteToken = null,
   authError = null,
   userEmail = null,
+  nextPath = null,
 }: StudioHomePageProps) {
   const isSignedIn = Boolean(userEmail);
 
   return (
     <StudioMarketingShell userEmail={userEmail}>
       <div className="relative grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_min(100%,520px)]">
-        {/* Hero photo — left column on desktop, top band on mobile */}
+        {/* Hero photo — left column on desktop, band behind content on mobile */}
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-[42vh] lg:inset-y-0 lg:left-0 lg:h-auto lg:w-[calc(100%-min(100%,520px))]"
           aria-hidden
@@ -61,7 +63,7 @@ export function StudioHomePage({
           <div className="absolute inset-0 bg-gradient-to-t from-[#f6f2eb] via-transparent to-[#f6f2eb]/50 lg:from-[#f6f2eb]/80 lg:via-transparent lg:to-[#f6f2eb]/20" />
         </div>
 
-        <section className="relative z-10 flex flex-col justify-center px-6 pt-[38vh] pb-16 lg:px-10 lg:pt-24 lg:pb-24">
+        <section className="relative z-10 order-2 flex flex-col justify-center px-6 pt-8 pb-16 lg:order-1 lg:px-10 lg:pt-24 lg:pb-24">
           <p className="studio-eyebrow">PTO communications, elevated</p>
           <h1 className="font-display mt-5 max-w-xl text-[2.75rem] leading-[1.05] text-cos-text sm:text-6xl lg:text-[4.25rem]">
             Your campaign workspace, designed like a studio.
@@ -73,8 +75,8 @@ export function StudioHomePage({
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
             {!isSignedIn && (
-              <Button href="/login" size="lg">
-                Get started
+              <Button href="#sign-in" size="lg">
+                Sign in
                 <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </Button>
             )}
@@ -128,7 +130,10 @@ export function StudioHomePage({
           </ul>
         </section>
 
-        <section className="relative z-10 flex items-center justify-center bg-cos-dark px-6 py-16 lg:px-8 lg:py-24">
+        <section
+          id="sign-in"
+          className="relative z-10 order-1 flex items-center justify-center bg-cos-dark px-6 py-12 lg:order-2 lg:px-8 lg:py-24"
+        >
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.07]"
             style={{
@@ -158,7 +163,7 @@ export function StudioHomePage({
                   ? "Your studio is ready. Pick up where you left off in your campaign workspace."
                   : invitePreview
                     ? `You're invited to ${invitePreview.organizationName}.`
-                    : "Enter your email — we'll send a secure link. No password needed."}
+                    : "Sign in with Google, Facebook, or the email and password your admin shared."}
               </p>
             </div>
 
@@ -169,12 +174,14 @@ export function StudioHomePage({
                   Enter workspace
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
-                <Link
-                  href="/auth/signout"
-                  className="block text-center text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
-                >
-                  Sign out
-                </Link>
+                <form action="/auth/signout" method="POST">
+                  <button
+                    type="submit"
+                    className="block w-full text-center text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+                  >
+                    Sign out
+                  </button>
+                </form>
               </div>
             ) : (
               <>
@@ -199,6 +206,7 @@ export function StudioHomePage({
                     inviteToken={inviteToken}
                     defaultEmail={invitePreview?.email ?? ""}
                     variant="studio"
+                    nextPath={nextPath}
                   />
                 </div>
               </>

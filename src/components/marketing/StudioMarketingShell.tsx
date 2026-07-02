@@ -56,7 +56,7 @@ export function StudioMarketingShell({ userEmail, children }: StudioMarketingShe
                 </Button>
               </>
             ) : (
-              <Button href="/login" size="sm" variant="secondary">
+              <Button href="#sign-in" size="sm">
                 Sign in
               </Button>
             )}
@@ -64,6 +64,14 @@ export function StudioMarketingShell({ userEmail, children }: StudioMarketingShe
         </div>
 
         <nav className="flex gap-4 overflow-x-auto border-t border-cos-border/60 px-6 py-2 md:hidden">
+          {!isSignedIn && (
+            <Link
+              href="#sign-in"
+              className="shrink-0 text-xs font-medium tracking-wide text-cos-text uppercase"
+            >
+              Sign in
+            </Link>
+          )}
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}

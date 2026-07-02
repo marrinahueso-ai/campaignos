@@ -87,12 +87,14 @@ export function DashboardHeader({
           {userEmail && (
             <div className="hidden border-l border-cos-border pl-3 text-right sm:block">
               <p className="max-w-[12rem] truncate text-xs text-cos-muted">{userEmail}</p>
-              <Link
-                href="/auth/signout"
-                className="text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
-              >
-                Sign out
-              </Link>
+              <form action="/auth/signout" method="POST">
+                <button
+                  type="submit"
+                  className="text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+                >
+                  Sign out
+                </button>
+              </form>
             </div>
           )}
         </div>

@@ -1,7 +1,13 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { mapCalendarImportRow } from "@/lib/organizations/mappers";
+import { buildCalendarEventDedupeKeySet } from "@/lib/calendar-import/event-dedup";
+import {
+  getCalendarPlanningWindow,
+  resolveCalendarSchoolYearLabel,
+} from "@/lib/calendar-import/calendar-window";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import { buildCalendarReviewStats } from "@/lib/calendar-import/stats";
 import {
   parseRawReviewEvents,
@@ -97,26 +103,146 @@ export const getCalendarReviewPageData = cache(async (): Promise<{
   };
 });
 
+export async function getSchoolYearCalendarEventCount(
+  schoolYearId: string,
+): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .eq("school_year_id", schoolYearId)
+    .neq("status", "archived");
+
+  if (error) {
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+/** All non-archived events visible on the calendar (planning window). */
+export async function getCalendarWindowEventCount(
+  schoolYearLabel: string | null | undefined,
+): Promise<number> {
+  const window = getCalendarPlanningWindow(schoolYearLabel);
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("events")
+    .select("*", { count: "exact", head: true })
+    .gte("date", window.startDate)
+    .lte("date", window.endDate)
+    .neq("status", "archived");
+
+  if (error) {
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
+export async function getExistingCalendarEventKeysForSchoolYear(
+  schoolYearId: string,
+): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("title, date")
+    .eq("school_year_id", schoolYearId)
+    .neq("status", "archived");
+
+  if (error || !data) {
+    return new Set();
+  }
+
+  return buildCalendarEventDedupeKeySet(
+    data.map((row) => ({
+      title: row.title as string,
+      date: row.date as string,
+    })),
+  );
+}
+
+export async function getSchoolYearCalendarEventsForDedup(
+  schoolYearId: string,
+): Promise<{ title: string; date: string }[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("title, date")
+    .eq("school_year_id", schoolYearId)
+    .neq("status", "archived")
+    .order("date", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    title: row.title as string,
+    date: row.date as string,
+  }));
+}
+
+/** Events currently on the calendar — used for import dedup. */
+export async function getCalendarWindowEventsForDedup(
+  schoolYearLabel: string | null | undefined,
+): Promise<{ title: string; date: string }[]> {
+  const window = getCalendarPlanningWindow(schoolYearLabel);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("title, date")
+    .gte("date", window.startDate)
+    .lte("date", window.endDate)
+    .neq("status", "archived")
+    .order("date", { ascending: true });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    title: row.title as string,
+    date: row.date as string,
+  }));
+}
+
+export async function getExistingCalendarEventKeysForWindow(
+  schoolYearLabel: string | null | undefined,
+): Promise<Set<string>> {
+  const events = await getCalendarWindowEventsForDedup(schoolYearLabel);
+  return buildCalendarEventDedupeKeySet(
+    events.map((event) => ({ title: event.title, date: event.date })),
+  );
+}
+
 export async function getImportedEventsForCalendarList(): Promise<{
   filename: string | null;
   events: CalendarImportedEventListItem[];
 }> {
-  const latestImport = await getLatestCalendarImport();
-
-  if (!latestImport?.importedAt) {
+  const organization = await getLatestOrganization();
+  if (!organization) {
     return { filename: null, events: [] };
   }
+
+  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  const schoolYearLabel = resolveCalendarSchoolYearLabel({
+    activeSchoolYearLabel: activeSchoolYear?.label,
+    organizationSchoolYear: organization.schoolYear,
+  });
+  const window = getCalendarPlanningWindow(schoolYearLabel);
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
     .select("id, title, date, category, communication_strategy")
-    .eq("calendar_import_id", latestImport.id)
+    .gte("date", window.startDate)
+    .lte("date", window.endDate)
     .neq("status", "archived")
     .order("date", { ascending: true });
 
   if (error || !data) {
-    return { filename: latestImport.filename, events: [] };
+    return { filename: schoolYearLabel, events: [] };
   }
 
   const { parseCommunicationStrategy } = await import(
@@ -124,7 +250,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
   );
 
   return {
-    filename: latestImport.filename,
+    filename: schoolYearLabel,
     events: data.map((row) => ({
       id: row.id as string,
       title: row.title as string,

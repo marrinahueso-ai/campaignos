@@ -3,31 +3,36 @@
 import { useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { deleteImportedCalendarEventsAction } from "@/lib/calendar-import/actions";
+import { clearCalendarWindowEventsAction } from "@/lib/calendar-import/actions";
 import { Button } from "@/components/ui/Button";
 
 interface CalendarImportCleanupPanelProps {
-  importId: string;
-  filename: string;
-  importedCount: number;
+  schoolYearLabel: string;
+  eventCount: number;
 }
 
 export function CalendarImportCleanupPanel({
-  importId,
-  filename,
-  importedCount,
+  schoolYearLabel,
+  eventCount,
 }: CalendarImportCleanupPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleDeleteAll() {
+  function handleClearAll() {
+    const confirmed = window.confirm(
+      `Remove all ${eventCount} events from your calendar and campaigns? This cannot be undone. Sync or import again afterward.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
     setError(null);
 
     startTransition(async () => {
-      const result = await deleteImportedCalendarEventsAction(importId);
+      const result = await clearCalendarWindowEventsAction();
       if (!result.success) {
-        setError(result.error ?? "Unable to delete imported events.");
+        setError(result.error ?? "Unable to clear calendar events.");
         return;
       }
 
@@ -40,11 +45,13 @@ export function CalendarImportCleanupPanel({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-amber-950">
-            Testing import from {filename}
+            {eventCount} events on {schoolYearLabel}
           </p>
           <p className="mt-1 text-sm text-amber-800">
-            {importedCount} imported events are on this calendar. Remove them all
-            when you are done testing.
+            Clear everything to start fresh, then sync your subscribe feed and
+            upload a PDF for anything missing. Use{" "}
+            <span className="font-medium">Import list</span> to delete individual
+            events.
           </p>
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
         </div>
@@ -52,11 +59,11 @@ export function CalendarImportCleanupPanel({
           variant="secondary"
           size="sm"
           className="shrink-0 text-red-700 hover:bg-red-50"
-          onClick={handleDeleteAll}
+          onClick={handleClearAll}
           disabled={isPending}
         >
           <Trash2 className="h-4 w-4" />
-          {isPending ? "Deleting..." : "Delete all imported events"}
+          {isPending ? "Clearing..." : "Clear all calendar events"}
         </Button>
       </div>
     </div>

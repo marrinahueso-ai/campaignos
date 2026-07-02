@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { UserPlus } from "lucide-react";
+import { Copy, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
   claimOrganizationAccessAction,
-  inviteTeamMemberAction,
+  createTeamMemberAccountAction,
   removeTeamMemberAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
@@ -33,6 +33,8 @@ interface TeamSettingsPanelProps {
   canManage: boolean;
   showClaimBanner: boolean;
   currentUserEmail: string | null;
+  siteOrigin: string;
+  canProvisionAccounts: boolean;
 }
 
 function statusBadge(status: OrganizationUser["status"]) {
@@ -52,29 +54,59 @@ export function TeamSettingsPanel({
   canManage,
   showClaimBanner,
   currentUserEmail,
+  siteOrigin,
+  canProvisionAccounts,
 }: TeamSettingsPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [showInvite, setShowInvite] = useState(false);
+  const [provisionedEmail, setProvisionedEmail] = useState<string | null>(null);
+  const [provisionedPassword, setProvisionedPassword] = useState<string | null>(
+    null,
+  );
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  async function handleInvite(formData: FormData) {
+  async function handleCreateAccount(formData: FormData) {
     startTransition(async () => {
-      const result = await inviteTeamMemberAction(
+      const result = await createTeamMemberAccountAction(
         { error: null, success: false },
         formData,
       );
       if (result.error) {
         setError(result.error);
         setMessage(null);
+        setProvisionedEmail(null);
+        setProvisionedPassword(null);
         return;
       }
       setError(null);
-      setMessage(result.message ?? "Invite sent.");
-      setShowInvite(false);
+      setMessage(result.message ?? "Account created.");
+      setProvisionedEmail(result.provisionedEmail ?? null);
+      setProvisionedPassword(result.provisionedPassword ?? null);
+      setShowCreateForm(false);
       router.refresh();
     });
+  }
+
+  async function copySignInDetails() {
+    if (!provisionedEmail || !provisionedPassword) {
+      return;
+    }
+
+    const text = [
+      `CampaignOS sign-in: ${siteOrigin}/login`,
+      `Email: ${provisionedEmail}`,
+      `Password: ${provisionedPassword}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setMessage("Sign-in details copied.");
+      setError(null);
+    } catch {
+      setError("Could not copy. Select and copy the details manually.");
+    }
   }
 
   function handleClaim() {
@@ -143,8 +175,8 @@ export function TeamSettingsPanel({
         <CardHeader>
           <CardTitle>Team members</CardTitle>
           <CardDescription>
-            Invite board members and VPs by email. They sign in with a magic link
-            and inherit the org role and permissions you assign.
+            Create a tester account with email and password, then share the sign-in
+            details directly. No magic link or paid email required.
           </CardDescription>
         </CardHeader>
 
@@ -212,9 +244,17 @@ export function TeamSettingsPanel({
 
         {canManage && (
           <>
-            {showInvite ? (
+            {!canProvisionAccounts && (
+              <p className="mt-4 text-sm text-amber-900">
+                Add <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
+                <code className="text-xs">.env.local</code> to create tester accounts
+                from here.
+              </p>
+            )}
+
+            {showCreateForm ? (
               <form
-                action={handleInvite}
+                action={handleCreateAccount}
                 className="mt-6 space-y-4 rounded-xl border border-cos-border bg-cos-bg/50 p-5"
               >
                 <Input
@@ -224,6 +264,14 @@ export function TeamSettingsPanel({
                   placeholder="communications@ptoees.org"
                   required
                 />
+                <Input
+                  name="password"
+                  label="Temporary password"
+                  type="text"
+                  placeholder="At least 8 characters"
+                  required
+                  minLength={8}
+                />
                 <Select name="organizationRoleId" label="Organization role" defaultValue="">
                   <option value="">Select role (optional)</option>
                   {roles.map((role) => (
@@ -232,7 +280,7 @@ export function TeamSettingsPanel({
                     </option>
                   ))}
                 </Select>
-                <Select name="campaignRole" label="Access level" defaultValue="contributor">
+                <Select name="campaignRole" label="Access level" defaultValue="admin">
                   {CAMPAIGN_ROLES.map((role) => (
                     <option key={role} value={role}>
                       {campaignRoleLabel(role as CampaignRole)}
@@ -240,13 +288,13 @@ export function TeamSettingsPanel({
                   ))}
                 </Select>
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={isPending}>
-                    Send invite
+                  <Button type="submit" disabled={isPending || !canProvisionAccounts}>
+                    Create account
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setShowInvite(false)}
+                    onClick={() => setShowCreateForm(false)}
                   >
                     Cancel
                   </Button>
@@ -257,10 +305,11 @@ export function TeamSettingsPanel({
                 type="button"
                 variant="secondary"
                 className="mt-6"
-                onClick={() => setShowInvite(true)}
+                onClick={() => setShowCreateForm(true)}
+                disabled={!canProvisionAccounts}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Invite team member
+                Add tester account
               </Button>
             )}
           </>
@@ -269,6 +318,39 @@ export function TeamSettingsPanel({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {message && <p className="text-sm text-emerald-700">{message}</p>}
+      {provisionedEmail && provisionedPassword && (
+        <div className="rounded-xl border border-cos-border bg-cos-bg/50 p-4">
+          <p className="text-sm font-medium text-cos-text">Share these sign-in details</p>
+          <p className="mt-1 text-xs text-cos-muted">
+            Send by text or in person. They sign in at {siteOrigin}/login with email &
+            password.
+          </p>
+          <dl className="mt-3 space-y-2 text-sm">
+            <div>
+              <dt className="text-cos-muted">Login URL</dt>
+              <dd className="font-medium text-cos-text">{siteOrigin}/login</dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Email</dt>
+              <dd className="font-medium text-cos-text">{provisionedEmail}</dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Password</dt>
+              <dd className="font-medium text-cos-text">{provisionedPassword}</dd>
+            </div>
+          </dl>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mt-3"
+            onClick={copySignInDetails}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Copy sign-in details
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

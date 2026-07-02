@@ -22,11 +22,107 @@ import {
   isCampaignRole,
 } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole, SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
+import {
+  buildInviteLoginUrl,
+  resolveAuthSiteOrigin,
+} from "@/lib/auth/invite-url";
+import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
+import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 export interface AuthActionState {
   error: string | null;
   success: boolean;
   message?: string | null;
+  inviteUrl?: string | null;
+  provisionedEmail?: string | null;
+  provisionedPassword?: string | null;
+}
+
+export async function getOAuthSignInUrl(
+  provider: string,
+  inviteToken?: string | null,
+): Promise<{ url: string } | { error: string }> {
+  if (!isOAuthSignInProvider(provider)) {
+    return { error: "Unsupported sign-in provider." };
+  }
+
+  const supabase = await createClient();
+  const headersList = await headers();
+  const origin = resolveAuthSiteOrigin(headersList.get("origin"));
+  const redirectTo = new URL("/auth/callback", origin);
+
+  if (inviteToken) {
+    redirectTo.searchParams.set("invite", inviteToken);
+  }
+
+  const options: {
+    redirectTo: string;
+    skipBrowserRedirect: true;
+    queryParams?: Record<string, string>;
+  } = {
+    redirectTo: redirectTo.toString(),
+    skipBrowserRedirect: true,
+  };
+
+  if (provider === "google") {
+    options.queryParams = {
+      access_type: "offline",
+      prompt: "consent",
+    };
+  }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options,
+  });
+
+  if (error) {
+    const message = error.message.includes("redirect")
+      ? `${error.message} Add ${redirectTo.origin}/auth/callback to Supabase Auth redirect URLs.`
+      : error.message;
+    return { error: message };
+  }
+
+  if (!data.url) {
+    return {
+      error:
+        "Could not start social sign-in. Enable the provider in Supabase Auth settings.",
+    };
+  }
+
+  return { url: data.url };
+}
+
+export async function signInWithPasswordAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = formData.get("email")?.toString()?.trim() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
+
+  if (!email || !password) {
+    return { error: "Enter your email and password.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: error.message, success: false };
+  }
+
+  if (data.user?.email) {
+    await acceptPendingInvitesForUser(data.user.id, data.user.email);
+  }
+
+  const nextPath =
+    safeNextPath(formData.get("next")?.toString()) ?? "/dashboard";
+  redirect(nextPath);
 }
 
 export async function signInWithEmailAction(
@@ -42,10 +138,7 @@ export async function signInWithEmailAction(
 
   const supabase = await createClient();
   const headersList = await headers();
-  const origin =
-    headersList.get("origin") ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "http://localhost:3000";
+  const origin = resolveAuthSiteOrigin(headersList.get("origin"));
   const redirectTo = new URL("/auth/callback", origin);
   if (inviteToken) {
     redirectTo.searchParams.set("invite", inviteToken);
@@ -55,18 +148,22 @@ export async function signInWithEmailAction(
     email,
     options: {
       emailRedirectTo: redirectTo.toString(),
-      shouldCreateUser: true,
+      shouldCreateUser: false,
     },
   });
 
   if (error) {
-    return { error: error.message, success: false };
+    const message = error.message.includes("redirect")
+      ? `${error.message} Add ${redirectTo.origin}/auth/callback to Supabase Auth redirect URLs.`
+      : error.message;
+    return { error: message, success: false };
   }
 
   return {
     error: null,
     success: true,
-    message: "Check your email for a sign-in link.",
+    message:
+      "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
   };
 }
 
@@ -79,6 +176,76 @@ export async function signOutAction(): Promise<void> {
 export async function completeAuthSessionAction(): Promise<void> {
   const user = await requireAuthUser();
   await acceptPendingInvitesForUser(user.id, user.email);
+}
+
+export async function createTeamMemberAccountAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  const organization = await getCurrentOrganization();
+  const campaignRole = await getCurrentCampaignRole();
+
+  if (!user || !organization) {
+    return { error: "Sign in and set up your organization first.", success: false };
+  }
+
+  if (!canManageTeam(campaignRole)) {
+    return { error: "You do not have permission to create team accounts.", success: false };
+  }
+
+  if (!isSupabaseAdminConfigured()) {
+    return {
+      error:
+        "Add SUPABASE_SERVICE_ROLE_KEY to .env.local to create tester accounts from the app.",
+      success: false,
+    };
+  }
+
+  const email = formData.get("email")?.toString()?.trim() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
+  const organizationRoleId = formData.get("organizationRoleId")?.toString() || null;
+  const accessRoleRaw = formData.get("campaignRole")?.toString() ?? "";
+
+  if (!email) {
+    return { error: "Email is required.", success: false };
+  }
+
+  if (!password) {
+    return { error: "Choose a temporary password for this person.", success: false };
+  }
+
+  let roleKind = null as import("@/types/organization-workspace").OrganizationRoleKind | null;
+  if (organizationRoleId) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("organization_roles")
+      .select("role_kind")
+      .eq("id", organizationRoleId)
+      .maybeSingle();
+    roleKind = (data?.role_kind as typeof roleKind) ?? null;
+  }
+
+  const result = await provisionTeamMemberAccount({
+    organizationId: organization.id,
+    email,
+    password,
+    organizationRoleId,
+    campaignRole: resolveCampaignRoleForInvite(accessRoleRaw, roleKind),
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team");
+  return {
+    error: null,
+    success: true,
+    provisionedEmail: email,
+    provisionedPassword: password,
+    message: `Account ready for ${email}. Share the sign-in details below — no email required.`,
+  };
 }
 
 export async function inviteTeamMemberAction(
@@ -128,11 +295,18 @@ export async function inviteTeamMemberAction(
     return { error: result.error, success: false };
   }
 
+  const headersList = await headers();
+  const inviteUrl = buildInviteLoginUrl(
+    result.inviteToken,
+    resolveAuthSiteOrigin(headersList.get("origin")),
+  );
+
   revalidatePath("/settings/team");
   return {
     error: null,
     success: true,
-    message: `Invite sent to ${email}. They can sign in with that email to join.`,
+    inviteUrl,
+    message: `Added ${email} to your team. Share the invite link below — CampaignOS does not email invites automatically yet.`,
   };
 }
 

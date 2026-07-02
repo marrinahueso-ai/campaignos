@@ -11,6 +11,9 @@ import { getLatestOrganizationLegacy } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import { resolveAuthSiteOrigin } from "@/lib/auth/invite-url";
+import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Team",
@@ -43,6 +46,8 @@ export default async function TeamSettingsPage() {
     user && !membership && organization && activeCount === 0,
   );
 
+  const siteOrigin = resolveAuthSiteOrigin((await headers()).get("origin"));
+
   return (
     <div className="studio-page space-y-10 pb-12">
       <StudioPageHeader
@@ -63,6 +68,8 @@ export default async function TeamSettingsPage() {
           canManage={canManageTeam(campaignRole) || showClaimBanner}
           showClaimBanner={showClaimBanner}
           currentUserEmail={user?.email ?? null}
+          siteOrigin={siteOrigin}
+          canProvisionAccounts={isSupabaseAdminConfigured()}
         />
       )}
     </div>

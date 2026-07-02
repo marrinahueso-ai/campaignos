@@ -128,12 +128,13 @@ export interface PlanningCalendarItem {
 export interface PlanningCalendarData {
   items: PlanningCalendarItem[];
   importCleanup?: {
-    importId: string;
-    filename: string;
-    importedCount: number;
+    schoolYearId: string | null;
+    schoolYearLabel: string;
+    eventCount: number;
   } | null;
   importedEvents: CalendarImportedEventListItem[];
   importListFilename: string | null;
+  activeSchoolYearId: string | null;
 }
 
 export interface PlanningCalendarFilters {

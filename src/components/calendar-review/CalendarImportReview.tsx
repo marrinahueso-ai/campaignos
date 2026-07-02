@@ -203,6 +203,13 @@ export function CalendarImportReview({
         return;
       }
 
+      if (result.importedCount === 0 && result.skippedCount > 0) {
+        setActionError(
+          `${result.skippedCount} event${result.skippedCount === 1 ? "" : "s"} already on your calendar — nothing new to import.`,
+        );
+        return;
+      }
+
       setImportedCount(result.importedCount);
       setImportComplete(true);
       setParseStatus("imported");
