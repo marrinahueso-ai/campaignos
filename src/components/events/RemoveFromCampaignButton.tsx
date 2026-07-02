@@ -52,7 +52,7 @@ export function RemoveFromCampaignButton({
         onClick={handleRemove}
       >
         <CalendarOff className="h-4 w-4" />
-        {pending ? "Removing…" : "Calendar only"}
+        {pending ? "Removing…" : "Remove from campaigns"}
       </Button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
