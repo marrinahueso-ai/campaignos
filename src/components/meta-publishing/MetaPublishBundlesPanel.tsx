@@ -382,10 +382,27 @@ export function MetaPublishBundleCard({
                           </button>
                         ))}
                       </div>
-                      <p className="mt-1 text-xs text-cos-muted">
-                        {surfaceOptionLabel(bundle.metaPublishSurfaces)} —{" "}
-                        {bundle.targets.map((target) => target.label).join(", ")}
-                      </p>
+                    </div>
+                  )}
+
+                  {isMetaPost && bundle.targets.length > 0 && (
+                    <div>
+                      <p className="cos-section-title">Publishes to</p>
+                      <ul className="mt-1 flex flex-wrap gap-1.5">
+                        {bundle.targets.map((target) => (
+                          <li
+                            key={`${target.platform}-${target.placement}`}
+                            className="rounded-full border border-cos-border bg-cos-bg px-2 py-0.5 text-xs text-cos-text"
+                          >
+                            {target.label}
+                          </li>
+                        ))}
+                      </ul>
+                      {onSurfacesChange && (
+                        <p className="mt-1 text-xs text-cos-muted">
+                          {surfaceOptionLabel(bundle.metaPublishSurfaces)}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -407,22 +424,6 @@ export function MetaPublishBundleCard({
                           </p>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {isMetaPost && !onSurfacesChange && bundle.targets.length > 0 && (
-                    <div>
-                      <p className="cos-section-title">Publishes to</p>
-                      <ul className="mt-1 flex flex-wrap gap-1.5">
-                        {bundle.targets.map((target) => (
-                          <li
-                            key={`${target.platform}-${target.placement}`}
-                            className="rounded-full border border-cos-border bg-cos-bg px-2 py-0.5 text-xs text-cos-text"
-                          >
-                            {target.label}
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   )}
 
@@ -925,7 +926,7 @@ export function MetaPublishBundlesPanel({
                   : undefined
               }
               onSurfacesChange={
-                mode === "schedule" && bundle.isMetaPost
+                (mode === "schedule" || mode === "publishing") && bundle.isMetaPost
                   ? (surfaces) => runSurfacesChange(bundle.relativeDay, surfaces)
                   : undefined
               }
