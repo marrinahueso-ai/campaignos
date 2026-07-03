@@ -9,7 +9,10 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { FeaturePreviewSlug } from "@/lib/marketing/feature-preview-fixtures";
+import type { FeaturePreviewSlug, FeatureVideoSlug } from "@/lib/marketing/feature-preview-fixtures";
+import { FEATURE_VIDEO_SLUGS } from "@/lib/marketing/feature-preview-fixtures";
+
+export type FeatureMediaMode = "live" | "video";
 
 export interface FeatureDefinition {
   id: FeaturePreviewSlug;
@@ -18,10 +21,18 @@ export interface FeatureDefinition {
   summary: string;
   highlights: string[];
   details: string[];
+  media?: FeatureMediaMode;
+}
+
+function withMedia(
+  feature: Omit<FeatureDefinition, "media">,
+): FeatureDefinition {
+  const usesVideo = FEATURE_VIDEO_SLUGS.includes(feature.id as FeatureVideoSlug);
+  return usesVideo ? { ...feature, media: "video" } : { ...feature, media: "live" };
 }
 
 export const MARKETING_FEATURES: FeatureDefinition[] = [
-  {
+  withMedia({
     id: "dashboard",
     icon: LayoutDashboard,
     title: "A dashboard that feels like a friend",
@@ -33,8 +44,8 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Quick snapshots for approvals and recently published posts",
       "Weather and your week on the side — context, not clutter",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "planning-hub",
     icon: LayoutGrid,
     title: "Event planning hub",
@@ -46,34 +57,34 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Track planning tasks with progress toward event day",
       "Jump to artwork, schedule, or settings from quick links",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "workflow",
     icon: Megaphone,
-    title: "Campaign workflow, step by step",
+    title: "Campaigns at a glance",
     summary:
-      "Every event moves through a clear path: plan → artwork → schedule → publish.",
-    highlights: ["Communication plan", "Meta milestones", "Review & publish"],
+      "Every full campaign and reminder plan in one grid — thumbnails, chairs, and one click to the planning hub.",
+    highlights: ["Campaign cards", "Full vs reminders", "Open planning hub"],
     details: [
-      "Communication plan tailored to your event type",
-      "Artwork and captions stay tied to each milestone",
-      "Review & publish when your team is ready",
+      "Browse campaigns grouped by month with artwork thumbnails",
+      "See Full campaign vs Reminders only at a glance",
+      "Jump straight into the planning hub from any card",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "calendar",
     icon: CalendarRange,
     title: "One calendar for the whole school year",
     summary:
-      "Events, post deadlines, and reminders — layered on a single view you can actually read.",
-    highlights: ["Layer toggles", "Month + week views", "Drag to reschedule"],
+      "Events, post deadlines, and reminders — layered on a month view dense enough to scan at a glance.",
+    highlights: ["Month view", "Meta post chips", "Layer toggles"],
     details: [
       "Import your school calendar once during setup",
       "Toggle layers: campaigns, drafts, scheduled posts, events",
       "Hover any day to see what's coming up",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "heatmap",
     icon: Flame,
     title: "Posting-time heatmap",
@@ -85,8 +96,8 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Blend your preferred times with published-post history",
       "Drag posts onto high-score slots in one motion",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "artwork",
     icon: ImageIcon,
     title: "Artwork studio for every milestone",
@@ -98,8 +109,8 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "AI-assisted prompts using your school brand",
       "Import from Canva when you're already there",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "approvals",
     icon: Users,
     title: "Team roster & approvals",
@@ -111,8 +122,8 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Assign approval roles per event",
       "Track what's waiting on you vs. your team",
     ],
-  },
-  {
+  }),
+  withMedia({
     id: "publish",
     icon: Send,
     title: "Publish to Facebook & Instagram",
@@ -124,5 +135,5 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Schedule all ready posts in one click",
       "See published history without leaving the workspace",
     ],
-  },
+  }),
 ];

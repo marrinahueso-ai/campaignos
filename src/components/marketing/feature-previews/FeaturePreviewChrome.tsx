@@ -38,7 +38,7 @@ export function FeaturePreviewChrome({
   compact = false,
 }: FeaturePreviewChromeProps) {
   return (
-    <div className="flex min-h-[520px] overflow-hidden border border-cos-border bg-cos-bg shadow-sm">
+    <div className="flex min-h-[780px] overflow-hidden border border-cos-border bg-cos-bg shadow-sm">
       <aside className="hidden w-52 shrink-0 flex-col border-r border-cos-border bg-cos-card sm:flex">
         <div className="border-b border-cos-border px-4 py-4">
           <p className="font-display text-lg text-cos-text">CampaignOS</p>
@@ -65,7 +65,7 @@ export function FeaturePreviewChrome({
           <p className="studio-eyebrow">{PREVIEW_SCHOOL_NAME}</p>
           <p className="font-display text-xl text-cos-text sm:text-2xl">PTO Campaign Studio</p>
         </header>
-        <div className={cn("flex-1 overflow-hidden", compact ? "p-4" : "p-5 sm:p-6")}>
+        <div className={cn("flex-1 overflow-y-auto", compact ? "p-4" : "p-5 sm:p-6")}>
           {children}
         </div>
       </div>

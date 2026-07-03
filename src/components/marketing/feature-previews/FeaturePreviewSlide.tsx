@@ -35,7 +35,7 @@ export function FeaturePreviewSlide({ slug, chrome = true }: FeaturePreviewSlide
   }
 
   return (
-    <FeaturePreviewChrome active={slug} compact={slug === "dashboard"}>
+    <FeaturePreviewChrome active={slug} compact={false}>
       {content}
     </FeaturePreviewChrome>
   );

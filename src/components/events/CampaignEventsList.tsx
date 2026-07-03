@@ -17,6 +17,7 @@ interface CampaignEventsListProps {
   artworkByEventId: Map<string, HeroArtworkSelection | null>;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
   metaScheduledEventIds?: Set<string>;
+  defaultExpanded?: boolean;
 }
 
 function CampaignMonthSection({
@@ -25,14 +26,16 @@ function CampaignMonthSection({
   artworkByEventId,
   ownershipByEventId,
   metaScheduledEventIds,
+  defaultExpanded = false,
 }: {
   group: CampaignMonthGroup;
   muted?: boolean;
   artworkByEventId: Map<string, HeroArtworkSelection | null>;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
   metaScheduledEventIds?: Set<string>;
+  defaultExpanded?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultExpanded);
 
   return (
     <section
@@ -96,6 +99,7 @@ export function CampaignEventsList({
   artworkByEventId,
   ownershipByEventId,
   metaScheduledEventIds,
+  defaultExpanded = false,
 }: CampaignEventsListProps) {
   const { activeGroups, pastGroups } = monthGroups;
   const totalGroups = activeGroups.length + pastGroups.length;
@@ -121,6 +125,7 @@ export function CampaignEventsList({
           artworkByEventId={artworkByEventId}
           ownershipByEventId={ownershipByEventId}
           metaScheduledEventIds={metaScheduledEventIds}
+          defaultExpanded={defaultExpanded}
         />
       ))}
 

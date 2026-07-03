@@ -7,35 +7,39 @@ import {
   type CalendarLayerId,
 } from "@/lib/communications-calendar/unified-calendar-layers";
 import {
+  enrichPreviewCalendarItems,
   PREVIEW_TODAY,
   previewCalendarItems,
   previewPostingHeatmap,
 } from "@/lib/marketing/feature-preview-fixtures";
 import { useMemo, useState } from "react";
 
-export function FeaturePreviewHeatmapSlide() {
+interface FeaturePreviewHeatmapSlideProps {
+  interactive?: boolean;
+  initialHeatmapEnabled?: boolean;
+}
+
+export function FeaturePreviewHeatmapSlide({
+  interactive = false,
+  initialHeatmapEnabled = true,
+}: FeaturePreviewHeatmapSlideProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers(),
   );
-  const [showPostingHeatmap, setShowPostingHeatmap] = useState(true);
+  const [showPostingHeatmap, setShowPostingHeatmap] = useState(initialHeatmapEnabled);
 
   const enrichedItems = useMemo(
-    () =>
-      previewCalendarItems.map((item) => ({
-        ...item,
-        isOverdue: false,
-        isToday: item.scheduledDate === PREVIEW_TODAY,
-      })),
+    () => enrichPreviewCalendarItems(previewCalendarItems),
     [],
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3" data-record-step="calendar-heatmap">
       <UnifiedCalendarControlPanel
         view="week"
         periodLabel="Jun 29 – Jul 5, 2026"
         activeLayers={activeLayers}
-        upcomingItems={enrichedItems.slice(0, 3)}
+        upcomingItems={enrichedItems.slice(0, 4)}
         showImportList={false}
         postingHeatmap={previewPostingHeatmap}
         showPostingHeatmap={showPostingHeatmap}
@@ -47,7 +51,7 @@ export function FeaturePreviewHeatmapSlide() {
         onLayersChange={setActiveLayers}
         onSelectUpcomingItem={() => {}}
       />
-      <div className="pointer-events-none">
+      <div className={interactive ? undefined : "pointer-events-none"}>
         <PlanningCalendarWeekView
           items={enrichedItems}
           anchorDate={PREVIEW_TODAY}

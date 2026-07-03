@@ -10,7 +10,7 @@ import {
 const PREVIEW_COMMITTEES = [
   "Spring Book Fair",
   "Family Picnic",
-  "Spirit Night",
+  "Spirit Afternoon",
 ] as const;
 
 export function FeaturePreviewApprovalsSlide() {

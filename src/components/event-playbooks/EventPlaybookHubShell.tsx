@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import {
   EventPlaybookTabs,
   type CampaignWorkflowStep,
+  type EventPlaybookTab,
 } from "@/components/event-playbooks/EventPlaybookTabs";
 import { OverviewTab } from "@/components/event-playbooks/OverviewTab";
 import { TasksTab } from "@/components/event-playbooks/TasksTab";
@@ -37,6 +38,7 @@ interface EventPlaybookHubShellProps {
   calendarSettingsExtras?: React.ReactNode;
   initialCampaignStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
+  defaultTab?: EventPlaybookTab;
 }
 
 export function EventPlaybookHubShell({
@@ -53,6 +55,7 @@ export function EventPlaybookHubShell({
   calendarSettingsExtras,
   initialCampaignStep = "plan",
   onCampaignStepChange,
+  defaultTab = "overview",
 }: EventPlaybookHubShellProps) {
   const formattedTime = formatEventTime(event.time);
   const showArtwork = hasDisplayableArtwork(artwork);
@@ -118,6 +121,7 @@ export function EventPlaybookHubShell({
         hasCampaign={hasCampaign}
         initialCampaignStep={initialCampaignStep}
         onCampaignStepChange={onCampaignStepChange}
+        defaultTab={defaultTab}
         overview={
           <OverviewTab
             event={event}

@@ -77,7 +77,7 @@ async function main() {
 
     const browser = await chromium.launch();
     const page = await browser.newPage({
-      viewport: { width: 1280, height: 800 },
+      viewport: { width: 1280, height: 960 },
       deviceScaleFactor: 2,
     });
 
@@ -85,7 +85,7 @@ async function main() {
       const url = `${baseUrl}/features/preview/${slug}`;
       await page.goto(url, { waitUntil: "networkidle" });
       await page.waitForSelector("[data-feature-capture]", { timeout: 30_000 });
-      await page.waitForTimeout(600);
+      await page.waitForTimeout(slug === "planning-hub" ? 900 : 600);
 
       const target = page.locator("[data-feature-capture]").first();
       await target.screenshot({

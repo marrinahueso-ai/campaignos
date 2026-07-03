@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { FeatureCarouselVideoSlide } from "@/components/marketing/FeatureCarouselVideoSlide";
 import { MARKETING_FEATURES } from "@/lib/marketing/feature-definitions";
-import type { FeaturePreviewSlug } from "@/lib/marketing/feature-preview-fixtures";
+import type { FeaturePreviewSlug, FeatureVideoSlug } from "@/lib/marketing/feature-preview-fixtures";
+import { FEATURE_VIDEO_SLUGS } from "@/lib/marketing/feature-preview-fixtures";
 import { cn } from "@/lib/utils/cn";
 
 const FeaturePreviewSlide = dynamic(
@@ -22,7 +24,12 @@ const FeaturePreviewSlide = dynamic(
 );
 
 const AUTOPLAY_MS = 5500;
+const VIDEO_AUTOPLAY_MS = 14000;
 const PAUSE_AFTER_INTERACTION_MS = 10000;
+
+function isVideoSlug(slug: FeaturePreviewSlug): slug is FeatureVideoSlug {
+  return FEATURE_VIDEO_SLUGS.includes(slug as FeatureVideoSlug);
+}
 
 export function FeaturesCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -35,6 +42,8 @@ export function FeaturesCarousel() {
 
   const active = MARKETING_FEATURES[activeIndex]!;
   const activeSlug = active.id;
+  const usesVideo = active.media === "video" && isVideoSlug(activeSlug);
+  const slideDurationMs = usesVideo ? VIDEO_AUTOPLAY_MS : AUTOPLAY_MS;
 
   const pauseAutoplay = useCallback(() => {
     pauseUntilRef.current = Date.now() + PAUSE_AFTER_INTERACTION_MS;
@@ -100,7 +109,7 @@ export function FeaturesCarousel() {
         );
         setProgressKey((value) => value + 1);
         scheduleNext();
-      }, AUTOPLAY_MS);
+      }, slideDurationMs);
     };
 
     scheduleNext();
@@ -109,7 +118,7 @@ export function FeaturesCarousel() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isPaused, activeIndex]);
+  }, [isPaused, activeIndex, slideDurationMs]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -151,7 +160,7 @@ export function FeaturesCarousel() {
               <p className="cos-section-title">From the workspace</p>
               <span className="inline-flex items-center gap-1.5 border border-cos-border bg-cos-bg/60 px-2 py-0.5 text-[10px] font-medium tracking-wide text-cos-muted uppercase">
                 <ActiveIcon className="h-3 w-3" strokeWidth={1.5} />
-                Live product UI
+                {usesVideo ? "Screen capture" : "Live product UI"}
               </span>
             </div>
             <p className="mt-2 font-display text-2xl text-cos-text sm:text-3xl">
@@ -217,7 +226,11 @@ export function FeaturesCarousel() {
             )}
           >
             <div className="max-h-[640px] overflow-hidden">
-              <FeaturePreviewSlide slug={activeSlug as FeaturePreviewSlug} />
+              {usesVideo ? (
+                <FeatureCarouselVideoSlide slug={activeSlug} isActive={!isPaused} />
+              ) : (
+                <FeaturePreviewSlide slug={activeSlug} />
+              )}
             </div>
           </div>
 
@@ -235,7 +248,7 @@ export function FeaturesCarousel() {
               style={
                 isPaused
                   ? undefined
-                  : { animationDuration: `${AUTOPLAY_MS}ms` }
+                  : { animationDuration: `${slideDurationMs}ms` }
               }
             />
           </div>

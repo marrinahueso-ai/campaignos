@@ -23,7 +23,7 @@ export default async function FeaturePreviewCapturePage({
   }
 
   return (
-    <div className="bg-cos-bg" data-feature-capture>
+    <div className="min-w-[1100px] bg-cos-bg" data-feature-capture>
       <FeaturePreviewCapture slug={slug as FeaturePreviewSlug} />
     </div>
   );

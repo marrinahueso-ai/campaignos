@@ -1,53 +1,37 @@
-import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
-import {
-  PREVIEW_EVENT_TITLE,
-  previewMetaPublishBundles,
-} from "@/lib/marketing/feature-preview-fixtures";
-import { cn } from "@/lib/utils/cn";
+"use client";
 
-const STEPS = [
-  "Communication Plan",
-  "Artwork",
-  "Posts & Schedule",
-  "Review & Publish",
-  "Published",
-] as const;
+import { CampaignEventsList } from "@/components/events/CampaignEventsList";
+import {
+  getPreviewCampaignArtworkMap,
+  getPreviewCampaignMonthGroups,
+  getPreviewCampaignOwnershipMap,
+  previewMetaScheduledEventIds,
+} from "@/lib/marketing/feature-preview-fixtures";
+import { useMemo } from "react";
 
 export function FeaturePreviewWorkflowSlide() {
+  const monthGroups = useMemo(() => getPreviewCampaignMonthGroups(), []);
+  const artworkByEventId = useMemo(() => getPreviewCampaignArtworkMap(), []);
+  const ownershipByEventId = useMemo(() => getPreviewCampaignOwnershipMap(), []);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="studio-eyebrow">Campaign workflow</p>
-        <p className="font-display text-2xl text-cos-text">{PREVIEW_EVENT_TITLE}</p>
-      </div>
+    <div className="pointer-events-none space-y-6">
+      <header className="border-b border-cos-border pb-6">
+        <p className="studio-eyebrow">Workspace</p>
+        <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Campaigns</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
+          Full campaigns and reminder-only plans grouped by month — these are the
+          events that get social posts and communications.
+        </p>
+      </header>
 
-      <div className="overflow-x-auto border-b border-cos-border">
-        <div className="flex min-w-max gap-0">
-          {STEPS.map((label, index) => (
-            <div
-              key={label}
-              className={cn(
-                "px-3 py-2.5 text-xs font-medium tracking-wide uppercase sm:px-4",
-                index === 2
-                  ? "border-b-2 border-cos-text bg-cos-bg/60 text-cos-text"
-                  : "text-cos-muted",
-              )}
-            >
-              {label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="pointer-events-none origin-top scale-[0.98]">
-        <CampaignScheduleStep
-          eventId="preview"
-          metaPublishBundles={previewMetaPublishBundles}
-          metaSocialCaptionMilestones={[]}
-          aiStatus={{ available: true, reason: null }}
-          userRole="vp_communications"
-        />
-      </div>
+      <CampaignEventsList
+        monthGroups={monthGroups}
+        artworkByEventId={artworkByEventId}
+        ownershipByEventId={ownershipByEventId}
+        metaScheduledEventIds={previewMetaScheduledEventIds}
+        defaultExpanded
+      />
     </div>
   );
 }

@@ -136,7 +136,7 @@ export function FeaturePreviewArtworkSlide() {
       <ArtworkV2PickerScreen
         items={MOCK_ITEMS}
         isPhaseWorkflow
-        defaultExpandedDays={[-30, -3, -1]}
+        defaultExpandedDays={[-30, -3, -1, 0]}
         getMilestoneStatus={previewMilestoneStatus}
         onSelect={() => {}}
         onSelectMilestone={() => {}}
