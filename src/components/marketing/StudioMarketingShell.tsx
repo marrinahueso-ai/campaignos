@@ -113,20 +113,36 @@ export function StudioMarketingPageHeader({
   title,
   description,
   className,
+  tone = "light",
 }: {
   eyebrow: string;
   title: string;
   description?: string;
   className?: string;
+  tone?: "light" | "dark";
 }) {
+  const isDark = tone === "dark";
+
   return (
-    <header className={cn("border-b border-cos-border pb-10", className)}>
-      <p className="studio-eyebrow">{eyebrow}</p>
-      <h1 className="font-display mt-4 max-w-3xl text-4xl leading-tight text-cos-text sm:text-5xl lg:text-6xl">
+    <header
+      className={cn(isDark ? "pb-0" : "border-b border-cos-border pb-10", className)}
+    >
+      <p className={cn("studio-eyebrow", isDark && "text-cos-dark-muted")}>{eyebrow}</p>
+      <h1
+        className={cn(
+          "font-display mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl lg:text-6xl",
+          isDark ? "text-[#f6f2eb]" : "text-cos-text",
+        )}
+      >
         {title}
       </h1>
       {description && (
-        <p className="mt-5 max-w-2xl text-base leading-relaxed text-cos-muted sm:text-lg">
+        <p
+          className={cn(
+            "mt-5 max-w-2xl text-base leading-relaxed sm:text-lg",
+            isDark ? "text-cos-dark-muted" : "text-cos-muted",
+          )}
+        >
           {description}
         </p>
       )}

@@ -142,7 +142,7 @@ export function FeaturesCarousel() {
   const ActiveIcon = active.icon;
 
   return (
-    <div ref={containerRef} className="mt-16" tabIndex={-1}>
+    <div ref={containerRef} tabIndex={-1}>
       <div
         className="cos-card overflow-hidden p-0"
         onMouseEnter={() => setIsPaused(true)}

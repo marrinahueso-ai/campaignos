@@ -16,13 +16,18 @@ export function StudioFeaturesPage({ userEmail = null }: StudioFeaturesPageProps
 
   return (
     <StudioMarketingShell userEmail={userEmail}>
-      <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
-        <StudioMarketingPageHeader
-          eyebrow="Features"
-          title="Everything your PTO needs — nothing you don't."
-          description="Explore real workspace screens — dashboard, calendar heatmap, artwork studio, approvals, and Meta publishing. The tour cycles on its own, or pick a feature below."
-        />
+      <section className="border-b border-cos-border bg-cos-dark">
+        <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
+          <StudioMarketingPageHeader
+            tone="dark"
+            eyebrow="Features"
+            title="Everything your PTO needs — nothing you don't."
+            description="Explore real workspace screens — dashboard, calendar heatmap, artwork studio, approvals, and Meta publishing. The tour cycles on its own, or pick a feature below."
+          />
+        </div>
+      </section>
 
+      <div className="mx-auto max-w-7xl px-6 pt-12 pb-16 lg:px-10 lg:pt-16 lg:pb-24">
         <FeaturesCarousel />
 
         <section className="mt-20 border border-cos-border bg-cos-dark px-8 py-12 text-center sm:px-12">
