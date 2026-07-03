@@ -40,6 +40,7 @@ export default async function DashboardPage() {
             firstName={todayData.firstName}
             attentionCount={todayData.attentionCount}
             teammateNote={todayData.teammateNote}
+            timezone={organization?.timezone ?? "America/Chicago"}
           />
           <div className="mt-6 flex flex-col gap-8 lg:mt-7 lg:gap-10">
             <WhatsNextSection

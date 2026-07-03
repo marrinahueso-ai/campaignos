@@ -32,7 +32,13 @@ export interface GreetingMemberCandidate {
   roleName: string | null;
 }
 
+export interface GreetingCurrentUser {
+  displayName: string | null;
+  email: string;
+}
+
 export interface ResolveTodayGreetingNameInput {
+  currentUser?: GreetingCurrentUser | null;
   memberCandidates: GreetingMemberCandidate[];
   organizationContactName: string | null;
   organizationName: string | null;
@@ -59,6 +65,45 @@ function formatDisplayFirstName(firstName: string): string {
   }
 
   return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+}
+
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function extractFirstNameFromEmail(email: string): string | null {
+  const localPart = email.split("@")[0]?.trim();
+  if (!localPart) {
+    return null;
+  }
+
+  const [namePart] = localPart.split(/[._+-]/);
+  if (!namePart || !/^[a-zA-Z]{2,}$/.test(namePart)) {
+    return null;
+  }
+
+  return formatDisplayFirstName(namePart);
+}
+
+function resolveMemberGreetingName(
+  member: GreetingMemberCandidate,
+  context: {
+    organizationName: string | null;
+    blockedRoleNames: string[];
+  },
+): string | null {
+  if (looksLikeTestMember(member.name, member.email)) {
+    return null;
+  }
+
+  if (
+    member.roleName &&
+    normalizeName(member.name) === normalizeName(member.roleName)
+  ) {
+    return null;
+  }
+
+  return resolveFromFullName(member.name, context);
 }
 
 function looksLikeTestMember(name: string, email: string): boolean {
@@ -147,21 +192,32 @@ export function resolveTodayGreetingName(
     blockedRoleNames: input.blockedRoleNames,
   };
 
-  for (const member of input.memberCandidates) {
-    if (looksLikeTestMember(member.name, member.email)) {
-      continue;
+  const currentUser = input.currentUser;
+  if (currentUser) {
+    if (currentUser.displayName) {
+      const greetingName = resolveFromFullName(currentUser.displayName, context);
+      if (greetingName) {
+        return greetingName;
+      }
     }
 
+    const matchingMember = input.memberCandidates.find(
+      (member) =>
+        normalizeEmail(member.email) === normalizeEmail(currentUser.email),
+    );
+    if (matchingMember) {
+      const greetingName = resolveMemberGreetingName(matchingMember, context);
+      if (greetingName) {
+        return greetingName;
+      }
+    }
+
+    const emailFirstName = extractFirstNameFromEmail(currentUser.email);
     if (
-      member.roleName &&
-      normalizeName(member.name) === normalizeName(member.roleName)
+      emailFirstName &&
+      !isBlockedGreetingName(emailFirstName, context)
     ) {
-      continue;
-    }
-
-    const greetingName = resolveFromFullName(member.name, context);
-    if (greetingName) {
-      return greetingName;
+      return emailFirstName;
     }
   }
 

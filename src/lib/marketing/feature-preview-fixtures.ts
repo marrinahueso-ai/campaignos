@@ -21,6 +21,7 @@ export const PREVIEW_BACK_TO_SCHOOL_ARTWORK = "/images/back-to-school-fair-campa
 
 /** Fictional school and team — never use real org or board names in marketing. */
 export const PREVIEW_SCHOOL_NAME = "Oak Ridge Elementary";
+export const PREVIEW_ORG_TIMEZONE = "America/Chicago";
 export const PREVIEW_USER_FIRST_NAME = "Sarah";
 export const PREVIEW_USER_FULL_NAME = "Sarah Chen";
 export const PREVIEW_USER_ROLE = "VP Communications";

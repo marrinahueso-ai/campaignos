@@ -35,6 +35,7 @@ export interface OrganizationUserRow {
 export interface AuthUserSummary {
   id: string;
   email: string;
+  displayName: string | null;
 }
 
 export interface OrganizationMembership {

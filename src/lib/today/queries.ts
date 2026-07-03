@@ -1,3 +1,5 @@
+import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getAuthUser } from "@/lib/auth/queries";
 import { getMemoryHintsForEvents } from "@/lib/memory";
 import {
   buildPlanningItemsFromRaw,
@@ -30,7 +32,11 @@ async function getTodayGreetingName(
     return "there";
   }
 
-  const supabase = await createClient();
+  const [authUser, membership, supabase] = await Promise.all([
+    getAuthUser(),
+    getActiveMembership(),
+    createClient(),
+  ]);
 
   const [{ data: memberRows }, { data: roleRows }] = await Promise.all([
     supabase
@@ -53,7 +59,16 @@ async function getTodayGreetingName(
     (row) => row.name,
   );
 
+  const currentUserEmail = authUser?.email ?? membership?.user.email ?? null;
+  const currentUserDisplayName = authUser?.displayName ?? null;
+
   return resolveTodayGreetingName({
+    currentUser: currentUserEmail
+      ? {
+          displayName: currentUserDisplayName,
+          email: currentUserEmail,
+        }
+      : null,
     memberCandidates: ((memberRows ?? []) as OrganizationMemberRow[]).map(
       (member) => ({
         name: member.name,

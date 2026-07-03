@@ -6,6 +6,7 @@ import { TodaySnapshot } from "@/components/today/TodaySnapshot";
 import { WhatsNextSection } from "@/components/today/WhatsNextSection";
 import {
   PREVIEW_TODAY,
+  PREVIEW_ORG_TIMEZONE,
   PREVIEW_USER_FIRST_NAME,
   previewDashboardArtwork,
   previewWeather,
@@ -59,7 +60,11 @@ function FeaturePreviewSlideContent({
       return (
         <div className="grid gap-4 lg:grid-cols-[1fr_220px] lg:gap-5">
           <div className="space-y-4">
-            <TodayHero firstName={PREVIEW_USER_FIRST_NAME} attentionCount={3} />
+            <TodayHero
+              firstName={PREVIEW_USER_FIRST_NAME}
+              attentionCount={3}
+              timezone={PREVIEW_ORG_TIMEZONE}
+            />
             <WhatsNextSection
               whatsNext={previewWhatsNext}
               artwork={previewDashboardArtwork}

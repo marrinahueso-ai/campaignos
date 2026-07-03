@@ -4,10 +4,17 @@ interface TodayHeroProps {
   firstName: string | null;
   attentionCount: number;
   teammateNote?: string;
+  /** IANA timezone for server-rendered greetings; omit to use browser local time. */
+  timezone?: string;
 }
 
-export function TodayHero({ firstName, attentionCount, teammateNote }: TodayHeroProps) {
-  const greeting = getTimeOfDayGreeting();
+export function TodayHero({
+  firstName,
+  attentionCount,
+  teammateNote,
+  timezone,
+}: TodayHeroProps) {
+  const greeting = getTimeOfDayGreeting(new Date(), timezone);
   const greetingLine = `${greeting}, ${firstName?.trim() || "there"}`;
 
   return (
