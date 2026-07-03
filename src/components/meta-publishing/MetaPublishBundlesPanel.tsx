@@ -21,12 +21,18 @@ import {
   scheduleMetaBundleAction,
   skipMetaPublishMilestoneAction,
   unskipMetaPublishMilestoneAction,
+  updateMetaPublishSurfacesAction,
 } from "@/lib/meta-publishing/actions";
+import {
+  isFeedSurfaceEnabled,
+  isStorySurfaceEnabled,
+} from "@/lib/artwork-v2/campaign-phases";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 import { cn } from "@/lib/utils/cn";
 
 function isBundleDeprioritized(
@@ -103,13 +109,27 @@ function statusClassName(status: MetaPublishBundleStatus): string {
   }
 }
 
-function isMilestoneComplete(milestone: MetaSocialCaptionMilestone): boolean {
-  return (
-    milestone.feed.status === "approved" &&
-    Boolean(milestone.feed.content) &&
-    milestone.story.status === "approved" &&
-    Boolean(milestone.story.content)
-  );
+const SURFACE_OPTIONS: { value: MetaPublishSurfaces; label: string }[] = [
+  { value: "both", label: "Feed + Story" },
+  { value: "feed_only", label: "Feed only" },
+  { value: "story_only", label: "Story only" },
+];
+
+function surfaceOptionLabel(surfaces: MetaPublishSurfaces): string {
+  return SURFACE_OPTIONS.find((option) => option.value === surfaces)?.label ?? "Feed + Story";
+}
+
+function isMilestoneComplete(
+  milestone: MetaSocialCaptionMilestone,
+  surfaces: MetaPublishSurfaces,
+): boolean {
+  const feedOk =
+    !isFeedSurfaceEnabled(surfaces) ||
+    (milestone.feed.status === "approved" && Boolean(milestone.feed.content));
+  const storyOk =
+    !isStorySurfaceEnabled(surfaces) ||
+    (milestone.story.status === "approved" && Boolean(milestone.story.content));
+  return feedOk && storyOk;
 }
 
 interface MetaPublishBundleCardProps {
@@ -128,6 +148,8 @@ interface MetaPublishBundleCardProps {
   onUnskip?: () => void;
   onSchedule?: () => void;
   onPublishNow?: () => void;
+  onSurfacesChange?: (surfaces: MetaPublishSurfaces) => void;
+  surfacesPending?: boolean;
   publishPending?: boolean;
   schedulePending?: boolean;
   skipPending?: boolean;
@@ -145,6 +167,8 @@ export function MetaPublishBundleCard({
   onUnskip,
   onSchedule,
   onPublishNow,
+  onSurfacesChange,
+  surfacesPending = false,
   publishPending = false,
   skipPending = false,
   schedulePending = false,
@@ -161,6 +185,8 @@ export function MetaPublishBundleCard({
     isMetaPost &&
     Boolean(onPublishNow) &&
     ["ready", "scheduled", "approved", "failed"].includes(bundle.status);
+  const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+  const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
   const canSkip =
     !isSkipped &&
     bundle.status !== "published" &&
@@ -303,24 +329,28 @@ export function MetaPublishBundleCard({
         <>
           <div className="grid gap-4 p-5 sm:grid-cols-[auto_1fr]">
             <div className="flex gap-3">
-              <ArtworkLightboxThumbnail
-                src={bundle.feedArtworkUrl}
-                alt={`${bundle.title} feed artwork`}
-                label="Feed 1:1"
-                variant="feed"
-                wrapperClassName="w-20"
-                frameClassName="aspect-square"
-                placeholder="Feed"
-              />
-              <ArtworkLightboxThumbnail
-                src={bundle.storyArtworkUrl}
-                alt={`${bundle.title} story artwork`}
-                label="Story"
-                variant="story"
-                wrapperClassName="w-14"
-                frameClassName="aspect-[9/16]"
-                placeholder="Story"
-              />
+              {showFeed && (
+                <ArtworkLightboxThumbnail
+                  src={bundle.feedArtworkUrl}
+                  alt={`${bundle.title} feed artwork`}
+                  label="Feed 1:1"
+                  variant="feed"
+                  wrapperClassName="w-20"
+                  frameClassName="aspect-square"
+                  placeholder="Feed"
+                />
+              )}
+              {showStory && (
+                <ArtworkLightboxThumbnail
+                  src={bundle.storyArtworkUrl}
+                  alt={`${bundle.title} story artwork`}
+                  label="Story"
+                  variant="story"
+                  wrapperClassName="w-14"
+                  frameClassName="aspect-[9/16]"
+                  placeholder="Story"
+                />
+              )}
             </div>
 
             <div className="min-w-0 space-y-3">
@@ -331,15 +361,45 @@ export function MetaPublishBundleCard({
                 </p>
               ) : (
                 <>
+                  {isMetaPost && onSurfacesChange && (
+                    <div>
+                      <p className="cos-section-title">Publish surfaces</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {SURFACE_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            disabled={surfacesPending || publishPending || skipPending}
+                            onClick={() => onSurfacesChange(option.value)}
+                            className={cn(
+                              "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                              bundle.metaPublishSurfaces === option.value
+                                ? "border-cos-text bg-cos-text text-white"
+                                : "border-cos-border bg-cos-bg text-cos-text hover:border-cos-muted",
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-xs text-cos-muted">
+                        {surfaceOptionLabel(bundle.metaPublishSurfaces)} —{" "}
+                        {bundle.targets.map((target) => target.label).join(", ")}
+                      </p>
+                    </div>
+                  )}
+
                   {showCaptionPreview && !captionEdit && isMetaPost && (
                     <div className="space-y-2">
-                      <div>
-                        <p className="cos-section-title">Feed caption</p>
-                        <p className="mt-1 text-sm text-cos-text">
-                          {bundle.captionPreview?.trim() || "Draft captions below."}
-                        </p>
-                      </div>
-                      {bundle.storyCaptionPreview && (
+                      {showFeed && (
+                        <div>
+                          <p className="cos-section-title">Feed caption</p>
+                          <p className="mt-1 text-sm text-cos-text">
+                            {bundle.captionPreview?.trim() || "Draft captions below."}
+                          </p>
+                        </div>
+                      )}
+                      {showStory && bundle.storyCaptionPreview && (
                         <div>
                           <p className="cos-section-title">Story caption</p>
                           <p className="mt-1 text-sm text-cos-text">
@@ -350,7 +410,7 @@ export function MetaPublishBundleCard({
                     </div>
                   )}
 
-                  {isMetaPost && (
+                  {isMetaPost && !onSurfacesChange && bundle.targets.length > 0 && (
                     <div>
                       <p className="cos-section-title">Publishes to</p>
                       <ul className="mt-1 flex flex-wrap gap-1.5">
@@ -385,29 +445,33 @@ export function MetaPublishBundleCard({
 
           {captionEdit && milestone && !isSkipped && isMetaPost && (
             <div className="divide-y divide-cos-border border-t border-cos-border">
-              <MetaSocialCaptionField
-                eventId={captionEdit.eventId}
-                relativeDay={milestone.relativeDay}
-                placement="feed"
-                label="Feed (FB + IG)"
-                caption={milestone.feed}
-                hasApprovedFeedArtwork={milestone.hasApprovedFeedArtwork}
-                aiStatus={captionEdit.aiStatus}
-                userRole={captionEdit.userRole}
-                disabled={captionEdit.disabled}
-              />
-              <MetaSocialCaptionField
-                eventId={captionEdit.eventId}
-                relativeDay={milestone.relativeDay}
-                placement="story"
-                label="Story (FB + IG)"
-                caption={milestone.story}
-                feedCaption={milestone.feed.content}
-                hasApprovedFeedArtwork={milestone.hasApprovedFeedArtwork}
-                aiStatus={captionEdit.aiStatus}
-                userRole={captionEdit.userRole}
-                disabled={captionEdit.disabled}
-              />
+              {showFeed && (
+                <MetaSocialCaptionField
+                  eventId={captionEdit.eventId}
+                  relativeDay={milestone.relativeDay}
+                  placement="feed"
+                  label="Feed (FB + IG)"
+                  caption={milestone.feed}
+                  hasApprovedFeedArtwork={milestone.hasApprovedFeedArtwork}
+                  aiStatus={captionEdit.aiStatus}
+                  userRole={captionEdit.userRole}
+                  disabled={captionEdit.disabled}
+                />
+              )}
+              {showStory && (
+                <MetaSocialCaptionField
+                  eventId={captionEdit.eventId}
+                  relativeDay={milestone.relativeDay}
+                  placement="story"
+                  label="Story (FB + IG)"
+                  caption={milestone.story}
+                  feedCaption={milestone.feed.content}
+                  hasApprovedFeedArtwork={milestone.hasApprovedFeedArtwork}
+                  aiStatus={captionEdit.aiStatus}
+                  userRole={captionEdit.userRole}
+                  disabled={captionEdit.disabled}
+                />
+              )}
             </div>
           )}
         </>
@@ -453,6 +517,7 @@ export function MetaPublishBundlesPanel({
   const [skipPendingDay, setSkipPendingDay] = useState<number | null>(null);
   const [schedulePendingDay, setSchedulePendingDay] = useState<number | null>(null);
   const [publishPendingDay, setPublishPendingDay] = useState<number | null>(null);
+  const [surfacesPendingDay, setSurfacesPendingDay] = useState<number | null>(null);
   const [optimisticSkippedDays, setOptimisticSkippedDays] = useState<Set<number>>(
     () => new Set(),
   );
@@ -513,8 +578,17 @@ export function MetaPublishBundlesPanel({
   }, []);
 
   const approvedCaptionCount = useMemo(
-    () => captionMilestones.filter(isMilestoneComplete).length,
-    [captionMilestones],
+    () =>
+      captionMilestones.filter((milestone) => {
+        const bundle = bundles.find(
+          (entry) => entry.relativeDay === milestone.relativeDay && entry.isMetaPost,
+        );
+        return isMilestoneComplete(
+          milestone,
+          bundle?.metaPublishSurfaces ?? "both",
+        );
+      }).length,
+    [captionMilestones, bundles],
   );
 
   const counts = useMemo(
@@ -553,6 +627,20 @@ export function MetaPublishBundlesPanel({
       setSchedulePendingDay(null);
       if (!result.success) {
         setError(result.error ?? "Unable to schedule this milestone.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function runSurfacesChange(relativeDay: number, surfaces: MetaPublishSurfaces) {
+    setError(null);
+    setSurfacesPendingDay(relativeDay);
+    startTransition(async () => {
+      const result = await updateMetaPublishSurfacesAction(eventId, relativeDay, surfaces);
+      setSurfacesPendingDay(null);
+      if (!result.success) {
+        setError(result.error ?? "Unable to update publish surfaces.");
         return;
       }
       router.refresh();
@@ -836,6 +924,12 @@ export function MetaPublishBundlesPanel({
                   ? () => runPublishNow(bundle.relativeDay)
                   : undefined
               }
+              onSurfacesChange={
+                mode === "schedule" && bundle.isMetaPost
+                  ? (surfaces) => runSurfacesChange(bundle.relativeDay, surfaces)
+                  : undefined
+              }
+              surfacesPending={surfacesPendingDay === bundle.relativeDay}
               publishPending={publishPendingDay === bundle.relativeDay}
               skipPending={skipPendingDay === bundle.relativeDay}
               schedulePending={schedulePendingDay === bundle.relativeDay}

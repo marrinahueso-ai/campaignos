@@ -1,4 +1,8 @@
-import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
+import {
+  filterMetaPublishTargetsBySurfaces,
+  isFeedSurfaceEnabled,
+  isStorySurfaceEnabled,
+} from "@/lib/artwork-v2/campaign-phases";
 import { resolveMilestoneArtworkUrls } from "@/lib/meta-publishing/resolve-milestone-artwork";
 import {
   getFeedCaptionForMilestone,
@@ -24,6 +28,8 @@ import type {
   MetaPublishPlatform,
   MetaPublishPlacement,
 } from "@/lib/meta-publishing/types";
+import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 import { createClient } from "@/lib/supabase/server";
 
 export interface PublishMilestoneResult {
@@ -33,12 +39,68 @@ export interface PublishMilestoneResult {
   failedCount: number;
 }
 
+async function getMilestonePublishSurfaces(
+  eventId: string,
+  relativeDay: number,
+): Promise<MetaPublishSurfaces> {
+  const supabase = await createClient();
+  const { data: step } = await supabase
+    .from("event_communication_steps")
+    .select("meta_publish_surfaces")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  return (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
+}
+
+function slotMatchesSurfaces(
+  slot: MetaPublicationSlot,
+  surfaces: MetaPublishSurfaces,
+): boolean {
+  return filterMetaPublishTargetsBySurfaces(surfaces).some(
+    (target) => target.platform === slot.platform && target.placement === slot.placement,
+  );
+}
+
 async function prepareSlotsForImmediatePublish(input: {
   eventId: string;
   relativeDay: number;
 }): Promise<number> {
   const supabase = await createClient();
   const now = new Date().toISOString();
+
+  const surfaces = await getMilestonePublishSurfaces(input.eventId, input.relativeDay);
+  const enabledTargets = filterMetaPublishTargetsBySurfaces(surfaces);
+
+  if (enabledTargets.length === 0) {
+    return 0;
+  }
+
+  const { data: existingSlots, error: listError } = await supabase
+    .from("meta_publication_slots")
+    .select("id, platform, placement, status")
+    .eq("event_id", input.eventId)
+    .eq("relative_day", input.relativeDay)
+    .in("status", ["draft", "scheduled", "approved", "failed"]);
+
+  if (listError) {
+    console.error("Failed to list slots for immediate publish:", listError.message);
+    return 0;
+  }
+
+  const slotIds = (existingSlots ?? [])
+    .filter((slot) =>
+      enabledTargets.some(
+        (target) =>
+          target.platform === slot.platform && target.placement === slot.placement,
+      ),
+    )
+    .map((slot) => slot.id as string);
+
+  if (slotIds.length === 0) {
+    return 0;
+  }
 
   const { data, error } = await supabase
     .from("meta_publication_slots")
@@ -47,9 +109,7 @@ async function prepareSlotsForImmediatePublish(input: {
       scheduled_for: now,
       updated_at: now,
     })
-    .eq("event_id", input.eventId)
-    .eq("relative_day", input.relativeDay)
-    .in("status", ["draft", "scheduled", "approved", "failed"])
+    .in("id", slotIds)
     .select("id");
 
   if (error) {
@@ -158,6 +218,8 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
+  const surfaces = await getMilestonePublishSurfaces(input.eventId, input.relativeDay);
+
   if (input.immediate) {
     const prepared = await prepareSlotsForImmediatePublish({
       eventId: input.eventId,
@@ -177,6 +239,7 @@ export async function publishMetaMilestoneBundle(input: {
   const slots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
+      slotMatchesSurfaces(slot, surfaces) &&
       (slot.status === "approved" || slot.status === "failed"),
   );
 
@@ -195,10 +258,20 @@ export async function publishMetaMilestoneBundle(input: {
   const feedCaption = getFeedCaptionForMilestone(captions, input.relativeDay)?.trim();
   const storyCaption = getStoryCaptionForMilestone(captions, input.relativeDay)?.trim();
 
-  if (!feedCaption || !storyCaption) {
+  const needsFeedCaption = isFeedSurfaceEnabled(surfaces);
+  const needsStoryCaption = isStorySurfaceEnabled(surfaces);
+
+  if (
+    (needsFeedCaption && !feedCaption) ||
+    (needsStoryCaption && !storyCaption)
+  ) {
     return {
       success: false,
-      error: "Approved feed and story captions are required before auto-publish.",
+      error: needsFeedCaption && needsStoryCaption
+        ? "Approved feed and story captions are required before auto-publish."
+        : needsFeedCaption
+          ? "Approved feed caption is required before auto-publish."
+          : "Approved story caption is required before auto-publish.",
       publishedCount: 0,
       failedCount: 0,
     };
@@ -209,10 +282,17 @@ export async function publishMetaMilestoneBundle(input: {
     relativeDay: input.relativeDay,
   });
 
-  if (!feedUrl || !storyUrl) {
+  if (
+    (needsFeedCaption && !feedUrl) ||
+    (needsStoryCaption && !storyUrl)
+  ) {
     return {
       success: false,
-      error: "Approved feed and story artwork are required before auto-publish.",
+      error: needsFeedCaption && needsStoryCaption
+        ? "Approved feed and story artwork are required before auto-publish."
+        : needsFeedCaption
+          ? "Approved feed artwork is required before auto-publish."
+          : "Approved story artwork is required before auto-publish.",
       publishedCount: 0,
       failedCount: 0,
     };
@@ -240,10 +320,10 @@ export async function publishMetaMilestoneBundle(input: {
     const result = await publishSlot({
       slot,
       connection: connection!,
-      feedCaption,
-      storyCaption,
-      feedUrl,
-      storyUrl,
+      feedCaption: feedCaption ?? "",
+      storyCaption: storyCaption ?? "",
+      feedUrl: feedUrl ?? "",
+      storyUrl: storyUrl ?? "",
     });
 
     if (result.error) {
@@ -282,7 +362,8 @@ export async function publishMetaMilestoneBundle(input: {
   }
 
   const allDaySlots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
-    (slot) => slot.relativeDay === input.relativeDay,
+    (slot) =>
+      slot.relativeDay === input.relativeDay && slotMatchesSurfaces(slot, surfaces),
   );
   const activeDaySlots = allDaySlots.filter((slot) => slot.status !== "cancelled");
   const alreadyPublished =

@@ -14,6 +14,7 @@ import {
   syncMetaPublicationSlots,
 } from "@/lib/meta-publishing/sync-slots";
 import type { MetaPublishActionResult } from "@/lib/meta-publishing/types";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidateMetaPaths(eventId: string): void {
@@ -83,7 +84,7 @@ export async function publishMetaBundleNowAction(
       success: false,
       error:
         bundle.status === "needs_artwork"
-          ? "Approve feed and story artwork before publishing."
+          ? "Approve required artwork before publishing."
           : bundle.status === "needs_caption"
             ? "Approve social captions in Schedule before publishing."
             : "This milestone cannot be published right now.",
@@ -176,7 +177,7 @@ export async function scheduleAllReadyMetaBundlesAction(
   if (readyBundles.length === 0) {
     return {
       success: false,
-      error: "No milestones are ready yet. Approve feed + story artwork and captions first.",
+      error: "No milestones are ready yet. Approve required artwork and captions first.",
     };
   }
 
@@ -547,4 +548,54 @@ export async function unskipMetaPublishMilestoneAction(
 export async function getApprovedSlotCount(eventId: string): Promise<number> {
   const slots = await getMetaPublicationSlotsForEvent(eventId);
   return slots.filter((slot) => slot.status === "approved").length;
+}
+
+export async function updateMetaPublishSurfacesAction(
+  eventId: string,
+  relativeDay: number,
+  surfaces: MetaPublishSurfaces,
+): Promise<MetaPublishActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to update publish settings." };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data: step, error: lookupError } = await supabase
+    .from("event_communication_steps")
+    .select("id, channel, status")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  if (!step?.id) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (step.channel !== "facebook" && step.channel !== "instagram") {
+    return {
+      success: false,
+      error: "Publish surfaces can only be set on Facebook or Instagram milestones.",
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("event_communication_steps")
+    .update({ meta_publish_surfaces: surfaces, updated_at: now })
+    .eq("id", step.id);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  await syncMetaPublicationSlots(eventId);
+  revalidateMetaPaths(eventId);
+
+  return { success: true, updatedCount: 1, error: null };
 }

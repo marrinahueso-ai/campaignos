@@ -49,7 +49,7 @@ export default async function MetaPublishingSettingsPage({
       <StudioPageHeader
         backHref="/settings"
         title="Meta Publishing"
-        description={`Connect Facebook and Instagram once for ${organization?.name ?? "your PTO"}. Approved milestones auto-post to feed and story on both platforms at the scheduled time.`}
+        description={`Connect Facebook and Instagram once for ${organization?.name ?? "your PTO"}. Approved milestones auto-post to the feed and/or story surfaces you choose on each milestone.`}
         eyebrow="Configure"
       />
 
@@ -84,8 +84,8 @@ export default async function MetaPublishingSettingsPage({
         <CardHeader>
           <CardTitle>{isConnected ? "Connected" : "Connect Meta"}</CardTitle>
           <CardDescription>
-            After approval, CampaignOS publishes feed and story posts automatically — no manual
-            posting required.
+            After approval, CampaignOS publishes to the Meta surfaces you configure per milestone
+            (feed, story, or both) — no manual posting required.
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">

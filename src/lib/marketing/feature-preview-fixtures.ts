@@ -156,6 +156,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
       { platform: "instagram", placement: "feed", label: "Instagram Feed" },
     ],
     stepId: null,
+    metaPublishSurfaces: "both",
   },
   {
     relativeDay: 0,
@@ -172,6 +173,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     missingArtwork: [],
     targets: [],
     stepId: null,
+    metaPublishSurfaces: "both",
   },
 ];
 

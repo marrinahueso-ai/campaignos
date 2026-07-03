@@ -12,7 +12,15 @@ import {
   formatRelativeDay,
 } from "@/lib/playbooks/constants";
 import type { CommunicationChannel } from "@/types/event-workspace";
-import type { EventCommunicationStep, PlaybookStepInput } from "@/types/playbooks";
+import type { EventCommunicationStep, MetaPublishSurfaces, PlaybookStepInput } from "@/types/playbooks";
+
+const META_CHANNELS = new Set<CommunicationChannel>(["facebook", "instagram"]);
+
+const SURFACE_OPTIONS: { value: MetaPublishSurfaces; label: string }[] = [
+  { value: "both", label: "Feed + Story" },
+  { value: "feed_only", label: "Feed only" },
+  { value: "story_only", label: "Story only" },
+];
 
 interface EventPlaybookTimelineEditorProps {
   eventId: string;
@@ -33,6 +41,7 @@ function stepsToInput(steps: EventCommunicationStep[]): PlaybookStepInput[] {
     channel: step.channel,
     isRequired: step.isRequired,
     defaultStatus: step.status,
+    metaPublishSurfaces: step.metaPublishSurfaces,
   }));
 }
 
@@ -146,6 +155,11 @@ export function EventPlaybookTimelineEditor({
               onChange={(event) =>
                 updateStep(index, {
                   channel: event.target.value as CommunicationChannel,
+                  metaPublishSurfaces: META_CHANNELS.has(
+                    event.target.value as CommunicationChannel,
+                  )
+                    ? (step.metaPublishSurfaces ?? "both")
+                    : undefined,
                 })
               }
               disabled={isPending}
@@ -171,6 +185,26 @@ export function EventPlaybookTimelineEditor({
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
+            {META_CHANNELS.has(step.channel) && (
+              <div className="sm:col-span-4">
+                <Select
+                  label="Meta publish surfaces"
+                  value={step.metaPublishSurfaces ?? "both"}
+                  onChange={(event) =>
+                    updateStep(index, {
+                      metaPublishSurfaces: event.target.value as MetaPublishSurfaces,
+                    })
+                  }
+                  disabled={isPending}
+                >
+                  {SURFACE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            )}
             <p className="sm:col-span-4 text-xs text-cos-muted">
               {formatRelativeDay(step.relativeDay)}
             </p>

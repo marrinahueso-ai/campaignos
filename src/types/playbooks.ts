@@ -21,6 +21,9 @@ export type PlaybookStepDefaultStatus =
 
 export type EventCommunicationStepStatus = "upcoming" | "completed" | "skipped";
 
+/** Which Meta placements to publish for a facebook/instagram communication step. */
+export type MetaPublishSurfaces = "both" | "feed_only" | "story_only";
+
 export interface CommunicationPlaybook {
   id: string;
   organizationId: string | null;
@@ -120,6 +123,7 @@ export interface EventCommunicationStep {
   channel: CommunicationChannel;
   isRequired: boolean;
   status: EventCommunicationStepStatus;
+  metaPublishSurfaces: MetaPublishSurfaces;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -137,6 +141,7 @@ export interface EventCommunicationStepRow {
   channel: CommunicationChannel;
   is_required: boolean;
   status: EventCommunicationStepStatus;
+  meta_publish_surfaces: MetaPublishSurfaces;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -161,6 +166,7 @@ export interface PlaybookStepInput {
   channel: CommunicationChannel;
   isRequired: boolean;
   defaultStatus: PlaybookStepDefaultStatus;
+  metaPublishSurfaces?: MetaPublishSurfaces;
 }
 
 export interface CommunicationHealthSummary {

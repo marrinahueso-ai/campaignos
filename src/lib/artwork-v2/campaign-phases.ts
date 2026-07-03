@@ -314,3 +314,33 @@ export const META_PUBLISH_TARGETS = [
   { platform: "facebook", placement: "story" as const, usesArtwork: "story" as const },
   { platform: "instagram", placement: "story" as const, usesArtwork: "story" as const },
 ] as const;
+
+export type MetaPublishSurfaces = import("@/types/playbooks").MetaPublishSurfaces;
+
+export function isFeedSurfaceEnabled(surfaces: MetaPublishSurfaces): boolean {
+  return surfaces === "both" || surfaces === "feed_only";
+}
+
+export function isStorySurfaceEnabled(surfaces: MetaPublishSurfaces): boolean {
+  return surfaces === "both" || surfaces === "story_only";
+}
+
+export function filterMetaPublishTargetsBySurfaces(
+  surfaces: MetaPublishSurfaces,
+): (typeof META_PUBLISH_TARGETS)[number][] {
+  return META_PUBLISH_TARGETS.filter((target) => {
+    if (target.placement === "feed") {
+      return isFeedSurfaceEnabled(surfaces);
+    }
+    return isStorySurfaceEnabled(surfaces);
+  });
+}
+
+export function isMetaPublishTargetEnabled(
+  surfaces: MetaPublishSurfaces,
+  placement: MetaArtworkPlacement,
+): boolean {
+  return placement === "feed"
+    ? isFeedSurfaceEnabled(surfaces)
+    : isStorySurfaceEnabled(surfaces);
+}

@@ -48,6 +48,7 @@ export function buildFallbackPlaybookData(event: Event): EventPlaybookData {
     channel: def.channel,
     isRequired: true,
     status: "upcoming",
+    metaPublishSurfaces: def.metaPublishSurfaces ?? "both",
     completedAt: null,
     createdAt: now,
     updatedAt: now,

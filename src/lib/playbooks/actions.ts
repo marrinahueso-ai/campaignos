@@ -58,6 +58,7 @@ function parseStepsFromFormData(formData: FormData): PlaybookStepInput[] {
       channel: step.channel as CommunicationChannel,
       isRequired: Boolean(step.isRequired),
       defaultStatus: step.defaultStatus ?? "upcoming",
+      metaPublishSurfaces: step.metaPublishSurfaces,
     }));
   } catch {
     return [];

@@ -172,7 +172,7 @@ export async function ensureMetaMilestoneApprovalRequest(
     return false;
   }
 
-  if (!isMilestoneCaptionsApproved(captions, relativeDay)) {
+  if (!isMilestoneCaptionsApproved(captions, relativeDay, bundle.metaPublishSurfaces)) {
     return false;
   }
 

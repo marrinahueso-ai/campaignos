@@ -160,14 +160,22 @@ export function getStoryCaptionForMilestone(
 export function isMilestoneCaptionsApproved(
   captions: MetaSocialCaption[],
   relativeDay: number,
+  surfaces: import("@/types/playbooks").MetaPublishSurfaces = "both",
 ): boolean {
+  const feedRequired =
+    surfaces === "both" || surfaces === "feed_only";
+  const storyRequired =
+    surfaces === "both" || surfaces === "story_only";
+
   const feed = getCaptionForMilestone(captions, relativeDay, "feed");
   const story = getCaptionForMilestone(captions, relativeDay, "story");
 
-  return (
-    Boolean(feed?.content?.trim()) &&
-    feed?.status === "approved" &&
-    Boolean(story?.content?.trim()) &&
-    story?.status === "approved"
-  );
+  const feedApproved =
+    !feedRequired ||
+    (Boolean(feed?.content?.trim()) && feed?.status === "approved");
+  const storyApproved =
+    !storyRequired ||
+    (Boolean(story?.content?.trim()) && story?.status === "approved");
+
+  return feedApproved && storyApproved;
 }

@@ -4,9 +4,11 @@ import {
 } from "@/lib/campaign-plan/resolve-plan-milestones";
 import {
   buildArtworkPhaseItemsFromMilestones,
+  filterMetaPublishTargetsBySurfaces,
   groupArtworkPhasesByMilestone,
   isApprovedArtworkAsset,
-  META_PUBLISH_TARGETS,
+  isFeedSurfaceEnabled,
+  isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import {
@@ -26,12 +28,12 @@ import type {
   MetaPublicationSlotStatus,
   MetaPublishBundle,
   MetaPublishBundleStatus,
-  MetaPublishTargetPreview,
 } from "@/lib/meta-publishing/types";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 function targetLabel(platform: string, placement: string): string {
   const platformLabel = platform === "facebook" ? "Facebook" : "Instagram";
@@ -48,12 +50,15 @@ function isMetaSocialChannel(channel: CommunicationChannel | null | undefined): 
 }
 
 function deriveBundleStatus(input: {
+  surfaces: MetaPublishSurfaces;
   hasFeedArtwork: boolean;
   hasStoryArtwork: boolean;
   hasCaption: boolean;
   slotStatuses: MetaPublicationSlotStatus[];
 }): MetaPublishBundleStatus {
-  const { slotStatuses: statuses } = input;
+  const { slotStatuses: statuses, surfaces } = input;
+  const needsFeedArtwork = isFeedSurfaceEnabled(surfaces);
+  const needsStoryArtwork = isStorySurfaceEnabled(surfaces);
 
   if (statuses.length > 0 && statuses.every((status) => status === "cancelled")) {
     return "skipped";
@@ -83,7 +88,10 @@ function deriveBundleStatus(input: {
     return "scheduled";
   }
 
-  if (!input.hasFeedArtwork || !input.hasStoryArtwork) {
+  if (
+    (needsFeedArtwork && !input.hasFeedArtwork) ||
+    (needsStoryArtwork && !input.hasStoryArtwork)
+  ) {
     return "needs_artwork";
   }
 
@@ -141,7 +149,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       .then((client) =>
         client
           .from("event_communication_steps")
-          .select("id, relative_day, due_date, title, channel, status, sort_order")
+          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces")
           .eq("event_id", eventId),
       ),
   ]);
@@ -160,18 +168,21 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
   const phaseItems = buildArtworkPhaseItemsFromMilestones(planMilestones);
   const milestoneGroups = groupArtworkPhasesByMilestone(phaseItems);
 
-  const targets: MetaPublishTargetPreview[] = META_PUBLISH_TARGETS.map((target) => ({
-    platform: target.platform,
-    placement: target.placement,
-    label: targetLabel(target.platform, target.placement),
-  }));
-
   return milestoneGroups.map((group) => {
     const step = steps.find((entry) => entry.relative_day === group.relativeDay);
     const stepId = step?.id ?? null;
     const stepSkipped = step?.status === "skipped";
     const channel = (step?.channel as CommunicationChannel | undefined) ?? null;
     const isMetaPost = isMetaSocialChannel(channel);
+    const metaPublishSurfaces =
+      (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
+    const enabledTargets = filterMetaPublishTargetsBySurfaces(metaPublishSurfaces).map(
+      (target) => ({
+        platform: target.platform,
+        placement: target.placement,
+        label: targetLabel(target.platform, target.placement),
+      }),
+    );
 
     const feedPhase = group.formats.find((format) => format.metaPlacement === "feed");
     const storyPhase = group.formats.find((format) => format.metaPlacement === "story");
@@ -182,10 +193,10 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const hasStoryArtwork = isApprovedArtworkAsset(storyAsset);
     const missingArtwork: string[] = [];
 
-    if (!hasFeedArtwork) {
+    if (isFeedSurfaceEnabled(metaPublishSurfaces) && !hasFeedArtwork) {
       missingArtwork.push("Feed (1:1)");
     }
-    if (!hasStoryArtwork) {
+    if (isStorySurfaceEnabled(metaPublishSurfaces) && !hasStoryArtwork) {
       missingArtwork.push("Story");
     }
 
@@ -220,6 +231,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         channel,
         isMetaPost: false,
         stepId,
+        metaPublishSurfaces,
       };
     }
 
@@ -242,16 +254,22 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       status: stepSkipped
         ? "skipped"
         : deriveBundleStatus({
+            surfaces: metaPublishSurfaces,
             hasFeedArtwork,
             hasStoryArtwork,
-            hasCaption: isMilestoneCaptionsApproved(metaCaptions, group.relativeDay),
+            hasCaption: isMilestoneCaptionsApproved(
+              metaCaptions,
+              group.relativeDay,
+              metaPublishSurfaces,
+            ),
             slotStatuses: slotStatuses(groupSlots),
           }),
-      targets,
+      targets: enabledTargets,
       missingArtwork,
       channel,
       isMetaPost: true,
       stepId,
+      metaPublishSurfaces,
     };
   });
 }

@@ -132,7 +132,7 @@ export function SettingsPreferencesForm() {
         <CardHeader>
           <CardTitle>Meta Publishing</CardTitle>
           <CardDescription>
-            Connect Facebook and Instagram for automatic feed + story posting after
+            Connect Facebook and Instagram for automatic posting to feed and/or story after
             approval.
           </CardDescription>
         </CardHeader>

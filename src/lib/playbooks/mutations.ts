@@ -16,10 +16,22 @@ import { resolveTimingStepsForEvent } from "@/lib/playbooks/timing-presets";
 import type {
   CommunicationPlaybookStepRow,
   EventType,
+  MetaPublishSurfaces,
   PlaybookEditorInput,
   PlaybookStepInput,
 } from "@/types/playbooks";
 import type { Event } from "@/types";
+import type { CommunicationChannel } from "@/types/event-workspace";
+
+function defaultMetaPublishSurfaces(
+  channel: CommunicationChannel,
+  surfaces?: MetaPublishSurfaces,
+): MetaPublishSurfaces {
+  if (surfaces) {
+    return surfaces;
+  }
+  return "both";
+}
 
 export async function seedOrganizationPlaybookDefaults(
   organizationId: string,
@@ -119,6 +131,10 @@ export async function assignPlaybookToEvent(
     channel: step.channel,
     is_required: true,
     status: "upcoming",
+    meta_publish_surfaces: defaultMetaPublishSurfaces(
+      step.channel,
+      step.metaPublishSurfaces,
+    ),
   }));
 
   const { error: stepsError } = await supabase
@@ -352,6 +368,10 @@ export async function replaceEventCommunicationTimeline(
       : step.defaultStatus === "completed"
         ? "completed"
         : "upcoming",
+    meta_publish_surfaces: defaultMetaPublishSurfaces(
+      step.channel,
+      step.metaPublishSurfaces,
+    ),
     updated_at: now,
   }));
 

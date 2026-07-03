@@ -1,5 +1,6 @@
 import {
   buildArtworkPhaseItemsFromMilestones,
+  filterMetaPublishTargetsBySurfaces,
   isApprovedArtworkAsset,
   META_PUBLISH_TARGETS,
 } from "@/lib/artwork-v2/campaign-phases";
@@ -13,9 +14,26 @@ import { createClient } from "@/lib/supabase/server";
 import type { MetaPublicationSlotRow } from "@/lib/meta-publishing/types";
 import type { CommunicationItemRow } from "@/types/event-workspace";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 function isMissingMetaSlotsTable(error: { code?: string; message?: string } | null): boolean {
   return error?.code === "42P01" || Boolean(error?.message?.includes("meta_publication_slots"));
+}
+
+function resolveStepPublishSurfaces(
+  step: EventCommunicationStepRow | undefined,
+): MetaPublishSurfaces {
+  return (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
+}
+
+function isTargetEnabled(
+  surfaces: MetaPublishSurfaces,
+  platform: string,
+  placement: string,
+): boolean {
+  return filterMetaPublishTargetsBySurfaces(surfaces).some(
+    (target) => target.platform === platform && target.placement === placement,
+  );
 }
 
 function defaultScheduledTime(dueDate: string | null): string | null {
@@ -124,6 +142,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
 
   for (const milestone of milestones) {
     const step = steps.find((entry) => entry.relative_day === milestone.relativeDay);
+    const surfaces = resolveStepPublishSurfaces(step);
     const communicationItemId = step
       ? (itemsByStepId.get(step.id as string)?.id ?? null)
       : null;
@@ -146,6 +165,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
       storyAsset && isApprovedArtworkAsset(storyAsset) ? storyAsset.id : null;
 
     for (const target of META_PUBLISH_TARGETS) {
+      const enabled = isTargetEnabled(surfaces, target.platform, target.placement);
       const eventAssetId = target.usesArtwork === "feed" ? feedAssetId : storyAssetId;
 
       const { data: existing, error: existingError } = await supabase
@@ -161,6 +181,23 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
         return false;
       }
 
+      if (!enabled) {
+        if (!existing) {
+          continue;
+        }
+
+        const row = existing as MetaPublicationSlotRow;
+        if (row.status === "published" || row.status === "cancelled") {
+          continue;
+        }
+
+        await supabase
+          .from("meta_publication_slots")
+          .update({ status: "cancelled", updated_at: now })
+          .eq("id", row.id);
+        continue;
+      }
+
       const payload = {
         milestone_title: milestone.title,
         event_asset_id: eventAssetId,
@@ -171,7 +208,18 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
 
       if (existing) {
         const row = existing as MetaPublicationSlotRow;
-        if (row.status === "published" || row.status === "cancelled") {
+        if (row.status === "published") {
+          continue;
+        }
+
+        if (row.status === "cancelled") {
+          await supabase
+            .from("meta_publication_slots")
+            .update({
+              ...payload,
+              status: "draft",
+            })
+            .eq("id", row.id);
           continue;
         }
 

@@ -1,4 +1,5 @@
 import type { CommunicationChannel } from "@/types/event-workspace";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 export type MetaPublishPlatform = "facebook" | "instagram";
 export type MetaPublishPlacement = "feed" | "story";
@@ -108,6 +109,8 @@ export interface MetaPublishBundle {
   isMetaPost: boolean;
   /** Plan step id when this milestone maps to a communication step. */
   stepId: string | null;
+  /** Feed/story/both preference for Meta posts on this milestone. */
+  metaPublishSurfaces: MetaPublishSurfaces;
 }
 
 export type MetaPublishActionResult = {

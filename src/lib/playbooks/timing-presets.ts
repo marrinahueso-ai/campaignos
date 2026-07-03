@@ -5,6 +5,7 @@
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type { EventType } from "@/types/playbooks";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 export type TimingPresetId =
   | "full_event"
@@ -18,6 +19,7 @@ export interface TimingPresetStep {
   relativeDay: number;
   title: string;
   channel: CommunicationChannel;
+  metaPublishSurfaces?: MetaPublishSurfaces;
 }
 
 /** Event type selects the timing preset; communication strategy filters steps within it. */
@@ -53,7 +55,12 @@ const FULL_EVENT_STEPS: TimingPresetStep[] = [
 
 const PTO_MEETING_STEPS: TimingPresetStep[] = [
   { relativeDay: -3, title: "3 Days Out", channel: "newsletter" },
-  { relativeDay: -1, title: "Day Before", channel: "facebook" },
+  {
+    relativeDay: -1,
+    title: "Day Before",
+    channel: "facebook",
+    metaPublishSurfaces: "story_only",
+  },
   { relativeDay: 0, title: "Day Of", channel: "morning_announcements" },
   { relativeDay: 1, title: "Thank You / Recap", channel: "newsletter" },
 ];
