@@ -1,4 +1,5 @@
 import type { CommunicationChannel } from "@/types/event-workspace";
+import type { MetaPublishMode } from "@/lib/meta-publishing/publish-mode";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 export type MetaPublishPlatform = "facebook" | "instagram";
@@ -113,6 +114,10 @@ export interface MetaPublishBundle {
   metaPublishSurfaces: MetaPublishSurfaces;
   /** Story posted manually via Post Kit — skips story auto-publish. */
   storyManualPublish: boolean;
+  /** Derived single publish mode for UI and scheduling logic. */
+  publishMode: MetaPublishMode;
+  /** When story post kit email was sent for manual story modes. */
+  storyReminderSentAt: string | null;
 }
 
 export type MetaPublishActionResult = {

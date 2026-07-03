@@ -891,6 +891,8 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     stepId: null,
     metaPublishSurfaces: "both",
     storyManualPublish: false,
+    publishMode: "feed_and_story_auto",
+    storyReminderSentAt: null,
   },
   {
     relativeDay: 0,
@@ -909,6 +911,8 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     stepId: null,
     metaPublishSurfaces: "both",
     storyManualPublish: false,
+    publishMode: "feed_and_story_auto",
+    storyReminderSentAt: null,
   },
 ];
 

@@ -21,20 +21,24 @@ import {
   scheduleMetaBundleAction,
   skipMetaPublishMilestoneAction,
   unskipMetaPublishMilestoneAction,
-  updateMetaPublishSurfacesAction,
-  updateStoryManualPublishAction,
+  updatePublishModeAction,
 } from "@/lib/meta-publishing/actions";
 import {
   isFeedSurfaceEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
+import {
+  isManualStoryEmailMode,
+  isManualStoryOnlyMode,
+  PUBLISH_MODE_OPTIONS,
+  type MetaPublishMode,
+} from "@/lib/meta-publishing/publish-mode";
 import { StoryPostKit } from "@/components/meta-publishing/StoryPostKit";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
-import type { MetaPublishSurfaces } from "@/types/playbooks";
 import { cn } from "@/lib/utils/cn";
 
 function isBundleDeprioritized(
@@ -72,10 +76,7 @@ function statusLabel(bundle: MetaPublishBundle, publishPending = false): string 
     return channelLabelForBundle(bundle);
   }
 
-  const manualStoryOnly =
-    bundle.storyManualPublish &&
-    isStorySurfaceEnabled(bundle.metaPublishSurfaces) &&
-    !isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+  const manualStoryOnly = isManualStoryOnlyMode(bundle.publishMode);
 
   switch (bundle.status) {
     case "needs_artwork":
@@ -83,9 +84,11 @@ function statusLabel(bundle: MetaPublishBundle, publishPending = false): string 
     case "needs_caption":
       return "Needs caption approval";
     case "ready":
-      return manualStoryOnly ? "Ready to post manually" : "Ready to publish";
+      return manualStoryOnly ? "Ready — confirm to send post kit" : "Ready to publish";
     case "scheduled":
-      return "Scheduled";
+      return manualStoryOnly && bundle.storyReminderSentAt
+        ? "Post kit sent"
+        : "Scheduled";
     case "approved":
       return "Queued for auto-post";
     case "posting":
@@ -120,36 +123,9 @@ function statusClassName(status: MetaPublishBundleStatus): string {
   }
 }
 
-const SURFACE_OPTIONS: { value: MetaPublishSurfaces; label: string }[] = [
-  { value: "both", label: "Feed + Story" },
-  { value: "feed_only", label: "Feed only" },
-  { value: "story_only", label: "Story only" },
-];
-
-
-function publishTargetHint(
-  surfaces: MetaPublishSurfaces,
-  targets: MetaPublishBundle["targets"],
-): string {
-  if (targets.length === 0) {
-    return "";
-  }
-
-  switch (surfaces) {
-    case "both":
-      return "Facebook & Instagram · feed and story";
-    case "feed_only":
-      return "Facebook & Instagram feed";
-    case "story_only":
-      return "Facebook & Instagram story";
-    default:
-      return targets.map((target) => target.label).join(" · ");
-  }
-}
-
 function isMilestoneComplete(
   milestone: MetaSocialCaptionMilestone,
-  surfaces: MetaPublishSurfaces,
+  surfaces: MetaPublishBundle["metaPublishSurfaces"],
 ): boolean {
   const feedOk =
     !isFeedSurfaceEnabled(surfaces) ||
@@ -176,10 +152,8 @@ interface MetaPublishBundleCardProps {
   onUnskip?: () => void;
   onSchedule?: () => void;
   onPublishNow?: () => void;
-  onSurfacesChange?: (surfaces: MetaPublishSurfaces) => void;
-  onStoryManualToggle?: (enabled: boolean) => void;
-  storyManualPending?: boolean;
-  surfacesPending?: boolean;
+  onPublishModeChange?: (mode: MetaPublishMode) => void;
+  publishModePending?: boolean;
   publishPending?: boolean;
   schedulePending?: boolean;
   skipPending?: boolean;
@@ -199,10 +173,8 @@ export function MetaPublishBundleCard({
   onUnskip,
   onSchedule,
   onPublishNow,
-  onSurfacesChange,
-  onStoryManualToggle,
-  storyManualPending = false,
-  surfacesPending = false,
+  onPublishModeChange,
+  publishModePending = false,
   publishPending = false,
   skipPending = false,
   schedulePending = false,
@@ -214,29 +186,27 @@ export function MetaPublishBundleCard({
   const displayStatus: MetaPublishBundleStatus = isPublishing ? "posting" : bundle.status;
   const isSkipped = bundle.status === "skipped";
   const isMetaPost = bundle.isMetaPost;
-  const manualStoryOnly =
-    bundle.storyManualPublish &&
-    isStorySurfaceEnabled(bundle.metaPublishSurfaces) &&
-    !isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+  const manualStoryOnly = isManualStoryOnlyMode(bundle.publishMode);
+  const manualStoryEmail = isManualStoryEmailMode(bundle.publishMode);
   const canSchedule =
     isMetaPost &&
     bundle.status === "ready" &&
     Boolean(onSchedule) &&
-    !isSkipped &&
-    !manualStoryOnly;
+    !isSkipped;
   const canPublishNow =
     isMetaPost &&
     Boolean(onPublishNow) &&
     !isPublishing &&
-    !manualStoryOnly &&
-    ["ready", "scheduled", "approved", "failed"].includes(bundle.status);
+    (manualStoryOnly
+      ? ["ready", "scheduled"].includes(bundle.status)
+      : ["ready", "scheduled", "approved", "failed"].includes(bundle.status));
   const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
   const showPostKitSection =
     showPostKit &&
     isMetaPost &&
     !isSkipped &&
-    (showStory || showFeed) &&
+    (manualStoryEmail || showStory || showFeed) &&
     (Boolean(bundle.storyArtworkUrl) ||
       Boolean(bundle.feedArtworkUrl) ||
       Boolean(bundle.captionPreview) ||
@@ -373,7 +343,11 @@ export function MetaPublishBundleCard({
               disabled={publishPending || skipPending}
               onClick={() => onPublishNow?.()}
             >
-              {publishPending ? "Publishing…" : "Publish now"}
+              {publishPending
+                ? "Working…"
+                : manualStoryOnly
+                  ? "Send post kit"
+                  : "Publish now"}
             </Button>
           )}
         </div>
@@ -415,57 +389,50 @@ export function MetaPublishBundleCard({
                 </p>
               ) : (
                 <>
-                  {isMetaPost && onSurfacesChange && (
+                  {isMetaPost && onPublishModeChange && (
                     <div className="space-y-2">
-                      <p className="cos-section-title">Where to publish</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {SURFACE_OPTIONS.map((option) => (
+                      <p className="cos-section-title">Publish mode</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {PUBLISH_MODE_OPTIONS.map((option) => (
                           <button
                             key={option.value}
                             type="button"
-                            disabled={surfacesPending || publishPending || skipPending}
-                            onClick={() => onSurfacesChange(option.value)}
+                            disabled={publishModePending || publishPending || skipPending}
+                            onClick={() => onPublishModeChange(option.value)}
                             className={cn(
-                              "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                              bundle.metaPublishSurfaces === option.value
+                              "rounded-lg border px-3 py-2.5 text-left transition-colors",
+                              bundle.publishMode === option.value
                                 ? "border-cos-text bg-cos-text text-white"
                                 : "border-cos-border bg-cos-bg text-cos-text hover:border-cos-muted",
                             )}
                           >
-                            {option.label}
+                            <span className="block text-sm font-medium">{option.label}</span>
+                            <span
+                              className={cn(
+                                "mt-0.5 block text-xs",
+                                bundle.publishMode === option.value
+                                  ? "text-white/80"
+                                  : "text-cos-muted",
+                              )}
+                            >
+                              {option.description}
+                            </span>
                           </button>
                         ))}
                       </div>
-                      {bundle.targets.length > 0 && (
-                        <p className="text-xs text-cos-muted">
-                          {publishTargetHint(bundle.metaPublishSurfaces, bundle.targets)}
-                        </p>
-                      )}
-                      {showStory && onStoryManualToggle && (
-                        <label className="flex min-h-10 cursor-pointer items-center gap-2 pt-1 text-sm text-cos-text">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-cos-border"
-                            checked={bundle.storyManualPublish}
-                            disabled={storyManualPending || surfacesPending || publishPending}
-                            onChange={(event) => onStoryManualToggle(event.target.checked)}
-                          />
-                          <span>I&apos;ll post the story manually from my phone</span>
-                        </label>
-                      )}
-                      {showStory &&
-                        bundle.metaPublishSurfaces === "story_only" &&
-                        !bundle.storyManualPublish && (
-                          <p className="text-xs text-cos-muted">
-                            Story-only works best with manual posting for stickers and links.
-                          </p>
-                        )}
                     </div>
                   )}
 
-                  {isMetaPost && !onSurfacesChange && bundle.targets.length > 0 && (
+                  {manualStoryEmail && !manualStoryOnly && bundle.status !== "ready" && (
                     <p className="text-xs text-cos-muted">
-                      {publishTargetHint(bundle.metaPublishSurfaces, bundle.targets)}
+                      Story: post from your phone — post kit below.
+                    </p>
+                  )}
+
+                  {manualStoryOnly && (
+                    <p className="text-sm text-cos-text">
+                      Post the story from your phone. Schedule or publish now to email the post kit
+                      to your team.
                     </p>
                   )}
 
@@ -508,7 +475,7 @@ export function MetaPublishBundleCard({
                       bundle={bundle}
                       milestone={milestone}
                       eventLink={eventLink}
-                      defaultExpanded={bundle.storyManualPublish && showStory}
+                      defaultExpanded={manualStoryOnly || (manualStoryEmail && bundle.status !== "ready")}
                     />
                   )}
                 </>
@@ -594,8 +561,7 @@ export function MetaPublishBundlesPanel({
   const [skipPendingDay, setSkipPendingDay] = useState<number | null>(null);
   const [schedulePendingDay, setSchedulePendingDay] = useState<number | null>(null);
   const [publishPendingDay, setPublishPendingDay] = useState<number | null>(null);
-  const [surfacesPendingDay, setSurfacesPendingDay] = useState<number | null>(null);
-  const [storyManualPendingDay, setStoryManualPendingDay] = useState<number | null>(null);
+  const [publishModePendingDay, setPublishModePendingDay] = useState<number | null>(null);
   const [optimisticSkippedDays, setOptimisticSkippedDays] = useState<Set<number>>(
     () => new Set(),
   );
@@ -711,28 +677,14 @@ export function MetaPublishBundlesPanel({
     });
   }
 
-  function runSurfacesChange(relativeDay: number, surfaces: MetaPublishSurfaces) {
+  function runPublishModeChange(relativeDay: number, mode: MetaPublishMode) {
     setError(null);
-    setSurfacesPendingDay(relativeDay);
+    setPublishModePendingDay(relativeDay);
     startTransition(async () => {
-      const result = await updateMetaPublishSurfacesAction(eventId, relativeDay, surfaces);
-      setSurfacesPendingDay(null);
+      const result = await updatePublishModeAction(eventId, relativeDay, mode);
+      setPublishModePendingDay(null);
       if (!result.success) {
-        setError(result.error ?? "Unable to update publish surfaces.");
-        return;
-      }
-      router.refresh();
-    });
-  }
-
-  function runStoryManualToggle(relativeDay: number, enabled: boolean) {
-    setError(null);
-    setStoryManualPendingDay(relativeDay);
-    startTransition(async () => {
-      const result = await updateStoryManualPublishAction(eventId, relativeDay, enabled);
-      setStoryManualPendingDay(null);
-      if (!result.success) {
-        setError(result.error ?? "Unable to update manual story setting.");
+        setError(result.error ?? "Unable to update publish mode.");
         return;
       }
       router.refresh();
@@ -1027,18 +979,12 @@ export function MetaPublishBundlesPanel({
                   ? () => runPublishNow(bundle.relativeDay)
                   : undefined
               }
-              onSurfacesChange={
+              onPublishModeChange={
                 (mode === "schedule" || mode === "publishing") && bundle.isMetaPost
-                  ? (surfaces) => runSurfacesChange(bundle.relativeDay, surfaces)
+                  ? (publishMode) => runPublishModeChange(bundle.relativeDay, publishMode)
                   : undefined
               }
-              onStoryManualToggle={
-                (mode === "schedule" || mode === "publishing") && bundle.isMetaPost
-                  ? (enabled) => runStoryManualToggle(bundle.relativeDay, enabled)
-                  : undefined
-              }
-              storyManualPending={storyManualPendingDay === bundle.relativeDay}
-              surfacesPending={surfacesPendingDay === bundle.relativeDay}
+              publishModePending={publishModePendingDay === bundle.relativeDay}
               publishPending={publishPendingDay === bundle.relativeDay}
               skipPending={skipPendingDay === bundle.relativeDay}
               schedulePending={schedulePendingDay === bundle.relativeDay}

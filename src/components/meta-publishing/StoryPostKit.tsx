@@ -11,6 +11,10 @@ import {
   isFeedSurfaceEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
+import {
+  isManualStoryEmailMode,
+  isManualStoryOnlyMode,
+} from "@/lib/meta-publishing/publish-mode";
 import { copyTextToClipboard } from "@/lib/meta-publishing/post-kit";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
@@ -45,6 +49,8 @@ export function StoryPostKit({
 
   const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
+  const manualStoryEmail = isManualStoryEmailMode(bundle.publishMode);
+  const manualStoryOnly = isManualStoryOnlyMode(bundle.publishMode);
 
   const feedCaption = milestone?.feed.content?.trim() ?? bundle.captionPreview?.trim() ?? "";
   const storyCaption =
@@ -95,10 +101,12 @@ export function StoryPostKit({
     return null;
   }
 
-  const isManualStory = bundle.storyManualPublish && showStory;
-  const collapsedHint = isManualStory
+  const isManualStory = manualStoryEmail;
+  const collapsedHint = manualStoryOnly
     ? "Save story image and copy captions for Instagram"
-    : "Stickers, music, or link in the app?";
+    : manualStoryEmail
+      ? "Post story from your phone after feed goes out"
+      : "Stickers, music, or link in the app?";
 
   return (
     <div className="border-t border-cos-border pt-4">
@@ -129,9 +137,11 @@ export function StoryPostKit({
       {expanded && (
         <div className="mt-3 space-y-3 pl-6">
           <p className="text-xs leading-relaxed text-cos-muted">
-            {isManualStory
+            {manualStoryOnly
               ? "Save the story image and copy captions, then post in Instagram — add music, link stickers, and tags in the app."
-              : "Download artwork and copy captions when you need stickers, music, or links in the native app."}
+              : manualStoryEmail
+                ? "After the feed post goes out, use this kit to post the story from your phone."
+                : "Download artwork and copy captions when you need stickers, music, or links in the native app."}
           </p>
 
           <div className="flex flex-wrap gap-2">

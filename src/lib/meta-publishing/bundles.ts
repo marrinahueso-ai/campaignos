@@ -33,6 +33,10 @@ import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
+import {
+  derivePublishMode,
+  isManualStoryOnlyBundle,
+} from "@/lib/meta-publishing/publish-mode";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 function targetLabel(platform: string, placement: string): string {
@@ -52,23 +56,30 @@ function isMetaSocialChannel(channel: CommunicationChannel | null | undefined): 
 function deriveBundleStatus(input: {
   surfaces: MetaPublishSurfaces;
   storyManualPublish: boolean;
+  storyReminderSentAt: string | null;
+  stepCompleted: boolean;
   hasFeedArtwork: boolean;
   hasStoryArtwork: boolean;
   hasCaption: boolean;
   slotStatuses: MetaPublicationSlotStatus[];
 }): MetaPublishBundleStatus {
-  const { slotStatuses: statuses, surfaces, storyManualPublish } = input;
+  const { slotStatuses: statuses, surfaces, storyManualPublish, storyReminderSentAt, stepCompleted } =
+    input;
   const needsFeedArtwork = isFeedSurfaceEnabled(surfaces);
   const needsStoryArtwork = isStorySurfaceEnabled(surfaces);
 
   if (statuses.length > 0 && statuses.every((status) => status === "cancelled")) {
     if (
-      storyManualPublish &&
-      needsStoryArtwork &&
-      !needsFeedArtwork &&
+      isManualStoryOnlyBundle(surfaces, storyManualPublish) &&
       input.hasStoryArtwork &&
       input.hasCaption
     ) {
+      if (stepCompleted) {
+        return "published";
+      }
+      if (storyReminderSentAt) {
+        return "scheduled";
+      }
       return "ready";
     }
     return "skipped";
@@ -159,7 +170,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       .then((client) =>
         client
           .from("event_communication_steps")
-          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish")
+          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish, story_reminder_sent_at")
           .eq("event_id", eventId),
       ),
   ]);
@@ -187,6 +198,9 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const metaPublishSurfaces =
       (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
     const storyManualPublish = Boolean(step?.story_manual_publish);
+    const storyReminderSentAt = (step?.story_reminder_sent_at as string | null | undefined) ?? null;
+    const stepCompleted = step?.status === "completed";
+    const publishMode = derivePublishMode(metaPublishSurfaces, storyManualPublish);
     const enabledTargets = filterMetaPublishTargetsBySurfaces(
       metaPublishSurfaces,
       storyManualPublish,
@@ -247,6 +261,8 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         stepId,
         metaPublishSurfaces,
         storyManualPublish,
+        publishMode,
+        storyReminderSentAt,
       };
     }
 
@@ -271,6 +287,8 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         : deriveBundleStatus({
             surfaces: metaPublishSurfaces,
             storyManualPublish,
+            storyReminderSentAt,
+            stepCompleted,
             hasFeedArtwork,
             hasStoryArtwork,
             hasCaption: isMilestoneCaptionsApproved(
@@ -287,6 +305,8 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       stepId,
       metaPublishSurfaces,
       storyManualPublish,
+      publishMode,
+      storyReminderSentAt,
     };
   });
 }
@@ -301,4 +321,20 @@ export function countBundlesByStatus(
 /** True when this milestone has at least one Meta slot that auto-publishes via API. */
 export function bundleHasAutoPublishTargets(bundle: MetaPublishBundle): boolean {
   return bundle.isMetaPost && bundle.targets.length > 0;
+}
+
+/** True when schedule/publish is handled manually (story-only, no Meta API slots). */
+export function bundleIsManualStoryOnly(bundle: MetaPublishBundle): boolean {
+  return (
+    bundle.isMetaPost &&
+    isManualStoryOnlyBundle(bundle.metaPublishSurfaces, bundle.storyManualPublish)
+  );
+}
+
+/** True when this milestone can be scheduled (auto or manual story-only). */
+export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
+  if (!bundle.isMetaPost || bundle.status !== "ready") {
+    return false;
+  }
+  return bundleHasAutoPublishTargets(bundle) || bundleIsManualStoryOnly(bundle);
 }

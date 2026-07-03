@@ -6,15 +6,20 @@ import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
-import { getMetaPublishBundles, bundleHasAutoPublishTargets } from "@/lib/meta-publishing/bundles";
+import { getMetaPublishBundles, bundleHasAutoPublishTargets, bundleIsManualStoryOnly, bundleIsSchedulable } from "@/lib/meta-publishing/bundles";
 import { publishDueMetaMilestonesForEvent } from "@/lib/meta-publishing/publish-due";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
+import {
+  publishModeToDb,
+  surfacesNeedManualStoryEmail,
+  type MetaPublishMode,
+} from "@/lib/meta-publishing/publish-mode";
+import { sendStoryPostKitForMilestone } from "@/lib/meta-publishing/send-story-post-kit";
 import {
   getMetaPublicationSlotsForEvent,
   syncMetaPublicationSlots,
 } from "@/lib/meta-publishing/sync-slots";
 import type { MetaPublishActionResult } from "@/lib/meta-publishing/types";
-import type { MetaPublishSurfaces } from "@/types/playbooks";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidateMetaPaths(eventId: string): void {
@@ -62,6 +67,100 @@ async function updateSlotsForMilestones(input: {
   return data?.length ?? 0;
 }
 
+async function sendManualStoryPostKitIfNeeded(
+  eventId: string,
+  relativeDay: number,
+  bundle: Awaited<ReturnType<typeof getMetaPublishBundles>>[number],
+): Promise<string | null> {
+  if (!surfacesNeedManualStoryEmail(bundle.metaPublishSurfaces, bundle.storyManualPublish)) {
+    return null;
+  }
+
+  const emailResult = await sendStoryPostKitForMilestone({
+    eventId,
+    relativeDay,
+    forceResend: true,
+  });
+
+  if (!emailResult.success && !emailResult.skipped) {
+    return emailResult.error ?? "Story post kit email failed to send.";
+  }
+
+  return null;
+}
+
+async function scheduleManualStoryOnlyBundle(
+  eventId: string,
+  relativeDay: number,
+): Promise<MetaPublishActionResult> {
+  const bundle = (await getMetaPublishBundles(eventId)).find(
+    (entry) => entry.relativeDay === relativeDay,
+  );
+
+  if (!bundle || !bundleIsManualStoryOnly(bundle)) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (bundle.status !== "ready") {
+    return { success: false, error: "This milestone is not ready to schedule yet." };
+  }
+
+  const emailError = await sendManualStoryPostKitIfNeeded(eventId, relativeDay, bundle);
+  if (emailError) {
+    return { success: false, error: emailError };
+  }
+
+  const actor = await getApprovalActorFromSession();
+  await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
+
+  revalidateMetaPaths(eventId);
+  return { success: true, updatedCount: 1, error: null };
+}
+
+async function publishManualStoryOnlyBundle(
+  eventId: string,
+  relativeDay: number,
+): Promise<MetaPublishActionResult> {
+  const supabase = await createClient();
+  const bundle = (await getMetaPublishBundles(eventId)).find(
+    (entry) => entry.relativeDay === relativeDay,
+  );
+
+  if (!bundle || !bundleIsManualStoryOnly(bundle)) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (!["ready", "scheduled"].includes(bundle.status)) {
+    return {
+      success: false,
+      error: "This milestone cannot be confirmed for manual posting right now.",
+    };
+  }
+
+  const emailError = await sendManualStoryPostKitIfNeeded(eventId, relativeDay, bundle);
+  if (emailError) {
+    return { success: false, error: emailError };
+  }
+
+  const { data: step } = await supabase
+    .from("event_communication_steps")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  if (step?.id) {
+    const now = new Date().toISOString();
+    await supabase
+      .from("event_communication_steps")
+      .update({ status: "completed", completed_at: now, updated_at: now })
+      .eq("id", step.id);
+  }
+
+  revalidateMetaPaths(eventId);
+  return { success: true, updatedCount: 1, publishedCount: 0, error: null };
+}
+
 export async function publishMetaBundleNowAction(
   eventId: string,
   relativeDay: number,
@@ -91,11 +190,29 @@ export async function publishMetaBundleNowAction(
     };
   }
 
+  if (bundleIsManualStoryOnly(bundle)) {
+    return publishManualStoryOnlyBundle(eventId, relativeDay);
+  }
+
   const result = await publishMetaMilestoneBundle({
     eventId,
     relativeDay,
     immediate: true,
   });
+
+  if (result.success && surfacesNeedManualStoryEmail(bundle.metaPublishSurfaces, bundle.storyManualPublish)) {
+    const emailError = await sendManualStoryPostKitIfNeeded(eventId, relativeDay, bundle);
+    if (emailError) {
+      revalidateMetaPaths(eventId);
+      return {
+        success: true,
+        publishedCount: result.publishedCount,
+        failedCount: result.failedCount,
+        updatedCount: result.publishedCount,
+        error: `Feed published, but story post kit email failed: ${emailError}`,
+      };
+    }
+  }
 
   revalidateMetaPaths(eventId);
   return {
@@ -174,9 +291,7 @@ export async function scheduleAllReadyMetaBundlesAction(
 
   await syncMetaPublicationSlots(eventId);
   const bundles = await getMetaPublishBundles(eventId);
-  const readyBundles = bundles.filter(
-    (bundle) => bundle.status === "ready" && bundleHasAutoPublishTargets(bundle),
-  );
+  const readyBundles = bundles.filter((bundle) => bundleIsSchedulable(bundle));
 
   if (readyBundles.length === 0) {
     return {
@@ -190,6 +305,14 @@ export async function scheduleAllReadyMetaBundlesAction(
   let updatedCount = 0;
 
   for (const bundle of readyBundles) {
+    if (bundleIsManualStoryOnly(bundle)) {
+      const manualResult = await scheduleManualStoryOnlyBundle(eventId, bundle.relativeDay);
+      if (manualResult.success) {
+        updatedCount += 1;
+      }
+      continue;
+    }
+
     const scheduledFor = bundle.scheduledFor ?? bundle.dueDate;
     if (!scheduledFor) {
       continue;
@@ -210,6 +333,7 @@ export async function scheduleAllReadyMetaBundlesAction(
       updatedCount += 1;
       const actor = await getApprovalActorFromSession();
       await ensureMetaMilestoneApprovalRequest(eventId, bundle.relativeDay, actor);
+      await sendManualStoryPostKitIfNeeded(eventId, bundle.relativeDay, bundle);
     }
   }
 
@@ -332,6 +456,10 @@ export async function scheduleMetaBundleAction(
     return { success: false, error: "This milestone is not ready to schedule yet." };
   }
 
+  if (bundleIsManualStoryOnly(bundle)) {
+    return scheduleManualStoryOnlyBundle(eventId, relativeDay);
+  }
+
   const updatedCount = await updateSlotsForMilestones({
     eventId,
     relativeDays: [relativeDay],
@@ -342,6 +470,7 @@ export async function scheduleMetaBundleAction(
   if (updatedCount > 0) {
     const actor = await getApprovalActorFromSession();
     await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
+    await sendManualStoryPostKitIfNeeded(eventId, relativeDay, bundle);
   }
 
   revalidateMetaPaths(eventId);
@@ -554,10 +683,66 @@ export async function getApprovedSlotCount(eventId: string): Promise<number> {
   return slots.filter((slot) => slot.status === "approved").length;
 }
 
+export async function updatePublishModeAction(
+  eventId: string,
+  relativeDay: number,
+  mode: MetaPublishMode,
+): Promise<MetaPublishActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to update publish settings." };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+  const { metaPublishSurfaces, storyManualPublish } = publishModeToDb(mode);
+
+  const { data: step, error: lookupError } = await supabase
+    .from("event_communication_steps")
+    .select("id, channel, status")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  if (!step?.id) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (step.channel !== "facebook" && step.channel !== "instagram") {
+    return {
+      success: false,
+      error: "Publish mode can only be set on Facebook or Instagram milestones.",
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("event_communication_steps")
+    .update({
+      meta_publish_surfaces: metaPublishSurfaces,
+      story_manual_publish: storyManualPublish,
+      updated_at: now,
+    })
+    .eq("id", step.id);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  await syncMetaPublicationSlots(eventId);
+  revalidateMetaPaths(eventId);
+
+  return { success: true, updatedCount: 1, error: null };
+}
+
+/** @deprecated Use updatePublishModeAction */
 export async function updateMetaPublishSurfacesAction(
   eventId: string,
   relativeDay: number,
-  surfaces: MetaPublishSurfaces,
+  surfaces: import("@/types/playbooks").MetaPublishSurfaces,
 ): Promise<MetaPublishActionResult> {
   const role = await getCurrentCampaignRole();
   if (!canUploadCampaignAssets(role)) {
@@ -569,7 +754,7 @@ export async function updateMetaPublishSurfacesAction(
 
   const { data: step, error: lookupError } = await supabase
     .from("event_communication_steps")
-    .select("id, channel, status")
+    .select("id, channel, status, story_manual_publish")
     .eq("event_id", eventId)
     .eq("relative_day", relativeDay)
     .maybeSingle();
@@ -604,6 +789,7 @@ export async function updateMetaPublishSurfacesAction(
   return { success: true, updatedCount: 1, error: null };
 }
 
+/** @deprecated Use updatePublishModeAction */
 export async function updateStoryManualPublishAction(
   eventId: string,
   relativeDay: number,
@@ -619,7 +805,7 @@ export async function updateStoryManualPublishAction(
 
   const { data: step, error: lookupError } = await supabase
     .from("event_communication_steps")
-    .select("id, channel, status")
+    .select("id, channel, status, meta_publish_surfaces")
     .eq("event_id", eventId)
     .eq("relative_day", relativeDay)
     .maybeSingle();
