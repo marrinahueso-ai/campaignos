@@ -236,6 +236,18 @@ const SUBMITTABLE_STATUSES = new Set<CommunicationStatus>([
   "changes_requested",
 ]);
 
+export const APPROVABLE_COMMUNICATION_STATUSES = new Set<CommunicationStatus>([
+  "draft",
+  "generated",
+  "pending_approval",
+]);
+
+export function isCommunicationApprovable(
+  status: CommunicationStatus,
+): boolean {
+  return APPROVABLE_COMMUNICATION_STATUSES.has(status);
+}
+
 export async function sendCommunicationForApproval(
   eventId: string,
   communicationItemId: string,
@@ -383,13 +395,23 @@ export async function approveCommunicationDraft(
     return { success: false, error: "Communication not found." };
   }
 
-  const approvableStatuses = new Set<CommunicationStatus>([
-    "draft",
-    "generated",
-    "pending_approval",
-  ]);
-
-  if (!approvableStatuses.has(item.status)) {
+  if (!isCommunicationApprovable(item.status)) {
+    if (item.status === "approved") {
+      return { success: false, error: "This draft is already approved." };
+    }
+    if (item.status === "published") {
+      return {
+        success: false,
+        error: "This communication has already been published.",
+      };
+    }
+    if (item.status === "changes_requested") {
+      return {
+        success: false,
+        error:
+          "This draft was sent back for changes. Resubmit it for approval after edits.",
+      };
+    }
     return { success: false, error: "This draft is not ready to approve." };
   }
 

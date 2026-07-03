@@ -1,7 +1,11 @@
 import { displayDraftContent } from "@/lib/ai/content";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
-import { dedupePendingApprovalQueueRows } from "@/lib/event-workspace/approval-request-dedupe";
+import {
+  dedupePendingApprovalQueueRows,
+  resolveStalePendingApprovalRequestsForApprovedItems,
+} from "@/lib/event-workspace/approval-request-dedupe";
+import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
 import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
 import {
   type ApprovalActor,
@@ -302,6 +306,8 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
         `Backfilled ${synced} meta milestone approval request(s) for approvals inbox.`,
       );
     }
+  } else {
+    await resolveStalePendingApprovalRequestsForApprovedItems();
   }
 
   const refreshedRows = dedupePendingApprovalQueueRows(
@@ -312,7 +318,11 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
     .filter((item): item is ApprovalQueueItem => item !== null);
   const enriched = await enrichApprovalQueuePreviews(refreshedRows, mapped);
 
-  const pending = enriched.filter((item) => item.status === "pending");
+  const pending = enriched.filter(
+    (item) =>
+      item.status === "pending" &&
+      isCommunicationApprovable(item.communicationStatus),
+  );
   const assignedToMe = pending.filter((item) => item.assignedToMe);
 
   return {

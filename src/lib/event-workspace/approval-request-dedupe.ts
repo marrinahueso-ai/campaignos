@@ -101,6 +101,78 @@ type ApprovalQueueDedupeRow = {
   requested_at: string;
 };
 
+export async function resolveStalePendingApprovalRequestsForApprovedItems(): Promise<number> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data: pending, error } = await supabase
+    .from("approval_requests")
+    .select("id, communication_item_id")
+    .eq("status", "pending")
+    .not("communication_item_id", "is", null);
+
+  if (error || !pending?.length) {
+    if (error) {
+      console.error(
+        "Failed to load pending approval requests for stale cleanup:",
+        error.message,
+      );
+    }
+    return 0;
+  }
+
+  const itemIds = [
+    ...new Set(
+      pending
+        .map((row) => row.communication_item_id as string)
+        .filter(Boolean),
+    ),
+  ];
+
+  const { data: clearedItems, error: itemsError } = await supabase
+    .from("communication_items")
+    .select("id")
+    .in("id", itemIds)
+    .in("status", ["approved", "published"]);
+
+  if (itemsError || !clearedItems?.length) {
+    if (itemsError) {
+      console.error(
+        "Failed to load cleared communication items for stale cleanup:",
+        itemsError.message,
+      );
+    }
+    return 0;
+  }
+
+  const clearedItemIds = new Set(clearedItems.map((row) => row.id as string));
+  const staleRequestIds = pending
+    .filter((row) => clearedItemIds.has(row.communication_item_id as string))
+    .map((row) => row.id as string);
+
+  if (staleRequestIds.length === 0) {
+    return 0;
+  }
+
+  const { error: updateError } = await supabase
+    .from("approval_requests")
+    .update({
+      status: "approved",
+      resolved_at: now,
+    })
+    .in("id", staleRequestIds);
+
+  if (updateError) {
+    console.error(
+      "Failed to resolve stale pending approval requests:",
+      updateError.message,
+    );
+    return 0;
+  }
+
+  return staleRequestIds.length;
+}
+
 export function dedupePendingApprovalQueueRows<T extends ApprovalQueueDedupeRow>(
   rows: T[],
 ): T[] {

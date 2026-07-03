@@ -8,10 +8,13 @@ import {
   isMilestoneCaptionsApproved,
 } from "@/lib/meta-captions/queries";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
+import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
 import {
   cancelDuplicatePendingApprovalRequests,
   dedupePendingApprovalRequestsInDb,
+  resolveStalePendingApprovalRequestsForApprovedItems,
 } from "@/lib/event-workspace/approval-request-dedupe";
+import type { CommunicationStatus } from "@/types/event-workspace";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { createClient } from "@/lib/supabase/server";
 
@@ -86,11 +89,15 @@ async function upsertPendingApprovalRequest(input: {
 
   const { data: existing } = await supabase
     .from("approval_requests")
-    .select("id")
+    .select("id, status")
     .eq("communication_item_id", input.communicationItemId)
     .order("requested_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (existing?.status === "approved") {
+    return true;
+  }
 
   if (existing) {
     const { error } = await supabase
@@ -185,6 +192,21 @@ export async function ensureMetaMilestoneApprovalRequest(
     return false;
   }
 
+  const supabase = await createClient();
+  const { data: communicationItem } = await supabase
+    .from("communication_items")
+    .select("status")
+    .eq("id", communicationItemId)
+    .maybeSingle();
+
+  const communicationStatus = communicationItem?.status as
+    | CommunicationStatus
+    | undefined;
+
+  if (communicationStatus && !isCommunicationApprovable(communicationStatus)) {
+    return false;
+  }
+
   const captionContent = getFeedCaptionForMilestone(captions, relativeDay)?.trim();
   if (!captionContent) {
     return false;
@@ -215,7 +237,6 @@ export async function ensureMetaMilestoneApprovalRequest(
     return false;
   }
 
-  const supabase = await createClient();
   const now = new Date().toISOString();
   const { error } = await supabase
     .from("communication_items")
@@ -225,7 +246,7 @@ export async function ensureMetaMilestoneApprovalRequest(
       updated_at: now,
     })
     .eq("id", communicationItemId)
-    .neq("status", "approved");
+    .in("status", ["draft", "generated", "changes_requested"]);
 
   if (error) {
     console.error("Failed to mark meta milestone communication item pending approval:", error.message);
@@ -303,9 +324,17 @@ export async function syncMetaApprovalRequestsForEvent(
 export async function backfillMetaApprovalRequests(
   actor?: ApprovalActor | null,
 ): Promise<number> {
-  const deduped = await dedupePendingApprovalRequestsInDb();
+  const [deduped, resolvedStale] = await Promise.all([
+    dedupePendingApprovalRequestsInDb(),
+    resolveStalePendingApprovalRequestsForApprovedItems(),
+  ]);
   if (deduped > 0) {
     console.info(`Cancelled ${deduped} duplicate pending approval request(s).`);
+  }
+  if (resolvedStale > 0) {
+    console.info(
+      `Resolved ${resolvedStale} stale pending approval request(s) for already-approved drafts.`,
+    );
   }
 
   const supabase = await createClient();
