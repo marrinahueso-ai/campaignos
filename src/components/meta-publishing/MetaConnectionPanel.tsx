@@ -67,7 +67,6 @@ export function MetaConnectionPanel({
         → Customize → Permissions and features → enable{" "}
         <code className="rounded bg-cos-bg px-1">pages_show_list</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_read_engagement</code>,{" "}
-        <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>, and{" "}
         <code className="rounded bg-cos-bg px-1">business_management</code> (set each to{" "}
         <strong className="font-medium text-cos-text">Ready for testing</strong>).
