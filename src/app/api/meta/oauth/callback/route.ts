@@ -73,29 +73,56 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
-  const longLived = await exchangeShortLivedForLongLived({
-    shortLivedToken: shortLived.accessToken,
-  });
-  if (!longLived.accessToken) {
-    redirectTarget.searchParams.set("error", "long_lived_exchange_failed");
-    return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
-  }
-
   const preferredPageId =
     request.cookies.get(META_OAUTH_PAGE_ID_COOKIE)?.value?.trim() ||
     request.nextUrl.searchParams.get("pageId")?.trim() ||
+    request.nextUrl.searchParams.get("page_id")?.trim() ||
     getMetaFacebookPageId() ||
     undefined;
 
-  const { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(
-    longLived.accessToken,
-    {
-      fallbackPageIds: preferredPageId ? [preferredPageId] : undefined,
-      alternateTokens: shortLived.accessToken ? [shortLived.accessToken] : undefined,
-    },
+  const fallbackPageIds = preferredPageId ? [preferredPageId] : undefined;
+
+  // Resolve pages with the short-lived token first — granular page scopes often
+  // survive here but are lost after the long-lived exchange on Business Suite Pages.
+  let { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(
+    shortLived.accessToken,
+    { fallbackPageIds },
   );
+
+  let tokenExpiresAt: string | null = null;
+
+  if (pages.length === 0) {
+    const longLived = await exchangeShortLivedForLongLived({
+      shortLivedToken: shortLived.accessToken,
+    });
+    if (!longLived.accessToken) {
+      redirectTarget.searchParams.set("error", "long_lived_exchange_failed");
+      return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
+    }
+
+    if (longLived.expiresIn != null) {
+      tokenExpiresAt = new Date(Date.now() + longLived.expiresIn * 1000).toISOString();
+    }
+
+    const longLivedResult = await fetchPagesFromUserToken(longLived.accessToken, {
+      fallbackPageIds,
+      alternateTokens: [shortLived.accessToken],
+      preferAlternateFirst: true,
+    });
+    pages = longLivedResult.pages;
+    pagesError = longLivedResult.error;
+    debugHint = longLivedResult.debugHint;
+  } else {
+    const longLived = await exchangeShortLivedForLongLived({
+      shortLivedToken: shortLived.accessToken,
+    });
+    if (longLived.expiresIn != null) {
+      tokenExpiresAt = new Date(Date.now() + longLived.expiresIn * 1000).toISOString();
+    }
+  }
+
   if (pagesError || pages.length === 0) {
-    const tokenDebug = await debugToken({ inputToken: longLived.accessToken });
+    const tokenDebug = await debugToken({ inputToken: shortLived.accessToken });
     console.error("Meta OAuth callback: no pages resolved", {
       pagesError,
       debugHint,
@@ -103,12 +130,23 @@ export async function GET(request: NextRequest) {
       tokenValid: tokenDebug.isValid,
       scopes: tokenDebug.scopes,
       granularPageIds: tokenDebug.granularPageIds,
+      profileId: tokenDebug.profileId,
+      tokenType: tokenDebug.tokenType,
       userId: tokenDebug.userId,
       debugError: tokenDebug.error,
     });
     redirectTarget.searchParams.set("error", "no_pages");
     if (debugHint) {
       redirectTarget.searchParams.set("hint", debugHint.slice(0, 480));
+    }
+    if (tokenDebug.scopes.length > 0) {
+      redirectTarget.searchParams.set("scopes", tokenDebug.scopes.join(",").slice(0, 200));
+    }
+    if (tokenDebug.granularPageIds.length > 0) {
+      redirectTarget.searchParams.set(
+        "pages",
+        tokenDebug.granularPageIds.join(",").slice(0, 120),
+      );
     }
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
@@ -117,10 +155,7 @@ export async function GET(request: NextRequest) {
     organizationId: organization.id,
     pages,
     preferredPageId: preferredPageId || undefined,
-    tokenExpiresAt:
-      longLived.expiresIn != null
-        ? new Date(Date.now() + longLived.expiresIn * 1000).toISOString()
-        : null,
+    tokenExpiresAt,
   });
 
   if (!saved.success) {

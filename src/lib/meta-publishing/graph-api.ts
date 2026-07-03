@@ -310,19 +310,27 @@ type GranularScopeEntry = {
 
 function isPagePermissionScope(scope: string): boolean {
   // instagram_* target_ids are IG account IDs, not Page IDs.
-  return /^pages[_/]/.test(scope) || scope === "pages";
+  return /^pages[_/]/.test(scope) || scope === "pages" || scope === "manage_pages";
+}
+
+function normalizeTargetId(value: unknown): string | null {
+  if (value == null) {
+    return null;
+  }
+  const id = String(value).trim();
+  return /^\d+$/.test(id) ? id : null;
 }
 
 function targetIdsFromGranularEntry(entry: GranularScopeEntry): string[] {
   const ids: string[] = [];
   for (const targetId of entry.target_ids ?? []) {
-    const id = String(targetId ?? "").trim();
+    const id = normalizeTargetId(targetId);
     if (id) {
       ids.push(id);
     }
   }
 
-  const singular = String(entry.target_id ?? "").trim();
+  const singular = normalizeTargetId(entry.target_id);
   if (singular) {
     ids.push(singular);
   }
@@ -353,9 +361,18 @@ function pageIdsFromGranularScopes(
 
 function userAccessTokensFromOptions(
   primaryToken: string,
-  options?: { alternateTokens?: string[] },
+  options?: { alternateTokens?: string[]; preferAlternateFirst?: boolean },
 ): string[] {
-  return uniquePageIds([primaryToken, ...(options?.alternateTokens ?? [])]);
+  const alternates = (options?.alternateTokens ?? [])
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const primary = primaryToken.trim();
+
+  if (options?.preferAlternateFirst && alternates.length > 0) {
+    return uniquePageIds([...alternates, primary]);
+  }
+
+  return uniquePageIds([primary, ...alternates]);
 }
 
 async function fetchPageFromUserTokenById(input: {
@@ -364,6 +381,7 @@ async function fetchPageFromUserTokenById(input: {
 }): Promise<ResolvedMetaPage | null> {
   const fieldSets = [
     "id,name,access_token,instagram_business_account",
+    "access_token,name,instagram_business_account",
     "access_token,name",
     "access_token",
   ];
@@ -386,24 +404,104 @@ async function fetchPageFromUserTokenById(input: {
       }
 
       const pageToken = String(result.data.access_token ?? "");
-      if (!pageToken) {
-        console.warn(`Meta GET /${input.pageId} fields=${fields} returned no access_token.`);
-        continue;
+      if (pageToken) {
+        const linkedIg =
+          (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+
+        return {
+          id: String(result.data.id ?? input.pageId),
+          name: String(result.data.name ?? "Facebook Page"),
+          accessToken: pageToken,
+          instagramAccountId: linkedIg,
+        };
       }
 
-      const linkedIg =
-        (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+      console.warn(`Meta GET /${input.pageId} fields=${fields} returned no access_token.`);
+    }
 
+    // Login for Business may return a Page token directly (no nested access_token field).
+    const directPage = await graphGet(`/${input.pageId}`, {
+      fields: "id,name,instagram_business_account",
+      access_token: token,
+    });
+    if (directPage.ok) {
+      const linkedIg =
+        (directPage.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
       return {
-        id: String(result.data.id ?? input.pageId),
-        name: String(result.data.name ?? "Facebook Page"),
-        accessToken: pageToken,
+        id: String(directPage.data.id ?? input.pageId),
+        name: String(directPage.data.name ?? "Facebook Page"),
+        accessToken: token,
         instagramAccountId: linkedIg,
       };
     }
   }
 
   return null;
+}
+
+async function resolveImpersonatedPageToken(input: {
+  accessToken: string;
+  profileId: string | null;
+  tokenType: string | null;
+}): Promise<ResolvedMetaPage | null> {
+  const pageId = normalizeTargetId(input.profileId);
+  if (!pageId) {
+    return null;
+  }
+
+  const details = await graphGet(`/${pageId}`, {
+    fields: "id,name,instagram_business_account",
+    access_token: input.accessToken,
+  });
+
+  if (!details.ok) {
+    console.warn(`Meta impersonated page token check failed for ${pageId}:`, details.error);
+    return null;
+  }
+
+  const linkedIg =
+    (details.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+
+  return {
+    id: pageId,
+    name: String(details.data.name ?? "Facebook Page"),
+    accessToken: input.accessToken,
+    instagramAccountId: linkedIg,
+  };
+}
+
+async function fetchPageIdsFromMePermissions(userAccessToken: string): Promise<string[]> {
+  const result = await graphGet("/me/permissions", {
+    access_token: userAccessToken,
+  });
+
+  if (!result.ok) {
+    console.warn("Meta GET /me/permissions failed:", result.error);
+    return [];
+  }
+
+  const entries = result.data.data as
+    | Array<{ permission?: string; status?: string; target_ids?: unknown[] }>
+    | undefined;
+
+  const pageIds = new Set<string>();
+  for (const entry of entries ?? []) {
+    if (entry.status !== "granted") {
+      continue;
+    }
+    const permission = String(entry.permission ?? "");
+    if (!isPagePermissionScope(permission)) {
+      continue;
+    }
+    for (const targetId of entry.target_ids ?? []) {
+      const id = normalizeTargetId(targetId);
+      if (id) {
+        pageIds.add(id);
+      }
+    }
+  }
+
+  return [...pageIds];
 }
 
 function uniquePageIds(ids: Array<string | null | undefined>): string[] {
@@ -625,68 +723,83 @@ async function resolvePagesByIds(input: {
 
 export async function fetchPagesFromUserToken(
   userAccessToken: string,
-  options?: { fallbackPageIds?: string[]; alternateTokens?: string[] },
+  options?: {
+    fallbackPageIds?: string[];
+    alternateTokens?: string[];
+    preferAlternateFirst?: boolean;
+  },
 ): Promise<{ pages: ResolvedMetaPage[]; error: string | null; debugHint?: string | null }> {
   const userAccessTokens = userAccessTokensFromOptions(userAccessToken, options);
-  const token = userAccessTokens[0] ?? "";
   const sources: string[] = [];
+  const resolutionErrors: string[] = [];
 
-  const debug = await debugToken({ inputToken: token });
-  let granularPageIds = debug.granularPageIds;
+  let pages: ResolvedMetaPage[] = [];
 
-  if (debug.error) {
-    console.warn("Meta debug_token failed:", debug.error);
-  } else {
-    console.info("Meta token debug:", {
-      isValid: debug.isValid,
-      scopes: debug.scopes,
-      granularPageIds,
-      userId: debug.userId,
+  for (const token of userAccessTokens) {
+    const debug = await debugToken({ inputToken: token });
+    if (debug.error) {
+      console.warn("Meta debug_token failed:", debug.error);
+      resolutionErrors.push(`debug_token: ${debug.error}`);
+    } else {
+      console.info("Meta token debug:", {
+        isValid: debug.isValid,
+        scopes: debug.scopes,
+        granularPageIds: debug.granularPageIds,
+        profileId: debug.profileId,
+        tokenType: debug.tokenType,
+        userId: debug.userId,
+      });
+    }
+
+    const impersonated = await resolveImpersonatedPageToken({
+      accessToken: token,
+      profileId: debug.profileId,
+      tokenType: debug.tokenType,
     });
-  }
+    if (impersonated) {
+      pages = [impersonated];
+      sources.push("impersonated_page_token");
+      break;
+    }
 
-  if (granularPageIds.length === 0 && userAccessTokens.length > 1) {
-    for (const alternateToken of userAccessTokens.slice(1)) {
-      const alternateDebug = await debugToken({ inputToken: alternateToken });
-      if (alternateDebug.granularPageIds.length > 0) {
-        granularPageIds = alternateDebug.granularPageIds;
-        console.info("Meta token debug (alternate token):", {
-          granularPageIds,
-          userId: alternateDebug.userId,
-        });
+    const granularPageIds = debug.granularPageIds;
+    const permissionPageIds = await fetchPageIdsFromMePermissions(token);
+    const earlyPageIds = uniquePageIds([
+      ...granularPageIds,
+      ...permissionPageIds,
+      ...(options?.fallbackPageIds ?? []),
+      getMetaFacebookPageId(),
+    ]);
+
+    if (earlyPageIds.length > 0) {
+      const resolvedEarly = await resolvePagesByIds({
+        pageIds: earlyPageIds,
+        userAccessTokens: [token],
+        sourceLabel: granularPageIds.length > 0 ? "granular_scopes" : "permissions_or_fallback",
+        sources,
+      });
+      if (resolvedEarly.length > 0) {
+        pages = resolvedEarly;
         break;
+      }
+      if (granularPageIds.length > 0) {
+        resolutionErrors.push(
+          `granular page IDs ${granularPageIds.join(", ")} could not resolve tokens`,
+        );
       }
     }
-  }
 
-  const { rawPages, sourceLabels } = await fetchAllRawPageSources(token);
-  sources.push(...sourceLabels);
+    const { rawPages, sourceLabels } = await fetchAllRawPageSources(token);
+    sources.push(...sourceLabels.map((label) => `${label} (token …${token.slice(-6)})`));
 
-  let pages = await resolveRawPagesToMetaPages({ rawPages, userAccessTokens });
-
-  if (pages.length === 0 && userAccessTokens.length > 1) {
-    for (const alternateToken of userAccessTokens.slice(1)) {
-      const alternateSources = await fetchAllRawPageSources(alternateToken);
-      if (alternateSources.rawPages.length === 0) {
-        continue;
-      }
-
-      sources.push(
-        ...alternateSources.sourceLabels.map((label) => `${label} (alternate token)`),
-      );
-      const alternatePages = await resolveRawPagesToMetaPages({
-        rawPages: alternateSources.rawPages,
-        userAccessTokens,
-      });
-      if (alternatePages.length > 0) {
-        pages = alternatePages;
-        break;
-      }
+    const listedPages = await resolveRawPagesToMetaPages({ rawPages, userAccessTokens: [token] });
+    if (listedPages.length > 0) {
+      pages = listedPages;
+      break;
     }
   }
 
   const fallbackPageIds = uniquePageIds([
-    ...granularPageIds,
     ...(options?.fallbackPageIds ?? []),
     getMetaFacebookPageId(),
   ]);
@@ -699,36 +812,35 @@ export async function fetchPagesFromUserToken(
     const resolvedById = await resolvePagesByIds({
       pageIds: unresolvedPageIds,
       userAccessTokens,
-      sourceLabel: granularPageIds.some((id) => unresolvedPageIds.includes(id))
-        ? "granular_scopes_or_fallback"
-        : "fallback_page_id",
+      sourceLabel: "fallback_page_id",
       sources,
     });
     pages = [...pages, ...resolvedById];
   }
 
   if (pages.length === 0) {
+    const primaryDebug = await debugToken({ inputToken: userAccessTokens[0] ?? "" });
     const scopeHint =
-      debug.scopes.length > 0 ? `Granted scopes: ${debug.scopes.join(", ")}.` : "";
+      primaryDebug.scopes.length > 0 ? `Granted scopes: ${primaryDebug.scopes.join(", ")}.` : "";
     const granularHint =
-      granularPageIds.length > 0
-        ? ` Token lists page IDs ${granularPageIds.join(", ")} but could not resolve Page tokens — confirm you selected the Page during Facebook login and have CREATE_CONTENT on it.`
+      primaryDebug.granularPageIds.length > 0
+        ? ` Token lists page IDs ${primaryDebug.granularPageIds.join(", ")} but could not resolve Page tokens — confirm you selected the Page during Facebook login and have CREATE_CONTENT on it.`
         : "";
     const businessHint =
-      !debug.scopes.includes("business_management")
+      !primaryDebug.scopes.includes("business_management")
         ? " Pages in Meta Business Suite require business_management — add it to your Login for Business configuration and reconnect."
-        : rawPages.length === 0
-          ? " /me/accounts and /me/assigned_pages returned no Pages. If your Page is in Business Suite, ensure business_management is Ready for testing and reconnect."
-          : " Pages were listed but Page access tokens could not be resolved — try Advanced connect below with your Page ID.";
+        : " /me/accounts and /me/assigned_pages returned no Pages. If your Page is in Business Suite, ensure business_management is Ready for testing and reconnect.";
     const envHint = getMetaFacebookPageId()
-      ? ` META_FACEBOOK_PAGE_ID=${getMetaFacebookPageId()} is configured but could not resolve a token for it.`
+      ? ` META_FACEBOOK_PAGE_ID=${getMetaFacebookPageId()} is configured but could not resolve a token for it — verify it is the numeric Page ID (not the @username).`
       : "";
+    const detailHint =
+      resolutionErrors.length > 0 ? ` Details: ${resolutionErrors.slice(0, 2).join("; ")}.` : "";
 
     return {
       pages: [],
       error:
         "No Facebook Pages found for this token. Select your Page during Facebook login, or use Advanced connect with your Page ID.",
-      debugHint: `${scopeHint}${granularHint}${businessHint}${envHint}`.trim() || null,
+      debugHint: `${scopeHint}${granularHint}${businessHint}${envHint}${detailHint}`.trim() || null,
     };
   }
 
@@ -807,6 +919,8 @@ export async function debugToken(input: {
   scopes: string[];
   granularPageIds: string[];
   userId: string | null;
+  profileId: string | null;
+  tokenType: string | null;
   error: string | null;
 }> {
   const result = await graphGet("/debug_token", {
@@ -822,6 +936,8 @@ export async function debugToken(input: {
       scopes: [],
       granularPageIds: [],
       userId: null,
+      profileId: null,
+      tokenType: null,
       error: result.error,
     };
   }
@@ -832,6 +948,8 @@ export async function debugToken(input: {
         expires_at?: number;
         scopes?: string[];
         user_id?: string;
+        profile_id?: string | number;
+        type?: string;
         granular_scopes?: GranularScopeEntry[];
       }
     | undefined;
@@ -841,6 +959,8 @@ export async function debugToken(input: {
       ? new Date(data.expires_at * 1000).toISOString()
       : null;
 
+  const profileId = normalizeTargetId(data?.profile_id);
+
   return {
     ok: true,
     isValid: Boolean(data?.is_valid),
@@ -848,6 +968,8 @@ export async function debugToken(input: {
     scopes: Array.isArray(data?.scopes) ? data.scopes : [],
     granularPageIds: pageIdsFromGranularScopes(data?.granular_scopes),
     userId: data?.user_id ? String(data.user_id) : null,
+    profileId,
+    tokenType: data?.type ? String(data.type) : null,
     error: null,
   };
 }

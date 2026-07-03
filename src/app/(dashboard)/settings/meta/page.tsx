@@ -19,7 +19,13 @@ export const metadata = {
 };
 
 interface MetaPublishingSettingsPageProps {
-  searchParams: Promise<{ connected?: string; error?: string; hint?: string }>;
+  searchParams: Promise<{
+    connected?: string;
+    error?: string;
+    hint?: string;
+    scopes?: string;
+    pages?: string;
+  }>;
 }
 
 export default async function MetaPublishingSettingsPage({
@@ -56,6 +62,14 @@ export default async function MetaPublishingSettingsPage({
         >
           <p>{statusMessage}</p>
           {statusHint ? <p className="text-cos-muted">{statusHint}</p> : null}
+          {params.error === "no_pages" && params.pages ? (
+            <p className="text-cos-muted">
+              Facebook granted access to page ID(s):{" "}
+              <code className="rounded bg-cos-bg px-1">{params.pages}</code>. Use that ID in{" "}
+              <strong className="font-medium text-cos-text">Advanced connect</strong> below if OAuth
+              keeps failing.
+            </p>
+          ) : null}
           {params.error === "no_pages" ? (
             <p className="text-cos-muted">
               Next: expand <strong className="font-medium text-cos-text">Advanced connect</strong>{" "}

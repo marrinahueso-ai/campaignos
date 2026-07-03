@@ -196,12 +196,18 @@ export function MetaConnectionPanel({
               → select your app
             </li>
             <li>
-              Add permissions: <code className="rounded bg-white px-1">pages_show_list</code>,{" "}
+              Add permissions:{" "}
+              <code className="rounded bg-white px-1">pages_show_list</code>,{" "}
+              <code className="rounded bg-white px-1">pages_read_engagement</code>,{" "}
               <code className="rounded bg-white px-1">pages_manage_posts</code>,{" "}
               <code className="rounded bg-white px-1">business_management</code>
             </li>
-            <li>Generate Access Token → approve → select your Page in the dialog</li>
-            <li>Copy the token, enter your Page ID below, and connect</li>
+            <li>Generate Access Token → approve → select your Business and Page in the dialogs</li>
+            <li>
+              Find your numeric Page ID: in Graph API Explorer run{" "}
+              <code className="rounded bg-white px-1">GET /me/accounts?fields=id,name</code> or
+              open your Page → About → Page transparency → Page ID
+            </li>
           </ol>
 
           <form onSubmit={handleQuickConnect} className="space-y-3">
@@ -407,7 +413,7 @@ export function MetaConnectionPanel({
       )}
 
       {showFallbackConnect && (
-        <div>
+        <div id="advanced-connect">
           <button
             type="button"
             className="text-sm font-medium text-cos-accent hover:text-cos-muted"

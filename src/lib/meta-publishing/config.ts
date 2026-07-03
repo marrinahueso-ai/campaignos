@@ -17,6 +17,7 @@ export const META_OAUTH_AUTHORIZE_URL = "https://www.facebook.com/dialog/oauth";
 export const META_OAUTH_SCOPE_LIST = [
   "pages_show_list",
   "pages_read_engagement",
+  "pages_read_user_content",
   "pages_manage_posts",
   "business_management",
   "instagram_basic",
