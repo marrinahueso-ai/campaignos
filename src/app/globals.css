@@ -149,6 +149,31 @@ body {
     animation: feature-carousel-backward 0.32s ease-out;
   }
 
+  @keyframes feature-carousel-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .feature-carousel-progress {
+    animation: feature-carousel-progress linear forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feature-carousel-enter-forward,
+    .feature-carousel-enter-backward,
+    .feature-carousel-progress {
+      animation: none;
+    }
+
+    .feature-carousel-progress {
+      transform: scaleX(1);
+    }
+  }
+
   /* Calendar drag-and-drop: sync pointer-events via html class (Safari-safe). */
   .calendar-drop-target {
     pointer-events: auto;

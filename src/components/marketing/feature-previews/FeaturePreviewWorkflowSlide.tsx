@@ -1,5 +1,8 @@
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
-import { previewMetaPublishBundles } from "@/lib/marketing/feature-preview-fixtures";
+import {
+  PREVIEW_EVENT_TITLE,
+  previewMetaPublishBundles,
+} from "@/lib/marketing/feature-preview-fixtures";
 import { cn } from "@/lib/utils/cn";
 
 const STEPS = [
@@ -15,7 +18,7 @@ export function FeaturePreviewWorkflowSlide() {
     <div className="space-y-4">
       <div>
         <p className="studio-eyebrow">Campaign workflow</p>
-        <p className="font-display text-2xl text-cos-text">Fall Festival</p>
+        <p className="font-display text-2xl text-cos-text">{PREVIEW_EVENT_TITLE}</p>
       </div>
 
       <div className="overflow-x-auto border-b border-cos-border">

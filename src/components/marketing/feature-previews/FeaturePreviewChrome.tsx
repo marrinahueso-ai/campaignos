@@ -9,6 +9,7 @@ import {
   Palette,
   Send,
 } from "lucide-react";
+import { PREVIEW_SCHOOL_NAME } from "@/lib/marketing/feature-preview-fixtures";
 import { cn } from "@/lib/utils/cn";
 import type { FeaturePreviewSlug } from "@/lib/marketing/feature-preview-fixtures";
 
@@ -48,7 +49,10 @@ export function FeaturePreviewChrome({
               key={item.label}
               label={item.label}
               icon={item.icon}
-              active={item.href === active}
+              active={
+                item.href === active ||
+                (active === "heatmap" && item.href === "calendar")
+              }
             />
           ))}
         </nav>
@@ -56,7 +60,7 @@ export function FeaturePreviewChrome({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-cos-border/80 bg-cos-card/90 px-4 py-3 sm:px-6">
-          <p className="studio-eyebrow">Home</p>
+          <p className="studio-eyebrow">{PREVIEW_SCHOOL_NAME}</p>
           <p className="font-display text-xl text-cos-text sm:text-2xl">PTO Campaign Studio</p>
         </header>
         <div className={cn("flex-1 overflow-hidden", compact ? "p-4" : "p-5 sm:p-6")}>

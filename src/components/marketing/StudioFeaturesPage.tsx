@@ -20,7 +20,7 @@ export function StudioFeaturesPage({ userEmail = null }: StudioFeaturesPageProps
         <StudioMarketingPageHeader
           eyebrow="Features"
           title="Everything your PTO needs — nothing you don't."
-          description="Explore how CampaignOS handles planning, artwork, approvals, and publishing. The preview cycles on its own — or click to jump ahead."
+          description="Explore real workspace screens — dashboard, calendar heatmap, artwork studio, approvals, and Meta publishing. The tour cycles on its own, or pick a feature below."
         />
 
         <FeaturesCarousel />

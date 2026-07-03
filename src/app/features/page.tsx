@@ -4,7 +4,7 @@ import { StudioFeaturesPage } from "@/components/marketing/StudioFeaturesPage";
 export const metadata = {
   title: "Features",
   description:
-    "Explore CampaignOS — campaign planning, artwork studio, unified calendar, team approvals, and Meta publishing for PTO teams.",
+    "Explore CampaignOS — campaign planning, artwork studio, unified calendar, posting heatmap, team approvals, and Meta publishing for PTO teams.",
 };
 
 export default async function FeaturesPage() {
