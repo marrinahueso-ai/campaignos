@@ -1,5 +1,13 @@
 import type { PreferredPostingWindow } from "@/types/posting-preferences";
-import type { PostingHeatmapData, PostingTimeScoreGrid } from "@/lib/posting-analytics/types";
+import {
+  getDayOfWeekInTimezone,
+  getHourInTimezone,
+} from "@/lib/posting-analytics/timezone-utils";
+import type {
+  PostingHeatmapData,
+  PostingHeatmapSource,
+  PostingTimeScoreGrid,
+} from "@/lib/posting-analytics/types";
 
 const DAYS = 7;
 const HOURS = 24;
@@ -94,24 +102,120 @@ function applyManualWindows(
   }
 }
 
-export function computePostingHeatmap(input: {
-  preferredPostingHours: PreferredPostingWindow[] | null;
-  timezone: string;
-}): PostingHeatmapData {
+function buildBaselineGrid(
+  preferredPostingHours: PreferredPostingWindow[] | null,
+): PostingTimeScoreGrid {
   const grid = emptyGrid();
   const hasManual =
-    input.preferredPostingHours !== null && input.preferredPostingHours.length > 0;
+    preferredPostingHours !== null && preferredPostingHours.length > 0;
 
   if (hasManual) {
-    applyManualWindows(grid, input.preferredPostingHours!);
+    applyManualWindows(grid, preferredPostingHours!);
   } else {
     applyPtoHeuristic(grid);
   }
 
+  return grid;
+}
+
+function buildHistoryGrid(
+  publishedAtTimestamps: string[],
+  timezone: string,
+): PostingTimeScoreGrid {
+  const counts = emptyGrid();
+  let maxCount = 0;
+
+  for (const timestamp of publishedAtTimestamps) {
+    const day = getDayOfWeekInTimezone(timestamp, timezone);
+    const hour = getHourInTimezone(timestamp, timezone);
+    counts[day]![hour]! += 1;
+    maxCount = Math.max(maxCount, counts[day]![hour]!);
+  }
+
+  if (maxCount === 0) {
+    return emptyGrid();
+  }
+
+  const grid = emptyGrid();
+  for (let day = 0; day < DAYS; day += 1) {
+    for (let hour = 0; hour < HOURS; hour += 1) {
+      grid[day]![hour] = counts[day]![hour]! / maxCount;
+    }
+  }
+
+  return grid;
+}
+
+function historyWeightForPostCount(postCount: number): number {
+  if (postCount <= 0) {
+    return 0;
+  }
+
+  if (postCount < 6) {
+    return 0.6;
+  }
+
+  return 0.8;
+}
+
+function mergeGrids(
+  historyGrid: PostingTimeScoreGrid,
+  baselineGrid: PostingTimeScoreGrid,
+  historyWeight: number,
+): PostingTimeScoreGrid {
+  const baselineWeight = 1 - historyWeight;
+  const merged = emptyGrid();
+
+  for (let day = 0; day < DAYS; day += 1) {
+    for (let hour = 0; hour < HOURS; hour += 1) {
+      merged[day]![hour] = clampScore(
+        historyWeight * historyGrid[day]![hour]! +
+          baselineWeight * baselineGrid[day]![hour]!,
+      );
+    }
+  }
+
+  return merged;
+}
+
+function resolveHeatmapSource(
+  postCount: number,
+  hasManual: boolean,
+): PostingHeatmapSource {
+  if (postCount > 0 && hasManual) {
+    return "blended";
+  }
+
+  if (postCount > 0) {
+    return "history";
+  }
+
+  return hasManual ? "manual" : "suggested";
+}
+
+export function computePostingHeatmap(input: {
+  preferredPostingHours: PreferredPostingWindow[] | null;
+  timezone: string;
+  publishedAtTimestamps?: string[];
+}): PostingHeatmapData {
+  const hasManual =
+    input.preferredPostingHours !== null && input.preferredPostingHours.length > 0;
+  const publishedAtTimestamps = input.publishedAtTimestamps ?? [];
+  const postCount = publishedAtTimestamps.length;
+
+  const baselineGrid = buildBaselineGrid(input.preferredPostingHours);
+  const historyGrid = buildHistoryGrid(publishedAtTimestamps, input.timezone);
+  const historyWeight = historyWeightForPostCount(postCount);
+  const scores =
+    historyWeight > 0
+      ? mergeGrids(historyGrid, baselineGrid, historyWeight)
+      : baselineGrid;
+
   return {
     timezone: input.timezone,
-    scores: grid,
-    source: hasManual ? "manual" : "suggested",
+    scores,
+    source: resolveHeatmapSource(postCount, hasManual),
+    postCount,
   };
 }
 

@@ -31,6 +31,10 @@ import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 type EnrichedItem = PlanningCalendarItem & { isOverdue: boolean; isToday: boolean };
 
+type DropTarget =
+  | { date: string; hour: "allday" }
+  | { date: string; hour: number };
+
 interface PlanningCalendarWeekViewProps {
   items: EnrichedItem[];
   anchorDate: string;
@@ -45,6 +49,22 @@ const HOUR_ROWS = Array.from(
   (_, index) => WEEK_VIEW_START_HOUR + index,
 );
 
+function dropTargetKey(target: DropTarget | null): string | null {
+  if (!target) {
+    return null;
+  }
+
+  return `${target.date}:${target.hour}`;
+}
+
+function matchesDropTarget(
+  target: DropTarget | null,
+  date: string,
+  hour: DropTarget["hour"],
+): boolean {
+  return target?.date === date && target.hour === hour;
+}
+
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
@@ -56,7 +76,7 @@ export function PlanningCalendarWeekView({
   const today = getTodayDateString();
   const weekDates = getWeekDates(anchorDate);
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
@@ -66,7 +86,7 @@ export function PlanningCalendarWeekView({
   );
 
   const handleDrop = useCallback(
-    (date: string, event: React.DragEvent<HTMLDivElement>) => {
+    (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setDropTarget(null);
       const raw = event.dataTransfer.getData(DRAG_MIME);
@@ -81,12 +101,17 @@ export function PlanningCalendarWeekView({
           eventId: payload.eventId,
           timelineStepId: payload.timelineStepId,
           channel: payload.channel,
+          ...(typeof hour === "number"
+            ? { newHour: hour, timezone }
+            : {}),
         });
         if (result.success) onRescheduled();
       });
     },
-    [onRescheduled],
+    [onRescheduled, timezone],
   );
+
+  const activeDropKey = dropTargetKey(dropTarget);
 
   return (
     <div
@@ -152,13 +177,18 @@ export function PlanningCalendarWeekView({
               <div
                 onDragOver={(event) => {
                   event.preventDefault();
-                  setDropTarget(date);
+                  setDropTarget({ date, hour: "allday" });
                 }}
-                onDragLeave={() => setDropTarget((current) => (current === date ? null : current))}
-                onDrop={(event) => handleDrop(date, event)}
+                onDragLeave={() =>
+                  setDropTarget((current) =>
+                    matchesDropTarget(current, date, "allday") ? null : current,
+                  )
+                }
+                onDrop={(event) => handleDrop(date, "allday", event)}
                 className={cn(
-                  "min-h-16 border-b border-cos-border/70 p-1.5",
-                  dropTarget === date && "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
+                  "min-h-16 border-b border-cos-border/70 p-1.5 transition-colors",
+                  activeDropKey === `${date}:allday` &&
+                    "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
                 )}
               >
                 {placement.allDay.length > 0 ? (
@@ -188,15 +218,31 @@ export function PlanningCalendarWeekView({
                     ? getScoreForCell(postingHeatmap.scores, dayOfWeek, hour)
                     : 0;
                 const hourItems: EnrichedItem[] = placement.byHour.get(hour) ?? [];
+                const isDropTarget = activeDropKey === `${date}:${hour}`;
 
                 return (
                   <div
                     key={`${date}-${hour}`}
-                    className="relative h-12 border-b border-cos-border/60"
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDropTarget({ date, hour });
+                    }}
+                    onDragLeave={() =>
+                      setDropTarget((current) =>
+                        matchesDropTarget(current, date, hour) ? null : current,
+                      )
+                    }
+                    onDrop={(event) => handleDrop(date, hour, event)}
+                    className={cn(
+                      "relative h-12 border-b border-cos-border/60 transition-colors",
+                      isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
+                    )}
                     style={
                       showPostingHeatmap
                         ? { backgroundColor: heatmapCellBackground(score) }
-                        : undefined
+                        : isDropTarget
+                          ? { backgroundColor: "color-mix(in srgb, var(--cos-accent) 12%, transparent)" }
+                          : undefined
                     }
                   >
                     {hourItems.length > 0 && (
@@ -210,6 +256,11 @@ export function PlanningCalendarWeekView({
                           />
                         ))}
                       </div>
+                    )}
+                    {isDropTarget && hourItems.length === 0 && (
+                      <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-medium text-indigo-600">
+                        {formatHourLabel(hour)}
+                      </p>
                     )}
                   </div>
                 );

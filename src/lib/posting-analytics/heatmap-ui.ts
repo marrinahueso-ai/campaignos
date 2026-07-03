@@ -36,5 +36,18 @@ export function heatmapSourceLabel(heatmap: PostingHeatmapData | null): string {
     return "Suggested schedule";
   }
 
+  if (heatmap.postCount > 0) {
+    const postLabel =
+      heatmap.postCount === 1
+        ? "Based on 1 post"
+        : `Based on ${heatmap.postCount} posts`;
+
+    if (heatmap.source === "blended") {
+      return `${postLabel} + your preferences`;
+    }
+
+    return postLabel;
+  }
+
   return heatmap.source === "manual" ? "Your preferred times" : "Suggested schedule";
 }

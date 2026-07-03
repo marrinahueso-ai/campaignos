@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { localDateHourToIso } from "@/lib/posting-analytics/timezone-utils";
 import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles";
 import type { PlanningItemType } from "@/types/communications-calendar";
 import type { EventAssetType } from "@/types/event-workspace";
@@ -21,7 +22,18 @@ function parseMetaMilestoneRelativeDay(
 function buildRescheduledTimestamp(
   newDate: string,
   existingScheduledFor: string | null,
+  options?: {
+    newHour?: number;
+    timezone?: string;
+  },
 ): string {
+  if (
+    options?.newHour !== undefined &&
+    options.timezone
+  ) {
+    return localDateHourToIso(newDate, options.newHour, options.timezone);
+  }
+
   if (existingScheduledFor?.includes("T")) {
     return `${newDate}${existingScheduledFor.slice(existingScheduledFor.indexOf("T"))}`;
   }
@@ -37,6 +49,8 @@ export async function reschedulePlanningItem(
     eventId?: string;
     timelineStepId?: string | null;
     channel?: string | null;
+    newHour?: number;
+    timezone?: string;
   },
 ): Promise<boolean> {
   const supabase = await createClient();
@@ -68,12 +82,19 @@ export async function reschedulePlanningItem(
       if (sourceType === "draft") {
         const { data: schedule } = await supabase
           .from("publication_schedule")
-          .select("id")
+          .select("id, scheduled_for")
           .eq("communication_item_id", sourceId)
           .maybeSingle();
 
-        const scheduledFor = `${newDate}T09:00:00.000Z`;
         if (schedule?.id) {
+          const scheduledFor = buildRescheduledTimestamp(
+            newDate,
+            schedule.scheduled_for,
+            {
+              newHour: context?.newHour,
+              timezone: context?.timezone,
+            },
+          );
           const { error } = await supabase
             .from("publication_schedule")
             .update({ scheduled_for: scheduledFor, updated_at: now })
@@ -82,6 +103,10 @@ export async function reschedulePlanningItem(
         }
 
         if (context?.eventId) {
+          const scheduledFor = buildRescheduledTimestamp(newDate, null, {
+            newHour: context?.newHour,
+            timezone: context?.timezone,
+          });
           const { error } = await supabase.from("publication_schedule").insert({
             event_id: context.eventId,
             communication_item_id: sourceId,
@@ -121,13 +146,21 @@ export async function reschedulePlanningItem(
         }
       }
 
-      const scheduledFor = `${newDate}T09:00:00.000Z`;
       const { data: existing } = await supabase
         .from("publication_schedule")
-        .select("id")
+        .select("id, scheduled_for")
         .eq("event_id", asset.event_id)
         .is("communication_item_id", null)
         .maybeSingle();
+
+      const scheduledFor = buildRescheduledTimestamp(
+        newDate,
+        existing?.scheduled_for ?? null,
+        {
+          newHour: context?.newHour,
+          timezone: context?.timezone,
+        },
+      );
 
       if (existing?.id) {
         const { error } = await supabase
@@ -154,7 +187,20 @@ export async function reschedulePlanningItem(
       return !error;
     }
     case "scheduled_post": {
-      const scheduledFor = `${newDate}T09:00:00.000Z`;
+      const { data: schedule } = await supabase
+        .from("publication_schedule")
+        .select("scheduled_for")
+        .eq("id", sourceId)
+        .maybeSingle();
+
+      const scheduledFor = buildRescheduledTimestamp(
+        newDate,
+        schedule?.scheduled_for ?? null,
+        {
+          newHour: context?.newHour,
+          timezone: context?.timezone,
+        },
+      );
       const { error } = await supabase
         .from("publication_schedule")
         .update({ scheduled_for: scheduledFor, updated_at: now })
@@ -196,7 +242,10 @@ export async function reschedulePlanningItem(
         updatable.find((slot) => slot.scheduled_for)?.scheduled_for ??
         slots.find((slot) => slot.scheduled_for)?.scheduled_for ??
         null;
-      const scheduledFor = buildRescheduledTimestamp(newDate, timeReference);
+      const scheduledFor = buildRescheduledTimestamp(newDate, timeReference, {
+        newHour: context?.newHour,
+        timezone: context?.timezone,
+      });
 
       await supabase
         .from("event_communication_steps")

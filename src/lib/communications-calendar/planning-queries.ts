@@ -11,6 +11,7 @@ import {
 } from "@/lib/calendar-import/queries";
 import { getEventsInDateRange } from "@/lib/events/queries";
 import { computePostingHeatmap } from "@/lib/posting-analytics/compute-heatmap";
+import { fetchPublishedPostTimestamps } from "@/lib/posting-analytics/fetch-publish-history";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { PlanningCalendarData } from "@/types/communications-calendar";
@@ -24,9 +25,10 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     ? await getActiveSchoolYear(organization.id)
     : null;
 
-  const [raw, importedList] = await Promise.all([
+  const [raw, importedList, publishedAtTimestamps] = await Promise.all([
     fetchUnifiedCalendarRawData(schoolYear),
     getImportedEventsForCalendarList(),
+    fetchPublishedPostTimestamps(),
   ]);
 
   let importCleanup: PlanningCalendarData["importCleanup"] = null;
@@ -48,6 +50,7 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     ? computePostingHeatmap({
         timezone: organization.timezone,
         preferredPostingHours: organization.preferredPostingHours,
+        publishedAtTimestamps,
       })
     : null;
 

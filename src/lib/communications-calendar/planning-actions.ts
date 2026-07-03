@@ -13,9 +13,18 @@ export async function reschedulePlanningItemAction(input: {
   eventId?: string;
   timelineStepId?: string | null;
   channel?: string | null;
+  newHour?: number;
+  timezone?: string;
 }): Promise<{ success: boolean; error: string | null }> {
   if (!DATE_PATTERN.test(input.newDate)) {
     return { success: false, error: "Invalid date format." };
+  }
+
+  if (
+    input.newHour !== undefined &&
+    (input.newHour < 0 || input.newHour > 23 || !input.timezone)
+  ) {
+    return { success: false, error: "Invalid time or timezone." };
   }
 
   const success = await reschedulePlanningItem(
@@ -26,6 +35,8 @@ export async function reschedulePlanningItemAction(input: {
       eventId: input.eventId,
       timelineStepId: input.timelineStepId,
       channel: input.channel,
+      newHour: input.newHour,
+      timezone: input.timezone,
     },
   );
 
