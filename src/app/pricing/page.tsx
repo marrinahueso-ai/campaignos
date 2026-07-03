@@ -4,7 +4,8 @@ import { StudioPricingPage } from "@/components/marketing/StudioPricingPage";
 
 export const metadata = {
   title: "Pricing",
-  description: "Simple monthly plans for PTO and school volunteer teams — $29, $59, and $99.",
+  description:
+    "Early access is free for PTO teams. Founding schools lock in $199/year per school before billing opens.",
 };
 
 export default async function PricingPage() {
