@@ -1,9 +1,68 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
+const META_OAUTH_STATE_TTL_SECONDS = 60 * 10;
+
+function signMetaOAuthStatePayload(payload: string): string {
+  return createHmac("sha256", getMetaAppSecret()).update(payload).digest("base64url");
+}
+
+function safeCompareSignatures(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+/** Signed OAuth state survives Safari and cross-site redirects without relying on cookies. */
 export function createMetaOAuthState(): string {
-  return randomBytes(96).toString("base64url");
+  const nonce = randomBytes(32).toString("base64url");
+  const issuedAt = Math.floor(Date.now() / 1000).toString();
+  const payload = `${nonce}.${issuedAt}`;
+  return `${payload}.${signMetaOAuthStatePayload(payload)}`;
+}
+
+export function verifyMetaOAuthState(state: string | null | undefined): boolean {
+  if (!state) {
+    return false;
+  }
+
+  const parts = state.split(".");
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  const [nonce, issuedAtRaw, signature] = parts;
+  if (!nonce || !issuedAtRaw || !signature) {
+    return false;
+  }
+
+  const payload = `${nonce}.${issuedAtRaw}`;
+  if (!safeCompareSignatures(signature, signMetaOAuthStatePayload(payload))) {
+    return false;
+  }
+
+  const issuedAt = Number(issuedAtRaw);
+  if (!Number.isFinite(issuedAt)) {
+    return false;
+  }
+
+  const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+  return ageSeconds >= 0 && ageSeconds <= META_OAUTH_STATE_TTL_SECONDS;
+}
+
+export function getMetaOAuthCookieOptions(origin: string) {
+  const secure = origin.startsWith("https://");
+  return {
+    httpOnly: true,
+    secure,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: META_OAUTH_STATE_TTL_SECONDS,
+  };
 }
 
 export function isMetaIntegrationConfigured(): boolean {

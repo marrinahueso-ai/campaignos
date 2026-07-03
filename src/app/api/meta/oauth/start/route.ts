@@ -11,6 +11,7 @@ import {
   getMetaAppId,
   getMetaFacebookPageId,
   getMetaOAuthConfigId,
+  getMetaOAuthCookieOptions,
   getMetaRedirectUri,
   isMetaIntegrationConfigured,
 } from "@/lib/meta-publishing/config.server";
@@ -51,13 +52,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(authorizeUrl);
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 10,
-  };
+  const cookieOptions = getMetaOAuthCookieOptions(request.nextUrl.origin);
 
   response.cookies.set(META_OAUTH_STATE_COOKIE, state, cookieOptions);
   response.cookies.set(META_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);

@@ -55,6 +55,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
 
     if (href) {
+      if (href.startsWith("/api/")) {
+        return (
+          <a href={href} className={styles} target={target} rel={rel}>
+            {children}
+          </a>
+        );
+      }
+
       return (
         <Link href={href} className={styles} target={target} rel={rel}>
           {children}

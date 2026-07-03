@@ -35,7 +35,8 @@ const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   not_configured: "Meta app credentials are not configured on the server.",
   token_exchange_failed: "Meta token exchange failed. Check META_APP_ID, META_APP_SECRET, and redirect URL.",
   long_lived_exchange_failed: "Could not exchange for a long-lived token.",
-  invalid_state: "OAuth session expired. Try connecting again.",
+  invalid_state:
+    "OAuth session could not be verified. Close other CampaignOS tabs, then click Connect with Facebook again. If it keeps failing, confirm META_REDIRECT_URI matches your live site URL exactly.",
   missing_code: "Facebook did not return an authorization code.",
   no_organization: "Set up your organization before connecting Meta.",
   verify_failed: "Connected to Meta but Page verification failed.",
