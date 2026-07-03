@@ -25,9 +25,15 @@ import { FeaturePreviewPlanningHubSlide } from "@/components/marketing/feature-p
 interface FeaturePreviewSlideProps {
   slug: FeaturePreviewSlug;
   chrome?: boolean;
+  /** Tighter framing for the marketing features carousel. */
+  carousel?: boolean;
 }
 
-export function FeaturePreviewSlide({ slug, chrome = true }: FeaturePreviewSlideProps) {
+export function FeaturePreviewSlide({
+  slug,
+  chrome = true,
+  carousel = false,
+}: FeaturePreviewSlideProps) {
   const content = <FeaturePreviewSlideContent slug={slug} />;
 
   if (!chrome) {
@@ -35,7 +41,7 @@ export function FeaturePreviewSlide({ slug, chrome = true }: FeaturePreviewSlide
   }
 
   return (
-    <FeaturePreviewChrome active={slug} compact={false}>
+    <FeaturePreviewChrome active={slug} compact={carousel} carousel={carousel}>
       {content}
     </FeaturePreviewChrome>
   );

@@ -30,18 +30,35 @@ interface FeaturePreviewChromeProps {
   active: FeaturePreviewSlug;
   children: React.ReactNode;
   compact?: boolean;
+  /** Half-page carousel framing — shorter chrome, no outer border (frame provides it). */
+  carousel?: boolean;
 }
 
 export function FeaturePreviewChrome({
   active,
   children,
   compact = false,
+  carousel = false,
 }: FeaturePreviewChromeProps) {
   return (
-    <div className="flex min-h-[780px] overflow-hidden border border-cos-border bg-cos-bg shadow-sm">
-      <aside className="hidden w-52 shrink-0 flex-col border-r border-cos-border bg-cos-card sm:flex">
-        <div className="border-b border-cos-border px-4 py-4">
-          <p className="font-display text-lg text-cos-text">CampaignOS</p>
+    <div
+      className={cn(
+        "flex overflow-hidden bg-cos-bg",
+        carousel
+          ? "min-h-0 max-h-[560px] border-0 shadow-none"
+          : "min-h-[780px] border border-cos-border shadow-sm",
+      )}
+    >
+      <aside
+        className={cn(
+          "hidden shrink-0 flex-col border-r border-cos-border bg-cos-card sm:flex",
+          carousel ? "w-40" : "w-52",
+        )}
+      >
+        <div className={cn("border-b border-cos-border", carousel ? "px-3 py-3" : "px-4 py-4")}>
+          <p className={cn("font-display text-cos-text", carousel ? "text-base" : "text-lg")}>
+            CampaignOS
+          </p>
           <p className="text-[10px] tracking-[0.18em] text-cos-muted uppercase">Studio</p>
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
@@ -61,11 +78,28 @@ export function FeaturePreviewChrome({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-cos-border/80 bg-cos-card/90 px-4 py-3 sm:px-6">
+        <header
+          className={cn(
+            "border-b border-cos-border/80 bg-cos-card/90",
+            carousel ? "px-3 py-2 sm:px-4" : "px-4 py-3 sm:px-6",
+          )}
+        >
           <p className="studio-eyebrow">{PREVIEW_SCHOOL_NAME}</p>
-          <p className="font-display text-xl text-cos-text sm:text-2xl">PTO Campaign Studio</p>
+          <p
+            className={cn(
+              "font-display text-cos-text",
+              carousel ? "text-lg sm:text-xl" : "text-xl sm:text-2xl",
+            )}
+          >
+            PTO Campaign Studio
+          </p>
         </header>
-        <div className={cn("flex-1 overflow-y-auto", compact ? "p-4" : "p-5 sm:p-6")}>
+        <div
+          className={cn(
+            "flex-1 overflow-y-auto",
+            carousel ? "p-3 sm:p-4" : compact ? "p-4" : "p-5 sm:p-6",
+          )}
+        >
           {children}
         </div>
       </div>

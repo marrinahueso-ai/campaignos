@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { FeatureCarouselPreviewFrame } from "@/components/marketing/FeatureCarouselPreviewFrame";
 import { FeatureCarouselVideoSlide } from "@/components/marketing/FeatureCarouselVideoSlide";
 import { MARKETING_FEATURES } from "@/lib/marketing/feature-definitions";
 import type { FeaturePreviewSlug, FeatureVideoSlug } from "@/lib/marketing/feature-preview-fixtures";
@@ -225,18 +226,13 @@ export function FeaturesCarousel() {
                 : "feature-carousel-enter-backward",
             )}
           >
-            <div
-              className={cn(
-                "overflow-hidden",
-                usesVideo ? "max-h-[720px]" : "max-h-[640px]",
-              )}
-            >
+            <FeatureCarouselPreviewFrame>
               {usesVideo ? (
                 <FeatureCarouselVideoSlide slug={activeSlug} isActive={!isPaused} />
               ) : (
-                <FeaturePreviewSlide slug={activeSlug} />
+                <FeaturePreviewSlide slug={activeSlug} carousel />
               )}
-            </div>
+            </FeatureCarouselPreviewFrame>
           </div>
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-cos-bg via-cos-bg/60 to-transparent" />

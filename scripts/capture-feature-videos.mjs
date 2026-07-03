@@ -19,7 +19,7 @@ const RECORDINGS = [
   {
     slug: "planning-hub",
     scenario: "campaigns-flow",
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1280, height: 960 },
     run: async (page) => {
       await page.waitForSelector('[data-record-step="campaigns"]', { timeout: 30_000 });
       await page.waitForTimeout(1800);
@@ -34,7 +34,7 @@ const RECORDINGS = [
   {
     slug: "calendar",
     scenario: "calendar-month",
-    viewport: { width: 1280, height: 720 },
+    viewport: { width: 1280, height: 960 },
     run: async (page) => {
       await page.waitForSelector('[data-record-step="calendar-month"]', {
         timeout: 30_000,
