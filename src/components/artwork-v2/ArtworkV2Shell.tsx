@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
 import { ArtworkV2ApprovedScreen } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
+import {
+  ArtworkV2BatchGenerateScreen,
+  type ArtworkV2BatchMilestoneProgress,
+} from "@/components/artwork-v2/ArtworkV2BatchGenerateScreen";
 import { ArtworkV2CreatorScreen } from "@/components/artwork-v2/ArtworkV2CreatorScreen";
 import {
   ArtworkV2PickerScreen,
@@ -16,7 +20,9 @@ import {
   approveInspirationAsArtworkV2Action,
   denyArtworkV2Action,
   generateArtworkV2Action,
+  generateRemainingArtworkV2Action,
   generateStoryFromFeedAction,
+  getArtworkV2ReviewVersionsAction,
   importCanvaDesignAsArtworkV2Action,
 } from "@/lib/artwork-v2/actions";
 import { getCanvaConnectionStatusAction } from "@/lib/canva/actions";
@@ -25,8 +31,14 @@ import {
   isApprovedArtworkAsset,
   pickDefaultInspirationAsset,
   type ArtworkPhaseWorkflowItem,
+  type MetaArtworkPlacement,
 } from "@/lib/artwork-v2/campaign-phases";
 import { buildDefaultArtworkPrompt } from "@/lib/artwork-v2/event-prompt";
+import {
+  canShowGenerateRemainingButton,
+  getRemainingArtworkMilestones,
+  resolveMilestoneArtworkStatus,
+} from "@/lib/artwork-v2/batch-generate";
 import { resolveCanvaUrl } from "@/lib/artwork-v2/canva-link";
 import {
   findMilestoneFeedItem,
@@ -54,6 +66,7 @@ interface ArtworkV2ShellProps {
   communicationStrategy: CommunicationStrategy;
   communicationSteps: EventCommunicationStep[];
   assets: EventAsset[];
+  onNavigateToCaptions?: (relativeDay: number) => void;
 }
 
 function revokeReferencePreviews(references: ArtworkV2Reference[]): void {
@@ -89,6 +102,10 @@ function referenceFromApprovedAsset(asset: EventAsset): ArtworkV2Reference {
     eventAssetId: asset.id,
   };
 }
+
+type MilestoneFormatOverrides = Partial<
+  Record<MetaArtworkPlacement, { imageUrl: string; downloadFilename: string }>
+>;
 
 function resolveApprovedDownload(
   item: ArtworkWorkflowItem,
@@ -141,6 +158,7 @@ export function ArtworkV2Shell({
   communicationStrategy,
   communicationSteps,
   assets,
+  onNavigateToCaptions,
 }: ArtworkV2ShellProps) {
   const router = useRouter();
   const workflowItems = useMemo(
@@ -195,6 +213,9 @@ export function ArtworkV2Shell({
   const [reviewVersions, setReviewVersions] = useState<ArtworkV2ReviewVersion[]>([]);
   const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
   const [milestoneFormats, setMilestoneFormats] = useState<ArtworkV2ApprovedFormat[] | null>(null);
+  const [approvedMilestoneDay, setApprovedMilestoneDay] = useState<number | null>(null);
+  const [milestoneFormatOverrides, setMilestoneFormatOverrides] =
+    useState<MilestoneFormatOverrides | null>(null);
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [canvaPickerOpen, setCanvaPickerOpen] = useState(false);
   const [importingCanvaDesignId, setImportingCanvaDesignId] = useState<string | null>(null);
@@ -205,6 +226,11 @@ export function ArtworkV2Shell({
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
   const [isReviewBusy, startReviewAction] = useTransition();
+  const [batchMilestones, setBatchMilestones] = useState<ArtworkV2BatchMilestoneProgress[]>([]);
+  const [batchCurrentIndex, setBatchCurrentIndex] = useState(0);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchComplete, setBatchComplete] = useState(false);
+  const batchCancelRef = useRef(false);
 
   useEffect(() => {
     void getCanvaConnectionStatusAction().then(setCanvaStatus);
@@ -220,13 +246,70 @@ export function ArtworkV2Shell({
     return `/api/canva/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
   }
 
+  const buildMilestoneFormats = useCallback(
+    (
+      relativeDay: number,
+      overrides?: MilestoneFormatOverrides | null,
+    ): ArtworkV2ApprovedFormat[] | null => {
+      const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
+      const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
+      if (!feedItem) {
+        return null;
+      }
+
+      const feedDownload = resolveApprovedDownload(feedItem, assets);
+      const storyDownload = storyItem ? resolveApprovedDownload(storyItem, assets) : null;
+      const feedOverride = overrides?.feed;
+      const storyOverride = overrides?.story;
+
+      return [
+        {
+          label: "Feed 1:1",
+          imageUrl: feedOverride?.imageUrl ?? feedDownload?.imageUrl ?? null,
+          downloadFilename:
+            feedOverride?.downloadFilename ??
+            feedDownload?.downloadFilename ??
+            buildArtworkDownloadFilename(feedItem.label),
+        },
+        {
+          label: "Story 9:16",
+          imageUrl: storyOverride?.imageUrl ?? storyDownload?.imageUrl ?? null,
+          downloadFilename:
+            storyOverride?.downloadFilename ??
+            storyDownload?.downloadFilename ??
+            buildArtworkDownloadFilename(storyItem?.label ?? feedItem.label),
+        },
+      ];
+    },
+    [assets, phaseItems],
+  );
+
   function openItem(item: ArtworkWorkflowItem) {
     setSelectedItem(item);
     setMilestoneFormats(null);
+    setApprovedMilestoneDay(null);
+    setMilestoneFormatOverrides(null);
     setGenerationError(null);
     setGenerationWarning(null);
     setReviewError(null);
     setIsGeneratingStory(false);
+
+    if (isPhaseItem(item)) {
+      const feedItem = findMilestoneFeedItem(phaseItems, item.relativeDay);
+      const storyItem = findMilestoneStoryItem(phaseItems, item.relativeDay);
+      if (feedItem && storyItem) {
+        const feedApproved = isApprovedArtworkAsset(
+          resolveWorkflowAsset(feedItem, null, assets),
+        );
+        const storyApproved = isApprovedArtworkAsset(
+          resolveWorkflowAsset(storyItem, null, assets),
+        );
+        if (feedApproved && storyApproved) {
+          openMilestoneApproved(item.relativeDay);
+          return;
+        }
+      }
+    }
 
     const approvedDownload = resolveApprovedDownload(item, assets);
     if (approvedDownload) {
@@ -235,11 +318,43 @@ export function ArtworkV2Shell({
       return;
     }
 
+    const asset = resolveWorkflowAsset(item, null, assets);
+    const readyForReview =
+      asset?.planStatus === "generated" || asset?.planStatus === "in_progress";
+
+    if (readyForReview) {
+      void openReviewForItem(item);
+      return;
+    }
+
     setApprovedArtwork(null);
     const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
     setPrompt(defaults.prompt);
     setReferences(defaults.references);
     setStep("create");
+  }
+
+  async function openReviewForItem(item: ArtworkWorkflowItem) {
+    setSelectedItem(item);
+    setReviewError(null);
+    setGenerationWarning(null);
+    setHasGeneratedOnce(true);
+
+    const result = await getArtworkV2ReviewVersionsAction(eventId, item.id);
+    if (!result.success || result.versions.length === 0) {
+      const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
+      setPrompt(defaults.prompt);
+      setReferences(defaults.references);
+      setStep("create");
+      return;
+    }
+
+    const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
+    setPrompt(defaults.prompt);
+    revokeReferencePreviews(references);
+    setReferences(defaults.references);
+    setReviewVersions(result.versions);
+    setStep("review");
   }
 
   async function finishApprovedArtworkImport(imageUrl: string | null) {
@@ -255,7 +370,17 @@ export function ArtworkV2Shell({
     router.refresh();
 
     if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
-      openMilestoneApproved(selectedItem.relativeDay);
+      openMilestoneApproved(
+        selectedItem.relativeDay,
+        imageUrl
+          ? {
+              story: {
+                imageUrl,
+                downloadFilename: buildArtworkDownloadFilename(selectedItem.label),
+              },
+            }
+          : undefined,
+      );
       return;
     }
 
@@ -287,32 +412,54 @@ export function ArtworkV2Shell({
     });
   }
 
-  function openMilestoneApproved(relativeDay: number) {
+  function openMilestoneApproved(
+    relativeDay: number,
+    overrides?: MilestoneFormatOverrides,
+  ) {
     const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
-    const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
     if (!feedItem) return;
 
+    const formats = buildMilestoneFormats(relativeDay, overrides);
+    if (!formats) return;
+
     const feedDownload = resolveApprovedDownload(feedItem, assets);
-    const storyDownload = storyItem ? resolveApprovedDownload(storyItem, assets) : null;
 
     setSelectedItem(feedItem);
-    setMilestoneFormats([
-      {
-        label: "Feed 1:1",
-        imageUrl: feedDownload?.imageUrl ?? null,
-        downloadFilename: feedDownload?.downloadFilename ?? buildArtworkDownloadFilename(feedItem.label),
-      },
-      {
-        label: "Story 9:16",
-        imageUrl: storyDownload?.imageUrl ?? null,
-        downloadFilename:
-          storyDownload?.downloadFilename ??
-          buildArtworkDownloadFilename(storyItem?.label ?? feedItem.label),
-      },
-    ]);
-    setApprovedArtwork(feedDownload);
+    setApprovedMilestoneDay(relativeDay);
+    setMilestoneFormatOverrides(overrides ?? null);
+    setMilestoneFormats(formats);
+    setApprovedArtwork(
+      feedDownload ??
+        (overrides?.feed
+          ? {
+              imageUrl: overrides.feed.imageUrl,
+              downloadFilename: overrides.feed.downloadFilename,
+            }
+          : null),
+    );
     setStep("approved");
   }
+
+  useEffect(() => {
+    if (step !== "approved" || approvedMilestoneDay == null) {
+      return;
+    }
+
+    const formats = buildMilestoneFormats(approvedMilestoneDay, milestoneFormatOverrides);
+    if (!formats) {
+      return;
+    }
+
+    setMilestoneFormats(formats);
+
+    const feedItem = findMilestoneFeedItem(phaseItems, approvedMilestoneDay);
+    if (feedItem) {
+      const feedDownload = resolveApprovedDownload(feedItem, assets);
+      if (feedDownload) {
+        setApprovedArtwork(feedDownload);
+      }
+    }
+  }, [assets, step, approvedMilestoneDay, milestoneFormatOverrides, phaseItems, buildMilestoneFormats]);
 
   function openMilestone(relativeDay: number) {
     const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
@@ -323,10 +470,28 @@ export function ArtworkV2Shell({
     const storyAsset = storyItem ? resolveWorkflowAsset(storyItem, null, assets) : null;
     const feedApproved = isApprovedArtworkAsset(feedAsset);
     const storyApproved = storyItem ? isApprovedArtworkAsset(storyAsset) : true;
+    const milestoneStatus = resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets);
 
     if (feedApproved && storyApproved) {
       openMilestoneApproved(relativeDay);
       return;
+    }
+
+    if (milestoneStatus === "ready_for_review") {
+      const feedReady =
+        feedAsset?.planStatus === "generated" || feedAsset?.planStatus === "in_progress";
+      const storyReady =
+        storyAsset?.planStatus === "generated" || storyAsset?.planStatus === "in_progress";
+
+      if (!feedApproved && feedReady) {
+        void openReviewForItem(feedItem);
+        return;
+      }
+
+      if (feedApproved && storyItem && storyReady) {
+        void openReviewForItem(storyItem);
+        return;
+      }
     }
 
     if (feedApproved && storyItem) {
@@ -373,6 +538,8 @@ export function ArtworkV2Shell({
     setReferences([]);
     setApprovedArtwork(null);
     setMilestoneFormats(null);
+    setApprovedMilestoneDay(null);
+    setMilestoneFormatOverrides(null);
     setGenerationError(null);
     setGenerationWarning(null);
     setReviewError(null);
@@ -447,7 +614,17 @@ export function ArtworkV2Shell({
       }
 
       if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
-        openMilestoneApproved(selectedItem.relativeDay);
+        openMilestoneApproved(
+          selectedItem.relativeDay,
+          imageUrl
+            ? {
+                story: {
+                  imageUrl,
+                  downloadFilename: buildArtworkDownloadFilename(selectedItem.label),
+                },
+              }
+            : undefined,
+        );
         return;
       }
 
@@ -535,7 +712,17 @@ export function ArtworkV2Shell({
       router.refresh();
 
       if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
-        openMilestoneApproved(selectedItem.relativeDay);
+        openMilestoneApproved(
+          selectedItem.relativeDay,
+          imageUrl
+            ? {
+                story: {
+                  imageUrl,
+                  downloadFilename: buildArtworkDownloadFilename(selectedItem.label),
+                },
+              }
+            : undefined,
+        );
         return;
       }
 
@@ -605,12 +792,145 @@ export function ArtworkV2Shell({
     setStep("pick");
   }
 
+  function handleContinueToCaptions() {
+    if (!selectedItem || !isPhaseItem(selectedItem) || !milestoneFormats) return;
+    onNavigateToCaptions?.(approvedMilestoneDay ?? selectedItem.relativeDay);
+  }
+
   function handleReturnToEvent() {
     window.location.hash = "plan";
     window.location.href = `/events/${eventId}#plan`;
   }
 
   const isPhaseWorkflow = phaseItems.length > 0;
+
+  const showGenerateRemaining = useMemo(
+    () => canShowGenerateRemainingButton(phaseItems, assets),
+    [phaseItems, assets],
+  );
+
+  const getMilestoneStatus = useCallback(
+    (relativeDay: number) => resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets),
+    [phaseItems, assets],
+  );
+
+  function updateBatchMilestone(
+    index: number,
+    update: Partial<ArtworkV2BatchMilestoneProgress>,
+  ) {
+    setBatchMilestones((current) =>
+      current.map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, ...update } : entry,
+      ),
+    );
+  }
+
+  async function runBatchGeneration(anchorRelativeDay?: number) {
+    const remaining = getRemainingArtworkMilestones(phaseItems, assets);
+
+    for (let index = 0; index < remaining.length; index += 1) {
+      if (batchCancelRef.current) {
+        setBatchMilestones((current) =>
+          current.map((entry, entryIndex) =>
+            entryIndex >= index && entry.status === "pending"
+              ? { ...entry, status: "cancelled" }
+              : entry,
+          ),
+        );
+        break;
+      }
+
+      const milestone = remaining[index]!;
+      setBatchCurrentIndex(index);
+      updateBatchMilestone(index, { status: "generating_feed" });
+
+      const feedResult = await generateRemainingArtworkV2Action(eventId, {
+        anchorRelativeDay,
+        relativeDay: milestone.relativeDay,
+        phase: "feed",
+      });
+
+      if (batchCancelRef.current) {
+        break;
+      }
+
+      const feedMilestoneResult = feedResult.milestones[0];
+      if (!feedResult.success || feedMilestoneResult?.error) {
+        updateBatchMilestone(index, {
+          status: "failed",
+          error: feedMilestoneResult?.error ?? feedResult.error ?? "Unable to generate feed artwork.",
+        });
+        continue;
+      }
+
+      updateBatchMilestone(index, { status: "generating_story" });
+
+      const storyResult = await generateRemainingArtworkV2Action(eventId, {
+        anchorRelativeDay,
+        relativeDay: milestone.relativeDay,
+        phase: "story",
+      });
+
+      if (batchCancelRef.current) {
+        break;
+      }
+
+      const storyMilestoneResult = storyResult.milestones[0];
+      if (!storyResult.success || storyMilestoneResult?.error) {
+        updateBatchMilestone(index, {
+          status: "failed",
+          error:
+            storyMilestoneResult?.error ??
+            storyResult.error ??
+            "Feed created, but story generation failed.",
+        });
+        continue;
+      }
+
+      updateBatchMilestone(index, { status: "ready" });
+    }
+
+    router.refresh();
+    setBatchRunning(false);
+    setBatchComplete(true);
+  }
+
+  function handleStartBatchGenerate(anchorRelativeDay?: number) {
+    const remaining = getRemainingArtworkMilestones(phaseItems, assets);
+    if (remaining.length === 0) {
+      return;
+    }
+
+    batchCancelRef.current = false;
+    setBatchMilestones(
+      remaining.map((milestone) => ({
+        relativeDay: milestone.relativeDay,
+        title: milestone.title,
+        status: "pending",
+      })),
+    );
+    setBatchCurrentIndex(0);
+    setBatchRunning(true);
+    setBatchComplete(false);
+    setStep("batch-generate");
+    void runBatchGeneration(anchorRelativeDay);
+  }
+
+  function handleCancelBatchGenerate() {
+    batchCancelRef.current = true;
+    setBatchRunning(false);
+    setBatchComplete(true);
+  }
+
+  function handleBatchReviewMilestones() {
+    const firstReady = batchMilestones.find((entry) => entry.status === "ready");
+    resetCreatorState();
+    setReviewVersions([]);
+    setStep("pick");
+    if (firstReady) {
+      openMilestone(firstReady.relativeDay);
+    }
+  }
 
   const hasNextMilestone =
     selectedItem && isPhaseItem(selectedItem)
@@ -639,17 +959,42 @@ export function ArtworkV2Shell({
         isPhaseWorkflow={isPhaseWorkflow}
         onSelect={openItem}
         onSelectMilestone={isPhaseWorkflow ? openMilestone : undefined}
+        showGenerateRemaining={showGenerateRemaining}
+        onGenerateRemaining={
+          showGenerateRemaining ? () => handleStartBatchGenerate() : undefined
+        }
+        getMilestoneStatus={isPhaseWorkflow ? getMilestoneStatus : undefined}
+      />
+    );
+  }
+
+  if (step === "batch-generate") {
+    return (
+      <ArtworkV2BatchGenerateScreen
+        milestones={batchMilestones}
+        currentIndex={batchCurrentIndex}
+        isRunning={batchRunning}
+        isComplete={batchComplete}
+        onCancel={handleCancelBatchGenerate}
+        onBackToArtworkList={handleBackToPicker}
+        onReviewMilestones={handleBatchReviewMilestones}
       />
     );
   }
 
   if (isGeneratingStory) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-sm font-medium text-cos-text">Creating story version…</p>
-        <p className="mt-2 text-sm text-cos-muted">
-          Adapting your feed design to a 9:16 story format.
-        </p>
+      <div className="space-y-6">
+        <header>
+          <p className="studio-eyebrow">Create</p>
+          <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Story version</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
+            Adapting your feed design to a 9:16 story format.
+          </p>
+        </header>
+        <div className="border border-cos-border bg-cos-card px-6 py-12 text-center">
+          <p className="text-sm font-medium text-cos-text">Creating story version…</p>
+        </div>
       </div>
     );
   }
@@ -706,6 +1051,7 @@ export function ArtworkV2Shell({
           isBusy={isReviewBusy || isGenerating}
           emptyVariant={hasGeneratedOnce ? "exhausted" : "initial"}
           lastGenerationMode={lastGenerationMode}
+          onBack={handleBackToPicker}
           onApprove={handleApprove}
           onDeny={handleDeny}
           onAdjust={handleAdjust}
@@ -727,12 +1073,19 @@ export function ArtworkV2Shell({
         milestoneFormats={milestoneFormats ?? undefined}
         hasNextItem={Boolean(hasNextMilestone)}
         onContinueNext={handleContinueNext}
+        onContinueToCaptions={milestoneFormats ? handleContinueToCaptions : undefined}
         onReturnToEvent={handleReturnToEvent}
         onBackToArtworkList={handleBackToPicker}
         onCreateNew={handleCreateNew}
         showCreateStory={showCreateStoryAction}
         isCreatingStory={isGeneratingStory}
         onCreateStory={handleCreateStoryFromApproved}
+        showGenerateRemaining={showGenerateRemaining && Boolean(milestoneFormats)}
+        onGenerateRemaining={
+          showGenerateRemaining && milestoneFormats && isPhaseItem(selectedItem)
+            ? () => handleStartBatchGenerate(approvedMilestoneDay ?? selectedItem.relativeDay)
+            : undefined
+        }
       />
     );
   }

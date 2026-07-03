@@ -1,5 +1,7 @@
 import { CalendarDays, Clock, MapPin, Users } from "lucide-react";
 import { CampaignProgressStrip } from "@/components/campaign-progress/CampaignProgressStrip";
+import { CampaignWorkflowStatusBar } from "@/components/event-workspace/CampaignWorkflowStatusBar";
+import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { EditEventDetailsButton } from "@/components/event-workspace/EditEventDetailsButton";
 import {
   EventArchivedBanner,
@@ -24,6 +26,10 @@ interface EventWorkspaceHeroProps {
   compact?: boolean;
   /** When set, progress is shown inline in the same hero card. */
   campaignProgress?: CampaignProgressSnapshot;
+  /** Slim workflow bar for Planning Hub social tab — no title, date, or artwork. */
+  variant?: "default" | "planning-hub-workflow";
+  activeWorkflowStep?: CampaignWorkflowStep;
+  onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
 }
 
 export function EventWorkspaceHero({
@@ -32,7 +38,26 @@ export function EventWorkspaceHero({
   artwork,
   compact = false,
   campaignProgress,
+  variant = "default",
+  activeWorkflowStep = "plan",
+  onWorkflowStepSelect,
 }: EventWorkspaceHeroProps) {
+  if (
+    variant === "planning-hub-workflow" &&
+    campaignProgress &&
+    onWorkflowStepSelect
+  ) {
+    return (
+      <CampaignWorkflowStatusBar
+        event={event}
+        nextStep={nextStep}
+        campaignProgress={campaignProgress}
+        activeWorkflowStep={activeWorkflowStep}
+        onWorkflowStepSelect={onWorkflowStepSelect}
+      />
+    );
+  }
+
   const showArtwork = hasDisplayableArtwork(artwork);
   const archived = isArchivedEvent(event);
   const formattedTime = formatEventTime(event.time);
@@ -132,7 +157,7 @@ export function EventWorkspaceHero({
             <EventHeroArtwork
               artwork={artwork}
               eventTitle={event.title}
-              compact={isUnified}
+              size={isUnified ? "compact" : undefined}
             />
           )}
         </div>

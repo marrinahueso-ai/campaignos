@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import { CampaignEventsList } from "@/components/events/CampaignEventsList";
 import { Button } from "@/components/ui/Button";
-import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { getCampaignPageEvents, getMetaScheduledEventIds } from "@/lib/events/campaign-page-queries";
 import { groupEventsByMonth, sortCampaignMonthGroups } from "@/lib/events/campaign-page-utils";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -20,9 +20,10 @@ export default async function EventsPage() {
   const groups = groupEventsByMonth(events);
   const monthGroups = sortCampaignMonthGroups(groups, today);
 
-  const [artworkByEventId, organization] = await Promise.all([
+  const [artworkByEventId, organization, metaScheduledEventIds] = await Promise.all([
     getEventArtworkMap(eventIds),
     getLatestOrganization(),
+    getMetaScheduledEventIds(eventIds),
   ]);
 
   const workspace = organization
@@ -52,6 +53,7 @@ export default async function EventsPage() {
         monthGroups={monthGroups}
         artworkByEventId={artworkByEventId}
         ownershipByEventId={ownershipByEventId}
+        metaScheduledEventIds={metaScheduledEventIds}
       />
     </div>
   );

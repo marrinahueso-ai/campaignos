@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { CheckCircle2, RotateCcw } from "lucide-react";
+import { useState, useTransition } from "react";
+import { CheckCircle2, ChevronDown, RotateCcw } from "lucide-react";
+import { ApprovalQueuePreviewPanel } from "@/components/approvals/ApprovalQueuePreviewPanel";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -18,6 +18,7 @@ import {
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
 import { formatDateTime } from "@/lib/utils/dates";
+import { cn } from "@/lib/utils/cn";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 
 interface ApprovalsHubProps {
@@ -30,9 +31,13 @@ interface ApprovalsHubProps {
 function ApprovalQueueList({
   items,
   showActions = false,
+  expandedId,
+  onToggleExpand,
 }: {
   items: ApprovalQueueItem[];
   showActions?: boolean;
+  expandedId: string | null;
+  onToggleExpand: (id: string) => void;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -50,80 +55,104 @@ function ApprovalQueueList({
 
   return (
     <ul className="divide-y divide-cos-border">
-      {items.map((item) => (
-        <li key={item.id} className="px-6 py-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <Link
-                href={`/events/${item.eventId}#schedule`}
-                className="text-sm font-medium text-cos-text transition-colors hover:text-cos-primary"
-              >
-                {channelLabel(item.channel)} · {item.eventTitle}
-              </Link>
-              <p className="text-xs text-cos-muted">
-                Requested {formatDateTime(item.requestedAt)}
-                {item.assigneeDisplayName
-                  ? ` · Assigned to ${item.assigneeDisplayName}`
-                  : null}
-              </p>
-              {item.notes && item.communicationStatus === "changes_requested" && (
-                <p className="text-xs text-cos-muted">{item.notes}</p>
+      {items.map((item) => {
+        const isExpanded = expandedId === item.id;
+
+        return (
+          <li key={item.id} className="px-6 py-4">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="min-w-0 flex-1 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => onToggleExpand(item.id)}
+                  className="group inline-flex max-w-full items-start gap-1.5 text-left"
+                  aria-expanded={isExpanded}
+                >
+                  <ChevronDown
+                    className={cn(
+                      "mt-0.5 h-4 w-4 shrink-0 text-cos-muted transition-transform",
+                      isExpanded && "rotate-180",
+                    )}
+                    aria-hidden
+                  />
+                  <span className="text-sm font-medium text-cos-text transition-colors group-hover:text-cos-primary">
+                    {channelLabel(item.channel)} · {item.eventTitle}
+                  </span>
+                </button>
+                <p className="pl-5 text-xs text-cos-muted">
+                  Requested {formatDateTime(item.requestedAt)}
+                  {item.assigneeDisplayName
+                    ? ` · Assigned to ${item.assigneeDisplayName}`
+                    : null}
+                </p>
+                {item.notes && item.communicationStatus === "changes_requested" && (
+                  <p className="pl-5 text-xs text-cos-muted">{item.notes}</p>
+                )}
+              </div>
+
+              {isExpanded && (
+                <div className="w-full shrink-0 sm:w-72">
+                  <ApprovalQueuePreviewPanel
+                    eventTitle={item.eventTitle}
+                    preview={item.preview}
+                  />
+                </div>
+              )}
+
+              {showActions && (
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={isPending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        const result = await approveCommunicationAction(
+                          item.eventId,
+                          item.communicationItemId,
+                        );
+                        if (result.success) {
+                          router.refresh();
+                        }
+                      })
+                    }
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={isPending}
+                    onClick={() => {
+                      const notes = window.prompt(
+                        "What should change before approval?",
+                      );
+                      if (notes === null) {
+                        return;
+                      }
+
+                      startTransition(async () => {
+                        const result = await requestCommunicationChangesAction(
+                          item.eventId,
+                          item.communicationItemId,
+                          notes,
+                        );
+                        if (result.success) {
+                          router.refresh();
+                        }
+                      });
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Request changes
+                  </Button>
+                </div>
               )}
             </div>
-
-            {showActions && (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={isPending}
-                  onClick={() =>
-                    startTransition(async () => {
-                      const result = await approveCommunicationAction(
-                        item.eventId,
-                        item.communicationItemId,
-                      );
-                      if (result.success) {
-                        router.refresh();
-                      }
-                    })
-                  }
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={isPending}
-                  onClick={() => {
-                    const notes = window.prompt(
-                      "What should change before approval?",
-                    );
-                    if (notes === null) {
-                      return;
-                    }
-
-                    startTransition(async () => {
-                      const result = await requestCommunicationChangesAction(
-                        item.eventId,
-                        item.communicationItemId,
-                        notes,
-                      );
-                      if (result.success) {
-                        router.refresh();
-                      }
-                    });
-                  }}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Request changes
-                </Button>
-              </div>
-            )}
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -134,7 +163,12 @@ export function ApprovalsHub({
   changesRequested,
   recentlyApproved,
 }: ApprovalsHubProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const otherPending = allPending.filter((item) => !item.assignedToMe);
+
+  function handleToggleExpand(id: string) {
+    setExpandedId((current) => (current === id ? null : id));
+  }
 
   return (
     <div className="studio-page space-y-10">
@@ -162,7 +196,12 @@ export function ApprovalsHub({
               Drafts waiting on your org role from the matrix.
             </CardDescription>
           </CardHeader>
-          <ApprovalQueueList items={assignedToMe} showActions />
+          <ApprovalQueueList
+            items={assignedToMe}
+            showActions
+            expandedId={expandedId}
+            onToggleExpand={handleToggleExpand}
+          />
         </Card>
 
         <Card padding="none" className="overflow-hidden scroll-mt-8" id="other-pending">
@@ -172,7 +211,11 @@ export function ApprovalsHub({
               Drafts waiting on someone else in your organization.
             </CardDescription>
           </CardHeader>
-          <ApprovalQueueList items={otherPending} />
+          <ApprovalQueueList
+            items={otherPending}
+            expandedId={expandedId}
+            onToggleExpand={handleToggleExpand}
+          />
         </Card>
 
         <Card padding="none" className="overflow-hidden scroll-mt-8" id="changes-requested">
@@ -182,7 +225,11 @@ export function ApprovalsHub({
               Drafts sent back for edits before they can be approved.
             </CardDescription>
           </CardHeader>
-          <ApprovalQueueList items={changesRequested} />
+          <ApprovalQueueList
+            items={changesRequested}
+            expandedId={expandedId}
+            onToggleExpand={handleToggleExpand}
+          />
         </Card>
 
         <Card padding="none" className="overflow-hidden scroll-mt-8" id="approved">
@@ -192,7 +239,11 @@ export function ApprovalsHub({
               Communications cleared and ready to publish.
             </CardDescription>
           </CardHeader>
-          <ApprovalQueueList items={recentlyApproved} />
+          <ApprovalQueueList
+            items={recentlyApproved}
+            expandedId={expandedId}
+            onToggleExpand={handleToggleExpand}
+          />
         </Card>
       </div>
     </div>

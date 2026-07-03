@@ -2,7 +2,7 @@
 
 import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { MetaSocialCaptionMilestoneCard } from "@/components/meta-captions/MetaSocialCaptionField";
 import { Button } from "@/components/ui/Button";
 import {
@@ -21,6 +21,10 @@ interface MetaSocialCaptionsSectionProps {
   milestones: MetaSocialCaptionMilestone[];
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
+  /** Auto-expand a milestone when navigating from artwork approval. */
+  initialExpandedDay?: number | null;
+  approvalRoleLabel?: string | null;
+  onNavigateToPublish?: (relativeDay: number) => void;
 }
 
 function isMilestoneComplete(milestone: MetaSocialCaptionMilestone): boolean {
@@ -37,13 +41,39 @@ export function MetaSocialCaptionsSection({
   milestones,
   aiStatus,
   userRole,
+  initialExpandedDay = null,
+  approvalRoleLabel = null,
+  onNavigateToPublish,
 }: MetaSocialCaptionsSectionProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [expandedDay, setExpandedDay] = useState<number | null>(null);
+  const [expandedDay, setExpandedDay] = useState<number | null>(initialExpandedDay);
+
+  useEffect(() => {
+    if (initialExpandedDay == null) {
+      return;
+    }
+    setExpandedDay(initialExpandedDay);
+
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(`caption-milestone-${initialExpandedDay}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+
+    return () => window.clearTimeout(timer);
+  }, [initialExpandedDay]);
 
   const approvedCount = milestones.filter(isMilestoneComplete).length;
+  const expandedMilestone =
+    expandedDay != null
+      ? milestones.find((milestone) => milestone.relativeDay === expandedDay)
+      : null;
+  const showExpandedPublishCta =
+    expandedMilestone != null &&
+    isMilestoneComplete(expandedMilestone) &&
+    Boolean(onNavigateToPublish);
 
   function runGenerateAll() {
     setError(null);
@@ -66,8 +96,8 @@ export function MetaSocialCaptionsSection({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card padding="none">
+      <CardHeader className="px-5 pt-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle>Meta social captions</CardTitle>
@@ -89,17 +119,30 @@ export function MetaSocialCaptionsSection({
         {approvedCount > 0 && (
           <p className="mt-2 text-xs text-emerald-700">
             {approvedCount} of {milestones.length} milestones approved for Schedule
+            {approvalRoleLabel ? ` · Approver: ${approvalRoleLabel}` : ""}
           </p>
+        )}
+        {showExpandedPublishCta && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={() => onNavigateToPublish?.(expandedMilestone!.relativeDay)}
+            >
+              Continue to Review &amp; Publish
+            </Button>
+          </div>
         )}
       </CardHeader>
 
       {error && (
-        <p className="mx-6 -mt-2 mb-2 text-sm text-red-600" role="alert">
+        <p className="mx-5 -mt-2 mb-2 text-sm text-red-600" role="alert">
           {error}
         </p>
       )}
 
-      <ul className="space-y-3 px-6 pb-6">
+      <ul className="space-y-4 px-5 pb-5">
         {milestones.map((milestone) => (
           <MetaSocialCaptionMilestoneCard
             key={milestone.relativeDay}
@@ -110,6 +153,8 @@ export function MetaSocialCaptionsSection({
             expanded={expandedDay === milestone.relativeDay}
             onToggle={() => toggleMilestone(milestone.relativeDay)}
             disabled={isPending}
+            approvalRoleLabel={approvalRoleLabel}
+            onNavigateToPublish={onNavigateToPublish}
           />
         ))}
       </ul>

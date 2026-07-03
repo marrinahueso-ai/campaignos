@@ -1,6 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 
 interface ArtworkV2ReviewAdjustPanelProps {
@@ -24,17 +30,17 @@ export function ArtworkV2ReviewAdjustPanel({
   const hasComments = adjustmentComments.trim().length > 0;
 
   return (
-    <section className="mt-4 rounded-2xl border border-cos-border bg-cos-card p-4 shadow-sm sm:p-5">
-      <header className="space-y-1">
-        <h3 className="text-base font-semibold text-cos-text">Prefer one, with edits?</h3>
-        <p className="text-sm text-cos-muted">
+    <Card className="mt-4" padding="md">
+      <CardHeader>
+        <CardTitle>Prefer one, with edits?</CardTitle>
+        <CardDescription>
           Select the version you like best, describe what to change, then generate updated options —
           or approve your selection as-is.
-        </p>
-      </header>
+        </CardDescription>
+      </CardHeader>
 
-      <div className="mt-4 space-y-2">
-        <label htmlFor="artwork-v2-adjust-comments" className="text-sm font-medium text-cos-text">
+      <div className="space-y-2">
+        <label htmlFor="artwork-v2-adjust-comments" className="cos-section-title">
           Your edits
           {hasSelection && (
             <span className="ml-2 font-normal text-cos-muted">
@@ -78,6 +84,6 @@ export function ArtworkV2ReviewAdjustPanel({
       {!hasSelection && (
         <p className="mt-3 text-xs text-cos-muted">Select a version above to continue.</p>
       )}
-    </section>
+    </Card>
   );
 }

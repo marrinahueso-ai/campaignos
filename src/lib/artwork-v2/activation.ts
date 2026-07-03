@@ -38,13 +38,17 @@ export async function activateExternalArtworkOnAsset(input: {
   const nextVersion =
     asset.status === "uploaded" && asset.storage_path ? currentVersion + 1 : currentVersion;
 
-  await recordConceptAsVersion({
+  const versionRecorded = await recordConceptAsVersion({
     assetId: input.assetId,
     versionNumber: nextVersion,
     filename: input.filename,
     storagePath: input.storagePath,
     uploadedBy: input.uploadedBy,
   });
+
+  if (!versionRecorded) {
+    return false;
+  }
 
   const updatePayload: Record<string, unknown> = {
     filename: input.filename,

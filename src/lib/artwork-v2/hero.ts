@@ -4,10 +4,18 @@ import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { ensurePlanAssetRow } from "@/lib/creative-director/mutations";
 import { createClient } from "@/lib/supabase/server";
+import type { EventAssetType } from "@/types/event-workspace";
+
+const FEED_MILESTONE_ASSET_TYPES = new Set<EventAssetType>([
+  "instagram_graphic",
+  "square_graphic",
+  "facebook_graphic",
+]);
 
 /** Sets the event hero image from approved artwork when no hero image exists yet. */
 export async function maybePromoteApprovedArtworkToHero(input: {
   eventId: string;
+  assetType?: EventAssetType;
   storagePath: string;
   filename: string;
   generationPrompt: string;
@@ -17,8 +25,11 @@ export async function maybePromoteApprovedArtworkToHero(input: {
   const existingHero = assets.find((asset) => asset.assetType === "hero_image");
   const hasHeroImage =
     existingHero?.status === "uploaded" && Boolean(existingHero.storagePath);
+  const isFeedMilestonePromotion =
+    input.assetType !== undefined &&
+    FEED_MILESTONE_ASSET_TYPES.has(input.assetType);
 
-  if (hasHeroImage) {
+  if (hasHeroImage && !isFeedMilestonePromotion) {
     return false;
   }
 

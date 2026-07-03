@@ -211,6 +211,14 @@ export interface ApprovalRequestRow {
   created_at: string;
 }
 
+export interface ApprovalQueuePreview {
+  milestoneTitle: string | null;
+  scheduledFor: string | null;
+  captionText: string | null;
+  storyCaptionSnippet: string | null;
+  artworkThumbnailUrl: string | null;
+}
+
 export interface ApprovalQueueItem {
   id: string;
   eventId: string;
@@ -223,6 +231,7 @@ export interface ApprovalQueueItem {
   assigneeDisplayName: string;
   assignedToMe: boolean;
   notes: string | null;
+  preview: ApprovalQueuePreview;
 }
 
 export interface PublicationScheduleItem {

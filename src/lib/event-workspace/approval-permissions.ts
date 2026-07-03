@@ -2,15 +2,18 @@ import {
   canApproveDraft,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
 
 export type ApprovalActor = {
   organizationUserId: string | null;
   organizationRoleId: string | null;
+  email: string | null;
 };
 
 export type ApprovalAssignment = {
   assignedOrganizationRoleId: string | null;
   assignedUserId: string | null;
+  assignedRoleContactName?: string | null;
 };
 
 export function canActOnAssignedApproval(
@@ -34,21 +37,11 @@ export function canActOnAssignedApproval(
     return true;
   }
 
-  if (
-    actor?.organizationUserId &&
-    assignment?.assignedUserId === actor.organizationUserId
-  ) {
-    return true;
-  }
-
-  if (
-    actor?.organizationRoleId &&
-    assignment?.assignedOrganizationRoleId === actor.organizationRoleId
-  ) {
-    return true;
-  }
-
-  return false;
+  return isActorAssignedToApproval(actor, {
+    assignedOrganizationRoleId: assignment?.assignedOrganizationRoleId ?? null,
+    assignedUserId: assignment?.assignedUserId ?? null,
+    assignedRoleContactName: assignment?.assignedRoleContactName ?? null,
+  });
 }
 
 export function getApprovalItemContext(

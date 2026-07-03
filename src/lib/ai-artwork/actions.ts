@@ -532,8 +532,8 @@ export async function approveArtworkConceptAction(
     uploadedBy: await uploadedByLabel(),
   });
 
-  if (!activated) {
-    return { success: false, error: "Unable to approve concept as campaign asset." };
+  if (!activated.success) {
+    return { success: false, error: activated.error };
   }
 
   const ctx = await resolveAssetContext(eventId, assetId);

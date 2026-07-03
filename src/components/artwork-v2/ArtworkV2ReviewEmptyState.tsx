@@ -3,6 +3,12 @@
 import { ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import {
   ARTWORK_GENERATION_MODE_COPY,
   type ArtworkGenerationMode,
 } from "@/lib/artwork-v2/generation-mode";
@@ -23,16 +29,24 @@ export function ArtworkV2ReviewEmptyState({
   const isExhausted = variant === "exhausted";
 
   return (
-    <div className="flex min-h-[min(calc(100dvh-14rem),480px)] flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="rounded-3xl bg-gradient-to-br from-[#eef2f0] via-[#f7f3ed] to-[#e9e3da] p-8 shadow-inner">
-        <ImageIcon className="h-14 w-14 text-cos-muted/70 stroke-[1.25]" aria-hidden />
-      </div>
-      <p className="mt-6 text-base font-medium text-cos-text">
-        {isExhausted
-          ? "No versions left. Try generating again."
-          : "No artwork has been generated yet."}
-      </p>
-      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+    <Card padding="lg">
+      <CardHeader className="items-center text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center border border-cos-border bg-cos-bg">
+          <ImageIcon className="h-8 w-8 text-cos-muted" aria-hidden />
+        </div>
+        <CardTitle className="mt-4">
+          {isExhausted
+            ? "No versions left"
+            : "No artwork generated yet"}
+        </CardTitle>
+        <CardDescription>
+          {isExhausted
+            ? "Try generating again with a refined mode or edit your prompt."
+            : "Generate artwork from your prompt to review versions here."}
+        </CardDescription>
+      </CardHeader>
+
+      <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
         <Button type="button" size="lg" onClick={onGenerate}>
           {isExhausted ? "Back to create" : "Generate artwork"}
         </Button>
@@ -42,6 +56,6 @@ export function ArtworkV2ReviewEmptyState({
           </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

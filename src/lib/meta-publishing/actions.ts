@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
+import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
+import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import { publishDueMetaMilestonesForEvent } from "@/lib/meta-publishing/publish-due";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
@@ -239,6 +241,8 @@ export async function scheduleAllReadyMetaBundlesAction(
 
     if (!error) {
       updatedCount += 1;
+      const actor = await getApprovalActorFromSession();
+      await ensureMetaMilestoneApprovalRequest(eventId, bundle.relativeDay, actor);
     }
   }
 
@@ -366,6 +370,11 @@ export async function scheduleMetaBundleAction(
     status: "scheduled",
     scheduledFor: bundle.scheduledFor,
   });
+
+  if (updatedCount > 0) {
+    const actor = await getApprovalActorFromSession();
+    await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
+  }
 
   revalidateMetaPaths(eventId);
   return {

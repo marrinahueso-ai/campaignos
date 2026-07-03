@@ -1,6 +1,28 @@
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 
-export type ArtworkV2Step = "pick" | "create" | "review" | "approved";
+export type ArtworkV2Step = "pick" | "create" | "review" | "approved" | "batch-generate";
+
+export type ArtworkV2BatchMilestoneStatus =
+  | "pending"
+  | "generating_feed"
+  | "generating_story"
+  | "ready"
+  | "failed"
+  | "cancelled";
+
+export interface ArtworkV2BatchMilestoneResult {
+  relativeDay: number;
+  title: string;
+  feedVersionIds: string[];
+  storyVersionIds: string[];
+  error?: string;
+}
+
+export interface ArtworkV2BatchGenerationResult {
+  success: boolean;
+  error: string | null;
+  milestones: ArtworkV2BatchMilestoneResult[];
+}
 
 export type ArtworkV2ReferenceSource = "upload" | "event_file" | null;
 

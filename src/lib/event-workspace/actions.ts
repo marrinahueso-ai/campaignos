@@ -2,7 +2,7 @@
 
 import { campaignRoleLabel } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
 import { getEventById } from "@/lib/events/queries";
 import {
   approveCommunicationDraft,
@@ -36,15 +36,7 @@ export type WorkspaceActionState = {
 };
 
 async function getApprovalActor(): Promise<ApprovalActor | null> {
-  const membership = await getActiveMembership();
-  if (!membership) {
-    return null;
-  }
-
-  return {
-    organizationUserId: membership.user.id,
-    organizationRoleId: membership.user.organizationRoleId,
-  };
+  return getApprovalActorFromSession();
 }
 
 export async function ensureEventWorkspaceAction(

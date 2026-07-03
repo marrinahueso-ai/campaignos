@@ -4,6 +4,12 @@ import { useRef, useState } from "react";
 import { CheckCircle2, ExternalLink, ImageIcon, Upload, X } from "lucide-react";
 import { ArtworkGenerationModePicker } from "@/components/artwork-v2/ArtworkGenerationModePicker";
 import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Textarea } from "@/components/ui/Textarea";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 import { ARTWORK_GENERATION_MODE_COPY, type ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
@@ -120,18 +126,19 @@ export function ArtworkV2CreatorScreen({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <header className="space-y-2">
+    <div className="space-y-6">
+      <header>
         <button
           type="button"
           onClick={onBack}
-          className="text-sm text-cos-muted hover:text-cos-text"
+          className="mb-3 text-sm text-cos-muted hover:text-cos-text"
         >
-          ← Back
+          ← Back to artwork list
         </button>
-        <h2 className="font-display text-3xl text-cos-text sm:text-4xl">{item.label}</h2>
+        <p className="studio-eyebrow">Create</p>
+        <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">{item.label}</h2>
         {isPhaseItem && (
-          <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
             {item.metaPlacement === "feed"
               ? "Creates a 1:1 feed image first — when you approve, we automatically generate the 9:16 story version from the same design."
               : item.metaPlacement === "story"
@@ -141,34 +148,41 @@ export function ArtworkV2CreatorScreen({
         )}
       </header>
 
-      <div className="space-y-2">
-        <label htmlFor="artwork-v2-prompt" className="text-sm font-semibold text-cos-text">
-          What should this artwork look like?
-        </label>
-        <p className="text-xs text-cos-muted">
-          Pre-filled from your campaign event details — edit anything before generating.
-        </p>
-        <Textarea
-          id="artwork-v2-prompt"
-          value={prompt}
-          onChange={(e) => onPromptChange(e.target.value)}
-          rows={8}
-          placeholder="Describe the artwork you want — style, colors, text, mood…"
-          className="min-h-[180px] text-base"
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Artwork prompt</CardTitle>
+          <CardDescription>
+            Pre-filled from your campaign event details — edit anything before generating.
+          </CardDescription>
+        </CardHeader>
+        <div className="px-6 pb-6">
+          <label htmlFor="artwork-v2-prompt" className="cos-section-title">
+            What should this artwork look like?
+          </label>
+          <Textarea
+            id="artwork-v2-prompt"
+            value={prompt}
+            onChange={(e) => onPromptChange(e.target.value)}
+            rows={8}
+            placeholder="Describe the artwork you want — style, colors, text, mood…"
+            className="mt-2 min-h-[180px] text-base"
+          />
+        </div>
+      </Card>
 
-      <section className="space-y-3">
-        <p className="text-sm font-semibold text-cos-text">
-          {isPhaseItem ? "Artwork & inspiration" : "Reference images (optional)"}
-        </p>
-        <p className="text-xs text-cos-muted">
-          {isPhaseItem
-            ? "Upload artwork from Canva, a designer, or another source — then approve it directly without generating. Or reuse approved artwork from this event as inspiration for AI."
-            : `Add up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images. All attached images are sent to OpenAI with your prompt.`}
-        </p>
-
-        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-bg/50 px-4 py-3">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {isPhaseItem ? "Artwork & inspiration" : "Reference images (optional)"}
+          </CardTitle>
+          <CardDescription>
+            {isPhaseItem
+              ? "Upload artwork from Canva, a designer, or another source — then approve it directly without generating. Or reuse approved artwork from this event as inspiration for AI."
+              : `Add up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images. All attached images are sent to OpenAI with your prompt.`}
+          </CardDescription>
+        </CardHeader>
+        <div className="space-y-3 px-6 pb-6">
+        <div className="space-y-3 border border-cos-border bg-cos-bg/50 px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             {isPhaseItem ? (
               <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-cos-muted">
@@ -227,7 +241,7 @@ export function ArtworkV2CreatorScreen({
             {references.map((reference) => (
               <li
                 key={reference.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-cos-border bg-cos-card"
+                className="flex flex-col overflow-hidden border border-cos-border bg-cos-card"
               >
                 <div className="flex aspect-square items-center justify-center bg-[#f7f6f3] p-2">
                   {reference.previewUrl ? (
@@ -340,31 +354,40 @@ export function ArtworkV2CreatorScreen({
           className="hidden"
           onChange={handleUploadChange}
         />
-      </section>
+        </div>
+      </Card>
 
-      <div className="border-t border-cos-border pt-6">
-        {error && (
-          <p className="mb-3 text-sm text-red-600" role="alert">
-            {error}
-          </p>
-        )}
-        <ArtworkGenerationModePicker
-          value={generationMode}
-          onChange={setGenerationMode}
-          disabled={isGenerating}
-        />
-        <Button
-          type="button"
-          size="lg"
-          className="mt-4 w-full sm:w-auto"
-          disabled={!prompt.trim() || isGenerating}
-          onClick={() => onGenerate(generationMode)}
-        >
-          {isGenerating
-            ? "Generating artwork…"
-            : `Generate ${ARTWORK_GENERATION_MODE_COPY[generationMode].title.toLowerCase()}`}
-        </Button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Generate</CardTitle>
+          <CardDescription>
+            Choose a generation mode, then create artwork from your prompt.
+          </CardDescription>
+        </CardHeader>
+        <div className="px-6 pb-6">
+          {error && (
+            <p className="mb-3 text-sm text-red-600" role="alert">
+              {error}
+            </p>
+          )}
+          <ArtworkGenerationModePicker
+            value={generationMode}
+            onChange={setGenerationMode}
+            disabled={isGenerating}
+          />
+          <Button
+            type="button"
+            size="lg"
+            className="mt-4 w-full sm:w-auto"
+            disabled={!prompt.trim() || isGenerating}
+            onClick={() => onGenerate(generationMode)}
+          >
+            {isGenerating
+              ? "Generating artwork…"
+              : `Generate ${ARTWORK_GENERATION_MODE_COPY[generationMode].title.toLowerCase()}`}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

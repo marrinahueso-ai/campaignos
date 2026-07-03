@@ -14,6 +14,7 @@ interface CampaignCreativeTabProps {
   communicationStrategy: CommunicationStrategy;
   communicationSteps: EventCommunicationStep[];
   assets: EventAsset[];
+  onNavigateToCaptions?: (relativeDay: number) => void;
 }
 
 export function CampaignCreativeTab({
@@ -24,6 +25,7 @@ export function CampaignCreativeTab({
   communicationStrategy,
   communicationSteps,
   assets,
+  onNavigateToCaptions,
 }: CampaignCreativeTabProps) {
   return (
     <ArtworkV2Shell
@@ -34,6 +36,7 @@ export function CampaignCreativeTab({
       communicationStrategy={communicationStrategy}
       communicationSteps={communicationSteps}
       assets={assets}
+      onNavigateToCaptions={onNavigateToCaptions}
     />
   );
 }

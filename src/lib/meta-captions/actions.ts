@@ -5,6 +5,8 @@ import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canApproveDraft } from "@/lib/auth/campaign-roles";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
+import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
+import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
 import { syncMetaPublicationSlots } from "@/lib/meta-publishing/sync-slots";
 import {
   generateAllMetaSocialCaptions,
@@ -260,6 +262,19 @@ export async function approveMetaSocialCaptionAction(
     return { success: false, error: updated.error ?? "Could not approve caption." };
   }
 
+  const refreshedCaptions = await getMetaSocialCaptionsForEvent(eventId);
+  const feed = getCaptionForMilestone(refreshedCaptions, relativeDay, "feed");
+  const story = getCaptionForMilestone(refreshedCaptions, relativeDay, "story");
+  if (
+    feed?.status === "approved" &&
+    story?.status === "approved" &&
+    feed.content?.trim() &&
+    story.content?.trim()
+  ) {
+    const actor = await getApprovalActorFromSession();
+    await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
+  }
+
   revalidateCaptionPaths(eventId);
   return { success: true, content: caption.content };
 }
@@ -367,6 +382,9 @@ export async function approveMilestoneCaptionsAction(
       return result;
     }
   }
+
+  const actor = await getApprovalActorFromSession();
+  await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
 
   revalidateCaptionPaths(eventId);
   return { success: true };

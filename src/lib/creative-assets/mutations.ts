@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
+import {
+  isDuplicateKeyError,
+  isMissingSchemaError,
+} from "@/lib/creative-assets/schema-errors";
 import { uploadEventAsset } from "@/lib/event-workspace/mutations";
 import type { EventAssetType } from "@/types/event-workspace";
 
@@ -24,7 +27,7 @@ async function snapshotCurrentVersion(
   });
 
   if (error) {
-    if (isMissingSchemaError(error)) {
+    if (isMissingSchemaError(error) || isDuplicateKeyError(error)) {
       return true;
     }
     console.error("Failed to snapshot asset version:", error.message);

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CampaignWorkspaceTabs } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { CampaignCommunicationPlanStep } from "@/components/event-workspace/CampaignCommunicationPlanStep";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
@@ -25,6 +26,13 @@ import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
+
+function scrollCampaignWorkflowIntoView() {
+  document
+    .getElementById("campaign-workflow-tabs")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 interface EventWorkspaceCampaignLayoutProps {
   event: Event;
@@ -70,6 +78,37 @@ export function EventWorkspaceCampaignLayout({
   approvalRoles,
   defaultApprovalRoleId,
 }: EventWorkspaceCampaignLayoutProps) {
+  const [expandedCaptionDay, setExpandedCaptionDay] = useState<number | null>(null);
+  const [expandedPublishDay, setExpandedPublishDay] = useState<number | null>(null);
+
+  const approvalRoleLabel = resolveEventApprovalRoleLabel(
+    event.approvalOrganizationRoleId,
+    defaultApprovalRoleId,
+    approvalRoles,
+  );
+
+  function handleNavigateToCaptions(relativeDay: number) {
+    const stepTitle = playbookData.steps.find((step) => step.relativeDay === relativeDay)?.title;
+    const resolvedDay =
+      metaSocialCaptionMilestones.find((milestone) => milestone.relativeDay === relativeDay)
+        ?.relativeDay ??
+      (stepTitle
+        ? metaSocialCaptionMilestones.find((milestone) => milestone.title === stepTitle)
+            ?.relativeDay
+        : undefined) ??
+      relativeDay;
+
+    setExpandedCaptionDay(resolvedDay);
+    window.location.hash = "schedule";
+    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
+  function handleNavigateToPublish(relativeDay: number) {
+    setExpandedPublishDay(relativeDay);
+    window.location.hash = "publish";
+    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
   return (
     <div className="space-y-6">
       <EventWorkspaceHero
@@ -91,7 +130,6 @@ export function EventWorkspaceCampaignLayout({
             defaultApprovalRoleId={defaultApprovalRoleId}
             approvalRoles={approvalRoles}
             ownership={ownership}
-            assets={assets}
             assignedSteps={playbookData.steps}
           />
         }
@@ -104,6 +142,7 @@ export function EventWorkspaceCampaignLayout({
             communicationStrategy={communicationStrategy}
             communicationSteps={playbookData.steps}
             assets={assets}
+            onNavigateToCaptions={handleNavigateToCaptions}
           />
         }
         schedule={
@@ -113,12 +152,17 @@ export function EventWorkspaceCampaignLayout({
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
             userRole={userRole}
+            initialExpandedDay={expandedCaptionDay}
+            approvalRoleLabel={approvalRoleLabel}
+            onNavigateToPublish={handleNavigateToPublish}
           />
         }
         publish={
           <CampaignReviewPublishStep
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
+            approvalRoleLabel={approvalRoleLabel}
+            initialExpandedDay={expandedPublishDay}
           />
         }
         published={

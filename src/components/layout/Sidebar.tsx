@@ -17,7 +17,12 @@ import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
 
-const navItems = [
+const navItems: {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+}[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Campaigns", href: "/events", icon: Megaphone },
@@ -111,7 +116,7 @@ export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
       )}
 
       <nav className={cn("flex-1 space-y-0.5", showLabels ? "px-4 py-6" : "px-2 py-4")}>
-        {navItems.map(({ label, href, icon: Icon }) => {
+        {navItems.map(({ label, href, icon: Icon, badge }) => {
           const isActive =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
@@ -132,7 +137,14 @@ export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
             >
               <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
               {showLabels && (
-                <span className="tracking-wide">{label}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2 tracking-wide">
+                  <span className="truncate">{label}</span>
+                  {badge && (
+                    <span className="shrink-0 bg-cos-accent px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-white uppercase">
+                      {badge}
+                    </span>
+                  )}
+                </span>
               )}
               {!showLabels && (
                 <span

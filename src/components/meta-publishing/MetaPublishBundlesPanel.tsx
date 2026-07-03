@@ -8,6 +8,12 @@ import {
 } from "@/components/meta-captions/MetaSocialCaptionField";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { generateAllMetaSocialCaptionsAction } from "@/lib/meta-captions/actions";
 import { channelLabelForBundle } from "@/lib/meta-publishing/bundle-display";
 import {
@@ -125,6 +131,7 @@ interface MetaPublishBundleCardProps {
   publishPending?: boolean;
   schedulePending?: boolean;
   skipPending?: boolean;
+  approvalRoleLabel?: string | null;
 }
 
 export function MetaPublishBundleCard({
@@ -141,6 +148,7 @@ export function MetaPublishBundleCard({
   publishPending = false,
   skipPending = false,
   schedulePending = false,
+  approvalRoleLabel = null,
 }: MetaPublishBundleCardProps) {
   const isSkipped = bundle.status === "skipped";
   const isMetaPost = bundle.isMetaPost;
@@ -209,6 +217,21 @@ export function MetaPublishBundleCard({
                 )}
               </p>
             )}
+            {!bundle.scheduledFor && isMetaPost && !isSkipped && bundle.dueDate && (
+              <p className="mt-0.5 text-xs text-cos-muted">
+                Planned for {formatDateTime(`${bundle.dueDate.slice(0, 10)}T10:00:00.000Z`)}
+              </p>
+            )}
+            {approvalRoleLabel &&
+              isMetaPost &&
+              !isSkipped &&
+              ["ready", "scheduled", "approved"].includes(bundle.status) && (
+                <p className="mt-1 text-xs text-cos-muted">
+                  {bundle.status === "ready"
+                    ? `Publishing requires approval from ${approvalRoleLabel}`
+                    : `Awaiting ${approvalRoleLabel} in Review & Publish`}
+                </p>
+              )}
             {!isMetaPost && !isSkipped && (
               <p className="mt-1 text-xs text-cos-muted">
                 Not posted to Meta — create artwork in the Artwork step.
@@ -284,6 +307,7 @@ export function MetaPublishBundleCard({
                 src={bundle.feedArtworkUrl}
                 alt={`${bundle.title} feed artwork`}
                 label="Feed 1:1"
+                variant="feed"
                 wrapperClassName="w-20"
                 frameClassName="aspect-square"
                 placeholder="Feed"
@@ -292,6 +316,7 @@ export function MetaPublishBundleCard({
                 src={bundle.storyArtworkUrl}
                 alt={`${bundle.title} story artwork`}
                 label="Story"
+                variant="story"
                 wrapperClassName="w-14"
                 frameClassName="aspect-[9/16]"
                 placeholder="Story"
@@ -396,8 +421,11 @@ interface MetaPublishBundlesPanelProps {
   bundles: MetaPublishBundle[];
   mode: "schedule" | "approval" | "publishing";
   captionMilestones?: MetaSocialCaptionMilestone[];
+  captionsSectionSeparate?: boolean;
   aiStatus?: AiAssistantStatus;
   userRole?: CampaignRole;
+  approvalRoleLabel?: string | null;
+  initialExpandedDay?: number | null;
   onScheduleAll?: () => Promise<{ success: boolean; error?: string | null }>;
   onApproveAll?: () => Promise<{ success: boolean; error?: string | null }>;
   onPublishAll?: () => Promise<{ success: boolean; error?: string | null }>;
@@ -408,8 +436,11 @@ export function MetaPublishBundlesPanel({
   bundles,
   mode,
   captionMilestones = [],
+  captionsSectionSeparate = false,
   aiStatus,
   userRole,
+  approvalRoleLabel = null,
+  initialExpandedDay = null,
   onScheduleAll,
   onApproveAll,
   onPublishAll,
@@ -437,6 +468,19 @@ export function MetaPublishBundlesPanel({
   );
 
   const [expandedDays, setExpandedDays] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    if (initialExpandedDay == null) {
+      return;
+    }
+
+    setExpandedDays((current) => {
+      if (current.has(initialExpandedDay)) {
+        return current;
+      }
+      return new Set(current).add(initialExpandedDay);
+    });
+  }, [initialExpandedDay]);
 
   useEffect(() => {
     setOptimisticSkippedDays((current) => {
@@ -617,59 +661,75 @@ export function MetaPublishBundlesPanel({
             label: `Approve all scheduled (${counts.scheduled})`,
             onClick: () => runAction(onApproveAll),
           }
-        : mode === "publishing" && actionableCount > 0
+        : mode === "publishing" && counts.ready > 0 && onScheduleAll
           ? {
-              label:
-                counts.failed > 0
-                  ? `Publish now (${actionableCount})`
-                  : `Publish all ready now (${actionableCount})`,
-              onClick: () => runAction(onPublishAll),
+              label: `Schedule all ready (${counts.ready})`,
+              onClick: () => runAction(onScheduleAll),
             }
-          : null;
+          : mode === "publishing" && counts.scheduled > 0 && onApproveAll
+            ? {
+                label: `Approve all scheduled (${counts.scheduled})`,
+                onClick: () => runAction(onApproveAll),
+              }
+            : mode === "publishing" && actionableCount > 0
+              ? {
+                  label:
+                    counts.failed > 0
+                      ? `Publish now (${actionableCount})`
+                      : `Publish all ready now (${actionableCount})`,
+                  onClick: () => runAction(onPublishAll),
+                }
+              : null;
 
   const showCaptionEditing =
-    mode === "schedule" && captionMilestones.length > 0 && aiStatus && userRole;
+    mode === "schedule" &&
+    captionMilestones.length > 0 &&
+    aiStatus &&
+    userRole &&
+    !captionsSectionSeparate;
 
   return (
     <div className="space-y-6">
       {showCaptionEditing && (
-        <section className="overflow-hidden border border-cos-border bg-cos-card">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-cos-border px-5 py-4">
-            <div>
-              <p className="cos-section-title">Social captions</p>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
-                Draft feed captions for Facebook and Instagram milestones. Story auto-syncs
-                from feed — expand any milestone below to review or edit.
-              </p>
-              {approvedCaptionCount > 0 && (
-                <p className="mt-2 text-xs text-emerald-700">
-                  {approvedCaptionCount} of {captionMilestones.length} milestones approved
-                </p>
-              )}
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">
-              {primaryAction && (
+        <Card padding="none">
+          <CardHeader className="px-5 pt-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <CardTitle>Social captions</CardTitle>
+                <CardDescription>
+                  Draft feed captions for Facebook and Instagram milestones. Story auto-syncs
+                  from feed — expand any milestone below to review or edit.
+                </CardDescription>
+                {approvedCaptionCount > 0 && (
+                  <p className="mt-2 text-xs text-emerald-700">
+                    {approvedCaptionCount} of {captionMilestones.length} milestones approved
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">
+                {primaryAction && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={isPending || isGeneratingCaptions}
+                    onClick={primaryAction.onClick}
+                  >
+                    {isPending ? "Working…" : primaryAction.label}
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  variant="secondary"
-                  disabled={isPending || isGeneratingCaptions}
-                  onClick={primaryAction.onClick}
+                  disabled={isGeneratingCaptions || !aiStatus.available}
+                  onClick={runGenerateAllCaptions}
+                  title={aiStatus.available ? undefined : (aiStatus.reason ?? undefined)}
                 >
-                  {isPending ? "Working…" : primaryAction.label}
+                  <Sparkles className="h-4 w-4" />
+                  {isGeneratingCaptions ? "Generating…" : "Generate all social captions"}
                 </Button>
-              )}
-              <Button
-                type="button"
-                disabled={isGeneratingCaptions || !aiStatus.available}
-                onClick={runGenerateAllCaptions}
-                title={aiStatus.available ? undefined : (aiStatus.reason ?? undefined)}
-              >
-                <Sparkles className="h-4 w-4" />
-                {isGeneratingCaptions ? "Generating…" : "Generate all social captions"}
-              </Button>
+              </div>
             </div>
-          </div>
-        </section>
+          </CardHeader>
+        </Card>
       )}
 
       {captionError && (
@@ -678,21 +738,54 @@ export function MetaPublishBundlesPanel({
         </p>
       )}
 
-      {!showCaptionEditing && primaryAction && (
-        <div className="flex justify-end">
-          <Button type="button" disabled={isPending} onClick={primaryAction.onClick}>
-            {isPending ? "Working…" : primaryAction.label}
-          </Button>
-        </div>
-      )}
-
       {error && (
         <p className="text-sm text-red-600" role="alert">
           {error}
         </p>
       )}
 
-      <ul className="space-y-4">
+      <Card padding="none">
+        {(mode === "schedule" || mode === "publishing") && (
+          <CardHeader className="px-5 pt-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>
+                  {mode === "publishing" ? "Milestones to review" : "Communication milestones"}
+                </CardTitle>
+                <CardDescription>
+                  {mode === "publishing"
+                    ? "Confirm go-live dates, schedule posts, and publish when ready."
+                    : "Expand any milestone for artwork previews, channel details, and scheduling actions."}
+                  {approvalRoleLabel && mode === "publishing" && (
+                    <span className="mt-1 block text-cos-muted">
+                      Approver: {approvalRoleLabel}
+                    </span>
+                  )}
+                </CardDescription>
+              </div>
+              {!showCaptionEditing && primaryAction && (
+                <Button type="button" disabled={isPending} onClick={primaryAction.onClick}>
+                  {isPending ? "Working…" : primaryAction.label}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+        )}
+
+        {!showCaptionEditing && primaryAction && mode !== "schedule" && mode !== "publishing" && (
+          <div className="flex justify-end px-5 pt-5">
+            <Button type="button" disabled={isPending} onClick={primaryAction.onClick}>
+              {isPending ? "Working…" : primaryAction.label}
+            </Button>
+          </div>
+        )}
+
+        <ul
+          className={cn(
+            "space-y-4 px-5 pb-5",
+            mode === "schedule" || mode === "publishing" ? "" : "pt-5",
+          )}
+        >
         {displayBundles.map((bundle) => (
           <li key={`${eventId}-${bundle.relativeDay}`}>
             <MetaPublishBundleCard
@@ -701,6 +794,7 @@ export function MetaPublishBundlesPanel({
               showCaptionPreview={!showCaptionEditing}
               expanded={expandedDays.has(bundle.relativeDay)}
               onToggle={() => toggleExpanded(bundle.relativeDay)}
+              approvalRoleLabel={approvalRoleLabel}
               captionEdit={
                 showCaptionEditing
                   ? {
@@ -722,7 +816,7 @@ export function MetaPublishBundlesPanel({
                   : undefined
               }
               onSchedule={
-                mode === "schedule" && bundle.status === "ready"
+                (mode === "schedule" || mode === "publishing") && bundle.status === "ready"
                   ? () => runScheduleMilestone(bundle.relativeDay)
                   : undefined
               }
@@ -738,7 +832,8 @@ export function MetaPublishBundlesPanel({
             />
           </li>
         ))}
-      </ul>
+        </ul>
+      </Card>
     </div>
   );
 }

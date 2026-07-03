@@ -138,9 +138,9 @@ export function PlanningCalendarDetailPanel({
         </section>
       </div>
 
-      <div className="border-t border-cos-border p-5">
+      <div className="space-y-2 border-t border-cos-border p-5">
         <Button href={`/events/${item.eventId}`} className="w-full">
-          Open event workspace
+          Open planning hub
         </Button>
       </div>
     </aside>

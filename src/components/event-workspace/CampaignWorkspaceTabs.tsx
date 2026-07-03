@@ -21,6 +21,10 @@ const WORKFLOW_STEPS: { id: CampaignWorkflowStep; label: string }[] = [
   { id: "published", label: "Published" },
 ];
 
+export const CAMPAIGN_WORKFLOW_STEP_LABELS = Object.fromEntries(
+  WORKFLOW_STEPS.map((step) => [step.id, step.label]),
+) as Record<CampaignWorkflowStep, string>;
+
 const LEGACY_HASH_TO_STEP: Record<string, CampaignWorkflowStep> = {
   plan: "plan",
   "communication-plan": "plan",
@@ -42,7 +46,7 @@ const LEGACY_HASH_TO_STEP: Record<string, CampaignWorkflowStep> = {
   "notes-memory": "published",
 };
 
-function stepFromHash(hash: string): CampaignWorkflowStep | null {
+export function stepFromHash(hash: string): CampaignWorkflowStep | null {
   const id = hash.replace("#", "");
   if (!id) {
     return null;
@@ -62,6 +66,12 @@ interface CampaignWorkspaceTabsProps {
   publish: React.ReactNode;
   published: React.ReactNode;
   defaultStep?: CampaignWorkflowStep;
+  /** Controlled step (e.g. planning hub social tab). */
+  activeStep?: CampaignWorkflowStep;
+  onStepChange?: (step: CampaignWorkflowStep) => void;
+  /** When false, workflow step is local state only (embedded in planning hub). */
+  manageHash?: boolean;
+  id?: string;
 }
 
 export function CampaignWorkspaceTabs({
@@ -71,31 +81,55 @@ export function CampaignWorkspaceTabs({
   publish,
   published,
   defaultStep = "plan",
+  activeStep: controlledStep,
+  onStepChange,
+  manageHash = true,
+  id = "campaign-workflow-tabs",
 }: CampaignWorkspaceTabsProps) {
-  const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(defaultStep);
+  const [internalStep, setInternalStep] = useState<CampaignWorkflowStep>(defaultStep);
+  const activeStep = controlledStep ?? internalStep;
   const [initialized, setInitialized] = useState(false);
 
   const syncFromHash = useCallback(() => {
-    const fromHash = stepFromHash(window.location.hash);
-    if (fromHash) {
-      setActiveStep(fromHash);
+    if (controlledStep !== undefined || !manageHash) {
       return;
     }
 
-    setActiveStep(defaultStep);
+    const fromHash = stepFromHash(window.location.hash);
+    if (fromHash) {
+      setInternalStep(fromHash);
+      return;
+    }
+
+    setInternalStep(defaultStep);
     window.history.replaceState(null, "", `#${defaultStep}`);
-  }, [defaultStep]);
+  }, [controlledStep, defaultStep, manageHash]);
 
   useEffect(() => {
     syncFromHash();
     setInitialized(true);
+    if (!manageHash) {
+      return;
+    }
     window.addEventListener("hashchange", syncFromHash);
     return () => window.removeEventListener("hashchange", syncFromHash);
-  }, [syncFromHash]);
+  }, [syncFromHash, manageHash]);
+
+  useEffect(() => {
+    if (controlledStep !== undefined || manageHash) {
+      return;
+    }
+    setInternalStep(defaultStep);
+  }, [controlledStep, defaultStep, manageHash]);
 
   function selectStep(step: CampaignWorkflowStep) {
-    setActiveStep(step);
-    window.history.replaceState(null, "", `#${step}`);
+    if (controlledStep === undefined) {
+      setInternalStep(step);
+    }
+    onStepChange?.(step);
+    if (manageHash) {
+      window.history.replaceState(null, "", `#${step}`);
+    }
   }
 
   const panels: Record<CampaignWorkflowStep, React.ReactNode> = {
@@ -107,7 +141,7 @@ export function CampaignWorkspaceTabs({
   };
 
   return (
-    <div className="border border-cos-border bg-cos-card">
+    <div id={id} className="scroll-mt-8 border border-cos-border bg-cos-card">
       <div
         className="sticky top-0 z-10 border-b border-cos-border bg-cos-card/95 px-4 pt-5 backdrop-blur-sm lg:px-6"
         role="navigation"

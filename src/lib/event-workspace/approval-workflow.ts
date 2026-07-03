@@ -10,6 +10,8 @@ import {
 } from "@/lib/event-workspace/approval-permissions";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
+import { cancelDuplicatePendingApprovalRequests } from "@/lib/event-workspace/approval-request-dedupe";
+import { syncMetaPublicationSlotsForApprovedItem } from "@/lib/event-workspace/meta-approval-sync";
 import { createClient } from "@/lib/supabase/server";
 import type { CommunicationChannel, CommunicationStatus } from "@/types/event-workspace";
 
@@ -124,19 +126,39 @@ async function upsertPendingApprovalRequest(input: {
       })
       .eq("id", existing.id);
 
-    return !error;
+    if (error) {
+      return false;
+    }
+
+    await cancelDuplicatePendingApprovalRequests(
+      input.communicationItemId,
+      existing.id,
+    );
+    return true;
   }
 
-  const { error } = await supabase.from("approval_requests").insert({
-    event_id: input.eventId,
-    communication_item_id: input.communicationItemId,
-    communication_version_id: input.versionId,
-    status: "pending",
-    notes: input.notes ?? null,
-    ...assigneeFields,
-  });
+  const { data: inserted, error } = await supabase
+    .from("approval_requests")
+    .insert({
+      event_id: input.eventId,
+      communication_item_id: input.communicationItemId,
+      communication_version_id: input.versionId,
+      status: "pending",
+      notes: input.notes ?? null,
+      ...assigneeFields,
+    })
+    .select("id")
+    .maybeSingle();
 
-  return !error;
+  if (error || !inserted?.id) {
+    return false;
+  }
+
+  await cancelDuplicatePendingApprovalRequests(
+    input.communicationItemId,
+    inserted.id,
+  );
+  return true;
 }
 
 async function resolveApprovalRequest(input: {
@@ -175,7 +197,15 @@ async function resolveApprovalRequest(input: {
       })
       .eq("id", pendingRequest.id);
 
-    return { ok: !error };
+    if (error) {
+      return { ok: false };
+    }
+
+    await cancelDuplicatePendingApprovalRequests(
+      input.communicationItemId,
+      pendingRequest.id,
+    );
+    return { ok: true };
   }
 
   const { data: item } = await supabase
@@ -385,6 +415,8 @@ export async function approveCommunicationDraft(
   if (itemError) {
     return { success: false, error: "Unable to mark draft as approved." };
   }
+
+  await syncMetaPublicationSlotsForApprovedItem(eventId, communicationItemId);
 
   const label = channelLabel(item.channel);
   await logApprovalActivity(

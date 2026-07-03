@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { EventWorkspaceCalendarLayout } from "@/components/event-workspace/EventWorkspaceCalendarLayout";
-import { EventWorkspaceCampaignLayout } from "@/components/event-workspace/EventWorkspaceCampaignLayout";
+import { EventPlanningHub } from "@/components/event-playbooks/EventPlanningHub";
 import { getCampaignIntelligenceFromWorkspace } from "@/lib/campaign-intelligence/from-workspace";
 import { getStepDraftsForEvent } from "@/lib/communications-brain/queries";
 import {
@@ -30,8 +29,14 @@ import { resolveEventRosterOwnership } from "@/lib/organization-workspace/resolv
 import { buildFallbackPlaybookData } from "@/lib/playbooks/mock-data";
 import {
   getEventPlaybookData,
-  getPlaybooksForOrganization,
 } from "@/lib/playbooks/queries";
+import {
+  areEventPlaybookTablesAvailable,
+  getEventPlaybookHubData,
+  getPastEventLessonsForType,
+  getPastEventsForType,
+} from "@/lib/event-playbooks/queries";
+import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -42,7 +47,7 @@ export async function generateMetadata({ params }: EventWorkspacePageProps) {
   const event = await getEventById(id);
 
   return {
-    title: event ? event.title : "Campaign workspace",
+    title: event ? `${event.title} — Planning hub` : "Planning hub",
   };
 }
 
@@ -55,6 +60,11 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
   }
 
   const hasCampaign = shouldAssignPlaybook(event.communicationStrategy);
+
+  const tablesAvailable = await areEventPlaybookTablesAvailable();
+  if (tablesAvailable) {
+    await seedDefaultPlaybookTasks(event.id);
+  }
 
   const [organization, workspace, userRole] = await Promise.all([
     getLatestOrganization(),
@@ -73,64 +83,89 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     resolvedWorkspace =
       (await getEventWorkspaceData(event.id)) ?? resolvedWorkspace;
   }
+
   const heroArtwork = selectHeroArtwork({
     assets: resolvedWorkspace.assets,
     communications: resolvedWorkspace.communications,
     approvalRequests: resolvedWorkspace.approvalRequests,
+    approvedSquareImageUrl:
+      event.approvedSquareImageStatus === "filled"
+        ? event.approvedSquareImageUrl
+        : null,
   });
+
   const aiStatus = getAiAssistantStatus();
-  const showRoleSimulator = process.env.NODE_ENV === "development";
+
+  const [hubData, pastEvents, pastEventLessons, orgWorkspace] = await Promise.all([
+    getEventPlaybookHubData(event.id),
+    getPastEventsForType(event.eventType, event.id),
+    getPastEventLessonsForType(event.eventType, event.id),
+    organization
+      ? getOrganizationWorkspaceData(organization.id)
+      : Promise.resolve(null),
+  ]);
+
+  const pastLessonCount = pastEventLessons.reduce(
+    (sum, entry) => sum + entry.lessons.length,
+    0,
+  );
+
+  const ownership = orgWorkspace
+    ? resolveEventRosterOwnership(event, orgWorkspace)
+    : null;
 
   if (!hasCampaign) {
     const campaignIntelligence = getCampaignIntelligenceFromWorkspace(
       event,
       resolvedWorkspace,
     );
-    const [organizationDefaults, eventMemory] = await Promise.all([
-      organization
-        ? getEventOrganizationDefaults(organization.id, event)
-        : Promise.resolve(null),
-      getEventMemory({
-        event,
-        schoolYear: organization?.schoolYear ?? null,
-        workspace: resolvedWorkspace,
-        campaignIntelligence,
-      }),
-    ]);
+    const organizationDefaults = organization
+      ? await getEventOrganizationDefaults(organization.id, event)
+      : null;
+    const eventMemory = await getEventMemory({
+      event,
+      schoolYear: organization?.schoolYear ?? null,
+      workspace: resolvedWorkspace,
+      campaignIntelligence,
+    });
 
     return (
-      <EventWorkspaceCalendarLayout
-        event={event}
-        eventId={event.id}
-        nextStep={getEventNextStep(false, [])}
-        artwork={heroArtwork}
-        campaignIntelligence={campaignIntelligence}
-        organizationDefaults={organizationDefaults}
-        assets={resolvedWorkspace.assets}
-        communicationStrategy={event.communicationStrategy}
-        eventMemory={eventMemory}
-      />
+      <div className="studio-page pb-12">
+        <EventPlanningHub
+          event={event}
+          ownership={ownership}
+          hubData={hubData}
+          pastEvents={pastEvents}
+          pastLessonCount={pastLessonCount}
+          aiStatus={aiStatus}
+          userRole={userRole}
+          tablesAvailable={tablesAvailable}
+          hasCampaign={false}
+          calendarContext={{
+            nextStep: getEventNextStep(false, []),
+            artwork: heroArtwork,
+            campaignIntelligence,
+            organizationDefaults,
+            assets: resolvedWorkspace.assets,
+            eventMemory,
+          }}
+        />
+      </div>
     );
   }
 
   const [
     playbookData,
-    availablePlaybooks,
     stepDrafts,
     metaPublishBundles,
     metaSocialCaptionMilestones,
     assetVersionsMap,
-    orgWorkspace,
   ] = await Promise.all([
     getEventPlaybookData(event.id),
-    getPlaybooksForOrganization(organization?.id ?? null),
     getStepDraftsForEvent(event.id),
     getMetaPublishBundles(event.id),
     buildMetaSocialCaptionMilestones(event.id),
     getAssetVersionsForEvent(event.id),
-    organization
-      ? getOrganizationWorkspaceData(organization.id)
-      : Promise.resolve(null),
   ]);
 
   const resolvedPlaybook = playbookData ?? buildFallbackPlaybookData(event);
@@ -159,16 +194,15 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
 
   const assetVersions = Object.fromEntries(assetVersionsMap.entries());
 
-  const ownership = orgWorkspace
-    ? resolveEventRosterOwnership(event, orgWorkspace)
-    : {
-        committeeName: null,
-        chairNames: [],
-        vpRoleName: null,
-        vpContactName: null,
-        committeeFilled: false,
-        vpFilled: false,
-      };
+  const resolvedOwnership = ownership ?? {
+    committeeName: null,
+    chairNames: [],
+    vpRoleName: null,
+    vpContactName: null,
+    committeeFilled: false,
+    vpFilled: false,
+  };
+
   const approvalRoles =
     orgWorkspace?.roles.map((role) => ({
       id: role.id,
@@ -181,29 +215,34 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     )?.defaultRoleId ?? null;
 
   return (
-    <EventWorkspaceCampaignLayout
-      event={event}
-      eventId={event.id}
-      organizationName={organization?.name ?? null}
-      nextStep={getEventNextStep(true, resolvedPlaybook.steps)}
-      artwork={heroArtwork}
-      campaignProgress={campaignProgress}
-      playbookData={resolvedPlaybook}
-      availablePlaybooks={availablePlaybooks}
-      stepDrafts={stepDrafts}
-      metaSocialCaptionMilestones={metaSocialCaptionMilestones}
-      assets={resolvedWorkspace.assets}
-      assetVersions={assetVersions}
-      metaPublishBundles={metaPublishBundles}
-      timeline={resolvedWorkspace.timeline}
-      communicationStrategy={event.communicationStrategy}
-      aiStatus={aiStatus}
-      userRole={userRole}
-      ownership={ownership}
-      approvalRoles={approvalRoles}
-      defaultApprovalRoleId={defaultApprovalRoleId}
-      showRoleSimulator={showRoleSimulator}
-      eventDetailsChanged={eventDetailsChanged}
-    />
+    <div className="studio-page pb-12">
+      <EventPlanningHub
+        event={event}
+        ownership={resolvedOwnership}
+        hubData={hubData}
+        pastEvents={pastEvents}
+        pastLessonCount={pastLessonCount}
+        aiStatus={aiStatus}
+        userRole={userRole}
+        tablesAvailable={tablesAvailable}
+        hasCampaign
+        campaignWorkspace={{
+          organizationName: organization?.name ?? null,
+          nextStep: getEventNextStep(true, resolvedPlaybook.steps),
+          artwork: heroArtwork,
+          campaignProgress,
+          playbookData: resolvedPlaybook,
+          stepDrafts,
+          metaSocialCaptionMilestones,
+          assets: resolvedWorkspace.assets,
+          assetVersions,
+          metaPublishBundles,
+          timeline: resolvedWorkspace.timeline,
+          approvalRoles,
+          defaultApprovalRoleId,
+          eventDetailsChanged,
+        }}
+      />
+    </div>
   );
 }

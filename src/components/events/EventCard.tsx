@@ -6,6 +6,7 @@ import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-art
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import { getEventCardDescription } from "@/lib/events/event-card-display";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -24,6 +25,7 @@ interface EventCardProps {
   artwork?: HeroArtworkSelection | null;
   ownership?: EventRosterOwnership | null;
   showRemoveFromCampaigns?: boolean;
+  metaPublicationScheduled?: boolean;
 }
 
 export function EventCard({
@@ -31,9 +33,13 @@ export function EventCard({
   artwork = null,
   ownership = null,
   showRemoveFromCampaigns = false,
+  metaPublicationScheduled = false,
 }: EventCardProps) {
   const formattedTime = formatEventTime(event.time);
   const showThumbnail = hasDisplayableArtwork(artwork);
+  const cardDescription = getEventCardDescription(event.description);
+  const showScheduledBadge =
+    event.status !== "scheduled" || metaPublicationScheduled;
 
   return (
     <Card interactive className="flex flex-col">
@@ -54,14 +60,16 @@ export function EventCard({
             </Link>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <EventStatusBadge status={event.status} />
+            {showScheduledBadge && <EventStatusBadge status={event.status} />}
             <CommunicationStrategyBadge strategy={event.communicationStrategy} />
           </div>
         </div>
-        {event.description && (
-          <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+        {cardDescription && (
+          <CardDescription className="line-clamp-2">{cardDescription}</CardDescription>
         )}
-        {ownership && <EventOwnershipStrip ownership={ownership} />}
+        {ownership && (
+          <EventOwnershipStrip ownership={ownership} filledBadgeEmphasis="prominent" />
+        )}
       </CardHeader>
 
       <div className="mt-auto space-y-4">
@@ -96,7 +104,7 @@ export function EventCard({
 
         <div className="flex flex-col gap-2">
           <Button href={`/events/${event.id}`} variant="secondary" size="sm" className="w-full">
-            Open event
+            Open planning hub
             <ArrowRight className="h-4 w-4" />
           </Button>
           {showRemoveFromCampaigns &&

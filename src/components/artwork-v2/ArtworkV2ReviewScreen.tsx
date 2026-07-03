@@ -20,6 +20,7 @@ interface ArtworkV2ReviewScreenProps {
   isBusy?: boolean;
   emptyVariant?: "initial" | "exhausted";
   lastGenerationMode?: ArtworkGenerationMode;
+  onBack?: () => void;
   onApprove: (versionId: string) => void;
   onDeny: (versionId: string) => void;
   onAdjust: (versionId: string, adjustmentComments: string) => void;
@@ -33,6 +34,7 @@ export function ArtworkV2ReviewScreen({
   isBusy = false,
   emptyVariant = "initial",
   lastGenerationMode = "quick",
+  onBack,
   onApprove,
   onDeny,
   onAdjust,
@@ -53,12 +55,23 @@ export function ArtworkV2ReviewScreen({
 
   if (versions.length === 0) {
     return (
-      <ArtworkV2ReviewEmptyState
-        variant={emptyVariant}
-        lastGenerationMode={lastGenerationMode}
-        onGenerate={onGenerate}
-        onRegenerate={onRegenerate}
-      />
+      <div className="space-y-6">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-sm text-cos-muted hover:text-cos-text"
+          >
+            ← Back to artwork list
+          </button>
+        )}
+        <ArtworkV2ReviewEmptyState
+          variant={emptyVariant}
+          lastGenerationMode={lastGenerationMode}
+          onGenerate={onGenerate}
+          onRegenerate={onRegenerate}
+        />
+      </div>
     );
   }
 
@@ -81,7 +94,25 @@ export function ArtworkV2ReviewScreen({
 
   return (
     <>
-      <div className="flex flex-col">
+      <div className="space-y-6">
+        <header>
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-3 text-sm text-cos-muted hover:text-cos-text"
+            >
+              ← Back to artwork list
+            </button>
+          )}
+          <p className="studio-eyebrow">Review</p>
+          <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">{item.label}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
+            Pick the version you prefer, request edits, or approve as-is.
+          </p>
+        </header>
+
+        <div className="flex flex-col">
         <div className="grid min-h-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
           {versions.map((version) => (
             <ArtworkV2ReviewCard
@@ -112,8 +143,8 @@ export function ArtworkV2ReviewScreen({
         />
 
         {showRefinedRetry && (
-          <section className="mt-4 rounded-2xl border border-dashed border-cos-border bg-cos-bg/50 px-4 py-4 sm:px-5">
-            <p className="text-sm font-medium text-cos-text">Not quite what you wanted?</p>
+          <section className="mt-4 border border-dashed border-cos-border bg-cos-bg/50 px-4 py-4 sm:px-5">
+            <p className="cos-section-title">Not quite what you wanted?</p>
             <p className="mt-1 text-sm text-cos-muted">
               Try a {ARTWORK_GENERATION_MODE_COPY.refined.title.toLowerCase()} for more layout
               polish and two versions to compare.
@@ -133,6 +164,7 @@ export function ArtworkV2ReviewScreen({
             </div>
           </section>
         )}
+        </div>
       </div>
 
       {lightboxSrc && lightboxVersion && (

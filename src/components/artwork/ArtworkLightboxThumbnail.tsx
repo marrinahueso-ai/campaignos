@@ -8,6 +8,7 @@ interface ArtworkLightboxThumbnailProps {
   src: string | null | undefined;
   alt: string;
   label?: string;
+  variant?: "feed" | "story";
   wrapperClassName?: string;
   frameClassName?: string;
   placeholder?: string;
@@ -17,6 +18,7 @@ export function ArtworkLightboxThumbnail({
   src,
   alt,
   label,
+  variant = "feed",
   wrapperClassName,
   frameClassName,
   placeholder = "No image",
@@ -45,7 +47,12 @@ export function ArtworkLightboxThumbnail({
             <img src={src} alt="" className="h-full w-full object-cover" />
           </button>
           {open && (
-            <ArtworkV2ReviewLightbox src={src} alt={alt} onClose={() => setOpen(false)} />
+            <ArtworkV2ReviewLightbox
+              src={src}
+              alt={alt}
+              variant={variant}
+              onClose={() => setOpen(false)}
+            />
           )}
         </>
       ) : (

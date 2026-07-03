@@ -1,5 +1,6 @@
 import { APPROVER_ROLES } from "@/lib/auth/campaign-roles";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
+import { contactNameMatchesEmail } from "@/lib/event-workspace/approval-actor-matching";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
 import type { OrganizationRole } from "@/types/organization-workspace";
 
@@ -71,7 +72,8 @@ export async function resolveApprovalAssignee(
   const matchingMembers = teamMembers.filter(
     (member) =>
       member.status === "active" &&
-      member.organizationRoleId === resolvedRoleId,
+      (member.organizationRoleId === resolvedRoleId ||
+        contactNameMatchesEmail(role?.contactName, member.email)),
   );
 
   const preferredMember =

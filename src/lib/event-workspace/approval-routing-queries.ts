@@ -1,14 +1,22 @@
+import { displayDraftContent } from "@/lib/ai/content";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
+import { dedupePendingApprovalQueueRows } from "@/lib/event-workspace/approval-request-dedupe";
+import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
 import {
   type ApprovalActor,
 } from "@/lib/event-workspace/approval-permissions";
+import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { createClient } from "@/lib/supabase/server";
 import type {
   ApprovalQueueItem,
+  ApprovalQueuePreview,
   ApprovalRequestRow,
   CommunicationChannel,
   CommunicationStatus,
 } from "@/types/event-workspace";
+import type { EventCommunicationStepRow } from "@/types/playbooks";
 
 type ApprovalQueueRow = ApprovalRequestRow & {
   events: { id: string; title: string } | null;
@@ -16,6 +24,7 @@ type ApprovalQueueRow = ApprovalRequestRow & {
     id: string;
     channel: CommunicationChannel;
     status: CommunicationStatus;
+    event_communication_step_id: string | null;
   } | null;
   assigned_role: {
     name: string | null;
@@ -51,27 +60,25 @@ function isAssignedToActor(
   row: ApprovalQueueRow,
   actor: ApprovalActor | null,
 ): boolean {
-  if (!actor) {
-    return false;
-  }
-
-  if (row.assigned_user_id && actor.organizationUserId === row.assigned_user_id) {
-    return true;
-  }
-
-  if (
-    row.assigned_organization_role_id &&
-    actor.organizationRoleId === row.assigned_organization_role_id
-  ) {
-    return true;
-  }
-
-  return false;
+  return isActorAssignedToApproval(actor, {
+    assignedOrganizationRoleId: row.assigned_organization_role_id ?? null,
+    assignedUserId: row.assigned_user_id ?? null,
+    assignedRoleContactName: row.assigned_role?.contact_name ?? null,
+  });
 }
+
+const EMPTY_PREVIEW: ApprovalQueuePreview = {
+  milestoneTitle: null,
+  scheduledFor: null,
+  captionText: null,
+  storyCaptionSnippet: null,
+  artworkThumbnailUrl: null,
+};
 
 function mapQueueRow(
   row: ApprovalQueueRow,
   actor: ApprovalActor | null,
+  preview: ApprovalQueuePreview = EMPTY_PREVIEW,
 ): ApprovalQueueItem | null {
   if (!row.communication_items || !row.events) {
     return null;
@@ -89,6 +96,7 @@ function mapQueueRow(
     assigneeDisplayName: resolveAssigneeDisplayName(row),
     assignedToMe: isAssignedToActor(row, actor),
     notes: row.notes,
+    preview,
   };
 }
 
@@ -101,7 +109,7 @@ async function fetchApprovalQueueRows(): Promise<ApprovalQueueRow[]> {
       `
       *,
       events ( id, title ),
-      communication_items ( id, channel, status ),
+      communication_items ( id, channel, status, event_communication_step_id ),
       assigned_role:organization_roles!approval_requests_assigned_organization_role_id_fkey (
         name,
         contact_name
@@ -126,6 +134,147 @@ async function fetchApprovalQueueRows(): Promise<ApprovalQueueRow[]> {
   return (data ?? []) as ApprovalQueueRow[];
 }
 
+async function fetchVersionContentById(
+  versionIds: string[],
+): Promise<Map<string, string>> {
+  if (versionIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("communication_versions")
+    .select("id, content")
+    .in("id", versionIds);
+
+  if (error?.code === "42P01" || error) {
+    if (error && error.code !== "42P01") {
+      console.error("Failed to fetch approval preview versions:", error.message);
+    }
+    return new Map();
+  }
+
+  return new Map(
+    (data ?? []).map((row) => [row.id as string, row.content as string]),
+  );
+}
+
+async function fetchStepsById(
+  stepIds: string[],
+): Promise<Map<string, EventCommunicationStepRow>> {
+  if (stepIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_communication_steps")
+    .select("id, relative_day, due_date, title, channel, status, sort_order, event_id")
+    .in("id", stepIds);
+
+  if (error?.code === "42P01" || error) {
+    if (error && error.code !== "42P01") {
+      console.error("Failed to fetch approval preview steps:", error.message);
+    }
+    return new Map();
+  }
+
+  return new Map(
+    ((data ?? []) as EventCommunicationStepRow[]).map((row) => [row.id, row]),
+  );
+}
+
+function findBundleForRow(
+  bundles: MetaPublishBundle[],
+  stepId: string | null,
+): MetaPublishBundle | null {
+  if (!stepId) {
+    return null;
+  }
+
+  return bundles.find((bundle) => bundle.stepId === stepId) ?? null;
+}
+
+function buildPreviewForRow(
+  row: ApprovalQueueRow,
+  versionContentById: Map<string, string>,
+  stepsById: Map<string, EventCommunicationStepRow>,
+  bundlesByEvent: Map<string, MetaPublishBundle[]>,
+): ApprovalQueuePreview {
+  const stepId = row.communication_items?.event_communication_step_id ?? null;
+  const step = stepId ? stepsById.get(stepId) ?? null : null;
+  const bundles = bundlesByEvent.get(row.events?.id ?? "") ?? [];
+  const bundle = findBundleForRow(bundles, stepId);
+
+  const versionContent = row.communication_version_id
+    ? versionContentById.get(row.communication_version_id) ?? null
+    : null;
+
+  const captionText = displayDraftContent(
+    versionContent ?? bundle?.captionPreview ?? null,
+  );
+
+  const scheduledFor =
+    bundle?.scheduledFor ??
+    (step?.due_date ? `${String(step.due_date).slice(0, 10)}T10:00:00.000Z` : null);
+
+  return {
+    milestoneTitle: step?.title ?? bundle?.title ?? null,
+    scheduledFor,
+    captionText,
+    storyCaptionSnippet: bundle?.storyCaptionPreview ?? null,
+    artworkThumbnailUrl: bundle?.feedArtworkUrl ?? null,
+  };
+}
+
+async function enrichApprovalQueuePreviews(
+  rows: ApprovalQueueRow[],
+  items: ApprovalQueueItem[],
+): Promise<ApprovalQueueItem[]> {
+  if (items.length === 0) {
+    return items;
+  }
+
+  const rowById = new Map(rows.map((row) => [row.id, row]));
+  const versionIds = [
+    ...new Set(
+      rows
+        .map((row) => row.communication_version_id)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+  const stepIds = [
+    ...new Set(
+      rows
+        .map((row) => row.communication_items?.event_communication_step_id)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ];
+  const eventIds = [...new Set(items.map((item) => item.eventId))];
+
+  const [versionContentById, stepsById, bundleLists] = await Promise.all([
+    fetchVersionContentById(versionIds),
+    fetchStepsById(stepIds),
+    Promise.all(eventIds.map(async (eventId) => getMetaPublishBundles(eventId))),
+  ]);
+
+  const bundlesByEvent = new Map(
+    eventIds.map((eventId, index) => [eventId, bundleLists[index] ?? []]),
+  );
+
+  return items.map((item) => {
+    const row = rowById.get(item.id);
+    if (!row) {
+      return item;
+    }
+
+    return {
+      ...item,
+      preview: buildPreviewForRow(row, versionContentById, stepsById, bundlesByEvent),
+    };
+  });
+}
+
 export async function getApprovalQueueForCurrentUser(): Promise<{
   assignedToMe: ApprovalQueueItem[];
   allPending: ApprovalQueueItem[];
@@ -142,23 +291,37 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
     ? {
         organizationUserId: membership.user.id,
         organizationRoleId: membership.user.organizationRoleId,
+        email: membership.user.email,
       }
     : null;
 
-  const mapped = rows
+  if (actor) {
+    const synced = await backfillMetaApprovalRequests(actor);
+    if (synced > 0) {
+      console.info(
+        `Backfilled ${synced} meta milestone approval request(s) for approvals inbox.`,
+      );
+    }
+  }
+
+  const refreshedRows = dedupePendingApprovalQueueRows(
+    actor ? await fetchApprovalQueueRows() : rows,
+  );
+  const mapped = refreshedRows
     .map((row) => mapQueueRow(row, actor))
     .filter((item): item is ApprovalQueueItem => item !== null);
+  const enriched = await enrichApprovalQueuePreviews(refreshedRows, mapped);
 
-  const pending = mapped.filter((item) => item.status === "pending");
+  const pending = enriched.filter((item) => item.status === "pending");
   const assignedToMe = pending.filter((item) => item.assignedToMe);
 
   return {
     assignedToMe,
     allPending: pending,
-    changesRequested: mapped.filter(
+    changesRequested: enriched.filter(
       (item) => item.communicationStatus === "changes_requested",
     ),
-    recentlyApproved: mapped
+    recentlyApproved: enriched
       .filter((item) => item.status === "approved")
       .slice(0, 10),
     actor,

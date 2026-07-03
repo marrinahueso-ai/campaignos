@@ -21,6 +21,17 @@ export interface Event {
   approvalOrganizationRoleId: string | null;
   budget: string | null;
   volunteerNeeds: string | null;
+  goal: string | null;
+  expectedAttendance: string | null;
+  planningQuickLinks: Record<string, { url: string; status: "open" | "filled" }>;
+  planningVendors: Array<{
+    id: string;
+    name: string;
+    notes: string;
+    status: "open" | "filled";
+  }>;
+  approvedSquareImageUrl: string | null;
+  approvedSquareImageStatus: "open" | "filled";
   createdAt: string;
   updatedAt: string | null;
 }
@@ -43,6 +54,12 @@ export interface EventRow {
   approval_organization_role_id?: string | null;
   budget: string | null;
   volunteer_needs: string | null;
+  goal?: string | null;
+  expected_attendance?: string | null;
+  planning_quick_links?: Record<string, unknown> | null;
+  planning_vendors?: unknown[] | null;
+  approved_square_image_url?: string | null;
+  approved_square_image_status?: "open" | "filled" | null;
   created_at: string;
   updated_at: string | null;
 }

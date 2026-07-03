@@ -69,10 +69,8 @@ export function ArtworkV2ReviewCard({
   return (
     <article
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-cos-card shadow-sm transition-shadow",
-        isSelected
-          ? "ring-2 ring-cos-primary ring-offset-2 ring-offset-cos-bg"
-          : "ring-1 ring-slate-900/[0.04]",
+        "flex min-h-0 flex-1 flex-col overflow-hidden border border-cos-border bg-cos-card transition-shadow",
+        isSelected && "ring-2 ring-cos-primary ring-offset-2 ring-offset-cos-bg",
       )}
     >
       <div
@@ -119,7 +117,7 @@ export function ArtworkV2ReviewCard({
       </div>
 
       <div className="flex shrink-0 items-center justify-between gap-2 border-t border-cos-border/60 px-3 py-3 sm:px-4">
-        <span className="text-sm font-medium text-cos-text">Version {version.index}</span>
+        <span className="text-sm text-cos-text">Version {version.index}</span>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             type="button"

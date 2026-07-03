@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarClock } from "lucide-react";
+import { MetaSocialCaptionsSection } from "@/components/meta-captions/MetaSocialCaptionsSection";
 import { MetaPublishBundlesPanel } from "@/components/meta-publishing/MetaPublishBundlesPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { scheduleAllReadyMetaBundlesAction } from "@/lib/meta-publishing/actions";
@@ -15,6 +16,9 @@ interface CampaignScheduleStepProps {
   metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
+  initialExpandedDay?: number | null;
+  approvalRoleLabel?: string | null;
+  onNavigateToPublish?: (relativeDay: number) => void;
 }
 
 export function CampaignScheduleStep({
@@ -23,6 +27,9 @@ export function CampaignScheduleStep({
   metaSocialCaptionMilestones,
   aiStatus,
   userRole,
+  initialExpandedDay = null,
+  approvalRoleLabel = null,
+  onNavigateToPublish,
 }: CampaignScheduleStepProps) {
   const hasBundles = metaPublishBundles.length > 0;
 
@@ -39,6 +46,18 @@ export function CampaignScheduleStep({
         </p>
       </header>
 
+      {metaSocialCaptionMilestones.length > 0 && (
+        <MetaSocialCaptionsSection
+          eventId={eventId}
+          milestones={metaSocialCaptionMilestones}
+          aiStatus={aiStatus}
+          userRole={userRole}
+          initialExpandedDay={initialExpandedDay}
+          approvalRoleLabel={approvalRoleLabel}
+          onNavigateToPublish={onNavigateToPublish}
+        />
+      )}
+
       {!hasBundles ? (
         <EmptyState
           icon={CalendarClock}
@@ -51,6 +70,7 @@ export function CampaignScheduleStep({
           bundles={metaPublishBundles}
           mode="schedule"
           captionMilestones={metaSocialCaptionMilestones}
+          captionsSectionSeparate={metaSocialCaptionMilestones.length > 0}
           aiStatus={aiStatus}
           userRole={userRole}
           onScheduleAll={() => scheduleAllReadyMetaBundlesAction(eventId)}

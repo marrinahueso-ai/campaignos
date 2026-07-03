@@ -2,7 +2,24 @@ import { User } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 
-function SlotBadge({ filled }: { filled: boolean }) {
+function SlotBadge({
+  filled,
+  emphasis = "default",
+}: {
+  filled: boolean;
+  emphasis?: "default" | "prominent";
+}) {
+  if (filled && emphasis === "prominent") {
+    return (
+      <Badge
+        variant="success"
+        className="shrink-0 border border-emerald-200 bg-emerald-100 text-emerald-800"
+      >
+        Filled
+      </Badge>
+    );
+  }
+
   return (
     <Badge variant={filled ? "success" : "warning"} className="shrink-0">
       {filled ? "Filled" : "Open"}
@@ -12,9 +29,13 @@ function SlotBadge({ filled }: { filled: boolean }) {
 
 interface EventOwnershipStripProps {
   ownership: EventRosterOwnership;
+  filledBadgeEmphasis?: "default" | "prominent";
 }
 
-export function EventOwnershipStrip({ ownership }: EventOwnershipStripProps) {
+export function EventOwnershipStrip({
+  ownership,
+  filledBadgeEmphasis = "default",
+}: EventOwnershipStripProps) {
   if (!ownership.committeeName) {
     return null;
   }
@@ -32,7 +53,7 @@ export function EventOwnershipStrip({ ownership }: EventOwnershipStripProps) {
           )}
         </span>
       </p>
-      <SlotBadge filled={ownership.committeeFilled} />
+      <SlotBadge filled={ownership.committeeFilled} emphasis={filledBadgeEmphasis} />
     </div>
   );
 }

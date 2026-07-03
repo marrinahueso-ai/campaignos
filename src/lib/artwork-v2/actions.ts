@@ -13,7 +13,7 @@ import {
   saveGenerationSettings,
   setAssetPlanStatusInProgress,
 } from "@/lib/ai-artwork/mutations";
-import { getConceptById } from "@/lib/ai-artwork/queries";
+import { getConceptById, getPendingConceptsForAsset } from "@/lib/ai-artwork/queries";
 import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { activateConceptAsAsset } from "@/lib/ai-artwork/versions";
@@ -38,6 +38,7 @@ import { getEventCommunicationSteps } from "@/lib/playbooks/queries";
 import { syncMetaPublicationSlots } from "@/lib/meta-publishing/sync-slots";
 import {
   getArtworkPhaseItems,
+  groupArtworkPhasesByMilestone,
   isApprovedArtworkAsset,
 } from "@/lib/artwork-v2/campaign-phases";
 import { buildDefaultArtworkPrompt } from "@/lib/artwork-v2/event-prompt";
@@ -45,6 +46,10 @@ import {
   findMilestoneFeedItem,
   findMilestoneStoryItem,
 } from "@/lib/artwork-v2/milestone-workflow";
+import {
+  findAnchorInspirationFeedAsset,
+  getRemainingArtworkMilestones,
+} from "@/lib/artwork-v2/batch-generate";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 import {
   parseArtworkGenerationModeFromForm,
@@ -54,13 +59,19 @@ import { runArtworkV2Generation } from "@/lib/artwork-v2/generation";
 import { activateExternalArtworkOnAsset } from "@/lib/artwork-v2/activation";
 import { maybePromoteApprovedArtworkToHero } from "@/lib/artwork-v2/hero";
 import { resolveArtworkV2ImageSizePreset } from "@/lib/artwork-v2/image-size";
-import type { ArtworkV2GenerationResult } from "@/lib/artwork-v2/types";
+import type {
+  ArtworkV2BatchGenerationResult,
+  ArtworkV2BatchMilestoneResult,
+  ArtworkV2GenerationResult,
+  ArtworkV2ReviewVersion,
+} from "@/lib/artwork-v2/types";
 import {
   getCanvaConnectionForCurrentOrg,
   getValidCanvaAccessToken,
   isCanvaConnectionConfigured,
 } from "@/lib/canva/connection";
 import { exportCanvaDesignAsPng } from "@/lib/canva/import-design";
+import type { EventAsset } from "@/types/event-workspace";
 
 function revalidateArtworkV2Paths(eventId: string): void {
   revalidatePath("/creative-studio");
@@ -428,6 +439,29 @@ export async function generateStoryFromFeedAction(
   };
 }
 
+/** Load pending generated versions for the artwork review screen. */
+export async function getArtworkV2ReviewVersionsAction(
+  eventId: string,
+  workflowItemId: string,
+): Promise<{ success: boolean; error: string | null; versions: ArtworkV2ReviewVersion[] }> {
+  const resolved = await resolveWorkflowItem(eventId, workflowItemId);
+  if ("error" in resolved) {
+    return { success: false, error: resolved.error, versions: [] };
+  }
+
+  const pendingConcepts = await getPendingConceptsForAsset(resolved.assetId);
+  const versions = pendingConcepts
+    .slice()
+    .sort((left, right) => left.conceptIndex - right.conceptIndex)
+    .map((concept) => ({
+      id: concept.id,
+      index: concept.conceptIndex,
+      imageUrl: resolveAssetImageUrl(concept.storagePath),
+    }));
+
+  return { success: true, error: null, versions };
+}
+
 export async function approveArtworkV2Action(
   eventId: string,
   conceptId: string,
@@ -464,13 +498,16 @@ export async function approveArtworkV2Action(
     uploadedBy,
   });
 
-  if (!activated) {
-    return { success: false, error: "Unable to approve artwork." };
+  if (!activated.success) {
+    return { success: false, error: activated.error };
   }
+
+  const approvedStoragePath = resolveAssetImageUrl(concept.storagePath);
 
   await maybePromoteApprovedArtworkToHero({
     eventId,
-    storagePath: concept.storagePath,
+    assetType: resolved.item.assetType,
+    storagePath: approvedStoragePath ?? concept.storagePath,
     filename: concept.filename,
     generationPrompt: concept.generationPrompt,
     uploadedBy,
@@ -482,7 +519,7 @@ export async function approveArtworkV2Action(
   return {
     success: true,
     error: null,
-    approvedImageUrl: resolveAssetImageUrl(concept.storagePath),
+    approvedImageUrl: approvedStoragePath,
   };
 }
 
@@ -722,6 +759,7 @@ export async function approveInspirationAsArtworkV2Action(
 
   await maybePromoteApprovedArtworkToHero({
     eventId,
+    assetType: resolved.item.assetType,
     storagePath,
     filename,
     generationPrompt,
@@ -812,6 +850,7 @@ export async function importCanvaDesignAsArtworkV2Action(
 
   await maybePromoteApprovedArtworkToHero({
     eventId,
+    assetType: resolved.item.assetType,
     storagePath: uploaded.publicUrl,
     filename: exported.filename,
     generationPrompt,
@@ -825,5 +864,443 @@ export async function importCanvaDesignAsArtworkV2Action(
     success: true,
     error: null,
     approvedImageUrl: resolveAssetImageUrl(uploaded.publicUrl),
+  };
+}
+
+async function generateFeedWithInspirationAsset(input: {
+  eventId: string;
+  feedItem: ArtworkWorkflowItem;
+  inspirationAsset: EventAsset;
+  event: Awaited<ReturnType<typeof getEventById>>;
+  organizationName: string | null;
+}): Promise<ArtworkV2GenerationResult> {
+  const inspirationUrl = resolveAssetImageUrl(input.inspirationAsset.storagePath);
+  if (!inspirationUrl) {
+    return { success: false, error: "Style reference image not found." };
+  }
+
+  const userPrompt = buildDefaultArtworkPrompt({
+    event: input.event!,
+    organizationName: input.organizationName,
+    item: input.feedItem,
+    hasInspiration: true,
+  });
+
+  const resolved = await resolveWorkflowItem(input.eventId, input.feedItem.id);
+  if ("error" in resolved) {
+    return { success: false, error: resolved.error };
+  }
+
+  const { item, assetId } = resolved;
+  const imageSizePreset = resolveArtworkV2ImageSizePreset(item);
+
+  const settingsToSave = {
+    ...DEFAULT_GENERATION_SETTINGS,
+    imageSizePreset,
+    customPromptOverride: userPrompt,
+    inspirationAssetId: input.inspirationAsset.id,
+    inspirationStrength: "light" as const,
+    supportInspirationAssetIds: [],
+    inspirationStyleProfile: null,
+    textPlan: null,
+    additionalInstructions: "",
+    negativeInstructions: "",
+    style: "",
+  };
+
+  await setAssetPlanStatusInProgress(input.eventId, assetId);
+  await saveGenerationSettings(input.eventId, assetId, settingsToSave, userPrompt);
+
+  const generation = await runArtworkV2Generation({
+    eventId: input.eventId,
+    assetId,
+    assetType: item.assetType,
+    imageSizePreset,
+    userManualPrompt: userPrompt,
+    orchestration: {
+      kind: "create",
+      userPrompt,
+      inspirationImageUrls: [inspirationUrl],
+    },
+    inspirationAssetId: input.inspirationAsset.id,
+    generationProfile: resolveArtworkGenerationProfile("quick"),
+  });
+
+  if (!generation.success) {
+    return {
+      success: false,
+      error: generation.error,
+      userPrompt,
+      orchestratedPrompt: generation.orchestratedPrompt,
+    };
+  }
+
+  return {
+    success: true,
+    error: null,
+    warning: generation.warning,
+    userPrompt,
+    orchestratedPrompt: generation.orchestratedPrompt,
+    assetId,
+    versions: generation.versions,
+  };
+}
+
+async function generateStoryFromFeedImage(input: {
+  eventId: string;
+  relativeDay: number;
+  feedAssetId: string;
+  feedImageUrl: string;
+  event: Awaited<ReturnType<typeof getEventById>>;
+  organizationName: string | null;
+  phaseItems: ReturnType<typeof getArtworkPhaseItems>;
+}): Promise<ArtworkV2GenerationResult> {
+  const storyItem = findMilestoneStoryItem(input.phaseItems, input.relativeDay);
+  if (!storyItem) {
+    return { success: false, error: "Story artwork slot not found for this milestone." };
+  }
+
+  const assets = await getCampaignAssetsForEvent(input.eventId);
+  const storyAsset = resolveWorkflowAsset(storyItem, null, assets);
+  if (isApprovedArtworkAsset(storyAsset)) {
+    return { success: false, error: "Story artwork is already approved." };
+  }
+
+  const userPrompt = buildDefaultArtworkPrompt({
+    event: input.event!,
+    organizationName: input.organizationName,
+    item: storyItem,
+    hasInspiration: true,
+  });
+
+  const resolved = await resolveWorkflowItem(input.eventId, storyItem.id);
+  if ("error" in resolved) {
+    return { success: false, error: resolved.error };
+  }
+
+  const { item, assetId } = resolved;
+  const imageSizePreset = resolveArtworkV2ImageSizePreset(item);
+
+  const settingsToSave = {
+    ...DEFAULT_GENERATION_SETTINGS,
+    imageSizePreset,
+    customPromptOverride: userPrompt,
+    inspirationAssetId: input.feedAssetId,
+    inspirationStrength: "light" as const,
+    supportInspirationAssetIds: [],
+    inspirationStyleProfile: null,
+    textPlan: null,
+    additionalInstructions: "",
+    negativeInstructions: "",
+    style: "",
+  };
+
+  await setAssetPlanStatusInProgress(input.eventId, assetId);
+  await saveGenerationSettings(input.eventId, assetId, settingsToSave, userPrompt);
+
+  const generation = await runArtworkV2Generation({
+    eventId: input.eventId,
+    assetId,
+    assetType: item.assetType,
+    imageSizePreset,
+    userManualPrompt: userPrompt,
+    orchestration: {
+      kind: "create",
+      userPrompt,
+      inspirationImageUrls: [input.feedImageUrl],
+    },
+    inspirationAssetId: input.feedAssetId,
+    generationProfile: resolveArtworkGenerationProfile("quick"),
+  });
+
+  if (!generation.success) {
+    return {
+      success: false,
+      error: generation.error,
+      userPrompt,
+      orchestratedPrompt: generation.orchestratedPrompt,
+    };
+  }
+
+  return {
+    success: true,
+    error: null,
+    warning: generation.warning,
+    userPrompt,
+    orchestratedPrompt: generation.orchestratedPrompt,
+    assetId,
+    versions: generation.versions,
+  };
+}
+
+async function generateRemainingMilestoneArtwork(input: {
+  eventId: string;
+  relativeDay: number;
+  inspirationAsset: EventAsset;
+  event: Awaited<ReturnType<typeof getEventById>>;
+  organizationName: string | null;
+  phaseItems: ReturnType<typeof getArtworkPhaseItems>;
+  phase?: "feed" | "story" | "all";
+}): Promise<ArtworkV2BatchMilestoneResult> {
+  const feedItem = findMilestoneFeedItem(input.phaseItems, input.relativeDay);
+  const title =
+    groupArtworkPhasesByMilestone(input.phaseItems).find(
+      (group) => group.relativeDay === input.relativeDay,
+    )?.title ?? `Day ${input.relativeDay}`;
+
+  if (!feedItem) {
+    return {
+      relativeDay: input.relativeDay,
+      title,
+      feedVersionIds: [],
+      storyVersionIds: [],
+      error: "Feed artwork slot not found for this milestone.",
+    };
+  }
+
+  const assets = await getCampaignAssetsForEvent(input.eventId);
+  const feedAsset = resolveWorkflowAsset(feedItem, null, assets);
+  const phase = input.phase ?? "all";
+  let feedVersionIds: string[] = [];
+  let feedImageUrl: string | null = null;
+  let feedAssetId: string | null = feedAsset?.id ?? null;
+
+  if (phase === "feed" || phase === "all") {
+    if (isApprovedArtworkAsset(feedAsset)) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds: [],
+        storyVersionIds: [],
+        error: "Feed artwork is already approved.",
+      };
+    }
+
+    const feedResult = await generateFeedWithInspirationAsset({
+      eventId: input.eventId,
+      feedItem,
+      inspirationAsset: input.inspirationAsset,
+      event: input.event,
+      organizationName: input.organizationName,
+    });
+
+    if (!feedResult.success || !feedResult.versions?.length) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds: [],
+        storyVersionIds: [],
+        error: feedResult.error ?? "Unable to generate feed artwork.",
+      };
+    }
+
+    feedVersionIds = feedResult.versions.map((version) => version.id);
+    feedImageUrl = feedResult.versions[0]?.imageUrl ?? null;
+    feedAssetId = feedResult.assetId ?? feedAssetId;
+
+    if (!feedImageUrl || !feedAssetId) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds,
+        storyVersionIds: [],
+        error: "Feed artwork was generated but the image is not available yet.",
+      };
+    }
+
+    if (phase === "feed") {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds,
+        storyVersionIds: [],
+      };
+    }
+  }
+
+  if (phase === "story" || phase === "all") {
+    const storyItem = findMilestoneStoryItem(input.phaseItems, input.relativeDay);
+    if (!storyItem) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds,
+        storyVersionIds: [],
+      };
+    }
+
+    const storyAsset = resolveWorkflowAsset(storyItem, null, assets);
+    if (isApprovedArtworkAsset(storyAsset)) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds,
+        storyVersionIds: [],
+      };
+    }
+
+    if (!feedImageUrl || !feedAssetId) {
+      if (phase === "story") {
+        const refreshedAssets = await getCampaignAssetsForEvent(input.eventId);
+        const refreshedFeedAsset = resolveWorkflowAsset(feedItem, null, refreshedAssets);
+        feedAssetId = refreshedFeedAsset?.id ?? null;
+
+        if (feedAssetId) {
+          const pendingFeedConcepts = await getPendingConceptsForAsset(feedAssetId);
+          const latestFeedConcept = pendingFeedConcepts[0];
+          feedImageUrl = latestFeedConcept?.storagePath
+            ? resolveAssetImageUrl(latestFeedConcept.storagePath)
+            : null;
+        }
+
+        if (!feedImageUrl && refreshedFeedAsset?.storagePath) {
+          feedImageUrl = resolveAssetImageUrl(refreshedFeedAsset.storagePath);
+        }
+      }
+
+      if (!feedImageUrl || !feedAssetId) {
+        return {
+          relativeDay: input.relativeDay,
+          title,
+          feedVersionIds,
+          storyVersionIds: [],
+          error: "Generate the feed artwork before creating the story version.",
+        };
+      }
+    }
+
+    const storyResult = await generateStoryFromFeedImage({
+      eventId: input.eventId,
+      relativeDay: input.relativeDay,
+      feedAssetId,
+      feedImageUrl,
+      event: input.event,
+      organizationName: input.organizationName,
+      phaseItems: input.phaseItems,
+    });
+
+    if (!storyResult.success) {
+      return {
+        relativeDay: input.relativeDay,
+        title,
+        feedVersionIds,
+        storyVersionIds: [],
+        error: storyResult.error ?? "Feed created, but story generation failed.",
+      };
+    }
+
+    return {
+      relativeDay: input.relativeDay,
+      title,
+      feedVersionIds,
+      storyVersionIds: (storyResult.versions ?? []).map((version) => version.id),
+    };
+  }
+
+  return {
+    relativeDay: input.relativeDay,
+    title,
+    feedVersionIds,
+    storyVersionIds: [],
+  };
+}
+
+/** Generate feed + story artwork for remaining milestones using an approved feed as style reference. */
+export async function generateRemainingArtworkV2Action(
+  eventId: string,
+  options?: {
+    anchorRelativeDay?: number;
+    relativeDay?: number;
+    phase?: "feed" | "story" | "all";
+  },
+): Promise<ArtworkV2BatchGenerationResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return {
+      success: false,
+      error: "You do not have permission to generate artwork.",
+      milestones: [],
+    };
+  }
+
+  if (!isArtworkGenerationConfigured()) {
+    return {
+      success: false,
+      error: "AI artwork generation is not configured.",
+      milestones: [],
+    };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found.", milestones: [] };
+  }
+
+  const communicationSteps = await getEventCommunicationSteps(eventId);
+  const phaseItems = getArtworkPhaseItems({
+    eventType: event.eventType,
+    communicationStrategy: event.communicationStrategy,
+    communicationSteps,
+  });
+
+  if (phaseItems.length === 0) {
+    return {
+      success: false,
+      error: "This campaign does not use milestone artwork.",
+      milestones: [],
+    };
+  }
+
+  const assets = await getCampaignAssetsForEvent(eventId);
+  const inspirationAsset = findAnchorInspirationFeedAsset(
+    phaseItems,
+    assets,
+    options?.anchorRelativeDay,
+  );
+
+  if (!inspirationAsset) {
+    return {
+      success: false,
+      error: "Approve at least one milestone feed artwork before generating the rest.",
+      milestones: [],
+    };
+  }
+
+  const organizationName = (await getLatestOrganization())?.name ?? null;
+  const remaining = getRemainingArtworkMilestones(phaseItems, assets).filter((milestone) =>
+    options?.relativeDay != null ? milestone.relativeDay === options.relativeDay : true,
+  );
+
+  if (remaining.length === 0) {
+    return {
+      success: false,
+      error: "No remaining milestones need artwork.",
+      milestones: [],
+    };
+  }
+
+  const milestones: ArtworkV2BatchMilestoneResult[] = [];
+
+  for (const milestone of remaining) {
+    milestones.push(
+      await generateRemainingMilestoneArtwork({
+        eventId,
+        relativeDay: milestone.relativeDay,
+        inspirationAsset,
+        event,
+        organizationName,
+        phaseItems,
+        phase: options?.phase,
+      }),
+    );
+  }
+
+  revalidateArtworkV2Paths(eventId);
+
+  const hasFailures = milestones.some((entry) => entry.error);
+  return {
+    success: !hasFailures,
+    error: hasFailures ? "Some milestones could not be generated." : null,
+    milestones,
   };
 }

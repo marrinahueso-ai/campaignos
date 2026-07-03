@@ -1,6 +1,10 @@
 import type { CreateEventInput, Event, EventRow } from "@/types";
 import { parseCommunicationStrategy } from "@/lib/events/communication-strategy";
 import { sanitizeVolunteerNeeds } from "@/lib/events/volunteer-needs";
+import {
+  parsePlanningQuickLinks,
+  parsePlanningVendors,
+} from "@/lib/event-playbooks/planning-constants";
 
 export function mapEventRow(row: EventRow): Event {
   return {
@@ -21,6 +25,13 @@ export function mapEventRow(row: EventRow): Event {
     approvalOrganizationRoleId: row.approval_organization_role_id ?? null,
     budget: row.budget ?? null,
     volunteerNeeds: sanitizeVolunteerNeeds(row.volunteer_needs),
+    goal: row.goal ?? null,
+    expectedAttendance: row.expected_attendance ?? null,
+    planningQuickLinks: parsePlanningQuickLinks(row.planning_quick_links) as Event["planningQuickLinks"],
+    planningVendors: parsePlanningVendors(row.planning_vendors),
+    approvedSquareImageUrl: row.approved_square_image_url ?? null,
+    approvedSquareImageStatus:
+      row.approved_square_image_status === "filled" ? "filled" : "open",
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? null,
   };

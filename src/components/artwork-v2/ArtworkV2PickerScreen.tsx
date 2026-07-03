@@ -4,11 +4,18 @@ import { ChevronDown, ChevronRight, Download } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { Button } from "@/components/ui/Button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { downloadArtworkImage } from "@/lib/artwork-v2/download";
 import {
   groupArtworkPhasesByMilestone,
   type ArtworkPhaseWorkflowItem,
 } from "@/lib/artwork-v2/campaign-phases";
+import type { MilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import { cn } from "@/lib/utils/cn";
 
@@ -23,6 +30,9 @@ interface ArtworkV2PickerScreenProps {
   isPhaseWorkflow?: boolean;
   onSelect: (item: ArtworkWorkflowItem) => void;
   onSelectMilestone?: (relativeDay: number) => void;
+  showGenerateRemaining?: boolean;
+  onGenerateRemaining?: () => void;
+  getMilestoneStatus?: (relativeDay: number) => MilestoneArtworkStatus;
 }
 
 function isPhaseEntry(item: ArtworkV2PickerEntry): item is ArtworkV2PickerEntry & ArtworkPhaseWorkflowItem {
@@ -42,11 +52,43 @@ function milestoneProgress(formats: ArtworkV2PickerEntry[]): {
   };
 }
 
+function milestoneStatusLabel(status: MilestoneArtworkStatus): string {
+  switch (status) {
+    case "complete":
+      return "Complete";
+    case "ready_for_review":
+      return "Ready for review";
+    case "in_progress":
+      return "In progress";
+    default:
+      return "Not started";
+  }
+}
+
+function milestoneStatusDescription(
+  status: MilestoneArtworkStatus,
+  progress: ReturnType<typeof milestoneProgress>,
+): string {
+  if (status === "complete") {
+    return "Feed (1:1) + Story (9:16) ready";
+  }
+  if (status === "ready_for_review") {
+    return "Generated versions waiting for your review";
+  }
+  if (status === "in_progress") {
+    return progress.approved > 0 ? "Story version in progress" : "Feed + Story · one creation flow";
+  }
+  return "Feed + Story · one creation flow";
+}
+
 export function ArtworkV2PickerScreen({
   items,
   isPhaseWorkflow = false,
   onSelect,
   onSelectMilestone,
+  showGenerateRemaining = false,
+  onGenerateRemaining,
+  getMilestoneStatus,
 }: ArtworkV2PickerScreenProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(() => new Set());
@@ -95,8 +137,14 @@ export function ArtworkV2PickerScreen({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-cos-border bg-cos-card px-6 py-12 text-center shadow-sm">
-        <p className="text-sm text-cos-muted">No artwork is needed for this campaign.</p>
+      <div className="space-y-6">
+        <header>
+          <p className="studio-eyebrow">Create</p>
+          <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Artwork</h2>
+        </header>
+        <Card padding="lg" className="text-center">
+          <p className="text-sm text-cos-muted">No artwork is needed for this campaign.</p>
+        </Card>
       </div>
     );
   }
@@ -111,20 +159,48 @@ export function ArtworkV2PickerScreen({
             ? "Create artwork once per milestone — we generate a 1:1 feed image and a 9:16 story version from the same design."
             : "Choose what you\u2019d like to create. Approved artwork can be downloaded from here."}
         </p>
+        {showGenerateRemaining && onGenerateRemaining && (
+          <div className="mt-4">
+            <Button type="button" size="lg" onClick={onGenerateRemaining}>
+              Generate remaining artwork
+            </Button>
+            <p className="mt-2 max-w-2xl text-xs text-cos-muted">
+              Uses your approved milestone as a style reference. You&apos;ll review each result before
+              anything is approved.
+            </p>
+          </div>
+        )}
       </header>
 
       {phaseGroups ? (
-        <ul className="space-y-4">
+        <Card padding="none">
+          <CardHeader className="px-5 pt-5">
+            <CardTitle>Campaign milestones</CardTitle>
+            <CardDescription>
+              One creation flow per milestone — feed (1:1) and story (9:16) from the same design.
+            </CardDescription>
+          </CardHeader>
+          <ul className="space-y-4 px-5 pb-5">
           {phaseGroups.map((group) => {
             const progress = milestoneProgress(group.formats);
+            const milestoneStatus = getMilestoneStatus?.(group.relativeDay) ?? (
+              progress.complete
+                ? "complete"
+                : progress.approved > 0
+                  ? "in_progress"
+                  : "not_started"
+            );
             const feed = group.formats.find((format) => format.metaPlacement === "feed");
             const story = group.formats.find((format) => format.metaPlacement === "story");
             const expanded = expandedDays.has(group.relativeDay);
-            const openLabel = progress.complete
-              ? "View"
-              : progress.approved > 0
-                ? "Continue"
-                : "Create";
+            const openLabel =
+              milestoneStatus === "complete"
+                ? "View"
+                : milestoneStatus === "ready_for_review"
+                  ? "Review"
+                  : progress.approved > 0
+                    ? "Continue"
+                    : "Create";
 
             return (
               <li key={group.relativeDay}>
@@ -154,26 +230,22 @@ export function ArtworkV2PickerScreen({
                         <div>
                           <h3 className="font-display text-2xl text-cos-text">{group.title}</h3>
                           <p className="mt-0.5 text-xs text-cos-muted">
-                            {progress.complete
-                              ? "Feed (1:1) + Story (9:16) ready"
-                              : progress.approved > 0
-                                ? "Story version in progress"
-                                : "Feed + Story · one creation flow"}
+                            {milestoneStatusDescription(milestoneStatus, progress)}
                           </p>
                         </div>
                         <span
                           className={cn(
                             "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                            progress.complete
+                            milestoneStatus === "complete"
                               ? "bg-emerald-50 text-emerald-700"
-                              : "bg-cos-bg text-cos-muted",
+                              : milestoneStatus === "ready_for_review"
+                                ? "bg-amber-50 text-amber-800"
+                                : milestoneStatus === "in_progress"
+                                  ? "bg-cos-bg text-cos-muted"
+                                  : "bg-cos-bg text-cos-muted",
                           )}
                         >
-                          {progress.complete
-                            ? "Complete"
-                            : progress.approved > 0
-                              ? "In progress"
-                              : "Not started"}
+                          {milestoneStatusLabel(milestoneStatus)}
                         </span>
                       </div>
                     </button>
@@ -199,6 +271,7 @@ export function ArtworkV2PickerScreen({
                             src={feed.downloadUrl}
                             alt={`${group.title} feed artwork`}
                             label="Feed 1:1"
+                            variant="feed"
                             wrapperClassName="w-16"
                             frameClassName="aspect-square"
                           />
@@ -224,6 +297,7 @@ export function ArtworkV2PickerScreen({
                             src={story.downloadUrl}
                             alt={`${group.title} story artwork`}
                             label="Story 9:16"
+                            variant="story"
                             wrapperClassName="w-12"
                             frameClassName="aspect-[9/16]"
                           />
@@ -249,22 +323,30 @@ export function ArtworkV2PickerScreen({
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </Card>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <Card padding="none">
+          <CardHeader className="px-5 pt-5">
+            <CardTitle>Campaign artwork</CardTitle>
+            <CardDescription>
+              Choose what to create. Approved artwork can be downloaded from here.
+            </CardDescription>
+          </CardHeader>
+          <ul className="divide-y divide-cos-border">
           {items.map((item) => (
-            <li key={item.id} className="flex gap-2">
+            <li key={item.id} className="flex gap-2 px-5 py-4">
               <button
                 type="button"
                 onClick={() => onSelect(item)}
                 className={cn(
-                  "flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-cos-border bg-cos-card px-5 py-4 text-left shadow-sm transition-colors",
+                  "flex min-w-0 flex-1 items-center gap-3 border border-cos-border bg-cos-card px-5 py-4 text-left transition-colors",
                   "hover:border-cos-primary/40 hover:bg-cos-info/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-primary",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs",
+                    "flex h-5 w-5 shrink-0 items-center justify-center border text-xs",
                     item.isApproved
                       ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                       : "border-cos-border bg-cos-bg text-cos-muted",
@@ -274,7 +356,7 @@ export function ArtworkV2PickerScreen({
                   {item.isApproved ? "✓" : "□"}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-base font-medium text-cos-text">{item.label}</span>
+                  <span className="font-display block truncate text-lg text-cos-text">{item.label}</span>
                   {item.channelLabel && (
                     <span className="mt-0.5 block truncate text-xs text-cos-muted">
                       {item.channelLabel}
@@ -304,7 +386,8 @@ export function ArtworkV2PickerScreen({
               )}
             </li>
           ))}
-        </ul>
+          </ul>
+        </Card>
       )}
     </div>
   );

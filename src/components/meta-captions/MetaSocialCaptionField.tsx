@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Pencil, RefreshCw, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Pencil, RefreshCw, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
@@ -156,11 +156,11 @@ export function MetaSocialCaptionField({
         <div className="flex flex-wrap items-center gap-2">
           <p className="cos-section-title">{label}</p>
           {isApproved ? (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
               Approved
             </span>
           ) : hasContent ? (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+            <span className="rounded-full bg-cos-bg px-2.5 py-0.5 text-xs font-medium text-cos-muted">
               Draft
             </span>
           ) : null}
@@ -182,7 +182,7 @@ export function MetaSocialCaptionField({
           className="text-sm leading-6"
         />
       ) : (
-        <div className="rounded-lg border border-cos-border bg-white p-3 text-sm leading-6 whitespace-pre-wrap text-cos-text">
+        <div className="border border-cos-border bg-cos-bg/50 p-3 text-sm leading-6 whitespace-pre-wrap text-cos-text">
           {content}
         </div>
       )}
@@ -321,6 +321,8 @@ interface MetaSocialCaptionMilestoneCardProps {
   expanded: boolean;
   onToggle: () => void;
   disabled?: boolean;
+  approvalRoleLabel?: string | null;
+  onNavigateToPublish?: (relativeDay: number) => void;
 }
 
 function milestoneStatus(milestone: import("@/lib/meta-captions/types").MetaSocialCaptionMilestone) {
@@ -328,15 +330,27 @@ function milestoneStatus(milestone: import("@/lib/meta-captions/types").MetaSoci
   const storyApproved = milestone.story.status === "approved" && milestone.story.content;
 
   if (feedApproved && storyApproved) {
-    return { label: "Approved", className: "bg-emerald-50 text-emerald-700" };
+    return {
+      label: "Complete",
+      subtitle: "Feed + Story captions ready",
+      className: "bg-emerald-50 text-emerald-700",
+    };
   }
 
   const hasAny = milestone.feed.content || milestone.story.content;
   if (hasAny) {
-    return { label: "In progress", className: "bg-amber-50 text-amber-800" };
+    return {
+      label: "In progress",
+      subtitle: "Captions in progress",
+      className: "bg-cos-bg text-cos-muted",
+    };
   }
 
-  return { label: "Needs captions", className: "bg-cos-bg text-cos-muted" };
+  return {
+    label: "Not started",
+    subtitle: "Feed + Story · draft captions",
+    className: "bg-cos-bg text-cos-muted",
+  };
 }
 
 export function MetaSocialCaptionMilestoneCard({
@@ -347,6 +361,8 @@ export function MetaSocialCaptionMilestoneCard({
   expanded,
   onToggle,
   disabled = false,
+  approvalRoleLabel = null,
+  onNavigateToPublish,
 }: MetaSocialCaptionMilestoneCardProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -357,6 +373,7 @@ export function MetaSocialCaptionMilestoneCard({
   const storyReady = Boolean(milestone.story.content?.trim());
   const milestoneApproved =
     milestone.feed.status === "approved" && milestone.story.status === "approved";
+  const isComplete = milestoneApproved && feedReady && storyReady;
   const canApproveMilestone =
     canApproveDraft(userRole) && feedReady && storyReady && !milestoneApproved;
 
@@ -373,30 +390,55 @@ export function MetaSocialCaptionMilestoneCard({
   }
 
   return (
-    <li className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between gap-3 border-b border-cos-border px-4 py-3 text-left"
-        onClick={onToggle}
-        aria-expanded={expanded}
-      >
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-cos-text">{milestone.title}</h3>
-          {!expanded && (milestone.feed.content || milestone.story.content) && (
-            <p className="mt-0.5 truncate text-xs text-cos-muted">
-              {milestone.feed.content?.slice(0, 80) ?? milestone.story.content?.slice(0, 80)}
-            </p>
-          )}
+    <li id={`caption-milestone-${milestone.relativeDay}`}>
+      <article className="overflow-hidden border border-cos-border bg-cos-card">
+        <div className="flex items-start gap-2 border-b border-cos-border px-4 py-4">
+          <button
+            type="button"
+            className="mt-1 shrink-0 rounded-lg p-1 text-cos-muted hover:bg-cos-bg hover:text-cos-text"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Collapse milestone" : "Expand milestone"}
+          >
+            {expanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            className="min-w-0 flex-1 text-left"
+            onClick={onToggle}
+            aria-expanded={expanded}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="font-display text-2xl text-cos-text">{milestone.title}</h3>
+                <p className="mt-0.5 text-xs text-cos-muted">{status.subtitle}</p>
+                {isComplete && approvalRoleLabel && (
+                  <p className="mt-1 text-xs text-cos-muted">
+                    Publishing requires approval from {approvalRoleLabel}
+                  </p>
+                )}
+                {!expanded && (milestone.feed.content || milestone.story.content) && (
+                  <p className="mt-1 truncate text-xs text-cos-muted">
+                    {milestone.feed.content?.slice(0, 80) ?? milestone.story.content?.slice(0, 80)}
+                  </p>
+                )}
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
+                  status.className,
+                )}
+              >
+                {status.label}
+              </span>
+            </div>
+          </button>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-            status.className,
-          )}
-        >
-          {status.label}
-        </span>
-      </button>
 
       {expanded && (
         <div className="divide-y divide-cos-border">
@@ -423,8 +465,8 @@ export function MetaSocialCaptionMilestoneCard({
             userRole={userRole}
             disabled={disabled || isPending}
           />
-          {(canApproveMilestone || error) && (
-            <div className="space-y-2 border-t border-cos-border px-4 py-3">
+          {(canApproveMilestone || isComplete || error) && (
+            <div className="space-y-3 border-t border-cos-border px-4 py-3">
               {error && (
                 <p className="text-sm text-red-600" role="alert">
                   {error}
@@ -441,10 +483,28 @@ export function MetaSocialCaptionMilestoneCard({
                   Approve milestone
                 </Button>
               )}
+              {isComplete && onNavigateToPublish && (
+                <div className="space-y-2">
+                  {approvalRoleLabel && (
+                    <p className="text-xs text-cos-muted">
+                      Ready for {approvalRoleLabel} to review in Review &amp; Publish
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={disabled || isPending}
+                    onClick={() => onNavigateToPublish(milestone.relativeDay)}
+                  >
+                    Continue to Review &amp; Publish
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
+      </article>
     </li>
   );
 }

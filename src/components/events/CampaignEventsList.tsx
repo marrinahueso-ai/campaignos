@@ -16,6 +16,7 @@ interface CampaignEventsListProps {
   monthGroups: SortedCampaignMonthGroups;
   artworkByEventId: Map<string, HeroArtworkSelection | null>;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
+  metaScheduledEventIds?: Set<string>;
 }
 
 function CampaignMonthSection({
@@ -23,11 +24,13 @@ function CampaignMonthSection({
   muted = false,
   artworkByEventId,
   ownershipByEventId,
+  metaScheduledEventIds,
 }: {
   group: CampaignMonthGroup;
   muted?: boolean;
   artworkByEventId: Map<string, HeroArtworkSelection | null>;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
+  metaScheduledEventIds?: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -78,6 +81,7 @@ function CampaignMonthSection({
               event={event}
               artwork={artworkByEventId.get(event.id) ?? null}
               ownership={ownershipByEventId?.get(event.id) ?? null}
+              metaPublicationScheduled={metaScheduledEventIds?.has(event.id) ?? false}
               showRemoveFromCampaigns
             />
           ))}
@@ -91,6 +95,7 @@ export function CampaignEventsList({
   monthGroups,
   artworkByEventId,
   ownershipByEventId,
+  metaScheduledEventIds,
 }: CampaignEventsListProps) {
   const { activeGroups, pastGroups } = monthGroups;
   const totalGroups = activeGroups.length + pastGroups.length;
@@ -115,6 +120,7 @@ export function CampaignEventsList({
           group={group}
           artworkByEventId={artworkByEventId}
           ownershipByEventId={ownershipByEventId}
+          metaScheduledEventIds={metaScheduledEventIds}
         />
       ))}
 
@@ -128,6 +134,7 @@ export function CampaignEventsList({
               muted
               artworkByEventId={artworkByEventId}
               ownershipByEventId={ownershipByEventId}
+              metaScheduledEventIds={metaScheduledEventIds}
             />
           ))}
         </div>

@@ -37,6 +37,12 @@ const HERO_ASSET_TYPES = new Set<EventAssetType>([
   "newsletter_banner",
 ]);
 
+const MILESTONE_FEED_ASSET_TYPES = new Set<EventAssetType>([
+  "instagram_graphic",
+  "square_graphic",
+  "facebook_graphic",
+]);
+
 const VISUAL_COMMUNICATION_CHANNELS = new Set<CommunicationChannel>([
   "flyer",
   "instagram",
@@ -97,6 +103,13 @@ function isUsableAsset(asset: EventAsset): boolean {
   return (
     asset.status === "uploaded" &&
     !!(asset.filename || resolveAssetImageUrl(asset.storagePath))
+  );
+}
+
+function isApprovedPlanAsset(asset: EventAsset): boolean {
+  return (
+    isUsableAsset(asset) &&
+    (asset.planStatus === "approved" || asset.planStatus === "published")
   );
 }
 
@@ -227,6 +240,86 @@ function pickApprovedUploadedAsset(
   return null;
 }
 
+function pickFeedForStoryMilestone(
+  storyAsset: EventAsset,
+  assets: EventAsset[],
+): EventAsset | null {
+  if (!storyAsset.planLabel) {
+    return null;
+  }
+
+  return (
+    sortVisualAssets(
+      assets.filter(
+        (asset) =>
+          MILESTONE_FEED_ASSET_TYPES.has(asset.assetType) &&
+          asset.planLabel === storyAsset.planLabel &&
+          isUsableAsset(asset) &&
+          isApprovedPlanAsset(asset),
+      ),
+    )[0] ?? null
+  );
+}
+
+/** When only a story asset is approved, prefer feed from the same milestone. */
+function pickApprovedStoryFallback(
+  assets: EventAsset[],
+): HeroArtworkSelection | null {
+  const approvedStories = sortVisualAssets(
+    assets.filter(
+      (asset) =>
+        asset.assetType === "instagram_story" && isApprovedPlanAsset(asset),
+    ),
+  );
+
+  if (approvedStories.length === 0) {
+    return null;
+  }
+
+  const newestStory = approvedStories[0]!;
+  const feedFromMilestone = pickFeedForStoryMilestone(newestStory, assets);
+
+  if (feedFromMilestone) {
+    return toAssetSelection(feedFromMilestone, "approved_asset", "Artwork ready");
+  }
+
+  return toAssetSelection(newestStory, "approved_asset", "Artwork ready");
+}
+
+function pickApprovedPlanAsset(assets: EventAsset[]): HeroArtworkSelection | null {
+  const approvedAssets = assets.filter(
+    (asset) => HERO_ASSET_TYPES.has(asset.assetType) && isApprovedPlanAsset(asset),
+  );
+
+  if (approvedAssets.length === 0) {
+    return pickApprovedStoryFallback(assets);
+  }
+
+  const milestoneFeeds = sortVisualAssets(
+    approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
+  );
+  const heroImage = approvedAssets.find((asset) => asset.assetType === "hero_image");
+
+  if (milestoneFeeds.length > 0) {
+    const newestFeed = milestoneFeeds[0]!;
+    if (
+      !heroImage ||
+      newestFeed.updatedAt.localeCompare(heroImage.updatedAt) >= 0
+    ) {
+      return toAssetSelection(newestFeed, "approved_asset", "Artwork ready");
+    }
+  }
+
+  if (heroImage) {
+    return toAssetSelection(heroImage, "approved_asset", "Artwork ready");
+  }
+
+  const fallback = sortVisualAssets(approvedAssets)[0];
+  return fallback
+    ? toAssetSelection(fallback, "approved_asset", "Artwork ready")
+    : null;
+}
+
 function pickMostRecentUploadedAsset(
   assets: EventAsset[],
 ): HeroArtworkSelection | null {
@@ -285,7 +378,25 @@ export function selectHeroArtwork(input: {
   assets: EventAsset[];
   communications: CommunicationItem[];
   approvalRequests: ApprovalRequest[];
+  approvedSquareImageUrl?: string | null;
 }): HeroArtworkSelection | null {
+  if (input.approvedSquareImageUrl) {
+    return {
+      source: "approved_asset",
+      caption: "Artwork ready",
+      imageUrl: input.approvedSquareImageUrl,
+      label: "Approved artwork",
+      filename: null,
+      aspectRatio: "square",
+      assetType: "square_graphic",
+    };
+  }
+
+  const approvedPlanArtwork = pickApprovedPlanAsset(input.assets);
+  if (approvedPlanArtwork) {
+    return approvedPlanArtwork;
+  }
+
   const approvedCommunicationIds = getApprovedCommunicationIds(
     input.communications,
     input.approvalRequests,

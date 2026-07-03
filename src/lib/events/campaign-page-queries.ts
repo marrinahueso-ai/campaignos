@@ -24,3 +24,35 @@ export async function getCampaignPageEvents(): Promise<Event[]> {
     isCampaignPageStrategy(event.communicationStrategy),
   );
 }
+
+/** Event ids with at least one Meta slot scheduled or approved for posting. */
+export async function getMetaScheduledEventIds(
+  eventIds: string[],
+): Promise<Set<string>> {
+  if (eventIds.length === 0) {
+    return new Set();
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("meta_publication_slots")
+    .select("event_id, status")
+    .in("event_id", eventIds)
+    .in("status", ["scheduled", "approved"]);
+
+  if (error) {
+    if (error.code === "42P01" || error.message.includes("meta_publication_slots")) {
+      return new Set();
+    }
+
+    console.error("Failed to fetch meta publication slots:", error.message);
+    return new Set();
+  }
+
+  const scheduled = new Set<string>();
+  for (const row of data ?? []) {
+    scheduled.add(row.event_id);
+  }
+
+  return scheduled;
+}

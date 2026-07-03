@@ -1,3 +1,10 @@
+/** True when Postgres reports a unique constraint violation (duplicate row). */
+export function isDuplicateKeyError(
+  error: { code?: string } | null | undefined,
+): boolean {
+  return error?.code === "23505";
+}
+
 /** True when Postgres/Supabase reports a missing table or column (migration not applied). */
 export function isMissingSchemaError(
   error: { code?: string; message?: string } | null | undefined,
