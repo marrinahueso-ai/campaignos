@@ -452,7 +452,6 @@ export function featureScreenshotPath(slug: FeaturePreviewSlug): string {
 export const FEATURE_VIDEO_SLUGS = [
   "planning-hub",
   "calendar",
-  "heatmap",
 ] as const satisfies readonly FeaturePreviewSlug[];
 
 export type FeatureVideoSlug = (typeof FEATURE_VIDEO_SLUGS)[number];

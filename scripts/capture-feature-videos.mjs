@@ -44,24 +44,6 @@ const RECORDINGS = [
       await page.waitForTimeout(9000);
     },
   },
-  {
-    slug: "heatmap",
-    scenario: "calendar-heatmap",
-    viewport: { width: 1280, height: 960 },
-    run: async (page) => {
-      await page.waitForSelector('[data-record-step="calendar-heatmap"]', {
-        timeout: 30_000,
-      });
-      await page.waitForTimeout(1500);
-      await page.getByRole("button", { name: "Best times to post" }).click();
-      await page.waitForTimeout(600);
-      await page
-        .locator('[data-testid="calendar-drop-week-2026-07-02-17"]')
-        .first()
-        .scrollIntoViewIfNeeded();
-      await page.waitForTimeout(9500);
-    },
-  },
 ];
 
 const onlyArgIndex = process.argv.indexOf("--only");

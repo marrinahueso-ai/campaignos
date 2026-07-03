@@ -34,7 +34,7 @@ export function FeaturePreviewSlide({
   chrome = true,
   carousel = false,
 }: FeaturePreviewSlideProps) {
-  const content = <FeaturePreviewSlideContent slug={slug} />;
+  const content = <FeaturePreviewSlideContent slug={slug} carousel={carousel} />;
 
   if (!chrome) {
     return content;
@@ -47,7 +47,13 @@ export function FeaturePreviewSlide({
   );
 }
 
-function FeaturePreviewSlideContent({ slug }: { slug: FeaturePreviewSlug }) {
+function FeaturePreviewSlideContent({
+  slug,
+  carousel = false,
+}: {
+  slug: FeaturePreviewSlug;
+  carousel?: boolean;
+}) {
   switch (slug) {
     case "dashboard":
       return (
@@ -88,7 +94,7 @@ function FeaturePreviewSlideContent({ slug }: { slug: FeaturePreviewSlug }) {
     case "calendar":
       return <FeaturePreviewCalendarSlide />;
     case "heatmap":
-      return <FeaturePreviewHeatmapSlide />;
+      return <FeaturePreviewHeatmapSlide compact={carousel} />;
     case "artwork":
       return <FeaturePreviewArtworkSlide />;
     case "approvals":
