@@ -75,11 +75,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
-    if (shouldAllowAuthenticatedLoginView(request.nextUrl.searchParams.get("error"))) {
+    const loginError = request.nextUrl.searchParams.get("error");
+    if (shouldAllowAuthenticatedLoginView(loginError)) {
       return supabaseResponse;
     }
 
-    const pendingCode = getPendingFoundingAccessCodeFromRequest(request);
+    const setupIntent = request.nextUrl.searchParams.get("intent") === "setup";
+    const pendingCode = setupIntent
+      ? getPendingFoundingAccessCodeFromRequest(request)
+      : null;
     const hasValidPendingCode =
       Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
     const hasMembership = await hasActiveOrganizationMembership(
@@ -95,8 +99,15 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse;
     }
 
-    const homePath = await resolvePostAuthPathForUser(supabase, user.id);
-    if (shouldAllowAuthenticatedLoginView(new URL(homePath, request.url).searchParams.get("error"))) {
+    const homePath = await resolvePostAuthPathForUser(supabase, user.id, null, {
+      setupIntent,
+      pendingCode,
+    });
+    if (
+      shouldAllowAuthenticatedLoginView(
+        new URL(homePath, request.url).searchParams.get("error"),
+      )
+    ) {
       return supabaseResponse;
     }
     const homeUrl = new URL(homePath, request.nextUrl.origin);

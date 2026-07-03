@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
+import type { NextResponse } from "next/server";
 
 /**
  * Founding / beta access codes are configured via Vercel env vars (not in-app UI):
@@ -149,6 +150,16 @@ export async function getPendingFoundingAccessCode(): Promise<string | null> {
 export async function clearPendingFoundingAccessCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(PENDING_FOUNDING_ACCESS_COOKIE);
+}
+
+/** Clear pending setup cookie on OAuth/password responses (stale cookie must not block sign-in). */
+export function clearPendingFoundingAccessCookieOnResponse(
+  response: NextResponse,
+): void {
+  response.cookies.set(PENDING_FOUNDING_ACCESS_COOKIE, "", {
+    ...pendingFoundingAccessCookieOptions(),
+    maxAge: 0,
+  });
 }
 
 export async function resolvePendingFoundingAccess(): Promise<FoundingAccessResolution> {

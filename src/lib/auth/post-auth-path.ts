@@ -11,7 +11,7 @@ import { safeNextPath } from "@/lib/auth/safe-next-path";
 export const SCHOOL_SETUP_PATH = "/settings/school-setup";
 export const DEFAULT_AUTH_PATH = "/dashboard";
 
-/** Login errors that must render for authenticated users (no auto-redirect). */
+/** Known login errors with dedicated UI copy. */
 export const LOGIN_PAGE_ERRORS = [
   "existing_org",
   "auth",
@@ -31,8 +31,9 @@ export function isLoginPageError(
   );
 }
 
+/** Any /login?error=… URL must render without middleware or page redirects. */
 export function shouldAllowAuthenticatedLoginView(error?: string | null) {
-  return isLoginPageError(error);
+  return Boolean(error?.trim());
 }
 
 export function resolveAuthenticatedAppPath(
@@ -53,24 +54,29 @@ export function resolveAuthenticatedAppPath(
 
 export async function getAuthenticatedAppPath(
   next?: string | null,
+  options?: { setupIntent?: boolean },
 ): Promise<string> {
-  const pendingCode = await getPendingFoundingAccessCode();
-  const pendingSetup =
-    Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
+  const setupIntent = options?.setupIntent ?? false;
 
-  if (pendingSetup) {
-    const organization = await getCurrentOrganization();
-    if (organization) {
-      return "/login?error=existing_org";
+  if (setupIntent) {
+    const pendingCode = await getPendingFoundingAccessCode();
+    const pendingSetup =
+      Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
+
+    if (pendingSetup) {
+      const organization = await getCurrentOrganization();
+      if (organization) {
+        return "/login?error=existing_org";
+      }
+      return SCHOOL_SETUP_PATH;
     }
-    return SCHOOL_SETUP_PATH;
+
+    if (isFoundingAccessCodeRequired()) {
+      return "/login?intent=setup&error=code_required";
+    }
   }
 
   const organization = await getCurrentOrganization();
-  if (!organization && isFoundingAccessCodeRequired() && !pendingSetup) {
-    return "/login?intent=setup&error=code_required";
-  }
-
   return resolveAuthenticatedAppPath(organization !== null, next);
 }
 
@@ -81,10 +87,16 @@ export async function resolvePostAuthPathForUser(
   next?: string | null,
   options?: { setupIntent?: boolean; pendingCode?: string | null },
 ): Promise<string> {
-  const pendingCode =
-    options?.pendingCode ?? (await getPendingFoundingAccessCode());
+  const setupIntent = options?.setupIntent ?? false;
+  const pendingCode = setupIntent
+    ? options?.pendingCode !== undefined
+      ? options.pendingCode
+      : await getPendingFoundingAccessCode()
+    : null;
   const hasValidPendingSetup =
-    Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
+    setupIntent &&
+    Boolean(pendingCode) &&
+    validateFoundingAccessCode(pendingCode);
 
   const hasMembership = await hasActiveOrganizationMembership(supabase, userId);
 
@@ -95,7 +107,7 @@ export async function resolvePostAuthPathForUser(
     return SCHOOL_SETUP_PATH;
   }
 
-  if (options?.setupIntent && !hasValidPendingSetup) {
+  if (setupIntent && !hasValidPendingSetup) {
     return "/login?intent=setup&error=code_required";
   }
 

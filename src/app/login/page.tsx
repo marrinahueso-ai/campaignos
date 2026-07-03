@@ -46,7 +46,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const showLoginError = shouldAllowAuthenticatedLoginView(params.error);
 
   if (user && !needsFoundingCodeRetry && !showLoginError) {
-    redirect(await getAuthenticatedAppPath(nextPath));
+    redirect(await getAuthenticatedAppPath(nextPath, { setupIntent }));
   }
 
   const invitePreview = params.invite

@@ -27,6 +27,7 @@ import {
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import {
+  clearPendingFoundingAccessCookie,
   isFoundingAccessCodeRequired,
   PENDING_FOUNDING_ACCESS_QUERY_PARAM,
   resolveFoundingAccess,
@@ -135,6 +136,8 @@ export async function signInWithPasswordAction(
   if (data.user?.email) {
     await acceptPendingInvitesForUser(data.user.id, data.user.email);
   }
+
+  await clearPendingFoundingAccessCookie();
 
   redirect(await getAuthenticatedAppPath(safeNextPath(formData.get("next")?.toString())));
 }

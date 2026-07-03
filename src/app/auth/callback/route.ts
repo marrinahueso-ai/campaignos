@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { acceptPendingInvitesForUser } from "@/lib/auth/membership-queries";
 import {
+  clearPendingFoundingAccessCookieOnResponse,
   pendingFoundingAccessCookieOptions,
   PENDING_FOUNDING_ACCESS_COOKIE,
 } from "@/lib/auth/founding-access";
@@ -92,6 +93,8 @@ export async function GET(request: NextRequest) {
       pendingFoundingCode,
       pendingFoundingAccessCookieOptions(),
     );
+  } else if (!setupIntent) {
+    clearPendingFoundingAccessCookieOnResponse(finalResponse);
   }
   return finalResponse;
 }
