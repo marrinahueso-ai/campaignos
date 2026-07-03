@@ -36,19 +36,20 @@ export async function prepareFacebookFeedImageBytes(
   }
 
   const inputBuffer = Buffer.from(await response.arrayBuffer());
-  const metadata = await sharp(inputBuffer).metadata();
+  const image = sharp(inputBuffer, { sequentialRead: true });
+  const metadata = await image.metadata();
   const width = metadata.width ?? 0;
   const height = metadata.height ?? 0;
 
   try {
     const pipeline = isFacebookFeedAspect(width, height)
-      ? sharp(inputBuffer).resize(FACEBOOK_FEED_WIDTH, FACEBOOK_FEED_HEIGHT, { fit: "fill" })
-      : sharp(inputBuffer).resize(FACEBOOK_FEED_WIDTH, FACEBOOK_FEED_HEIGHT, {
+      ? image.clone().resize(FACEBOOK_FEED_WIDTH, FACEBOOK_FEED_HEIGHT, { fit: "fill" })
+      : image.clone().resize(FACEBOOK_FEED_WIDTH, FACEBOOK_FEED_HEIGHT, {
           fit: "contain",
           background: FEED_CANVAS_BACKGROUND,
         });
 
-    const bytes = await pipeline.jpeg({ quality: 92, mozjpeg: true }).toBuffer();
+    const bytes = await pipeline.jpeg({ quality: 90 }).toBuffer();
     return { bytes, contentType: "image/jpeg" };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Image processing failed";

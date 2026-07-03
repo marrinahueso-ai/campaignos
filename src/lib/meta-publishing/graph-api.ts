@@ -130,7 +130,13 @@ async function waitForInstagramContainer(input: {
   containerId: string;
   accessToken: string;
 }): Promise<GraphResult> {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  const pollDelaysMs = [0, 500, 500, 800, 800, 1000, 1000, 1200, 1200, 1500, 1500, 1500];
+
+  for (let attempt = 0; attempt < pollDelaysMs.length; attempt += 1) {
+    if (pollDelaysMs[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, pollDelaysMs[attempt]));
+    }
+
     const status = await graphGet(`/${input.containerId}`, {
       fields: "status_code",
       access_token: input.accessToken,
@@ -147,8 +153,6 @@ async function waitForInstagramContainer(input: {
     if (code === "ERROR") {
       return { ok: false, error: "Instagram media container failed processing." };
     }
-
-    await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 
   return { ok: false, error: "Instagram media container timed out." };

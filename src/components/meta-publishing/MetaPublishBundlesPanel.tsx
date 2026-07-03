@@ -58,7 +58,11 @@ function sortBundlesForDisplay(
   });
 }
 
-function statusLabel(bundle: MetaPublishBundle): string {
+function statusLabel(bundle: MetaPublishBundle, publishPending = false): string {
+  if (publishPending) {
+    return "Publishing…";
+  }
+
   if (!bundle.isMetaPost) {
     if (bundle.status === "needs_artwork") {
       return "Needs artwork";
@@ -174,6 +178,8 @@ export function MetaPublishBundleCard({
   schedulePending = false,
   approvalRoleLabel = null,
 }: MetaPublishBundleCardProps) {
+  const isPublishing = publishPending || bundle.status === "posting";
+  const displayStatus: MetaPublishBundleStatus = isPublishing ? "posting" : bundle.status;
   const isSkipped = bundle.status === "skipped";
   const isMetaPost = bundle.isMetaPost;
   const canSchedule =
@@ -184,13 +190,14 @@ export function MetaPublishBundleCard({
   const canPublishNow =
     isMetaPost &&
     Boolean(onPublishNow) &&
+    !isPublishing &&
     ["ready", "scheduled", "approved", "failed"].includes(bundle.status);
   const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
   const canSkip =
     !isSkipped &&
+    !isPublishing &&
     bundle.status !== "published" &&
-    bundle.status !== "posting" &&
     Boolean(onSkip);
   const canUnskip = isSkipped && Boolean(onUnskip);
 
@@ -285,10 +292,10 @@ export function MetaPublishBundleCard({
             <span
               className={cn(
                 "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                statusClassName(bundle.status),
+                statusClassName(displayStatus),
               )}
             >
-              {statusLabel(bundle)}
+              {statusLabel(bundle, publishPending)}
             </span>
           )}
           {canSkip && (
@@ -653,14 +660,25 @@ export function MetaPublishBundlesPanel({
     setPublishPendingDay(relativeDay);
     startTransition(async () => {
       const result = await publishMetaBundleNowAction(eventId, relativeDay);
-      setPublishPendingDay(null);
       if (!result.success) {
+        setPublishPendingDay(null);
         setError(result.error ?? "Unable to publish this milestone.");
         return;
       }
       router.refresh();
     });
   }
+
+  useEffect(() => {
+    if (publishPendingDay == null) {
+      return;
+    }
+
+    const bundle = bundles.find((entry) => entry.relativeDay === publishPendingDay);
+    if (bundle && ["published", "failed", "posting"].includes(bundle.status)) {
+      setPublishPendingDay(null);
+    }
+  }, [bundles, publishPendingDay]);
 
   function runSkipMilestone(relativeDay: number, skip: boolean) {
     setError(null);

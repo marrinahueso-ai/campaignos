@@ -66,12 +66,12 @@ function slotMatchesSurfaces(
 async function prepareSlotsForImmediatePublish(input: {
   eventId: string;
   relativeDay: number;
+  surfaces: MetaPublishSurfaces;
 }): Promise<number> {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const surfaces = await getMilestonePublishSurfaces(input.eventId, input.relativeDay);
-  const enabledTargets = filterMetaPublishTargetsBySurfaces(surfaces);
+  const enabledTargets = filterMetaPublishTargetsBySurfaces(input.surfaces);
 
   if (enabledTargets.length === 0) {
     return 0;
@@ -224,6 +224,7 @@ export async function publishMetaMilestoneBundle(input: {
     const prepared = await prepareSlotsForImmediatePublish({
       eventId: input.eventId,
       relativeDay: input.relativeDay,
+      surfaces,
     });
 
     if (prepared === 0) {
@@ -300,49 +301,74 @@ export async function publishMetaMilestoneBundle(input: {
 
   await markSlotsPosting(slots.map((slot) => slot.id));
 
+  const publishInputs = {
+    connection: connection!,
+    feedCaption: feedCaption ?? "",
+    storyCaption: storyCaption ?? "",
+    feedUrl: feedUrl ?? "",
+    storyUrl: storyUrl ?? "",
+  };
+
+  const outcomes = await Promise.all(
+    slots.map(async (slot) => {
+      if (
+        slot.platform === "instagram" &&
+        !isInstagramPublishingConfigured(connection)
+      ) {
+        return {
+          slot,
+          status: "cancelled" as const,
+          externalPostId: null,
+          publishError: "Skipped — Instagram is not connected.",
+        };
+      }
+
+      const result = await publishSlot({ slot, ...publishInputs });
+
+      if (result.error) {
+        return {
+          slot,
+          status: "failed" as const,
+          externalPostId: null,
+          publishError: result.error,
+        };
+      }
+
+      return {
+        slot,
+        status: "published" as const,
+        externalPostId: result.postId,
+        publishError: null,
+      };
+    }),
+  );
+
+  await Promise.all(
+    outcomes.map((outcome) =>
+      updateSlotPublishResult({
+        slotId: outcome.slot.id,
+        status: outcome.status,
+        externalPostId: outcome.externalPostId,
+        publishError: outcome.publishError,
+      }),
+    ),
+  );
+
   let publishedCount = 0;
   let failedCount = 0;
   let firstError: string | null = null;
 
-  for (const slot of slots) {
-    if (
-      slot.platform === "instagram" &&
-      !isInstagramPublishingConfigured(connection)
-    ) {
-      await updateSlotPublishResult({
-        slotId: slot.id,
-        status: "cancelled",
-        publishError: "Skipped — Instagram is not connected.",
-      });
+  for (const outcome of outcomes) {
+    if (outcome.status === "published") {
+      publishedCount += 1;
       continue;
     }
 
-    const result = await publishSlot({
-      slot,
-      connection: connection!,
-      feedCaption: feedCaption ?? "",
-      storyCaption: storyCaption ?? "",
-      feedUrl: feedUrl ?? "",
-      storyUrl: storyUrl ?? "",
-    });
-
-    if (result.error) {
+    if (outcome.status === "failed") {
       failedCount += 1;
-      firstError ??= `${slotLabel(slot.platform, slot.placement)}: ${result.error}`;
-      await updateSlotPublishResult({
-        slotId: slot.id,
-        status: "failed",
-        publishError: result.error,
-      });
-      continue;
+      firstError ??=
+        `${slotLabel(outcome.slot.platform, outcome.slot.placement)}: ${outcome.publishError}`;
     }
-
-    publishedCount += 1;
-    await updateSlotPublishResult({
-      slotId: slot.id,
-      status: "published",
-      externalPostId: result.postId,
-    });
   }
 
   const communicationItemId = slots.find((slot) => slot.communicationItemId)?.communicationItemId;
