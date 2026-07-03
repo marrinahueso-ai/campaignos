@@ -90,6 +90,7 @@ export function mapEventCommunicationStepRow(
     status: row.status,
     metaPublishSurfaces: row.meta_publish_surfaces ?? "both",
     storyManualPublish: row.story_manual_publish ?? false,
+    storyReminderSentAt: row.story_reminder_sent_at ?? null,
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

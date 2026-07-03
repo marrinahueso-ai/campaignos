@@ -126,6 +126,8 @@ export interface EventCommunicationStep {
   metaPublishSurfaces: MetaPublishSurfaces;
   /** When true, story is posted manually (Post Kit); feed still auto-publishes if enabled. */
   storyManualPublish: boolean;
+  /** When set, story post kit reminder email was sent for this milestone. */
+  storyReminderSentAt: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -145,6 +147,7 @@ export interface EventCommunicationStepRow {
   status: EventCommunicationStepStatus;
   meta_publish_surfaces: MetaPublishSurfaces;
   story_manual_publish: boolean;
+  story_reminder_sent_at: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
