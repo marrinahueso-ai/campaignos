@@ -22,11 +22,13 @@ import {
   skipMetaPublishMilestoneAction,
   unskipMetaPublishMilestoneAction,
   updateMetaPublishSurfacesAction,
+  updateStoryManualPublishAction,
 } from "@/lib/meta-publishing/actions";
 import {
   isFeedSurfaceEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
+import { StoryPostKit } from "@/components/meta-publishing/StoryPostKit";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
@@ -70,13 +72,18 @@ function statusLabel(bundle: MetaPublishBundle, publishPending = false): string 
     return channelLabelForBundle(bundle);
   }
 
+  const manualStoryOnly =
+    bundle.storyManualPublish &&
+    isStorySurfaceEnabled(bundle.metaPublishSurfaces) &&
+    !isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+
   switch (bundle.status) {
     case "needs_artwork":
       return "Needs artwork";
     case "needs_caption":
       return "Needs caption approval";
     case "ready":
-      return "Ready to publish";
+      return manualStoryOnly ? "Ready to post manually" : "Ready to publish";
     case "scheduled":
       return "Scheduled";
     case "approved":
@@ -153,11 +160,15 @@ interface MetaPublishBundleCardProps {
   onSchedule?: () => void;
   onPublishNow?: () => void;
   onSurfacesChange?: (surfaces: MetaPublishSurfaces) => void;
+  onStoryManualToggle?: (enabled: boolean) => void;
+  storyManualPending?: boolean;
   surfacesPending?: boolean;
   publishPending?: boolean;
   schedulePending?: boolean;
   skipPending?: boolean;
   approvalRoleLabel?: string | null;
+  eventLink?: string | null;
+  showPostKit?: boolean;
 }
 
 export function MetaPublishBundleCard({
@@ -172,28 +183,47 @@ export function MetaPublishBundleCard({
   onSchedule,
   onPublishNow,
   onSurfacesChange,
+  onStoryManualToggle,
+  storyManualPending = false,
   surfacesPending = false,
   publishPending = false,
   skipPending = false,
   schedulePending = false,
   approvalRoleLabel = null,
+  eventLink = null,
+  showPostKit = false,
 }: MetaPublishBundleCardProps) {
   const isPublishing = publishPending || bundle.status === "posting";
   const displayStatus: MetaPublishBundleStatus = isPublishing ? "posting" : bundle.status;
   const isSkipped = bundle.status === "skipped";
   const isMetaPost = bundle.isMetaPost;
+  const manualStoryOnly =
+    bundle.storyManualPublish &&
+    isStorySurfaceEnabled(bundle.metaPublishSurfaces) &&
+    !isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const canSchedule =
     isMetaPost &&
     bundle.status === "ready" &&
     Boolean(onSchedule) &&
-    !isSkipped;
+    !isSkipped &&
+    !manualStoryOnly;
   const canPublishNow =
     isMetaPost &&
     Boolean(onPublishNow) &&
     !isPublishing &&
+    !manualStoryOnly &&
     ["ready", "scheduled", "approved", "failed"].includes(bundle.status);
   const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
+  const showPostKitSection =
+    showPostKit &&
+    isMetaPost &&
+    !isSkipped &&
+    (showStory || showFeed) &&
+    (Boolean(bundle.storyArtworkUrl) ||
+      Boolean(bundle.feedArtworkUrl) ||
+      Boolean(bundle.captionPreview) ||
+      Boolean(bundle.storyCaptionPreview));
   const canSkip =
     !isSkipped &&
     !isPublishing &&
@@ -446,6 +476,18 @@ export function MetaPublishBundleCard({
                       Missing artwork: {bundle.missingArtwork.join(", ")}
                     </p>
                   )}
+
+                  {showPostKitSection && (
+                    <StoryPostKit
+                      bundle={bundle}
+                      milestone={milestone}
+                      eventLink={eventLink}
+                      prominent={bundle.storyManualPublish && showStory}
+                      showManualToggle={Boolean(onStoryManualToggle) && showStory}
+                      onManualToggle={onStoryManualToggle}
+                      manualTogglePending={storyManualPending}
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -501,6 +543,8 @@ interface MetaPublishBundlesPanelProps {
   onScheduleAll?: () => Promise<{ success: boolean; error?: string | null }>;
   onApproveAll?: () => Promise<{ success: boolean; error?: string | null }>;
   onPublishAll?: () => Promise<{ success: boolean; error?: string | null }>;
+  eventLink?: string | null;
+  showPostKit?: boolean;
 }
 
 export function MetaPublishBundlesPanel({
@@ -516,6 +560,8 @@ export function MetaPublishBundlesPanel({
   onScheduleAll,
   onApproveAll,
   onPublishAll,
+  eventLink = null,
+  showPostKit = false,
 }: MetaPublishBundlesPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -526,6 +572,7 @@ export function MetaPublishBundlesPanel({
   const [schedulePendingDay, setSchedulePendingDay] = useState<number | null>(null);
   const [publishPendingDay, setPublishPendingDay] = useState<number | null>(null);
   const [surfacesPendingDay, setSurfacesPendingDay] = useState<number | null>(null);
+  const [storyManualPendingDay, setStoryManualPendingDay] = useState<number | null>(null);
   const [optimisticSkippedDays, setOptimisticSkippedDays] = useState<Set<number>>(
     () => new Set(),
   );
@@ -649,6 +696,20 @@ export function MetaPublishBundlesPanel({
       setSurfacesPendingDay(null);
       if (!result.success) {
         setError(result.error ?? "Unable to update publish surfaces.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function runStoryManualToggle(relativeDay: number, enabled: boolean) {
+    setError(null);
+    setStoryManualPendingDay(relativeDay);
+    startTransition(async () => {
+      const result = await updateStoryManualPublishAction(eventId, relativeDay, enabled);
+      setStoryManualPendingDay(null);
+      if (!result.success) {
+        setError(result.error ?? "Unable to update manual story setting.");
         return;
       }
       router.refresh();
@@ -948,10 +1009,18 @@ export function MetaPublishBundlesPanel({
                   ? (surfaces) => runSurfacesChange(bundle.relativeDay, surfaces)
                   : undefined
               }
+              onStoryManualToggle={
+                (mode === "schedule" || mode === "publishing") && bundle.isMetaPost
+                  ? (enabled) => runStoryManualToggle(bundle.relativeDay, enabled)
+                  : undefined
+              }
+              storyManualPending={storyManualPendingDay === bundle.relativeDay}
               surfacesPending={surfacesPendingDay === bundle.relativeDay}
               publishPending={publishPendingDay === bundle.relativeDay}
               skipPending={skipPendingDay === bundle.relativeDay}
               schedulePending={schedulePendingDay === bundle.relativeDay}
+              eventLink={eventLink}
+              showPostKit={showPostKit}
             />
           </li>
         ))}

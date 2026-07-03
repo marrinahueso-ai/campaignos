@@ -111,6 +111,8 @@ export interface MetaPublishBundle {
   stepId: string | null;
   /** Feed/story/both preference for Meta posts on this milestone. */
   metaPublishSurfaces: MetaPublishSurfaces;
+  /** Story posted manually via Post Kit — skips story auto-publish. */
+  storyManualPublish: boolean;
 }
 
 export type MetaPublishActionResult = {

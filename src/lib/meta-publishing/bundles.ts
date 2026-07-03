@@ -51,16 +51,26 @@ function isMetaSocialChannel(channel: CommunicationChannel | null | undefined): 
 
 function deriveBundleStatus(input: {
   surfaces: MetaPublishSurfaces;
+  storyManualPublish: boolean;
   hasFeedArtwork: boolean;
   hasStoryArtwork: boolean;
   hasCaption: boolean;
   slotStatuses: MetaPublicationSlotStatus[];
 }): MetaPublishBundleStatus {
-  const { slotStatuses: statuses, surfaces } = input;
+  const { slotStatuses: statuses, surfaces, storyManualPublish } = input;
   const needsFeedArtwork = isFeedSurfaceEnabled(surfaces);
   const needsStoryArtwork = isStorySurfaceEnabled(surfaces);
 
   if (statuses.length > 0 && statuses.every((status) => status === "cancelled")) {
+    if (
+      storyManualPublish &&
+      needsStoryArtwork &&
+      !needsFeedArtwork &&
+      input.hasStoryArtwork &&
+      input.hasCaption
+    ) {
+      return "ready";
+    }
     return "skipped";
   }
 
@@ -149,7 +159,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       .then((client) =>
         client
           .from("event_communication_steps")
-          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces")
+          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish")
           .eq("event_id", eventId),
       ),
   ]);
@@ -176,7 +186,11 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const isMetaPost = isMetaSocialChannel(channel);
     const metaPublishSurfaces =
       (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
-    const enabledTargets = filterMetaPublishTargetsBySurfaces(metaPublishSurfaces).map(
+    const storyManualPublish = Boolean(step?.story_manual_publish);
+    const enabledTargets = filterMetaPublishTargetsBySurfaces(
+      metaPublishSurfaces,
+      storyManualPublish,
+    ).map(
       (target) => ({
         platform: target.platform,
         placement: target.placement,
@@ -232,6 +246,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         isMetaPost: false,
         stepId,
         metaPublishSurfaces,
+        storyManualPublish,
       };
     }
 
@@ -255,6 +270,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         ? "skipped"
         : deriveBundleStatus({
             surfaces: metaPublishSurfaces,
+            storyManualPublish,
             hasFeedArtwork,
             hasStoryArtwork,
             hasCaption: isMilestoneCaptionsApproved(
@@ -270,6 +286,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       isMetaPost: true,
       stepId,
       metaPublishSurfaces,
+      storyManualPublish,
     };
   });
 }
@@ -279,4 +296,9 @@ export function countBundlesByStatus(
   statuses: MetaPublishBundleStatus[],
 ): number {
   return bundles.filter((bundle) => statuses.includes(bundle.status)).length;
+}
+
+/** True when this milestone has at least one Meta slot that auto-publishes via API. */
+export function bundleHasAutoPublishTargets(bundle: MetaPublishBundle): boolean {
+  return bundle.isMetaPost && bundle.targets.length > 0;
 }

@@ -39,26 +39,30 @@ export interface PublishMilestoneResult {
   failedCount: number;
 }
 
-async function getMilestonePublishSurfaces(
+async function getMilestonePublishSettings(
   eventId: string,
   relativeDay: number,
-): Promise<MetaPublishSurfaces> {
+): Promise<{ surfaces: MetaPublishSurfaces; storyManualPublish: boolean }> {
   const supabase = await createClient();
   const { data: step } = await supabase
     .from("event_communication_steps")
-    .select("meta_publish_surfaces")
+    .select("meta_publish_surfaces, story_manual_publish")
     .eq("event_id", eventId)
     .eq("relative_day", relativeDay)
     .maybeSingle();
 
-  return (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
+  return {
+    surfaces: (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both",
+    storyManualPublish: Boolean(step?.story_manual_publish),
+  };
 }
 
 function slotMatchesSurfaces(
   slot: MetaPublicationSlot,
   surfaces: MetaPublishSurfaces,
+  storyManualPublish: boolean,
 ): boolean {
-  return filterMetaPublishTargetsBySurfaces(surfaces).some(
+  return filterMetaPublishTargetsBySurfaces(surfaces, storyManualPublish).some(
     (target) => target.platform === slot.platform && target.placement === slot.placement,
   );
 }
@@ -67,11 +71,15 @@ async function prepareSlotsForImmediatePublish(input: {
   eventId: string;
   relativeDay: number;
   surfaces: MetaPublishSurfaces;
+  storyManualPublish: boolean;
 }): Promise<number> {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const enabledTargets = filterMetaPublishTargetsBySurfaces(input.surfaces);
+  const enabledTargets = filterMetaPublishTargetsBySurfaces(
+    input.surfaces,
+    input.storyManualPublish,
+  );
 
   if (enabledTargets.length === 0) {
     return 0;
@@ -218,13 +226,17 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
-  const surfaces = await getMilestonePublishSurfaces(input.eventId, input.relativeDay);
+  const { surfaces, storyManualPublish } = await getMilestonePublishSettings(
+    input.eventId,
+    input.relativeDay,
+  );
 
   if (input.immediate) {
     const prepared = await prepareSlotsForImmediatePublish({
       eventId: input.eventId,
       relativeDay: input.relativeDay,
       surfaces,
+      storyManualPublish,
     });
 
     if (prepared === 0) {
@@ -240,7 +252,7 @@ export async function publishMetaMilestoneBundle(input: {
   const slots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
-      slotMatchesSurfaces(slot, surfaces) &&
+      slotMatchesSurfaces(slot, surfaces, storyManualPublish) &&
       (slot.status === "approved" || slot.status === "failed"),
   );
 
@@ -260,7 +272,8 @@ export async function publishMetaMilestoneBundle(input: {
   const storyCaption = getStoryCaptionForMilestone(captions, input.relativeDay)?.trim();
 
   const needsFeedCaption = isFeedSurfaceEnabled(surfaces);
-  const needsStoryCaption = isStorySurfaceEnabled(surfaces);
+  const needsStoryCaption =
+    isStorySurfaceEnabled(surfaces) && !storyManualPublish;
 
   if (
     (needsFeedCaption && !feedCaption) ||
@@ -389,7 +402,8 @@ export async function publishMetaMilestoneBundle(input: {
 
   const allDaySlots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
     (slot) =>
-      slot.relativeDay === input.relativeDay && slotMatchesSurfaces(slot, surfaces),
+      slot.relativeDay === input.relativeDay &&
+      slotMatchesSurfaces(slot, surfaces, storyManualPublish),
   );
   const activeDaySlots = allDaySlots.filter((slot) => slot.status !== "cancelled");
   const alreadyPublished =

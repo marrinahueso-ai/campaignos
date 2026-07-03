@@ -26,12 +26,17 @@ function resolveStepPublishSurfaces(
   return (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
 }
 
+function isStepStoryManualPublish(step: EventCommunicationStepRow | undefined): boolean {
+  return Boolean(step?.story_manual_publish);
+}
+
 function isTargetEnabled(
   surfaces: MetaPublishSurfaces,
+  storyManualPublish: boolean,
   platform: string,
   placement: string,
 ): boolean {
-  return filterMetaPublishTargetsBySurfaces(surfaces).some(
+  return filterMetaPublishTargetsBySurfaces(surfaces, storyManualPublish).some(
     (target) => target.platform === platform && target.placement === placement,
   );
 }
@@ -143,6 +148,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
   for (const milestone of milestones) {
     const step = steps.find((entry) => entry.relative_day === milestone.relativeDay);
     const surfaces = resolveStepPublishSurfaces(step);
+    const storyManualPublish = isStepStoryManualPublish(step);
     const communicationItemId = step
       ? (itemsByStepId.get(step.id as string)?.id ?? null)
       : null;
@@ -165,7 +171,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
       storyAsset && isApprovedArtworkAsset(storyAsset) ? storyAsset.id : null;
 
     for (const target of META_PUBLISH_TARGETS) {
-      const enabled = isTargetEnabled(surfaces, target.platform, target.placement);
+      const enabled = isTargetEnabled(surfaces, storyManualPublish, target.platform, target.placement);
       const eventAssetId = target.usesArtwork === "feed" ? feedAssetId : storyAssetId;
 
       const { data: existing, error: existingError } = await supabase

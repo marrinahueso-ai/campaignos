@@ -6,7 +6,7 @@ import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
-import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
+import { getMetaPublishBundles, bundleHasAutoPublishTargets } from "@/lib/meta-publishing/bundles";
 import { publishDueMetaMilestonesForEvent } from "@/lib/meta-publishing/publish-due";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import {
@@ -116,8 +116,10 @@ export async function publishAllActionableMetaBundlesNowAction(
   }
 
   const bundles = await getMetaPublishBundles(eventId);
-  const actionable = bundles.filter((bundle) =>
-    ["ready", "scheduled", "approved", "failed"].includes(bundle.status),
+  const actionable = bundles.filter(
+    (bundle) =>
+      bundleHasAutoPublishTargets(bundle) &&
+      ["ready", "scheduled", "approved", "failed"].includes(bundle.status),
   );
 
   if (actionable.length === 0) {
@@ -172,7 +174,9 @@ export async function scheduleAllReadyMetaBundlesAction(
 
   await syncMetaPublicationSlots(eventId);
   const bundles = await getMetaPublishBundles(eventId);
-  const readyBundles = bundles.filter((bundle) => bundle.status === "ready");
+  const readyBundles = bundles.filter(
+    (bundle) => bundle.status === "ready" && bundleHasAutoPublishTargets(bundle),
+  );
 
   if (readyBundles.length === 0) {
     return {
@@ -588,6 +592,56 @@ export async function updateMetaPublishSurfacesAction(
   const { error: updateError } = await supabase
     .from("event_communication_steps")
     .update({ meta_publish_surfaces: surfaces, updated_at: now })
+    .eq("id", step.id);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  await syncMetaPublicationSlots(eventId);
+  revalidateMetaPaths(eventId);
+
+  return { success: true, updatedCount: 1, error: null };
+}
+
+export async function updateStoryManualPublishAction(
+  eventId: string,
+  relativeDay: number,
+  storyManualPublish: boolean,
+): Promise<MetaPublishActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to update publish settings." };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data: step, error: lookupError } = await supabase
+    .from("event_communication_steps")
+    .select("id, channel, status")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  if (!step?.id) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (step.channel !== "facebook" && step.channel !== "instagram") {
+    return {
+      success: false,
+      error: "Manual story posting can only be set on Facebook or Instagram milestones.",
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("event_communication_steps")
+    .update({ story_manual_publish: storyManualPublish, updated_at: now })
     .eq("id", step.id);
 
   if (updateError) {

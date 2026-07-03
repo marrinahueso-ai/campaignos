@@ -8,10 +8,13 @@ import {
   publishAllActionableMetaBundlesNowAction,
   scheduleAllReadyMetaBundlesAction,
 } from "@/lib/meta-publishing/actions";
+import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { Event } from "@/types";
 
 interface CampaignReviewPublishStepProps {
   eventId: string;
+  event: Event;
   metaPublishBundles: MetaPublishBundle[];
   approvalRoleLabel?: string | null;
   initialExpandedDay?: number | null;
@@ -19,10 +22,12 @@ interface CampaignReviewPublishStepProps {
 
 export function CampaignReviewPublishStep({
   eventId,
+  event,
   metaPublishBundles,
   approvalRoleLabel = null,
   initialExpandedDay = null,
 }: CampaignReviewPublishStepProps) {
+  const eventLink = resolveEventShareLink(event);
   const activeBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
   );
@@ -73,6 +78,8 @@ export function CampaignReviewPublishStep({
           mode="publishing"
           approvalRoleLabel={approvalRoleLabel}
           initialExpandedDay={initialExpandedDay}
+          eventLink={eventLink}
+          showPostKit
           onScheduleAll={() => scheduleAllReadyMetaBundlesAction(eventId)}
           onApproveAll={() => approveAllScheduledMetaBundlesAction(eventId)}
           onPublishAll={() => publishAllActionableMetaBundlesNowAction(eventId)}

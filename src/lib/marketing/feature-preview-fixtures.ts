@@ -890,6 +890,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     ],
     stepId: null,
     metaPublishSurfaces: "both",
+    storyManualPublish: false,
   },
   {
     relativeDay: 0,
@@ -907,6 +908,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     targets: [],
     stepId: null,
     metaPublishSurfaces: "both",
+    storyManualPublish: false,
   },
 ];
 

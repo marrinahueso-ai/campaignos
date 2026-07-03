@@ -124,6 +124,8 @@ export interface EventCommunicationStep {
   isRequired: boolean;
   status: EventCommunicationStepStatus;
   metaPublishSurfaces: MetaPublishSurfaces;
+  /** When true, story is posted manually (Post Kit); feed still auto-publishes if enabled. */
+  storyManualPublish: boolean;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -142,6 +144,7 @@ export interface EventCommunicationStepRow {
   is_required: boolean;
   status: EventCommunicationStepStatus;
   meta_publish_surfaces: MetaPublishSurfaces;
+  story_manual_publish: boolean;
   completed_at: string | null;
   created_at: string;
   updated_at: string;

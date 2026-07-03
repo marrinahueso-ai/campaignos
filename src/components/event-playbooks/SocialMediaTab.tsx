@@ -165,6 +165,7 @@ export function SocialMediaTab({
         publish={
           <CampaignReviewPublishStep
             eventId={eventId}
+            event={event}
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={expandedPublishDay}

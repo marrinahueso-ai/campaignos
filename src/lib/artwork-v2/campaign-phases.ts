@@ -325,14 +325,23 @@ export function isStorySurfaceEnabled(surfaces: MetaPublishSurfaces): boolean {
   return surfaces === "both" || surfaces === "story_only";
 }
 
+/** Story artwork/captions for Post Kit — false when user posts story manually. */
+export function isStoryAutoPublishEnabled(
+  surfaces: MetaPublishSurfaces,
+  storyManualPublish = false,
+): boolean {
+  return isStorySurfaceEnabled(surfaces) && !storyManualPublish;
+}
+
 export function filterMetaPublishTargetsBySurfaces(
   surfaces: MetaPublishSurfaces,
+  storyManualPublish = false,
 ): (typeof META_PUBLISH_TARGETS)[number][] {
   return META_PUBLISH_TARGETS.filter((target) => {
     if (target.placement === "feed") {
       return isFeedSurfaceEnabled(surfaces);
     }
-    return isStorySurfaceEnabled(surfaces);
+    return isStoryAutoPublishEnabled(surfaces, storyManualPublish);
   });
 }
 
