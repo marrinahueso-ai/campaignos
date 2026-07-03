@@ -8,4 +8,5 @@ export function revalidateEventPaths(eventId: string): void {
   revalidatePath("/campaigns");
   revalidatePath("/calendar");
   revalidatePath("/communications/calendar");
+  revalidatePath("/approvals");
 }

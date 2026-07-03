@@ -225,10 +225,11 @@ export async function ensureMetaMilestoneApprovalRequest(
       updated_at: now,
     })
     .eq("id", communicationItemId)
-    .in("status", ["draft", "generated", "changes_requested"]);
+    .neq("status", "approved");
 
   if (error) {
     console.error("Failed to mark meta milestone communication item pending approval:", error.message);
+    return false;
   }
 
   return true;

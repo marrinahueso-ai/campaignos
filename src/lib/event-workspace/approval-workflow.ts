@@ -328,11 +328,20 @@ async function getPendingApprovalAssignment(
 ): Promise<{
   assignedOrganizationRoleId: string | null;
   assignedUserId: string | null;
+  assignedRoleContactName: string | null;
 } | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("approval_requests")
-    .select("assigned_organization_role_id, assigned_user_id")
+    .select(
+      `
+      assigned_organization_role_id,
+      assigned_user_id,
+      assigned_role:organization_roles!approval_requests_assigned_organization_role_id_fkey (
+        contact_name
+      )
+    `,
+    )
     .eq("communication_item_id", communicationItemId)
     .eq("status", "pending")
     .order("requested_at", { ascending: false })
@@ -343,9 +352,14 @@ async function getPendingApprovalAssignment(
     return null;
   }
 
+  const assignedRole = Array.isArray(data.assigned_role)
+    ? (data.assigned_role[0] as { contact_name: string | null } | undefined)
+    : (data.assigned_role as { contact_name: string | null } | null);
+
   return {
     assignedOrganizationRoleId: data.assigned_organization_role_id ?? null,
     assignedUserId: data.assigned_user_id ?? null,
+    assignedRoleContactName: assignedRole?.contact_name ?? null,
   };
 }
 
@@ -370,6 +384,7 @@ export async function approveCommunicationDraft(
   }
 
   const approvableStatuses = new Set<CommunicationStatus>([
+    "draft",
     "generated",
     "pending_approval",
   ]);

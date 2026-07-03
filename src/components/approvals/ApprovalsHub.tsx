@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { CheckCircle2, ChevronDown, RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, ChevronDown, Loader2, RotateCcw } from "lucide-react";
 import { ApprovalQueuePreviewPanel } from "@/components/approvals/ApprovalQueuePreviewPanel";
+import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -33,14 +34,37 @@ function ApprovalQueueList({
   showActions = false,
   expandedId,
   onToggleExpand,
+  onActionError,
 }: {
   items: ApprovalQueueItem[];
   showActions?: boolean;
   expandedId: string | null;
   onToggleExpand: (id: string) => void;
+  onActionError: (message: string) => void;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [pendingItemId, setPendingItemId] = useState<string | null>(null);
+
+  async function runApprovalAction(
+    item: ApprovalQueueItem,
+    action: () => Promise<{ error: string | null; success: boolean }>,
+  ) {
+    setPendingItemId(item.id);
+
+    try {
+      const result = await action();
+      if (result.success) {
+        router.refresh();
+        return;
+      }
+
+      onActionError(result.error ?? "Unable to complete that action.");
+    } catch {
+      onActionError("Something went wrong. Please try again.");
+    } finally {
+      setPendingItemId(null);
+    }
+  }
 
   if (items.length === 0) {
     return (
@@ -57,6 +81,7 @@ function ApprovalQueueList({
     <ul className="divide-y divide-cos-border">
       {items.map((item) => {
         const isExpanded = expandedId === item.id;
+        const isItemPending = pendingItemId === item.id;
 
         return (
           <li key={item.id} className="px-6 py-4">
@@ -104,26 +129,27 @@ function ApprovalQueueList({
                   <Button
                     size="sm"
                     variant="secondary"
-                    disabled={isPending}
+                    disabled={pendingItemId !== null}
                     onClick={() =>
-                      startTransition(async () => {
-                        const result = await approveCommunicationAction(
+                      runApprovalAction(item, () =>
+                        approveCommunicationAction(
                           item.eventId,
                           item.communicationItemId,
-                        );
-                        if (result.success) {
-                          router.refresh();
-                        }
-                      })
+                        ),
+                      )
                     }
                   >
-                    <CheckCircle2 className="h-4 w-4" />
+                    {isItemPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
                     Approve
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={isPending}
+                    disabled={pendingItemId !== null}
                     onClick={() => {
                       const notes = window.prompt(
                         "What should change before approval?",
@@ -132,19 +158,20 @@ function ApprovalQueueList({
                         return;
                       }
 
-                      startTransition(async () => {
-                        const result = await requestCommunicationChangesAction(
+                      void runApprovalAction(item, () =>
+                        requestCommunicationChangesAction(
                           item.eventId,
                           item.communicationItemId,
                           notes,
-                        );
-                        if (result.success) {
-                          router.refresh();
-                        }
-                      });
+                        ),
+                      );
                     }}
                   >
-                    <RotateCcw className="h-4 w-4" />
+                    {isItemPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
                     Request changes
                   </Button>
                 </div>
@@ -164,6 +191,7 @@ export function ApprovalsHub({
   recentlyApproved,
 }: ApprovalsHubProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const otherPending = allPending.filter((item) => !item.assignedToMe);
 
   function handleToggleExpand(id: string) {
@@ -172,6 +200,10 @@ export function ApprovalsHub({
 
   return (
     <div className="studio-page space-y-10">
+      <CalendarActionToast
+        message={actionError}
+        onDismiss={() => setActionError(null)}
+      />
       <header className="border-b border-cos-border pb-8">
         <div className="flex items-start gap-5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-cos-border bg-cos-card">
@@ -201,6 +233,7 @@ export function ApprovalsHub({
             showActions
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
+            onActionError={setActionError}
           />
         </Card>
 
@@ -215,6 +248,7 @@ export function ApprovalsHub({
             items={otherPending}
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
+            onActionError={setActionError}
           />
         </Card>
 
@@ -229,6 +263,7 @@ export function ApprovalsHub({
             items={changesRequested}
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
+            onActionError={setActionError}
           />
         </Card>
 
@@ -243,6 +278,7 @@ export function ApprovalsHub({
             items={recentlyApproved}
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
+            onActionError={setActionError}
           />
         </Card>
       </div>
