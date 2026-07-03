@@ -3,6 +3,7 @@
 import { useCallback, useState, useTransition } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import {
+  captureDropPayload,
   executeRescheduleDrop,
   useCalendarDragState,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
@@ -32,25 +33,39 @@ export function PlanningCalendarMonthView({
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastVariant, setToastVariant] = useState<"error" | "success">("error");
   const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = groupItemsByDate(items);
 
+  const showToast = useCallback((message: string, variant: "error" | "success") => {
+    setToastVariant(variant);
+    setToastMessage(message);
+  }, []);
+
   const handleDrop = useCallback(
     (date: string, event: React.DragEvent<HTMLDivElement>) => {
+      const payload = captureDropPayload(event);
       setDropTarget(null);
       setIsDragging(false);
 
+      if (!payload) {
+        showToast("Could not read the dragged item. Try again.", "error");
+        return;
+      }
+
       startTransition(async () => {
-        await executeRescheduleDrop(event, {
+        await executeRescheduleDrop({
           date,
+          payload,
           onRescheduled,
-          onError: setToastMessage,
+          onSuccess: (message) => showToast(message, "success"),
+          onError: (message) => showToast(message, "error"),
         });
       });
     },
-    [onRescheduled, setIsDragging],
+    [onRescheduled, setIsDragging, showToast],
   );
 
   return (
@@ -81,6 +96,7 @@ export function PlanningCalendarMonthView({
             return (
               <div
                 key={date}
+                data-testid={`calendar-drop-month-${date}`}
                 onDragOver={(event) => {
                   handleDragOver(event);
                   setDropTarget(date);
@@ -90,7 +106,7 @@ export function PlanningCalendarMonthView({
                 }
                 onDrop={(event) => handleDrop(date, event)}
                 className={cn(
-                  "relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0 transition-colors duration-200",
+                  "calendar-drop-target relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0 transition-colors duration-200",
                   !inMonth && "bg-cos-bg/40",
                   dropTarget === date && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
                 )}
@@ -118,7 +134,7 @@ export function PlanningCalendarMonthView({
                   <UnifiedCalendarDayContent
                     items={dayItems}
                     onSelectItem={onSelectItem}
-                    onDragError={setToastMessage}
+                    onDragError={(message) => showToast(message, "error")}
                     compact
                     itemLimit={5}
                   />
@@ -130,6 +146,7 @@ export function PlanningCalendarMonthView({
 
       <CalendarActionToast
         message={toastMessage}
+        variant={toastVariant}
         onDismiss={() => setToastMessage(null)}
       />
     </>

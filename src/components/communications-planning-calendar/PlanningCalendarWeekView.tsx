@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, useTransition } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { PlanningCalendarItemChip } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import {
+  captureDropPayload,
   executeRescheduleDrop,
   useCalendarDragState,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
@@ -79,6 +80,7 @@ export function PlanningCalendarWeekView({
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastVariant, setToastVariant] = useState<"error" | "success">("error");
   const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
@@ -88,21 +90,34 @@ export function PlanningCalendarWeekView({
     [itemsByDate, timezone],
   );
 
+  const showToast = useCallback((message: string, variant: "error" | "success") => {
+    setToastVariant(variant);
+    setToastMessage(message);
+  }, []);
+
   const handleDrop = useCallback(
     (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
+      const payload = captureDropPayload(event);
       setDropTarget(null);
       setIsDragging(false);
 
+      if (!payload) {
+        showToast("Could not read the dragged item. Try again.", "error");
+        return;
+      }
+
       startTransition(async () => {
-        await executeRescheduleDrop(event, {
+        await executeRescheduleDrop({
           date,
+          payload,
           ...(typeof hour === "number" ? { hour, timezone } : {}),
           onRescheduled,
-          onError: setToastMessage,
+          onSuccess: (message) => showToast(message, "success"),
+          onError: (message) => showToast(message, "error"),
         });
       });
     },
-    [onRescheduled, setIsDragging, timezone],
+    [onRescheduled, setIsDragging, showToast, timezone],
   );
 
   const handleCellDragOver = useCallback(
@@ -178,6 +193,7 @@ export function PlanningCalendarWeekView({
                 )}
               >
                 <div
+                  data-testid={`calendar-drop-week-${date}-allday`}
                   onDragOver={(event) => handleCellDragOver(date, "allday", event)}
                   onDragLeave={() =>
                     setDropTarget((current) =>
@@ -186,7 +202,7 @@ export function PlanningCalendarWeekView({
                   }
                   onDrop={(event) => handleDrop(date, "allday", event)}
                   className={cn(
-                    "relative min-h-16 border-b border-cos-border/70 p-1.5 transition-colors",
+                    "calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5 transition-colors",
                     activeDropKey === `${date}:allday` &&
                       "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
                   )}
@@ -199,7 +215,7 @@ export function PlanningCalendarWeekView({
                           item={item}
                           compact
                           onSelect={onSelectItem}
-                          onDragError={setToastMessage}
+                          onDragError={(message) => showToast(message, "error")}
                         />
                       ))}
                       {placement.allDay.length > 4 && (
@@ -227,6 +243,7 @@ export function PlanningCalendarWeekView({
                   return (
                     <div
                       key={`${date}-${hour}`}
+                      data-testid={`calendar-drop-week-${date}-${hour}`}
                       onDragOver={(event) => handleCellDragOver(date, hour, event)}
                       onDragLeave={() =>
                         setDropTarget((current) =>
@@ -235,7 +252,7 @@ export function PlanningCalendarWeekView({
                       }
                       onDrop={(event) => handleDrop(date, hour, event)}
                       className={cn(
-                        "relative h-12 border-b border-cos-border/60 transition-colors",
+                        "calendar-drop-target relative h-12 border-b border-cos-border/60 transition-colors",
                         isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
                       )}
                       style={
@@ -254,7 +271,7 @@ export function PlanningCalendarWeekView({
                               item={item}
                               compact
                               onSelect={onSelectItem}
-                              onDragError={setToastMessage}
+                              onDragError={(message) => showToast(message, "error")}
                             />
                           ))}
                         </div>
@@ -275,6 +292,7 @@ export function PlanningCalendarWeekView({
 
       <CalendarActionToast
         message={toastMessage}
+        variant={toastVariant}
         onDismiss={() => setToastMessage(null)}
       />
     </>

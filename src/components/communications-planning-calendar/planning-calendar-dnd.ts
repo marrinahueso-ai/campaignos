@@ -114,23 +114,26 @@ export type RescheduleDropInput = {
   date: string;
   hour?: number;
   timezone?: string;
+  payload: PlanningDragPayload;
   onRescheduled: () => void;
+  onSuccess: (message: string) => void;
   onError: (message: string) => void;
 };
 
-export async function executeRescheduleDrop(
+/** Read payload synchronously in the drop handler — dataTransfer clears after the event returns. */
+export function captureDropPayload(
   event: React.DragEvent,
-  input: RescheduleDropInput,
-): Promise<void> {
+): PlanningDragPayload | null {
   event.preventDefault();
   event.stopPropagation();
   endCalendarDragSession();
+  return readDragPayload(event);
+}
 
-  const payload = readDragPayload(event);
-  if (!payload) {
-    input.onError("Could not read the dragged item. Try again.");
-    return;
-  }
+export async function executeRescheduleDrop(
+  input: RescheduleDropInput,
+): Promise<void> {
+  const { payload } = input;
 
   const result = await reschedulePlanningItemAction({
     sourceType: payload.sourceType,
@@ -146,6 +149,7 @@ export async function executeRescheduleDrop(
 
   if (result.success) {
     input.onRescheduled();
+    input.onSuccess("Item rescheduled successfully.");
     return;
   }
 

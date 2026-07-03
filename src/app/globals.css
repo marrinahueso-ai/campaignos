@@ -151,14 +151,21 @@ body {
 
   /* Calendar drag-and-drop: sync pointer-events via html class (Safari-safe). */
   .calendar-drop-target {
-    pointer-events: none;
-  }
-
-  html.calendar-dragging .calendar-drop-target {
     pointer-events: auto;
   }
 
-  html.calendar-dragging .calendar-drag-chip {
+  html.calendar-dragging .calendar-drag-chip:not([data-dragging="true"]) {
     pointer-events: none;
+  }
+
+  .calendar-drag-chip[draggable="true"] {
+    -webkit-user-drag: element;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .calendar-drag-handle {
+    -webkit-user-drag: none;
+    touch-action: none;
   }
 }

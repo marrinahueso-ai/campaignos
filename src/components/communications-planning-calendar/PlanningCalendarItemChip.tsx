@@ -84,6 +84,7 @@ export function PlanningCalendarItemChip({
 
   function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
     didDragRef.current = false;
+    event.currentTarget.setAttribute("data-dragging", "true");
 
     try {
       beginCalendarDragSession();
@@ -111,7 +112,8 @@ export function PlanningCalendarItemChip({
     didDragRef.current = true;
   }
 
-  function handleDragEnd() {
+  function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {
+    event.currentTarget.removeAttribute("data-dragging");
     endCalendarDragSession();
     window.setTimeout(() => {
       didDragRef.current = false;
@@ -135,14 +137,22 @@ export function PlanningCalendarItemChip({
 
   return (
     <div
+      draggable={isDraggable}
+      onDragStart={isDraggable ? handleDragStart : undefined}
+      onDrag={isDraggable ? handleDrag : undefined}
+      onDragEnd={isDraggable ? handleDragEnd : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
       aria-label={displayTitle}
+      data-testid={`calendar-chip-${item.id}`}
+      data-draggable={isDraggable ? "true" : "false"}
       className={cn(
         "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-lg border text-left transition-all duration-200",
-        isDraggable ? "cursor-default" : "cursor-pointer",
+        isDraggable
+          ? "cursor-grab touch-manipulation active:cursor-grabbing"
+          : "cursor-pointer",
         "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
         statusStyles.bg,
         statusStyles.border,
@@ -152,23 +162,16 @@ export function PlanningCalendarItemChip({
     >
       {isDraggable ? (
         <div
-          draggable
-          onDragStart={handleDragStart}
-          onDrag={handleDrag}
-          onDragEnd={handleDragEnd}
-          onClick={(event) => event.stopPropagation()}
-          onMouseDown={(event) => event.stopPropagation()}
-          aria-label={`Drag to reschedule ${displayTitle}`}
-          title="Drag to reschedule"
+          aria-hidden
+          data-testid={`calendar-chip-grip-${item.id}`}
           className={cn(
-            "shrink-0 touch-none select-none rounded p-0.5",
-            "cursor-grab active:cursor-grabbing",
+            "calendar-drag-handle pointer-events-none shrink-0 select-none rounded p-1",
             isMetaPost
-              ? "text-cos-accent hover:bg-white/70"
-              : "text-cos-border hover:text-cos-accent hover:bg-white/60",
+              ? "text-cos-accent"
+              : "text-cos-border group-hover:text-cos-accent",
           )}
         >
-          <GripVertical className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <GripVertical className={compact ? "h-4 w-4" : "h-4 w-4"} />
         </div>
       ) : null}
       <div className="min-w-0 flex-1 select-none">
