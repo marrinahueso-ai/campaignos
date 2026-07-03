@@ -3,6 +3,7 @@ import "server-only";
 import { generateText, getAiAssistantStatus } from "@/lib/ai";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import { EVENT_TYPE_LABELS, DEFAULT_EVENT_TYPE } from "@/lib/playbooks/constants";
+import type { EventType } from "@/types/playbooks";
 import type { Event } from "@/types";
 import type { EventPlaybookInsightsResult, EventPlaybookNote, EventPlaybookTask } from "@/types/event-playbooks";
 
@@ -67,7 +68,10 @@ function truncate(text: string, max: number): string {
 }
 
 function eventTypeLabel(eventType: string | null): string {
-  return EVENT_TYPE_LABELS[eventType ?? DEFAULT_EVENT_TYPE] ?? "this event type";
+  return (
+    EVENT_TYPE_LABELS[(eventType ?? DEFAULT_EVENT_TYPE) as EventType] ??
+    "this event type"
+  );
 }
 
 function openTaskTitles(tasks: EventPlaybookTask[]): string[] {

@@ -10,6 +10,7 @@ import {
   generateEventPlaybookInsightsAction,
 } from "@/lib/event-playbooks/actions";
 import { EVENT_TYPE_LABELS, DEFAULT_EVENT_TYPE } from "@/lib/playbooks/constants";
+import type { EventType } from "@/types/playbooks";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type {
   EventPlaybookInsightsResult,
@@ -51,7 +52,8 @@ export function AIInsightsTab({
   const [addedTitles, setAddedTitles] = useState<Set<string>>(new Set());
 
   const eventTypeLabel =
-    EVENT_TYPE_LABELS[eventType ?? DEFAULT_EVENT_TYPE] ?? "this event type";
+    EVENT_TYPE_LABELS[(eventType ?? DEFAULT_EVENT_TYPE) as EventType] ??
+    "this event type";
 
   const existingTaskTitles = useMemo(
     () => new Set(tasks.map((t) => normalizeTitle(t.title))),
