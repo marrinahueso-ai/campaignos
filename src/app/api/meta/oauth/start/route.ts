@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     "";
   const authType = request.nextUrl.searchParams.get("auth_type")?.trim() ?? "";
 
-  const state = createMetaOAuthState();
+  const state = createMetaOAuthState({ pageId: pageId || undefined });
   const redirectUri = getMetaRedirectUri(request.nextUrl.origin);
   const configId = getMetaOAuthConfigId();
 

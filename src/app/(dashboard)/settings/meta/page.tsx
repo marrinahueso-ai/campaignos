@@ -65,17 +65,16 @@ export default async function MetaPublishingSettingsPage({
           {params.error === "no_pages" && params.pages ? (
             <p className="text-cos-muted">
               Facebook granted access to page ID(s):{" "}
-              <code className="rounded bg-cos-bg px-1">{params.pages}</code>. Use that ID in{" "}
-              <strong className="font-medium text-cos-text">Advanced connect</strong> below if OAuth
-              keeps failing.
+              <code className="rounded bg-cos-bg px-1">{params.pages}</code>. Set{" "}
+              <code className="rounded bg-cos-bg px-1">META_FACEBOOK_PAGE_ID</code> to one of those
+              IDs on your server, then reconnect.
             </p>
           ) : null}
           {params.error === "no_pages" ? (
             <p className="text-cos-muted">
-              Next: expand <strong className="font-medium text-cos-text">Advanced connect</strong>{" "}
-              below and connect with your Facebook Page ID plus a token from Graph API Explorer, or
-              set <code className="rounded bg-cos-bg px-1">META_FACEBOOK_PAGE_ID</code> on the server
-              and reconnect.
+              Next: in Vercel, add <code className="rounded bg-cos-bg px-1">META_FACEBOOK_PAGE_ID</code>{" "}
+              with your Page&apos;s numeric ID, redeploy, then click{" "}
+              <strong className="font-medium text-cos-text">Reconnect with Facebook</strong>.
             </p>
           ) : null}
         </div>

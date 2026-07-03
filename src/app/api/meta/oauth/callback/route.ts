@@ -9,7 +9,7 @@ import {
   getMetaOAuthCookieOptions,
   getMetaRedirectUri,
   isMetaIntegrationConfigured,
-  verifyMetaOAuthState,
+  parseMetaOAuthState,
 } from "@/lib/meta-publishing/config.server";
 import { saveMetaConnectionFromOAuth } from "@/lib/meta-publishing/connection-actions";
 import {
@@ -17,6 +17,7 @@ import {
   exchangeCodeForUserToken,
   exchangeShortLivedForLongLived,
   fetchPagesFromUserToken,
+  mergeResolvedMetaPages,
 } from "@/lib/meta-publishing/graph-api";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -54,8 +55,8 @@ export async function GET(request: NextRequest) {
 
   const cookieState = request.cookies.get(META_OAUTH_STATE_COOKIE)?.value;
   const stateMatchesCookie = Boolean(cookieState && state === cookieState);
-  const stateIsSigned = verifyMetaOAuthState(state);
-  if (!stateMatchesCookie && !stateIsSigned) {
+  const parsedState = parseMetaOAuthState(state);
+  if (!stateMatchesCookie && !parsedState.valid) {
     redirectTarget.searchParams.set("error", "invalid_state");
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest) {
 
   const preferredPageId =
     request.cookies.get(META_OAUTH_PAGE_ID_COOKIE)?.value?.trim() ||
+    parsedState.pageId ||
     request.nextUrl.searchParams.get("pageId")?.trim() ||
     request.nextUrl.searchParams.get("page_id")?.trim() ||
     getMetaFacebookPageId() ||
@@ -82,24 +84,29 @@ export async function GET(request: NextRequest) {
 
   const fallbackPageIds = preferredPageId ? [preferredPageId] : undefined;
 
-  // Resolve pages with the short-lived token first — granular page scopes often
-  // survive here but are lost after the long-lived exchange on Business Suite Pages.
-  let { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(
-    shortLived.accessToken,
-    { fallbackPageIds },
-  );
+  const shortLivedDebug = await debugToken({ inputToken: shortLived.accessToken });
+  const isPageScopedToken = shortLivedDebug.tokenType?.toUpperCase() === "PAGE";
 
+  // Resolve pages on the short-lived token first — granular page scopes often survive
+  // here but are lost after the long-lived exchange on Business Suite Pages.
+  const shortLivedResultPromise = fetchPagesFromUserToken(shortLived.accessToken, {
+    fallbackPageIds,
+  });
+  const longLivedExchangePromise = isPageScopedToken
+    ? Promise.resolve({ accessToken: null, expiresIn: null, error: null })
+    : exchangeShortLivedForLongLived({ shortLivedToken: shortLived.accessToken });
+
+  const [shortLivedResult, longLived] = await Promise.all([
+    shortLivedResultPromise,
+    longLivedExchangePromise,
+  ]);
+
+  let pages = shortLivedResult.pages;
+  let pagesError = shortLivedResult.error;
+  let debugHint = shortLivedResult.debugHint;
   let tokenExpiresAt: string | null = null;
 
-  if (pages.length === 0) {
-    const longLived = await exchangeShortLivedForLongLived({
-      shortLivedToken: shortLived.accessToken,
-    });
-    if (!longLived.accessToken) {
-      redirectTarget.searchParams.set("error", "long_lived_exchange_failed");
-      return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
-    }
-
+  if (longLived.accessToken) {
     if (longLived.expiresIn != null) {
       tokenExpiresAt = new Date(Date.now() + longLived.expiresIn * 1000).toISOString();
     }
@@ -107,45 +114,47 @@ export async function GET(request: NextRequest) {
     const longLivedResult = await fetchPagesFromUserToken(longLived.accessToken, {
       fallbackPageIds,
       alternateTokens: [shortLived.accessToken],
-      preferAlternateFirst: true,
+      preferAlternateFirst: pages.length === 0,
     });
-    pages = longLivedResult.pages;
-    pagesError = longLivedResult.error;
-    debugHint = longLivedResult.debugHint;
-  } else {
-    const longLived = await exchangeShortLivedForLongLived({
-      shortLivedToken: shortLived.accessToken,
-    });
-    if (longLived.expiresIn != null) {
-      tokenExpiresAt = new Date(Date.now() + longLived.expiresIn * 1000).toISOString();
+
+    pages = mergeResolvedMetaPages(pages, longLivedResult.pages);
+    if (pages.length === 0) {
+      pagesError = longLivedResult.error ?? shortLivedResult.error;
+      debugHint = longLivedResult.debugHint ?? shortLivedResult.debugHint;
+    } else {
+      pagesError = null;
+      debugHint = shortLivedResult.debugHint ?? longLivedResult.debugHint;
     }
   }
 
   if (pagesError || pages.length === 0) {
-    const tokenDebug = await debugToken({ inputToken: shortLived.accessToken });
     console.error("Meta OAuth callback: no pages resolved", {
       pagesError,
       debugHint,
       preferredPageId,
-      tokenValid: tokenDebug.isValid,
-      scopes: tokenDebug.scopes,
-      granularPageIds: tokenDebug.granularPageIds,
-      profileId: tokenDebug.profileId,
-      tokenType: tokenDebug.tokenType,
-      userId: tokenDebug.userId,
-      debugError: tokenDebug.error,
+      tokenValid: shortLivedDebug.isValid,
+      scopes: shortLivedDebug.scopes,
+      granularPageIds: shortLivedDebug.granularPageIds,
+      profileId: shortLivedDebug.profileId,
+      tokenType: shortLivedDebug.tokenType,
+      userId: shortLivedDebug.userId,
+      debugError: shortLivedDebug.error,
+      isPageScopedToken,
     });
     redirectTarget.searchParams.set("error", "no_pages");
     if (debugHint) {
       redirectTarget.searchParams.set("hint", debugHint.slice(0, 480));
     }
-    if (tokenDebug.scopes.length > 0) {
-      redirectTarget.searchParams.set("scopes", tokenDebug.scopes.join(",").slice(0, 200));
+    if (shortLivedDebug.scopes.length > 0) {
+      redirectTarget.searchParams.set(
+        "scopes",
+        shortLivedDebug.scopes.join(",").slice(0, 200),
+      );
     }
-    if (tokenDebug.granularPageIds.length > 0) {
+    if (shortLivedDebug.granularPageIds.length > 0) {
       redirectTarget.searchParams.set(
         "pages",
-        tokenDebug.granularPageIds.join(",").slice(0, 120),
+        shortLivedDebug.granularPageIds.join(",").slice(0, 120),
       );
     }
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);

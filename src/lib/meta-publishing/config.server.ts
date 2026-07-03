@@ -17,41 +17,61 @@ function safeCompareSignatures(left: string, right: string): boolean {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+export type MetaOAuthStatePayload = {
+  valid: boolean;
+  pageId: string | null;
+};
+
+function normalizeOAuthStatePageId(value: string | null | undefined): string | null {
+  const id = value?.trim() ?? "";
+  return /^\d+$/.test(id) ? id : null;
+}
+
 /** Signed OAuth state survives Safari and cross-site redirects without relying on cookies. */
-export function createMetaOAuthState(): string {
+export function createMetaOAuthState(options?: { pageId?: string }): string {
   const nonce = randomBytes(32).toString("base64url");
   const issuedAt = Math.floor(Date.now() / 1000).toString();
-  const payload = `${nonce}.${issuedAt}`;
+  const pageId = normalizeOAuthStatePageId(options?.pageId);
+  const payload = pageId ? `${nonce}.${issuedAt}.${pageId}` : `${nonce}.${issuedAt}`;
   return `${payload}.${signMetaOAuthStatePayload(payload)}`;
 }
 
-export function verifyMetaOAuthState(state: string | null | undefined): boolean {
+export function parseMetaOAuthState(state: string | null | undefined): MetaOAuthStatePayload {
   if (!state) {
-    return false;
+    return { valid: false, pageId: null };
   }
 
   const parts = state.split(".");
-  if (parts.length !== 3) {
-    return false;
+  if (parts.length !== 3 && parts.length !== 4) {
+    return { valid: false, pageId: null };
   }
 
-  const [nonce, issuedAtRaw, signature] = parts;
+  const nonce = parts[0];
+  const issuedAtRaw = parts[1];
+  const signature = parts[parts.length - 1] ?? "";
+  const pageId = parts.length === 4 ? normalizeOAuthStatePageId(parts[2]) : null;
+
   if (!nonce || !issuedAtRaw || !signature) {
-    return false;
+    return { valid: false, pageId: null };
   }
 
-  const payload = `${nonce}.${issuedAtRaw}`;
+  const payload = pageId ? `${nonce}.${issuedAtRaw}.${pageId}` : `${nonce}.${issuedAtRaw}`;
   if (!safeCompareSignatures(signature, signMetaOAuthStatePayload(payload))) {
-    return false;
+    return { valid: false, pageId: null };
   }
 
   const issuedAt = Number(issuedAtRaw);
   if (!Number.isFinite(issuedAt)) {
-    return false;
+    return { valid: false, pageId: null };
   }
 
   const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
-  return ageSeconds >= 0 && ageSeconds <= META_OAUTH_STATE_TTL_SECONDS;
+  const valid = ageSeconds >= 0 && ageSeconds <= META_OAUTH_STATE_TTL_SECONDS;
+  return { valid, pageId: valid ? pageId : null };
+}
+
+export function verifyMetaOAuthState(state: string | null | undefined): boolean {
+  return parseMetaOAuthState(state).valid;
 }
 
 export function getMetaOAuthCookieOptions(origin: string) {

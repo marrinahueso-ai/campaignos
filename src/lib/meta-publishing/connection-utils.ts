@@ -31,7 +31,7 @@ export function isInstagramPublishingConfigured(connection: MetaConnection | nul
 
 const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   no_pages:
-    "Facebook login succeeded but no Page access token could be resolved. This usually means your Page is in Meta Business Suite — granular page permissions may not survive token exchange, or META_FACEBOOK_PAGE_ID is not the numeric Page ID.",
+    "Facebook login succeeded but CampaignOS could not resolve a Page access token. Set META_FACEBOOK_PAGE_ID to your numeric Page ID on the server, confirm business_management and pages_show_list are in your Login for Business configuration, then reconnect.",
   not_configured: "Meta app credentials are not configured on the server.",
   token_exchange_failed: "Meta token exchange failed. Check META_APP_ID, META_APP_SECRET, and redirect URL.",
   long_lived_exchange_failed: "Could not exchange for a long-lived token.",

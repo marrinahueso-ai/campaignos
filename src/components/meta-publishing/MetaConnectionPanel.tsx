@@ -67,6 +67,7 @@ export function MetaConnectionPanel({
         → Customize → Permissions and features → enable{" "}
         <code className="rounded bg-cos-bg px-1">pages_show_list</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_read_engagement</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>, and{" "}
         <code className="rounded bg-cos-bg px-1">business_management</code> (set each to{" "}
         <strong className="font-medium text-cos-text">Ready for testing</strong>).
@@ -384,10 +385,12 @@ export function MetaConnectionPanel({
               </p>
               {oauthError === "no_pages" ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  OAuth connected your Facebook account but could not resolve a Page token. Open{" "}
-                  <strong>Advanced connect</strong> below, or set{" "}
-                  <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on the
-                  server to your Page ID and click Reconnect.
+                  Facebook connected your account but CampaignOS could not resolve a Page token.
+                  Set <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on
+                  your server to your numeric Page ID, confirm your Login for Business configuration
+                  includes <code className="rounded bg-white/80 px-1">business_management</code> and{" "}
+                  <code className="rounded bg-white/80 px-1">pages_show_list</code>, then click{" "}
+                  <strong>Reconnect with Facebook</strong>.
                 </p>
               ) : null}
               <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
