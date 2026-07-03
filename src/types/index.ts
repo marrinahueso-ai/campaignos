@@ -107,6 +107,8 @@ export interface Organization {
   ptoWebsite: string | null;
   timezone: string;
   preferredPostingHours: PreferredPostingWindow[] | null;
+  foundingAccessCode: string | null;
+  billingExemptAt: string | null;
   createdAt: string;
 }
 
@@ -121,6 +123,8 @@ export interface OrganizationRow {
   pto_website: string | null;
   timezone?: string | null;
   preferred_posting_hours?: PreferredPostingWindow[] | null;
+  founding_access_code?: string | null;
+  billing_exempt_at?: string | null;
   created_at: string;
 }
 

@@ -19,7 +19,13 @@ import { cn } from "@/lib/utils/cn";
 const STEPS = ["Welcome", "School", "Brand", "Calendar", "Finish"];
 const initialState: SchoolSetupFormState = { error: null, success: false };
 
-export function SchoolSetupWizard() {
+interface SchoolSetupWizardProps {
+  accessCodeRequired?: boolean;
+}
+
+export function SchoolSetupWizard({
+  accessCodeRequired = false,
+}: SchoolSetupWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [hasCalendarFile, setHasCalendarFile] = useState(false);
@@ -134,7 +140,7 @@ export function SchoolSetupWizard() {
             )
           }
         >
-          {state.error && step === 4 && (
+          {state.error && (step === 1 || step === 4) && (
             <div
               role="alert"
               className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
@@ -168,6 +174,24 @@ export function SchoolSetupWizard() {
                   <p className="mt-1 text-sm leading-relaxed text-cos-muted">
                     Your setup becomes the foundation for events, campaigns, and
                     approvals.
+                  </p>
+                </div>
+                <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
+                  <Input
+                    name="foundingAccessCode"
+                    label={
+                      accessCodeRequired
+                        ? "Founding access code"
+                        : "Founding access code (optional)"
+                    }
+                    placeholder="Enter your partner code"
+                    autoComplete="off"
+                    required={accessCodeRequired}
+                  />
+                  <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+                    {accessCodeRequired
+                      ? "A valid founding code is required to create your workspace."
+                      : "Have an early partner code? Enter it here to unlock founding benefits and skip future billing."}
                   </p>
                 </div>
               </div>

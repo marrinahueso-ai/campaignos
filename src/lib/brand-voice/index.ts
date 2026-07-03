@@ -126,6 +126,8 @@ async function resolveOrganization(
       ptoWebsite: null,
       timezone: "America/Chicago",
       preferredPostingHours: null,
+      foundingAccessCode: null,
+      billingExemptAt: null,
       createdAt: new Date().toISOString(),
     };
   }

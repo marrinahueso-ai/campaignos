@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CalendarRange, LayoutDashboard, Megaphone, Send, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarRange, LayoutDashboard, Megaphone, Send, Sparkles, Users } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
+import { SCHOOL_SETUP_PATH } from "@/lib/auth/post-auth-path";
 
 type InvitePreview = Awaited<ReturnType<typeof getInvitePreview>>;
 
@@ -14,6 +15,7 @@ interface StudioHomePageProps {
   authError?: string | null;
   userEmail?: string | null;
   nextPath?: string | null;
+  setupIntent?: boolean;
   workspaceHref?: string;
 }
 
@@ -41,9 +43,15 @@ export function StudioHomePage({
   authError = null,
   userEmail = null,
   nextPath = null,
+  setupIntent = false,
   workspaceHref = "/dashboard",
 }: StudioHomePageProps) {
   const isSignedIn = Boolean(userEmail);
+  const needsSchoolSetup = workspaceHref === SCHOOL_SETUP_PATH;
+  const startSchoolHref = isSignedIn
+    ? SCHOOL_SETUP_PATH
+    : `/login?intent=setup&next=${encodeURIComponent(SCHOOL_SETUP_PATH)}`;
+  const showNewSchoolPath = setupIntent || (!invitePreview && !isSignedIn);
 
   return (
     <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
@@ -76,10 +84,16 @@ export function StudioHomePage({
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            {!isSignedIn && (
-              <Button href="#sign-in" size="lg">
-                Sign in
+            {!isSignedIn && showNewSchoolPath && (
+              <Button href={startSchoolHref} size="lg">
+                Start your PTO workspace
                 <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+              </Button>
+            )}
+            {!isSignedIn && (
+              <Button href="#sign-in" variant={showNewSchoolPath ? "secondary" : "primary"} size="lg">
+                {invitePreview ? "Accept invite" : "Sign in"}
+                {!showNewSchoolPath && <ArrowRight className="h-4 w-4" strokeWidth={1.5} />}
               </Button>
             )}
             <Link
@@ -109,11 +123,18 @@ export function StudioHomePage({
           </div>
 
           {isSignedIn && (
-            <div className="mt-10">
-              <Button href={workspaceHref} size="lg">
-                <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} />
-                Go to your workspace
-              </Button>
+            <div className="mt-10 flex flex-wrap items-center gap-4">
+              {needsSchoolSetup ? (
+                <Button href={SCHOOL_SETUP_PATH} size="lg">
+                  Start school setup
+                  <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                </Button>
+              ) : (
+                <Button href={workspaceHref} size="lg">
+                  <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} />
+                  Enter workspace
+                </Button>
+              )}
             </div>
           )}
 
@@ -155,25 +176,33 @@ export function StudioHomePage({
               </div>
               <h2 className="font-display text-3xl text-[#f6f2eb] sm:text-4xl">
                 {isSignedIn
-                  ? "Welcome back"
+                  ? needsSchoolSetup
+                    ? "Start your school"
+                    : "Welcome back"
                   : invitePreview
                     ? "Join your team"
-                    : "Sign in"}
+                    : setupIntent
+                      ? "Start your school"
+                      : "Sign in"}
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-cos-dark-muted">
                 {isSignedIn
-                  ? "Your studio is ready. Pick up where you left off in your campaign workspace."
+                  ? needsSchoolSetup
+                    ? "You're signed in. Set up your PTO workspace — school profile, brand kit, and calendar — in a few minutes."
+                    : "Your studio is ready. Pick up where you left off in your campaign workspace."
                   : invitePreview
-                    ? `You're invited to ${invitePreview.organizationName}.`
-                    : "Sign in with Google, Facebook, or the email and password your admin shared."}
+                    ? `You're invited to ${invitePreview.organizationName}. Sign in to join your team.`
+                    : setupIntent
+                      ? "Starting fresh as PTO president or communications lead? Sign in, then we'll walk you through school setup."
+                      : "Returning to your workspace? Sign in below. Starting a new school? Choose Start your PTO workspace above."}
               </p>
             </div>
 
             {isSignedIn ? (
               <div className="space-y-4 border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
                 <p className="text-sm text-cos-muted">{userEmail}</p>
-                <Button href={workspaceHref} size="lg" className="w-full">
-                  Enter workspace
+                <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
+                  {needsSchoolSetup ? "Start school setup" : "Enter workspace"}
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
                 <form action="/auth/signout" method="POST">
@@ -189,11 +218,42 @@ export function StudioHomePage({
               <>
                 {invitePreview && (
                   <div className="mb-6 border border-cos-dark-muted/25 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
-                    Invited as{" "}
-                    <span className="font-medium">
-                      {invitePreview.roleName ?? invitePreview.campaignRole}
-                    </span>
-                    . Use <span className="font-medium">{invitePreview.email}</span>.
+                    <div className="flex items-start gap-3">
+                      <Users className="mt-0.5 h-4 w-4 shrink-0 text-cos-accent" strokeWidth={1.5} />
+                      <div>
+                        <p className="font-medium">Joining an existing team</p>
+                        <p className="mt-1 text-cos-dark-muted">
+                          Invited as{" "}
+                          <span className="font-medium text-[#f6f2eb]">
+                            {invitePreview.roleName ?? invitePreview.campaignRole}
+                          </span>
+                          . Use <span className="font-medium text-[#f6f2eb]">{invitePreview.email}</span>.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!invitePreview && setupIntent && (
+                  <div className="mb-6 border border-cos-accent/30 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
+                    <p className="font-medium">Starting a new PTO workspace</p>
+                    <p className="mt-1 text-cos-dark-muted">
+                      After sign-in you&apos;ll create your school profile. Have a founding access code?
+                      Enter it during setup to unlock early partner benefits.
+                    </p>
+                  </div>
+                )}
+
+                {!invitePreview && !setupIntent && (
+                  <div className="mb-6 border border-cos-dark-muted/25 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
+                    <p>
+                      <span className="font-medium">New school?</span>{" "}
+                      <Link href={startSchoolHref} className="text-cos-accent underline-offset-2 hover:underline">
+                        Start your PTO workspace
+                      </Link>
+                      .{" "}
+                      <span className="font-medium">Joining a team?</span> Use the invite link your admin sent.
+                    </p>
                   </div>
                 )}
 
@@ -208,7 +268,7 @@ export function StudioHomePage({
                     inviteToken={inviteToken}
                     defaultEmail={invitePreview?.email ?? ""}
                     variant="studio"
-                    nextPath={nextPath}
+                    nextPath={nextPath ?? (setupIntent ? SCHOOL_SETUP_PATH : null)}
                   />
                 </div>
               </>

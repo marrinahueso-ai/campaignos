@@ -11,6 +11,7 @@ import {
   toBrandAssetsInsert,
   toOrganizationInsert,
 } from "@/lib/organizations/mappers";
+import type { FoundingAccessResolution } from "@/lib/auth/founding-access";
 import type {
   BrandAssetsRow,
   OrganizationRow,
@@ -53,12 +54,26 @@ export async function createSchoolProfile(
     schoolLogo: File | null;
     calendarFile: File | null;
   },
+  foundingAccess: FoundingAccessResolution = {
+    valid: true,
+    billingExempt: false,
+    normalizedCode: null,
+    error: null,
+  },
 ) {
   const supabase = await createClient();
 
   const { data: organization, error: organizationError } = await supabase
     .from("organizations")
-    .insert(toOrganizationInsert(input))
+    .insert({
+      ...toOrganizationInsert(input),
+      founding_access_code: foundingAccess.billingExempt
+        ? foundingAccess.normalizedCode
+        : null,
+      billing_exempt_at: foundingAccess.billingExempt
+        ? new Date().toISOString()
+        : null,
+    })
     .select("*")
     .single();
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { resolveFoundingAccess } from "@/lib/auth/founding-access";
 import { createSchoolProfile } from "@/lib/organizations/mutations";
 import {
   parseSchoolSetupFiles,
@@ -22,8 +23,16 @@ export async function completeSchoolSetup(
     return { error: parsed.error, success: false };
   }
 
+  const foundingAccess = resolveFoundingAccess(
+    formData.get("foundingAccessCode")?.toString(),
+  );
+
+  if (!foundingAccess.valid) {
+    return { error: foundingAccess.error, success: false };
+  }
+
   const files = parseSchoolSetupFiles(formData);
-  const result = await createSchoolProfile(parsed.data, files);
+  const result = await createSchoolProfile(parsed.data, files, foundingAccess);
 
   if ("error" in result && result.error) {
     return { error: result.error, success: false };

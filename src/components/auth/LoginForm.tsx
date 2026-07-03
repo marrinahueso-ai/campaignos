@@ -47,7 +47,11 @@ export function LoginForm({
 
   return (
     <div className="space-y-5">
-      <SocialSignInButtons inviteToken={inviteToken} variant={variant} />
+      <SocialSignInButtons
+        inviteToken={inviteToken}
+        nextPath={nextPath}
+        variant={variant}
+      />
 
       <div className="flex rounded-xl border border-cos-border bg-cos-bg/40 p-1">
         <button
@@ -130,6 +134,9 @@ export function LoginForm({
         <form action={magicAction} className="space-y-5">
           {inviteToken && (
             <input type="hidden" name="inviteToken" value={inviteToken} />
+          )}
+          {nextPath && (
+            <input type="hidden" name="next" value={nextPath} />
           )}
 
           <Input

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface SocialSignInButtonsProps {
   inviteToken?: string | null;
+  nextPath?: string | null;
   variant?: "default" | "studio";
 }
 
@@ -48,6 +49,7 @@ function ProviderIcon({ provider }: { provider: OAuthSignInProvider }) {
 
 export function SocialSignInButtons({
   inviteToken = null,
+  nextPath = null,
   variant = "default",
 }: SocialSignInButtonsProps) {
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function SocialSignInButtons({
       setError(null);
       setPendingProvider(provider);
 
-      const result = await getOAuthSignInUrl(provider, inviteToken);
+      const result = await getOAuthSignInUrl(provider, inviteToken, nextPath);
       if ("error" in result) {
         setError(result.error);
         setPendingProvider(null);

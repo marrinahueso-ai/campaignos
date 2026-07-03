@@ -1,3 +1,4 @@
+import { isFoundingAccessCodeRequired } from "@/lib/auth/founding-access";
 import { SchoolSetupWizard } from "@/components/school-setup/SchoolSetupWizard";
 
 export const metadata = {
@@ -7,7 +8,9 @@ export const metadata = {
 export default function SettingsSchoolSetupPage() {
   return (
     <div className="studio-page pb-12">
-      <SchoolSetupWizard />
+      <SchoolSetupWizard
+        accessCodeRequired={isFoundingAccessCodeRequired()}
+      />
     </div>
   );
 }

@@ -7,6 +7,7 @@ interface HomePageProps {
   searchParams: Promise<{
     invite?: string;
     error?: string;
+    intent?: string;
   }>;
 }
 
@@ -20,6 +21,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     ? await getInvitePreview(params.invite)
     : null;
 
+  const setupIntent = params.intent === "setup";
   const workspaceHref = user ? await getAuthenticatedAppPath() : "/dashboard";
 
   return (
@@ -28,6 +30,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       inviteToken={params.invite ?? null}
       authError={params.error ?? null}
       userEmail={user?.email ?? null}
+      setupIntent={setupIntent}
       workspaceHref={workspaceHref}
     />
   );

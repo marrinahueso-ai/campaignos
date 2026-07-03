@@ -29,6 +29,7 @@ import {
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 export interface AuthActionState {
@@ -43,6 +44,7 @@ export interface AuthActionState {
 export async function getOAuthSignInUrl(
   provider: string,
   inviteToken?: string | null,
+  nextPath?: string | null,
 ): Promise<{ url: string } | { error: string }> {
   if (!isOAuthSignInProvider(provider)) {
     return { error: "Unsupported sign-in provider." };
@@ -55,6 +57,11 @@ export async function getOAuthSignInUrl(
 
   if (inviteToken) {
     redirectTo.searchParams.set("invite", inviteToken);
+  }
+
+  const safeNext = safeNextPath(nextPath);
+  if (safeNext) {
+    redirectTo.searchParams.set("next", safeNext);
   }
 
   const options: {
@@ -120,7 +127,7 @@ export async function signInWithPasswordAction(
     await acceptPendingInvitesForUser(data.user.id, data.user.email);
   }
 
-  redirect(await getAuthenticatedAppPath(formData.get("next")?.toString()));
+  redirect(await getAuthenticatedAppPath(safeNextPath(formData.get("next")?.toString())));
 }
 
 export async function signInWithEmailAction(
@@ -129,6 +136,7 @@ export async function signInWithEmailAction(
 ): Promise<AuthActionState> {
   const email = formData.get("email")?.toString()?.trim() ?? "";
   const inviteToken = formData.get("inviteToken")?.toString()?.trim() || null;
+  const next = safeNextPath(formData.get("next")?.toString());
 
   if (!email) {
     return { error: "Enter your email address.", success: false };
@@ -140,6 +148,9 @@ export async function signInWithEmailAction(
   const redirectTo = new URL("/auth/callback", origin);
   if (inviteToken) {
     redirectTo.searchParams.set("invite", inviteToken);
+  }
+  if (next) {
+    redirectTo.searchParams.set("next", next);
   }
 
   const { error } = await supabase.auth.signInWithOtp({
