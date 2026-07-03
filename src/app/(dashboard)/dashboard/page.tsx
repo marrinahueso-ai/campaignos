@@ -3,12 +3,14 @@ import { TodayHero } from "@/components/today/TodayHero";
 import { TodayPulseSection } from "@/components/today/TodayPulseSection";
 import { TodaySnapshot } from "@/components/today/TodaySnapshot";
 import { WhatsNextSection } from "@/components/today/WhatsNextSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getApprovalQueueForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getEventArtwork } from "@/lib/event-workspace/get-event-artwork";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { getTodayWeatherContext } from "@/lib/weather/queries";
+import { GraduationCap } from "lucide-react";
 
 export const metadata = {
   title: "Dashboard",
@@ -16,6 +18,23 @@ export const metadata = {
 
 export default async function DashboardPage() {
   const organization = await getLatestOrganization();
+
+  if (!organization) {
+    return (
+      <div className="studio-page pb-12">
+        <EmptyState
+          icon={GraduationCap}
+          title="Set up your school"
+          description="Add your school name, brand colors, and calendar so CampaignOS can plan campaigns with you."
+          action={{
+            label: "Set up your school — takes about 5 minutes",
+            href: "/settings/school-setup",
+          }}
+          className="cos-card py-20"
+        />
+      </div>
+    );
+  }
 
   const [todayData, weatherContext, approvalQueue] = await Promise.all([
     getTodayPageData(organization),

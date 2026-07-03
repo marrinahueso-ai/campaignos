@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 
 const PUBLIC_PATHS = [
   "/",
@@ -64,8 +65,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
+    const homePath = await resolvePostAuthPathForUser(supabase, user.id);
     const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/dashboard";
+    homeUrl.pathname = homePath;
     homeUrl.search = "";
     const redirectResponse = NextResponse.redirect(homeUrl);
     copyCookies(supabaseResponse, redirectResponse);

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 
 interface StudioAboutPageProps {
   userEmail?: string | null;
+  workspaceHref?: string;
 }
 
 const milestones = [
@@ -28,11 +29,14 @@ const milestones = [
   },
 ];
 
-export function StudioAboutPage({ userEmail = null }: StudioAboutPageProps) {
+export function StudioAboutPage({
+  userEmail = null,
+  workspaceHref = "/dashboard",
+}: StudioAboutPageProps) {
   const isSignedIn = Boolean(userEmail);
 
   return (
-    <StudioMarketingShell userEmail={userEmail}>
+    <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
         <StudioMarketingPageHeader
           eyebrow="Our story"
@@ -137,7 +141,7 @@ export function StudioAboutPage({ userEmail = null }: StudioAboutPageProps) {
             one beautiful studio.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button href={isSignedIn ? "/dashboard" : "/login"} size="lg">
+            <Button href={isSignedIn ? workspaceHref : "/login"} size="lg">
               {isSignedIn ? "Go to workspace" : "Get started"}
               <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
             </Button>

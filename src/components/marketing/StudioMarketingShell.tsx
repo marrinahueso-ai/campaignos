@@ -12,10 +12,15 @@ const NAV_LINKS = [
 
 interface StudioMarketingShellProps {
   userEmail?: string | null;
+  workspaceHref?: string;
   children: React.ReactNode;
 }
 
-export function StudioMarketingShell({ userEmail, children }: StudioMarketingShellProps) {
+export function StudioMarketingShell({
+  userEmail,
+  workspaceHref = "/dashboard",
+  children,
+}: StudioMarketingShellProps) {
   const isSignedIn = Boolean(userEmail);
 
   return (
@@ -45,12 +50,12 @@ export function StudioMarketingShell({ userEmail, children }: StudioMarketingShe
             {isSignedIn ? (
               <>
                 <Link
-                  href="/dashboard"
+                  href={workspaceHref}
                   className="hidden text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text sm:inline"
                 >
                   Workspace
                 </Link>
-                <Button href="/dashboard" size="sm">
+                <Button href={workspaceHref} size="sm">
                   Enter workspace
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>

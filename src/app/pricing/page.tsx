@@ -1,4 +1,5 @@
 import { getAuthUser } from "@/lib/auth/queries";
+import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { StudioPricingPage } from "@/components/marketing/StudioPricingPage";
 
 export const metadata = {
@@ -8,6 +9,12 @@ export const metadata = {
 
 export default async function PricingPage() {
   const user = await getAuthUser();
+  const workspaceHref = user ? await getAuthenticatedAppPath() : "/dashboard";
 
-  return <StudioPricingPage userEmail={user?.email ?? null} />;
+  return (
+    <StudioPricingPage
+      userEmail={user?.email ?? null}
+      workspaceHref={workspaceHref}
+    />
+  );
 }

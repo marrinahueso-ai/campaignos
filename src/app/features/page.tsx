@@ -1,4 +1,5 @@
 import { getAuthUser } from "@/lib/auth/queries";
+import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { StudioFeaturesPage } from "@/components/marketing/StudioFeaturesPage";
 
 export const metadata = {
@@ -9,6 +10,12 @@ export const metadata = {
 
 export default async function FeaturesPage() {
   const user = await getAuthUser();
+  const workspaceHref = user ? await getAuthenticatedAppPath() : "/dashboard";
 
-  return <StudioFeaturesPage userEmail={user?.email ?? null} />;
+  return (
+    <StudioFeaturesPage
+      userEmail={user?.email ?? null}
+      workspaceHref={workspaceHref}
+    />
+  );
 }

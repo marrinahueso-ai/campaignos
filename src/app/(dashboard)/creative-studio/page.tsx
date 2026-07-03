@@ -1,9 +1,9 @@
-import { ArtworkRebuildPlaceholder } from "@/components/creative-studio/ArtworkRebuildPlaceholder";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Artwork",
 };
 
 export default function CreativeStudioPage() {
-  return <ArtworkRebuildPlaceholder />;
+  redirect("/events");
 }

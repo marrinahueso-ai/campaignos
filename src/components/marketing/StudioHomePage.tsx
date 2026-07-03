@@ -14,6 +14,7 @@ interface StudioHomePageProps {
   authError?: string | null;
   userEmail?: string | null;
   nextPath?: string | null;
+  workspaceHref?: string;
 }
 
 const highlights = [
@@ -40,11 +41,12 @@ export function StudioHomePage({
   authError = null,
   userEmail = null,
   nextPath = null,
+  workspaceHref = "/dashboard",
 }: StudioHomePageProps) {
   const isSignedIn = Boolean(userEmail);
 
   return (
-    <StudioMarketingShell userEmail={userEmail}>
+    <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
       <div className="relative grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_min(100%,520px)]">
         {/* Hero photo — left column on desktop, band behind content on mobile */}
         <div
@@ -108,7 +110,7 @@ export function StudioHomePage({
 
           {isSignedIn && (
             <div className="mt-10">
-              <Button href="/dashboard" size="lg">
+              <Button href={workspaceHref} size="lg">
                 <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} />
                 Go to your workspace
               </Button>
@@ -170,7 +172,7 @@ export function StudioHomePage({
             {isSignedIn ? (
               <div className="space-y-4 border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
                 <p className="text-sm text-cos-muted">{userEmail}</p>
-                <Button href="/dashboard" size="lg" className="w-full">
+                <Button href={workspaceHref} size="lg" className="w-full">
                   Enter workspace
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>

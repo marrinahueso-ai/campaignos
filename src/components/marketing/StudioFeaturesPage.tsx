@@ -9,13 +9,17 @@ import { Button } from "@/components/ui/Button";
 
 interface StudioFeaturesPageProps {
   userEmail?: string | null;
+  workspaceHref?: string;
 }
 
-export function StudioFeaturesPage({ userEmail = null }: StudioFeaturesPageProps) {
+export function StudioFeaturesPage({
+  userEmail = null,
+  workspaceHref = "/dashboard",
+}: StudioFeaturesPageProps) {
   const isSignedIn = Boolean(userEmail);
 
   return (
-    <StudioMarketingShell userEmail={userEmail}>
+    <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
       <section className="border-b border-cos-border bg-cos-dark">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-20">
           <StudioMarketingPageHeader
@@ -41,7 +45,7 @@ export function StudioFeaturesPage({ userEmail = null }: StudioFeaturesPageProps
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             {isSignedIn ? (
-              <Button href="/dashboard" size="lg">
+              <Button href={workspaceHref} size="lg">
                 Go to workspace
                 <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </Button>

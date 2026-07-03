@@ -28,7 +28,7 @@ import {
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
-import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
 export interface AuthActionState {
@@ -120,9 +120,7 @@ export async function signInWithPasswordAction(
     await acceptPendingInvitesForUser(data.user.id, data.user.email);
   }
 
-  const nextPath =
-    safeNextPath(formData.get("next")?.toString()) ?? "/dashboard";
-  redirect(nextPath);
+  redirect(await getAuthenticatedAppPath(formData.get("next")?.toString()));
 }
 
 export async function signInWithEmailAction(

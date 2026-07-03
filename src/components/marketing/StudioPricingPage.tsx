@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface StudioPricingPageProps {
   userEmail?: string | null;
+  workspaceHref?: string;
 }
 
 const plans = [
@@ -58,12 +59,15 @@ const plans = [
   },
 ];
 
-export function StudioPricingPage({ userEmail = null }: StudioPricingPageProps) {
+export function StudioPricingPage({
+  userEmail = null,
+  workspaceHref = "/dashboard",
+}: StudioPricingPageProps) {
   const isSignedIn = Boolean(userEmail);
-  const ctaHref = isSignedIn ? "/dashboard" : "/login";
+  const ctaHref = isSignedIn ? workspaceHref : "/login";
 
   return (
-    <StudioMarketingShell userEmail={userEmail}>
+    <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
         <StudioMarketingPageHeader
           eyebrow="Pricing"

@@ -1,6 +1,6 @@
 import { getAuthUser } from "@/lib/auth/queries";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
-import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { redirect } from "next/navigation";
 import { StudioHomePage } from "@/components/marketing/StudioHomePage";
 
@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const user = await getAuthUser();
   if (user) {
-    redirect(safeNextPath(params.next) ?? "/dashboard");
+    redirect(await getAuthenticatedAppPath(params.next));
   }
 
   const invitePreview = params.invite

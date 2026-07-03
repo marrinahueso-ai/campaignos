@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { mapOrganizationUserRow } from "@/lib/auth/mappers";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -170,6 +171,30 @@ export async function acceptPendingInvitesForUser(
   }
 
   return data?.length ?? 0;
+}
+
+/** Returns null when organization_users is unavailable (legacy local dev). */
+export async function hasActiveOrganizationMembership(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean | null> {
+  const { data, error } = await supabase
+    .from("organization_users")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+
+  if (error?.code === "42P01") {
+    return null;
+  }
+
+  if (error) {
+    return false;
+  }
+
+  return Boolean(data);
 }
 
 export { getLatestOrganizationLegacyId };
