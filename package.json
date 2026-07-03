@@ -10,7 +10,8 @@
     "clean": "bash scripts/clean.sh",
     "dev:clean": "npm run clean && npm run dev",
     "verify": "bash scripts/verify.sh",
-    "capture:features": "node scripts/capture-feature-screenshots.mjs"
+    "capture:features": "node scripts/capture-feature-screenshots.mjs",
+    "capture:features-videos": "node scripts/capture-feature-videos.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
