@@ -6,16 +6,6 @@ import type {
   PreferredPostingWindow,
 } from "@/types/posting-preferences";
 
-export const COMMON_US_TIMEZONES = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Phoenix",
-  "America/Anchorage",
-  "Pacific/Honolulu",
-] as const;
-
 export function windowsFromInput(input: PostingPreferencesInput): PreferredPostingWindow[] | null {
   if (!input.useCustomWindows) {
     return null;

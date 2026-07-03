@@ -9,13 +9,13 @@ import {
 } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import {
-  COMMON_US_TIMEZONES,
-} from "@/lib/organizations/posting-preferences";
-import {
   savePostingPreferencesAction,
   type PostingPreferencesActionState,
 } from "@/lib/organizations/posting-preferences-actions";
-import type { PostingPreferencesInput } from "@/types/posting-preferences";
+import {
+  COMMON_US_TIMEZONES,
+  type PostingPreferencesInput,
+} from "@/types/posting-preferences";
 
 const DAY_OPTIONS = [
   { value: 0, label: "Sun" },
