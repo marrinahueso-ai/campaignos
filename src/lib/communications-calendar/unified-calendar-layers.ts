@@ -133,13 +133,29 @@ export function getDisplayStatus(
   return "draft";
 }
 
+export function isMetaMilestoneItem(item: PlanningCalendarItem): boolean {
+  return item.communicationType === "meta_milestone";
+}
+
+/** Calendar chip title: event name first, then milestone (not "Day Of — Meta"). */
+export function getCalendarItemDisplayTitle(item: PlanningCalendarItem): string {
+  if (isMetaMilestoneItem(item)) {
+    const milestone =
+      item.timelineStepTitle ??
+      item.title.replace(/\s*[—-]\s*Meta\s*$/i, "").trim();
+    return `${item.eventTitle} - ${milestone}`;
+  }
+
+  return item.title;
+}
+
 export function getPrimaryChannelLabel(item: PlanningCalendarItem): string | null {
   if (item.communicationType === "event") {
     return "Event";
   }
 
-  if (item.communicationType === "meta_milestone") {
-    return "Meta";
+  if (isMetaMilestoneItem(item)) {
+    return null;
   }
 
   return null;

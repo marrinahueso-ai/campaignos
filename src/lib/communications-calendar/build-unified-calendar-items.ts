@@ -54,14 +54,15 @@ function buildMetaMilestoneItems(
     const first = group[0]!;
     const scheduledDate = toDateOnly(first.scheduledFor!);
     const aggregateStatus = aggregateMetaStatus(group);
+    const eventTitle = eventTitleById.get(first.eventId) ?? "Event";
 
     items.push({
       id: `meta-${first.eventId}-${first.relativeDay}-${scheduledDate}`,
       sourceId: `${first.eventId}-${first.relativeDay}`,
       sourceType: "meta_milestone",
       eventId: first.eventId,
-      eventTitle: eventTitleById.get(first.eventId) ?? "Event",
-      title: `${first.milestoneTitle} — Meta`,
+      eventTitle,
+      title: `${eventTitle} - ${first.milestoneTitle}`,
       timelineStepTitle: first.milestoneTitle,
       timelineStepId: null,
       communicationItemId: null,

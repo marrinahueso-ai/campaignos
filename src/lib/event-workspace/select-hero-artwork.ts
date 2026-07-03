@@ -101,16 +101,25 @@ export { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 
 function isUsableAsset(asset: EventAsset): boolean {
   return (
-    asset.status === "uploaded" &&
-    !!(asset.filename || resolveAssetImageUrl(asset.storagePath))
+    asset.status === "uploaded" && Boolean(resolveAssetImageUrl(asset.storagePath))
   );
 }
 
 function isApprovedPlanAsset(asset: EventAsset): boolean {
-  return (
-    isUsableAsset(asset) &&
-    (asset.planStatus === "approved" || asset.planStatus === "published")
-  );
+  if (!isUsableAsset(asset)) {
+    return false;
+  }
+
+  if (asset.planStatus === "in_progress" || asset.planStatus === "generated") {
+    return false;
+  }
+
+  if (asset.planStatus === "approved" || asset.planStatus === "published") {
+    return true;
+  }
+
+  // Legacy rows before plan_status was tracked (matches artwork-v2 UI).
+  return asset.status === "uploaded";
 }
 
 function getApprovedCommunicationIds(
@@ -185,11 +194,16 @@ function toAssetSelection(
   asset: EventAsset,
   source: HeroArtworkSource,
   caption: HeroArtworkCaption,
-): HeroArtworkSelection {
+): HeroArtworkSelection | null {
+  const imageUrl = resolveAssetImageUrl(asset.storagePath);
+  if (!imageUrl) {
+    return null;
+  }
+
   return {
     source,
     caption,
-    imageUrl: resolveAssetImageUrl(asset.storagePath),
+    imageUrl,
     label: getAssetLabel(asset.assetType),
     filename: asset.filename,
     aspectRatio: "square",
@@ -220,7 +234,14 @@ function pickApprovedUploadedAsset(
     )[0];
 
     if (matchedAsset) {
-      return toAssetSelection(matchedAsset, "approved_asset", "Artwork ready");
+      const selection = toAssetSelection(
+        matchedAsset,
+        "approved_asset",
+        "Artwork ready",
+      );
+      if (selection) {
+        return selection;
+      }
     }
 
     const imageUrl = extractImageUrl(communication.latestContent);
@@ -245,11 +266,14 @@ function pickApprovedUploadedAsset(
   );
 
   if (approvedVisualAssets.length > 0 && approvedCommunicationIds.size > 0) {
-    return toAssetSelection(
-      approvedVisualAssets[0],
+    const selection = toAssetSelection(
+      approvedVisualAssets[0]!,
       "approved_asset",
       "Artwork ready",
     );
+    if (selection) {
+      return selection;
+    }
   }
 
   return null;
@@ -295,7 +319,14 @@ function pickApprovedStoryFallback(
   const feedFromMilestone = pickFeedForStoryMilestone(newestStory, assets);
 
   if (feedFromMilestone) {
-    return toAssetSelection(feedFromMilestone, "approved_asset", "Artwork ready");
+    const selection = toAssetSelection(
+      feedFromMilestone,
+      "approved_asset",
+      "Artwork ready",
+    );
+    if (selection) {
+      return selection;
+    }
   }
 
   return toAssetSelection(newestStory, "approved_asset", "Artwork ready");
@@ -310,18 +341,27 @@ function pickApprovedPlanAsset(assets: EventAsset[]): HeroArtworkSelection | nul
     return pickApprovedStoryFallback(assets);
   }
 
-  const heroImage = approvedAssets.find((asset) => asset.assetType === "hero_image");
-
-  if (heroImage) {
-    return toAssetSelection(heroImage, "approved_asset", "Artwork ready");
-  }
-
   const milestoneFeeds = sortVisualAssetsOldestFirst(
     approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
   );
 
   if (milestoneFeeds.length > 0) {
-    return toAssetSelection(milestoneFeeds[0]!, "approved_asset", "Artwork ready");
+    const selection = toAssetSelection(
+      milestoneFeeds[0]!,
+      "approved_asset",
+      "Artwork ready",
+    );
+    if (selection) {
+      return selection;
+    }
+  }
+
+  const heroImage = approvedAssets.find((asset) => asset.assetType === "hero_image");
+  if (heroImage) {
+    const selection = toAssetSelection(heroImage, "approved_asset", "Artwork ready");
+    if (selection) {
+      return selection;
+    }
   }
 
   const fallback = sortVisualAssets(approvedAssets)[0];
