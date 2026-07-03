@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/meta-publish",
-      "schedule": "* * * * *"
+      "schedule": "0 14 * * *"
     }
   ]
 }
