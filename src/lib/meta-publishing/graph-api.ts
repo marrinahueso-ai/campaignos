@@ -476,6 +476,37 @@ function pageIdsFromGranularScopes(
   return [...pageIds];
 }
 
+/** All numeric asset IDs from granular scopes (Login for Business may use non-pages_* scope names). */
+function allTargetIdsFromGranularScopes(
+  granularScopes: GranularScopeEntry[] | undefined,
+): string[] {
+  if (!granularScopes?.length) {
+    return [];
+  }
+
+  const ids = new Set<string>();
+  for (const entry of granularScopes) {
+    for (const id of targetIdsFromGranularEntry(entry)) {
+      ids.add(id);
+    }
+  }
+
+  return [...ids];
+}
+
+function collectTrustedPageIds(input: {
+  granularPageIds: string[];
+  profileId: string | null;
+  fallbackPageIds?: string[];
+}): string[] {
+  return uniquePageIds([
+    ...input.granularPageIds,
+    input.profileId,
+    ...(input.fallbackPageIds ?? []),
+    getMetaFacebookPageId(),
+  ]);
+}
+
 function uniqueStrings(values: Array<string | null | undefined>): string[] {
   const seen = new Set<string>();
   for (const value of values) {
@@ -940,6 +971,58 @@ export function mergeResolvedMetaPages(
   return mergeResolvedPages(primary, secondary);
 }
 
+/**
+ * When META_FACEBOOK_PAGE_ID is configured, Login for Business often grants a valid user
+ * token without /me/accounts or nested Page tokens. Trust the OAuth token for that Page.
+ */
+async function tryResolveEnvConfiguredPage(
+  userAccessTokens: string[],
+): Promise<ResolvedMetaPage | null> {
+  const envPageId = getMetaFacebookPageId();
+  if (!envPageId) {
+    return null;
+  }
+
+  for (const token of userAccessTokens) {
+    const trimmed = token.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const debug = await debugToken({ inputToken: trimmed });
+    if (!debug.ok || !debug.isValid) {
+      continue;
+    }
+
+    const trustedPageIds = collectTrustedPageIds({
+      granularPageIds: debug.granularPageIds,
+      profileId: debug.profileId,
+    });
+
+    const resolved = await fetchPageFromUserTokenById({
+      pageId: envPageId,
+      userAccessTokens: [trimmed],
+      trustedPageIds,
+      instagramAccountIdHint: debug.granularInstagramIds[0] ?? null,
+    });
+    if (resolved) {
+      return resolved;
+    }
+
+    console.info(
+      `Meta env-page trust: using configured page ${envPageId} with OAuth token …${trimmed.slice(-6)}`,
+    );
+    return {
+      id: envPageId,
+      name: "Facebook Page",
+      accessToken: trimmed,
+      instagramAccountId: debug.granularInstagramIds[0] ?? null,
+    };
+  }
+
+  return null;
+}
+
 export async function fetchPagesFromUserToken(
   userAccessToken: string,
   options?: {
@@ -951,6 +1034,15 @@ export async function fetchPagesFromUserToken(
   const userAccessTokens = userAccessTokensFromOptions(userAccessToken, options);
   const sources: string[] = [];
   const resolutionErrors: string[] = [];
+
+  const envPage = await tryResolveEnvConfiguredPage(userAccessTokens);
+  if (envPage) {
+    return {
+      pages: [envPage],
+      error: null,
+      debugHint: `Resolved via env_page_trust (${envPage.id})`,
+    };
+  }
 
   let pages: ResolvedMetaPage[] = [];
 
@@ -972,11 +1064,11 @@ export async function fetchPagesFromUserToken(
     }
 
     const instagramAccountIdHint = debug.granularInstagramIds[0] ?? null;
-    const trustedPageIds = uniquePageIds([
-      ...debug.granularPageIds,
-      ...(options?.fallbackPageIds ?? []),
-      getMetaFacebookPageId(),
-    ]);
+    const trustedPageIds = collectTrustedPageIds({
+      granularPageIds: debug.granularPageIds,
+      profileId: debug.profileId,
+      fallbackPageIds: options?.fallbackPageIds,
+    });
 
     const impersonated = await resolveImpersonatedPageToken({
       accessToken: token,
@@ -995,6 +1087,8 @@ export async function fetchPagesFromUserToken(
     const permissionPageIds = await fetchPageIdsFromMePermissions(token);
     const earlyPageIds = uniquePageIds([
       ...granularPageIds,
+      ...(granularPageIds.length === 0 ? debug.granularTargetIds : []),
+      debug.profileId,
       ...permissionPageIds,
       ...(options?.fallbackPageIds ?? []),
       getMetaFacebookPageId(),
@@ -1043,6 +1137,8 @@ export async function fetchPagesFromUserToken(
       sources,
       trustedPageIds: uniquePageIds([
         ...primaryDebug.granularPageIds,
+        ...primaryDebug.granularTargetIds,
+        primaryDebug.profileId,
         ...unresolvedPageIds,
         getMetaFacebookPageId(),
       ]),
@@ -1152,6 +1248,7 @@ export async function debugToken(input: {
   scopes: string[];
   granularPageIds: string[];
   granularInstagramIds: string[];
+  granularTargetIds: string[];
   userId: string | null;
   profileId: string | null;
   tokenType: string | null;
@@ -1170,6 +1267,7 @@ export async function debugToken(input: {
       scopes: [],
       granularPageIds: [],
       granularInstagramIds: [],
+      granularTargetIds: [],
       userId: null,
       profileId: null,
       tokenType: null,
@@ -1204,6 +1302,7 @@ export async function debugToken(input: {
     scopes: Array.isArray(data?.scopes) ? data.scopes : [],
     granularPageIds: pageIdsFromGranularScopes(granularScopes),
     granularInstagramIds: instagramIdsFromGranularScopes(granularScopes),
+    granularTargetIds: allTargetIdsFromGranularScopes(granularScopes),
     userId: data?.user_id ? String(data.user_id) : null,
     profileId,
     tokenType: data?.type ? String(data.type) : null,
@@ -1229,13 +1328,16 @@ export async function verifyMetaConnection(input: {
     });
     if (!meAsPage) {
       const debug = await debugToken({ inputToken: input.accessToken });
+      const envPageId = getMetaFacebookPageId();
       const hasGranularPageAccess =
         debug.isValid &&
         (debug.granularPageIds.includes(input.pageId) ||
+          debug.granularTargetIds.includes(input.pageId) ||
           debug.profileId === input.pageId ||
           debug.tokenType?.toUpperCase() === "PAGE");
+      const hasEnvPageTrust = Boolean(envPageId && envPageId === input.pageId && debug.isValid);
 
-      if (hasGranularPageAccess) {
+      if (hasGranularPageAccess || hasEnvPageTrust) {
         return { ok: true, pageName: null, error: null };
       }
 

@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     tokenExpiresAt = shortLivedDebug.expiresAt;
   }
 
-  if (pagesError || pages.length === 0) {
+  if (pages.length === 0) {
     console.error("Meta OAuth callback: no pages resolved", {
       pagesError,
       debugHint,
