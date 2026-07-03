@@ -16,6 +16,7 @@ import { Select } from "@/components/ui/Select";
 import {
   claimOrganizationAccessAction,
   createTeamMemberAccountAction,
+  inviteTeamMemberAction,
   removeTeamMemberAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
@@ -36,6 +37,8 @@ interface TeamSettingsPanelProps {
   siteOrigin: string;
   canProvisionAccounts: boolean;
 }
+
+type AddMode = "invite" | "password" | null;
 
 function statusBadge(status: OrganizationUser["status"]) {
   switch (status) {
@@ -61,11 +64,40 @@ export function TeamSettingsPanel({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [provisionedEmail, setProvisionedEmail] = useState<string | null>(null);
   const [provisionedPassword, setProvisionedPassword] = useState<string | null>(
     null,
   );
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [addMode, setAddMode] = useState<AddMode>(null);
+
+  function resetSuccessState() {
+    setInviteUrl(null);
+    setProvisionedEmail(null);
+    setProvisionedPassword(null);
+  }
+
+  async function handleInvite(formData: FormData) {
+    startTransition(async () => {
+      const result = await inviteTeamMemberAction(
+        { error: null, success: false },
+        formData,
+      );
+      if (result.error) {
+        setError(result.error);
+        setMessage(null);
+        resetSuccessState();
+        return;
+      }
+      setError(null);
+      setMessage(result.message ?? "Invite created.");
+      setInviteUrl(result.inviteUrl ?? null);
+      setProvisionedEmail(null);
+      setProvisionedPassword(null);
+      setAddMode(null);
+      router.refresh();
+    });
+  }
 
   async function handleCreateAccount(formData: FormData) {
     startTransition(async () => {
@@ -76,17 +108,31 @@ export function TeamSettingsPanel({
       if (result.error) {
         setError(result.error);
         setMessage(null);
-        setProvisionedEmail(null);
-        setProvisionedPassword(null);
+        resetSuccessState();
         return;
       }
       setError(null);
       setMessage(result.message ?? "Account created.");
+      setInviteUrl(null);
       setProvisionedEmail(result.provisionedEmail ?? null);
       setProvisionedPassword(result.provisionedPassword ?? null);
-      setShowCreateForm(false);
+      setAddMode(null);
       router.refresh();
     });
+  }
+
+  async function copyInviteLink() {
+    if (!inviteUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setMessage("Invite link copied.");
+      setError(null);
+    } catch {
+      setError("Could not copy. Select and copy the link manually.");
+    }
   }
 
   async function copySignInDetails() {
@@ -175,8 +221,8 @@ export function TeamSettingsPanel({
         <CardHeader>
           <CardTitle>Team members</CardTitle>
           <CardDescription>
-            Create a tester account with email and password, then share the sign-in
-            details directly. No magic link or paid email required.
+            Invite VPs and committee chairs with a link (they sign in with Google),
+            or create an email-and-password account and share the credentials.
           </CardDescription>
         </CardHeader>
 
@@ -244,19 +290,60 @@ export function TeamSettingsPanel({
 
         {canManage && (
           <>
-            {!canProvisionAccounts && (
-              <p className="mt-4 text-sm text-amber-900">
-                Add <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> to{" "}
-                <code className="text-xs">.env.local</code> to create tester accounts
-                from here.
-              </p>
-            )}
-
-            {showCreateForm ? (
+            {addMode === "invite" ? (
+              <form
+                action={handleInvite}
+                className="mt-6 space-y-4 rounded-xl border border-cos-border bg-cos-bg/50 p-5"
+              >
+                <p className="text-sm text-cos-muted">
+                  After you send the invite, copy the link and share it by text or
+                  email. They open it and sign in with Google using the invited
+                  email address.
+                </p>
+                <Input
+                  name="email"
+                  label="Email"
+                  type="email"
+                  placeholder="communications@ptoees.org"
+                  required
+                />
+                <Select name="organizationRoleId" label="Organization role" defaultValue="">
+                  <option value="">Select role (optional)</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </Select>
+                <Select name="campaignRole" label="Access level" defaultValue="contributor">
+                  {CAMPAIGN_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {campaignRoleLabel(role as CampaignRole)}
+                    </option>
+                  ))}
+                </Select>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isPending}>
+                    Create invite link
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setAddMode(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            ) : addMode === "password" ? (
               <form
                 action={handleCreateAccount}
                 className="mt-6 space-y-4 rounded-xl border border-cos-border bg-cos-bg/50 p-5"
               >
+                <p className="text-sm text-cos-muted">
+                  Creates a ready-to-use account. Share the email and temporary
+                  password — they sign in at the login page with email &amp; password.
+                </p>
                 <Input
                   name="email"
                   label="Email"
@@ -280,7 +367,7 @@ export function TeamSettingsPanel({
                     </option>
                   ))}
                 </Select>
-                <Select name="campaignRole" label="Access level" defaultValue="admin">
+                <Select name="campaignRole" label="Access level" defaultValue="contributor">
                   {CAMPAIGN_ROLES.map((role) => (
                     <option key={role} value={role}>
                       {campaignRoleLabel(role as CampaignRole)}
@@ -294,23 +381,46 @@ export function TeamSettingsPanel({
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setShowCreateForm(false)}
+                    onClick={() => setAddMode(null)}
                   >
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : (
-              <Button
-                type="button"
-                variant="secondary"
-                className="mt-6"
-                onClick={() => setShowCreateForm(true)}
-                disabled={!canProvisionAccounts}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add tester account
-              </Button>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    resetSuccessState();
+                    setAddMode("invite");
+                  }}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Invite team member
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    resetSuccessState();
+                    setAddMode("password");
+                  }}
+                  disabled={!canProvisionAccounts}
+                >
+                  Create account with password
+                </Button>
+              </div>
+            )}
+
+            {!canProvisionAccounts && addMode !== "password" && (
+              <p className="mt-4 text-sm text-amber-900">
+                Password accounts require{" "}
+                <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> on the
+                server. Invite links work without it — use Google sign-in on the
+                invite link.
+              </p>
             )}
           </>
         )}
@@ -318,12 +428,33 @@ export function TeamSettingsPanel({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {message && <p className="text-sm text-emerald-700">{message}</p>}
+      {inviteUrl && (
+        <div className="rounded-xl border border-cos-border bg-cos-bg/50 p-4">
+          <p className="text-sm font-medium text-cos-text">Share this invite link</p>
+          <p className="mt-1 text-xs text-cos-muted">
+            Send by text or email. They open the link and tap{" "}
+            <span className="font-medium">Continue with Google</span> using the
+            invited email address.
+          </p>
+          <p className="mt-3 break-all text-sm font-medium text-cos-text">{inviteUrl}</p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mt-3"
+            onClick={copyInviteLink}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Copy invite link
+          </Button>
+        </div>
+      )}
       {provisionedEmail && provisionedPassword && (
         <div className="rounded-xl border border-cos-border bg-cos-bg/50 p-4">
           <p className="text-sm font-medium text-cos-text">Share these sign-in details</p>
           <p className="mt-1 text-xs text-cos-muted">
-            Send by text or in person. They sign in at {siteOrigin}/login with email &
-            password.
+            Send by text or in person. They sign in at {siteOrigin}/login with email
+            &amp; password.
           </p>
           <dl className="mt-3 space-y-2 text-sm">
             <div>

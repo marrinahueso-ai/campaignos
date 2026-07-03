@@ -163,8 +163,9 @@ export function LoginForm({
           </Button>
 
           <p className="text-center text-xs leading-relaxed text-cos-muted">
-            Magic links require Supabase email delivery. Use email & password
-            unless your admin has SMTP configured.
+            {inviteToken
+              ? "Magic links work on invite links. Use the invited email, or sign in with Google above."
+              : "Magic links require an existing account. Use Google sign-in or the email & password your admin shared."}
           </p>
         </form>
       )}

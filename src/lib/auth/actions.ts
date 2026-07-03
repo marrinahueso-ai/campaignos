@@ -146,7 +146,8 @@ export async function signInWithEmailAction(
     email,
     options: {
       emailRedirectTo: redirectTo.toString(),
-      shouldCreateUser: false,
+      // Invited users may not have a Supabase account yet; allow signup only via invite link.
+      shouldCreateUser: Boolean(inviteToken),
     },
   });
 
