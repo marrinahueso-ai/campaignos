@@ -23,6 +23,8 @@ import type {
   PlanningCalendarItem,
   PlanningCalendarView,
 } from "@/types/communications-calendar";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
+import { heatmapSourceLabel } from "@/lib/posting-analytics/heatmap-ui";
 
 const VIEW_OPTIONS: {
   value: PlanningCalendarView;
@@ -47,6 +49,9 @@ interface UnifiedCalendarControlPanelProps {
     eventCount: number;
   } | null;
   showImportList?: boolean;
+  postingHeatmap?: PostingHeatmapData | null;
+  showPostingHeatmap?: boolean;
+  onShowPostingHeatmapChange?: (value: boolean) => void;
   onViewChange: (view: PlanningCalendarView) => void;
   onPrevious: () => void;
   onNext: () => void;
@@ -62,6 +67,9 @@ export function UnifiedCalendarControlPanel({
   upcomingItems,
   importCleanup,
   showImportList = true,
+  postingHeatmap = null,
+  showPostingHeatmap = false,
+  onShowPostingHeatmapChange,
   onViewChange,
   onPrevious,
   onNext,
@@ -185,6 +193,47 @@ export function UnifiedCalendarControlPanel({
               </button>
             );
           })}
+
+          {view === "week" && onShowPostingHeatmapChange && (
+            <>
+              <span className="mx-1 hidden h-4 w-px bg-cos-border sm:inline-block" aria-hidden />
+              <button
+                type="button"
+                aria-pressed={showPostingHeatmap}
+                onClick={() => onShowPostingHeatmapChange(!showPostingHeatmap)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                  showPostingHeatmap
+                    ? "bg-cos-accent text-white"
+                    : "bg-cos-bg text-cos-muted hover:text-cos-text",
+                )}
+              >
+                Best times to post
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {view === "week" && showPostingHeatmap && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-cos-border bg-cos-bg/30 px-5 py-2.5 text-xs text-cos-muted">
+          <span>Darker = families more likely to see posts</span>
+          <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />
+          <span className="inline-flex items-center gap-2">
+            <span>Low</span>
+            <span
+              className="inline-flex h-3 w-20 overflow-hidden rounded-full ring-1 ring-cos-border"
+              aria-hidden
+            >
+              <span className="flex-1 bg-cos-accent-soft" />
+              <span className="flex-1 bg-cos-accent/40" />
+              <span className="flex-1 bg-cos-accent/70" />
+              <span className="flex-1 bg-cos-accent" />
+            </span>
+            <span>High</span>
+          </span>
+          <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />
+          <span>Source: {heatmapSourceLabel(postingHeatmap)}</span>
         </div>
       )}
 

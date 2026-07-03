@@ -69,6 +69,7 @@ function buildMetaMilestoneItems(
       channel: null,
       communicationType: "meta_milestone",
       scheduledDate,
+      scheduledAt: first.scheduledFor,
       status: aggregateStatus,
       assignedUser: null,
       draftContent: null,

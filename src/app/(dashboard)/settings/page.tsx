@@ -1,5 +1,6 @@
 import { SettingsPreferencesForm } from "@/components/settings/SettingsPreferencesForm";
 import { SchoolYearSettingsSection } from "@/components/settings/SchoolYearSettingsSection";
+import { PostingPreferencesSection } from "@/components/settings/PostingPreferencesSection";
 import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
 import Link from "next/link";
 
@@ -30,6 +31,7 @@ export default function SettingsPage() {
       </section>
 
       <SchoolYearSettingsSection />
+      <PostingPreferencesSection />
       <SettingsPreferencesForm />
     </div>
   );

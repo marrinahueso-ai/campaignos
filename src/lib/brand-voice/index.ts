@@ -124,6 +124,8 @@ async function resolveOrganization(
       principal: null,
       schoolWebsite: null,
       ptoWebsite: null,
+      timezone: "America/Chicago",
+      preferredPostingHours: null,
       createdAt: new Date().toISOString(),
     };
   }

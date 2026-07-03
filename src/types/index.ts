@@ -94,6 +94,8 @@ export type CalendarParseStatus =
   | "failed"
   | "imported";
 
+import type { PreferredPostingWindow } from "@/types/posting-preferences";
+
 export interface Organization {
   id: string;
   name: string;
@@ -103,6 +105,8 @@ export interface Organization {
   principal: string | null;
   schoolWebsite: string | null;
   ptoWebsite: string | null;
+  timezone: string;
+  preferredPostingHours: PreferredPostingWindow[] | null;
   createdAt: string;
 }
 
@@ -115,6 +119,8 @@ export interface OrganizationRow {
   principal: string | null;
   school_website: string | null;
   pto_website: string | null;
+  timezone?: string | null;
+  preferred_posting_hours?: PreferredPostingWindow[] | null;
   created_at: string;
 }
 

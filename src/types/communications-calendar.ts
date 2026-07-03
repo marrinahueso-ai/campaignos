@@ -123,7 +123,11 @@ export interface PlanningCalendarItem {
   publishStatus: string | null;
   versionNumber: number | null;
   communicationStrategy?: CommunicationStrategy | null;
+  /** ISO timestamp when a specific publish time is known */
+  scheduledAt?: string | null;
 }
+
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 
 export interface PlanningCalendarData {
   items: PlanningCalendarItem[];
@@ -135,6 +139,7 @@ export interface PlanningCalendarData {
   importedEvents: CalendarImportedEventListItem[];
   importListFilename: string | null;
   activeSchoolYearId: string | null;
+  postingHeatmap: PostingHeatmapData | null;
 }
 
 export interface PlanningCalendarFilters {

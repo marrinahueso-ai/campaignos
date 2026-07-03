@@ -50,6 +50,7 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers,
   );
+  const [showPostingHeatmap, setShowPostingHeatmap] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
   const hasAutoFocused = useRef(false);
 
@@ -190,6 +191,9 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
         onToday={goToday}
         onLayersChange={setActiveLayers}
         onSelectUpcomingItem={setSelectedItem}
+        postingHeatmap={data.postingHeatmap}
+        showPostingHeatmap={showPostingHeatmap}
+        onShowPostingHeatmapChange={setShowPostingHeatmap}
       />
 
       {showEmptyPeriodHint && (
@@ -224,6 +228,8 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
           anchorDate={weekAnchor}
           onSelectItem={setSelectedItem}
           onRescheduled={handleRescheduled}
+          postingHeatmap={data.postingHeatmap}
+          showPostingHeatmap={showPostingHeatmap}
         />
       )}
       {view === "agenda" && (

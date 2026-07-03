@@ -1,35 +1,69 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import { PlanningCalendarItemChip } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import { reschedulePlanningItemAction } from "@/lib/communications-calendar/planning-actions";
-import { UnifiedCalendarDayContent } from "@/components/unified-calendar/UnifiedCalendarDayContent";
 import {
   DRAG_MIME,
   parseDragPayload,
 } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
+import { getScoreForCell } from "@/lib/posting-analytics/compute-heatmap";
+import {
+  formatHourLabel,
+  heatmapCellBackground,
+  resolveItemHour,
+} from "@/lib/posting-analytics/heatmap-ui";
+import {
+  WEEK_VIEW_END_HOUR,
+  WEEK_VIEW_START_HOUR,
+  type PostingHeatmapData,
+} from "@/lib/posting-analytics/types";
 import { getWeekDates } from "@/lib/communications-calendar/workload";
 import { cn } from "@/lib/utils/cn";
-import { formatLocalDate, getTodayDateString, normalizeDateOnly, parseLocalDate } from "@/lib/utils/dates";
+import {
+  formatLocalDate,
+  getDayOfWeek,
+  getTodayDateString,
+  normalizeDateOnly,
+  parseLocalDate,
+} from "@/lib/utils/dates";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
+type EnrichedItem = PlanningCalendarItem & { isOverdue: boolean; isToday: boolean };
+
 interface PlanningCalendarWeekViewProps {
-  items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[];
+  items: EnrichedItem[];
   anchorDate: string;
   onSelectItem: (item: PlanningCalendarItem) => void;
   onRescheduled: () => void;
+  postingHeatmap?: PostingHeatmapData | null;
+  showPostingHeatmap?: boolean;
 }
+
+const HOUR_ROWS = Array.from(
+  { length: WEEK_VIEW_END_HOUR - WEEK_VIEW_START_HOUR + 1 },
+  (_, index) => WEEK_VIEW_START_HOUR + index,
+);
 
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
   onSelectItem,
   onRescheduled,
+  postingHeatmap = null,
+  showPostingHeatmap = false,
 }: PlanningCalendarWeekViewProps) {
   const today = getTodayDateString();
   const weekDates = getWeekDates(anchorDate);
+  const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const itemsByDate = groupItemsByDate(items);
+
+  const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
+  const placementByDate = useMemo(
+    () => buildItemPlacement(itemsByDate, timezone),
+    [itemsByDate, timezone],
+  );
 
   const handleDrop = useCallback(
     (date: string, event: React.DragEvent<HTMLDivElement>) => {
@@ -61,11 +95,12 @@ export function PlanningCalendarWeekView({
         isPending && "opacity-80",
       )}
     >
-      <div className="grid grid-cols-7 border-b border-cos-border bg-cos-bg">
+      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-cos-border bg-cos-bg">
+        <div aria-hidden className="border-r border-cos-border" />
         {weekDates.map((date) => {
           const dateObj = parseLocalDate(date);
           return (
-            <div key={date} className="px-3 py-3 text-center">
+            <div key={date} className="border-r border-cos-border px-2 py-3 text-center last:border-r-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
                 {formatLocalDate(date, { weekday: "short" })}
               </p>
@@ -82,32 +117,103 @@ export function PlanningCalendarWeekView({
         })}
       </div>
 
-      <div className="grid min-h-[480px] grid-cols-7">
+      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
+        <div className="border-r border-cos-border bg-cos-bg/40">
+          <div className="flex h-16 items-center justify-end border-b border-cos-border/70 px-2">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-cos-muted">
+              All day
+            </span>
+          </div>
+          {HOUR_ROWS.map((hour) => (
+            <div
+              key={hour}
+              className="flex h-12 items-start justify-end border-b border-cos-border/60 px-2 pt-1"
+            >
+              <span className="text-[10px] font-medium text-cos-muted">
+                {formatHourLabel(hour)}
+              </span>
+            </div>
+          ))}
+        </div>
+
         {weekDates.map((date) => {
-          const dayItems = itemsByDate.get(date) ?? [];
+          const dayOfWeek = getDayOfWeek(date);
+          const placement = placementByDate.get(date) ?? { allDay: [], byHour: new Map() };
+          const isTodayColumn = date === today;
+
           return (
             <div
               key={date}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDropTarget(date);
-              }}
-              onDragLeave={() => setDropTarget((current) => (current === date ? null : current))}
-              onDrop={(event) => handleDrop(date, event)}
               className={cn(
-                "border-r border-cos-border p-3 last:border-r-0",
-                date === today && "bg-cos-accent-soft/30",
-                dropTarget === date && "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
+                "border-r border-cos-border last:border-r-0",
+                isTodayColumn && "bg-cos-accent-soft/20",
               )}
             >
-              <UnifiedCalendarDayContent
-                items={dayItems}
-                onSelectItem={onSelectItem}
-                itemLimit={8}
-              />
-              {dayItems.length === 0 && (
-                <p className="py-8 text-center text-xs text-cos-border">Drop here</p>
-              )}
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDropTarget(date);
+                }}
+                onDragLeave={() => setDropTarget((current) => (current === date ? null : current))}
+                onDrop={(event) => handleDrop(date, event)}
+                className={cn(
+                  "min-h-16 border-b border-cos-border/70 p-1.5",
+                  dropTarget === date && "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
+                )}
+              >
+                {placement.allDay.length > 0 ? (
+                  <div className="space-y-1">
+                    {placement.allDay.slice(0, 4).map((item) => (
+                      <PlanningCalendarItemChip
+                        key={item.id}
+                        item={item}
+                        compact
+                        onSelect={onSelectItem}
+                      />
+                    ))}
+                    {placement.allDay.length > 4 && (
+                      <p className="px-1 text-[10px] font-medium text-cos-primary">
+                        +{placement.allDay.length - 4} more
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="py-4 text-center text-[10px] text-cos-border">Drop here</p>
+                )}
+              </div>
+
+              {HOUR_ROWS.map((hour) => {
+                const score =
+                  showPostingHeatmap && postingHeatmap
+                    ? getScoreForCell(postingHeatmap.scores, dayOfWeek, hour)
+                    : 0;
+                const hourItems: EnrichedItem[] = placement.byHour.get(hour) ?? [];
+
+                return (
+                  <div
+                    key={`${date}-${hour}`}
+                    className="relative h-12 border-b border-cos-border/60"
+                    style={
+                      showPostingHeatmap
+                        ? { backgroundColor: heatmapCellBackground(score) }
+                        : undefined
+                    }
+                  >
+                    {hourItems.length > 0 && (
+                      <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
+                        {hourItems.slice(0, 2).map((item) => (
+                          <PlanningCalendarItemChip
+                            key={item.id}
+                            item={item}
+                            compact
+                            onSelect={onSelectItem}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -116,10 +222,8 @@ export function PlanningCalendarWeekView({
   );
 }
 
-function groupItemsByDate(
-  items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[],
-) {
-  const map = new Map<string, typeof items>();
+function groupItemsByDate(items: EnrichedItem[]) {
+  const map = new Map<string, EnrichedItem[]>();
   for (const item of items) {
     const dateKey = normalizeDateOnly(item.scheduledDate);
     const list = map.get(dateKey) ?? [];
@@ -127,4 +231,39 @@ function groupItemsByDate(
     map.set(dateKey, list);
   }
   return map;
+}
+
+function buildItemPlacement(
+  itemsByDate: Map<string, EnrichedItem[]>,
+  timezone: string,
+) {
+  const result = new Map<
+    string,
+    { allDay: EnrichedItem[]; byHour: Map<number, EnrichedItem[]> }
+  >();
+
+  for (const [date, dayItems] of itemsByDate) {
+    const allDay: EnrichedItem[] = [];
+    const byHour = new Map<number, EnrichedItem[]>();
+
+    for (const item of dayItems) {
+      const hour = resolveItemHour(item, timezone);
+      if (
+        hour === null ||
+        hour < WEEK_VIEW_START_HOUR ||
+        hour > WEEK_VIEW_END_HOUR
+      ) {
+        allDay.push(item);
+        continue;
+      }
+
+      const list = byHour.get(hour) ?? [];
+      list.push(item);
+      byHour.set(hour, list);
+    }
+
+    result.set(date, { allDay, byHour });
+  }
+
+  return result;
 }

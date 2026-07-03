@@ -18,6 +18,8 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
     principal: row.principal,
     schoolWebsite: row.school_website,
     ptoWebsite: row.pto_website,
+    timezone: row.timezone ?? "America/Chicago",
+    preferredPostingHours: row.preferred_posting_hours ?? null,
     createdAt: row.created_at,
   };
 }

@@ -10,6 +10,7 @@ import {
   getImportedEventsForCalendarList,
 } from "@/lib/calendar-import/queries";
 import { getEventsInDateRange } from "@/lib/events/queries";
+import { computePostingHeatmap } from "@/lib/posting-analytics/compute-heatmap";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { PlanningCalendarData } from "@/types/communications-calendar";
@@ -43,12 +44,20 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     };
   }
 
+  const postingHeatmap = organization
+    ? computePostingHeatmap({
+        timezone: organization.timezone,
+        preferredPostingHours: organization.preferredPostingHours,
+      })
+    : null;
+
   return {
     items: buildUnifiedCalendarItemsFromRaw(raw),
     importCleanup,
     importedEvents: importedList.events,
     importListFilename: importedList.filename,
     activeSchoolYearId: activeSchoolYear?.id ?? null,
+    postingHeatmap,
   };
 }
 
