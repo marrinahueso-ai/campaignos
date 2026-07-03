@@ -225,7 +225,7 @@ export function MetaPublishBundleCard({
             {approvalRoleLabel &&
               isMetaPost &&
               !isSkipped &&
-              ["ready", "scheduled", "approved"].includes(bundle.status) && (
+              ["ready", "scheduled"].includes(bundle.status) && (
                 <p className="mt-1 text-xs text-cos-muted">
                   {bundle.status === "ready"
                     ? `Publishing requires approval from ${approvalRoleLabel}`

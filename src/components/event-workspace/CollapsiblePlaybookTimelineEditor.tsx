@@ -14,7 +14,7 @@ export function CollapsiblePlaybookTimelineEditor({
   eventId,
   steps,
 }: CollapsiblePlaybookTimelineEditorProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   if (steps.length === 0) {
     return null;

@@ -7,6 +7,7 @@ import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
 import { getEventById } from "@/lib/events/queries";
+import { getEventCommunicationSteps } from "@/lib/playbooks/queries";
 import {
   getFeedCaptionForMilestone,
   getMetaSocialCaptionsForEvent,
@@ -49,11 +50,15 @@ async function resolveArtworkUrls(input: {
     return { feedUrl: null, storyUrl: null };
   }
 
+  const [communicationSteps, assets] = await Promise.all([
+    getEventCommunicationSteps(input.eventId),
+    getCampaignAssetsForEvent(input.eventId),
+  ]);
   const phaseItems = getArtworkPhaseItems({
     eventType: event.eventType,
     communicationStrategy: event.communicationStrategy,
+    communicationSteps,
   });
-  const assets = await getCampaignAssetsForEvent(input.eventId);
 
   const feedPhase = phaseItems.find(
     (phase) => phase.relativeDay === input.relativeDay && phase.metaPlacement === "feed",

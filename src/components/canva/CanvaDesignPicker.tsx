@@ -63,10 +63,11 @@ export function CanvaDesignPicker({
         <div className="flex items-start justify-between gap-4 border-b border-cos-border px-5 py-4">
           <div>
             <h3 id="canva-picker-title" className="font-display text-2xl text-cos-text">
-              Import from Canva
+              Choose from Canva
             </h3>
             <p className="mt-1 text-sm text-cos-muted">
-              Pick a design — we&apos;ll export it as PNG and add it to this milestone.
+              Pick a design — we&apos;ll export it as PNG and add it as inspiration for this
+              artwork.
             </p>
           </div>
           <button
@@ -138,7 +139,7 @@ export function CanvaDesignPicker({
                           {design.title}
                         </span>
                         <span className="mt-0.5 block text-xs text-cos-muted">
-                          {importing ? "Importing…" : "Import as artwork"}
+                          {importing ? "Importing…" : "Use as inspiration"}
                         </span>
                       </span>
                       {importing && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-cos-muted" />}

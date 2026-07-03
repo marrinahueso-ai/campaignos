@@ -15,7 +15,6 @@ import {
 import { CollapsiblePlaybookTimelineEditor } from "@/components/event-workspace/CollapsiblePlaybookTimelineEditor";
 import { getTimingPlanSummary } from "@/lib/communications/communication-plan-display";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
-import { CHANNEL_LABELS, formatRelativeDay } from "@/lib/playbooks/constants";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { EventType } from "@/types/playbooks";
 import type { EventCommunicationStep } from "@/types/playbooks";
@@ -97,27 +96,7 @@ export function CampaignCommunicationPlanStep({
 
             {timingOpen && (
               <div className="mt-4 space-y-4">
-                {assignedSteps.length > 0 ? (
-                  <div className="rounded-xl border border-cos-border bg-cos-bg/40 p-4">
-                    <p className="text-xs font-medium uppercase tracking-wide text-cos-muted">
-                      Scheduled for this event
-                    </p>
-                    <ul className="mt-3 space-y-2">
-                      {assignedSteps.map((step) => (
-                        <li
-                          key={step.id}
-                          className="flex flex-wrap items-baseline justify-between gap-2 text-sm text-cos-text"
-                        >
-                          <span>{step.title}</span>
-                          <span className="text-cos-muted">
-                            {formatRelativeDay(step.relativeDay)} ·{" "}
-                            {CHANNEL_LABELS[step.channel] ?? step.channel}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
+                {assignedSteps.length === 0 && (
                   <p className="text-sm text-cos-muted">{timing.summary}</p>
                 )}
 

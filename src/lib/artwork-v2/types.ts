@@ -24,7 +24,7 @@ export interface ArtworkV2BatchGenerationResult {
   milestones: ArtworkV2BatchMilestoneResult[];
 }
 
-export type ArtworkV2ReferenceSource = "upload" | "event_file" | null;
+export type ArtworkV2ReferenceSource = "upload" | "event_file" | "stored" | null;
 
 export interface ArtworkV2Reference {
   id: string;
@@ -33,6 +33,8 @@ export interface ArtworkV2Reference {
   previewUrl: string | null;
   eventAssetId?: string | null;
   file?: File | null;
+  /** Server-stored inspiration image (e.g. imported from Canva). */
+  inspirationStoragePath?: string | null;
 }
 
 export interface ArtworkV2Session {

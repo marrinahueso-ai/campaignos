@@ -296,9 +296,12 @@ async function resolveReferenceImageUrls(input: {
   batchId: string;
   inspirationEventAssetIds: string[];
   inspirationFiles: File[];
+  inspirationStoragePaths: string[];
 }): Promise<{ urls: string[]; inspirationAssetIds: string[]; error?: string }> {
   const totalRequested =
-    input.inspirationEventAssetIds.length + input.inspirationFiles.length;
+    input.inspirationEventAssetIds.length +
+    input.inspirationFiles.length +
+    input.inspirationStoragePaths.length;
 
   if (totalRequested > ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
     return {
@@ -360,12 +363,32 @@ async function resolveReferenceImageUrls(input: {
     urls.push(uploaded.publicUrl);
   }
 
+  const seenStoragePaths = new Set<string>();
+  for (const storagePath of input.inspirationStoragePaths) {
+    if (seenStoragePaths.has(storagePath)) {
+      continue;
+    }
+
+    seenStoragePaths.add(storagePath);
+    const url = resolveAssetImageUrl(storagePath);
+    if (!url) {
+      return {
+        urls: [],
+        inspirationAssetIds: [],
+        error: "Inspiration file is not ready yet.",
+      };
+    }
+
+    urls.push(url);
+  }
+
   return { urls, inspirationAssetIds };
 }
 
 function parseInspirationsFromForm(formData: FormData): {
   inspirationEventAssetIds: string[];
   inspirationFiles: File[];
+  inspirationStoragePaths: string[];
 } {
   const inspirationEventAssetIds = formData
     .getAll("inspirationEventAssetId")
@@ -376,7 +399,12 @@ function parseInspirationsFromForm(formData: FormData): {
     .getAll("inspirationFile")
     .filter((field): field is File => field instanceof File && field.size > 0);
 
-  return { inspirationEventAssetIds, inspirationFiles };
+  const inspirationStoragePaths = formData
+    .getAll("inspirationStoragePath")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  return { inspirationEventAssetIds, inspirationFiles, inspirationStoragePaths };
 }
 
 export async function generateArtworkV2Action(
@@ -394,7 +422,8 @@ export async function generateArtworkV2Action(
 
   const workflowItemId = String(formData.get("workflowItemId") ?? "").trim();
   const prompt = String(formData.get("prompt") ?? "");
-  const { inspirationEventAssetIds, inspirationFiles } = parseInspirationsFromForm(formData);
+  const { inspirationEventAssetIds, inspirationFiles, inspirationStoragePaths } =
+    parseInspirationsFromForm(formData);
 
   if (!workflowItemId) {
     return { success: false, error: "Artwork type is required." };
@@ -419,6 +448,7 @@ export async function generateArtworkV2Action(
     batchId,
     inspirationEventAssetIds,
     inspirationFiles,
+    inspirationStoragePaths,
   });
 
   if (reference.error) {
@@ -862,7 +892,8 @@ export async function adjustArtworkV2Action(
   const userPrompt = resolveFinalArtworkImagePrompt(String(formData.get("originalPrompt") ?? ""));
   const adjustmentComments = String(formData.get("adjustmentComments") ?? "").trim();
   const versionId = String(formData.get("versionId") ?? "").trim();
-  const { inspirationEventAssetIds, inspirationFiles } = parseInspirationsFromForm(formData);
+  const { inspirationEventAssetIds, inspirationFiles, inspirationStoragePaths } =
+    parseInspirationsFromForm(formData);
 
   if (!workflowItemId) {
     return { success: false, error: "Artwork type is required." };
@@ -912,6 +943,7 @@ export async function adjustArtworkV2Action(
     batchId,
     inspirationEventAssetIds,
     inspirationFiles,
+    inspirationStoragePaths,
   });
 
   if (reference.error) {
@@ -979,13 +1011,19 @@ export async function approveInspirationAsArtworkV2Action(
   }
 
   const workflowItemId = String(formData.get("workflowItemId") ?? "").trim();
-  const { inspirationEventAssetIds, inspirationFiles } = parseInspirationsFromForm(formData);
+  const { inspirationEventAssetIds, inspirationFiles, inspirationStoragePaths } =
+    parseInspirationsFromForm(formData);
 
   if (!workflowItemId) {
     return { success: false, error: "Artwork type is required." };
   }
 
-  if (inspirationEventAssetIds.length + inspirationFiles.length !== 1) {
+  const inspirationSourceCount =
+    inspirationEventAssetIds.length +
+    inspirationFiles.length +
+    inspirationStoragePaths.length;
+
+  if (inspirationSourceCount !== 1) {
     return {
       success: false,
       error: "Choose one inspiration image to use as approved artwork.",
@@ -1038,6 +1076,12 @@ export async function approveInspirationAsArtworkV2Action(
     storagePath = sourceAsset.storagePath;
     filename = sourceAsset.filename ?? filename;
     generationPrompt = `Approved from ${sourceAsset.planLabel ?? sourceAsset.filename ?? "inspiration"}.`;
+  } else if (inspirationStoragePaths.length === 1) {
+    storagePath = inspirationStoragePaths[0]!;
+    filename = sanitizeEventAssetFilename(
+      storagePath.split("/").pop() ?? "canva-inspiration.png",
+    );
+    generationPrompt = "Approved from Canva inspiration.";
   } else {
     const inspirationFile = inspirationFiles[0]!;
     const bytes = Buffer.from(await inspirationFile.arrayBuffer());
@@ -1098,11 +1142,20 @@ export async function approveInspirationAsArtworkV2Action(
   };
 }
 
-export async function importCanvaDesignAsArtworkV2Action(
+export async function importCanvaDesignAsInspirationV2Action(
   eventId: string,
   workflowItemId: string,
   designId: string,
-): Promise<ArtworkV2GenerationResult> {
+  designTitle?: string | null,
+): Promise<{
+  success: boolean;
+  error: string | null;
+  reference?: {
+    label: string;
+    previewUrl: string;
+    inspirationStoragePath: string;
+  };
+}> {
   const role = await getCurrentCampaignRole();
   if (!canUploadCampaignAssets(role)) {
     return { success: false, error: "You do not have permission to import artwork." };
@@ -1134,14 +1187,16 @@ export async function importCanvaDesignAsArtworkV2Action(
     return { success: false, error: exported.error };
   }
 
-  const storagePath = buildApprovedArtworkStoragePath(
+  const batchId = createConceptBatchId();
+  const inspirationStoragePath = buildReferenceStoragePath(
     eventId,
-    resolved.item.assetType,
+    batchId,
     exported.filename,
+    1,
   );
 
   const uploaded = await uploadArtworkBytes({
-    storagePath,
+    storagePath: inspirationStoragePath,
     bytes: exported.bytes,
     contentType: "image/png",
   });
@@ -1149,43 +1204,25 @@ export async function importCanvaDesignAsArtworkV2Action(
   if (!uploaded.success || !uploaded.publicUrl) {
     return {
       success: false,
-      error: uploaded.error ?? "Unable to store imported Canva artwork.",
+      error: uploaded.error ?? "Unable to store Canva inspiration image.",
     };
   }
 
-  const uploadedBy = await uploadedByLabel();
-  const generationPrompt = `Imported from Canva design ${designId}.`;
-
-  const activated = await activateExternalArtworkOnAsset({
-    eventId,
-    assetId: resolved.assetId,
-    storagePath: uploaded.publicUrl,
-    filename: exported.filename,
-    uploadedBy,
-    generationPrompt,
-    aiGenerated: false,
-  });
-
-  if (!activated) {
-    return { success: false, error: "Unable to approve imported Canva artwork." };
+  const previewUrl = resolveAssetImageUrl(inspirationStoragePath);
+  if (!previewUrl) {
+    return { success: false, error: "Imported Canva image is not ready yet." };
   }
 
-  await maybePromoteApprovedArtworkToHero({
-    eventId,
-    assetType: resolved.item.assetType,
-    storagePath: uploaded.publicUrl,
-    filename: exported.filename,
-    generationPrompt,
-    uploadedBy,
-  });
-
-  await syncMetaPublicationSlots(eventId);
-  revalidateArtworkV2Paths(eventId);
+  const label = designTitle?.trim() || exported.filename.replace(/\.png$/i, "");
 
   return {
     success: true,
     error: null,
-    approvedImageUrl: resolveAssetImageUrl(uploaded.publicUrl),
+    reference: {
+      label: label ? `Canva: ${label}` : "Canva design",
+      previewUrl,
+      inspirationStoragePath,
+    },
   };
 }
 

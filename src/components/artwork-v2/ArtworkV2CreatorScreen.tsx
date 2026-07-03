@@ -187,29 +187,35 @@ export function ArtworkV2CreatorScreen({
             {isPhaseItem ? (
               <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-cos-muted">
                 <li>
-                  Design in Canva, or pick an existing design with{" "}
-                  <span className="font-medium text-cos-text">Import from Canva</span> below.
+                  Pick a Canva design with{" "}
+                  <span className="font-medium text-cos-text">Choose from Canva</span> — it
+                  imports as inspiration without downloading.
+                </li>
+                <li>
+                  Generate AI artwork inspired by it, or click{" "}
+                  <span className="font-medium text-cos-text">Use as approved</span> to skip
+                  generation.
                 </li>
                 <li>
                   For manual export: Share → Download → PNG, then{" "}
                   <span className="font-medium text-cos-text">Upload exported file</span>.
                 </li>
-                <li>
-                  Click <span className="font-medium text-cos-text">Use as approved</span> on any
-                  uploaded preview — or import picks approve automatically.
-                </li>
               </ol>
             ) : (
               <ol className="list-decimal space-y-1 pl-4 text-xs leading-relaxed text-cos-muted">
-                <li>Import or download your Canva design as PNG.</li>
-                <li>Upload it below as a reference image.</li>
-                <li>Use Generate Artwork to create AI versions inspired by it.</li>
+                <li>
+                  Pick a Canva design with{" "}
+                  <span className="font-medium text-cos-text">Choose from Canva</span> — no
+                  download needed.
+                </li>
+                <li>It appears below as a reference image for AI generation.</li>
+                <li>Use Generate Artwork to create versions inspired by your Canva design.</li>
               </ol>
             )}
             <div className="flex shrink-0 flex-col gap-2">
               {canImportFromCanva && onOpenCanvaPicker ? (
                 <Button type="button" size="sm" onClick={onOpenCanvaPicker}>
-                  Import from Canva
+                  Choose from Canva
                 </Button>
               ) : canvaIntegrationConfigured ? (
                 <Button href={canvaConnectHref} size="sm" variant="secondary">

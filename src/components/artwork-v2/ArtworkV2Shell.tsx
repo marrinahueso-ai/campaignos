@@ -23,7 +23,7 @@ import {
   generateRemainingArtworkV2Action,
   generateStoryFromFeedAction,
   getArtworkV2ReviewVersionsAction,
-  importCanvaDesignAsArtworkV2Action,
+  importCanvaDesignAsInspirationV2Action,
   prepareArtworkV2RegenerationAction,
   resetArtworkV2SlotAction,
 } from "@/lib/artwork-v2/actions";
@@ -53,7 +53,7 @@ import { nextWorkflowItem, resolveWorkflowAsset } from "@/lib/creative-studio/ar
 import type { ArtworkV2Reference, ArtworkV2ReviewVersion, ArtworkV2Step } from "@/lib/artwork-v2/types";
 import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
 import { buildArtworkDownloadFilename } from "@/lib/artwork-v2/download";
-import { normalizeReviewVersionIndices } from "@/lib/artwork-v2/constants";
+import { normalizeReviewVersionIndices, ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 import type { ArtworkV2ApprovedFormat } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
@@ -89,6 +89,10 @@ function appendReferencesToFormData(formData: FormData, references: ArtworkV2Ref
 
     if (reference.source === "upload" && reference.file) {
       formData.append("inspirationFile", reference.file);
+    }
+
+    if (reference.source === "stored" && reference.inspirationStoragePath) {
+      formData.append("inspirationStoragePath", reference.inspirationStoragePath);
     }
   }
 }
@@ -407,28 +411,60 @@ export function ArtworkV2Shell({
     setStep("approved");
   }
 
-  function handleImportCanvaDesign(designId: string) {
+  function handleImportCanvaDesign(designId: string, designTitle?: string) {
     if (!selectedItem) return;
+
+    if (references.length >= ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
+      setGenerationError(
+        `You can attach up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images.`,
+      );
+      return;
+    }
 
     setGenerationError(null);
     setImportingCanvaDesignId(designId);
 
     startReviewAction(async () => {
-      const result = await importCanvaDesignAsArtworkV2Action(
+      const result = await importCanvaDesignAsInspirationV2Action(
         eventId,
         selectedItem.id,
         designId,
+        designTitle,
       );
 
       setImportingCanvaDesignId(null);
 
-      if (!result.success) {
+      if (!result.success || !result.reference) {
         setGenerationError(result.error ?? "Unable to import from Canva.");
         return;
       }
 
+      const hadInspiration = references.length > 0;
+      const nextReferences: ArtworkV2Reference[] = [
+        ...references,
+        {
+          id: crypto.randomUUID(),
+          source: "stored",
+          label: result.reference.label,
+          previewUrl: result.reference.previewUrl,
+          inspirationStoragePath: result.reference.inspirationStoragePath,
+        },
+      ];
+
+      setReferences(nextReferences);
+
+      if (!hadInspiration) {
+        setPrompt(
+          buildDefaultArtworkPrompt({
+            event,
+            organizationName,
+            item: selectedItem,
+            hasInspiration: true,
+          }),
+        );
+      }
+
       setCanvaPickerOpen(false);
-      await finishApprovedArtworkImport(result.approvedImageUrl ?? null);
     });
   }
 
@@ -713,6 +749,8 @@ export function ArtworkV2Shell({
         formData.append("inspirationEventAssetId", reference.eventAssetId);
       } else if (reference.source === "upload" && reference.file) {
         formData.append("inspirationFile", reference.file);
+      } else if (reference.source === "stored" && reference.inspirationStoragePath) {
+        formData.append("inspirationStoragePath", reference.inspirationStoragePath);
       } else {
         setGenerationError("Unable to use this reference as artwork.");
         return;
@@ -1165,7 +1203,7 @@ export function ArtworkV2Shell({
         <CanvaDesignPicker
           open={canvaPickerOpen}
           onClose={() => setCanvaPickerOpen(false)}
-          onSelect={(design) => handleImportCanvaDesign(design.id)}
+          onSelect={(design) => handleImportCanvaDesign(design.id, design.title)}
           importingDesignId={importingCanvaDesignId}
           connectHref={buildCanvaConnectHref()}
         />
