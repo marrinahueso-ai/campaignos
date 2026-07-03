@@ -666,20 +666,30 @@ export function MetaPublishBundlesPanel({
               label: `Schedule all ready (${counts.ready})`,
               onClick: () => runAction(onScheduleAll),
             }
-          : mode === "publishing" && counts.scheduled > 0 && onApproveAll
+          : mode === "publishing" &&
+              (counts.approved > 0 || counts.failed > 0) &&
+              onPublishAll
             ? {
-                label: `Approve all scheduled (${counts.scheduled})`,
-                onClick: () => runAction(onApproveAll),
+                label:
+                  counts.failed > 0
+                    ? `Publish now (${counts.approved + counts.failed})`
+                    : `Publish all queued now (${counts.approved})`,
+                onClick: () => runAction(onPublishAll),
               }
-            : mode === "publishing" && actionableCount > 0
+            : mode === "publishing" && counts.scheduled > 0 && onApproveAll
               ? {
-                  label:
-                    counts.failed > 0
-                      ? `Publish now (${actionableCount})`
-                      : `Publish all ready now (${actionableCount})`,
-                  onClick: () => runAction(onPublishAll),
+                  label: `Approve all scheduled (${counts.scheduled})`,
+                  onClick: () => runAction(onApproveAll),
                 }
-              : null;
+              : mode === "publishing" && actionableCount > 0
+                ? {
+                    label:
+                      counts.failed > 0
+                        ? `Publish now (${actionableCount})`
+                        : `Publish all ready now (${actionableCount})`,
+                    onClick: () => runAction(onPublishAll),
+                  }
+                : null;
 
   const showCaptionEditing =
     mode === "schedule" &&

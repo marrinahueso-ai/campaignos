@@ -61,37 +61,6 @@ async function updateSlotsForMilestones(input: {
   return data?.length ?? 0;
 }
 
-async function prepareMetaBundlesForImmediatePublish(input: {
-  eventId: string;
-  relativeDays: number[];
-}): Promise<number> {
-  if (input.relativeDays.length === 0) {
-    return 0;
-  }
-
-  const supabase = await createClient();
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("meta_publication_slots")
-    .update({
-      status: "approved",
-      scheduled_for: now,
-      updated_at: now,
-    })
-    .eq("event_id", input.eventId)
-    .in("relative_day", input.relativeDays)
-    .in("status", ["draft", "scheduled", "approved", "failed"])
-    .select("id");
-
-  if (error) {
-    console.error("Failed to prepare meta bundles for publish:", error.message);
-    return 0;
-  }
-
-  return data?.length ?? 0;
-}
-
 export async function publishMetaBundleNowAction(
   eventId: string,
   relativeDay: number,
@@ -101,7 +70,6 @@ export async function publishMetaBundleNowAction(
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
-  await syncMetaPublicationSlots(eventId);
   const bundle = (await getMetaPublishBundles(eventId)).find(
     (entry) => entry.relativeDay === relativeDay,
   );
@@ -122,12 +90,11 @@ export async function publishMetaBundleNowAction(
     };
   }
 
-  await prepareMetaBundlesForImmediatePublish({
+  const result = await publishMetaMilestoneBundle({
     eventId,
-    relativeDays: [relativeDay],
+    relativeDay,
+    immediate: true,
   });
-
-  const result = await publishMetaMilestoneBundle({ eventId, relativeDay });
 
   revalidateMetaPaths(eventId);
   return {
@@ -147,7 +114,6 @@ export async function publishAllActionableMetaBundlesNowAction(
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
-  await syncMetaPublicationSlots(eventId);
   const bundles = await getMetaPublishBundles(eventId);
   const actionable = bundles.filter((bundle) =>
     ["ready", "scheduled", "approved", "failed"].includes(bundle.status),
@@ -161,11 +127,6 @@ export async function publishAllActionableMetaBundlesNowAction(
     };
   }
 
-  await prepareMetaBundlesForImmediatePublish({
-    eventId,
-    relativeDays: actionable.map((bundle) => bundle.relativeDay),
-  });
-
   let publishedCount = 0;
   let failedCount = 0;
   let firstError: string | null = null;
@@ -174,6 +135,7 @@ export async function publishAllActionableMetaBundlesNowAction(
     const result = await publishMetaMilestoneBundle({
       eventId,
       relativeDay: bundle.relativeDay,
+      immediate: true,
     });
 
     if (result.success) {
@@ -317,6 +279,7 @@ export async function publishAllApprovedMetaBundlesAction(
     const result = await publishMetaMilestoneBundle({
       eventId,
       relativeDay: bundle.relativeDay,
+      immediate: true,
     });
 
     if (result.success) {

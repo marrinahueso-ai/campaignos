@@ -1,13 +1,5 @@
-import {
-  getArtworkPhaseItems,
-  isApprovedArtworkAsset,
-} from "@/lib/artwork-v2/campaign-phases";
-import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
-import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
-import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
-import { getEventById } from "@/lib/events/queries";
-import { getEventCommunicationSteps } from "@/lib/playbooks/queries";
+import { resolveMilestoneArtworkUrls } from "@/lib/meta-publishing/resolve-milestone-artwork";
 import {
   getFeedCaptionForMilestone,
   getMetaSocialCaptionsForEvent,
@@ -41,45 +33,31 @@ export interface PublishMilestoneResult {
   failedCount: number;
 }
 
-async function resolveArtworkUrls(input: {
+async function prepareSlotsForImmediatePublish(input: {
   eventId: string;
   relativeDay: number;
-}): Promise<{ feedUrl: string | null; storyUrl: string | null }> {
-  const event = await getEventById(input.eventId);
-  if (!event) {
-    return { feedUrl: null, storyUrl: null };
+}): Promise<number> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("meta_publication_slots")
+    .update({
+      status: "approved",
+      scheduled_for: now,
+      updated_at: now,
+    })
+    .eq("event_id", input.eventId)
+    .eq("relative_day", input.relativeDay)
+    .in("status", ["draft", "scheduled", "approved", "failed"])
+    .select("id");
+
+  if (error) {
+    console.error("Failed to prepare slots for immediate publish:", error.message);
+    return 0;
   }
 
-  const [communicationSteps, assets] = await Promise.all([
-    getEventCommunicationSteps(input.eventId),
-    getCampaignAssetsForEvent(input.eventId),
-  ]);
-  const phaseItems = getArtworkPhaseItems({
-    eventType: event.eventType,
-    communicationStrategy: event.communicationStrategy,
-    communicationSteps,
-  });
-
-  const feedPhase = phaseItems.find(
-    (phase) => phase.relativeDay === input.relativeDay && phase.metaPlacement === "feed",
-  );
-  const storyPhase = phaseItems.find(
-    (phase) => phase.relativeDay === input.relativeDay && phase.metaPlacement === "story",
-  );
-
-  const feedAsset = feedPhase ? resolveWorkflowAsset(feedPhase, null, assets) : null;
-  const storyAsset = storyPhase ? resolveWorkflowAsset(storyPhase, null, assets) : null;
-
-  return {
-    feedUrl:
-      isApprovedArtworkAsset(feedAsset) && feedAsset?.storagePath
-        ? resolveAssetImageUrl(feedAsset.storagePath)
-        : null,
-    storyUrl:
-      isApprovedArtworkAsset(storyAsset) && storyAsset?.storagePath
-        ? resolveAssetImageUrl(storyAsset.storagePath)
-        : null,
-  };
+  return data?.length ?? 0;
 }
 
 async function publishSlot(input: {
@@ -165,6 +143,8 @@ export async function publishMetaMilestoneBundle(input: {
   eventId: string;
   relativeDay: number;
   connection?: MetaConnection | null;
+  /** When true, bypasses scheduled time and publishes via Graph API now. */
+  immediate?: boolean;
 }): Promise<PublishMilestoneResult> {
   const connection = input.connection ?? (await getMetaConnectionForCurrentOrg());
 
@@ -178,6 +158,22 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
+  if (input.immediate) {
+    const prepared = await prepareSlotsForImmediatePublish({
+      eventId: input.eventId,
+      relativeDay: input.relativeDay,
+    });
+
+    if (prepared === 0) {
+      return {
+        success: false,
+        error: "No publishable posts found for this milestone.",
+        publishedCount: 0,
+        failedCount: 0,
+      };
+    }
+  }
+
   const slots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
@@ -187,7 +183,9 @@ export async function publishMetaMilestoneBundle(input: {
   if (slots.length === 0) {
     return {
       success: false,
-      error: "No approved posts found for this milestone.",
+      error: input.immediate
+        ? "Could not prepare posts for immediate publish."
+        : "No approved posts found for this milestone.",
       publishedCount: 0,
       failedCount: 0,
     };
@@ -206,7 +204,7 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
-  const { feedUrl, storyUrl } = await resolveArtworkUrls({
+  const { feedUrl, storyUrl } = await resolveMilestoneArtworkUrls({
     eventId: input.eventId,
     relativeDay: input.relativeDay,
   });

@@ -175,7 +175,19 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
           continue;
         }
 
-        await supabase.from("meta_publication_slots").update(payload).eq("id", row.id);
+        const preserveSchedule = ["approved", "posting", "published", "failed"].includes(
+          row.status,
+        );
+        const updatePayload = preserveSchedule
+          ? {
+              milestone_title: payload.milestone_title,
+              event_asset_id: payload.event_asset_id,
+              communication_item_id: payload.communication_item_id,
+              updated_at: payload.updated_at,
+            }
+          : payload;
+
+        await supabase.from("meta_publication_slots").update(updatePayload).eq("id", row.id);
         continue;
       }
 
