@@ -19,6 +19,7 @@ const RECORDINGS = [
   {
     slug: "planning-hub",
     scenario: "campaigns-flow",
+    viewport: { width: 1280, height: 720 },
     run: async (page) => {
       await page.waitForSelector('[data-record-step="campaigns"]', { timeout: 30_000 });
       await page.waitForTimeout(1800);
@@ -33,6 +34,7 @@ const RECORDINGS = [
   {
     slug: "calendar",
     scenario: "calendar-month",
+    viewport: { width: 1280, height: 720 },
     run: async (page) => {
       await page.waitForSelector('[data-record-step="calendar-month"]', {
         timeout: 30_000,
@@ -45,12 +47,18 @@ const RECORDINGS = [
   {
     slug: "heatmap",
     scenario: "calendar-heatmap",
+    viewport: { width: 1280, height: 960 },
     run: async (page) => {
       await page.waitForSelector('[data-record-step="calendar-heatmap"]', {
         timeout: 30_000,
       });
       await page.waitForTimeout(1500);
       await page.getByRole("button", { name: "Best times to post" }).click();
+      await page.waitForTimeout(600);
+      await page
+        .locator('[data-testid="calendar-drop-week-2026-07-02-17"]')
+        .first()
+        .scrollIntoViewIfNeeded();
       await page.waitForTimeout(9500);
     },
   },
@@ -145,13 +153,13 @@ async function optimizeVideo(inputPath, outputPath) {
   await rm(inputPath, { force: true });
 }
 
-async function recordScenario(browser, { slug, scenario, run }) {
+async function recordScenario(browser, { slug, scenario, viewport, run }) {
   const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
+    viewport,
     deviceScaleFactor: 1,
     recordVideo: {
       dir: tmpDir,
-      size: { width: 1280, height: 720 },
+      size: viewport,
     },
   });
 

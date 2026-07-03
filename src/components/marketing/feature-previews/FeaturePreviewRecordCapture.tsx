@@ -42,7 +42,13 @@ export function FeaturePreviewRecordCapture({
       case "calendar-month":
         return <FeaturePreviewCalendarSlide interactive />;
       case "calendar-heatmap":
-        return <FeaturePreviewHeatmapSlide interactive initialHeatmapEnabled={false} />;
+        return (
+          <FeaturePreviewHeatmapSlide
+            interactive
+            initialHeatmapEnabled={false}
+            compact
+          />
+        );
       default:
         return null;
     }

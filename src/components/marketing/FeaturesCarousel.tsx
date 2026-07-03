@@ -225,7 +225,12 @@ export function FeaturesCarousel() {
                 : "feature-carousel-enter-backward",
             )}
           >
-            <div className="max-h-[640px] overflow-hidden">
+            <div
+              className={cn(
+                "overflow-hidden",
+                usesVideo ? "max-h-[720px]" : "max-h-[640px]",
+              )}
+            >
               {usesVideo ? (
                 <FeatureCarouselVideoSlide slug={activeSlug} isActive={!isPaused} />
               ) : (

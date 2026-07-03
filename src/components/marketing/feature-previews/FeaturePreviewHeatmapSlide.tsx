@@ -17,11 +17,13 @@ import { useMemo, useState } from "react";
 interface FeaturePreviewHeatmapSlideProps {
   interactive?: boolean;
   initialHeatmapEnabled?: boolean;
+  compact?: boolean;
 }
 
 export function FeaturePreviewHeatmapSlide({
   interactive = false,
   initialHeatmapEnabled = true,
+  compact = false,
 }: FeaturePreviewHeatmapSlideProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers(),
@@ -50,6 +52,7 @@ export function FeaturePreviewHeatmapSlide({
         onToday={() => {}}
         onLayersChange={setActiveLayers}
         onSelectUpcomingItem={() => {}}
+        compact={compact}
       />
       <div className={interactive ? undefined : "pointer-events-none"}>
         <PlanningCalendarWeekView

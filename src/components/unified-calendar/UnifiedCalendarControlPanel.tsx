@@ -58,6 +58,8 @@ interface UnifiedCalendarControlPanelProps {
   onToday: () => void;
   onLayersChange: (layers: Set<CalendarLayerId>) => void;
   onSelectUpcomingItem: (item: PlanningCalendarItem) => void;
+  /** Hides the hero title block and upcoming list — used for marketing screen capture. */
+  compact?: boolean;
 }
 
 export function UnifiedCalendarControlPanel({
@@ -76,6 +78,7 @@ export function UnifiedCalendarControlPanel({
   onToday,
   onLayersChange,
   onSelectUpcomingItem,
+  compact = false,
 }: UnifiedCalendarControlPanelProps) {
   const [upcomingOpen, setUpcomingOpen] = useState(false);
 
@@ -99,6 +102,7 @@ export function UnifiedCalendarControlPanel({
   return (
     <section className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
       {/* Title row */}
+      {!compact && (
       <div className="flex flex-col gap-4 border-b border-cos-border px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="studio-eyebrow">Workspace</p>
@@ -127,6 +131,7 @@ export function UnifiedCalendarControlPanel({
           </Button>
         </div>
       </div>
+      )}
 
       {/* View + navigation */}
       <div className="flex flex-col gap-3 border-b border-cos-border px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -238,7 +243,7 @@ export function UnifiedCalendarControlPanel({
       )}
 
       {/* Upcoming — collapsible */}
-      {view !== "import-list" && (
+      {!compact && view !== "import-list" && (
         <div className="bg-cos-bg/30">
           <button
             type="button"

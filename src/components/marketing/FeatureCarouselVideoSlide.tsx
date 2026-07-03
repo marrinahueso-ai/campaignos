@@ -41,7 +41,7 @@ export function FeatureCarouselVideoSlide({
   return (
     <video
       ref={videoRef}
-      className={cn("block h-auto w-full bg-cos-bg/40 object-cover object-top", className)}
+      className={cn("block h-auto w-full bg-cos-bg/40 object-contain object-top", className)}
       autoPlay
       muted
       loop
