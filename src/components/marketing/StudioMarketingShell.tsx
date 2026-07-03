@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { MarketingSocialLinks } from "@/components/marketing/MarketingSocialLinks";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
 
@@ -46,8 +47,9 @@ export function StudioMarketingShell({
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
-            {isSignedIn ? (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <MarketingSocialLinks />
+            {isSignedIn && (
               <>
                 <Link
                   href={workspaceHref}
@@ -60,23 +62,11 @@ export function StudioMarketingShell({
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </>
-            ) : (
-              <Button href="#sign-in" size="sm">
-                Sign in
-              </Button>
             )}
           </div>
         </div>
 
         <nav className="flex gap-4 overflow-x-auto border-t border-cos-border/60 px-6 py-2 md:hidden">
-          {!isSignedIn && (
-            <Link
-              href="#sign-in"
-              className="shrink-0 text-xs font-medium tracking-wide text-cos-text uppercase"
-            >
-              Sign in
-            </Link>
-          )}
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
