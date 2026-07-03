@@ -125,6 +125,8 @@ export async function GET(request: NextRequest) {
       pagesError = null;
       debugHint = shortLivedResult.debugHint ?? longLivedResult.debugHint;
     }
+  } else if (isPageScopedToken && shortLivedDebug.expiresAt) {
+    tokenExpiresAt = shortLivedDebug.expiresAt;
   }
 
   if (pagesError || pages.length === 0) {
@@ -135,11 +137,13 @@ export async function GET(request: NextRequest) {
       tokenValid: shortLivedDebug.isValid,
       scopes: shortLivedDebug.scopes,
       granularPageIds: shortLivedDebug.granularPageIds,
+      granularInstagramIds: shortLivedDebug.granularInstagramIds,
       profileId: shortLivedDebug.profileId,
       tokenType: shortLivedDebug.tokenType,
       userId: shortLivedDebug.userId,
       debugError: shortLivedDebug.error,
       isPageScopedToken,
+      shortLivedSources: shortLivedResult.debugHint,
     });
     redirectTarget.searchParams.set("error", "no_pages");
     if (debugHint) {

@@ -313,6 +313,123 @@ function isPagePermissionScope(scope: string): boolean {
   return /^pages[_/]/.test(scope) || scope === "pages" || scope === "manage_pages";
 }
 
+function isInstagramPermissionScope(scope: string): boolean {
+  return /^instagram[_/]/.test(scope) || scope === "instagram_basic";
+}
+
+function instagramIdsFromGranularScopes(
+  granularScopes: GranularScopeEntry[] | undefined,
+): string[] {
+  if (!granularScopes?.length) {
+    return [];
+  }
+
+  const instagramIds = new Set<string>();
+  for (const entry of granularScopes) {
+    const scope = String(entry.scope ?? "");
+    if (!isInstagramPermissionScope(scope)) {
+      continue;
+    }
+    for (const id of targetIdsFromGranularEntry(entry)) {
+      instagramIds.add(id);
+    }
+  }
+
+  return [...instagramIds];
+}
+
+async function probePageNode(input: {
+  pageId: string;
+  accessToken: string;
+  fieldSets: string[];
+}): Promise<{
+  ok: boolean;
+  id: string;
+  name: string | null;
+  instagramAccountId: string | null;
+  error: string | null;
+}> {
+  const results = await Promise.all(
+    input.fieldSets.map((fields) =>
+      graphGet(`/${input.pageId}`, {
+        fields,
+        access_token: input.accessToken,
+      }),
+    ),
+  );
+
+  for (let index = 0; index < results.length; index += 1) {
+    const result = results[index];
+    const fields = input.fieldSets[index];
+
+    if (!result.ok) {
+      console.warn(`Meta GET /${input.pageId} fields=${fields} failed:`, result.error);
+      continue;
+    }
+
+    const linkedIg =
+      (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+
+    return {
+      ok: true,
+      id: String(result.data.id ?? input.pageId),
+      name: result.data.name != null ? String(result.data.name) : null,
+      instagramAccountId: linkedIg,
+      error: null,
+    };
+  }
+
+  return {
+    ok: false,
+    id: input.pageId,
+    name: null,
+    instagramAccountId: null,
+    error: "Page probe failed for all field sets.",
+  };
+}
+
+async function probeMeAsPage(input: {
+  accessToken: string;
+  expectedPageId?: string | null;
+}): Promise<ResolvedMetaPage | null> {
+  const fieldSets = ["id,name,instagram_business_account", "id,name", "id"];
+  const results = await Promise.all(
+    fieldSets.map((fields) =>
+      graphGet("/me", {
+        fields,
+        access_token: input.accessToken,
+      }),
+    ),
+  );
+
+  for (const result of results) {
+    if (!result.ok) {
+      continue;
+    }
+
+    const pageId = normalizeTargetId(result.data.id);
+    if (!pageId) {
+      continue;
+    }
+
+    if (input.expectedPageId && pageId !== input.expectedPageId) {
+      continue;
+    }
+
+    const linkedIg =
+      (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+
+    return {
+      id: pageId,
+      name: String(result.data.name ?? "Facebook Page"),
+      accessToken: input.accessToken,
+      instagramAccountId: linkedIg,
+    };
+  }
+
+  return null;
+}
+
 function normalizeTargetId(value: unknown): string | null {
   if (value == null) {
     return null;
@@ -389,12 +506,22 @@ function userAccessTokensFromOptions(
 async function fetchPageFromUserTokenById(input: {
   pageId: string;
   userAccessTokens: string[];
+  trustedPageIds?: string[];
+  instagramAccountIdHint?: string | null;
 }): Promise<ResolvedMetaPage | null> {
+  const trustedIds = new Set(input.trustedPageIds ?? []);
+  const instagramHint = input.instagramAccountIdHint?.trim() || null;
   const fieldSets = [
     "id,name,access_token,instagram_business_account",
     "access_token,name,instagram_business_account",
     "access_token,name",
     "access_token",
+  ];
+  const directFieldSets = [
+    "id,name,instagram_business_account",
+    "id,name",
+    "id",
+    "name",
   ];
 
   for (const userAccessToken of input.userAccessTokens) {
@@ -424,7 +551,8 @@ async function fetchPageFromUserTokenById(input: {
       const pageToken = String(result.data.access_token ?? "");
       if (pageToken) {
         const linkedIg =
-          (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+          (result.data.instagram_business_account as { id?: string } | undefined)?.id ??
+          instagramHint;
 
         return {
           id: String(result.data.id ?? input.pageId),
@@ -438,18 +566,41 @@ async function fetchPageFromUserTokenById(input: {
     }
 
     // Login for Business may return a Page token directly (no nested access_token field).
-    const directPage = await graphGet(`/${input.pageId}`, {
-      fields: "id,name,instagram_business_account",
-      access_token: token,
+    const directPage = await probePageNode({
+      pageId: input.pageId,
+      accessToken: token,
+      fieldSets: directFieldSets,
     });
     if (directPage.ok) {
-      const linkedIg =
-        (directPage.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
       return {
-        id: String(directPage.data.id ?? input.pageId),
-        name: String(directPage.data.name ?? "Facebook Page"),
+        id: directPage.id,
+        name: directPage.name ?? "Facebook Page",
         accessToken: token,
-        instagramAccountId: linkedIg,
+        instagramAccountId: directPage.instagramAccountId ?? instagramHint,
+      };
+    }
+
+    const meAsPage = await probeMeAsPage({
+      accessToken: token,
+      expectedPageId: input.pageId,
+    });
+    if (meAsPage) {
+      return {
+        ...meAsPage,
+        instagramAccountId: meAsPage.instagramAccountId ?? instagramHint,
+      };
+    }
+
+    // Business Suite granular scopes grant page access without a separate Page token.
+    if (trustedIds.has(input.pageId)) {
+      console.info(
+        `Meta using granular-trust fallback for page ${input.pageId} (token …${token.slice(-6)})`,
+      );
+      return {
+        id: input.pageId,
+        name: "Facebook Page",
+        accessToken: token,
+        instagramAccountId: instagramHint,
       };
     }
   }
@@ -459,30 +610,17 @@ async function fetchPageFromUserTokenById(input: {
 
 async function resolvePageScopedAccessToken(
   accessToken: string,
+  instagramAccountIdHint?: string | null,
 ): Promise<ResolvedMetaPage | null> {
-  const me = await graphGet("/me", {
-    fields: "id,name,instagram_business_account",
-    access_token: accessToken,
-  });
-
-  if (!me.ok) {
-    console.warn("Meta GET /me with scoped token failed:", me.error);
+  const meAsPage = await probeMeAsPage({ accessToken });
+  if (!meAsPage) {
+    console.warn("Meta GET /me with scoped token failed for all field sets.");
     return null;
   }
-
-  const pageId = normalizeTargetId(me.data.id);
-  if (!pageId) {
-    return null;
-  }
-
-  const linkedIg =
-    (me.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
 
   return {
-    id: pageId,
-    name: String(me.data.name ?? "Facebook Page"),
-    accessToken,
-    instagramAccountId: linkedIg,
+    ...meAsPage,
+    instagramAccountId: meAsPage.instagramAccountId ?? instagramAccountIdHint ?? null,
   };
 }
 
@@ -490,34 +628,43 @@ async function resolveImpersonatedPageToken(input: {
   accessToken: string;
   profileId: string | null;
   tokenType: string | null;
+  instagramAccountIdHint?: string | null;
 }): Promise<ResolvedMetaPage | null> {
   const tokenType = input.tokenType?.toUpperCase() ?? "";
   const pageId = normalizeTargetId(input.profileId);
+  const instagramHint = input.instagramAccountIdHint?.trim() || null;
 
   if (pageId) {
-    const details = await graphGet(`/${pageId}`, {
-      fields: "id,name,instagram_business_account",
-      access_token: input.accessToken,
+    const details = await probePageNode({
+      pageId,
+      accessToken: input.accessToken,
+      fieldSets: ["id,name,instagram_business_account", "id,name", "id", "name"],
     });
 
-    if (!details.ok) {
-      console.warn(`Meta impersonated page token check failed for ${pageId}:`, details.error);
-      return null;
+    if (details.ok) {
+      return {
+        id: details.id,
+        name: details.name ?? "Facebook Page",
+        accessToken: input.accessToken,
+        instagramAccountId: details.instagramAccountId ?? instagramHint,
+      };
     }
 
-    const linkedIg =
-      (details.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+    console.warn(`Meta impersonated page token check failed for ${pageId}:`, details.error);
 
-    return {
-      id: pageId,
-      name: String(details.data.name ?? "Facebook Page"),
-      accessToken: input.accessToken,
-      instagramAccountId: linkedIg,
-    };
+    // profile_id is the Page ID for Login for Business PAGE tokens even when field reads fail.
+    if (tokenType === "PAGE") {
+      return {
+        id: pageId,
+        name: "Facebook Page",
+        accessToken: input.accessToken,
+        instagramAccountId: instagramHint,
+      };
+    }
   }
 
   if (tokenType === "PAGE") {
-    return resolvePageScopedAccessToken(input.accessToken);
+    return resolvePageScopedAccessToken(input.accessToken, instagramHint);
   }
 
   return null;
@@ -755,12 +902,16 @@ async function resolvePagesByIds(input: {
   userAccessTokens: string[];
   sourceLabel: string;
   sources: string[];
+  trustedPageIds?: string[];
+  instagramAccountIdHint?: string | null;
 }): Promise<ResolvedMetaPage[]> {
   const results = await Promise.all(
     input.pageIds.map((pageId) =>
       fetchPageFromUserTokenById({
         pageId,
         userAccessTokens: input.userAccessTokens,
+        trustedPageIds: input.trustedPageIds,
+        instagramAccountIdHint: input.instagramAccountIdHint,
       }),
     ),
   );
@@ -813,16 +964,25 @@ export async function fetchPagesFromUserToken(
         isValid: debug.isValid,
         scopes: debug.scopes,
         granularPageIds: debug.granularPageIds,
+        granularInstagramIds: debug.granularInstagramIds,
         profileId: debug.profileId,
         tokenType: debug.tokenType,
         userId: debug.userId,
       });
     }
 
+    const instagramAccountIdHint = debug.granularInstagramIds[0] ?? null;
+    const trustedPageIds = uniquePageIds([
+      ...debug.granularPageIds,
+      ...(options?.fallbackPageIds ?? []),
+      getMetaFacebookPageId(),
+    ]);
+
     const impersonated = await resolveImpersonatedPageToken({
       accessToken: token,
       profileId: debug.profileId,
       tokenType: debug.tokenType,
+      instagramAccountIdHint,
     });
     if (impersonated) {
       pages = mergeResolvedPages([impersonated], pages);
@@ -846,6 +1006,8 @@ export async function fetchPagesFromUserToken(
         userAccessTokens: [token],
         sourceLabel: granularPageIds.length > 0 ? "granular_scopes" : "permissions_or_fallback",
         sources,
+        trustedPageIds,
+        instagramAccountIdHint,
       });
       if (tokenPages.length === 0 && granularPageIds.length > 0) {
         resolutionErrors.push(
@@ -873,11 +1035,18 @@ export async function fetchPagesFromUserToken(
   );
 
   if (unresolvedPageIds.length > 0) {
+    const primaryDebug = await debugToken({ inputToken: userAccessTokens[0] ?? "" });
     const resolvedById = await resolvePagesByIds({
       pageIds: unresolvedPageIds,
       userAccessTokens,
       sourceLabel: "fallback_page_id",
       sources,
+      trustedPageIds: uniquePageIds([
+        ...primaryDebug.granularPageIds,
+        ...unresolvedPageIds,
+        getMetaFacebookPageId(),
+      ]),
+      instagramAccountIdHint: primaryDebug.granularInstagramIds[0] ?? null,
     });
     pages = [...pages, ...resolvedById];
   }
@@ -982,6 +1151,7 @@ export async function debugToken(input: {
   expiresAt: string | null;
   scopes: string[];
   granularPageIds: string[];
+  granularInstagramIds: string[];
   userId: string | null;
   profileId: string | null;
   tokenType: string | null;
@@ -999,6 +1169,7 @@ export async function debugToken(input: {
       expiresAt: null,
       scopes: [],
       granularPageIds: [],
+      granularInstagramIds: [],
       userId: null,
       profileId: null,
       tokenType: null,
@@ -1024,13 +1195,15 @@ export async function debugToken(input: {
       : null;
 
   const profileId = normalizeTargetId(data?.profile_id);
+  const granularScopes = data?.granular_scopes;
 
   return {
     ok: true,
     isValid: Boolean(data?.is_valid),
     expiresAt,
     scopes: Array.isArray(data?.scopes) ? data.scopes : [],
-    granularPageIds: pageIdsFromGranularScopes(data?.granular_scopes),
+    granularPageIds: pageIdsFromGranularScopes(granularScopes),
+    granularInstagramIds: instagramIdsFromGranularScopes(granularScopes),
     userId: data?.user_id ? String(data.user_id) : null,
     profileId,
     tokenType: data?.type ? String(data.type) : null,
@@ -1043,32 +1216,58 @@ export async function verifyMetaConnection(input: {
   instagramAccountId?: string;
   accessToken: string;
 }): Promise<{ ok: boolean; pageName: string | null; error: string | null }> {
-  const result = await graphGet(`/${input.pageId}`, {
-    fields: "name,instagram_business_account",
-    access_token: input.accessToken,
+  const probe = await probePageNode({
+    pageId: input.pageId,
+    accessToken: input.accessToken,
+    fieldSets: ["name,instagram_business_account", "name", "id,name"],
   });
 
-  if (!result.ok) {
-    return { ok: false, pageName: null, error: result.error };
+  if (!probe.ok) {
+    const meAsPage = await probeMeAsPage({
+      accessToken: input.accessToken,
+      expectedPageId: input.pageId,
+    });
+    if (!meAsPage) {
+      const debug = await debugToken({ inputToken: input.accessToken });
+      const hasGranularPageAccess =
+        debug.isValid &&
+        (debug.granularPageIds.includes(input.pageId) ||
+          debug.profileId === input.pageId ||
+          debug.tokenType?.toUpperCase() === "PAGE");
+
+      if (hasGranularPageAccess) {
+        return { ok: true, pageName: null, error: null };
+      }
+
+      return { ok: false, pageName: null, error: probe.error ?? "Page verification failed." };
+    }
+
+    const igId = input.instagramAccountId?.trim() ?? "";
+    if (meAsPage.instagramAccountId && igId && meAsPage.instagramAccountId !== igId) {
+      return {
+        ok: false,
+        pageName: meAsPage.name,
+        error: `Instagram account mismatch. Page is linked to ${meAsPage.instagramAccountId}.`,
+      };
+    }
+
+    return { ok: true, pageName: meAsPage.name, error: null };
   }
 
-  const linkedIg = (
-    result.data.instagram_business_account as { id?: string } | undefined
-  )?.id;
-
+  const linkedIg = probe.instagramAccountId;
   const igId = input.instagramAccountId?.trim() ?? "";
 
   if (linkedIg && igId && linkedIg !== igId) {
     return {
       ok: false,
-      pageName: String(result.data.name ?? ""),
+      pageName: probe.name,
       error: `Instagram account mismatch. Page is linked to ${linkedIg}.`,
     };
   }
 
   return {
     ok: true,
-    pageName: String(result.data.name ?? ""),
+    pageName: probe.name ?? "Facebook Page",
     error: null,
   };
 }
