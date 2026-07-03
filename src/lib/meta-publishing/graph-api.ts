@@ -4,6 +4,7 @@ import {
   getMetaAppSecret,
   getMetaFacebookPageId,
 } from "@/lib/meta-publishing/config.server";
+import { prepareFacebookFeedImageBytes } from "@/lib/meta-publishing/facebook-feed-image";
 
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
@@ -52,6 +53,35 @@ async function graphPost(
     body: body.toString(),
   });
 
+  return parseGraphPostResponse(response);
+}
+
+async function graphPostMultipart(
+  path: string,
+  params: Record<string, string>,
+  file: { bytes: Buffer; filename: string; contentType: string },
+): Promise<GraphResult> {
+  const form = new FormData();
+
+  for (const [key, value] of Object.entries(params)) {
+    form.append(key, value);
+  }
+
+  form.append(
+    "source",
+    new Blob([Uint8Array.from(file.bytes)], { type: file.contentType }),
+    file.filename,
+  );
+
+  const response = await fetch(graphUrl(path), {
+    method: "POST",
+    body: form,
+  });
+
+  return parseGraphPostResponse(response);
+}
+
+async function parseGraphPostResponse(response: Response): Promise<GraphResult> {
   const payload = (await response.json()) as {
     id?: string;
     post_id?: string;
@@ -130,10 +160,18 @@ export async function publishFacebookFeedPhoto(input: {
   imageUrl: string;
   caption: string;
 }): Promise<{ postId: string | null; error: string | null }> {
-  const result = await graphPost(`/${input.pageId}/photos`, {
-    url: input.imageUrl,
+  const prepared = await prepareFacebookFeedImageBytes(input.imageUrl);
+  if ("error" in prepared) {
+    return { postId: null, error: prepared.error };
+  }
+
+  const result = await graphPostMultipart(`/${input.pageId}/photos`, {
     caption: input.caption,
     access_token: input.accessToken,
+  }, {
+    bytes: prepared.bytes,
+    filename: "facebook-feed.jpg",
+    contentType: prepared.contentType,
   });
 
   if (!result.ok) {
