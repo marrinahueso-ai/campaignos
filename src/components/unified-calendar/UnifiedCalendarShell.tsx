@@ -50,7 +50,7 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers,
   );
-  const [showPostingHeatmap, setShowPostingHeatmap] = useState(false);
+  const [showPostingHeatmap, setShowPostingHeatmap] = useState(true);
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
   const hasAutoFocused = useRef(false);
 

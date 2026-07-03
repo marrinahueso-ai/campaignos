@@ -4,7 +4,12 @@ import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles"
 import type { PlanningItemType } from "@/types/communications-calendar";
 import type { EventAssetType } from "@/types/event-workspace";
 
-const RESCHEDULABLE_META_SLOT_STATUSES = ["scheduled", "approved"] as const;
+const RESCHEDULABLE_META_SLOT_STATUSES = [
+  "draft",
+  "scheduled",
+  "approved",
+  "failed",
+] as const;
 
 function parseMetaMilestoneRelativeDay(
   sourceId: string,

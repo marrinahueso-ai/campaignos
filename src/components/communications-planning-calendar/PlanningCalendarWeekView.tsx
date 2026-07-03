@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { PlanningCalendarItemChip } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import { reschedulePlanningItemAction } from "@/lib/communications-calendar/planning-actions";
 import {
@@ -11,6 +11,7 @@ import { getScoreForCell } from "@/lib/posting-analytics/compute-heatmap";
 import {
   formatHourLabel,
   heatmapCellBackground,
+  heatmapDropTargetBackground,
   resolveItemHour,
 } from "@/lib/posting-analytics/heatmap-ui";
 import {
@@ -65,19 +66,47 @@ function matchesDropTarget(
   return target?.date === date && target.hour === hour;
 }
 
+function readDragPayload(event: React.DragEvent): ReturnType<typeof parseDragPayload> {
+  const raw =
+    event.dataTransfer.getData(DRAG_MIME) ||
+    event.dataTransfer.getData("text/plain");
+  return parseDragPayload(raw);
+}
+
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
   onSelectItem,
   onRescheduled,
   postingHeatmap = null,
-  showPostingHeatmap = false,
+  showPostingHeatmap = true,
 }: PlanningCalendarWeekViewProps) {
   const today = getTodayDateString();
   const weekDates = getWeekDates(anchorDate);
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    function startDrag() {
+      setIsDragging(true);
+    }
+
+    function endDrag() {
+      setIsDragging(false);
+      setDropTarget(null);
+    }
+
+    document.addEventListener("dragstart", startDrag);
+    document.addEventListener("dragend", endDrag);
+    document.addEventListener("drop", endDrag);
+    return () => {
+      document.removeEventListener("dragstart", startDrag);
+      document.removeEventListener("dragend", endDrag);
+      document.removeEventListener("drop", endDrag);
+    };
+  }, []);
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
   const placementByDate = useMemo(
@@ -89,8 +118,8 @@ export function PlanningCalendarWeekView({
     (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setDropTarget(null);
-      const raw = event.dataTransfer.getData(DRAG_MIME);
-      const payload = parseDragPayload(raw);
+      setIsDragging(false);
+      const payload = readDragPayload(event);
       if (!payload) return;
 
       startTransition(async () => {
@@ -109,6 +138,16 @@ export function PlanningCalendarWeekView({
       });
     },
     [onRescheduled, timezone],
+  );
+
+  const handleDragOver = useCallback(
+    (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setIsDragging(true);
+      setDropTarget({ date, hour });
+    },
+    [],
   );
 
   const activeDropKey = dropTargetKey(dropTarget);
@@ -175,10 +214,7 @@ export function PlanningCalendarWeekView({
               )}
             >
               <div
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDropTarget({ date, hour: "allday" });
-                }}
+                onDragOver={(event) => handleDragOver(date, "allday", event)}
                 onDragLeave={() =>
                   setDropTarget((current) =>
                     matchesDropTarget(current, date, "allday") ? null : current,
@@ -192,7 +228,7 @@ export function PlanningCalendarWeekView({
                 )}
               >
                 {placement.allDay.length > 0 ? (
-                  <div className="space-y-1">
+                  <div className={cn("space-y-1", isDragging && "pointer-events-none")}>
                     {placement.allDay.slice(0, 4).map((item) => (
                       <PlanningCalendarItemChip
                         key={item.id}
@@ -219,34 +255,46 @@ export function PlanningCalendarWeekView({
                     : 0;
                 const hourItems: EnrichedItem[] = placement.byHour.get(hour) ?? [];
                 const isDropTarget = activeDropKey === `${date}:${hour}`;
+                const heatmapBackground = showPostingHeatmap
+                  ? heatmapCellBackground(score)
+                  : undefined;
 
                 return (
                   <div
                     key={`${date}-${hour}`}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setDropTarget({ date, hour });
-                    }}
-                    onDragLeave={() =>
-                      setDropTarget((current) =>
-                        matchesDropTarget(current, date, hour) ? null : current,
-                      )
-                    }
-                    onDrop={(event) => handleDrop(date, hour, event)}
                     className={cn(
                       "relative h-12 border-b border-cos-border/60 transition-colors",
                       isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
                     )}
                     style={
-                      showPostingHeatmap
-                        ? { backgroundColor: heatmapCellBackground(score) }
+                      heatmapBackground
+                        ? { backgroundColor: heatmapBackground }
                         : isDropTarget
-                          ? { backgroundColor: "color-mix(in srgb, var(--cos-accent) 12%, transparent)" }
+                          ? { backgroundColor: heatmapDropTargetBackground() }
                           : undefined
                     }
                   >
+                    <div
+                      aria-hidden={!isDragging}
+                      onDragOver={(event) => handleDragOver(date, hour, event)}
+                      onDragLeave={() =>
+                        setDropTarget((current) =>
+                          matchesDropTarget(current, date, hour) ? null : current,
+                        )
+                      }
+                      onDrop={(event) => handleDrop(date, hour, event)}
+                      className={cn(
+                        "absolute inset-0",
+                        isDragging ? "z-30" : "pointer-events-none",
+                      )}
+                    />
                     {hourItems.length > 0 && (
-                      <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
+                      <div
+                        className={cn(
+                          "absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5",
+                          isDragging && "pointer-events-none",
+                        )}
+                      >
                         {hourItems.slice(0, 2).map((item) => (
                           <PlanningCalendarItemChip
                             key={item.id}

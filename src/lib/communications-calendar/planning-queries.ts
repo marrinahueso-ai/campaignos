@@ -46,13 +46,11 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     };
   }
 
-  const postingHeatmap = organization
-    ? computePostingHeatmap({
-        timezone: organization.timezone,
-        preferredPostingHours: organization.preferredPostingHours,
-        publishedAtTimestamps,
-      })
-    : null;
+  const postingHeatmap = computePostingHeatmap({
+    timezone: organization?.timezone ?? "America/Chicago",
+    preferredPostingHours: organization?.preferredPostingHours ?? null,
+    publishedAtTimestamps,
+  });
 
   return {
     items: buildUnifiedCalendarItemsFromRaw(raw),

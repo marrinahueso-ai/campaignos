@@ -63,7 +63,10 @@ export function PlanningCalendarItemChip({
   const isDraggable = displayStatus !== "published";
 
   function handleDragStart(event: React.DragEvent<HTMLButtonElement>) {
-    event.dataTransfer.setData(DRAG_MIME, serializeDragPayload(item));
+    const payload = serializeDragPayload(item);
+    event.dataTransfer.setData(DRAG_MIME, payload);
+    // text/plain fallback for Safari/Firefox drop data retrieval
+    event.dataTransfer.setData("text/plain", payload);
     event.dataTransfer.effectAllowed = "move";
   }
 
