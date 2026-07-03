@@ -37,8 +37,9 @@ async function getLatestOrganizationLegacy(): Promise<Organization | null> {
 }
 
 /**
- * Resolves the organization for the signed-in user.
- * Falls back to the latest org only when auth/users table is unavailable (local dev).
+ * Resolves the organization for the signed-in user via active membership.
+ * Authenticated users without membership always get null (never inherit a random org).
+ * Legacy latest-org fallback applies only when nobody is signed in (local dev).
  */
 export const getCurrentOrganization = cache(async (): Promise<Organization | null> => {
   const user = await getAuthUser();
@@ -48,10 +49,12 @@ export const getCurrentOrganization = cache(async (): Promise<Organization | nul
     if (membership) {
       return fetchOrganizationById(membership.organizationId);
     }
+
+    return null;
   }
 
   const membershipTableAvailable = await isOrganizationUsersAvailable();
-  if (user && membershipTableAvailable) {
+  if (membershipTableAvailable) {
     return null;
   }
 

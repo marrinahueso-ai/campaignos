@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { resolveFoundingAccess } from "@/lib/auth/founding-access";
+import {
+  clearPendingFoundingAccessCookie,
+  getPendingFoundingAccessCode,
+  resolveFoundingAccess,
+} from "@/lib/auth/founding-access";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { createSchoolProfile } from "@/lib/organizations/mutations";
 import {
   parseSchoolSetupFiles,
@@ -17,15 +22,26 @@ export async function completeSchoolSetup(
   _prevState: SchoolSetupFormState,
   formData: FormData,
 ): Promise<SchoolSetupFormState> {
+  const existingMembership = await getActiveMembership();
+  if (existingMembership) {
+    return {
+      error:
+        "This account already belongs to a school workspace. Sign in to your existing workspace, or use an invite link to join another team.",
+      success: false,
+    };
+  }
+
   const parsed = parseSchoolSetupInput(formData);
 
   if ("error" in parsed) {
     return { error: parsed.error, success: false };
   }
 
-  const foundingAccess = resolveFoundingAccess(
-    formData.get("foundingAccessCode")?.toString(),
-  );
+  const pendingCode = await getPendingFoundingAccessCode();
+  const formCode = formData.get("foundingAccessCode")?.toString();
+  const foundingAccess = pendingCode
+    ? resolveFoundingAccess(pendingCode, { required: true })
+    : resolveFoundingAccess(formCode);
 
   if (!foundingAccess.valid) {
     return { error: foundingAccess.error, success: false };
@@ -37,6 +53,8 @@ export async function completeSchoolSetup(
   if ("error" in result && result.error) {
     return { error: result.error, success: false };
   }
+
+  await clearPendingFoundingAccessCookie();
 
   revalidatePath("/dashboard");
   revalidatePath("/settings/school-setup");

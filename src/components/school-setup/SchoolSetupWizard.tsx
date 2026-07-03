@@ -20,11 +20,11 @@ const STEPS = ["Welcome", "School", "Brand", "Calendar", "Finish"];
 const initialState: SchoolSetupFormState = { error: null, success: false };
 
 interface SchoolSetupWizardProps {
-  accessCodeRequired?: boolean;
+  validatedAccessCode?: string | null;
 }
 
 export function SchoolSetupWizard({
-  accessCodeRequired = false,
+  validatedAccessCode = null,
 }: SchoolSetupWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -84,6 +84,13 @@ export function SchoolSetupWizard({
       <WizardProgress steps={STEPS} currentStep={step} />
 
       <form action={formAction}>
+        {validatedAccessCode && (
+          <input
+            type="hidden"
+            name="foundingAccessCode"
+            value={validatedAccessCode}
+          />
+        )}
         <WizardShell
           title={stepCopy.title}
           description={stepCopy.description}
@@ -176,24 +183,17 @@ export function SchoolSetupWizard({
                     approvals.
                   </p>
                 </div>
-                <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
-                  <Input
-                    name="foundingAccessCode"
-                    label={
-                      accessCodeRequired
-                        ? "Founding access code"
-                        : "Founding access code (optional)"
-                    }
-                    placeholder="Enter your partner code"
-                    autoComplete="off"
-                    required={accessCodeRequired}
-                  />
-                  <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-                    {accessCodeRequired
-                      ? "A valid founding code is required to create your workspace."
-                      : "Have an early partner code? Enter it here to unlock founding benefits and skip future billing. Don't have a code? You can still set up during early access — contact us at hello@campaignos.app for a founding partner code."}
-                  </p>
-                </div>
+                {validatedAccessCode && (
+                  <div className="border border-cos-success/30 bg-cos-success-bg/40 px-5 py-4">
+                    <p className="text-sm font-medium text-cos-success-text">
+                      Founding access code verified
+                    </p>
+                    <p className="mt-1 text-sm text-cos-muted">
+                      Your partner code was validated at signup and will be
+                      applied when you complete setup.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

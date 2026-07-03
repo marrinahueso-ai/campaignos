@@ -27,7 +27,7 @@ import {
   resolveAuthSiteOrigin,
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
-import { isFoundingAccessCodeRequired } from "@/lib/auth/founding-access";
+import { isFoundingAccessCodeRequired, resolveFoundingAccess, setPendingFoundingAccessCookie } from "@/lib/auth/founding-access";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
@@ -136,12 +136,28 @@ export async function signInWithEmailAction(
   formData: FormData,
 ): Promise<AuthActionState> {
   const email = formData.get("email")?.toString()?.trim() ?? "";
+  const accessCode = formData.get("accessCode")?.toString()?.trim() || null;
   const inviteToken = formData.get("inviteToken")?.toString()?.trim() || null;
   const setupIntent = formData.get("setupIntent")?.toString() === "true";
   const next = safeNextPath(formData.get("next")?.toString());
 
   if (!email) {
     return { error: "Enter your email address.", success: false };
+  }
+
+  const isNewSchoolSignup = setupIntent && !inviteToken;
+
+  if (isNewSchoolSignup) {
+    const foundingAccess = resolveFoundingAccess(accessCode, {
+      required: isFoundingAccessCodeRequired(),
+    });
+    if (!foundingAccess.valid) {
+      return { error: foundingAccess.error, success: false };
+    }
+
+    if (foundingAccess.normalizedCode) {
+      await setPendingFoundingAccessCookie(foundingAccess.normalizedCode);
+    }
   }
 
   const supabase = await createClient();
@@ -154,15 +170,15 @@ export async function signInWithEmailAction(
   if (next) {
     redirectTo.searchParams.set("next", next);
   }
+  if (isNewSchoolSignup) {
+    redirectTo.searchParams.set("setup", "1");
+  }
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: redirectTo.toString(),
-      // Invited users and new PTO leaders (setup intent) may not have an account yet.
-      shouldCreateUser:
-        Boolean(inviteToken) ||
-        (setupIntent && !isFoundingAccessCodeRequired()),
+      shouldCreateUser: Boolean(inviteToken) || isNewSchoolSignup,
     },
   });
 
@@ -176,8 +192,9 @@ export async function signInWithEmailAction(
   return {
     error: null,
     success: true,
-    message:
-      "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
+    message: isNewSchoolSignup
+      ? "Check your email for a link to create your account and continue to school setup."
+      : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
   };
 }
 

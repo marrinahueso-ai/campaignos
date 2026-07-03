@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const invite = searchParams.get("invite");
+  const setupIntent = searchParams.get("setup") === "1";
   const requestedNext = safeNextPath(searchParams.get("next"));
 
   if (!code) {
@@ -54,7 +55,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (user) {
-    nextPath = await resolvePostAuthPathForUser(supabase, user.id, requestedNext);
+    nextPath = await resolvePostAuthPathForUser(
+      supabase,
+      user.id,
+      requestedNext,
+      { setupIntent },
+    );
   }
 
   const target = new URL(nextPath, origin);

@@ -193,7 +193,7 @@ export function StudioHomePage({
                   : invitePreview
                     ? `You're invited to ${invitePreview.organizationName}. Sign in to join your team.`
                     : setupIntent
-                      ? "Sign up with Google or Facebook to create your account — then we'll walk you through school setup."
+                      ? "Enter your email and founding access code to create your account — then we'll walk you through school setup."
                       : "Returning to your workspace? Sign in below. Starting a new school? Choose Start your PTO workspace above."}
               </p>
             </div>
@@ -238,17 +238,16 @@ export function StudioHomePage({
                   <div className="mb-6 border border-cos-accent/30 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
                     <p className="font-medium">Starting a new PTO workspace</p>
                     <p className="mt-1 text-cos-dark-muted">
-                      Sign up with Google or Facebook below — that creates your
-                      account and takes you to school setup. Have a founding
-                      partner code? Enter it on the welcome step. Don&apos;t have
-                      a code? You can still set up during early access.{" "}
+                      Enter your email and founding partner access code below.
+                      We&apos;ll send you a link to create your account and
+                      start school setup. Need a code?{" "}
                       <a
                         href="mailto:hello@campaignos.app"
                         className="text-cos-accent underline-offset-2 hover:underline"
                       >
                         Contact us
-                      </a>{" "}
-                      for a founding partner code.
+                      </a>
+                      .
                     </p>
                   </div>
                 )}
@@ -269,6 +268,21 @@ export function StudioHomePage({
                 {authError === "auth" && (
                   <p className="mb-4 text-sm text-red-300">
                     Sign-in link expired or invalid. Request a new one below.
+                  </p>
+                )}
+
+                {authError === "code_required" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    A valid founding access code is required to start a new
+                    school workspace. Enter your email and code below.
+                  </p>
+                )}
+
+                {authError === "existing_org" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    This email already belongs to a school workspace. Sign in to
+                    your existing workspace instead, or use an invite link to
+                    join another team.
                   </p>
                 )}
 

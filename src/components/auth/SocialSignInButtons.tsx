@@ -61,6 +61,10 @@ export function SocialSignInButtons({
   const isStudio = variant === "studio";
   const isSignup = setupIntent && !inviteToken;
 
+  if (isSignup) {
+    return null;
+  }
+
   function handleSignIn(provider: OAuthSignInProvider) {
     startTransition(async () => {
       setError(null);
