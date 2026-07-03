@@ -143,12 +143,25 @@ export function resolveWorkflowAsset(
     }
   }
 
-  return (
+  const candidate =
     assets.find(
       (asset) =>
         asset.planLabel === item.planLabel && asset.assetType === item.assetType,
-    ) ?? null
-  );
+    ) ?? null;
+
+  if (candidate && item.metaPlacement === "story" && candidate.assetType !== "instagram_story") {
+    return null;
+  }
+
+  if (
+    candidate &&
+    item.metaPlacement === "feed" &&
+    candidate.assetType === "instagram_story"
+  ) {
+    return null;
+  }
+
+  return candidate;
 }
 
 export function synthesizePlanItem(

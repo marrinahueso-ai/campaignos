@@ -7,6 +7,7 @@ import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { getEventCardDescription } from "@/lib/events/event-card-display";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   Card,
@@ -61,7 +62,11 @@ export function EventCard({
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1.5">
             {showScheduledBadge && <EventStatusBadge status={event.status} />}
-            <CommunicationStrategyBadge strategy={event.communicationStrategy} />
+            {metaPublicationScheduled ? (
+              <Badge variant="success">Queued</Badge>
+            ) : (
+              <CommunicationStrategyBadge strategy={event.communicationStrategy} />
+            )}
           </div>
         </div>
         {cardDescription && (

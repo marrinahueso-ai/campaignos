@@ -24,6 +24,8 @@ import {
   generateStoryFromFeedAction,
   getArtworkV2ReviewVersionsAction,
   importCanvaDesignAsArtworkV2Action,
+  prepareArtworkV2RegenerationAction,
+  resetArtworkV2SlotAction,
 } from "@/lib/artwork-v2/actions";
 import { getCanvaConnectionStatusAction } from "@/lib/canva/actions";
 import {
@@ -45,11 +47,13 @@ import {
   findMilestoneStoryItem,
   nextMilestoneFeedItem,
 } from "@/lib/artwork-v2/milestone-workflow";
+import { isStoryMilestoneDistinctlyApproved } from "@/lib/artwork-v2/milestone-assets";
 import { getArtworkWorkflowItems } from "@/lib/creative-studio/artwork-defaults";
 import { nextWorkflowItem, resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import type { ArtworkV2Reference, ArtworkV2ReviewVersion, ArtworkV2Step } from "@/lib/artwork-v2/types";
 import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
 import { buildArtworkDownloadFilename } from "@/lib/artwork-v2/download";
+import { normalizeReviewVersionIndices } from "@/lib/artwork-v2/constants";
 import type { ArtworkV2ApprovedFormat } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
@@ -224,6 +228,7 @@ export function ArtworkV2Shell({
   const [generationWarning, setGenerationWarning] = useState<string | null>(null);
   const [lastGenerationMode, setLastGenerationMode] = useState<ArtworkGenerationMode>("quick");
   const [reviewError, setReviewError] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
   const [isReviewBusy, startReviewAction] = useTransition();
   const [batchMilestones, setBatchMilestones] = useState<ArtworkV2BatchMilestoneProgress[]>([]);
@@ -231,6 +236,11 @@ export function ArtworkV2Shell({
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchComplete, setBatchComplete] = useState(false);
   const batchCancelRef = useRef(false);
+  const selectedItemRef = useRef<ArtworkWorkflowItem | null>(null);
+
+  useEffect(() => {
+    selectedItemRef.current = selectedItem;
+  }, [selectedItem]);
 
   useEffect(() => {
     void getCanvaConnectionStatusAction().then(setCanvaStatus);
@@ -301,8 +311,10 @@ export function ArtworkV2Shell({
         const feedApproved = isApprovedArtworkAsset(
           resolveWorkflowAsset(feedItem, null, assets),
         );
-        const storyApproved = isApprovedArtworkAsset(
-          resolveWorkflowAsset(storyItem, null, assets),
+        const storyApproved = isStoryMilestoneDistinctlyApproved(
+          feedItem,
+          storyItem,
+          assets,
         );
         if (feedApproved && storyApproved) {
           openMilestoneApproved(item.relativeDay);
@@ -382,6 +394,14 @@ export function ArtworkV2Shell({
           : undefined,
       );
       return;
+    }
+
+    if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "feed") {
+      const storyItem = findMilestoneStoryItem(phaseItems, selectedItem.relativeDay);
+      if (storyItem) {
+        await continueStoryWorkflowAfterFeedApproval(selectedItem.relativeDay);
+        return;
+      }
     }
 
     setStep("approved");
@@ -469,7 +489,9 @@ export function ArtworkV2Shell({
     const feedAsset = resolveWorkflowAsset(feedItem, null, assets);
     const storyAsset = storyItem ? resolveWorkflowAsset(storyItem, null, assets) : null;
     const feedApproved = isApprovedArtworkAsset(feedAsset);
-    const storyApproved = storyItem ? isApprovedArtworkAsset(storyAsset) : true;
+    const storyApproved = storyItem
+      ? isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)
+      : true;
     const milestoneStatus = resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets);
 
     if (feedApproved && storyApproved) {
@@ -532,6 +554,28 @@ export function ArtworkV2Shell({
     setStep("review");
   }
 
+  async function continueStoryWorkflowAfterFeedApproval(relativeDay: number) {
+    const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
+    const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
+    if (!storyItem || !feedItem) {
+      setStep("approved");
+      return;
+    }
+
+    if (isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)) {
+      openMilestoneApproved(relativeDay);
+      return;
+    }
+
+    const reviewResult = await getArtworkV2ReviewVersionsAction(eventId, storyItem.id);
+    if (reviewResult.success && reviewResult.versions.length > 0) {
+      await openReviewForItem(storyItem);
+      return;
+    }
+
+    await startStoryGenerationFromFeed(relativeDay, storyItem);
+  }
+
   function resetCreatorState() {
     revokeReferencePreviews(references);
     setPrompt("");
@@ -543,6 +587,7 @@ export function ArtworkV2Shell({
     setGenerationError(null);
     setGenerationWarning(null);
     setReviewError(null);
+    setResetError(null);
     setHasGeneratedOnce(false);
     setIsGeneratingStory(false);
   }
@@ -556,15 +601,100 @@ export function ArtworkV2Shell({
 
   function handleCreateNew() {
     if (!selectedItem) return;
+    void beginRegeneration(selectedItem);
+  }
 
-    setApprovedArtwork(null);
-    setReviewVersions([]);
-    setHasGeneratedOnce(false);
-    const defaults = buildCreatorDefaults(selectedItem, phaseItems, assets, event, organizationName);
-    setPrompt(defaults.prompt);
-    revokeReferencePreviews(references);
-    setReferences(defaults.references);
-    setStep("create");
+  function handleCreateNewFeed() {
+    const relativeDay =
+      approvedMilestoneDay ??
+      (selectedItem && isPhaseItem(selectedItem) ? selectedItem.relativeDay : null);
+    if (relativeDay == null) return;
+
+    const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
+    if (!feedItem) return;
+
+    void beginRegeneration(feedItem);
+  }
+
+  function handleCreateNewStory() {
+    const relativeDay =
+      approvedMilestoneDay ??
+      (selectedItem && isPhaseItem(selectedItem) ? selectedItem.relativeDay : null);
+    if (relativeDay == null) return;
+
+    const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
+    if (!storyItem) return;
+
+    void beginRegeneration(storyItem);
+  }
+
+  function handleDeleteArtwork() {
+    if (!selectedItem) return;
+
+    const deleteTarget =
+      milestoneFormats && approvedMilestoneDay != null
+        ? findMilestoneFeedItem(phaseItems, approvedMilestoneDay)
+        : selectedItem;
+
+    if (!deleteTarget) return;
+
+    setResetError(null);
+
+    startReviewAction(async () => {
+      const result = await resetArtworkV2SlotAction(eventId, deleteTarget.id);
+      if (!result.success) {
+        setResetError(result.error ?? "Unable to delete artwork.");
+        return;
+      }
+
+      router.refresh();
+      resetCreatorState();
+      setReviewVersions([]);
+      setSelectedItem(deleteTarget);
+      const defaults = buildCreatorDefaults(
+        deleteTarget,
+        phaseItems,
+        assets,
+        event,
+        organizationName,
+      );
+      setPrompt(defaults.prompt);
+      revokeReferencePreviews(references);
+      setReferences(defaults.references);
+      setStep("create");
+    });
+  }
+
+  function beginRegeneration(workflowItem: ArtworkWorkflowItem) {
+    setResetError(null);
+
+    startReviewAction(async () => {
+      const result = await prepareArtworkV2RegenerationAction(eventId, workflowItem.id);
+      if (!result.success) {
+        setResetError(result.error ?? "Unable to prepare a new version.");
+        return;
+      }
+
+      router.refresh();
+      setApprovedArtwork(null);
+      setMilestoneFormats(null);
+      setApprovedMilestoneDay(null);
+      setMilestoneFormatOverrides(null);
+      setReviewVersions([]);
+      setHasGeneratedOnce(false);
+      setSelectedItem(workflowItem);
+      const defaults = buildCreatorDefaults(
+        workflowItem,
+        phaseItems,
+        assets,
+        event,
+        organizationName,
+      );
+      setPrompt(defaults.prompt);
+      revokeReferencePreviews(references);
+      setReferences(defaults.references);
+      setStep("create");
+    });
   }
 
   function handleApproveInspiration(referenceId: string) {
@@ -600,7 +730,7 @@ export function ArtworkV2Shell({
       if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "feed") {
         const storyItem = findMilestoneStoryItem(phaseItems, selectedItem.relativeDay);
         if (storyItem) {
-          await startStoryGenerationFromFeed(selectedItem.relativeDay, storyItem);
+          await continueStoryWorkflowAfterFeedApproval(selectedItem.relativeDay);
           return;
         }
       }
@@ -685,14 +815,15 @@ export function ArtworkV2Shell({
   }
 
   function handleApprove(versionId: string) {
-    if (!selectedItem) return;
+    const approvingItem = selectedItemRef.current;
+    if (!approvingItem) return;
 
     setReviewError(null);
 
     startReviewAction(async () => {
       const approvedVersion = reviewVersions.find((version) => version.id === versionId);
 
-      const result = await approveArtworkV2Action(eventId, versionId, selectedItem.id);
+      const result = await approveArtworkV2Action(eventId, versionId, approvingItem.id);
       if (!result.success) {
         setReviewError(result.error ?? "Unable to approve artwork.");
         return;
@@ -702,7 +833,7 @@ export function ArtworkV2Shell({
       if (imageUrl) {
         setApprovedArtwork({
           imageUrl,
-          downloadFilename: buildArtworkDownloadFilename(selectedItem.label),
+          downloadFilename: buildArtworkDownloadFilename(approvingItem.label),
         });
       } else {
         setApprovedArtwork(null);
@@ -711,14 +842,22 @@ export function ArtworkV2Shell({
       setReviewVersions([]);
       router.refresh();
 
-      if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
+      if (isPhaseItem(approvingItem) && approvingItem.metaPlacement === "feed") {
+        const storyItem = findMilestoneStoryItem(phaseItems, approvingItem.relativeDay);
+        if (storyItem) {
+          await continueStoryWorkflowAfterFeedApproval(approvingItem.relativeDay);
+          return;
+        }
+      }
+
+      if (isPhaseItem(approvingItem) && approvingItem.metaPlacement === "story") {
         openMilestoneApproved(
-          selectedItem.relativeDay,
+          approvingItem.relativeDay,
           imageUrl
             ? {
                 story: {
                   imageUrl,
-                  downloadFilename: buildArtworkDownloadFilename(selectedItem.label),
+                  downloadFilename: buildArtworkDownloadFilename(approvingItem.label),
                 },
               }
             : undefined,
@@ -760,7 +899,9 @@ export function ArtworkV2Shell({
         return;
       }
 
-      setReviewVersions((current) => [...current, ...(result.versions ?? [])]);
+      setReviewVersions((current) =>
+        normalizeReviewVersionIndices([...current, ...(result.versions ?? [])]),
+      );
       setGenerationWarning(result.warning ?? null);
     });
   }
@@ -1077,6 +1218,11 @@ export function ArtworkV2Shell({
         onReturnToEvent={handleReturnToEvent}
         onBackToArtworkList={handleBackToPicker}
         onCreateNew={handleCreateNew}
+        onCreateNewFeed={milestoneFormats ? handleCreateNewFeed : undefined}
+        onCreateNewStory={milestoneFormats ? handleCreateNewStory : undefined}
+        onDelete={handleDeleteArtwork}
+        isResetting={isReviewBusy}
+        resetError={resetError}
         showCreateStory={showCreateStoryAction}
         isCreatingStory={isGeneratingStory}
         onCreateStory={handleCreateStoryFromApproved}

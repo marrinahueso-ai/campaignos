@@ -259,11 +259,16 @@ export function isApprovedArtworkAsset(asset: EventAsset | null): boolean {
     return false;
   }
 
-  return (
-    asset.status === "uploaded" ||
-    asset.planStatus === "approved" ||
-    asset.planStatus === "published"
-  );
+  if (asset.planStatus === "in_progress" || asset.planStatus === "generated") {
+    return false;
+  }
+
+  if (asset.planStatus === "approved" || asset.planStatus === "published") {
+    return true;
+  }
+
+  // Legacy rows before plan_status was tracked
+  return asset.status === "uploaded";
 }
 
 export function getApprovedArtworkAssets(assets: EventAsset[]): EventAsset[] {

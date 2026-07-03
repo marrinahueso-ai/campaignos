@@ -151,6 +151,21 @@ function sortVisualAssets(assets: EventAsset[]): EventAsset[] {
   });
 }
 
+/** Oldest-first — used to keep hero tied to the first approved milestone feed. */
+function sortVisualAssetsOldestFirst(assets: EventAsset[]): EventAsset[] {
+  return [...assets].sort((left, right) => {
+    const dateComparison = left.updatedAt.localeCompare(right.updatedAt);
+    if (dateComparison !== 0) {
+      return dateComparison;
+    }
+
+    return (
+      (ASSET_TYPE_PRIORITY[left.assetType] ?? 99) -
+      (ASSET_TYPE_PRIORITY[right.assetType] ?? 99)
+    );
+  });
+}
+
 function getAssetTypeForChannel(
   channel: CommunicationChannel,
 ): EventAssetType | null {
@@ -295,23 +310,18 @@ function pickApprovedPlanAsset(assets: EventAsset[]): HeroArtworkSelection | nul
     return pickApprovedStoryFallback(assets);
   }
 
-  const milestoneFeeds = sortVisualAssets(
-    approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
-  );
   const heroImage = approvedAssets.find((asset) => asset.assetType === "hero_image");
-
-  if (milestoneFeeds.length > 0) {
-    const newestFeed = milestoneFeeds[0]!;
-    if (
-      !heroImage ||
-      newestFeed.updatedAt.localeCompare(heroImage.updatedAt) >= 0
-    ) {
-      return toAssetSelection(newestFeed, "approved_asset", "Artwork ready");
-    }
-  }
 
   if (heroImage) {
     return toAssetSelection(heroImage, "approved_asset", "Artwork ready");
+  }
+
+  const milestoneFeeds = sortVisualAssetsOldestFirst(
+    approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
+  );
+
+  if (milestoneFeeds.length > 0) {
+    return toAssetSelection(milestoneFeeds[0]!, "approved_asset", "Artwork ready");
   }
 
   const fallback = sortVisualAssets(approvedAssets)[0];

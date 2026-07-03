@@ -12,7 +12,7 @@ const FEED_MILESTONE_ASSET_TYPES = new Set<EventAssetType>([
   "facebook_graphic",
 ]);
 
-/** Sets the event hero image from approved artwork when no hero image exists yet. */
+/** Sets the event hero image from the first approved 1:1 feed artwork only. */
 export async function maybePromoteApprovedArtworkToHero(input: {
   eventId: string;
   assetType?: EventAssetType;
@@ -21,15 +21,20 @@ export async function maybePromoteApprovedArtworkToHero(input: {
   generationPrompt: string;
   uploadedBy: string | null;
 }): Promise<boolean> {
-  const assets = await getCampaignAssetsForEvent(input.eventId);
-  const existingHero = assets.find((asset) => asset.assetType === "hero_image");
-  const hasHeroImage =
-    existingHero?.status === "uploaded" && Boolean(existingHero.storagePath);
   const isFeedMilestonePromotion =
     input.assetType !== undefined &&
     FEED_MILESTONE_ASSET_TYPES.has(input.assetType);
 
-  if (hasHeroImage && !isFeedMilestonePromotion) {
+  if (!isFeedMilestonePromotion) {
+    return false;
+  }
+
+  const assets = await getCampaignAssetsForEvent(input.eventId);
+  const existingHero = assets.find((asset) => asset.assetType === "hero_image");
+  const hasHeroImage =
+    existingHero?.status === "uploaded" && Boolean(existingHero.storagePath);
+
+  if (hasHeroImage) {
     return false;
   }
 

@@ -16,7 +16,7 @@ import {
 import { getConceptById, getPendingConceptsForAsset } from "@/lib/ai-artwork/queries";
 import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
-import { activateConceptAsAsset } from "@/lib/ai-artwork/versions";
+import { activateConceptAsAsset, snapshotAssetToVersion } from "@/lib/ai-artwork/versions";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { campaignRoleLabel } from "@/lib/auth/campaign-roles";
@@ -50,7 +50,10 @@ import {
   findAnchorInspirationFeedAsset,
   getRemainingArtworkMilestones,
 } from "@/lib/artwork-v2/batch-generate";
-import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import {
+  ARTWORK_V2_MAX_INSPIRATION_IMAGES,
+  normalizeReviewVersionIndices,
+} from "@/lib/artwork-v2/constants";
 import {
   parseArtworkGenerationModeFromForm,
   resolveArtworkGenerationProfile,
@@ -59,6 +62,12 @@ import { runArtworkV2Generation } from "@/lib/artwork-v2/generation";
 import { activateExternalArtworkOnAsset } from "@/lib/artwork-v2/activation";
 import { maybePromoteApprovedArtworkToHero } from "@/lib/artwork-v2/hero";
 import { resolveArtworkV2ImageSizePreset } from "@/lib/artwork-v2/image-size";
+import {
+  resolveMilestoneFeedAsset,
+  resolveMilestoneStoryAsset,
+  storyDuplicatedFeedArtwork,
+} from "@/lib/artwork-v2/milestone-assets";
+import { createClient } from "@/lib/supabase/server";
 import type {
   ArtworkV2BatchGenerationResult,
   ArtworkV2BatchMilestoneResult,
@@ -91,6 +100,159 @@ function buildReferenceStoragePath(
 async function uploadedByLabel(): Promise<string> {
   const role = await getCurrentCampaignRole();
   return campaignRoleLabel(role);
+}
+
+/** Clears a story slot that was incorrectly approved with the feed image (same storage path or row). */
+async function resetStoryAssetIfDuplicatingFeed(
+  eventId: string,
+  feedItem: ReturnType<typeof findMilestoneFeedItem>,
+  storyItem: ReturnType<typeof findMilestoneStoryItem>,
+): Promise<boolean> {
+  if (!feedItem || !storyItem) {
+    return false;
+  }
+
+  const assets = await getCampaignAssetsForEvent(eventId);
+  const feedAsset = resolveMilestoneFeedAsset(feedItem, assets);
+  const storyAsset = resolveMilestoneStoryAsset(storyItem, assets);
+
+  if (!storyAsset || !isApprovedArtworkAsset(storyAsset)) {
+    return false;
+  }
+
+  if (!storyDuplicatedFeedArtwork(feedAsset, storyAsset)) {
+    return false;
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("event_artwork_concepts")
+    .update({ status: "discarded" })
+    .eq("event_asset_id", storyAsset.id)
+    .in("status", ["pending", "approved"]);
+
+  const { error } = await supabase
+    .from("event_assets")
+    .update({
+      status: "placeholder",
+      storage_path: null,
+      filename: null,
+      plan_status: "needed",
+      updated_at: now,
+    })
+    .eq("id", storyAsset.id)
+    .eq("event_id", eventId);
+
+  return !error;
+}
+
+type ArtworkV2ResetMode = "regenerate" | "delete";
+
+async function resetArtworkAssetSlot(
+  eventId: string,
+  assetId: string,
+  mode: ArtworkV2ResetMode,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data: asset, error: fetchError } = await supabase
+    .from("event_assets")
+    .select("*")
+    .eq("id", assetId)
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  if (fetchError || !asset) {
+    return { ok: false, error: "Campaign artwork slot not found." };
+  }
+
+  if (mode === "delete" && asset.status === "uploaded" && asset.storage_path) {
+    const snapshotted = await snapshotAssetToVersion(asset, assetId);
+    if (!snapshotted) {
+      return {
+        ok: false,
+        error: "Unable to archive the previous artwork version. Try again.",
+      };
+    }
+  }
+
+  await supabase
+    .from("event_artwork_concepts")
+    .update({ status: "discarded" })
+    .eq("event_asset_id", assetId)
+    .in("status", ["pending", "approved"]);
+
+  if (mode === "regenerate") {
+    const { error } = await supabase
+      .from("event_assets")
+      .update({
+        plan_status: "in_progress",
+        updated_at: now,
+      })
+      .eq("id", assetId)
+      .eq("event_id", eventId);
+
+    if (error) {
+      return { ok: false, error: "Unable to prepare artwork for a new version." };
+    }
+
+    return { ok: true };
+  }
+
+  const { error } = await supabase
+    .from("event_assets")
+    .update({
+      status: "placeholder",
+      storage_path: null,
+      filename: null,
+      plan_status: "needed",
+      ai_generated: false,
+      updated_at: now,
+    })
+    .eq("id", assetId)
+    .eq("event_id", eventId);
+
+  if (error) {
+    return { ok: false, error: "Unable to delete artwork." };
+  }
+
+  return { ok: true };
+}
+
+async function resetMilestoneCompanionStorySlot(
+  eventId: string,
+  item: ArtworkWorkflowItem,
+  mode: ArtworkV2ResetMode,
+): Promise<{ ok: boolean; error?: string }> {
+  if (typeof item.relativeDay !== "number" || item.metaPlacement !== "feed") {
+    return { ok: true };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { ok: false, error: "Event not found." };
+  }
+
+  const phaseItems = getArtworkPhaseItems({
+    eventType: event.eventType,
+    communicationStrategy: event.communicationStrategy,
+    communicationSteps: await getEventCommunicationSteps(eventId),
+  });
+  const storyItem = findMilestoneStoryItem(phaseItems, item.relativeDay);
+  if (!storyItem) {
+    return { ok: true };
+  }
+
+  const assets = await getCampaignAssetsForEvent(eventId);
+  const storyAsset = resolveWorkflowAsset(storyItem, null, assets);
+  if (!storyAsset?.id || !isApprovedArtworkAsset(storyAsset)) {
+    return { ok: true };
+  }
+
+  return resetArtworkAssetSlot(eventId, storyAsset.id, mode);
 }
 
 async function resolveWorkflowItem(
@@ -363,7 +525,11 @@ export async function generateStoryFromFeedAction(
 
   const storyAsset = resolveWorkflowAsset(storyItem, null, assets);
   if (isApprovedArtworkAsset(storyAsset)) {
-    return { success: false, error: "Story artwork is already approved." };
+    if (storyDuplicatedFeedArtwork(feedAsset, storyAsset)) {
+      await resetStoryAssetIfDuplicatingFeed(eventId, feedItem, storyItem);
+    } else {
+      return { success: false, error: "Story artwork is already approved." };
+    }
   }
 
   const feedUrl = resolveAssetImageUrl(feedAsset.storagePath);
@@ -449,15 +615,28 @@ export async function getArtworkV2ReviewVersionsAction(
     return { success: false, error: resolved.error, versions: [] };
   }
 
-  const pendingConcepts = await getPendingConceptsForAsset(resolved.assetId);
-  const versions = pendingConcepts
-    .slice()
-    .sort((left, right) => left.conceptIndex - right.conceptIndex)
-    .map((concept) => ({
-      id: concept.id,
-      index: concept.conceptIndex,
-      imageUrl: resolveAssetImageUrl(concept.storagePath),
-    }));
+  const expectedPreset = resolveArtworkV2ImageSizePreset(resolved.item);
+  const pendingConcepts = (await getPendingConceptsForAsset(resolved.assetId)).filter(
+    (concept) =>
+      !concept.imageSizePreset || concept.imageSizePreset === expectedPreset,
+  );
+  const versions = normalizeReviewVersionIndices(
+    pendingConcepts
+      .slice()
+      .sort((left, right) => {
+        const leftTime = new Date(left.createdAt).getTime();
+        const rightTime = new Date(right.createdAt).getTime();
+        if (leftTime !== rightTime) {
+          return leftTime - rightTime;
+        }
+        return left.conceptIndex - right.conceptIndex;
+      })
+      .map((concept) => ({
+        id: concept.id,
+        index: concept.conceptIndex,
+        imageUrl: resolveAssetImageUrl(concept.storagePath),
+      })),
+  );
 
   return { success: true, error: null, versions };
 }
@@ -490,6 +669,41 @@ export async function approveArtworkV2Action(
     return { success: false, error: "Artwork version does not match this campaign item." };
   }
 
+  const expectedPreset = resolveArtworkV2ImageSizePreset(resolved.item);
+  if (concept.imageSizePreset && concept.imageSizePreset !== expectedPreset) {
+    return {
+      success: false,
+      error: `This version is ${concept.imageSizePreset} format. Approve it from the matching ${expectedPreset} artwork slot.`,
+    };
+  }
+
+  if (
+    typeof resolved.item.relativeDay === "number" &&
+    resolved.item.metaPlacement === "story"
+  ) {
+    const event = await getEventById(eventId);
+    const phaseItems = getArtworkPhaseItems({
+      eventType: event?.eventType ?? null,
+      communicationStrategy: event?.communicationStrategy ?? "full_campaign",
+      communicationSteps: await getEventCommunicationSteps(eventId),
+    });
+    const feedItem = findMilestoneFeedItem(phaseItems, resolved.item.relativeDay);
+    if (feedItem) {
+      const assets = await getCampaignAssetsForEvent(eventId);
+      const feedAsset = resolveMilestoneFeedAsset(feedItem, assets);
+      if (
+        feedAsset?.storagePath &&
+        concept.storagePath === feedAsset.storagePath
+      ) {
+        return {
+          success: false,
+          error:
+            "This is the feed (1:1) image. Approve a 9:16 story version generated from your feed design.",
+        };
+      }
+    }
+  }
+
   const uploadedBy = await uploadedByLabel();
   const activated = await activateConceptAsAsset({
     eventId,
@@ -502,12 +716,12 @@ export async function approveArtworkV2Action(
     return { success: false, error: activated.error };
   }
 
-  const approvedStoragePath = resolveAssetImageUrl(concept.storagePath);
+  const approvedImageUrl = resolveAssetImageUrl(concept.storagePath);
 
   await maybePromoteApprovedArtworkToHero({
     eventId,
     assetType: resolved.item.assetType,
-    storagePath: approvedStoragePath ?? concept.storagePath,
+    storagePath: concept.storagePath,
     filename: concept.filename,
     generationPrompt: concept.generationPrompt,
     uploadedBy,
@@ -519,7 +733,7 @@ export async function approveArtworkV2Action(
   return {
     success: true,
     error: null,
-    approvedImageUrl: approvedStoragePath,
+    approvedImageUrl,
   };
 }
 
@@ -549,6 +763,84 @@ export async function denyArtworkV2Action(
     }
   }
 
+  revalidateArtworkV2Paths(eventId);
+  return { success: true, error: null };
+}
+
+/** Clears approval lock so the user can generate a new version for this slot. */
+export async function prepareArtworkV2RegenerationAction(
+  eventId: string,
+  workflowItemId: string,
+): Promise<ArtworkV2GenerationResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to update artwork." };
+  }
+
+  const resolved = await resolveWorkflowItem(eventId, workflowItemId);
+  if ("error" in resolved) {
+    return { success: false, error: resolved.error };
+  }
+
+  if (
+    typeof resolved.item.relativeDay === "number" &&
+    resolved.item.metaPlacement === "feed"
+  ) {
+    const companionReset = await resetMilestoneCompanionStorySlot(
+      eventId,
+      resolved.item,
+      "delete",
+    );
+    if (!companionReset.ok) {
+      return { success: false, error: companionReset.error ?? "Unable to reset story artwork." };
+    }
+  }
+
+  const reset = await resetArtworkAssetSlot(eventId, resolved.assetId, "regenerate");
+  if (!reset.ok) {
+    return { success: false, error: reset.error ?? "Unable to prepare artwork for a new version." };
+  }
+
+  await syncMetaPublicationSlots(eventId);
+  revalidateArtworkV2Paths(eventId);
+  return { success: true, error: null };
+}
+
+/** Deletes approved artwork from a slot so the user can start over. */
+export async function resetArtworkV2SlotAction(
+  eventId: string,
+  workflowItemId: string,
+): Promise<ArtworkV2GenerationResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to delete artwork." };
+  }
+
+  const resolved = await resolveWorkflowItem(eventId, workflowItemId);
+  if ("error" in resolved) {
+    return { success: false, error: resolved.error };
+  }
+
+  if (
+    typeof resolved.item.relativeDay === "number" &&
+    resolved.item.metaPlacement === "feed"
+  ) {
+    const companionReset = await resetMilestoneCompanionStorySlot(
+      eventId,
+      resolved.item,
+      "delete",
+    );
+    if (!companionReset.ok) {
+      return { success: false, error: companionReset.error ?? "Unable to delete story artwork." };
+    }
+  }
+
+  const reset = await resetArtworkAssetSlot(eventId, resolved.assetId, "delete");
+  if (!reset.ok) {
+    return { success: false, error: reset.error ?? "Unable to delete artwork." };
+  }
+
+  await syncMetaPublicationSlots(eventId);
   revalidateArtworkV2Paths(eventId);
   return { success: true, error: null };
 }
@@ -597,6 +889,11 @@ export async function adjustArtworkV2Action(
     return { success: false, error: "Selected artwork image is not available." };
   }
 
+  const previousImageUrl = resolveAssetImageUrl(previousConcept.storagePath);
+  if (!previousImageUrl) {
+    return { success: false, error: "Selected artwork image is not available." };
+  }
+
   const resolved = await resolveWorkflowItem(eventId, workflowItemId);
   if ("error" in resolved) {
     return { success: false, error: resolved.error };
@@ -634,7 +931,7 @@ export async function adjustArtworkV2Action(
       kind: "adjust",
       userPrompt,
       adjustmentComments,
-      previousImageUrl: previousConcept.storagePath,
+      previousImageUrl,
       inspirationImageUrls: reference.urls,
     },
     inspirationAssetId: reference.inspirationAssetIds[0] ?? null,
@@ -698,6 +995,31 @@ export async function approveInspirationAsArtworkV2Action(
   const resolved = await resolveWorkflowItem(eventId, workflowItemId);
   if ("error" in resolved) {
     return { success: false, error: resolved.error };
+  }
+
+  if (
+    typeof resolved.item.relativeDay === "number" &&
+    resolved.item.metaPlacement === "story" &&
+    inspirationEventAssetIds.length === 1
+  ) {
+    const event = await getEventById(eventId);
+    const phaseItems = getArtworkPhaseItems({
+      eventType: event?.eventType ?? null,
+      communicationStrategy: event?.communicationStrategy ?? "full_campaign",
+      communicationSteps: await getEventCommunicationSteps(eventId),
+    });
+    const feedItem = findMilestoneFeedItem(phaseItems, resolved.item.relativeDay);
+    const assets = await getCampaignAssetsForEvent(eventId);
+    const feedAsset = feedItem ? resolveMilestoneFeedAsset(feedItem, assets) : null;
+    const sourceAsset = assets.find((entry) => entry.id === inspirationEventAssetIds[0]);
+
+    if (feedAsset && sourceAsset && feedAsset.id === sourceAsset.id) {
+      return {
+        success: false,
+        error:
+          "Generate a 9:16 story from your approved feed design — the feed image cannot be approved directly as the story.",
+      };
+    }
   }
 
   const uploadedBy = await uploadedByLabel();
@@ -961,9 +1283,15 @@ async function generateStoryFromFeedImage(input: {
   }
 
   const assets = await getCampaignAssetsForEvent(input.eventId);
+  const feedItem = findMilestoneFeedItem(input.phaseItems, input.relativeDay);
+  const feedAsset = feedItem ? resolveMilestoneFeedAsset(feedItem, assets) : null;
   const storyAsset = resolveWorkflowAsset(storyItem, null, assets);
   if (isApprovedArtworkAsset(storyAsset)) {
-    return { success: false, error: "Story artwork is already approved." };
+    if (storyDuplicatedFeedArtwork(feedAsset, storyAsset)) {
+      await resetStoryAssetIfDuplicatingFeed(input.eventId, feedItem, storyItem);
+    } else {
+      return { success: false, error: "Story artwork is already approved." };
+    }
   }
 
   const userPrompt = buildDefaultArtworkPrompt({

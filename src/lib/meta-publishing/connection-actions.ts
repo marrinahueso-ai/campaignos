@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { getLatestOrganization } from "@/lib/organizations/queries";
-import { verifyMetaConnection, fetchPagesFromUserToken } from "@/lib/meta-publishing/graph-api";
+import { pickPageFromTokenResult } from "@/lib/meta-publishing/connection-utils";
+import {
+  verifyMetaConnection,
+  fetchPagesFromUserToken,
+  type ResolvedMetaPage,
+} from "@/lib/meta-publishing/graph-api";
 import { createClient } from "@/lib/supabase/server";
 
 export type MetaConnectionActionResult = {
@@ -56,6 +61,7 @@ export async function saveMetaConnectionAction(input: {
       instagram_account_id: igId || "",
       page_access_token: token,
       page_name: verified.pageName,
+      token_expires_at: null,
       updated_at: now,
     },
     { onConflict: "organization_id" },
@@ -100,16 +106,52 @@ export async function disconnectMetaConnectionAction(): Promise<MetaConnectionAc
   return { success: true };
 }
 
-function pickPageFromTokenResult(
-  pages: Awaited<ReturnType<typeof fetchPagesFromUserToken>>["pages"],
-  preferredPageId?: string,
-) {
-  if (preferredPageId) {
-    return pages.find((page) => page.id === preferredPageId) ?? null;
+export async function saveMetaConnectionFromOAuth(input: {
+  organizationId: string;
+  pages: ResolvedMetaPage[];
+  preferredPageId?: string;
+  tokenExpiresAt: string | null;
+}): Promise<{ success: boolean; errorCode?: string; pageName?: string | null }> {
+  const page = pickPageFromTokenResult(input.pages, input.preferredPageId);
+  if (!page) {
+    return { success: false, errorCode: "no_pages" };
   }
 
-  const testPage = pages.find((page) => /test|pto/i.test(page.name));
-  return testPage ?? pages[0] ?? null;
+  const verified = await verifyMetaConnection({
+    pageId: page.id,
+    instagramAccountId: page.instagramAccountId ?? undefined,
+    accessToken: page.accessToken,
+  });
+
+  if (!verified.ok) {
+    return { success: false, errorCode: "verify_failed" };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { error } = await supabase.from("organization_meta_connections").upsert(
+    {
+      organization_id: input.organizationId,
+      facebook_page_id: page.id,
+      instagram_account_id: page.instagramAccountId ?? "",
+      page_access_token: page.accessToken,
+      page_name: verified.pageName ?? page.name,
+      token_expires_at: input.tokenExpiresAt,
+      updated_at: now,
+    },
+    { onConflict: "organization_id" },
+  );
+
+  if (error) {
+    if (error.code === "42P01") {
+      return { success: false, errorCode: "migration_required" };
+    }
+    return { success: false, errorCode: "save_failed" };
+  }
+
+  revalidatePath("/settings/meta");
+  return { success: true, pageName: verified.pageName ?? page.name };
 }
 
 export async function connectMetaWithUserTokenAction(input: {
@@ -162,6 +204,7 @@ export async function connectMetaWithUserTokenAction(input: {
         instagram_account_id: page.instagramAccountId ?? "",
         page_access_token: page.accessToken,
         page_name: verified.pageName ?? page.name,
+        token_expires_at: null,
         updated_at: now,
       },
       { onConflict: "organization_id" },

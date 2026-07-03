@@ -48,3 +48,13 @@ export function createPlaceholderReviewVersions(): ArtworkV2ReviewVersion[] {
     { id: "preview-b", index: 2, imageUrl: null },
   ];
 }
+
+/** Assign sequential display numbers (1, 2, …) for the review grid. */
+export function normalizeReviewVersionIndices(
+  versions: ArtworkV2ReviewVersion[],
+): ArtworkV2ReviewVersion[] {
+  return versions.map((version, index) => ({
+    ...version,
+    index: index + 1,
+  }));
+}

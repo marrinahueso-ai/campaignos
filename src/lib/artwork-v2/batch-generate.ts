@@ -7,6 +7,7 @@ import {
   findMilestoneFeedItem,
   findMilestoneStoryItem,
 } from "@/lib/artwork-v2/milestone-workflow";
+import { isStoryMilestoneDistinctlyApproved } from "@/lib/artwork-v2/milestone-assets";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import type { EventAsset } from "@/types/event-workspace";
 
@@ -43,7 +44,9 @@ export function resolveMilestoneArtworkStatus(
   const feedAsset = resolveWorkflowAsset(feedItem, null, assets);
   const storyAsset = storyItem ? resolveWorkflowAsset(storyItem, null, assets) : null;
   const feedApproved = isApprovedArtworkAsset(feedAsset);
-  const storyApproved = storyItem ? isApprovedArtworkAsset(storyAsset) : true;
+  const storyApproved = storyItem
+    ? isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)
+    : true;
 
   if (feedApproved && storyApproved) {
     return "complete";
@@ -76,9 +79,10 @@ export function canShowGenerateRemainingButton(
 
     const feedAsset = resolveWorkflowAsset(feedItem, null, assets);
     const storyItem = findMilestoneStoryItem(phaseItems, group.relativeDay);
-    const storyAsset = storyItem ? resolveWorkflowAsset(storyItem, null, assets) : null;
+    const storyApproved = storyItem
+      ? isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)
+      : true;
     const feedApproved = isApprovedArtworkAsset(feedAsset);
-    const storyApproved = storyItem ? isApprovedArtworkAsset(storyAsset) : true;
 
     if (feedApproved && storyApproved) {
       hasCompleteMilestone = true;

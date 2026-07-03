@@ -1,3 +1,9 @@
+import {
+  getMetaAppAccessToken,
+  getMetaAppId,
+  getMetaAppSecret,
+} from "@/lib/meta-publishing/config.server";
+
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
 function graphVersion(): string {
@@ -255,6 +261,111 @@ export async function fetchPagesFromUserToken(
   }
 
   return { pages, error: null };
+}
+
+type TokenExchangeResult = {
+  accessToken: string | null;
+  expiresIn: number | null;
+  error: string | null;
+};
+
+async function exchangeOAuthToken(
+  params: Record<string, string>,
+): Promise<TokenExchangeResult> {
+  const url = new URL(graphUrl("/oauth/access_token"));
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  const response = await fetch(url.toString());
+  const payload = (await response.json()) as {
+    access_token?: string;
+    expires_in?: number;
+    error?: { message?: string };
+  };
+
+  if (!response.ok || payload.error || !payload.access_token) {
+    return {
+      accessToken: null,
+      expiresIn: null,
+      error: payload.error?.message ?? `Meta token exchange failed (${response.status})`,
+    };
+  }
+
+  return {
+    accessToken: payload.access_token,
+    expiresIn: typeof payload.expires_in === "number" ? payload.expires_in : null,
+    error: null,
+  };
+}
+
+export async function exchangeCodeForUserToken(input: {
+  code: string;
+  redirectUri: string;
+}): Promise<TokenExchangeResult> {
+  return exchangeOAuthToken({
+    client_id: getMetaAppId(),
+    client_secret: getMetaAppSecret(),
+    redirect_uri: input.redirectUri,
+    code: input.code,
+  });
+}
+
+export async function exchangeShortLivedForLongLived(input: {
+  shortLivedToken: string;
+}): Promise<TokenExchangeResult> {
+  return exchangeOAuthToken({
+    grant_type: "fb_exchange_token",
+    client_id: getMetaAppId(),
+    client_secret: getMetaAppSecret(),
+    fb_exchange_token: input.shortLivedToken,
+  });
+}
+
+export async function debugToken(input: {
+  inputToken: string;
+}): Promise<{
+  ok: boolean;
+  isValid: boolean;
+  expiresAt: string | null;
+  scopes: string[];
+  error: string | null;
+}> {
+  const result = await graphGet("/debug_token", {
+    input_token: input.inputToken,
+    access_token: getMetaAppAccessToken(),
+  });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      isValid: false,
+      expiresAt: null,
+      scopes: [],
+      error: result.error,
+    };
+  }
+
+  const data = result.data.data as
+    | {
+        is_valid?: boolean;
+        expires_at?: number;
+        scopes?: string[];
+      }
+    | undefined;
+
+  const expiresAt =
+    typeof data?.expires_at === "number" && data.expires_at > 0
+      ? new Date(data.expires_at * 1000).toISOString()
+      : null;
+
+  return {
+    ok: true,
+    isValid: Boolean(data?.is_valid),
+    expiresAt,
+    scopes: Array.isArray(data?.scopes) ? data.scopes : [],
+    error: null,
+  };
 }
 
 export async function verifyMetaConnection(input: {

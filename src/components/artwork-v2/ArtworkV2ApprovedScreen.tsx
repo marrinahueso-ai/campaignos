@@ -31,6 +31,11 @@ interface ArtworkV2ApprovedScreenProps {
   onReturnToEvent: () => void;
   onBackToArtworkList: () => void;
   onCreateNew: () => void;
+  onCreateNewFeed?: () => void;
+  onCreateNewStory?: () => void;
+  onDelete?: () => void;
+  isResetting?: boolean;
+  resetError?: string | null;
   showCreateStory?: boolean;
   isCreatingStory?: boolean;
   onCreateStory?: () => void;
@@ -49,6 +54,11 @@ export function ArtworkV2ApprovedScreen({
   onReturnToEvent,
   onBackToArtworkList,
   onCreateNew,
+  onCreateNewFeed,
+  onCreateNewStory,
+  onDelete,
+  isResetting = false,
+  resetError = null,
   showCreateStory = false,
   isCreatingStory = false,
   onCreateStory,
@@ -111,25 +121,53 @@ export function ArtworkV2ApprovedScreen({
 
         <div className="px-6 pb-6">
           {milestoneComplete && milestoneFormats ? (
-            <div className="flex justify-start gap-4">
-              {milestoneFormats.map((format) =>
-                format.imageUrl ? (
-                  <ArtworkLightboxThumbnail
-                    key={format.label}
-                    src={format.imageUrl}
-                    alt={`${itemLabel} ${format.label}`}
-                    label={format.label}
-                    variant={
-                      format.label.toLowerCase().includes("story") ? "story" : "feed"
-                    }
-                    wrapperClassName="w-28"
-                    frameClassName={
-                      format.label.toLowerCase().includes("story") ? "aspect-[9/16]" : "aspect-square"
-                    }
-                  />
-                ) : null,
+            <>
+              <div className="flex justify-start gap-4">
+                {milestoneFormats.map((format) =>
+                  format.imageUrl ? (
+                    <div key={format.label} className="relative">
+                      <ArtworkLightboxThumbnail
+                        src={format.imageUrl}
+                        alt={`${itemLabel} ${format.label}`}
+                        label={format.label}
+                        variant={
+                          format.label.toLowerCase().includes("story") ? "story" : "feed"
+                        }
+                        wrapperClassName="w-28"
+                        frameClassName={
+                          format.label.toLowerCase().includes("story")
+                            ? "aspect-[9/16]"
+                            : "aspect-square"
+                        }
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        className="absolute -right-1 -top-1 h-7 w-7 p-0"
+                        disabled={isDownloading === format.label}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDownload(
+                            format.imageUrl!,
+                            format.downloadFilename,
+                            format.label,
+                          );
+                        }}
+                        aria-label={`Download ${format.label}`}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : null,
+                )}
+              </div>
+              {downloadError && (
+                <p className="mt-3 text-sm text-red-600" role="alert">
+                  {downloadError}
+                </p>
               )}
-            </div>
+            </>
           ) : (
             imageUrl && (
               <div className="max-w-md overflow-hidden border border-cos-border bg-cos-card">
@@ -143,23 +181,7 @@ export function ArtworkV2ApprovedScreen({
           )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {milestoneComplete && milestoneFormats ? (
-              milestoneFormats.map((format) =>
-                format.imageUrl ? (
-                  <Button
-                    key={format.label}
-                    type="button"
-                    size="lg"
-                    variant="secondary"
-                    disabled={isDownloading === format.label}
-                    onClick={() => handleDownload(format.imageUrl!, format.downloadFilename, format.label)}
-                  >
-                    <Download className="h-4 w-4" />
-                    {isDownloading === format.label ? "Downloading…" : `Download ${format.label}`}
-                  </Button>
-                ) : null,
-              )
-            ) : imageUrl ? (
+            {!milestoneComplete && imageUrl ? (
               <Button
                 type="button"
                 size="lg"
@@ -169,13 +191,13 @@ export function ArtworkV2ApprovedScreen({
                 <Download className="h-4 w-4" />
                 {isDownloading === "single" ? "Downloading…" : "Download artwork"}
               </Button>
-            ) : (
+            ) : !milestoneComplete ? (
               <p className="text-sm text-cos-muted">
                 Download is also available from the artwork list once this page refreshes.
               </p>
-            )}
+            ) : null}
 
-            {downloadError && (
+            {!milestoneComplete && downloadError && (
               <p className="w-full text-sm text-red-600" role="alert">
                 {downloadError}
               </p>
@@ -209,12 +231,66 @@ export function ArtworkV2ApprovedScreen({
                 Continue to next milestone
               </Button>
             )}
-            <Button type="button" size="lg" variant="secondary" onClick={onCreateNew}>
-              Create new version
+            {milestoneComplete && onCreateNewFeed && onCreateNewStory ? (
+              <>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="secondary"
+                  disabled={isResetting}
+                  onClick={onCreateNewFeed}
+                >
+                  {isResetting ? "Preparing…" : "New feed version"}
+                </Button>
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="secondary"
+                  disabled={isResetting}
+                  onClick={onCreateNewStory}
+                >
+                  {isResetting ? "Preparing…" : "New story version"}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="lg"
+                variant="secondary"
+                disabled={isResetting}
+                onClick={onCreateNew}
+              >
+                {isResetting ? "Preparing…" : "Create new version"}
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                type="button"
+                size="lg"
+                variant="secondary"
+                disabled={isResetting}
+                onClick={onDelete}
+              >
+                {isResetting
+                  ? "Working…"
+                  : milestoneComplete
+                    ? "Delete milestone artwork"
+                    : "Delete artwork"}
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="lg"
+              variant="secondary"
+              onClick={milestoneComplete ? onBackToArtworkList : onReturnToEvent}
+            >
+              {milestoneComplete ? "Return to artwork list" : "Return to Event"}
             </Button>
-            <Button type="button" size="lg" variant="secondary" onClick={onReturnToEvent}>
-              Return to Event
-            </Button>
+            {resetError && (
+              <p className="w-full text-sm text-red-600" role="alert">
+                {resetError}
+              </p>
+            )}
           </div>
         </div>
       </Card>

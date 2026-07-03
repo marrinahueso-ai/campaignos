@@ -176,7 +176,7 @@ function resolveImageGenerationAction(
   request: ArtworkV2OrchestrationRequest,
 ): "auto" | "generate" | "edit" {
   if (request.kind === "adjust") {
-    return "auto";
+    return "edit";
   }
 
   return "generate";

@@ -107,6 +107,9 @@ export function ArtworkV2ReviewScreen({
           )}
           <p className="studio-eyebrow">Review</p>
           <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">{item.label}</h2>
+          {"formatLabel" in item && item.formatLabel ? (
+            <p className="mt-1 text-sm font-medium text-cos-text">{item.formatLabel}</p>
+          ) : null}
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
             Pick the version you prefer, request edits, or approve as-is.
           </p>
