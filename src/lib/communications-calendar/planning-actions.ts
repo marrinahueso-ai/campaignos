@@ -41,6 +41,14 @@ export async function reschedulePlanningItemAction(input: {
   );
 
   if (!success) {
+    if (input.sourceType === "meta_milestone") {
+      return {
+        success: false,
+        error:
+          "This Meta post cannot be moved. Only draft, scheduled, or approved posts can be rescheduled.",
+      };
+    }
+
     return { success: false, error: "Unable to reschedule this item." };
   }
 

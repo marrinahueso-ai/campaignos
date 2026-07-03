@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { cn } from "@/lib/utils/cn";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import { MetaPlatformIcons } from "@/components/communications-planning-calendar/MetaPlatformIcons";
@@ -37,6 +38,10 @@ export function serializeDragPayload(item: PlanningCalendarItem): string {
 }
 
 export function parseDragPayload(raw: string): PlanningDragPayload | null {
+  if (!raw) {
+    return null;
+  }
+
   try {
     return JSON.parse(raw) as PlanningDragPayload;
   } catch {
@@ -61,21 +66,51 @@ export function PlanningCalendarItemChip({
   const isMetaPost = isMetaMilestoneItem(item);
   const displayTitle = getCalendarItemDisplayTitle(item);
   const isDraggable = displayStatus !== "published";
+  const didDragRef = useRef(false);
 
-  function handleDragStart(event: React.DragEvent<HTMLButtonElement>) {
+  function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
+    didDragRef.current = false;
     const payload = serializeDragPayload(item);
     event.dataTransfer.setData(DRAG_MIME, payload);
-    // text/plain fallback for Safari/Firefox drop data retrieval
     event.dataTransfer.setData("text/plain", payload);
     event.dataTransfer.effectAllowed = "move";
   }
 
+  function handleDrag(_event: React.DragEvent<HTMLDivElement>) {
+    didDragRef.current = true;
+  }
+
+  function handleDragEnd() {
+    window.setTimeout(() => {
+      didDragRef.current = false;
+    }, 0);
+  }
+
+  function handleClick() {
+    if (didDragRef.current) {
+      return;
+    }
+
+    onSelect?.(item);
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelect?.(item);
+    }
+  }
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       draggable={isDraggable}
       onDragStart={isDraggable ? handleDragStart : undefined}
-      onClick={() => onSelect?.(item)}
+      onDrag={isDraggable ? handleDrag : undefined}
+      onDragEnd={isDraggable ? handleDragEnd : undefined}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className={cn(
         "group w-full rounded-lg border text-left transition-all duration-200",
         isDraggable && "cursor-grab active:cursor-grabbing",
@@ -126,7 +161,7 @@ export function PlanningCalendarItemChip({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
