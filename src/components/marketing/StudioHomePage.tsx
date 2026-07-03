@@ -17,6 +17,7 @@ interface StudioHomePageProps {
   nextPath?: string | null;
   setupIntent?: boolean;
   workspaceHref?: string;
+  foundingCodeRetry?: boolean;
 }
 
 const highlights = [
@@ -45,9 +46,11 @@ export function StudioHomePage({
   nextPath = null,
   setupIntent = false,
   workspaceHref = "/dashboard",
+  foundingCodeRetry = false,
 }: StudioHomePageProps) {
   const isSignedIn = Boolean(userEmail);
   const needsSchoolSetup = workspaceHref === SCHOOL_SETUP_PATH;
+  const showSetupForm = setupIntent && (!isSignedIn || foundingCodeRetry);
   const startSchoolHref = isSignedIn
     ? SCHOOL_SETUP_PATH
     : `/login?intent=setup&next=${encodeURIComponent(SCHOOL_SETUP_PATH)}`;
@@ -181,8 +184,10 @@ export function StudioHomePage({
                     : "Welcome back"
                   : invitePreview
                     ? "Join your team"
-                    : setupIntent
-                      ? "Start your school"
+                    : showSetupForm
+                      ? foundingCodeRetry
+                        ? "Confirm your access code"
+                        : "Start your school"
                       : "Sign in"}
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-cos-dark-muted">
@@ -192,17 +197,31 @@ export function StudioHomePage({
                     : "Your studio is ready. Pick up where you left off in your campaign workspace."
                   : invitePreview
                     ? `You're invited to ${invitePreview.organizationName}. Sign in to join your team.`
-                    : setupIntent
-                      ? "Enter your email and founding access code to create your account — then we'll walk you through school setup."
+                    : showSetupForm
+                      ? foundingCodeRetry
+                        ? "Your sign-in link worked. Re-enter your founding access code to continue to school setup."
+                        : "Enter your email and founding access code to create your account — then we'll walk you through school setup."
                       : "Returning to your workspace? Sign in below. Starting a new school? Choose Start your PTO workspace above."}
               </p>
             </div>
 
-            {isSignedIn ? (
+            {isSignedIn && !foundingCodeRetry ? (
               <div className="space-y-4 border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
+                {authError === "existing_org" && (
+                  <p className="text-sm text-red-600">
+                    This email already has a workspace.{" "}
+                    <Link
+                      href={workspaceHref}
+                      className="font-medium underline-offset-2 hover:underline"
+                    >
+                      Sign in to continue
+                    </Link>
+                    , or use an invite link to join another team.
+                  </p>
+                )}
                 <p className="text-sm text-cos-muted">{userEmail}</p>
                 <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
-                  {needsSchoolSetup ? "Start school setup" : "Enter workspace"}
+                  {needsSchoolSetup ? "Start school setup" : "Go to your workspace"}
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
                 <form action="/auth/signout" method="POST">
@@ -234,25 +253,33 @@ export function StudioHomePage({
                   </div>
                 )}
 
-                {!invitePreview && setupIntent && (
+                {!invitePreview && showSetupForm && (
                   <div className="mb-6 border border-cos-accent/30 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
-                    <p className="font-medium">Starting a new PTO workspace</p>
+                    <p className="font-medium">
+                      {foundingCodeRetry
+                        ? "Almost there"
+                        : "Starting a new PTO workspace"}
+                    </p>
                     <p className="mt-1 text-cos-dark-muted">
-                      Enter your email and founding partner access code below.
-                      We&apos;ll send you a link to create your account and
-                      start school setup. Need a code?{" "}
-                      <a
-                        href="mailto:hello@campaignos.app"
-                        className="text-cos-accent underline-offset-2 hover:underline"
-                      >
-                        Contact us
-                      </a>
-                      .
+                      {foundingCodeRetry
+                        ? "Enter the same founding access code you used when requesting your sign-in link."
+                        : "Enter your email and founding partner access code below. We'll send you a link to create your account and start school setup. Need a code? "}
+                      {!foundingCodeRetry && (
+                        <>
+                          <a
+                            href="mailto:hello@campaignos.app"
+                            className="text-cos-accent underline-offset-2 hover:underline"
+                          >
+                            Contact us
+                          </a>
+                          .
+                        </>
+                      )}
                     </p>
                   </div>
                 )}
 
-                {!invitePreview && !setupIntent && (
+                {!invitePreview && !showSetupForm && (
                   <div className="mb-6 border border-cos-dark-muted/25 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
                     <p>
                       <span className="font-medium">New school?</span>{" "}
@@ -280,9 +307,14 @@ export function StudioHomePage({
 
                 {authError === "existing_org" && (
                   <p className="mb-4 text-sm text-red-300">
-                    This email already belongs to a school workspace. Sign in to
-                    your existing workspace instead, or use an invite link to
-                    join another team.
+                    This email already has a workspace.{" "}
+                    <Link
+                      href={workspaceHref}
+                      className="font-medium underline-offset-2 hover:underline"
+                    >
+                      Sign in to continue
+                    </Link>
+                    , or use an invite link to join another team.
                   </p>
                 )}
 
@@ -296,10 +328,11 @@ export function StudioHomePage({
                 <div className="border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
                   <LoginForm
                     inviteToken={inviteToken}
-                    defaultEmail={invitePreview?.email ?? ""}
+                    defaultEmail={invitePreview?.email ?? userEmail ?? ""}
                     variant="studio"
                     nextPath={nextPath ?? (setupIntent ? SCHOOL_SETUP_PATH : null)}
                     setupIntent={setupIntent}
+                    foundingCodeRetry={foundingCodeRetry}
                   />
                 </div>
               </>

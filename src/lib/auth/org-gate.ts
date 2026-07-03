@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import {
-  PENDING_FOUNDING_ACCESS_COOKIE,
+  getPendingFoundingAccessCodeFromRequest,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
 import { hasActiveOrganizationMembership } from "@/lib/auth/membership-queries";
@@ -13,15 +13,6 @@ function isOrgSetupPath(pathname: string): boolean {
   return ORG_SETUP_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
-}
-
-export function getPendingFoundingAccessCodeFromRequest(
-  request: NextRequest,
-): string | null {
-  const value = request.cookies
-    .get(PENDING_FOUNDING_ACCESS_COOKIE)
-    ?.value?.trim();
-  return value ? value.toUpperCase() : null;
 }
 
 /**

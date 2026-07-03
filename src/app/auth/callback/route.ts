@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { acceptPendingInvitesForUser } from "@/lib/auth/membership-queries";
+import {
+  pendingFoundingAccessCookieOptions,
+  PENDING_FOUNDING_ACCESS_COOKIE,
+  resolvePendingFoundingAccessForCallback,
+} from "@/lib/auth/founding-access";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
@@ -50,6 +55,14 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  let pendingFoundingCode: string | null = null;
+  if (user?.email && setupIntent) {
+    pendingFoundingCode = resolvePendingFoundingAccessForCallback(
+      request,
+      user.email,
+    );
+  }
+
   // New-school signup must not auto-join an existing invited org.
   if (user?.email && !setupIntent) {
     await acceptPendingInvitesForUser(user.id, user.email);
@@ -60,7 +73,7 @@ export async function GET(request: NextRequest) {
       supabase,
       user.id,
       requestedNext,
-      { setupIntent },
+      { setupIntent, pendingCode: pendingFoundingCode },
     );
   }
 
@@ -73,5 +86,12 @@ export async function GET(request: NextRequest) {
   response.cookies.getAll().forEach(({ name, value, ...options }) => {
     finalResponse.cookies.set(name, value, options);
   });
+  if (pendingFoundingCode) {
+    finalResponse.cookies.set(
+      PENDING_FOUNDING_ACCESS_COOKIE,
+      pendingFoundingCode,
+      pendingFoundingAccessCookieOptions(),
+    );
+  }
   return finalResponse;
 }

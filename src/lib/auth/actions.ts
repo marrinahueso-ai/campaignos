@@ -26,9 +26,18 @@ import {
   resolveAuthSiteOrigin,
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
-import { isFoundingAccessCodeRequired, resolveFoundingAccess, setPendingFoundingAccessCookie } from "@/lib/auth/founding-access";
+import {
+  isFoundingAccessCodeRequired,
+  PENDING_FOUNDING_ACCESS_QUERY_PARAM,
+  resolveFoundingAccess,
+  setPendingFoundingAccessCookie,
+} from "@/lib/auth/founding-access";
+import { createPendingFoundingAccessLinkToken } from "@/lib/auth/founding-access-link-token";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
-import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
+import {
+  getAuthenticatedAppPath,
+  SCHOOL_SETUP_PATH,
+} from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
@@ -145,6 +154,7 @@ export async function signInWithEmailAction(
   }
 
   const isNewSchoolSignup = setupIntent && !inviteToken;
+  let normalizedFoundingCode: string | null = null;
 
   if (isNewSchoolSignup) {
     const foundingAccess = resolveFoundingAccess(accessCode, {
@@ -154,8 +164,9 @@ export async function signInWithEmailAction(
       return { error: foundingAccess.error, success: false };
     }
 
-    if (foundingAccess.normalizedCode) {
-      await setPendingFoundingAccessCookie(foundingAccess.normalizedCode);
+    normalizedFoundingCode = foundingAccess.normalizedCode;
+    if (normalizedFoundingCode) {
+      await setPendingFoundingAccessCookie(normalizedFoundingCode);
     }
   }
 
@@ -171,6 +182,12 @@ export async function signInWithEmailAction(
   }
   if (isNewSchoolSignup) {
     redirectTo.searchParams.set("setup", "1");
+    if (normalizedFoundingCode) {
+      redirectTo.searchParams.set(
+        PENDING_FOUNDING_ACCESS_QUERY_PARAM,
+        createPendingFoundingAccessLinkToken(email, normalizedFoundingCode),
+      );
+    }
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -201,6 +218,31 @@ export async function signOutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function submitFoundingAccessCodeAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: "Sign in first, then enter your founding access code.", success: false };
+  }
+
+  const accessCode = formData.get("accessCode")?.toString()?.trim() || null;
+  const foundingAccess = resolveFoundingAccess(accessCode, {
+    required: isFoundingAccessCodeRequired(),
+  });
+
+  if (!foundingAccess.valid) {
+    return { error: foundingAccess.error, success: false };
+  }
+
+  if (foundingAccess.normalizedCode) {
+    await setPendingFoundingAccessCookie(foundingAccess.normalizedCode);
+  }
+
+  redirect(SCHOOL_SETUP_PATH);
 }
 
 export async function completeAuthSessionAction(): Promise<void> {

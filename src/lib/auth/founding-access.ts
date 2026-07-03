@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 
 /**
  * Founding / beta access codes are configured via Vercel env vars (not in-app UI):
@@ -14,7 +15,48 @@ const TRUTHY = new Set(["1", "true", "yes", "on"]);
 const FALSY = new Set(["0", "false", "no", "off"]);
 
 export const PENDING_FOUNDING_ACCESS_COOKIE = "campaignos_pending_founding_access";
+/** Signed query param so magic links work when the httpOnly cookie is missing (e.g. email in-app browser). */
+export const PENDING_FOUNDING_ACCESS_QUERY_PARAM = "fac";
 const PENDING_CODE_MAX_AGE_SECONDS = 60 * 60 * 24;
+
+export function getPendingFoundingAccessCodeFromRequest(
+  request: NextRequest,
+): string | null {
+  const value = request.cookies
+    .get(PENDING_FOUNDING_ACCESS_COOKIE)
+    ?.value?.trim();
+  return value ? value.toUpperCase() : null;
+}
+
+/** Resolve pending founding code from cookie or signed magic-link param. */
+export function resolvePendingFoundingAccessForCallback(
+  request: NextRequest,
+  email: string,
+): string | null {
+  const fromCookie = getPendingFoundingAccessCodeFromRequest(request);
+  if (fromCookie && validateFoundingAccessCode(fromCookie)) {
+    return fromCookie;
+  }
+
+  const token = request.nextUrl.searchParams
+    .get(PENDING_FOUNDING_ACCESS_QUERY_PARAM)
+    ?.trim();
+  if (!token) {
+    return null;
+  }
+
+  return verifyPendingFoundingAccessLinkToken(token, email);
+}
+
+export function pendingFoundingAccessCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: PENDING_CODE_MAX_AGE_SECONDS,
+  };
+}
 
 function parseFoundingAccessCodes(): Set<string> {
   const codes = new Set<string>();
@@ -111,13 +153,11 @@ export function resolveFoundingAccess(
 
 export async function setPendingFoundingAccessCookie(code: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(PENDING_FOUNDING_ACCESS_COOKIE, code.trim().toUpperCase(), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: PENDING_CODE_MAX_AGE_SECONDS,
-  });
+  cookieStore.set(
+    PENDING_FOUNDING_ACCESS_COOKIE,
+    code.trim().toUpperCase(),
+    pendingFoundingAccessCookieOptions(),
+  );
 }
 
 export async function getPendingFoundingAccessCode(): Promise<string | null> {

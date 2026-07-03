@@ -1,7 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  getPendingFoundingAccessCodeFromRequest,
+  isFoundingAccessCodeRequired,
+  validateFoundingAccessCode,
+} from "@/lib/auth/founding-access";
+import { hasActiveOrganizationMembership } from "@/lib/auth/membership-queries";
 import { resolveOrgGateRedirect } from "@/lib/auth/org-gate";
-import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
+import {
+  resolvePostAuthPathForUser,
+  shouldAllowAuthenticatedLoginView,
+} from "@/lib/auth/post-auth-path";
 
 const PUBLIC_PATHS = [
   "/",
@@ -66,7 +75,30 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname === "/login") {
+    if (shouldAllowAuthenticatedLoginView(request.nextUrl.searchParams.get("error"))) {
+      return supabaseResponse;
+    }
+
+    const pendingCode = getPendingFoundingAccessCodeFromRequest(request);
+    const hasValidPendingCode =
+      Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
+    const hasMembership = await hasActiveOrganizationMembership(
+      supabase,
+      user.id,
+    );
+
+    if (
+      !hasMembership &&
+      isFoundingAccessCodeRequired() &&
+      !hasValidPendingCode
+    ) {
+      return supabaseResponse;
+    }
+
     const homePath = await resolvePostAuthPathForUser(supabase, user.id);
+    if (shouldAllowAuthenticatedLoginView(new URL(homePath, request.url).searchParams.get("error"))) {
+      return supabaseResponse;
+    }
     const homeUrl = new URL(homePath, request.nextUrl.origin);
     const redirectResponse = NextResponse.redirect(homeUrl);
     copyCookies(supabaseResponse, redirectResponse);

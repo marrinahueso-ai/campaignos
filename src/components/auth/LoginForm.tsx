@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import {
   signInWithEmailAction,
   signInWithPasswordAction,
+  submitFoundingAccessCodeAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
 import { SocialSignInButtons } from "@/components/auth/SocialSignInButtons";
@@ -25,6 +26,7 @@ interface LoginFormProps {
   variant?: "default" | "studio";
   nextPath?: string | null;
   setupIntent?: boolean;
+  foundingCodeRetry?: boolean;
 }
 
 export function LoginForm({
@@ -33,6 +35,7 @@ export function LoginForm({
   variant = "default",
   nextPath = null,
   setupIntent = false,
+  foundingCodeRetry = false,
 }: LoginFormProps) {
   const isNewSchoolSignup = setupIntent && !inviteToken;
   const [mode, setMode] = useState<"password" | "magic">("password");
@@ -44,18 +47,67 @@ export function LoginForm({
     signInWithEmailAction,
     initialState,
   );
+  const [retryState, retryAction, retryPending] = useActionState(
+    submitFoundingAccessCodeAction,
+    initialState,
+  );
 
   const isStudio = variant === "studio";
-  const isPending = isNewSchoolSignup
-    ? magicPending
-    : mode === "password"
-      ? passwordPending
-      : magicPending;
-  const state = isNewSchoolSignup
-    ? magicState
-    : mode === "password"
-      ? passwordState
-      : magicState;
+  const isPending = foundingCodeRetry
+    ? retryPending
+    : isNewSchoolSignup
+      ? magicPending
+      : mode === "password"
+        ? passwordPending
+        : magicPending;
+  const state = foundingCodeRetry
+    ? retryState
+    : isNewSchoolSignup
+      ? magicState
+      : mode === "password"
+        ? passwordState
+        : magicState;
+
+  if (foundingCodeRetry) {
+    return (
+      <div className="space-y-5">
+        <form action={retryAction} className="space-y-5">
+          <Input
+            name="accessCode"
+            label="Founding access code"
+            type="text"
+            placeholder="Enter your partner code"
+            required
+            autoComplete="off"
+            variant={isStudio ? "studio" : "default"}
+          />
+
+          <Button
+            type="submit"
+            className={cn("w-full", isStudio && "tracking-wide uppercase")}
+            size={isStudio ? "lg" : "md"}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Verifying…
+              </>
+            ) : (
+              <>
+                <KeyRound className="h-4 w-4" strokeWidth={1.5} />
+                Continue to school setup
+              </>
+            )}
+          </Button>
+        </form>
+
+        {state.error && (
+          <p className="text-sm text-cos-error-text">{state.error}</p>
+        )}
+      </div>
+    );
+  }
 
   if (isNewSchoolSignup) {
     return (

@@ -147,7 +147,11 @@ export function SchoolSetupWizard({
           title: "You're all set",
           description: "Your school profile is ready. Let's head to your dashboard.",
         },
-      })[step as 1 | 2 | 3 | 4 | 5 | 6 | 7],
+      })[step as 1 | 2 | 3 | 4 | 5 | 6 | 7] ?? {
+        title: "Welcome to CampaignOS",
+        description:
+          "Set up your school profile once, and every PTO communication will stay on brand all year long.",
+      },
     [step],
   );
 

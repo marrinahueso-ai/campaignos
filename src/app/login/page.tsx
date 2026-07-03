@@ -1,7 +1,13 @@
 import { getAuthUser } from "@/lib/auth/queries";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
 import {
+  getPendingFoundingAccessCode,
+  isFoundingAccessCodeRequired,
+  validateFoundingAccessCode,
+} from "@/lib/auth/founding-access";
+import {
   getAuthenticatedAppPath,
+  shouldAllowAuthenticatedLoginView,
   SCHOOL_SETUP_PATH,
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
@@ -28,7 +34,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     safeNextPath(params.next) ?? (setupIntent ? SCHOOL_SETUP_PATH : null);
 
   const user = await getAuthUser();
-  if (user) {
+  const pendingCode = user ? await getPendingFoundingAccessCode() : null;
+  const hasValidPendingCode =
+    Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
+  const needsFoundingCodeRetry =
+    Boolean(user) &&
+    setupIntent &&
+    isFoundingAccessCodeRequired() &&
+    !hasValidPendingCode;
+
+  const showLoginError = shouldAllowAuthenticatedLoginView(params.error);
+
+  if (user && !needsFoundingCodeRetry && !showLoginError) {
     redirect(await getAuthenticatedAppPath(nextPath));
   }
 
@@ -43,6 +60,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       authError={params.error ?? null}
       nextPath={nextPath}
       setupIntent={setupIntent}
+      userEmail={
+        needsFoundingCodeRetry || params.error === "existing_org"
+          ? user?.email ?? null
+          : null
+      }
+      foundingCodeRetry={needsFoundingCodeRetry}
     />
   );
 }
