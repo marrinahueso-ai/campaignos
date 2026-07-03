@@ -10,6 +10,7 @@ import {
   getMetaConnectionForCurrentOrg,
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
+import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -18,7 +19,7 @@ export const metadata = {
 };
 
 interface MetaPublishingSettingsPageProps {
-  searchParams: Promise<{ connected?: string; error?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string; hint?: string }>;
 }
 
 export default async function MetaPublishingSettingsPage({
@@ -34,9 +35,8 @@ export default async function MetaPublishingSettingsPage({
   const statusMessage =
     params.connected === "1"
       ? "Meta connected successfully."
-      : params.error
-        ? `Could not connect Meta (${params.error.replaceAll("_", " ")}).`
-        : null;
+      : getMetaOAuthErrorMessage(params.error);
+  const statusHint = params.error && params.hint ? params.hint : null;
 
   return (
     <div className="studio-page mx-auto max-w-2xl space-y-10 pb-12">
@@ -48,14 +48,23 @@ export default async function MetaPublishingSettingsPage({
       />
 
       {statusMessage && (
-        <p
+        <div
           className={
-            params.connected === "1" ? "text-sm text-emerald-700" : "text-sm text-red-600"
+            params.connected === "1" ? "text-sm text-emerald-700" : "space-y-2 text-sm text-red-600"
           }
           role="status"
         >
-          {statusMessage}
-        </p>
+          <p>{statusMessage}</p>
+          {statusHint ? <p className="text-cos-muted">{statusHint}</p> : null}
+          {params.error === "no_pages" ? (
+            <p className="text-cos-muted">
+              Next: expand <strong className="font-medium text-cos-text">Advanced connect</strong>{" "}
+              below and connect with your Facebook Page ID plus a token from Graph API Explorer, or
+              set <code className="rounded bg-cos-bg px-1">META_FACEBOOK_PAGE_ID</code> on the server
+              and reconnect.
+            </p>
+          ) : null}
+        </div>
       )}
 
       <Card>
@@ -71,6 +80,7 @@ export default async function MetaPublishingSettingsPage({
             connection={connection}
             configuredViaEnv={configuredViaEnv}
             integrationConfigured={integrationConfigured}
+            oauthError={params.error ?? null}
           />
         </div>
       </Card>

@@ -6,7 +6,10 @@ export function pickPageFromTokenResult(
   preferredPageId?: string,
 ): ResolvedMetaPage | null {
   if (preferredPageId) {
-    return pages.find((page) => page.id === preferredPageId) ?? null;
+    const preferred = pages.find((page) => page.id === preferredPageId);
+    if (preferred) {
+      return preferred;
+    }
   }
 
   const linkedInstagramPage = pages.find((page) => page.instagramAccountId);
@@ -24,4 +27,28 @@ export function isMetaConnectionConfigured(connection: MetaConnection | null): b
 
 export function isInstagramPublishingConfigured(connection: MetaConnection | null): boolean {
   return Boolean(connection?.instagramAccountId?.trim());
+}
+
+const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  no_pages:
+    "Facebook login succeeded but no Page access token could be resolved. This usually means your Page is in Meta Business Suite and was not selected during login, or business_management is missing from your app configuration.",
+  not_configured: "Meta app credentials are not configured on the server.",
+  token_exchange_failed: "Meta token exchange failed. Check META_APP_ID, META_APP_SECRET, and redirect URL.",
+  long_lived_exchange_failed: "Could not exchange for a long-lived token.",
+  invalid_state: "OAuth session expired. Try connecting again.",
+  missing_code: "Facebook did not return an authorization code.",
+  no_organization: "Set up your organization before connecting Meta.",
+  verify_failed: "Connected to Meta but Page verification failed.",
+  save_failed: "Could not save the Meta connection.",
+  migration_required: "Meta connection storage is not set up. Run database migration 021.",
+};
+
+export function getMetaOAuthErrorMessage(errorCode: string | undefined): string | null {
+  if (!errorCode) {
+    return null;
+  }
+  return (
+    META_OAUTH_ERROR_MESSAGES[errorCode] ??
+    `Could not connect Meta (${errorCode.replaceAll("_", " ")}).`
+  );
 }

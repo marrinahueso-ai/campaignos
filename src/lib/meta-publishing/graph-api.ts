@@ -2,6 +2,7 @@ import {
   getMetaAppAccessToken,
   getMetaAppId,
   getMetaAppSecret,
+  getMetaFacebookPageId,
 } from "@/lib/meta-publishing/config.server";
 
 const DEFAULT_GRAPH_VERSION = "v21.0";
@@ -311,11 +312,13 @@ async function fetchPageFromUserTokenById(input: {
   });
 
   if (!result.ok) {
+    console.warn(`Meta GET /${input.pageId} (page token) failed:`, result.error);
     return null;
   }
 
   const pageToken = String(result.data.access_token ?? "");
   if (!pageToken) {
+    console.warn(`Meta GET /${input.pageId} returned no access_token for user token.`);
     return null;
   }
 
@@ -340,7 +343,8 @@ function pageIdsFromGranularScopes(
   const pageIds = new Set<string>();
   for (const entry of granularScopes) {
     const scope = String(entry.scope ?? "");
-    if (!/^(pages_|instagram_)/.test(scope)) {
+    // Only pages_* scopes carry Facebook Page IDs. instagram_* target_ids are IG account IDs.
+    if (!/^pages_/.test(scope)) {
       continue;
     }
     for (const targetId of entry.target_ids ?? []) {
@@ -354,8 +358,128 @@ function pageIdsFromGranularScopes(
   return [...pageIds];
 }
 
+function uniquePageIds(ids: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  for (const id of ids) {
+    const trimmed = String(id ?? "").trim();
+    if (trimmed) {
+      seen.add(trimmed);
+    }
+  }
+  return [...seen];
+}
+
+async function resolveRawPagesToMetaPages(input: {
+  rawPages: RawMetaPage[];
+  userAccessToken: string;
+}): Promise<ResolvedMetaPage[]> {
+  const pages: ResolvedMetaPage[] = [];
+  const seenIds = new Set<string>();
+
+  for (const page of input.rawPages) {
+    const pageId = String(page.id ?? "").trim();
+    if (!pageId || seenIds.has(pageId)) {
+      continue;
+    }
+
+    let resolved: ResolvedMetaPage | null = null;
+    if (page.access_token) {
+      resolved = await resolveMetaPageFromRaw(page);
+    }
+    if (!resolved) {
+      resolved = await fetchPageFromUserTokenById({
+        pageId,
+        userAccessToken: input.userAccessToken,
+      });
+    }
+
+    if (resolved) {
+      seenIds.add(resolved.id);
+      pages.push(resolved);
+    }
+  }
+
+  return pages;
+}
+
+async function fetchPagesFromBusinesses(
+  userAccessToken: string,
+): Promise<{ items: RawMetaPage[]; error: string | null }> {
+  const businesses = await graphGetPaginated("/me/businesses", {
+    fields: "id,name",
+    access_token: userAccessToken,
+  });
+
+  if (businesses.error && businesses.items.length === 0) {
+    return { items: [], error: businesses.error };
+  }
+
+  const items: RawMetaPage[] = [];
+  const seenIds = new Set<string>();
+
+  for (const business of businesses.items) {
+    const businessId = String(business.id ?? "").trim();
+    if (!businessId) {
+      continue;
+    }
+
+    for (const edge of ["owned_pages", "client_pages"] as const) {
+      const result = await graphGetPaginated(`/${businessId}/${edge}`, {
+        fields: "id,name,access_token",
+        access_token: userAccessToken,
+      });
+
+      if (result.error && result.items.length === 0) {
+        console.warn(`Meta /${businessId}/${edge} failed:`, result.error);
+      }
+
+      for (const page of result.items) {
+        const pageId = String(page.id ?? "").trim();
+        if (pageId && !seenIds.has(pageId)) {
+          seenIds.add(pageId);
+          items.push(page);
+        }
+      }
+    }
+  }
+
+  return { items, error: null };
+}
+
+async function resolvePagesByIds(input: {
+  pageIds: string[];
+  userAccessToken: string;
+  sourceLabel: string;
+  sources: string[];
+}): Promise<ResolvedMetaPage[]> {
+  const pages: ResolvedMetaPage[] = [];
+  const seenIds = new Set<string>();
+
+  for (const pageId of input.pageIds) {
+    if (seenIds.has(pageId)) {
+      continue;
+    }
+
+    const resolved = await fetchPageFromUserTokenById({
+      pageId,
+      userAccessToken: input.userAccessToken,
+    });
+    if (resolved) {
+      seenIds.add(resolved.id);
+      pages.push(resolved);
+    }
+  }
+
+  if (pages.length > 0) {
+    input.sources.push(`${input.sourceLabel} (${pages.length}/${input.pageIds.length})`);
+  }
+
+  return pages;
+}
+
 export async function fetchPagesFromUserToken(
   userAccessToken: string,
+  options?: { fallbackPageIds?: string[] },
 ): Promise<{ pages: ResolvedMetaPage[]; error: string | null; debugHint?: string | null }> {
   const token = userAccessToken.trim();
   const sources: string[] = [];
@@ -377,7 +501,7 @@ export async function fetchPagesFromUserToken(
 
   if (rawPages.length === 0) {
     const assigned = await graphGetPaginated("/me/assigned_pages", {
-      fields: "id,name,access_token",
+      fields: "id,name,access_token,tasks,permitted_tasks",
       access_token: token,
     });
 
@@ -391,70 +515,86 @@ export async function fetchPagesFromUserToken(
     }
   }
 
-  const pages: ResolvedMetaPage[] = [];
-
-  for (const page of rawPages) {
-    const resolved = await resolveMetaPageFromRaw(page);
-    if (resolved) {
-      pages.push(resolved);
+  if (rawPages.length === 0) {
+    const businessPages = await fetchPagesFromBusinesses(token);
+    if (businessPages.error && businessPages.items.length === 0) {
+      console.warn("Meta /me/businesses pages failed:", businessPages.error);
+    }
+    if (businessPages.items.length > 0) {
+      sources.push(`/me/businesses pages (${businessPages.items.length})`);
+      rawPages = businessPages.items;
     }
   }
 
-  if (pages.length === 0) {
-    const debug = await debugToken({ inputToken: token });
-    const granularPageIds = debug.granularPageIds;
+  let pages = await resolveRawPagesToMetaPages({ rawPages, userAccessToken: token });
 
-    if (debug.error) {
-      console.warn("Meta debug_token failed:", debug.error);
-    } else {
-      console.info("Meta token debug:", {
-        isValid: debug.isValid,
-        scopes: debug.scopes,
-        granularPageIds,
-        userId: debug.userId,
-      });
-    }
+  const debug = await debugToken({ inputToken: token });
+  const granularPageIds = debug.granularPageIds;
 
-    if (granularPageIds.length > 0) {
-      sources.push(`granular_scopes (${granularPageIds.length})`);
-      for (const pageId of granularPageIds) {
-        const resolved = await fetchPageFromUserTokenById({ pageId, userAccessToken: token });
-        if (resolved) {
-          pages.push(resolved);
-        }
-      }
-    }
+  if (debug.error) {
+    console.warn("Meta debug_token failed:", debug.error);
+  } else {
+    console.info("Meta token debug:", {
+      isValid: debug.isValid,
+      scopes: debug.scopes,
+      granularPageIds,
+      userId: debug.userId,
+    });
+  }
 
-    if (pages.length === 0) {
-      const scopeHint =
-        debug.scopes.length > 0 ? `Granted scopes: ${debug.scopes.join(", ")}.` : "";
-      const granularHint =
-        granularPageIds.length > 0
-          ? ` Token lists page IDs ${granularPageIds.join(", ")} but could not resolve Page tokens.`
-          : "";
-      const businessHint =
-        !debug.scopes.includes("business_management")
-          ? " Pages in Meta Business Suite require the business_management permission — add it to your Login for Business configuration and reconnect."
-          : "";
+  if (pages.length === 0 && granularPageIds.length > 0) {
+    pages = await resolvePagesByIds({
+      pageIds: granularPageIds,
+      userAccessToken: token,
+      sourceLabel: "granular_scopes",
+      sources,
+    });
+  }
 
-      return {
-        pages: [],
-        error:
-          "No Facebook Pages found for this token. Select your Page during Facebook login, or add business_management to your Meta app configuration.",
-        debugHint: `${scopeHint}${granularHint}${businessHint}`.trim() || null,
-      };
-    }
+  const fallbackPageIds = uniquePageIds([
+    ...(options?.fallbackPageIds ?? []),
+    getMetaFacebookPageId(),
+  ]);
+
+  if (pages.length === 0 && fallbackPageIds.length > 0) {
+    pages = await resolvePagesByIds({
+      pageIds: fallbackPageIds,
+      userAccessToken: token,
+      sourceLabel: "fallback_page_id",
+      sources,
+    });
   }
 
   if (pages.length === 0) {
+    const scopeHint =
+      debug.scopes.length > 0 ? `Granted scopes: ${debug.scopes.join(", ")}.` : "";
+    const granularHint =
+      granularPageIds.length > 0
+        ? ` Token lists page IDs ${granularPageIds.join(", ")} but could not resolve Page tokens — confirm you selected the Page during Facebook login and have CREATE_CONTENT on it.`
+        : "";
+    const businessHint =
+      !debug.scopes.includes("business_management")
+        ? " Pages in Meta Business Suite require business_management — add it to your Login for Business configuration and reconnect."
+        : rawPages.length === 0
+          ? " /me/accounts and /me/assigned_pages returned no Pages. If your Page is in Business Suite, ensure business_management is Ready for testing and reconnect."
+          : " Pages were listed but Page access tokens could not be resolved — try Advanced connect below with your Page ID.";
+    const envHint = getMetaFacebookPageId()
+      ? ` Set META_FACEBOOK_PAGE_ID=${getMetaFacebookPageId()} is configured but could not resolve a token for it.`
+      : "";
+
     return {
       pages: [],
-      error: "Could not resolve a Page access token from Meta.",
-      debugHint: sources.length > 0 ? `Tried: ${sources.join(", ")}` : null,
+      error:
+        "No Facebook Pages found for this token. Select your Page during Facebook login, or use Advanced connect with your Page ID.",
+      debugHint: `${scopeHint}${granularHint}${businessHint}${envHint}`.trim() || null,
     };
   }
 
-  return { pages, error: null, debugHint: sources.length > 0 ? `Resolved via ${sources.join(", ")}` : null };
+  return {
+    pages,
+    error: null,
+    debugHint: sources.length > 0 ? `Resolved via ${sources.join(", ")}` : null,
+  };
 }
 
 type TokenExchangeResult = {

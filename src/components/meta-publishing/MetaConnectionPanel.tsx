@@ -21,6 +21,7 @@ interface MetaConnectionPanelProps {
   configuredViaEnv: boolean;
   integrationConfigured: boolean;
   returnTo?: string;
+  oauthError?: string | null;
 }
 
 export function MetaConnectionPanel({
@@ -28,11 +29,12 @@ export function MetaConnectionPanel({
   configuredViaEnv,
   integrationConfigured,
   returnTo = "/settings/meta",
+  oauthError = null,
 }: MetaConnectionPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(oauthError === "no_pages");
   const [isPending, startTransition] = useTransition();
 
   const connected = isMetaConnectionConfigured(connection);
@@ -102,9 +104,11 @@ export function MetaConnectionPanel({
     setMessage(null);
 
     const form = new FormData(event.currentTarget);
+    const preferredPageId = String(form.get("preferredPageId") ?? "").trim();
     startTransition(async () => {
       const result = await connectMetaWithUserTokenAction({
         userAccessToken: String(form.get("userAccessToken") ?? ""),
+        preferredPageId: preferredPageId || undefined,
       });
 
       if (!result.success) {
@@ -163,6 +167,98 @@ export function MetaConnectionPanel({
   }
 
   const isDev = process.env.NODE_ENV === "development";
+  const showFallbackConnect = !configuredViaEnv && integrationConfigured && !connected;
+
+  function renderAdvancedConnect(showManualFields: boolean) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-4 rounded-xl border border-cos-border bg-cos-bg/40 p-4">
+          <div>
+            <h3 className="text-sm font-semibold text-cos-text">Connect with Page ID (fallback)</h3>
+            <p className="mt-1 text-sm text-cos-muted">
+              Use this when Facebook OAuth succeeds but CampaignOS cannot list your Page — common
+              for Pages in Meta Business Suite. Paste a user token from Graph API Explorer and your
+              Page ID.
+            </p>
+          </div>
+
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-cos-muted">
+            <li>
+              Open{" "}
+              <a
+                href="https://developers.facebook.com/tools/explorer/"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-cos-accent hover:text-cos-muted"
+              >
+                Graph API Explorer
+              </a>{" "}
+              → select your app
+            </li>
+            <li>
+              Add permissions: <code className="rounded bg-white px-1">pages_show_list</code>,{" "}
+              <code className="rounded bg-white px-1">pages_manage_posts</code>,{" "}
+              <code className="rounded bg-white px-1">business_management</code>
+            </li>
+            <li>Generate Access Token → approve → select your Page in the dialog</li>
+            <li>Copy the token, enter your Page ID below, and connect</li>
+          </ol>
+
+          <form onSubmit={handleQuickConnect} className="space-y-3">
+            <Input
+              name="preferredPageId"
+              label="Facebook Page ID"
+              placeholder="123456789012345"
+              defaultValue={connection?.facebookPageId ?? ""}
+              disabled={isPending}
+            />
+            <Input
+              name="userAccessToken"
+              label="Graph API user access token"
+              type="password"
+              placeholder="EAAM..."
+              disabled={isPending}
+            />
+            <Button type="submit" variant="secondary" disabled={isPending}>
+              {isPending ? "Connecting…" : "Connect with token + Page ID"}
+            </Button>
+          </form>
+        </div>
+
+        {showManualFields ? (
+          <form onSubmit={handleSave} className="space-y-4">
+            <Input
+              name="facebookPageId"
+              label="Facebook Page ID"
+              placeholder="123456789012345"
+              defaultValue={connection?.id === "env" ? "" : (connection?.facebookPageId ?? "")}
+              disabled={isPending}
+            />
+            <Input
+              name="instagramAccountId"
+              label="Instagram Business Account ID (optional)"
+              placeholder="17841400000000000"
+              defaultValue={
+                connection?.id === "env" ? "" : (connection?.instagramAccountId ?? "")
+              }
+              disabled={isPending}
+            />
+            <Input
+              name="pageAccessToken"
+              label="Page Access Token"
+              type="password"
+              placeholder="EAAG..."
+              disabled={isPending}
+            />
+
+            <Button type="submit" variant="secondary" disabled={isPending}>
+              {isPending ? "Saving…" : "Save manual connection"}
+            </Button>
+          </form>
+        ) : null}
+      </div>
+    );
+  }
 
   if (!configuredViaEnv && !integrationConfigured) {
     return (
@@ -280,6 +376,14 @@ export function MetaConnectionPanel({
                 Sign in with Facebook once. CampaignOS handles Page access so approved posts publish
                 automatically.
               </p>
+              {oauthError === "no_pages" ? (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  OAuth connected your Facebook account but could not resolve a Page token. Open{" "}
+                  <strong>Advanced connect</strong> below, or set{" "}
+                  <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on the
+                  server to your Page ID and click Reconnect.
+                </p>
+              ) : null}
               <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
                 <summary className="cursor-pointer font-medium text-cos-text">
                   Meta Developer Console setup (fix &ldquo;Invalid Scopes&rdquo; errors)
@@ -302,7 +406,21 @@ export function MetaConnectionPanel({
         </div>
       )}
 
-      {isDev && !configuredViaEnv && (
+      {showFallbackConnect && (
+        <div>
+          <button
+            type="button"
+            className="text-sm font-medium text-cos-accent hover:text-cos-muted"
+            onClick={() => setShowAdvanced((value) => !value)}
+          >
+            {showAdvanced ? "Hide advanced connect" : "Advanced connect (Page ID + token)"}
+          </button>
+
+          {showAdvanced && <div className="mt-4">{renderAdvancedConnect(isDev)}</div>}
+        </div>
+      )}
+
+      {isDev && !configuredViaEnv && connected && (
         <div>
           <button
             type="button"
@@ -312,85 +430,7 @@ export function MetaConnectionPanel({
             {showAdvanced ? "Hide advanced / developer setup" : "Advanced / Developer setup"}
           </button>
 
-          {showAdvanced && (
-            <div className="mt-4 space-y-6">
-              <div className="space-y-4 rounded-xl border border-cos-border bg-cos-bg/40 p-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-cos-text">Quick connect (dev)</h3>
-                  <p className="mt-1 text-sm text-cos-muted">
-                    Paste the token from Graph API Explorer. CampaignOS finds your Page, swaps in
-                    the correct Page token, and saves everything for you.
-                  </p>
-                </div>
-
-                <ol className="list-decimal space-y-1 pl-5 text-sm text-cos-muted">
-                  <li>
-                    Open{" "}
-                    <a
-                      href="https://developers.facebook.com/tools/explorer/"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-cos-accent hover:text-cos-muted"
-                    >
-                      Graph API Explorer
-                    </a>{" "}
-                    → select your app
-                  </li>
-                  <li>
-                    Add permissions: <code className="rounded bg-white px-1">pages_show_list</code>,{" "}
-                    <code className="rounded bg-white px-1">pages_read_engagement</code>,{" "}
-                    <code className="rounded bg-white px-1">pages_manage_posts</code>,{" "}
-                    <code className="rounded bg-white px-1">business_management</code>
-                  </li>
-                  <li>Generate Access Token → approve → select your Page</li>
-                  <li>Copy the token and paste it below</li>
-                </ol>
-
-                <form onSubmit={handleQuickConnect} className="space-y-3">
-                  <Input
-                    name="userAccessToken"
-                    label="Graph API access token"
-                    type="password"
-                    placeholder="EAAM..."
-                    disabled={isPending}
-                  />
-                  <Button type="submit" variant="secondary" disabled={isPending}>
-                    {isPending ? "Connecting…" : "Connect with token"}
-                  </Button>
-                </form>
-              </div>
-
-              <form onSubmit={handleSave} className="space-y-4">
-                <Input
-                  name="facebookPageId"
-                  label="Facebook Page ID"
-                  placeholder="123456789012345"
-                  defaultValue={connection?.id === "env" ? "" : (connection?.facebookPageId ?? "")}
-                  disabled={isPending}
-                />
-                <Input
-                  name="instagramAccountId"
-                  label="Instagram Business Account ID (optional)"
-                  placeholder="17841400000000000"
-                  defaultValue={
-                    connection?.id === "env" ? "" : (connection?.instagramAccountId ?? "")
-                  }
-                  disabled={isPending}
-                />
-                <Input
-                  name="pageAccessToken"
-                  label="Page Access Token"
-                  type="password"
-                  placeholder="EAAG..."
-                  disabled={isPending}
-                />
-
-                <Button type="submit" variant="secondary" disabled={isPending}>
-                  {isPending ? "Saving…" : "Save manual connection"}
-                </Button>
-              </form>
-            </div>
-          )}
+          {showAdvanced && <div className="mt-4">{renderAdvancedConnect(true)}</div>}
         </div>
       )}
 

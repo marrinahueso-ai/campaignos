@@ -5,6 +5,7 @@ import {
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
 import {
+  getMetaFacebookPageId,
   getMetaRedirectUri,
   isMetaIntegrationConfigured,
 } from "@/lib/meta-publishing/config.server";
@@ -76,12 +77,22 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget));
   }
 
-  const { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(longLived.accessToken);
+  const preferredPageId =
+    request.cookies.get(META_OAUTH_PAGE_ID_COOKIE)?.value?.trim() ||
+    request.nextUrl.searchParams.get("pageId")?.trim() ||
+    getMetaFacebookPageId() ||
+    undefined;
+
+  const { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(
+    longLived.accessToken,
+    { fallbackPageIds: preferredPageId ? [preferredPageId] : undefined },
+  );
   if (pagesError || pages.length === 0) {
     const tokenDebug = await debugToken({ inputToken: longLived.accessToken });
     console.error("Meta OAuth callback: no pages resolved", {
       pagesError,
       debugHint,
+      preferredPageId,
       tokenValid: tokenDebug.isValid,
       scopes: tokenDebug.scopes,
       granularPageIds: tokenDebug.granularPageIds,
@@ -89,13 +100,12 @@ export async function GET(request: NextRequest) {
       debugError: tokenDebug.error,
     });
     redirectTarget.searchParams.set("error", "no_pages");
+    if (debugHint) {
+      redirectTarget.searchParams.set("hint", debugHint.slice(0, 480));
+    }
     return clearOAuthCookies(NextResponse.redirect(redirectTarget));
   }
 
-  const preferredPageId =
-    request.cookies.get(META_OAUTH_PAGE_ID_COOKIE)?.value?.trim() ||
-    request.nextUrl.searchParams.get("pageId")?.trim() ||
-    undefined;
   const saved = await saveMetaConnectionFromOAuth({
     organizationId: organization.id,
     pages,

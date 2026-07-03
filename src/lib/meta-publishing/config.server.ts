@@ -45,3 +45,9 @@ export function getMetaOAuthConfigId(): string | null {
   const configId = process.env.META_OAUTH_CONFIG_ID?.trim();
   return configId || null;
 }
+
+/** Known Facebook Page ID for OAuth fallback when list endpoints return empty. */
+export function getMetaFacebookPageId(): string | null {
+  const pageId = process.env.META_FACEBOOK_PAGE_ID?.trim();
+  return pageId || null;
+}

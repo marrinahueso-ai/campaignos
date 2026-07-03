@@ -174,7 +174,11 @@ export async function connectMetaWithUserTokenAction(input: {
       return { success: false, error: "Paste the access token from Graph API Explorer." };
     }
 
-    const { pages, error } = await fetchPagesFromUserToken(token);
+    const { pages, error } = await fetchPagesFromUserToken(token, {
+      fallbackPageIds: input.preferredPageId?.trim()
+        ? [input.preferredPageId.trim()]
+        : undefined,
+    });
     if (error) {
       return { success: false, error };
     }
