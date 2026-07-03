@@ -93,7 +93,7 @@ function FeaturePreviewSlideContent({
         </div>
       );
     case "planning-hub":
-      return <FeaturePreviewPlanningHubSlide />;
+      return <FeaturePreviewPlanningHubSlide carousel={carousel} />;
     case "workflow":
       return <FeaturePreviewWorkflowSlide />;
     case "calendar":

@@ -8,9 +8,15 @@ import {
   previewPlanningHubOwnership,
 } from "@/lib/marketing/feature-preview-fixtures";
 
-export function FeaturePreviewPlanningHubSlide() {
+export function FeaturePreviewPlanningHubSlide({
+  carousel = false,
+}: {
+  carousel?: boolean;
+}) {
   return (
-    <div className="pointer-events-none">
+    <div
+      className={carousel ? "pointer-events-none origin-top scale-[0.97]" : "pointer-events-none"}
+    >
       <EventPlaybookHubShell
         event={previewPlanningHubEvent}
         artwork={previewPlanningHubArtwork}

@@ -3,7 +3,7 @@
 import { ArtworkV2PickerScreen } from "@/components/artwork-v2/ArtworkV2PickerScreen";
 import type { ArtworkV2PickerEntry } from "@/components/artwork-v2/ArtworkV2PickerScreen";
 import type { MilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
-import { PREVIEW_SPRING_ARTWORK } from "@/lib/marketing/feature-preview-fixtures";
+import { PREVIEW_BACK_TO_SCHOOL_ARTWORK } from "@/lib/marketing/feature-preview-fixtures";
 
 const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
   {
@@ -17,7 +17,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "facebook",
     channelLabel: "Facebook",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "save-the-date-feed.png",
   },
   {
@@ -31,7 +31,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "instagram",
     channelLabel: "Instagram",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "save-the-date-story.png",
   },
   {
@@ -45,7 +45,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "facebook",
     channelLabel: "Facebook",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "3-days-out-feed.png",
   },
   {
@@ -59,7 +59,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "instagram",
     channelLabel: "Instagram",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "3-days-out-story.png",
   },
   {
@@ -73,7 +73,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "facebook",
     channelLabel: "Facebook",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "day-before-feed.png",
   },
   {
@@ -87,7 +87,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "instagram",
     channelLabel: "Instagram",
     isApproved: true,
-    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
     downloadFilename: "day-before-story.png",
   },
   {

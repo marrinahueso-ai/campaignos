@@ -436,8 +436,8 @@ export type FeaturePreviewSlug =
 
 export const FEATURE_PREVIEW_SLUGS: FeaturePreviewSlug[] = [
   "dashboard",
-  "planning-hub",
   "workflow",
+  "planning-hub",
   "calendar",
   "heatmap",
   "artwork",
@@ -451,7 +451,6 @@ export function featureScreenshotPath(slug: FeaturePreviewSlug): string {
 
 /** Slugs that use pre-recorded screen capture videos in the features carousel. */
 export const FEATURE_VIDEO_SLUGS = [
-  "planning-hub",
   "calendar",
 ] as const satisfies readonly FeaturePreviewSlug[];
 
@@ -914,11 +913,11 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
 export const previewPublishingQueue: PlanningCalendarItem[] = [
   createPreviewPlanningItem({
     id: "q1",
-    eventId: "e1",
-    eventTitle: PREVIEW_EVENT_TITLE,
+    eventId: "preview-hub-event",
+    eventTitle: PREVIEW_HUB_EVENT_TITLE,
     title: "Day Before",
     timelineStepTitle: "Day Before",
-    scheduledDate: "2026-07-17",
+    scheduledDate: "2026-08-13",
     channel: "facebook",
     communicationType: "meta_milestone",
     publishStatus: "ready",
@@ -929,11 +928,11 @@ export const previewPublishingQueue: PlanningCalendarItem[] = [
 export const previewPublishingScheduled: PlanningCalendarItem[] = [
   createPreviewPlanningItem({
     id: "s1",
-    eventId: "e1",
-    eventTitle: PREVIEW_EVENT_TITLE,
-    title: "3 Days Out",
-    timelineStepTitle: "3 Days Out",
-    scheduledDate: "2026-07-15",
+    eventId: "preview-hub-event",
+    eventTitle: PREVIEW_HUB_EVENT_TITLE,
+    title: "1 Week Out",
+    timelineStepTitle: "1 Week Out",
+    scheduledDate: "2026-08-07",
     channel: "instagram",
     communicationType: "meta_milestone",
     publishStatus: "scheduled",
@@ -944,11 +943,11 @@ export const previewPublishingScheduled: PlanningCalendarItem[] = [
 export const previewPublishingPublished: PlanningCalendarItem[] = [
   createPreviewPlanningItem({
     id: "p1",
-    eventId: "e1",
-    eventTitle: PREVIEW_EVENT_TITLE,
+    eventId: "preview-hub-event",
+    eventTitle: PREVIEW_HUB_EVENT_TITLE,
     title: "Save the Date",
     timelineStepTitle: "Save the Date",
-    scheduledDate: "2026-06-15",
+    scheduledDate: "2026-07-12",
     channel: "facebook",
     communicationType: "meta_milestone",
     publishStatus: "published",

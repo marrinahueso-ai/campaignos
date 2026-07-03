@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import {
-  PREVIEW_EVENT_TITLE,
+  PREVIEW_HUB_EVENT_TITLE,
   PREVIEW_PRESIDENT_NAME,
   PREVIEW_SCHOOL_NAME,
   PREVIEW_USER_FULL_NAME,
@@ -62,7 +62,7 @@ export function FeaturePreviewApprovalsSlide() {
           <CheckCircle2 className="mt-0.5 h-4 w-4 text-cos-muted" strokeWidth={1.5} />
           <div>
             <p className="text-sm font-medium text-cos-text">
-              {PREVIEW_EVENT_TITLE} · Feed caption
+              {PREVIEW_HUB_EVENT_TITLE} · Feed caption
             </p>
             <p className="mt-1 text-sm text-cos-muted">
               Waiting on {PREVIEW_USER_ROLE} — {PREVIEW_USER_FULL_NAME}

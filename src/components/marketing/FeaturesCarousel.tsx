@@ -274,9 +274,7 @@ export function FeaturesCarousel() {
                   aria-current={isActive ? "true" : undefined}
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">
-                    {feature.title.split(",")[0]?.split("—")[0]?.trim()}
-                  </span>
+                  <span className="hidden sm:inline">{feature.navLabel}</span>
                   <span className="sm:hidden">{index + 1}</span>
                 </button>
               );

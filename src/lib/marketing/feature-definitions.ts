@@ -17,6 +17,8 @@ export type FeatureMediaMode = "live" | "video";
 export interface FeatureDefinition {
   id: FeaturePreviewSlug;
   icon: LucideIcon;
+  /** Short label for carousel nav pills */
+  navLabel: string;
   title: string;
   summary: string;
   highlights: string[];
@@ -35,9 +37,10 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
   withMedia({
     id: "dashboard",
     icon: LayoutDashboard,
-    title: "A dashboard that feels like a friend",
+    navLabel: "Today",
+    title: "Start your day on Today",
     summary:
-      "Open CampaignOS and know exactly what deserves your attention — without a wall of tasks.",
+      "Open CampaignOS and know exactly what deserves your attention — Next Up, pulse snapshots, and your week at a glance.",
     highlights: ["Next Up", "Pulse snapshots", "Week at a glance"],
     details: [
       "Next Up highlights the one thing to focus on right now",
@@ -46,21 +49,9 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
     ],
   }),
   withMedia({
-    id: "planning-hub",
-    icon: LayoutGrid,
-    title: "Event planning hub",
-    summary:
-      "Every campaign gets a home — overview, tasks, files, and social in one place.",
-    highlights: ["Event overview", "Planning checklist", "Quick links"],
-    details: [
-      "See date, budget, attendance, and committee at a glance",
-      "Track planning tasks with progress toward event day",
-      "Jump to artwork, schedule, or settings from quick links",
-    ],
-  }),
-  withMedia({
     id: "workflow",
     icon: Megaphone,
+    navLabel: "Campaigns",
     title: "Campaigns at a glance",
     summary:
       "Every full campaign and reminder plan in one grid — thumbnails, chairs, and one click to the planning hub.",
@@ -72,8 +63,23 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
     ],
   }),
   withMedia({
+    id: "planning-hub",
+    icon: LayoutGrid,
+    navLabel: "Planning hub",
+    title: "Event planning hub",
+    summary:
+      "Drill into one event — overview, tasks, files, and social in one place.",
+    highlights: ["Event overview", "Planning checklist", "Quick links"],
+    details: [
+      "See date, budget, attendance, and committee at a glance",
+      "Track planning tasks with progress toward event day",
+      "Jump to artwork, schedule, or settings from quick links",
+    ],
+  }),
+  withMedia({
     id: "calendar",
     icon: CalendarRange,
+    navLabel: "Calendar",
     title: "One calendar for the whole school year",
     summary:
       "Events, post deadlines, and reminders — layered on a month view dense enough to scan at a glance.",
@@ -87,6 +93,7 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
   withMedia({
     id: "heatmap",
     icon: Flame,
+    navLabel: "Heatmap",
     title: "Posting-time heatmap",
     summary:
       "See when parents actually engage — schedule posts in the green zones, not guesswork.",
@@ -100,6 +107,7 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
   withMedia({
     id: "artwork",
     icon: ImageIcon,
+    navLabel: "Artwork",
     title: "Artwork studio for every milestone",
     summary:
       "Create feed and story graphics in one flow — no Canva juggling unless you want it.",
@@ -113,6 +121,7 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
   withMedia({
     id: "approvals",
     icon: Users,
+    navLabel: "Approvals",
     title: "Team roster & approvals",
     summary:
       "Upload your board structure once. Route captions and posts to the right person.",
@@ -126,6 +135,7 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
   withMedia({
     id: "publish",
     icon: Send,
+    navLabel: "Publish",
     title: "Publish to Facebook & Instagram",
     summary:
       "Schedule Meta posts from the same place you planned them — feed and story together.",

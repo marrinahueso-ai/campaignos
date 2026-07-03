@@ -17,21 +17,6 @@ const tmpDir = path.join(root, ".tmp/feature-videos");
 /** Maps carousel video slug → record scenario route. */
 const RECORDINGS = [
   {
-    slug: "planning-hub",
-    scenario: "campaigns-flow",
-    viewport: { width: 1280, height: 960 },
-    run: async (page) => {
-      await page.waitForSelector('[data-record-step="campaigns"]', { timeout: 30_000 });
-      await page.waitForTimeout(1800);
-      const openHub = page.locator('[data-record-target="open-planning-hub"]');
-      await openHub.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(400);
-      await openHub.click({ timeout: 10_000 });
-      await page.waitForSelector('[data-record-step="planning-hub"]', { timeout: 10_000 });
-      await page.waitForTimeout(9000);
-    },
-  },
-  {
     slug: "calendar",
     scenario: "calendar-month",
     viewport: { width: 1280, height: 960 },
