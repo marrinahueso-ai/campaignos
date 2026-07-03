@@ -3,6 +3,32 @@ import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles"
 import type { PlanningItemType } from "@/types/communications-calendar";
 import type { EventAssetType } from "@/types/event-workspace";
 
+const RESCHEDULABLE_META_SLOT_STATUSES = ["scheduled", "approved"] as const;
+
+function parseMetaMilestoneRelativeDay(
+  sourceId: string,
+  eventId: string,
+): number | null {
+  const prefix = `${eventId}-`;
+  if (!sourceId.startsWith(prefix)) {
+    return null;
+  }
+
+  const relativeDay = Number.parseInt(sourceId.slice(prefix.length), 10);
+  return Number.isFinite(relativeDay) ? relativeDay : null;
+}
+
+function buildRescheduledTimestamp(
+  newDate: string,
+  existingScheduledFor: string | null,
+): string {
+  if (existingScheduledFor?.includes("T")) {
+    return `${newDate}${existingScheduledFor.slice(existingScheduledFor.indexOf("T"))}`;
+  }
+
+  return `${newDate}T10:00:00.000Z`;
+}
+
 export async function reschedulePlanningItem(
   sourceType: PlanningItemType,
   sourceId: string,
@@ -134,6 +160,58 @@ export async function reschedulePlanningItem(
         .update({ scheduled_for: scheduledFor, updated_at: now })
         .eq("id", sourceId);
       return !error;
+    }
+    case "meta_milestone": {
+      const eventId = context?.eventId;
+      if (!eventId) {
+        return false;
+      }
+
+      const relativeDay = parseMetaMilestoneRelativeDay(sourceId, eventId);
+      if (relativeDay === null) {
+        return false;
+      }
+
+      const { data: slots, error: fetchError } = await supabase
+        .from("meta_publication_slots")
+        .select("id, status, scheduled_for")
+        .eq("event_id", eventId)
+        .eq("relative_day", relativeDay);
+
+      if (fetchError || !slots?.length) {
+        return false;
+      }
+
+      const updatable = slots.filter((slot) =>
+        RESCHEDULABLE_META_SLOT_STATUSES.includes(
+          slot.status as (typeof RESCHEDULABLE_META_SLOT_STATUSES)[number],
+        ),
+      );
+
+      if (!updatable.length) {
+        return false;
+      }
+
+      const timeReference =
+        updatable.find((slot) => slot.scheduled_for)?.scheduled_for ??
+        slots.find((slot) => slot.scheduled_for)?.scheduled_for ??
+        null;
+      const scheduledFor = buildRescheduledTimestamp(newDate, timeReference);
+
+      await supabase
+        .from("event_communication_steps")
+        .update({ due_date: newDate, updated_at: now })
+        .eq("event_id", eventId)
+        .eq("relative_day", relativeDay);
+
+      const { error: updateError } = await supabase
+        .from("meta_publication_slots")
+        .update({ scheduled_for: scheduledFor, updated_at: now })
+        .eq("event_id", eventId)
+        .eq("relative_day", relativeDay)
+        .in("status", [...RESCHEDULABLE_META_SLOT_STATUSES]);
+
+      return !updateError;
     }
     default:
       return false;

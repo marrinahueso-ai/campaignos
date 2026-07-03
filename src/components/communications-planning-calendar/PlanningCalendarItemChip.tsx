@@ -60,6 +60,7 @@ export function PlanningCalendarItemChip({
   const channelLabel = getPrimaryChannelLabel(item);
   const isMetaPost = isMetaMilestoneItem(item);
   const displayTitle = getCalendarItemDisplayTitle(item);
+  const isDraggable = displayStatus !== "published";
 
   function handleDragStart(event: React.DragEvent<HTMLButtonElement>) {
     event.dataTransfer.setData(DRAG_MIME, serializeDragPayload(item));
@@ -69,11 +70,13 @@ export function PlanningCalendarItemChip({
   return (
     <button
       type="button"
-      draggable
-      onDragStart={handleDragStart}
+      draggable={isDraggable}
+      onDragStart={isDraggable ? handleDragStart : undefined}
       onClick={() => onSelect?.(item)}
       className={cn(
-        "group w-full cursor-grab rounded-lg border text-left transition-all duration-200 active:cursor-grabbing",
+        "group w-full rounded-lg border text-left transition-all duration-200",
+        isDraggable && "cursor-grab active:cursor-grabbing",
+        !isDraggable && "cursor-pointer",
         "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
         statusStyles.bg,
         statusStyles.border,
