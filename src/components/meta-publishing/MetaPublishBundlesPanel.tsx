@@ -126,8 +126,25 @@ const SURFACE_OPTIONS: { value: MetaPublishSurfaces; label: string }[] = [
   { value: "story_only", label: "Story only" },
 ];
 
-function surfaceOptionLabel(surfaces: MetaPublishSurfaces): string {
-  return SURFACE_OPTIONS.find((option) => option.value === surfaces)?.label ?? "Feed + Story";
+
+function publishTargetHint(
+  surfaces: MetaPublishSurfaces,
+  targets: MetaPublishBundle["targets"],
+): string {
+  if (targets.length === 0) {
+    return "";
+  }
+
+  switch (surfaces) {
+    case "both":
+      return "Facebook & Instagram · feed and story";
+    case "feed_only":
+      return "Facebook & Instagram feed";
+    case "story_only":
+      return "Facebook & Instagram story";
+    default:
+      return targets.map((target) => target.label).join(" · ");
+  }
 }
 
 function isMilestoneComplete(
@@ -364,7 +381,7 @@ export function MetaPublishBundleCard({
 
       {expanded && (
         <>
-          <div className="grid gap-4 p-5 sm:grid-cols-[auto_1fr]">
+          <div className="grid gap-5 p-5 sm:grid-cols-[auto_1fr]">
             <div className="flex gap-3">
               {showFeed && (
                 <ArtworkLightboxThumbnail
@@ -390,7 +407,7 @@ export function MetaPublishBundleCard({
               )}
             </div>
 
-            <div className="min-w-0 space-y-3">
+            <div className="min-w-0 space-y-4">
               {isSkipped ? (
                 <p className="text-sm text-cos-muted">
                   This milestone is skipped — nothing will go out for{" "}
@@ -399,9 +416,9 @@ export function MetaPublishBundleCard({
               ) : (
                 <>
                   {isMetaPost && onSurfacesChange && (
-                    <div>
-                      <p className="cos-section-title">Publish surfaces</p>
-                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <div className="space-y-2">
+                      <p className="cos-section-title">Where to publish</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {SURFACE_OPTIONS.map((option) => (
                           <button
                             key={option.value}
@@ -419,32 +436,41 @@ export function MetaPublishBundleCard({
                           </button>
                         ))}
                       </div>
-                    </div>
-                  )}
-
-                  {isMetaPost && bundle.targets.length > 0 && (
-                    <div>
-                      <p className="cos-section-title">Publishes to</p>
-                      <ul className="mt-1 flex flex-wrap gap-1.5">
-                        {bundle.targets.map((target) => (
-                          <li
-                            key={`${target.platform}-${target.placement}`}
-                            className="rounded-full border border-cos-border bg-cos-bg px-2 py-0.5 text-xs text-cos-text"
-                          >
-                            {target.label}
-                          </li>
-                        ))}
-                      </ul>
-                      {onSurfacesChange && (
-                        <p className="mt-1 text-xs text-cos-muted">
-                          {surfaceOptionLabel(bundle.metaPublishSurfaces)}
+                      {bundle.targets.length > 0 && (
+                        <p className="text-xs text-cos-muted">
+                          {publishTargetHint(bundle.metaPublishSurfaces, bundle.targets)}
                         </p>
                       )}
+                      {showStory && onStoryManualToggle && (
+                        <label className="flex min-h-10 cursor-pointer items-center gap-2 pt-1 text-sm text-cos-text">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-cos-border"
+                            checked={bundle.storyManualPublish}
+                            disabled={storyManualPending || surfacesPending || publishPending}
+                            onChange={(event) => onStoryManualToggle(event.target.checked)}
+                          />
+                          <span>I&apos;ll post the story manually from my phone</span>
+                        </label>
+                      )}
+                      {showStory &&
+                        bundle.metaPublishSurfaces === "story_only" &&
+                        !bundle.storyManualPublish && (
+                          <p className="text-xs text-cos-muted">
+                            Story-only works best with manual posting for stickers and links.
+                          </p>
+                        )}
                     </div>
                   )}
 
-                  {showCaptionPreview && !captionEdit && isMetaPost && (
-                    <div className="space-y-2">
+                  {isMetaPost && !onSurfacesChange && bundle.targets.length > 0 && (
+                    <p className="text-xs text-cos-muted">
+                      {publishTargetHint(bundle.metaPublishSurfaces, bundle.targets)}
+                    </p>
+                  )}
+
+                  {showCaptionPreview && !captionEdit && isMetaPost && !showPostKitSection && (
+                    <div className="space-y-2 border-t border-cos-border pt-4">
                       {showFeed && (
                         <div>
                           <p className="cos-section-title">Feed caption</p>
@@ -482,10 +508,7 @@ export function MetaPublishBundleCard({
                       bundle={bundle}
                       milestone={milestone}
                       eventLink={eventLink}
-                      prominent={bundle.storyManualPublish && showStory}
-                      showManualToggle={Boolean(onStoryManualToggle) && showStory}
-                      onManualToggle={onStoryManualToggle}
-                      manualTogglePending={storyManualPending}
+                      defaultExpanded={bundle.storyManualPublish && showStory}
                     />
                   )}
                 </>
