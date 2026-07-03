@@ -32,7 +32,7 @@ export function PlanningCalendarMonthView({
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { isDragging, setIsDragging, handleDragOver } = useCalendarDragState();
+  const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = groupItemsByDate(items);
@@ -81,26 +81,21 @@ export function PlanningCalendarMonthView({
             return (
               <div
                 key={date}
+                onDragOver={(event) => {
+                  handleDragOver(event);
+                  setDropTarget(date);
+                }}
+                onDragLeave={() =>
+                  setDropTarget((current) => (current === date ? null : current))
+                }
+                onDrop={(event) => handleDrop(date, event)}
                 className={cn(
                   "relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0 transition-colors duration-200",
                   !inMonth && "bg-cos-bg/40",
                   dropTarget === date && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
                 )}
               >
-                <div
-                  aria-hidden={!isDragging}
-                  onDragOver={(event) => {
-                    handleDragOver(event);
-                    setDropTarget(date);
-                  }}
-                  onDragLeave={() =>
-                    setDropTarget((current) => (current === date ? null : current))
-                  }
-                  onDrop={(event) => handleDrop(date, event)}
-                  className="calendar-drop-target absolute inset-0 z-30"
-                />
-                <div className="relative z-10">
-                  <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex items-center justify-between">
                     <span
                       className={cn(
                         "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
@@ -127,7 +122,6 @@ export function PlanningCalendarMonthView({
                     compact
                     itemLimit={5}
                   />
-                </div>
               </div>
             );
           })}

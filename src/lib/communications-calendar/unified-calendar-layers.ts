@@ -104,6 +104,13 @@ export function getDaySection(item: PlanningCalendarItem): CalendarDaySection {
   return "communications";
 }
 
+/** Draft, scheduled, and overdue items can be rescheduled; published cannot. */
+export function isPlanningItemDraggable(
+  item: PlanningCalendarItem & { isOverdue?: boolean },
+): boolean {
+  return getDisplayStatus(item) !== "published";
+}
+
 export function getDisplayStatus(
   item: PlanningCalendarItem & { isOverdue?: boolean },
 ): CalendarDisplayStatus {

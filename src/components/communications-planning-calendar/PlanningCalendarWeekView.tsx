@@ -79,7 +79,7 @@ export function PlanningCalendarWeekView({
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { isDragging, setIsDragging, handleDragOver } = useCalendarDragState();
+  const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
@@ -178,45 +178,39 @@ export function PlanningCalendarWeekView({
                 )}
               >
                 <div
+                  onDragOver={(event) => handleCellDragOver(date, "allday", event)}
+                  onDragLeave={() =>
+                    setDropTarget((current) =>
+                      matchesDropTarget(current, date, "allday") ? null : current,
+                    )
+                  }
+                  onDrop={(event) => handleDrop(date, "allday", event)}
                   className={cn(
-                    "relative min-h-16 border-b border-cos-border/70 transition-colors",
+                    "relative min-h-16 border-b border-cos-border/70 p-1.5 transition-colors",
                     activeDropKey === `${date}:allday` &&
                       "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
                   )}
                 >
-                  <div
-                    aria-hidden={!isDragging}
-                    onDragOver={(event) => handleCellDragOver(date, "allday", event)}
-                    onDragLeave={() =>
-                      setDropTarget((current) =>
-                        matchesDropTarget(current, date, "allday") ? null : current,
-                      )
-                    }
-                    onDrop={(event) => handleDrop(date, "allday", event)}
-                    className="calendar-drop-target absolute inset-0 z-30"
-                  />
-                  <div className="relative z-10 p-1.5">
-                    {placement.allDay.length > 0 ? (
-                      <div className="space-y-1">
-                        {placement.allDay.slice(0, 4).map((item) => (
-                          <PlanningCalendarItemChip
-                            key={item.id}
-                            item={item}
-                            compact
-                            onSelect={onSelectItem}
-                            onDragError={setToastMessage}
-                          />
-                        ))}
-                        {placement.allDay.length > 4 && (
-                          <p className="px-1 text-[10px] font-medium text-cos-primary">
-                            +{placement.allDay.length - 4} more
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="py-4 text-center text-[10px] text-cos-border">Drop here</p>
-                    )}
-                  </div>
+                  {placement.allDay.length > 0 ? (
+                    <div className="space-y-1">
+                      {placement.allDay.slice(0, 4).map((item) => (
+                        <PlanningCalendarItemChip
+                          key={item.id}
+                          item={item}
+                          compact
+                          onSelect={onSelectItem}
+                          onDragError={setToastMessage}
+                        />
+                      ))}
+                      {placement.allDay.length > 4 && (
+                        <p className="px-1 text-[10px] font-medium text-cos-primary">
+                          +{placement.allDay.length - 4} more
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="py-4 text-center text-[10px] text-cos-border">Drop here</p>
+                  )}
                 </div>
 
                 {HOUR_ROWS.map((hour) => {
@@ -233,6 +227,13 @@ export function PlanningCalendarWeekView({
                   return (
                     <div
                       key={`${date}-${hour}`}
+                      onDragOver={(event) => handleCellDragOver(date, hour, event)}
+                      onDragLeave={() =>
+                        setDropTarget((current) =>
+                          matchesDropTarget(current, date, hour) ? null : current,
+                        )
+                      }
+                      onDrop={(event) => handleDrop(date, hour, event)}
                       className={cn(
                         "relative h-12 border-b border-cos-border/60 transition-colors",
                         isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
@@ -245,19 +246,8 @@ export function PlanningCalendarWeekView({
                             : undefined
                       }
                     >
-                      <div
-                        aria-hidden={!isDragging}
-                        onDragOver={(event) => handleCellDragOver(date, hour, event)}
-                        onDragLeave={() =>
-                          setDropTarget((current) =>
-                            matchesDropTarget(current, date, hour) ? null : current,
-                          )
-                        }
-                        onDrop={(event) => handleDrop(date, hour, event)}
-                        className="calendar-drop-target absolute inset-0 z-30"
-                      />
                       {hourItems.length > 0 && (
-                        <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
+                        <div className="absolute inset-x-0 top-0 space-y-0.5 p-0.5">
                           {hourItems.slice(0, 2).map((item) => (
                             <PlanningCalendarItemChip
                               key={item.id}
@@ -270,7 +260,7 @@ export function PlanningCalendarWeekView({
                         </div>
                       )}
                       {isDropTarget && hourItems.length === 0 && (
-                        <p className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center text-[10px] font-medium text-indigo-600">
+                        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-medium text-indigo-600">
                           {formatHourLabel(hour)}
                         </p>
                       )}
