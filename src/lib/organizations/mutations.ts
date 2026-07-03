@@ -1,9 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { createOrganizationMembership } from "@/lib/auth/membership-mutations";
 import { getAuthUser } from "@/lib/auth/queries";
+import { validateCalendarSubscribeUrl } from "@/lib/calendar-import/fetch-subscribe-feed";
 import { seedOrganizationPlaybookDefaults } from "@/lib/playbooks/mutations";
 import { seedOrganizationWorkspace } from "@/lib/organization-workspace/seed";
-import { ensureSchoolYearForOrganization } from "@/lib/school-years/mutations";
+import {
+  ensureSchoolYearForOrganization,
+  updateSchoolYearSubscribeUrl,
+} from "@/lib/school-years/mutations";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import {
   getCalendarFileType,
   mapBrandAssetsRow,
@@ -90,6 +95,19 @@ export async function createSchoolProfile(
     label: input.schoolYear?.trim() || "Current school year",
     activate: true,
   });
+
+  if (input.calendarSubscribeUrl) {
+    const validation = validateCalendarSubscribeUrl(input.calendarSubscribeUrl);
+    if (validation.valid) {
+      const activeSchoolYear = await getActiveSchoolYear(organizationId);
+      if (activeSchoolYear) {
+        await updateSchoolYearSubscribeUrl(
+          activeSchoolYear.id,
+          validation.normalized || null,
+        );
+      }
+    }
+  }
 
   const authUser = await getAuthUser();
   if (authUser) {

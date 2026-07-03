@@ -188,6 +188,8 @@ export interface SchoolSetupInput {
   principal: string | null;
   schoolWebsite: string | null;
   ptoWebsite: string | null;
+  timezone: string;
+  calendarSubscribeUrl: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   fontFamily: string | null;

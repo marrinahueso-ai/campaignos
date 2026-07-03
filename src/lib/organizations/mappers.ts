@@ -65,6 +65,7 @@ export function toOrganizationInsert(input: SchoolSetupInput) {
     principal: input.principal,
     school_website: input.schoolWebsite,
     pto_website: input.ptoWebsite,
+    timezone: input.timezone,
   };
 }
 
