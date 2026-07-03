@@ -9,6 +9,7 @@ import {
 import {
   createMetaOAuthState,
   getMetaAppId,
+  getMetaFacebookPageId,
   getMetaOAuthConfigId,
   getMetaRedirectUri,
   isMetaIntegrationConfigured,
@@ -23,7 +24,10 @@ export async function GET(request: NextRequest) {
 
   const returnTo = request.nextUrl.searchParams.get("returnTo") ?? "/settings/meta";
   const safeReturnTo = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/meta";
-  const pageId = request.nextUrl.searchParams.get("pageId")?.trim() ?? "";
+  const pageId =
+    request.nextUrl.searchParams.get("pageId")?.trim() ||
+    getMetaFacebookPageId() ||
+    "";
   const authType = request.nextUrl.searchParams.get("auth_type")?.trim() ?? "";
 
   const state = createMetaOAuthState();

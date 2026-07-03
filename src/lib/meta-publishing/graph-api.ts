@@ -302,39 +302,36 @@ async function resolveMetaPageFromRaw(
   };
 }
 
-async function fetchPageFromUserTokenById(input: {
-  pageId: string;
-  userAccessToken: string;
-}): Promise<ResolvedMetaPage | null> {
-  const result = await graphGet(`/${input.pageId}`, {
-    fields: "id,name,access_token,instagram_business_account",
-    access_token: input.userAccessToken.trim(),
-  });
+type GranularScopeEntry = {
+  scope?: string;
+  target_ids?: string[];
+  target_id?: string;
+};
 
-  if (!result.ok) {
-    console.warn(`Meta GET /${input.pageId} (page token) failed:`, result.error);
-    return null;
+function isPagePermissionScope(scope: string): boolean {
+  // instagram_* target_ids are IG account IDs, not Page IDs.
+  return /^pages[_/]/.test(scope) || scope === "pages";
+}
+
+function targetIdsFromGranularEntry(entry: GranularScopeEntry): string[] {
+  const ids: string[] = [];
+  for (const targetId of entry.target_ids ?? []) {
+    const id = String(targetId ?? "").trim();
+    if (id) {
+      ids.push(id);
+    }
   }
 
-  const pageToken = String(result.data.access_token ?? "");
-  if (!pageToken) {
-    console.warn(`Meta GET /${input.pageId} returned no access_token for user token.`);
-    return null;
+  const singular = String(entry.target_id ?? "").trim();
+  if (singular) {
+    ids.push(singular);
   }
 
-  const linkedIg =
-    (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
-
-  return {
-    id: String(result.data.id ?? input.pageId),
-    name: String(result.data.name ?? "Facebook Page"),
-    accessToken: pageToken,
-    instagramAccountId: linkedIg,
-  };
+  return ids;
 }
 
 function pageIdsFromGranularScopes(
-  granularScopes: Array<{ scope?: string; target_ids?: string[] }> | undefined,
+  granularScopes: GranularScopeEntry[] | undefined,
 ): string[] {
   if (!granularScopes?.length) {
     return [];
@@ -343,19 +340,70 @@ function pageIdsFromGranularScopes(
   const pageIds = new Set<string>();
   for (const entry of granularScopes) {
     const scope = String(entry.scope ?? "");
-    // Only pages_* scopes carry Facebook Page IDs. instagram_* target_ids are IG account IDs.
-    if (!/^pages_/.test(scope)) {
+    if (!isPagePermissionScope(scope)) {
       continue;
     }
-    for (const targetId of entry.target_ids ?? []) {
-      const id = String(targetId ?? "").trim();
-      if (id) {
-        pageIds.add(id);
-      }
+    for (const id of targetIdsFromGranularEntry(entry)) {
+      pageIds.add(id);
     }
   }
 
   return [...pageIds];
+}
+
+function userAccessTokensFromOptions(
+  primaryToken: string,
+  options?: { alternateTokens?: string[] },
+): string[] {
+  return uniquePageIds([primaryToken, ...(options?.alternateTokens ?? [])]);
+}
+
+async function fetchPageFromUserTokenById(input: {
+  pageId: string;
+  userAccessTokens: string[];
+}): Promise<ResolvedMetaPage | null> {
+  const fieldSets = [
+    "id,name,access_token,instagram_business_account",
+    "access_token,name",
+    "access_token",
+  ];
+
+  for (const userAccessToken of input.userAccessTokens) {
+    const token = userAccessToken.trim();
+    if (!token) {
+      continue;
+    }
+
+    for (const fields of fieldSets) {
+      const result = await graphGet(`/${input.pageId}`, {
+        fields,
+        access_token: token,
+      });
+
+      if (!result.ok) {
+        console.warn(`Meta GET /${input.pageId} fields=${fields} failed:`, result.error);
+        continue;
+      }
+
+      const pageToken = String(result.data.access_token ?? "");
+      if (!pageToken) {
+        console.warn(`Meta GET /${input.pageId} fields=${fields} returned no access_token.`);
+        continue;
+      }
+
+      const linkedIg =
+        (result.data.instagram_business_account as { id?: string } | undefined)?.id ?? null;
+
+      return {
+        id: String(result.data.id ?? input.pageId),
+        name: String(result.data.name ?? "Facebook Page"),
+        accessToken: pageToken,
+        instagramAccountId: linkedIg,
+      };
+    }
+  }
+
+  return null;
 }
 
 function uniquePageIds(ids: Array<string | null | undefined>): string[] {
@@ -371,7 +419,7 @@ function uniquePageIds(ids: Array<string | null | undefined>): string[] {
 
 async function resolveRawPagesToMetaPages(input: {
   rawPages: RawMetaPage[];
-  userAccessToken: string;
+  userAccessTokens: string[];
 }): Promise<ResolvedMetaPage[]> {
   const pages: ResolvedMetaPage[] = [];
   const seenIds = new Set<string>();
@@ -389,7 +437,7 @@ async function resolveRawPagesToMetaPages(input: {
     if (!resolved) {
       resolved = await fetchPageFromUserTokenById({
         pageId,
-        userAccessToken: input.userAccessToken,
+        userAccessTokens: input.userAccessTokens,
       });
     }
 
@@ -400,6 +448,104 @@ async function resolveRawPagesToMetaPages(input: {
   }
 
   return pages;
+}
+
+async function fetchPagesFromMeAccountsField(
+  userAccessToken: string,
+): Promise<{ items: RawMetaPage[]; error: string | null }> {
+  const result = await graphGet("/me", {
+    fields: "accounts{id,name,access_token}",
+    access_token: userAccessToken,
+  });
+
+  if (!result.ok) {
+    return { items: [], error: result.error };
+  }
+
+  const accounts = result.data.accounts as { data?: RawMetaPage[] } | undefined;
+  return { items: accounts?.data ?? [], error: null };
+}
+
+async function fetchPagesFromBusinessesNested(
+  userAccessToken: string,
+): Promise<{ items: RawMetaPage[]; error: string | null }> {
+  const result = await graphGetPaginated("/me/businesses", {
+    fields: "owned_pages{id,name,access_token},client_pages{id,name,access_token}",
+    access_token: userAccessToken,
+  });
+
+  if (result.error && result.items.length === 0) {
+    return { items: [], error: result.error };
+  }
+
+  const items: RawMetaPage[] = [];
+  const seenIds = new Set<string>();
+
+  for (const business of result.items) {
+    const businessRecord = business as Record<string, unknown>;
+    for (const edge of ["owned_pages", "client_pages"] as const) {
+      const nested = businessRecord[edge] as { data?: RawMetaPage[] } | undefined;
+      for (const page of nested?.data ?? []) {
+        const pageId = String(page.id ?? "").trim();
+        if (pageId && !seenIds.has(pageId)) {
+          seenIds.add(pageId);
+          items.push(page);
+        }
+      }
+    }
+  }
+
+  return { items, error: null };
+}
+
+async function fetchAllRawPageSources(userAccessToken: string): Promise<{
+  rawPages: RawMetaPage[];
+  sourceLabels: string[];
+}> {
+  const [accounts, assigned, meAccounts, businessPages, businessNested] = await Promise.all([
+    graphGetPaginated("/me/accounts", {
+      fields: "id,name,access_token",
+      access_token: userAccessToken,
+    }),
+    graphGetPaginated("/me/assigned_pages", {
+      fields: "id,name,access_token,tasks,permitted_tasks",
+      access_token: userAccessToken,
+    }),
+    fetchPagesFromMeAccountsField(userAccessToken),
+    fetchPagesFromBusinesses(userAccessToken),
+    fetchPagesFromBusinessesNested(userAccessToken),
+  ]);
+
+  const sourceLabels: string[] = [];
+  const rawPages: RawMetaPage[] = [];
+  const seenIds = new Set<string>();
+
+  const appendSource = (label: string, items: RawMetaPage[], error: string | null) => {
+    if (error && items.length === 0) {
+      console.warn(`Meta ${label} failed:`, error);
+      return;
+    }
+    if (items.length === 0) {
+      return;
+    }
+
+    sourceLabels.push(`${label} (${items.length})`);
+    for (const page of items) {
+      const pageId = String(page.id ?? "").trim();
+      if (pageId && !seenIds.has(pageId)) {
+        seenIds.add(pageId);
+        rawPages.push(page);
+      }
+    }
+  };
+
+  appendSource("/me/accounts", accounts.items, accounts.error);
+  appendSource("/me/assigned_pages", assigned.items, assigned.error);
+  appendSource("/me?fields=accounts", meAccounts.items, meAccounts.error);
+  appendSource("/me/businesses pages", businessPages.items, businessPages.error);
+  appendSource("/me/businesses nested pages", businessNested.items, businessNested.error);
+
+  return { rawPages, sourceLabels };
 }
 
 async function fetchPagesFromBusinesses(
@@ -448,7 +594,7 @@ async function fetchPagesFromBusinesses(
 
 async function resolvePagesByIds(input: {
   pageIds: string[];
-  userAccessToken: string;
+  userAccessTokens: string[];
   sourceLabel: string;
   sources: string[];
 }): Promise<ResolvedMetaPage[]> {
@@ -462,7 +608,7 @@ async function resolvePagesByIds(input: {
 
     const resolved = await fetchPageFromUserTokenById({
       pageId,
-      userAccessToken: input.userAccessToken,
+      userAccessTokens: input.userAccessTokens,
     });
     if (resolved) {
       seenIds.add(resolved.id);
@@ -479,57 +625,14 @@ async function resolvePagesByIds(input: {
 
 export async function fetchPagesFromUserToken(
   userAccessToken: string,
-  options?: { fallbackPageIds?: string[] },
+  options?: { fallbackPageIds?: string[]; alternateTokens?: string[] },
 ): Promise<{ pages: ResolvedMetaPage[]; error: string | null; debugHint?: string | null }> {
-  const token = userAccessToken.trim();
+  const userAccessTokens = userAccessTokensFromOptions(userAccessToken, options);
+  const token = userAccessTokens[0] ?? "";
   const sources: string[] = [];
 
-  const accounts = await graphGetPaginated("/me/accounts", {
-    fields: "id,name,access_token",
-    access_token: token,
-  });
-
-  if (accounts.error && accounts.items.length === 0) {
-    console.warn("Meta /me/accounts failed:", accounts.error);
-  }
-
-  if (accounts.items.length > 0) {
-    sources.push(`/me/accounts (${accounts.items.length})`);
-  }
-
-  let rawPages = accounts.items;
-
-  if (rawPages.length === 0) {
-    const assigned = await graphGetPaginated("/me/assigned_pages", {
-      fields: "id,name,access_token,tasks,permitted_tasks",
-      access_token: token,
-    });
-
-    if (assigned.error && assigned.items.length === 0) {
-      console.warn("Meta /me/assigned_pages failed:", assigned.error);
-    }
-
-    if (assigned.items.length > 0) {
-      sources.push(`/me/assigned_pages (${assigned.items.length})`);
-      rawPages = assigned.items;
-    }
-  }
-
-  if (rawPages.length === 0) {
-    const businessPages = await fetchPagesFromBusinesses(token);
-    if (businessPages.error && businessPages.items.length === 0) {
-      console.warn("Meta /me/businesses pages failed:", businessPages.error);
-    }
-    if (businessPages.items.length > 0) {
-      sources.push(`/me/businesses pages (${businessPages.items.length})`);
-      rawPages = businessPages.items;
-    }
-  }
-
-  let pages = await resolveRawPagesToMetaPages({ rawPages, userAccessToken: token });
-
   const debug = await debugToken({ inputToken: token });
-  const granularPageIds = debug.granularPageIds;
+  let granularPageIds = debug.granularPageIds;
 
   if (debug.error) {
     console.warn("Meta debug_token failed:", debug.error);
@@ -542,27 +645,66 @@ export async function fetchPagesFromUserToken(
     });
   }
 
-  if (pages.length === 0 && granularPageIds.length > 0) {
-    pages = await resolvePagesByIds({
-      pageIds: granularPageIds,
-      userAccessToken: token,
-      sourceLabel: "granular_scopes",
-      sources,
-    });
+  if (granularPageIds.length === 0 && userAccessTokens.length > 1) {
+    for (const alternateToken of userAccessTokens.slice(1)) {
+      const alternateDebug = await debugToken({ inputToken: alternateToken });
+      if (alternateDebug.granularPageIds.length > 0) {
+        granularPageIds = alternateDebug.granularPageIds;
+        console.info("Meta token debug (alternate token):", {
+          granularPageIds,
+          userId: alternateDebug.userId,
+        });
+        break;
+      }
+    }
+  }
+
+  const { rawPages, sourceLabels } = await fetchAllRawPageSources(token);
+  sources.push(...sourceLabels);
+
+  let pages = await resolveRawPagesToMetaPages({ rawPages, userAccessTokens });
+
+  if (pages.length === 0 && userAccessTokens.length > 1) {
+    for (const alternateToken of userAccessTokens.slice(1)) {
+      const alternateSources = await fetchAllRawPageSources(alternateToken);
+      if (alternateSources.rawPages.length === 0) {
+        continue;
+      }
+
+      sources.push(
+        ...alternateSources.sourceLabels.map((label) => `${label} (alternate token)`),
+      );
+      const alternatePages = await resolveRawPagesToMetaPages({
+        rawPages: alternateSources.rawPages,
+        userAccessTokens,
+      });
+      if (alternatePages.length > 0) {
+        pages = alternatePages;
+        break;
+      }
+    }
   }
 
   const fallbackPageIds = uniquePageIds([
+    ...granularPageIds,
     ...(options?.fallbackPageIds ?? []),
     getMetaFacebookPageId(),
   ]);
 
-  if (pages.length === 0 && fallbackPageIds.length > 0) {
-    pages = await resolvePagesByIds({
-      pageIds: fallbackPageIds,
-      userAccessToken: token,
-      sourceLabel: "fallback_page_id",
+  const unresolvedPageIds = fallbackPageIds.filter(
+    (pageId) => !pages.some((page) => page.id === pageId),
+  );
+
+  if (unresolvedPageIds.length > 0) {
+    const resolvedById = await resolvePagesByIds({
+      pageIds: unresolvedPageIds,
+      userAccessTokens,
+      sourceLabel: granularPageIds.some((id) => unresolvedPageIds.includes(id))
+        ? "granular_scopes_or_fallback"
+        : "fallback_page_id",
       sources,
     });
+    pages = [...pages, ...resolvedById];
   }
 
   if (pages.length === 0) {
@@ -579,7 +721,7 @@ export async function fetchPagesFromUserToken(
           ? " /me/accounts and /me/assigned_pages returned no Pages. If your Page is in Business Suite, ensure business_management is Ready for testing and reconnect."
           : " Pages were listed but Page access tokens could not be resolved — try Advanced connect below with your Page ID.";
     const envHint = getMetaFacebookPageId()
-      ? ` Set META_FACEBOOK_PAGE_ID=${getMetaFacebookPageId()} is configured but could not resolve a token for it.`
+      ? ` META_FACEBOOK_PAGE_ID=${getMetaFacebookPageId()} is configured but could not resolve a token for it.`
       : "";
 
     return {
@@ -690,7 +832,7 @@ export async function debugToken(input: {
         expires_at?: number;
         scopes?: string[];
         user_id?: string;
-        granular_scopes?: Array<{ scope?: string; target_ids?: string[] }>;
+        granular_scopes?: GranularScopeEntry[];
       }
     | undefined;
 

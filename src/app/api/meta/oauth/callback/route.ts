@@ -85,7 +85,10 @@ export async function GET(request: NextRequest) {
 
   const { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(
     longLived.accessToken,
-    { fallbackPageIds: preferredPageId ? [preferredPageId] : undefined },
+    {
+      fallbackPageIds: preferredPageId ? [preferredPageId] : undefined,
+      alternateTokens: shortLived.accessToken ? [shortLived.accessToken] : undefined,
+    },
   );
   if (pagesError || pages.length === 0) {
     const tokenDebug = await debugToken({ inputToken: longLived.accessToken });
