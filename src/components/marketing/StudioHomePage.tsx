@@ -104,7 +104,7 @@ export function StudioHomePage({
               href="/pricing"
               className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
             >
-              Pricing · free early access
+              Pricing from $29
             </Link>
           </div>
 
