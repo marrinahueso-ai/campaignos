@@ -36,7 +36,7 @@ export async function getAuthenticatedAppPath(
   if (pendingSetup) {
     const organization = await getCurrentOrganization();
     if (organization) {
-      return DEFAULT_AUTH_PATH;
+      return "/login?error=existing_org";
     }
     return SCHOOL_SETUP_PATH;
   }
@@ -52,9 +52,7 @@ export async function resolvePostAuthPathForUser(
   next?: string | null,
   options?: { setupIntent?: boolean },
 ): Promise<string> {
-  const pendingCode = options?.setupIntent
-    ? (await getPendingFoundingAccessCode())
-    : null;
+  const pendingCode = await getPendingFoundingAccessCode();
   const hasValidPendingSetup =
     Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
 
@@ -71,9 +69,9 @@ export async function resolvePostAuthPathForUser(
     return "/login?intent=setup&error=code_required";
   }
 
-  if (hasMembership === null) {
-    return safeNextPath(next) ?? DEFAULT_AUTH_PATH;
+  if (!hasMembership) {
+    return SCHOOL_SETUP_PATH;
   }
 
-  return resolveAuthenticatedAppPath(hasMembership, next);
+  return resolveAuthenticatedAppPath(true, next);
 }

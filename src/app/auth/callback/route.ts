@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user?.email) {
+  // New-school signup must not auto-join an existing invited org.
+  if (user?.email && !setupIntent) {
     await acceptPendingInvitesForUser(user.id, user.email);
   }
 

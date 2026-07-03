@@ -7,7 +7,6 @@ import {
   getActiveMembership,
   getOrganizationUsers,
 } from "@/lib/auth/membership-queries";
-import { getLatestOrganizationLegacy } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
@@ -28,7 +27,7 @@ export default async function TeamSettingsPage() {
 
   const organization = membership
     ? await getOrganizationById(membership.organizationId)
-    : await getLatestOrganizationLegacy();
+    : null;
 
   const workspace = organization
     ? await getOrganizationWorkspaceData(organization.id)

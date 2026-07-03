@@ -26,7 +26,7 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     : null;
 
   const [raw, importedList, publishedAtTimestamps] = await Promise.all([
-    fetchUnifiedCalendarRawData(schoolYear),
+    fetchUnifiedCalendarRawData(schoolYear, organization?.id ?? null),
     getImportedEventsForCalendarList(),
     fetchPublishedPostTimestamps(),
   ]);
@@ -37,7 +37,10 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     activeSchoolYearLabel: activeSchoolYear?.label,
     organizationSchoolYear: organization?.schoolYear,
   });
-  const eventCount = await getCalendarWindowEventCount(schoolYearLabel);
+  const eventCount = await getCalendarWindowEventCount(
+    schoolYearLabel,
+    organization?.id ?? null,
+  );
   if (eventCount > 0) {
     importCleanup = {
       schoolYearId: activeSchoolYear?.id ?? null,
@@ -70,7 +73,11 @@ export async function getTodayPlanningItems(): Promise<PlanningCalendarItem[]> {
 
   const organization = await getLatestOrganization();
   const window = resolveTodayPlanningWindow(organization?.schoolYear ?? null);
-  const events = await getEventsInDateRange(window.startDate, window.endDate);
+  const events = await getEventsInDateRange(
+    window.startDate,
+    window.endDate,
+    organization?.id ?? null,
+  );
   const raw = await fetchPlanningRawDataForEvents(events.map((event) => event.id));
   return buildPlanningItemsFromRaw(raw, TODAY_PLANNING_ITEM_OPTIONS);
 }

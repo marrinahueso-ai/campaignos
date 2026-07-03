@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import {
-  claimOrganizationAdminAccess,
   deleteOrganizationMembership,
   inviteOrganizationUser,
   resolveCampaignRoleForInvite,
@@ -381,38 +380,18 @@ export async function removeTeamMemberAction(
 }
 
 export async function claimOrganizationAccessAction(): Promise<AuthActionState> {
-  const user = await requireAuthUser();
+  await requireAuthUser();
   const organization = await getCurrentOrganization();
 
-  if (!organization) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("organizations")
-      .select("id")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!data?.id) {
-      return { error: "No organization found to claim.", success: false };
-    }
-
-    const result = await claimOrganizationAdminAccess({
-      organizationId: data.id,
-      userId: user.id,
-      email: user.email,
-    });
-
-    if ("error" in result) {
-      return { error: result.error, success: false };
-    }
-
-    revalidatePath("/settings/team");
-    revalidatePath("/dashboard");
-    return { error: null, success: true, message: "You are now the admin for this PTO." };
+  if (organization) {
+    return { error: "You already belong to an organization.", success: false };
   }
 
-  return { error: "You already belong to an organization.", success: false };
+  return {
+    error:
+      "Complete School Setup to create your PTO workspace. Claiming an existing organization is disabled.",
+    success: false,
+  };
 }
 
 export async function setSimulatedRoleAction(

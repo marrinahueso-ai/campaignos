@@ -14,8 +14,22 @@ export interface UnifiedCalendarRawData {
 
 /** Lightweight fetch for the parent calendar — events + Meta milestones in the school-year window. */
 export const fetchUnifiedCalendarRawData = cache(
-  async (schoolYear?: string | null): Promise<UnifiedCalendarRawData> => {
+  async (
+    schoolYear?: string | null,
+    organizationId?: string | null,
+  ): Promise<UnifiedCalendarRawData> => {
     const window = resolveCalendarPlanningWindow(schoolYear);
+    const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
+      await import("@/lib/events/org-scope");
+    const scopedOrgId = await resolveScopedOrganizationId(organizationId);
+    const schoolYearIds = scopedOrgId
+      ? await getOrganizationSchoolYearIds(scopedOrgId)
+      : [];
+
+    if (!schoolYearIds.length) {
+      return { eventRows: [], metaSlots: [] };
+    }
+
     const supabase = await createClient();
 
     const { data: eventRows } = await supabase
@@ -24,6 +38,7 @@ export const fetchUnifiedCalendarRawData = cache(
       .gte("date", window.startDate)
       .lte("date", window.endDate)
       .neq("status", "archived")
+      .in("school_year_id", schoolYearIds)
       .order("date", { ascending: true });
 
     const scopedEventRows = (eventRows ?? []) as CoreEventRow[];

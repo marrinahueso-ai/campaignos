@@ -286,6 +286,13 @@ export function StudioHomePage({
                   </p>
                 )}
 
+                {authError === "org_required" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    Finish creating your school workspace with a founding access
+                    code before using CampaignOS.
+                  </p>
+                )}
+
                 <div className="border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
                   <LoginForm
                     inviteToken={inviteToken}

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveOrgGateRedirect } from "@/lib/auth/org-gate";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 
 const PUBLIC_PATHS = [
@@ -66,12 +67,20 @@ export async function updateSession(request: NextRequest) {
 
   if (user && pathname === "/login") {
     const homePath = await resolvePostAuthPathForUser(supabase, user.id);
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = homePath;
-    homeUrl.search = "";
+    const homeUrl = new URL(homePath, request.nextUrl.origin);
     const redirectResponse = NextResponse.redirect(homeUrl);
     copyCookies(supabaseResponse, redirectResponse);
     return redirectResponse;
+  }
+
+  if (user && !isPublicPath(pathname)) {
+    const gateRedirect = await resolveOrgGateRedirect(request, supabase, user.id);
+    if (gateRedirect) {
+      const gateUrl = new URL(gateRedirect, request.nextUrl.origin);
+      const redirectResponse = NextResponse.redirect(gateUrl);
+      copyCookies(supabaseResponse, redirectResponse);
+      return redirectResponse;
+    }
   }
 
   return supabaseResponse;

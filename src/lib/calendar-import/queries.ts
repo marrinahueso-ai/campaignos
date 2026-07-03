@@ -123,7 +123,20 @@ export async function getSchoolYearCalendarEventCount(
 /** All non-archived events visible on the calendar (planning window). */
 export async function getCalendarWindowEventCount(
   schoolYearLabel: string | null | undefined,
+  organizationId?: string | null,
 ): Promise<number> {
+  const organization = organizationId
+    ? { id: organizationId }
+    : await getLatestOrganization();
+  if (!organization) {
+    return 0;
+  }
+
+  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  if (!activeSchoolYear) {
+    return 0;
+  }
+
   const window = getCalendarPlanningWindow(schoolYearLabel);
   const supabase = await createClient();
   const { count, error } = await supabase
@@ -131,7 +144,8 @@ export async function getCalendarWindowEventCount(
     .select("*", { count: "exact", head: true })
     .gte("date", window.startDate)
     .lte("date", window.endDate)
-    .neq("status", "archived");
+    .neq("status", "archived")
+    .eq("school_year_id", activeSchoolYear.id);
 
   if (error) {
     return 0;
@@ -230,6 +244,11 @@ export async function getImportedEventsForCalendarList(): Promise<{
     activeSchoolYearLabel: activeSchoolYear?.label,
     organizationSchoolYear: organization.schoolYear,
   });
+
+  if (!activeSchoolYear) {
+    return { filename: schoolYearLabel, events: [] };
+  }
+
   const window = getCalendarPlanningWindow(schoolYearLabel);
 
   const supabase = await createClient();
@@ -239,6 +258,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
     .gte("date", window.startDate)
     .lte("date", window.endDate)
     .neq("status", "archived")
+    .eq("school_year_id", activeSchoolYear.id)
     .order("date", { ascending: true });
 
   if (error || !data) {

@@ -104,8 +104,12 @@ export async function getTodayPageData(
   const todayWindow = resolveTodayPlanningWindow(resolvedOrganization?.schoolYear ?? null);
 
   const [upcomingCampaignEvents, eventsInWindow, firstName] = await Promise.all([
-    getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT),
-    getEventsInDateRange(todayWindow.startDate, todayWindow.endDate),
+    getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
+    getEventsInDateRange(
+      todayWindow.startDate,
+      todayWindow.endDate,
+      resolvedOrganization?.id ?? null,
+    ),
     getTodayGreetingName(resolvedOrganization),
   ]);
 
