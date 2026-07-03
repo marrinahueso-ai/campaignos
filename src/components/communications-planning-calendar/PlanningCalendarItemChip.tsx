@@ -18,6 +18,7 @@ import {
   isMetaMilestoneItem,
   isPlanningItemDraggable,
 } from "@/lib/communications-calendar/unified-calendar-layers";
+import { heatmapChipElevatedClasses } from "@/lib/posting-analytics/heatmap-ui";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 const DRAG_MIME = "application/x-campaignos-planning-item";
@@ -58,6 +59,8 @@ export function parseDragPayload(raw: string): PlanningDragPayload | null {
 interface PlanningCalendarItemChipProps {
   item: PlanningCalendarItem & { isOverdue?: boolean; isToday?: boolean };
   compact?: boolean;
+  /** Solid white card + shadow so chips read clearly on heatmap cells. */
+  elevatedOnHeatmap?: boolean;
   onSelect?: (item: PlanningCalendarItem) => void;
   onDragError?: (message: string) => void;
 }
@@ -65,6 +68,7 @@ interface PlanningCalendarItemChipProps {
 export function PlanningCalendarItemChip({
   item,
   compact = false,
+  elevatedOnHeatmap = false,
   onSelect,
   onDragError,
 }: PlanningCalendarItemChipProps) {
@@ -153,9 +157,12 @@ export function PlanningCalendarItemChip({
         isDraggable
           ? "cursor-grab touch-manipulation active:cursor-grabbing"
           : "cursor-pointer",
-        "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
-        statusStyles.bg,
-        statusStyles.border,
+        elevatedOnHeatmap
+          ? "hover:shadow-md hover:ring-2 hover:ring-cos-border"
+          : "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
+        elevatedOnHeatmap
+          ? heatmapChipElevatedClasses(displayStatus)
+          : cn(statusStyles.bg, statusStyles.border),
         item.isToday && displayStatus !== "overdue" && "ring-2 ring-cos-primary/40",
         compact ? "px-1.5 py-1.5" : "px-2 py-2",
       )}

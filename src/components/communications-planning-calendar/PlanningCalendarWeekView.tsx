@@ -264,12 +264,13 @@ export function PlanningCalendarWeekView({
                       }
                     >
                       {hourItems.length > 0 && (
-                        <div className="absolute inset-x-0 top-0 space-y-0.5 p-0.5">
+                        <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
                           {hourItems.slice(0, 2).map((item) => (
                             <PlanningCalendarItemChip
                               key={item.id}
                               item={item}
                               compact
+                              elevatedOnHeatmap={showPostingHeatmap}
                               onSelect={onSelectItem}
                               onDragError={(message) => showToast(message, "error")}
                             />

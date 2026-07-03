@@ -1,5 +1,24 @@
+import type { CalmStatusKey } from "@/lib/design-system/status-colors";
 import { getHourInTimezone } from "@/lib/posting-analytics/timezone-utils";
 import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
+
+/** Left accent when chips sit on tan heatmap cells — keeps status readable on white. */
+export const HEATMAP_CHIP_STATUS_ACCENT: Record<CalmStatusKey, string> = {
+  draft: "border-l-cos-muted/60",
+  needs_review: "border-l-cos-warning-text",
+  approved: "border-l-cos-accent",
+  scheduled: "border-l-cos-accent",
+  published: "border-l-cos-success",
+  overdue: "border-l-cos-error",
+};
+
+/** Solid card surface so event chips pop over heatmap tint. */
+export function heatmapChipElevatedClasses(status: CalmStatusKey): string {
+  return [
+    "border-l-[3px] bg-white shadow-sm ring-1 ring-cos-border/90",
+    HEATMAP_CHIP_STATUS_ACCENT[status],
+  ].join(" ");
+}
 
 /** Background tint for heatmap cells — darker accent = higher score. */
 export function heatmapCellBackground(score: number): string | undefined {
