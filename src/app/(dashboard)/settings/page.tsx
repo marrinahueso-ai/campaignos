@@ -1,6 +1,5 @@
 import { SettingsPreferencesForm } from "@/components/settings/SettingsPreferencesForm";
 import { SchoolYearSettingsSection } from "@/components/settings/SchoolYearSettingsSection";
-import { PostingPreferencesSection } from "@/components/settings/PostingPreferencesSection";
 import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
 import Link from "next/link";
 
@@ -30,8 +29,21 @@ export default function SettingsPage() {
         </Link>
       </section>
 
+      <section className="cos-card">
+        <h2 className="font-display text-2xl text-cos-text">Posting schedule</h2>
+        <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+          Set your organization timezone and preferred posting windows for the
+          calendar heatmap.
+        </p>
+        <Link
+          href="/settings/posting-schedule"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-cos-text transition-colors hover:text-cos-primary"
+        >
+          Configure posting schedule →
+        </Link>
+      </section>
+
       <SchoolYearSettingsSection />
-      <PostingPreferencesSection />
       <SettingsPreferencesForm />
     </div>
   );

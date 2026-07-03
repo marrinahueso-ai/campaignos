@@ -94,6 +94,7 @@ export async function savePostingPreferencesAction(
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/posting-schedule");
   revalidatePath("/calendar");
 
   return { error: null, success: true };
