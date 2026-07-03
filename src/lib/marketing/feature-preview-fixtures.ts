@@ -485,16 +485,16 @@ function buildStrongPreviewHeatmap(): PostingHeatmapData {
 
   for (let day = 0; day < 7; day += 1) {
     const isWeekday = day >= 1 && day <= 5;
-    for (let hour = 6; hour <= 18; hour += 1) {
+    for (let hour = 6; hour <= 21; hour += 1) {
       let score: number;
-      if (hour >= 17 && hour <= 19) {
-        score = isWeekday ? 0.98 : 0.78;
+      if (hour >= 17 && hour <= 20) {
+        score = isWeekday ? 1 : 0.75;
       } else if (hour >= 11 && hour <= 16) {
-        score = isWeekday ? 0.68 : 0.52;
+        score = isWeekday ? 0.65 : 0.5;
       } else if (hour >= 7 && hour <= 10) {
-        score = isWeekday ? 0.42 : 0.58;
+        score = isWeekday ? 0.4 : 0.55;
       } else {
-        score = 0.28;
+        score = 0.24;
       }
       scores[day]![hour] = score;
     }

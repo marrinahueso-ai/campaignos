@@ -7,13 +7,18 @@ export function heatmapCellBackground(score: number): string | undefined {
     return undefined;
   }
 
-  const opacity = 0.08 + score * 0.42;
-  // rgba avoids color-mix + CSS variable issues in inline styles across browsers
-  return `rgba(184, 149, 111, ${opacity.toFixed(2)})`;
+  // Match legend steps (accent-soft → /40 → /70 → full) on white cells.
+  const opacity = 0.22 + score * 0.58;
+  // Pre-blend on white so cells read as solid tan/amber in screenshots and video.
+  const alpha = Math.min(1, opacity);
+  const r = Math.round(184 * alpha + 255 * (1 - alpha));
+  const g = Math.round(149 * alpha + 255 * (1 - alpha));
+  const b = Math.round(111 * alpha + 255 * (1 - alpha));
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 export function heatmapDropTargetBackground(): string {
-  return "rgba(184, 149, 111, 0.12)";
+  return "rgb(232, 223, 210)";
 }
 
 export function formatHourLabel(hour: number): string {

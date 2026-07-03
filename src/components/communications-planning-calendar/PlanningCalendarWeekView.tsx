@@ -189,7 +189,7 @@ export function PlanningCalendarWeekView({
                 key={date}
                 className={cn(
                   "border-r border-cos-border last:border-r-0",
-                  isTodayColumn && "bg-cos-accent-soft/20",
+                  isTodayColumn && !showPostingHeatmap && "bg-cos-accent-soft/20",
                 )}
               >
                 <div
