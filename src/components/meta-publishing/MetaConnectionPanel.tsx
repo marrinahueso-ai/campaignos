@@ -37,7 +37,12 @@ export function MetaConnectionPanel({
 
   const connected = isMetaConnectionConfigured(connection);
   const hasInstagram = isInstagramPublishingConfigured(connection);
-  const connectHref = `/api/meta/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
+  const reconnectParams = new URLSearchParams({ returnTo });
+  if (connected && connection?.facebookPageId) {
+    reconnectParams.set("pageId", connection.facebookPageId);
+    reconnectParams.set("auth_type", "rerequest");
+  }
+  const connectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
 
   const metaSetupSteps = (
     <ol className="list-decimal space-y-2 pl-5 text-sm text-cos-muted">
@@ -58,8 +63,10 @@ export function MetaConnectionPanel({
       <li>
         Add use case <strong className="font-medium text-cos-text">Manage everything on your Page</strong>{" "}
         → Customize → Permissions and features → enable{" "}
-        <code className="rounded bg-cos-bg px-1">pages_read_engagement</code> and{" "}
-        <code className="rounded bg-cos-bg px-1">pages_manage_posts</code> (set each to{" "}
+        <code className="rounded bg-cos-bg px-1">pages_show_list</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">pages_read_engagement</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>, and{" "}
+        <code className="rounded bg-cos-bg px-1">business_management</code> (set each to{" "}
         <strong className="font-medium text-cos-text">Ready for testing</strong>).
       </li>
       <li>
@@ -68,6 +75,13 @@ export function MetaConnectionPanel({
         → Customize → enable{" "}
         <code className="rounded bg-cos-bg px-1">instagram_basic</code> and{" "}
         <code className="rounded bg-cos-bg px-1">instagram_content_publish</code> (Ready for testing).
+      </li>
+      <li>
+        Under <strong className="font-medium text-cos-text">Facebook Login for Business → Configurations</strong>,
+        create a configuration including the permissions above. Copy its{" "}
+        <code className="rounded bg-cos-bg px-1">config_id</code> into{" "}
+        <code className="rounded bg-cos-bg px-1">META_OAUTH_CONFIG_ID</code> on your server (optional
+        but recommended for Business apps).
       </li>
       <li>
         Under <strong className="font-medium text-cos-text">Facebook Login for Business → Settings</strong>,
@@ -325,7 +339,8 @@ export function MetaConnectionPanel({
                   <li>
                     Add permissions: <code className="rounded bg-white px-1">pages_show_list</code>,{" "}
                     <code className="rounded bg-white px-1">pages_read_engagement</code>,{" "}
-                    <code className="rounded bg-white px-1">pages_manage_posts</code>
+                    <code className="rounded bg-white px-1">pages_manage_posts</code>,{" "}
+                    <code className="rounded bg-white px-1">business_management</code>
                   </li>
                   <li>Generate Access Token → approve → select your Page</li>
                   <li>Copy the token and paste it below</li>

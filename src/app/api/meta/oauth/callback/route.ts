@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  META_OAUTH_PAGE_ID_COOKIE,
   META_OAUTH_RETURN_COOKIE,
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
@@ -9,6 +10,7 @@ import {
 } from "@/lib/meta-publishing/config.server";
 import { saveMetaConnectionFromOAuth } from "@/lib/meta-publishing/connection-actions";
 import {
+  debugToken,
   exchangeCodeForUserToken,
   exchangeShortLivedForLongLived,
   fetchPagesFromUserToken,
@@ -74,13 +76,26 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget));
   }
 
-  const { pages, error: pagesError } = await fetchPagesFromUserToken(longLived.accessToken);
+  const { pages, error: pagesError, debugHint } = await fetchPagesFromUserToken(longLived.accessToken);
   if (pagesError || pages.length === 0) {
+    const tokenDebug = await debugToken({ inputToken: longLived.accessToken });
+    console.error("Meta OAuth callback: no pages resolved", {
+      pagesError,
+      debugHint,
+      tokenValid: tokenDebug.isValid,
+      scopes: tokenDebug.scopes,
+      granularPageIds: tokenDebug.granularPageIds,
+      userId: tokenDebug.userId,
+      debugError: tokenDebug.error,
+    });
     redirectTarget.searchParams.set("error", "no_pages");
     return clearOAuthCookies(NextResponse.redirect(redirectTarget));
   }
 
-  const preferredPageId = request.nextUrl.searchParams.get("pageId")?.trim();
+  const preferredPageId =
+    request.cookies.get(META_OAUTH_PAGE_ID_COOKIE)?.value?.trim() ||
+    request.nextUrl.searchParams.get("pageId")?.trim() ||
+    undefined;
   const saved = await saveMetaConnectionFromOAuth({
     organizationId: organization.id,
     pages,
@@ -103,5 +118,6 @@ export async function GET(request: NextRequest) {
 function clearOAuthCookies(response: NextResponse): NextResponse {
   response.cookies.delete(META_OAUTH_STATE_COOKIE);
   response.cookies.delete(META_OAUTH_RETURN_COOKIE);
+  response.cookies.delete(META_OAUTH_PAGE_ID_COOKIE);
   return response;
 }

@@ -39,3 +39,9 @@ export function getMetaRedirectUri(origin: string): string {
 export function getMetaAppAccessToken(): string {
   return `${getMetaAppId()}|${getMetaAppSecret()}`;
 }
+
+/** Facebook Login for Business configuration ID (optional). When set, OAuth uses config_id instead of scope. */
+export function getMetaOAuthConfigId(): string | null {
+  const configId = process.env.META_OAUTH_CONFIG_ID?.trim();
+  return configId || null;
+}
