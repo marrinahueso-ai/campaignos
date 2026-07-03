@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createHmac, timingSafeEqual } from "crypto";
 import { validateFoundingAccessCode } from "@/lib/auth/founding-access";
 

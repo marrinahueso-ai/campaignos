@@ -4,8 +4,8 @@ import { acceptPendingInvitesForUser } from "@/lib/auth/membership-queries";
 import {
   pendingFoundingAccessCookieOptions,
   PENDING_FOUNDING_ACCESS_COOKIE,
-  resolvePendingFoundingAccessForCallback,
 } from "@/lib/auth/founding-access";
+import { resolvePendingFoundingAccessForCallback } from "@/lib/auth/founding-access-callback";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
