@@ -193,7 +193,7 @@ export function StudioHomePage({
                   : invitePreview
                     ? `You're invited to ${invitePreview.organizationName}. Sign in to join your team.`
                     : setupIntent
-                      ? "Starting fresh as PTO president or communications lead? Sign in, then we'll walk you through school setup."
+                      ? "Sign up with Google or Facebook to create your account — then we'll walk you through school setup."
                       : "Returning to your workspace? Sign in below. Starting a new school? Choose Start your PTO workspace above."}
               </p>
             </div>
@@ -238,8 +238,17 @@ export function StudioHomePage({
                   <div className="mb-6 border border-cos-accent/30 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
                     <p className="font-medium">Starting a new PTO workspace</p>
                     <p className="mt-1 text-cos-dark-muted">
-                      After sign-in you&apos;ll create your school profile. Have a founding access code?
-                      Enter it during setup to unlock early partner benefits.
+                      Sign up with Google or Facebook below — that creates your
+                      account and takes you to school setup. Have a founding
+                      partner code? Enter it on the welcome step. Don&apos;t have
+                      a code? You can still set up during early access.{" "}
+                      <a
+                        href="mailto:hello@campaignos.app"
+                        className="text-cos-accent underline-offset-2 hover:underline"
+                      >
+                        Contact us
+                      </a>{" "}
+                      for a founding partner code.
                     </p>
                   </div>
                 )}
@@ -269,6 +278,7 @@ export function StudioHomePage({
                     defaultEmail={invitePreview?.email ?? ""}
                     variant="studio"
                     nextPath={nextPath ?? (setupIntent ? SCHOOL_SETUP_PATH : null)}
+                    setupIntent={setupIntent}
                   />
                 </div>
               </>

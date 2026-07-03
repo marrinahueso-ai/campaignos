@@ -14,6 +14,7 @@ interface SocialSignInButtonsProps {
   inviteToken?: string | null;
   nextPath?: string | null;
   variant?: "default" | "studio";
+  setupIntent?: boolean;
 }
 
 function ProviderIcon({ provider }: { provider: OAuthSignInProvider }) {
@@ -51,12 +52,14 @@ export function SocialSignInButtons({
   inviteToken = null,
   nextPath = null,
   variant = "default",
+  setupIntent = false,
 }: SocialSignInButtonsProps) {
   const [error, setError] = useState<string | null>(null);
   const [pendingProvider, setPendingProvider] =
     useState<OAuthSignInProvider | null>(null);
   const [isPending, startTransition] = useTransition();
   const isStudio = variant === "studio";
+  const isSignup = setupIntent && !inviteToken;
 
   function handleSignIn(provider: OAuthSignInProvider) {
     startTransition(async () => {
@@ -76,9 +79,17 @@ export function SocialSignInButtons({
 
   return (
     <div className="space-y-3">
+      {isSignup && (
+        <p className="text-center text-sm leading-relaxed text-cos-muted">
+          Sign up with Google or Facebook to create your account and start school
+          setup.
+        </p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         {OAUTH_SIGN_IN_PROVIDERS.map((provider) => {
           const loading = isPending && pendingProvider === provider;
+          const actionLabel = isSignup ? "Sign up with" : "Continue with";
 
           return (
             <button
@@ -96,7 +107,7 @@ export function SocialSignInButtons({
               ) : (
                 <ProviderIcon provider={provider} />
               )}
-              Continue with {OAUTH_PROVIDER_LABELS[provider]}
+              {actionLabel} {OAUTH_PROVIDER_LABELS[provider]}
             </button>
           );
         })}
@@ -107,7 +118,7 @@ export function SocialSignInButtons({
           <div className="w-full border-t border-cos-border" />
         </div>
         <p className="relative mx-auto w-fit bg-[#f6f2eb] px-3 text-xs text-cos-muted">
-          or use email
+          {isSignup ? "or sign up with email" : "or use email"}
         </p>
       </div>
 

@@ -191,7 +191,7 @@ export function SchoolSetupWizard({
                   <p className="mt-2 text-sm leading-relaxed text-cos-muted">
                     {accessCodeRequired
                       ? "A valid founding code is required to create your workspace."
-                      : "Have an early partner code? Enter it here to unlock founding benefits and skip future billing."}
+                      : "Have an early partner code? Enter it here to unlock founding benefits and skip future billing. Don't have a code? You can still set up during early access — contact us at hello@campaignos.app for a founding partner code."}
                   </p>
                 </div>
               </div>

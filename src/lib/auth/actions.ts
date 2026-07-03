@@ -27,6 +27,7 @@ import {
   resolveAuthSiteOrigin,
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
+import { isFoundingAccessCodeRequired } from "@/lib/auth/founding-access";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
@@ -136,6 +137,7 @@ export async function signInWithEmailAction(
 ): Promise<AuthActionState> {
   const email = formData.get("email")?.toString()?.trim() ?? "";
   const inviteToken = formData.get("inviteToken")?.toString()?.trim() || null;
+  const setupIntent = formData.get("setupIntent")?.toString() === "true";
   const next = safeNextPath(formData.get("next")?.toString());
 
   if (!email) {
@@ -157,8 +159,10 @@ export async function signInWithEmailAction(
     email,
     options: {
       emailRedirectTo: redirectTo.toString(),
-      // Invited users may not have a Supabase account yet; allow signup only via invite link.
-      shouldCreateUser: Boolean(inviteToken),
+      // Invited users and new PTO leaders (setup intent) may not have an account yet.
+      shouldCreateUser:
+        Boolean(inviteToken) ||
+        (setupIntent && !isFoundingAccessCodeRequired()),
     },
   });
 

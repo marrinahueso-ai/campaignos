@@ -1,3 +1,12 @@
+/**
+ * Founding / beta access codes are configured via Vercel env vars (not in-app UI):
+ *
+ * - CAMPAIGNOS_BETA_ACCESS_CODE=MYCODE
+ * - CAMPAIGNOS_FOUNDING_ACCESS_CODES=CODE1,CODE2
+ * - CAMPAIGNOS_REQUIRE_ACCESS_CODE=true  (optional; blocks school setup without a valid code)
+ *
+ * Users enter codes on the School Setup welcome step after signing up.
+ */
 const TRUTHY = new Set(["1", "true", "yes", "on"]);
 
 function parseFoundingAccessCodes(): Set<string> {
