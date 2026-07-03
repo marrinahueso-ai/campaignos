@@ -24,13 +24,13 @@ export function EventHeroArtwork({
     return (
       <figure className="flex shrink-0 self-center justify-end lg:justify-center">
         <div
-          className={`flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-[#f7f6f3] shadow-sm ring-1 ring-cos-border/60 ${SQUARE_SIZE_CLASSES[size]}`}
+          className={`aspect-square overflow-hidden rounded-2xl bg-[#f7f6f3] shadow-sm ring-1 ring-cos-border/60 ${SQUARE_SIZE_CLASSES[size]}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={`${eventTitle} artwork`}
-            className="max-h-full max-w-full object-contain object-center"
+            className="h-full w-full object-cover object-center"
           />
         </div>
       </figure>

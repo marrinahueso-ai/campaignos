@@ -19,11 +19,11 @@ import {
   getPreviewCampaignArtworkMap,
   getPreviewCampaignMonthGroups,
   getPreviewCampaignOwnershipMap,
-  previewDashboardArtwork,
-  previewEvent,
   previewMetaScheduledEventIds,
-  previewOwnership,
-  previewSpringCarnivalHubData,
+  previewPlanningHubArtwork,
+  previewPlanningHubData,
+  previewPlanningHubEvent,
+  previewPlanningHubOwnership,
 } from "@/lib/marketing/feature-preview-fixtures";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import { useMemo, useState } from "react";
@@ -39,10 +39,10 @@ export function FeaturePreviewRecordCampaignsFlow() {
     return (
       <div data-record-step="planning-hub">
         <EventPlaybookHubShell
-          event={previewEvent}
-          artwork={previewDashboardArtwork}
-          ownership={previewOwnership}
-          hubData={previewSpringCarnivalHubData}
+          event={previewPlanningHubEvent}
+          artwork={previewPlanningHubArtwork}
+          ownership={previewPlanningHubOwnership}
+          hubData={previewPlanningHubData}
           pastEvents={[]}
           pastLessonCount={0}
           aiStatus={{ available: true, reason: null }}
@@ -55,7 +55,7 @@ export function FeaturePreviewRecordCampaignsFlow() {
     );
   }
 
-  const activeGroup = monthGroups.activeGroups[0];
+  const activeGroups = monthGroups.activeGroups;
 
   return (
     <div className="space-y-6" data-record-step="campaigns">
@@ -67,8 +67,11 @@ export function FeaturePreviewRecordCampaignsFlow() {
         </p>
       </header>
 
-      {activeGroup && (
-        <section className="overflow-hidden border border-cos-border bg-cos-card">
+      {activeGroups.map((activeGroup) => (
+        <section
+          key={activeGroup.key}
+          className="overflow-hidden border border-cos-border bg-cos-card"
+        >
           <div className="border-b border-cos-border px-4 py-4">
             <p className="font-display text-2xl text-cos-text">{activeGroup.label}</p>
           </div>
@@ -80,7 +83,7 @@ export function FeaturePreviewRecordCampaignsFlow() {
               const cardDescription = getEventCardDescription(event.description);
               const formattedTime = formatEventTime(event.time);
               const metaScheduled = previewMetaScheduledEventIds.has(event.id);
-              const isHubTarget = event.id === previewEvent.id;
+              const isHubTarget = event.id === previewPlanningHubEvent.id;
 
               return (
                 <Card key={event.id} interactive className="flex flex-col">
@@ -144,7 +147,7 @@ export function FeaturePreviewRecordCampaignsFlow() {
             })}
           </div>
         </section>
-      )}
+      ))}
     </div>
   );
 }

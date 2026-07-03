@@ -17,7 +17,7 @@ import {
 } from "@/lib/events/campaign-page-utils";
 
 export const PREVIEW_SPRING_ARTWORK = "/images/spring-carnival-campaign.png";
-export const PREVIEW_BACK_TO_SCHOOL_ARTWORK = "/images/fall-festival-campaign.png";
+export const PREVIEW_BACK_TO_SCHOOL_ARTWORK = "/images/back-to-school-fair-campaign.png";
 
 /** Fictional school and team — never use real org or board names in marketing. */
 export const PREVIEW_SCHOOL_NAME = "Oak Ridge Elementary";

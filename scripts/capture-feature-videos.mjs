@@ -24,6 +24,7 @@ const RECORDINGS = [
       await page.waitForTimeout(1800);
       const openHub = page.locator('[data-record-target="open-planning-hub"]');
       await openHub.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
       await openHub.click({ timeout: 10_000 });
       await page.waitForSelector('[data-record-step="planning-hub"]', { timeout: 10_000 });
       await page.waitForTimeout(9000);
