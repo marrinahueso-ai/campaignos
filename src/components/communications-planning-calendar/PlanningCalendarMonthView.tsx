@@ -97,17 +97,9 @@ export function PlanningCalendarMonthView({
                     setDropTarget((current) => (current === date ? null : current))
                   }
                   onDrop={(event) => handleDrop(date, event)}
-                  className={cn(
-                    "absolute inset-0 z-30",
-                    !isDragging && "pointer-events-none",
-                  )}
+                  className="calendar-drop-target absolute inset-0 z-30"
                 />
-                <div
-                  className={cn(
-                    "relative z-10",
-                    isDragging && "pointer-events-none",
-                  )}
-                >
+                <div className="relative z-10">
                   <div className="mb-2 flex items-center justify-between">
                     <span
                       className={cn(
@@ -131,6 +123,7 @@ export function PlanningCalendarMonthView({
                   <UnifiedCalendarDayContent
                     items={dayItems}
                     onSelectItem={onSelectItem}
+                    onDragError={setToastMessage}
                     compact
                     itemLimit={5}
                   />

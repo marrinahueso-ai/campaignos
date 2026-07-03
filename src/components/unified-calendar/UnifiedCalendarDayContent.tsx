@@ -16,6 +16,7 @@ const SECTION_LABELS: Record<CalendarDaySection, string> = {
 interface UnifiedCalendarDayContentProps {
   items: (PlanningCalendarItem & { isOverdue: boolean; isToday: boolean })[];
   onSelectItem: (item: PlanningCalendarItem) => void;
+  onDragError?: (message: string) => void;
   compact?: boolean;
   itemLimit?: number;
 }
@@ -23,6 +24,7 @@ interface UnifiedCalendarDayContentProps {
 export function UnifiedCalendarDayContent({
   items,
   onSelectItem,
+  onDragError,
   compact = false,
   itemLimit = 6,
 }: UnifiedCalendarDayContentProps) {
@@ -68,6 +70,7 @@ export function UnifiedCalendarDayContent({
                   item={item}
                   compact={compact}
                   onSelect={onSelectItem}
+                  onDragError={onDragError}
                 />
               ))}
             </div>

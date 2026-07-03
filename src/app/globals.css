@@ -148,4 +148,17 @@ body {
   .feature-carousel-enter-backward {
     animation: feature-carousel-backward 0.32s ease-out;
   }
+
+  /* Calendar drag-and-drop: sync pointer-events via html class (Safari-safe). */
+  .calendar-drop-target {
+    pointer-events: none;
+  }
+
+  html.calendar-dragging .calendar-drop-target {
+    pointer-events: auto;
+  }
+
+  html.calendar-dragging .calendar-drag-chip {
+    pointer-events: none;
+  }
 }

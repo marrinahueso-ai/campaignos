@@ -193,17 +193,9 @@ export function PlanningCalendarWeekView({
                       )
                     }
                     onDrop={(event) => handleDrop(date, "allday", event)}
-                    className={cn(
-                      "absolute inset-0 z-30",
-                      !isDragging && "pointer-events-none",
-                    )}
+                    className="calendar-drop-target absolute inset-0 z-30"
                   />
-                  <div
-                    className={cn(
-                      "relative z-10 p-1.5",
-                      isDragging && "pointer-events-none",
-                    )}
-                  >
+                  <div className="relative z-10 p-1.5">
                     {placement.allDay.length > 0 ? (
                       <div className="space-y-1">
                         {placement.allDay.slice(0, 4).map((item) => (
@@ -212,6 +204,7 @@ export function PlanningCalendarWeekView({
                             item={item}
                             compact
                             onSelect={onSelectItem}
+                            onDragError={setToastMessage}
                           />
                         ))}
                         {placement.allDay.length > 4 && (
@@ -261,24 +254,17 @@ export function PlanningCalendarWeekView({
                           )
                         }
                         onDrop={(event) => handleDrop(date, hour, event)}
-                        className={cn(
-                          "absolute inset-0 z-30",
-                          !isDragging && "pointer-events-none",
-                        )}
+                        className="calendar-drop-target absolute inset-0 z-30"
                       />
                       {hourItems.length > 0 && (
-                        <div
-                          className={cn(
-                            "absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5",
-                            isDragging && "pointer-events-none",
-                          )}
-                        >
+                        <div className="absolute inset-x-0 top-0 z-10 space-y-0.5 p-0.5">
                           {hourItems.slice(0, 2).map((item) => (
                             <PlanningCalendarItemChip
                               key={item.id}
                               item={item}
                               compact
                               onSelect={onSelectItem}
+                              onDragError={setToastMessage}
                             />
                           ))}
                         </div>

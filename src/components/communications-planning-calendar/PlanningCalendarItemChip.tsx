@@ -5,6 +5,10 @@ import { cn } from "@/lib/utils/cn";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import { MetaPlatformIcons } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import {
+  beginCalendarDragSession,
+  endCalendarDragSession,
+} from "@/components/communications-planning-calendar/planning-calendar-dnd";
+import {
   DISPLAY_STATUS_LABELS,
   DISPLAY_STATUS_STYLES,
   getCalendarItemDisplayTitle,
@@ -53,12 +57,14 @@ interface PlanningCalendarItemChipProps {
   item: PlanningCalendarItem & { isOverdue?: boolean; isToday?: boolean };
   compact?: boolean;
   onSelect?: (item: PlanningCalendarItem) => void;
+  onDragError?: (message: string) => void;
 }
 
 export function PlanningCalendarItemChip({
   item,
   compact = false,
   onSelect,
+  onDragError,
 }: PlanningCalendarItemChipProps) {
   const displayStatus = getDisplayStatus(item);
   const statusStyles = DISPLAY_STATUS_STYLES[displayStatus];
@@ -68,12 +74,35 @@ export function PlanningCalendarItemChip({
   const isDraggable = displayStatus !== "published";
   const didDragRef = useRef(false);
 
+  function reportDragStartFailure(error: unknown) {
+    endCalendarDragSession();
+    console.error("Calendar drag start failed:", error);
+    onDragError?.("Could not start dragging this item. Try again.");
+  }
+
   function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
     didDragRef.current = false;
-    const payload = serializeDragPayload(item);
-    event.dataTransfer.setData(DRAG_MIME, payload);
-    event.dataTransfer.setData("text/plain", payload);
-    event.dataTransfer.effectAllowed = "move";
+
+    try {
+      beginCalendarDragSession();
+
+      const payload = serializeDragPayload(item);
+      if (!item.sourceId || !item.sourceType) {
+        throw new Error("Invalid drag payload");
+      }
+
+      // Safari requires text/plain; set it first.
+      event.dataTransfer.setData("text/plain", payload);
+      event.dataTransfer.setData(DRAG_MIME, payload);
+      event.dataTransfer.effectAllowed = "move";
+
+      if (event.defaultPrevented) {
+        throw new Error("Drag start was prevented by the browser");
+      }
+    } catch (error) {
+      reportDragStartFailure(error);
+      event.preventDefault();
+    }
   }
 
   function handleDrag(_event: React.DragEvent<HTMLDivElement>) {
@@ -81,6 +110,7 @@ export function PlanningCalendarItemChip({
   }
 
   function handleDragEnd() {
+    endCalendarDragSession();
     window.setTimeout(() => {
       didDragRef.current = false;
     }, 0);
@@ -103,16 +133,15 @@ export function PlanningCalendarItemChip({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
       draggable={isDraggable}
       onDragStart={isDraggable ? handleDragStart : undefined}
       onDrag={isDraggable ? handleDrag : undefined}
       onDragEnd={isDraggable ? handleDragEnd : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      aria-label={displayTitle}
       className={cn(
-        "group w-full rounded-lg border text-left transition-all duration-200",
+        "calendar-drag-chip group w-full select-none rounded-lg border text-left transition-all duration-200",
         isDraggable && "cursor-grab active:cursor-grabbing",
         !isDraggable && "cursor-pointer",
         "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
