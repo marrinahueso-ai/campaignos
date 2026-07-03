@@ -5,6 +5,11 @@ import { computePostingHeatmap } from "@/lib/posting-analytics/compute-heatmap";
 import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { TodayWeekEntry, TodayWhatsNext } from "@/types/today";
+import type { Event } from "@/types";
+import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+
+export const PREVIEW_SPRING_ARTWORK = "/images/spring-carnival-campaign.png";
 
 /** Fictional school and team — never use real org or board names in marketing. */
 export const PREVIEW_SCHOOL_NAME = "Oak Ridge Elementary";
@@ -28,11 +33,109 @@ export const previewWhatsNext: TodayWhatsNext = {
 export const previewDashboardArtwork: HeroArtworkSelection = {
   source: "approved_asset",
   caption: "Artwork ready",
-  imageUrl: "/images/fall-festival-campaign.png",
+  imageUrl: PREVIEW_SPRING_ARTWORK,
   label: "Save the Date",
   filename: "spring-carnival-save-the-date.png",
   aspectRatio: "square",
   assetType: "facebook_graphic",
+};
+
+export const previewOwnership: EventRosterOwnership = {
+  committeeName: "Spring Carnival",
+  chairNames: ["Sarah Chen"],
+  vpRoleName: "VP Communications",
+  vpContactName: PREVIEW_USER_FULL_NAME,
+  committeeFilled: true,
+  vpFilled: true,
+};
+
+export const previewEvent: Event = {
+  id: "preview-event",
+  title: PREVIEW_EVENT_TITLE,
+  description:
+    "Annual spring fundraiser with carnival games, food trucks, and a class basket raffle.",
+  date: "2026-07-18",
+  time: "10:00",
+  location: "Oak Ridge Elementary field",
+  audience: "Families and staff",
+  theme: "Spring Carnival",
+  status: "scheduled",
+  category: "Fundraiser",
+  eventType: "family_event",
+  communicationStrategy: "full_campaign",
+  calendarImportId: null,
+  eventOwner: null,
+  approvalOrganizationRoleId: null,
+  budget: "$4,500",
+  volunteerNeeds: "12 volunteers for game booths",
+  goal: "Raise funds for playground upgrades",
+  expectedAttendance: "350 families",
+  planningQuickLinks: {},
+  planningVendors: [],
+  approvedSquareImageUrl: PREVIEW_SPRING_ARTWORK,
+  approvedSquareImageStatus: "filled",
+  createdAt: "2026-05-01T12:00:00Z",
+  updatedAt: "2026-06-15T12:00:00Z",
+};
+
+export const previewHubData: EventPlaybookHubData = {
+  planningProgressPercent: 62,
+  tasks: [
+    {
+      id: "t1",
+      eventId: "preview-event",
+      title: "Confirm food truck lineup",
+      status: "done",
+      dueDate: "2026-06-20",
+      assigneeName: "Sarah Chen",
+      assigneeInitials: "SC",
+      sortOrder: 0,
+      createdAt: "2026-05-01T12:00:00Z",
+      updatedAt: "2026-06-18T12:00:00Z",
+    },
+    {
+      id: "t2",
+      eventId: "preview-event",
+      title: "Order bounce house rental",
+      status: "in_progress",
+      dueDate: "2026-07-01",
+      assigneeName: "Michelle Park",
+      assigneeInitials: "MP",
+      sortOrder: 1,
+      createdAt: "2026-05-01T12:00:00Z",
+      updatedAt: "2026-06-28T12:00:00Z",
+    },
+    {
+      id: "t3",
+      eventId: "preview-event",
+      title: "Recruit class basket volunteers",
+      status: "todo",
+      dueDate: "2026-07-10",
+      assigneeName: null,
+      assigneeInitials: null,
+      sortOrder: 2,
+      createdAt: "2026-05-01T12:00:00Z",
+      updatedAt: "2026-05-01T12:00:00Z",
+    },
+  ],
+  notes: [],
+  files: [],
+  activity: [
+    {
+      id: "a1",
+      eventId: "preview-event",
+      action: "Save the Date artwork approved",
+      actorName: PREVIEW_USER_FULL_NAME,
+      createdAt: "2026-06-22T14:00:00Z",
+    },
+    {
+      id: "a2",
+      eventId: "preview-event",
+      action: "Communication plan generated",
+      actorName: "Sarah Chen",
+      createdAt: "2026-06-10T09:30:00Z",
+    },
+  ],
 };
 
 export const previewWeekEntries: TodayWeekEntry[] = [
@@ -70,6 +173,7 @@ export const previewWeather: TodayWeatherContext = {
 
 export type FeaturePreviewSlug =
   | "dashboard"
+  | "planning-hub"
   | "workflow"
   | "calendar"
   | "heatmap"
@@ -79,6 +183,7 @@ export type FeaturePreviewSlug =
 
 export const FEATURE_PREVIEW_SLUGS: FeaturePreviewSlug[] = [
   "dashboard",
+  "planning-hub",
   "workflow",
   "calendar",
   "heatmap",
@@ -139,7 +244,7 @@ export const previewCalendarItems: PlanningCalendarItem[] = [
     eventId: "e1",
     eventTitle: PREVIEW_EVENT_TITLE,
     title: PREVIEW_EVENT_TITLE,
-    scheduledDate: "2026-10-15",
+    scheduledDate: "2026-07-18",
     sourceType: "event",
     channel: null,
     communicationType: "event",
@@ -149,13 +254,42 @@ export const previewCalendarItems: PlanningCalendarItem[] = [
     eventId: "e1",
     eventTitle: PREVIEW_EVENT_TITLE,
     title: "Day Before",
-    scheduledDate: "2026-10-14",
+    timelineStepTitle: "Day Before",
+    scheduledDate: "2026-07-17",
     sourceType: "timeline_task",
     channel: "facebook",
-    communicationType: "scheduled_post",
+    communicationType: "meta_milestone",
+    status: "scheduled",
+    publishStatus: "scheduled",
   }),
   createPreviewPlanningItem({
     id: "c3",
+    eventId: "e1",
+    eventTitle: PREVIEW_EVENT_TITLE,
+    title: "Day Of",
+    timelineStepTitle: "Day Of",
+    scheduledDate: "2026-07-18",
+    sourceType: "timeline_task",
+    channel: "facebook",
+    communicationType: "meta_milestone",
+    status: "scheduled",
+    publishStatus: "scheduled",
+  }),
+  createPreviewPlanningItem({
+    id: "c4",
+    eventId: "e1",
+    eventTitle: PREVIEW_EVENT_TITLE,
+    title: "Save the Date",
+    timelineStepTitle: "Save the Date",
+    scheduledDate: "2026-06-15",
+    sourceType: "timeline_task",
+    channel: "facebook",
+    communicationType: "meta_milestone",
+    status: "published",
+    publishStatus: "published",
+  }),
+  createPreviewPlanningItem({
+    id: "c5",
     eventId: "e2",
     eventTitle: "PTO General Meeting",
     title: "PTO General Meeting",
@@ -164,14 +298,50 @@ export const previewCalendarItems: PlanningCalendarItem[] = [
     channel: null,
     communicationType: "event",
   }),
+  createPreviewPlanningItem({
+    id: "c6",
+    eventId: "e3",
+    eventTitle: "Spirit Night",
+    title: "Spirit Night",
+    scheduledDate: "2026-07-25",
+    sourceType: "event",
+    channel: null,
+    communicationType: "event",
+  }),
+  createPreviewPlanningItem({
+    id: "c7",
+    eventId: "e1",
+    eventTitle: PREVIEW_EVENT_TITLE,
+    title: "3 Days Out",
+    timelineStepTitle: "3 Days Out",
+    scheduledDate: "2026-07-15",
+    sourceType: "timeline_task",
+    channel: "instagram",
+    communicationType: "meta_milestone",
+    status: "scheduled",
+    publishStatus: "scheduled",
+  }),
+  createPreviewPlanningItem({
+    id: "c8",
+    eventId: "e1",
+    eventTitle: PREVIEW_EVENT_TITLE,
+    title: "Teaser post",
+    timelineStepTitle: "Teaser post",
+    scheduledDate: "2026-07-03",
+    sourceType: "timeline_task",
+    channel: "facebook",
+    communicationType: "meta_milestone",
+    status: "published",
+    publishStatus: "published",
+  }),
 ];
 
 export const previewMetaPublishBundles: MetaPublishBundle[] = [
   {
     relativeDay: -1,
     title: "Day Before",
-    dueDate: "2026-10-14",
-    scheduledFor: "2026-10-14T09:00:00",
+    dueDate: "2026-07-17",
+    scheduledFor: "2026-07-17T09:00:00",
     status: "needs_artwork",
     isMetaPost: true,
     channel: "facebook",
@@ -190,8 +360,8 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
   {
     relativeDay: 0,
     title: "Day Of",
-    dueDate: "2026-10-15",
-    scheduledFor: "2026-10-15T07:00:00",
+    dueDate: "2026-07-18",
+    scheduledFor: "2026-07-18T07:00:00",
     status: "channel_only",
     isMetaPost: false,
     channel: null,
@@ -212,9 +382,10 @@ export const previewPublishingQueue: PlanningCalendarItem[] = [
     eventId: "e1",
     eventTitle: PREVIEW_EVENT_TITLE,
     title: "Day Before",
-    scheduledDate: "2026-10-14",
+    timelineStepTitle: "Day Before",
+    scheduledDate: "2026-07-17",
     channel: "facebook",
-    communicationType: "scheduled_post",
+    communicationType: "meta_milestone",
     publishStatus: "ready",
     status: "ready",
   }),
@@ -225,10 +396,11 @@ export const previewPublishingScheduled: PlanningCalendarItem[] = [
     id: "s1",
     eventId: "e1",
     eventTitle: PREVIEW_EVENT_TITLE,
-    title: "Save the Date",
-    scheduledDate: "2026-09-01",
+    title: "3 Days Out",
+    timelineStepTitle: "3 Days Out",
+    scheduledDate: "2026-07-15",
     channel: "instagram",
-    communicationType: "scheduled_post",
+    communicationType: "meta_milestone",
     publishStatus: "scheduled",
     status: "scheduled",
   }),
@@ -239,10 +411,11 @@ export const previewPublishingPublished: PlanningCalendarItem[] = [
     id: "p1",
     eventId: "e1",
     eventTitle: PREVIEW_EVENT_TITLE,
-    title: "Teaser post",
-    scheduledDate: "2026-08-15",
+    title: "Save the Date",
+    timelineStepTitle: "Save the Date",
+    scheduledDate: "2026-06-15",
     channel: "facebook",
-    communicationType: "scheduled_post",
+    communicationType: "meta_milestone",
     publishStatus: "published",
     status: "published",
   }),

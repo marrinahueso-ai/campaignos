@@ -17,6 +17,7 @@ export function FeaturePreviewHeatmapSlide() {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers(),
   );
+  const [showPostingHeatmap, setShowPostingHeatmap] = useState(true);
 
   const enrichedItems = useMemo(
     () =>
@@ -37,7 +38,8 @@ export function FeaturePreviewHeatmapSlide() {
         upcomingItems={enrichedItems.slice(0, 3)}
         showImportList={false}
         postingHeatmap={previewPostingHeatmap}
-        showPostingHeatmap
+        showPostingHeatmap={showPostingHeatmap}
+        onShowPostingHeatmapChange={setShowPostingHeatmap}
         onViewChange={() => {}}
         onPrevious={() => {}}
         onNext={() => {}}
@@ -50,7 +52,7 @@ export function FeaturePreviewHeatmapSlide() {
           items={enrichedItems}
           anchorDate={PREVIEW_TODAY}
           postingHeatmap={previewPostingHeatmap}
-          showPostingHeatmap
+          showPostingHeatmap={showPostingHeatmap}
           onSelectItem={() => {}}
           onRescheduled={() => {}}
         />

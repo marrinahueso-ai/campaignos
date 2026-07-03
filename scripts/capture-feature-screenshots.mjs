@@ -15,6 +15,7 @@ const outDir = path.join(root, "public/images/features");
 
 const SLUGS = [
   "dashboard",
+  "planning-hub",
   "workflow",
   "calendar",
   "heatmap",

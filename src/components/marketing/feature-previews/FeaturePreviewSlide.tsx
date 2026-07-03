@@ -20,6 +20,7 @@ import { FeaturePreviewChrome } from "@/components/marketing/feature-previews/Fe
 import { FeaturePreviewWorkflowSlide } from "@/components/marketing/feature-previews/FeaturePreviewWorkflowSlide";
 import { FeaturePreviewApprovalsSlide } from "@/components/marketing/feature-previews/FeaturePreviewApprovalsSlide";
 import { FeaturePreviewPublishSlide } from "@/components/marketing/feature-previews/FeaturePreviewPublishSlide";
+import { FeaturePreviewPlanningHubSlide } from "@/components/marketing/feature-previews/FeaturePreviewPlanningHubSlide";
 
 interface FeaturePreviewSlideProps {
   slug: FeaturePreviewSlug;
@@ -74,6 +75,8 @@ function FeaturePreviewSlideContent({ slug }: { slug: FeaturePreviewSlug }) {
           />
         </div>
       );
+    case "planning-hub":
+      return <FeaturePreviewPlanningHubSlide />;
     case "workflow":
       return <FeaturePreviewWorkflowSlide />;
     case "calendar":

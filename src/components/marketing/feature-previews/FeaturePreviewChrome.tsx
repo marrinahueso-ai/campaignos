@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Home,
   LayoutDashboard,
+  LayoutGrid,
   Megaphone,
   Palette,
   Send,
@@ -15,6 +16,7 @@ import type { FeaturePreviewSlug } from "@/lib/marketing/feature-preview-fixture
 
 const NAV_ITEMS = [
   { slug: "dashboard" as const, label: "Dashboard", icon: LayoutDashboard, href: "dashboard" },
+  { slug: "planning-hub" as const, label: "Events", icon: LayoutGrid, href: "planning-hub" },
   { slug: "calendar" as const, label: "Calendar", icon: CalendarRange, href: "calendar" },
   { slug: "workflow" as const, label: "Campaigns", icon: Megaphone, href: "workflow" },
   { slug: "publish" as const, label: "Publishing", icon: Send, href: "publish" },

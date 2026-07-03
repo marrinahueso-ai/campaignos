@@ -28,6 +28,7 @@ export type ArtworkV2PickerEntry = ArtworkWorkflowItem & {
 interface ArtworkV2PickerScreenProps {
   items: ArtworkV2PickerEntry[];
   isPhaseWorkflow?: boolean;
+  defaultExpandedDays?: number[];
   onSelect: (item: ArtworkWorkflowItem) => void;
   onSelectMilestone?: (relativeDay: number) => void;
   showGenerateRemaining?: boolean;
@@ -84,6 +85,7 @@ function milestoneStatusDescription(
 export function ArtworkV2PickerScreen({
   items,
   isPhaseWorkflow = false,
+  defaultExpandedDays,
   onSelect,
   onSelectMilestone,
   showGenerateRemaining = false,
@@ -91,7 +93,9 @@ export function ArtworkV2PickerScreen({
   getMilestoneStatus,
 }: ArtworkV2PickerScreenProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [expandedDays, setExpandedDays] = useState<Set<number>>(() => new Set());
+  const [expandedDays, setExpandedDays] = useState<Set<number>>(
+    () => new Set(defaultExpandedDays ?? []),
+  );
 
   const toggleExpanded = useCallback((relativeDay: number) => {
     setExpandedDays((current) => {

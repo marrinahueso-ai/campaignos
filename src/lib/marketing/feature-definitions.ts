@@ -3,6 +3,7 @@ import {
   Flame,
   ImageIcon,
   LayoutDashboard,
+  LayoutGrid,
   Megaphone,
   Send,
   Users,
@@ -31,6 +32,19 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
       "Next Up highlights the one thing to focus on right now",
       "Quick snapshots for approvals and recently published posts",
       "Weather and your week on the side — context, not clutter",
+    ],
+  },
+  {
+    id: "planning-hub",
+    icon: LayoutGrid,
+    title: "Event planning hub",
+    summary:
+      "Every campaign gets a home — overview, tasks, files, and social in one place.",
+    highlights: ["Event overview", "Planning checklist", "Quick links"],
+    details: [
+      "See date, budget, attendance, and committee at a glance",
+      "Track planning tasks with progress toward event day",
+      "Jump to artwork, schedule, or settings from quick links",
     ],
   },
   {

@@ -2,10 +2,38 @@
 
 import { ArtworkV2PickerScreen } from "@/components/artwork-v2/ArtworkV2PickerScreen";
 import type { ArtworkV2PickerEntry } from "@/components/artwork-v2/ArtworkV2PickerScreen";
-
-const FALL_FESTIVAL_ART = "/images/fall-festival-campaign.png";
+import type { MilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
+import { PREVIEW_SPRING_ARTWORK } from "@/lib/marketing/feature-preview-fixtures";
 
 const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
+  {
+    id: "feed-std",
+    label: "Save the Date",
+    assetType: "facebook_graphic",
+    planLabel: "Save the Date Feed",
+    formatLabel: "Feed 1:1",
+    metaPlacement: "feed",
+    relativeDay: -30,
+    channel: "facebook",
+    channelLabel: "Facebook",
+    isApproved: true,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadFilename: "save-the-date-feed.png",
+  },
+  {
+    id: "story-std",
+    label: "Save the Date",
+    assetType: "instagram_story",
+    planLabel: "Save the Date Story",
+    formatLabel: "Story 9:16",
+    metaPlacement: "story",
+    relativeDay: -30,
+    channel: "instagram",
+    channelLabel: "Instagram",
+    isApproved: true,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
+    downloadFilename: "save-the-date-story.png",
+  },
   {
     id: "feed-3",
     label: "3 Days Out",
@@ -17,7 +45,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "facebook",
     channelLabel: "Facebook",
     isApproved: true,
-    downloadUrl: FALL_FESTIVAL_ART,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
     downloadFilename: "3-days-out-feed.png",
   },
   {
@@ -31,7 +59,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "instagram",
     channelLabel: "Instagram",
     isApproved: true,
-    downloadUrl: FALL_FESTIVAL_ART,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
     downloadFilename: "3-days-out-story.png",
   },
   {
@@ -45,7 +73,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "facebook",
     channelLabel: "Facebook",
     isApproved: true,
-    downloadUrl: FALL_FESTIVAL_ART,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
     downloadFilename: "day-before-feed.png",
   },
   {
@@ -59,7 +87,7 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
     channel: "instagram",
     channelLabel: "Instagram",
     isApproved: true,
-    downloadUrl: FALL_FESTIVAL_ART,
+    downloadUrl: PREVIEW_SPRING_ARTWORK,
     downloadFilename: "day-before-story.png",
   },
   {
@@ -92,12 +120,24 @@ const MOCK_ITEMS: ArtworkV2PickerEntry[] = [
   },
 ];
 
+function previewMilestoneStatus(relativeDay: number): MilestoneArtworkStatus {
+  if (relativeDay === 0) {
+    return "not_started";
+  }
+  if (relativeDay === -1) {
+    return "ready_for_review";
+  }
+  return "complete";
+}
+
 export function FeaturePreviewArtworkSlide() {
   return (
     <div className="pointer-events-none">
       <ArtworkV2PickerScreen
         items={MOCK_ITEMS}
         isPhaseWorkflow
+        defaultExpandedDays={[-30, -3, -1]}
+        getMilestoneStatus={previewMilestoneStatus}
         onSelect={() => {}}
         onSelectMilestone={() => {}}
       />
