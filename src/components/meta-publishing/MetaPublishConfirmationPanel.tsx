@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, CheckCircle2, PartyPopper } from "lucide-react";
+import { CalendarCheck, CheckCircle2, PartyPopper, User } from "lucide-react";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { Button } from "@/components/ui/Button";
 import {
@@ -19,6 +19,7 @@ import { CAMPAIGN_WORKFLOW_STEP_LABELS } from "@/components/event-workspace/Camp
 import type { NextMilestoneTarget } from "@/lib/meta-publishing/next-milestone";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import { cn } from "@/lib/utils/cn";
 
 export type MetaPublishConfirmationAction = "scheduled" | "published";
 
@@ -43,6 +44,7 @@ function resolveWhen(bundle: MetaPublishBundle): string {
 interface MetaPublishConfirmationPanelProps {
   bundle: MetaPublishBundle;
   action: MetaPublishConfirmationAction;
+  approvalRoleLabel?: string | null;
   nextMilestone: NextMilestoneTarget | null;
   allComplete: boolean;
   onNextMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
@@ -50,9 +52,23 @@ interface MetaPublishConfirmationPanelProps {
   onContinueReviewing?: () => void;
 }
 
+function resolveStoryCaptionDisplay(
+  feedCaption: string,
+  storyCaption: string,
+): string {
+  if (!storyCaption) {
+    return "Syncs from feed";
+  }
+  const feedPrefix = feedCaption.slice(0, storyCaption.length);
+  return storyCaption === feedPrefix || storyCaption === feedCaption
+    ? "Syncs from feed"
+    : storyCaption;
+}
+
 export function MetaPublishConfirmationPanel({
   bundle,
   action,
+  approvalRoleLabel = null,
   nextMilestone,
   allComplete,
   onNextMilestone,
@@ -71,6 +87,9 @@ export function MetaPublishConfirmationPanel({
 
   const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
   const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
+  const feedCaption = bundle.captionPreview?.trim() ?? "";
+  const storyCaption = bundle.storyCaptionPreview?.trim() ?? "";
+  const storyCaptionDisplay = resolveStoryCaptionDisplay(feedCaption, storyCaption);
   const Icon = action === "scheduled" ? CalendarCheck : CheckCircle2;
 
   return (
@@ -90,6 +109,15 @@ export function MetaPublishConfirmationPanel({
             <CardDescription className="mt-2 text-base text-cos-text">
               {statusLine}
             </CardDescription>
+            {approvalRoleLabel && (
+              <p className="mt-3 inline-flex items-start gap-2 text-sm text-cos-text">
+                <User className="mt-0.5 h-4 w-4 shrink-0 text-cos-muted" aria-hidden />
+                <span>
+                  <span className="font-medium text-cos-muted">Approver · </span>
+                  {approvalRoleLabel}
+                </span>
+              </p>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -117,6 +145,34 @@ export function MetaPublishConfirmationPanel({
               frameClassName="aspect-[9/16]"
               placeholder="Story"
             />
+          )}
+        </div>
+      )}
+
+      {(showFeed || showStory) && (feedCaption || showStory) && (
+        <div className="space-y-3 border-b border-emerald-100 px-6 py-4">
+          {showFeed && (
+            <div>
+              <p className="cos-section-title">Feed caption</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap text-cos-text">
+                {feedCaption || "No feed caption yet."}
+              </p>
+            </div>
+          )}
+          {showStory && (
+            <div>
+              <p className="cos-section-title">Story caption</p>
+              <p
+                className={cn(
+                  "mt-1 text-sm whitespace-pre-wrap",
+                  storyCaptionDisplay === "Syncs from feed"
+                    ? "text-cos-muted italic"
+                    : "text-cos-text",
+                )}
+              >
+                {storyCaptionDisplay}
+              </p>
+            </div>
           )}
         </div>
       )}

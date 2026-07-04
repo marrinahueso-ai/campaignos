@@ -64,10 +64,9 @@ export function milestoneWorkflowBadgeLabel(status: MilestoneWorkflowBadgeStatus
 export function milestoneWorkflowBadgeClassName(status: MilestoneWorkflowBadgeStatus): string {
   switch (status) {
     case "published":
+    case "scheduled":
     case "complete":
       return "bg-emerald-50 text-emerald-700";
-    case "scheduled":
-      return "bg-cos-info/50 text-cos-text";
     case "ready_for_review":
       return "bg-amber-50 text-amber-800";
     case "in_progress":

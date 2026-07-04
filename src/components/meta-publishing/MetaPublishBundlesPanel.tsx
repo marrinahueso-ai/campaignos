@@ -518,6 +518,8 @@ interface MetaPublishBundlesPanelProps {
   showPostKit?: boolean;
   onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
   onViewPublished?: () => void;
+  /** When true, hides header bulk actions (Review & publish uses per-milestone actions only). */
+  hideBulkActions?: boolean;
 }
 
 export function MetaPublishBundlesPanel({
@@ -537,6 +539,7 @@ export function MetaPublishBundlesPanel({
   showPostKit = false,
   onNavigateToMilestone,
   onViewPublished,
+  hideBulkActions = false,
 }: MetaPublishBundlesPanelProps) {
   const router = useRouter();
   const [confirmation, setConfirmation] = useState<{
@@ -774,8 +777,9 @@ export function MetaPublishBundlesPanel({
   const actionableCount =
     counts.ready + counts.scheduled + counts.approved + counts.failed;
 
-  const primaryAction =
-    mode === "schedule" && counts.ready > 0
+  const primaryAction = hideBulkActions
+    ? null
+    : mode === "schedule" && counts.ready > 0
       ? {
           label: `Schedule all ready (${counts.ready})`,
           onClick: () => runAction(onScheduleAll),
@@ -788,27 +792,27 @@ export function MetaPublishBundlesPanel({
         : mode === "publishing" &&
               (counts.approved > 0 || counts.failed > 0) &&
               onPublishAll
+          ? {
+              label:
+                counts.failed > 0
+                  ? `Publish now (${counts.approved + counts.failed})`
+                  : `Publish all queued now (${counts.approved})`,
+              onClick: () => runAction(onPublishAll),
+            }
+          : mode === "publishing" && counts.scheduled > 0 && onApproveAll
             ? {
-                label:
-                  counts.failed > 0
-                    ? `Publish now (${counts.approved + counts.failed})`
-                    : `Publish all queued now (${counts.approved})`,
-                onClick: () => runAction(onPublishAll),
+                label: `Approve all scheduled (${counts.scheduled})`,
+                onClick: () => runAction(onApproveAll),
               }
-            : mode === "publishing" && counts.scheduled > 0 && onApproveAll
+            : mode === "publishing" && actionableCount > 0 && onPublishAll
               ? {
-                  label: `Approve all scheduled (${counts.scheduled})`,
-                  onClick: () => runAction(onApproveAll),
+                  label:
+                    counts.failed > 0
+                      ? `Publish now (${actionableCount})`
+                      : `Publish all ready now (${actionableCount})`,
+                  onClick: () => runAction(onPublishAll),
                 }
-              : mode === "publishing" && actionableCount > 0
-                ? {
-                    label:
-                      counts.failed > 0
-                        ? `Publish now (${actionableCount})`
-                        : `Publish all ready now (${actionableCount})`,
-                    onClick: () => runAction(onPublishAll),
-                  }
-                : null;
+              : null;
 
   const showCaptionEditing =
     mode === "schedule" &&
@@ -850,6 +854,7 @@ export function MetaPublishBundlesPanel({
         <MetaPublishConfirmationPanel
           bundle={confirmedBundle}
           action={confirmation.action}
+          approvalRoleLabel={approvalRoleLabel}
           nextMilestone={nextMilestone}
           allComplete={allComplete}
           onNextMilestone={handleNextMilestone}

@@ -1,5 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
-import { MetaPublishBundleCard } from "@/components/meta-publishing/MetaPublishBundlesPanel";
+import { CalendarCheck, CheckCircle2 } from "lucide-react";
+import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TimelineSection } from "@/components/event-workspace/TimelineSection";
 import {
@@ -8,53 +8,223 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
+import {
+  isFeedSurfaceEnabled,
+  isStorySurfaceEnabled,
+} from "@/lib/artwork-v2/campaign-phases";
+import {
+  milestoneWorkflowBadgeClassName,
+  milestoneWorkflowBadgeLabel,
+  resolvePublishWorkflowBadgeStatus,
+} from "@/lib/meta-publishing/milestone-workflow-badge";
+import { formatDateTime } from "@/lib/utils/dates";
+import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 import type { ActivityLogEntry } from "@/types/event-workspace";
-import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
+import { cn } from "@/lib/utils/cn";
 
 interface CampaignPublishedStepProps {
   metaPublishBundles: MetaPublishBundle[];
   timeline: ActivityLogEntry[];
 }
 
+const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = ["scheduled", "approved"];
+
+function sortBundlesByWhen(bundles: MetaPublishBundle[]): MetaPublishBundle[] {
+  return [...bundles].sort((left, right) => {
+    const leftWhen =
+      left.scheduledFor ??
+      (left.dueDate ? planDueDateToScheduledTime(left.dueDate) : null) ??
+      "";
+    const rightWhen =
+      right.scheduledFor ??
+      (right.dueDate ? planDueDateToScheduledTime(right.dueDate) : null) ??
+      "";
+
+    if (leftWhen && rightWhen && leftWhen !== rightWhen) {
+      return leftWhen.localeCompare(rightWhen);
+    }
+
+    return left.relativeDay - right.relativeDay;
+  });
+}
+
+function resolveBundleWhen(bundle: MetaPublishBundle): string | null {
+  if (bundle.scheduledFor) {
+    return bundle.scheduledFor;
+  }
+
+  if (bundle.dueDate) {
+    return planDueDateToScheduledTime(bundle.dueDate);
+  }
+
+  return null;
+}
+
+function formatWhenLine(bundle: MetaPublishBundle, section: "scheduled" | "published"): string {
+  const when = resolveBundleWhen(bundle);
+  if (!when) {
+    return section === "published" ? "Published" : "Scheduled";
+  }
+
+  const formatted = formatDateTime(when);
+  if (section === "published") {
+    return `Published ${formatted}`;
+  }
+
+  if (bundle.status === "approved") {
+    return `Goes out ${formatted} · Queued for auto-post`;
+  }
+
+  return `Goes out ${formatted}`;
+}
+
+function PublishedMilestoneCard({
+  bundle,
+  section,
+}: {
+  bundle: MetaPublishBundle;
+  section: "scheduled" | "published";
+}) {
+  const badgeStatus = resolvePublishWorkflowBadgeStatus(bundle.status);
+  const showFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+  const showStory = isStorySurfaceEnabled(bundle.metaPublishSurfaces);
+  const hasThumbnails = showFeed || showStory;
+
+  return (
+    <article {...milestoneAccordionCardProps(false)}>
+      <div className="flex items-start gap-4 border-b border-cos-border px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-2xl text-cos-text">{bundle.title}</h3>
+          <p className="mt-0.5 text-xs text-cos-muted">{formatWhenLine(bundle, section)}</p>
+        </div>
+
+        {badgeStatus && (
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
+              milestoneWorkflowBadgeClassName(badgeStatus),
+            )}
+          >
+            {section === "scheduled" && bundle.status === "approved"
+              ? "Queued for auto-post"
+              : milestoneWorkflowBadgeLabel(badgeStatus)}
+          </span>
+        )}
+      </div>
+
+      {hasThumbnails && (
+        <div className="flex gap-3 p-4">
+          {showFeed && (
+            <ArtworkLightboxThumbnail
+              src={bundle.feedArtworkUrl}
+              alt={`${bundle.title} feed artwork`}
+              label="Feed 1:1"
+              variant="feed"
+              wrapperClassName="w-20"
+              frameClassName="aspect-square"
+              placeholder="Feed"
+            />
+          )}
+          {showStory && (
+            <ArtworkLightboxThumbnail
+              src={bundle.storyArtworkUrl}
+              alt={`${bundle.title} story artwork`}
+              label="Story"
+              variant="story"
+              wrapperClassName="w-14"
+              frameClassName="aspect-[9/16]"
+              placeholder="Story"
+            />
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function MilestoneSection({
+  title,
+  description,
+  bundles,
+  section,
+  emptyIcon: EmptyIcon,
+  emptyTitle,
+  emptyDescription,
+}: {
+  title: string;
+  description: string;
+  bundles: MetaPublishBundle[];
+  section: "scheduled" | "published";
+  emptyIcon: typeof CalendarCheck;
+  emptyTitle: string;
+  emptyDescription: string;
+}) {
+  return (
+    <Card padding="none" className="overflow-hidden">
+      <CardHeader className="border-b border-cos-border px-6 py-5">
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+
+      {bundles.length === 0 ? (
+        <EmptyState
+          icon={EmptyIcon}
+          title={emptyTitle}
+          description={emptyDescription}
+          className="px-6 py-8"
+        />
+      ) : (
+        <div className="space-y-4 p-5">
+          {bundles.map((bundle) => (
+            <PublishedMilestoneCard key={bundle.relativeDay} bundle={bundle} section={section} />
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function CampaignPublishedStep({
   metaPublishBundles,
   timeline,
 }: CampaignPublishedStepProps) {
-  const publishedBundles = metaPublishBundles.filter(
-    (bundle) => bundle.status === "published",
+  const metaBundles = metaPublishBundles.filter(
+    (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
   );
 
-  const publishActivity = timeline.filter(
-    (entry) => entry.activityType === "published",
+  const scheduledBundles = sortBundlesByWhen(
+    metaBundles.filter((bundle) => SCHEDULED_STATUSES.includes(bundle.status)),
   );
 
-  const hasPublished = publishedBundles.length > 0 || publishActivity.length > 0;
+  const publishedBundles = sortBundlesByWhen(
+    metaBundles.filter((bundle) => bundle.status === "published"),
+  );
+
+  const publishActivity = timeline.filter((entry) => entry.activityType === "published");
 
   return (
     <div className="space-y-6">
-      {!hasPublished ? (
-        <EmptyState
-          icon={CheckCircle2}
-          title="Nothing published yet"
-          description="When communications are marked published, they will appear here as event history."
-        />
-      ) : (
-        <div className="space-y-4">
-          <Card padding="none" className="overflow-hidden">
-            <CardHeader className="border-b border-cos-border px-6 py-5">
-              <CardTitle>Published milestones</CardTitle>
-              <CardDescription>
-                Meta feed and story posts marked published for this event.
-              </CardDescription>
-            </CardHeader>
-            <div className="space-y-4 p-5">
-              {publishedBundles.map((bundle) => (
-                <MetaPublishBundleCard key={bundle.relativeDay} bundle={bundle} showCaptionPreview={false} />
-              ))}
-            </div>
-          </Card>
-        </div>
-      )}
+      <MilestoneSection
+        title="Scheduled milestones"
+        description="Meta posts queued or waiting for their go-live time."
+        bundles={scheduledBundles}
+        section="scheduled"
+        emptyIcon={CalendarCheck}
+        emptyTitle="Nothing scheduled yet"
+        emptyDescription="When you schedule posts in Review & publish, they will appear here with their go-live date and time."
+      />
+
+      <MilestoneSection
+        title="Published milestones"
+        description="Meta feed and story posts that have gone live for this event."
+        bundles={publishedBundles}
+        section="published"
+        emptyIcon={CheckCircle2}
+        emptyTitle="Nothing published yet"
+        emptyDescription="When communications are marked published, they will appear here with their publish date and time."
+      />
 
       {publishActivity.length > 0 && (
         <section className="space-y-3">

@@ -5,7 +5,6 @@ import { MetaPublishBundlesPanel } from "@/components/meta-publishing/MetaPublis
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   approveAllScheduledMetaBundlesAction,
-  publishAllActionableMetaBundlesNowAction,
 } from "@/lib/meta-publishing/actions";
 import {
   allReviewPublishMetaBundlesHandled,
@@ -87,10 +86,10 @@ export function CampaignReviewPublishStep({
           initialExpandedDay={initialExpandedDay}
           eventLink={eventLink}
           showPostKit
+          hideBulkActions
           onNavigateToMilestone={onNavigateToMilestone}
           onViewPublished={onViewPublished}
           onApproveAll={() => approveAllScheduledMetaBundlesAction(eventId)}
-          onPublishAll={() => publishAllActionableMetaBundlesNowAction(eventId)}
         />
       ) : (
         <EmptyState
