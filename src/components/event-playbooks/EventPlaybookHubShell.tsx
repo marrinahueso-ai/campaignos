@@ -63,8 +63,8 @@ export function EventPlaybookHubShell({
   const planningNoteCount = hubData.notes.filter((n) => n.noteType === "note").length;
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-4 border-b border-cos-border pb-8">
+    <div className="space-y-6">
+      <header className="space-y-3 border-b border-cos-border pb-5 sm:pb-6">
         <Link
           href="/events"
           className="inline-flex items-center gap-1.5 text-xs font-medium tracking-wide text-cos-muted transition-colors hover:text-cos-text"
@@ -76,24 +76,24 @@ export function EventPlaybookHubShell({
         <div
           className={
             showArtwork
-              ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6"
+              ? "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 lg:gap-5"
               : undefined
           }
         >
           <div className="min-w-0">
             <p className="studio-eyebrow">Planning hub</p>
-            <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">
+            <h1 className="font-display mt-1 text-3xl leading-tight text-cos-text sm:text-4xl">
               {event.title}
             </h1>
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-cos-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-cos-muted sm:text-sm">
               <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="h-4 w-4" />
+                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                 {formatEventDate(event.date)}
                 {formattedTime ? ` · ${formattedTime}` : ""}
               </span>
               {event.location && (
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4" />
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
                   {event.location}
                 </span>
               )}
@@ -111,7 +111,7 @@ export function EventPlaybookHubShell({
         </div>
 
         {ownership && (
-          <div className="mt-4">
+          <div className="mt-2">
             <EventOwnershipStrip ownership={ownership} />
           </div>
         )}
