@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { ChevronDown, ChevronRight, RotateCcw, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   MetaSocialCaptionField,
@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
-import { generateAllMetaSocialCaptionsAction } from "@/lib/meta-captions/actions";
 import { channelLabelForBundle } from "@/lib/meta-publishing/bundle-display";
 import {
   publishMetaBundleNowAction,
@@ -528,9 +527,7 @@ export function MetaPublishBundlesPanel({
 }: MetaPublishBundlesPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [captionError, setCaptionError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isGeneratingCaptions, startCaptionGeneration] = useTransition();
   const [skipPendingDay, setSkipPendingDay] = useState<number | null>(null);
   const [schedulePendingDay, setSchedulePendingDay] = useState<number | null>(null);
   const [publishPendingDay, setPublishPendingDay] = useState<number | null>(null);
@@ -754,18 +751,6 @@ export function MetaPublishBundlesPanel({
   const actionableCount =
     counts.ready + counts.scheduled + counts.approved + counts.failed;
 
-  function runGenerateAllCaptions() {
-    setCaptionError(null);
-    startCaptionGeneration(async () => {
-      const result = await generateAllMetaSocialCaptionsAction(eventId);
-      if (!result.success) {
-        setCaptionError(result.error ?? "Unable to generate captions.");
-        return;
-      }
-      router.refresh();
-    });
-  }
-
   const primaryAction =
     mode === "schedule" && counts.ready > 0
       ? {
@@ -837,31 +822,16 @@ export function MetaPublishBundlesPanel({
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={isPending || isGeneratingCaptions}
+                    disabled={isPending}
                     onClick={primaryAction.onClick}
                   >
                     {isPending ? "Working…" : primaryAction.label}
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  disabled={isGeneratingCaptions || !aiStatus.available}
-                  onClick={runGenerateAllCaptions}
-                  title={aiStatus.available ? undefined : (aiStatus.reason ?? undefined)}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {isGeneratingCaptions ? "Generating…" : "Generate all social captions"}
-                </Button>
               </div>
             </div>
           </CardHeader>
         </Card>
-      )}
-
-      {captionError && (
-        <p className="text-sm text-red-600" role="alert">
-          {captionError}
-        </p>
       )}
 
       {error && (
@@ -927,7 +897,7 @@ export function MetaPublishBundlesPanel({
                       eventId,
                       aiStatus: aiStatus!,
                       userRole: userRole!,
-                      disabled: isPending || isGeneratingCaptions,
+                      disabled: isPending,
                     }
                   : undefined
               }

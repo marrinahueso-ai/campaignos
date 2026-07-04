@@ -1,8 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { MetaSocialCaptionMilestoneCard } from "@/components/meta-captions/MetaSocialCaptionField";
 import { Button } from "@/components/ui/Button";
 import {
@@ -11,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
-import { generateAllMetaSocialCaptionsAction } from "@/lib/meta-captions/actions";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
@@ -45,9 +42,6 @@ export function MetaSocialCaptionsSection({
   approvalRoleLabel = null,
   onNavigateToPublish,
 }: MetaSocialCaptionsSectionProps) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const [expandedDay, setExpandedDay] = useState<number | null>(initialExpandedDay);
 
   useEffect(() => {
@@ -75,18 +69,6 @@ export function MetaSocialCaptionsSection({
     isMilestoneComplete(expandedMilestone) &&
     Boolean(onNavigateToPublish);
 
-  function runGenerateAll() {
-    setError(null);
-    startTransition(async () => {
-      const result = await generateAllMetaSocialCaptionsAction(eventId);
-      if (!result.success) {
-        setError(result.error ?? "Unable to generate captions.");
-        return;
-      }
-      router.refresh();
-    });
-  }
-
   function toggleMilestone(relativeDay: number) {
     setExpandedDay((current) => (current === relativeDay ? null : relativeDay));
   }
@@ -98,23 +80,12 @@ export function MetaSocialCaptionsSection({
   return (
     <Card padding="none">
       <CardHeader className="px-5 pt-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>Meta social captions</CardTitle>
-            <CardDescription>
-              Draft feed captions — story auto-syncs from feed. Approve each milestone when both
-              are ready for Schedule.
-            </CardDescription>
-          </div>
-          <Button
-            type="button"
-            disabled={isPending || !aiStatus.available}
-            onClick={runGenerateAll}
-            title={aiStatus.available ? undefined : (aiStatus.reason ?? undefined)}
-          >
-            <Sparkles className="h-4 w-4" />
-            {isPending ? "Generating…" : "Generate all social captions"}
-          </Button>
+        <div>
+          <CardTitle>Meta social captions</CardTitle>
+          <CardDescription>
+            Draft feed captions — story auto-syncs from feed. Approve each milestone when both
+            are ready for Schedule.
+          </CardDescription>
         </div>
         {approvedCount > 0 && (
           <p className="mt-2 text-xs text-emerald-700">
@@ -127,7 +98,6 @@ export function MetaSocialCaptionsSection({
             <Button
               type="button"
               size="sm"
-              disabled={isPending}
               onClick={() => onNavigateToPublish?.(expandedMilestone!.relativeDay)}
             >
               Continue to Review &amp; publish
@@ -135,12 +105,6 @@ export function MetaSocialCaptionsSection({
           </div>
         )}
       </CardHeader>
-
-      {error && (
-        <p className="mx-5 -mt-2 mb-2 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
 
       <ul className="space-y-4 px-5 pb-5">
         {milestones.map((milestone) => (
@@ -152,7 +116,6 @@ export function MetaSocialCaptionsSection({
             userRole={userRole}
             expanded={expandedDay === milestone.relativeDay}
             onToggle={() => toggleMilestone(milestone.relativeDay)}
-            disabled={isPending}
             approvalRoleLabel={approvalRoleLabel}
             onNavigateToPublish={onNavigateToPublish}
           />

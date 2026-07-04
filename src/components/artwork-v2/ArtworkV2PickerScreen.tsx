@@ -32,8 +32,6 @@ interface ArtworkV2PickerScreenProps {
   defaultExpandedDays?: number[];
   onSelect: (item: ArtworkWorkflowItem) => void;
   onSelectMilestone?: (relativeDay: number) => void;
-  showGenerateRemaining?: boolean;
-  onGenerateRemaining?: () => void;
   getMilestoneStatus?: (relativeDay: number) => MilestoneArtworkStatus;
 }
 
@@ -89,8 +87,6 @@ export function ArtworkV2PickerScreen({
   defaultExpandedDays,
   onSelect,
   onSelectMilestone,
-  showGenerateRemaining = false,
-  onGenerateRemaining,
   getMilestoneStatus,
 }: ArtworkV2PickerScreenProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -164,17 +160,6 @@ export function ArtworkV2PickerScreen({
             ? "Create artwork once per milestone — we generate a 1:1 feed image and a 9:16 story version from the same design."
             : "Choose what you\u2019d like to create. Approved artwork can be downloaded from here."}
         </p>
-        {showGenerateRemaining && onGenerateRemaining && (
-          <div className="mt-4">
-            <Button type="button" size="lg" onClick={onGenerateRemaining}>
-              Generate remaining artwork
-            </Button>
-            <p className="mt-2 max-w-2xl text-xs text-cos-muted">
-              Uses your approved milestone as a style reference. You&apos;ll review each result before
-              anything is approved.
-            </p>
-          </div>
-        )}
       </header>
 
       {phaseGroups ? (

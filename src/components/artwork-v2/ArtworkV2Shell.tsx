@@ -37,7 +37,6 @@ import {
 } from "@/lib/artwork-v2/campaign-phases";
 import { buildDefaultArtworkPrompt } from "@/lib/artwork-v2/event-prompt";
 import {
-  canShowGenerateRemainingButton,
   getRemainingArtworkMilestones,
   resolveMilestoneArtworkStatus,
 } from "@/lib/artwork-v2/batch-generate";
@@ -929,11 +928,6 @@ export function ArtworkV2Shell({
 
   const isPhaseWorkflow = phaseItems.length > 0;
 
-  const showGenerateRemaining = useMemo(
-    () => canShowGenerateRemainingButton(phaseItems, assets),
-    [phaseItems, assets],
-  );
-
   const getMilestoneStatus = useCallback(
     (relativeDay: number) => resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets),
     [phaseItems, assets],
@@ -1064,10 +1058,6 @@ export function ArtworkV2Shell({
         isPhaseWorkflow={isPhaseWorkflow}
         onSelect={openItem}
         onSelectMilestone={isPhaseWorkflow ? openMilestone : undefined}
-        showGenerateRemaining={showGenerateRemaining}
-        onGenerateRemaining={
-          showGenerateRemaining ? () => handleStartBatchGenerate() : undefined
-        }
         getMilestoneStatus={isPhaseWorkflow ? getMilestoneStatus : undefined}
       />
     );
