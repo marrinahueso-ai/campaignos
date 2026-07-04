@@ -56,12 +56,57 @@ export function planMilestonesFromStepRowsForDisplay(
   return planMilestonesFromStepRows(steps);
 }
 
+type MilestoneStepRow = Pick<
+  EventCommunicationStepRow,
+  "relative_day" | "title" | "sort_order" | "channel" | "status"
+>;
+
+/** Meta workflow milestones (Artwork, Captions, Review) — FB/IG steps only, skipped excluded. */
+export function metaWorkflowMilestonesFromStepRows(
+  steps: MilestoneStepRow[],
+): PlanMilestone[] {
+  const active = steps.filter((step) => step.status !== "skipped");
+  const socialDays = new Set<number>();
+
+  for (const step of active) {
+    if (META_SOCIAL_CHANNELS.includes(step.channel as CommunicationChannel)) {
+      socialDays.add(step.relative_day);
+    }
+  }
+
+  return Array.from(socialDays)
+    .sort((leftDay, rightDay) => leftDay - rightDay)
+    .map((relativeDay) => {
+      const step = findCommunicationStepForRelativeDay(active, relativeDay, {
+        preferMetaSocial: true,
+      });
+      return {
+        relativeDay,
+        title: step?.title ?? `Day ${relativeDay}`,
+      };
+    });
+}
+
+export function metaWorkflowMilestonesFromCommunicationSteps(
+  steps: EventCommunicationStep[],
+): PlanMilestone[] {
+  return metaWorkflowMilestonesFromStepRows(
+    steps.map((step) => ({
+      relative_day: step.relativeDay,
+      title: step.title,
+      sort_order: step.sortOrder,
+      channel: step.channel,
+      status: step.status,
+    })) as MilestoneStepRow[],
+  );
+}
+
 /** Prefer the Meta social step when multiple plan rows share a relative day. */
-export function findCommunicationStepForRelativeDay(
-  steps: EventCommunicationStepRow[],
+export function findCommunicationStepForRelativeDay<T extends MilestoneStepRow>(
+  steps: T[],
   relativeDay: number,
   options?: { preferMetaSocial?: boolean },
-): EventCommunicationStepRow | undefined {
+): T | undefined {
   const atDay = steps
     .filter((step) => step.relative_day === relativeDay)
     .sort(
@@ -95,7 +140,7 @@ export async function resolveArtworkMilestonesForEvent(
   const steps = await getEventCommunicationSteps(eventId);
 
   if (steps.length > 0) {
-    return milestonesFromCommunicationSteps(steps);
+    return metaWorkflowMilestonesFromCommunicationSteps(steps);
   }
 
   return resolveMetaArtworkMilestonesForEvent({
@@ -136,7 +181,7 @@ export async function resolveSocialMetaMilestonesForEvent(
   const steps = await getEventCommunicationSteps(eventId);
 
   if (steps.length > 0) {
-    return milestonesFromCommunicationSteps(steps, { socialOnly: true });
+    return metaWorkflowMilestonesFromCommunicationSteps(steps);
   }
 
   return resolveMetaArtworkMilestonesForEvent({

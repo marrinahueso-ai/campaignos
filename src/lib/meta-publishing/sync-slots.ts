@@ -4,13 +4,16 @@ import {
   isApprovedArtworkAsset,
   META_PUBLISH_TARGETS,
 } from "@/lib/artwork-v2/campaign-phases";
+import {
+  isStoryMilestoneDistinctlyApproved,
+  resolveMilestonePhaseAsset,
+} from "@/lib/artwork-v2/milestone-assets";
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import {
   findCommunicationStepForRelativeDay,
   resolveSocialMetaMilestonesForEvent,
 } from "@/lib/campaign-plan/resolve-plan-milestones";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
-import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { buildCommunicationItemsByStepId, ensureStepCommunicationItemsForEvent } from "@/lib/event-workspace/communication-items";
 import { getEventById } from "@/lib/events/queries";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
@@ -149,13 +152,34 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
         phase.relativeDay === milestone.relativeDay && phase.metaPlacement === "story",
     );
 
-    const feedAsset = feedPhase ? resolveWorkflowAsset(feedPhase, null, assets) : null;
-    const storyAsset = storyPhase ? resolveWorkflowAsset(storyPhase, null, assets) : null;
+    const titlesAtDay = steps
+      .filter(
+        (entry) =>
+          entry.relative_day === milestone.relativeDay && entry.status !== "skipped",
+      )
+      .map((entry) => entry.title.trim())
+      .filter(Boolean);
+    const uniqueTitles = [...new Set(titlesAtDay)];
+
+    const feedAsset = feedPhase
+      ? resolveMilestonePhaseAsset(feedPhase, assets, uniqueTitles)
+      : null;
+    const storyAsset = storyPhase
+      ? resolveMilestonePhaseAsset(storyPhase, assets, uniqueTitles)
+      : null;
 
     const feedAssetId =
       feedAsset && isApprovedArtworkAsset(feedAsset) ? feedAsset.id : null;
     const storyAssetId =
-      storyAsset && isApprovedArtworkAsset(storyAsset) ? storyAsset.id : null;
+      storyPhase && feedPhase
+        ? isStoryMilestoneDistinctlyApproved(feedPhase, storyPhase, assets, uniqueTitles) &&
+            storyAsset &&
+            isApprovedArtworkAsset(storyAsset)
+          ? storyAsset.id
+          : null
+        : storyAsset && isApprovedArtworkAsset(storyAsset)
+          ? storyAsset.id
+          : null;
 
     for (const target of META_PUBLISH_TARGETS) {
       const enabled = isTargetEnabled(surfaces, storyManualPublish, target.platform, target.placement);

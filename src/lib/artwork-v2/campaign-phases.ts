@@ -195,9 +195,23 @@ export function milestonesFromCommunicationSteps(
     (left, right) =>
       left.relativeDay - right.relativeDay || left.sortOrder - right.sortOrder,
   )) {
-    if (!byDay.has(step.relativeDay)) {
-      byDay.set(step.relativeDay, step.title);
+    if (byDay.has(step.relativeDay)) {
+      continue;
     }
+
+    if (options?.socialOnly) {
+      const atDay = filtered.filter((entry) => entry.relativeDay === step.relativeDay);
+      const preferred =
+        atDay.find((entry) =>
+          (["facebook", "instagram"] as const).includes(
+            entry.channel as "facebook" | "instagram",
+          ),
+        ) ?? atDay[0];
+      byDay.set(step.relativeDay, preferred?.title ?? step.title);
+      continue;
+    }
+
+    byDay.set(step.relativeDay, step.title);
   }
 
   return Array.from(byDay.entries())
@@ -211,7 +225,9 @@ export function getArtworkPhaseItems(input: {
   communicationSteps?: EventCommunicationStep[];
 }): ArtworkPhaseWorkflowItem[] {
   if (input.communicationSteps?.length) {
-    const milestones = milestonesFromCommunicationSteps(input.communicationSteps);
+    const milestones = milestonesFromCommunicationSteps(input.communicationSteps, {
+      socialOnly: true,
+    });
     if (milestones.length > 0) {
       return buildArtworkPhaseItemsFromMilestones(milestones);
     }

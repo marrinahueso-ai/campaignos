@@ -1,10 +1,13 @@
 import {
+  isStoryMilestoneDistinctlyApproved,
+  resolveMilestonePhaseAsset,
+} from "@/lib/artwork-v2/milestone-assets";
+import {
   META_SOCIAL_CHANNELS,
   findCommunicationStepForRelativeDay,
-  planMilestonesFromStepRowsForDisplay,
-  resolveArtworkMilestonesForEvent,
+  metaWorkflowMilestonesFromStepRows,
+  resolveSocialMetaMilestonesForEvent,
 } from "@/lib/campaign-plan/resolve-plan-milestones";
-import { isStoryMilestoneDistinctlyApproved } from "@/lib/artwork-v2/milestone-assets";
 import {
   planDueDateToScheduledTime,
   resolveBundleScheduledFor,
@@ -17,7 +20,6 @@ import {
   isFeedSurfaceEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
-import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import {
   getFeedCaptionForMilestone,
   getMetaSocialCaptionsForEvent,
@@ -142,10 +144,16 @@ function deriveChannelOnlyStatus(input: {
 }
 
 /** All plan milestones for schedule UI — includes skipped steps so volunteers can restore them. */
-function milestonesForScheduleDisplay(
+function milestoneTitlesAtDay(
   steps: EventCommunicationStepRow[],
-): { relativeDay: number; title: string }[] {
-  return planMilestonesFromStepRowsForDisplay(steps);
+  relativeDay: number,
+): string[] {
+  const titles = steps
+    .filter((step) => step.relative_day === relativeDay && step.status !== "skipped")
+    .map((step) => step.title.trim())
+    .filter(Boolean);
+
+  return [...new Set(titles)];
 }
 
 export async function getMetaPublishBundles(eventId: string): Promise<MetaPublishBundle[]> {
@@ -174,8 +182,8 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
 
   const planMilestones =
     steps.length > 0
-      ? milestonesForScheduleDisplay(steps)
-      : await resolveArtworkMilestonesForEvent(eventId);
+      ? metaWorkflowMilestonesFromStepRows(steps)
+      : await resolveSocialMetaMilestonesForEvent(eventId);
 
   if (planMilestones.length === 0) {
     return [];
@@ -211,13 +219,18 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
 
     const feedPhase = group.formats.find((format) => format.metaPlacement === "feed");
     const storyPhase = group.formats.find((format) => format.metaPlacement === "story");
-    const feedAsset = feedPhase ? resolveWorkflowAsset(feedPhase, null, assets) : null;
-    const storyAsset = storyPhase ? resolveWorkflowAsset(storyPhase, null, assets) : null;
+    const titlesAtDay = milestoneTitlesAtDay(steps, group.relativeDay);
+    const feedAsset = feedPhase
+      ? resolveMilestonePhaseAsset(feedPhase, assets, titlesAtDay)
+      : null;
+    const storyAsset = storyPhase
+      ? resolveMilestonePhaseAsset(storyPhase, assets, titlesAtDay)
+      : null;
 
     const hasFeedArtwork = isApprovedArtworkAsset(feedAsset);
     const hasStoryArtwork =
       storyPhase && feedPhase
-        ? isStoryMilestoneDistinctlyApproved(feedPhase, storyPhase, assets)
+        ? isStoryMilestoneDistinctlyApproved(feedPhase, storyPhase, assets, titlesAtDay)
         : isApprovedArtworkAsset(storyAsset);
     const missingArtwork: string[] = [];
 

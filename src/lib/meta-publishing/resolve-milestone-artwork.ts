@@ -3,21 +3,27 @@ import {
   isApprovedArtworkAsset,
 } from "@/lib/artwork-v2/campaign-phases";
 import {
-  planMilestonesFromStepRowsForDisplay,
-  resolveArtworkMilestonesForEvent,
+  metaWorkflowMilestonesFromStepRows,
+  resolveSocialMetaMilestonesForEvent,
 } from "@/lib/campaign-plan/resolve-plan-milestones";
+import { resolveMilestonePhaseAsset } from "@/lib/artwork-v2/milestone-assets";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
-import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { getEventById } from "@/lib/events/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
 
 /** Matches milestone list used by getMetaPublishBundles for artwork previews. */
-function milestonesForScheduleDisplay(
+function milestoneTitlesAtDay(
   steps: EventCommunicationStepRow[],
-): { relativeDay: number; title: string }[] {
-  return planMilestonesFromStepRowsForDisplay(steps);
+  relativeDay: number,
+): string[] {
+  const titles = steps
+    .filter((step) => step.relative_day === relativeDay && step.status !== "skipped")
+    .map((step) => step.title.trim())
+    .filter(Boolean);
+
+  return [...new Set(titles)];
 }
 
 export async function resolveMilestoneArtworkUrls(input: {
@@ -34,7 +40,7 @@ export async function resolveMilestoneArtworkUrls(input: {
     getCampaignAssetsForEvent(input.eventId),
     supabase
       .from("event_communication_steps")
-      .select("relative_day, title, sort_order")
+      .select("relative_day, title, sort_order, channel, status")
       .eq("event_id", input.eventId)
       .order("sort_order", { ascending: true }),
   ]);
@@ -42,8 +48,8 @@ export async function resolveMilestoneArtworkUrls(input: {
   const steps = (stepsResult.data ?? []) as EventCommunicationStepRow[];
   const planMilestones =
     steps.length > 0
-      ? milestonesForScheduleDisplay(steps)
-      : await resolveArtworkMilestonesForEvent(input.eventId);
+      ? metaWorkflowMilestonesFromStepRows(steps)
+      : await resolveSocialMetaMilestonesForEvent(input.eventId);
 
   const phaseItems = buildArtworkPhaseItemsFromMilestones(planMilestones);
   const feedPhase = phaseItems.find(
@@ -52,9 +58,14 @@ export async function resolveMilestoneArtworkUrls(input: {
   const storyPhase = phaseItems.find(
     (phase) => phase.relativeDay === input.relativeDay && phase.metaPlacement === "story",
   );
+  const titlesAtDay = milestoneTitlesAtDay(steps, input.relativeDay);
 
-  const feedAsset = feedPhase ? resolveWorkflowAsset(feedPhase, null, assets) : null;
-  const storyAsset = storyPhase ? resolveWorkflowAsset(storyPhase, null, assets) : null;
+  const feedAsset = feedPhase
+    ? resolveMilestonePhaseAsset(feedPhase, assets, titlesAtDay)
+    : null;
+  const storyAsset = storyPhase
+    ? resolveMilestonePhaseAsset(storyPhase, assets, titlesAtDay)
+    : null;
 
   return {
     feedUrl:
