@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EventBriefDescriptionSection } from "@/components/events/EventBriefDescriptionSection";
+import { createEvent } from "@/lib/events/actions";
 import {
-  createEvent,
+  type CreateEventFields,
   type CreateEventFormState,
-} from "@/lib/events/actions";
+} from "@/lib/events/create-event-form-state";
 import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
+import { EVENT_TIME_INPUT_HINT } from "@/lib/events/time-input";
 import { EVENT_TYPES } from "@/lib/playbooks/constants";
 import type { EventBriefInput } from "@/lib/ai/types";
 import { Button } from "@/components/ui/Button";
@@ -20,40 +22,62 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 
+const DEFAULT_FIELDS: CreateEventFields = {
+  title: "",
+  description: "",
+  date: "",
+  time: "",
+  location: "",
+  audience: "",
+  theme: "",
+  status: "draft",
+  eventType: "general_event",
+  communicationStrategy: "full_campaign",
+};
+
 const initialState: CreateEventFormState = { error: null };
 
 export function CreateEventForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [description, setDescription] = useState("");
+  const [fields, setFields] = useState<CreateEventFields>(DEFAULT_FIELDS);
   const [state, formAction, isPending] = useActionState(
     createEvent,
     initialState,
   );
 
+  useEffect(() => {
+    if (state.fields) {
+      setFields(state.fields);
+    }
+  }, [state.fields]);
+
+  function updateField<K extends keyof CreateEventFields>(
+    field: K,
+    value: CreateEventFields[K],
+  ) {
+    setFields((current) => ({ ...current, [field]: value }));
+  }
+
   function getBriefInput(): EventBriefInput {
-    const form = formRef.current;
-    const fd = form ? new FormData(form) : new FormData();
-    const eventType = String(fd.get("eventType") ?? "general_event");
     const eventTypeLabel =
-      EVENT_TYPES.find((entry) => entry.value === eventType)?.label ?? null;
-    const communicationStrategy = String(fd.get("communicationStrategy") ?? "full_campaign");
+      EVENT_TYPES.find((entry) => entry.value === fields.eventType)?.label ?? null;
     const communicationStrategyLabel =
       COMMUNICATION_STRATEGY_OPTIONS.find(
-        (entry) => entry.value === communicationStrategy,
+        (entry) => entry.value === fields.communicationStrategy,
       )?.label ?? null;
 
     return {
-      title: String(fd.get("title") ?? ""),
-      roughDescription: description,
-      audience: String(fd.get("audience") ?? "").trim() || null,
-      theme: String(fd.get("theme") ?? "").trim() || null,
+      title: fields.title,
+      roughDescription: fields.description,
+      audience: fields.audience.trim() || null,
+      theme: fields.theme.trim() || null,
       category: eventTypeLabel,
       eventTypeLabel,
       communicationStrategyLabel,
-      location: String(fd.get("location") ?? "").trim() || null,
-      date: String(fd.get("date") ?? "").trim() || null,
-      time: String(fd.get("time") ?? "").trim() || null,
+      location: fields.location.trim() || null,
+      date: fields.date.trim() || null,
+      time: fields.time.trim() || null,
       volunteerNeeds: null,
     };
   }
@@ -82,10 +106,17 @@ export function CreateEventForm() {
           name="title"
           label="Event Title"
           placeholder="Spring Carnival 2026"
+          value={fields.title}
+          onChange={(changeEvent) => updateField("title", changeEvent.target.value)}
           required
         />
 
-        <Select name="eventType" label="Event Type" defaultValue="general_event">
+        <Select
+          name="eventType"
+          label="Event Type"
+          value={fields.eventType}
+          onChange={(changeEvent) => updateField("eventType", changeEvent.target.value)}
+        >
           {EVENT_TYPES.map(({ value, label }) => (
             <option key={value} value={value}>
               {label}
@@ -96,7 +127,10 @@ export function CreateEventForm() {
         <Select
           name="communicationStrategy"
           label="How much communication does this event need?"
-          defaultValue="full_campaign"
+          value={fields.communicationStrategy}
+          onChange={(changeEvent) =>
+            updateField("communicationStrategy", changeEvent.target.value)
+          }
         >
           {COMMUNICATION_STRATEGY_OPTIONS.map(({ value, label, description: optionDescription }) => (
             <option key={value} value={value}>
@@ -106,8 +140,8 @@ export function CreateEventForm() {
         </Select>
 
         <EventBriefDescriptionSection
-          description={description}
-          onDescriptionChange={setDescription}
+          description={fields.description}
+          onDescriptionChange={(value) => updateField("description", value)}
           getBriefInput={getBriefInput}
           disabled={isPending}
           required
@@ -115,13 +149,22 @@ export function CreateEventForm() {
         />
 
         <div className="grid gap-6 sm:grid-cols-2">
-          <Input name="date" type="date" label="Event Date" required />
+          <Input
+            name="date"
+            type="date"
+            label="Event Date"
+            value={fields.date}
+            onChange={(changeEvent) => updateField("date", changeEvent.target.value)}
+            required
+          />
           <Input
             name="time"
             type="text"
             label="Event Time"
-            placeholder="5:20 PM (optional)"
-            hint="Optional. Examples: 5:20 PM, 17:20"
+            placeholder="6p or 6:15 PM (optional)"
+            hint={EVENT_TIME_INPUT_HINT}
+            value={fields.time}
+            onChange={(changeEvent) => updateField("time", changeEvent.target.value)}
             autoComplete="off"
           />
         </div>
@@ -130,6 +173,8 @@ export function CreateEventForm() {
           name="location"
           label="Location"
           placeholder="School gymnasium"
+          value={fields.location}
+          onChange={(changeEvent) => updateField("location", changeEvent.target.value)}
         />
 
         <div className="grid gap-6 sm:grid-cols-2">
@@ -137,15 +182,24 @@ export function CreateEventForm() {
             name="audience"
             label="Audience"
             placeholder="Families, teachers, community"
+            value={fields.audience}
+            onChange={(changeEvent) => updateField("audience", changeEvent.target.value)}
           />
           <Input
             name="theme"
             label="Theme"
             placeholder="Spring celebration, community fun"
+            value={fields.theme}
+            onChange={(changeEvent) => updateField("theme", changeEvent.target.value)}
           />
         </div>
 
-        <Select name="status" label="Status" defaultValue="draft">
+        <Select
+          name="status"
+          label="Status"
+          value={fields.status}
+          onChange={(changeEvent) => updateField("status", changeEvent.target.value)}
+        >
           <option value="draft">Draft</option>
           <option value="scheduled">Scheduled</option>
           <option value="published">Published</option>

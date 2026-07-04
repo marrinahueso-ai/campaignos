@@ -1,5 +1,7 @@
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventRow, toEventInsert } from "@/lib/events/mappers";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
 import type { CreateEventInput, Event, EventRow, EventStatus } from "@/types";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
@@ -31,10 +33,17 @@ function restoredStatusForDate(date: string): EventStatus {
 
 export async function insertEvent(input: CreateEventInput): Promise<Event | null> {
   const supabase = await createClient();
+  const organization = await getCurrentOrganization();
+  const activeSchoolYear = organization
+    ? await getActiveSchoolYear(organization.id)
+    : null;
 
   const { data, error } = await supabase
     .from("events")
-    .insert(toEventInsert(input))
+    .insert({
+      ...toEventInsert(input),
+      ...(activeSchoolYear && { school_year_id: activeSchoolYear.id }),
+    })
     .select("*")
     .single();
 

@@ -25,9 +25,10 @@ import { updateEventCampaignSettings } from "@/lib/events/mutations";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 
-export interface CreateEventFormState {
-  error: string | null;
-}
+import {
+  createEventErrorState,
+  type CreateEventFormState,
+} from "@/lib/events/create-event-form-state";
 
 export type EventActionState = {
   error: string | null;
@@ -41,15 +42,16 @@ export async function createEvent(
   const parsed = parseCreateEventInput(formData);
 
   if ("error" in parsed) {
-    return { error: parsed.error };
+    return createEventErrorState(formData, parsed.error);
   }
 
   const event = await insertEvent(parsed.data);
 
   if (!event) {
-    return {
-      error: "Unable to save event. Please check your connection and try again.",
-    };
+    return createEventErrorState(
+      formData,
+      "Unable to save event. Please check your connection and try again.",
+    );
   }
 
   const organization = await getLatestOrganization();
