@@ -22,48 +22,26 @@ export interface ArtworkV2ApprovedFormat {
 interface ArtworkV2ApprovedScreenProps {
   itemLabel: string;
   imageUrl: string | null;
-  downloadFilename: string;
   /** When both feed and story are approved for a milestone. */
   milestoneFormats?: ArtworkV2ApprovedFormat[];
-  hasNextItem: boolean;
-  onContinueNext: () => void;
   onContinueToCaptions?: () => void;
-  onReturnToEvent: () => void;
-  onBackToArtworkList: () => void;
-  onCreateNew: () => void;
-  onCreateNewFeed?: () => void;
-  onCreateNewStory?: () => void;
+  onModifyArtwork?: () => void;
   onDelete?: () => void;
+  onBackToArtworkList: () => void;
   isResetting?: boolean;
   resetError?: string | null;
-  showCreateStory?: boolean;
-  isCreatingStory?: boolean;
-  onCreateStory?: () => void;
-  showGenerateRemaining?: boolean;
-  onGenerateRemaining?: () => void;
 }
 
 export function ArtworkV2ApprovedScreen({
   itemLabel,
   imageUrl,
-  downloadFilename,
   milestoneFormats,
-  hasNextItem,
-  onContinueNext,
   onContinueToCaptions,
-  onReturnToEvent,
-  onBackToArtworkList,
-  onCreateNew,
-  onCreateNewFeed,
-  onCreateNewStory,
+  onModifyArtwork,
   onDelete,
+  onBackToArtworkList,
   isResetting = false,
   resetError = null,
-  showCreateStory = false,
-  isCreatingStory = false,
-  onCreateStory,
-  showGenerateRemaining = false,
-  onGenerateRemaining,
 }: ArtworkV2ApprovedScreenProps) {
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -181,88 +159,24 @@ export function ArtworkV2ApprovedScreen({
           )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {!milestoneComplete && imageUrl ? (
-              <Button
-                type="button"
-                size="lg"
-                disabled={isDownloading === "single"}
-                onClick={() => handleDownload(imageUrl, downloadFilename, "single")}
-              >
-                <Download className="h-4 w-4" />
-                {isDownloading === "single" ? "Downloading…" : "Download artwork"}
-              </Button>
-            ) : !milestoneComplete ? (
-              <p className="text-sm text-cos-muted">
-                Download is also available from the artwork list once this page refreshes.
-              </p>
-            ) : null}
-
-            {!milestoneComplete && downloadError && (
-              <p className="w-full text-sm text-red-600" role="alert">
-                {downloadError}
-              </p>
-            )}
-
-            {showCreateStory && onCreateStory && (
-              <Button
-                type="button"
-                size="lg"
-                disabled={isCreatingStory}
-                onClick={onCreateStory}
-              >
-                {isCreatingStory ? "Creating story version…" : "Create story version from this design"}
-              </Button>
-            )}
-
-            {showGenerateRemaining && onGenerateRemaining && (
-              <Button type="button" size="lg" onClick={onGenerateRemaining}>
-                Generate remaining artwork
-              </Button>
-            )}
-
             {milestoneComplete && onContinueToCaptions && (
               <Button type="button" size="lg" onClick={onContinueToCaptions}>
-                Continue to captions
+                Continue to Captions
               </Button>
             )}
 
-            {hasNextItem && (
-              <Button type="button" size="lg" variant="secondary" onClick={onContinueNext}>
-                Continue to next milestone
-              </Button>
-            )}
-            {milestoneComplete && onCreateNewFeed && onCreateNewStory ? (
-              <>
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="secondary"
-                  disabled={isResetting}
-                  onClick={onCreateNewFeed}
-                >
-                  {isResetting ? "Preparing…" : "New feed version"}
-                </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="secondary"
-                  disabled={isResetting}
-                  onClick={onCreateNewStory}
-                >
-                  {isResetting ? "Preparing…" : "New story version"}
-                </Button>
-              </>
-            ) : (
+            {onModifyArtwork && (
               <Button
                 type="button"
                 size="lg"
-                variant="secondary"
+                variant={milestoneComplete ? "secondary" : "primary"}
                 disabled={isResetting}
-                onClick={onCreateNew}
+                onClick={onModifyArtwork}
               >
-                {isResetting ? "Preparing…" : "Create new version"}
+                {isResetting ? "Preparing…" : "Modify Artwork"}
               </Button>
             )}
+
             {onDelete && (
               <Button
                 type="button"
@@ -271,21 +185,10 @@ export function ArtworkV2ApprovedScreen({
                 disabled={isResetting}
                 onClick={onDelete}
               >
-                {isResetting
-                  ? "Working…"
-                  : milestoneComplete
-                    ? "Delete milestone artwork"
-                    : "Delete artwork"}
+                {isResetting ? "Working…" : "Delete Artwork"}
               </Button>
             )}
-            <Button
-              type="button"
-              size="lg"
-              variant="secondary"
-              onClick={milestoneComplete ? onBackToArtworkList : onReturnToEvent}
-            >
-              {milestoneComplete ? "Return to artwork list" : "Return to Event"}
-            </Button>
+
             {resetError && (
               <p className="w-full text-sm text-red-600" role="alert">
                 {resetError}

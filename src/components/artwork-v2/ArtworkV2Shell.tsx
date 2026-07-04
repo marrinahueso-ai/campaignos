@@ -45,11 +45,10 @@ import { resolveCanvaUrl } from "@/lib/artwork-v2/canva-link";
 import {
   findMilestoneFeedItem,
   findMilestoneStoryItem,
-  nextMilestoneFeedItem,
 } from "@/lib/artwork-v2/milestone-workflow";
 import { isStoryMilestoneDistinctlyApproved } from "@/lib/artwork-v2/milestone-assets";
 import { getArtworkWorkflowItems } from "@/lib/creative-studio/artwork-defaults";
-import { nextWorkflowItem, resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
+import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import type { ArtworkV2Reference, ArtworkV2ReviewVersion, ArtworkV2Step } from "@/lib/artwork-v2/types";
 import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
 import { buildArtworkDownloadFilename } from "@/lib/artwork-v2/download";
@@ -652,18 +651,6 @@ export function ArtworkV2Shell({
     void beginRegeneration(feedItem);
   }
 
-  function handleCreateNewStory() {
-    const relativeDay =
-      approvedMilestoneDay ??
-      (selectedItem && isPhaseItem(selectedItem) ? selectedItem.relativeDay : null);
-    if (relativeDay == null) return;
-
-    const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
-    if (!storyItem) return;
-
-    void beginRegeneration(storyItem);
-  }
-
   function handleDeleteArtwork() {
     if (!selectedItem) return;
 
@@ -907,15 +894,6 @@ export function ArtworkV2Shell({
     });
   }
 
-  function handleCreateStoryFromApproved() {
-    if (!selectedItem || !isPhaseItem(selectedItem)) return;
-
-    const storyItem = findMilestoneStoryItem(phaseItems, selectedItem.relativeDay);
-    if (!storyItem) return;
-
-    void startStoryGenerationFromFeed(selectedItem.relativeDay, storyItem);
-  }
-
   function handleAdjust(versionId: string, adjustmentComments: string) {
     if (!selectedItem || !prompt.trim()) return;
 
@@ -944,41 +922,9 @@ export function ArtworkV2Shell({
     });
   }
 
-  function handleContinueNext() {
-    if (!selectedItem) return;
-
-    if (isPhaseItem(selectedItem)) {
-      const nextFeed = nextMilestoneFeedItem(phaseItems, selectedItem.relativeDay);
-      resetCreatorState();
-      setReviewVersions([]);
-      if (nextFeed) {
-        openMilestone(nextFeed.relativeDay);
-        return;
-      }
-      setSelectedItem(null);
-      setStep("pick");
-      return;
-    }
-
-    const next = nextWorkflowItem(selectedItem.id, workflowItems);
-    resetCreatorState();
-    setReviewVersions([]);
-    if (next) {
-      openItem(next);
-      return;
-    }
-    setSelectedItem(null);
-    setStep("pick");
-  }
-
   function handleContinueToCaptions() {
     if (!selectedItem || !isPhaseItem(selectedItem) || !milestoneFormats) return;
     onNavigateToCaptions?.(approvedMilestoneDay ?? selectedItem.relativeDay);
-  }
-
-  function handleReturnToEvent() {
-    window.location.hash = "plan";
-    window.location.href = `/events/${eventId}#plan`;
   }
 
   const isPhaseWorkflow = phaseItems.length > 0;
@@ -1111,26 +1057,6 @@ export function ArtworkV2Shell({
     }
   }
 
-  const hasNextMilestone =
-    selectedItem && isPhaseItem(selectedItem)
-      ? Boolean(nextMilestoneFeedItem(phaseItems, selectedItem.relativeDay))
-      : Boolean(selectedItem && nextWorkflowItem(selectedItem.id, workflowItems));
-
-  const pendingStoryItem =
-    selectedItem &&
-    isPhaseItem(selectedItem) &&
-    selectedItem.metaPlacement === "feed"
-      ? findMilestoneStoryItem(phaseItems, selectedItem.relativeDay)
-      : null;
-
-  const showCreateStoryAction = Boolean(
-    pendingStoryItem &&
-      step === "approved" &&
-      !isApprovedArtworkAsset(
-        resolveWorkflowAsset(pendingStoryItem, null, assets),
-      ),
-  );
-
   if (step === "pick") {
     return (
       <ArtworkV2PickerScreen
@@ -1246,30 +1172,13 @@ export function ArtworkV2Shell({
       <ArtworkV2ApprovedScreen
         itemLabel={selectedItem.label}
         imageUrl={approvedArtwork?.imageUrl ?? null}
-        downloadFilename={
-          approvedArtwork?.downloadFilename ?? buildArtworkDownloadFilename(selectedItem.label)
-        }
         milestoneFormats={milestoneFormats ?? undefined}
-        hasNextItem={Boolean(hasNextMilestone)}
-        onContinueNext={handleContinueNext}
         onContinueToCaptions={milestoneFormats ? handleContinueToCaptions : undefined}
-        onReturnToEvent={handleReturnToEvent}
-        onBackToArtworkList={handleBackToPicker}
-        onCreateNew={handleCreateNew}
-        onCreateNewFeed={milestoneFormats ? handleCreateNewFeed : undefined}
-        onCreateNewStory={milestoneFormats ? handleCreateNewStory : undefined}
+        onModifyArtwork={milestoneFormats ? handleCreateNewFeed : handleCreateNew}
         onDelete={handleDeleteArtwork}
+        onBackToArtworkList={handleBackToPicker}
         isResetting={isReviewBusy}
         resetError={resetError}
-        showCreateStory={showCreateStoryAction}
-        isCreatingStory={isGeneratingStory}
-        onCreateStory={handleCreateStoryFromApproved}
-        showGenerateRemaining={showGenerateRemaining && Boolean(milestoneFormats)}
-        onGenerateRemaining={
-          showGenerateRemaining && milestoneFormats && isPhaseItem(selectedItem)
-            ? () => handleStartBatchGenerate(approvedMilestoneDay ?? selectedItem.relativeDay)
-            : undefined
-        }
       />
     );
   }
