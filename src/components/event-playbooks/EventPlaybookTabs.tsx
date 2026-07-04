@@ -140,13 +140,16 @@ export function EventPlaybookTabs({
   };
 
   return (
-    <div className="border border-cos-border bg-cos-card">
+    <div className="overflow-hidden border border-cos-border bg-cos-card shadow-sm">
       <div
-        className="sticky top-0 z-10 border-b border-cos-border bg-cos-card/95 px-4 pt-5 backdrop-blur-sm lg:px-6"
+        className="sticky top-0 z-10 border-b border-cos-border bg-cos-card px-4 pt-4 backdrop-blur-sm lg:px-6"
         role="navigation"
         aria-label="Planning hub sections"
       >
-        <div className="flex gap-0 overflow-x-auto" role="tablist">
+        <div
+          className="flex gap-0 overflow-x-auto border border-cos-border bg-cos-bg p-1"
+          role="tablist"
+        >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -159,10 +162,10 @@ export function EventPlaybookTabs({
                 id={`playbook-tab-trigger-${tab.id}`}
                 onClick={() => selectTab(tab.id)}
                 className={cn(
-                  "shrink-0 border-b-2 px-4 py-3 text-sm transition-colors",
+                  "shrink-0 px-4 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "border-cos-dark bg-cos-bg text-cos-text"
-                    : "border-transparent text-cos-muted hover:bg-cos-bg/60 hover:text-cos-text",
+                    ? "bg-cos-card text-cos-text shadow-sm"
+                    : "text-cos-muted hover:text-cos-text",
                 )}
               >
                 {tab.label}
@@ -172,7 +175,7 @@ export function EventPlaybookTabs({
         </div>
       </div>
 
-      <div className="p-6 lg:p-8">
+      <div className="bg-cos-bg p-6 lg:p-8">
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse bg-cos-bg/60" />
         ) : (

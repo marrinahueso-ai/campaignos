@@ -108,7 +108,7 @@ export function OverviewChecklist({
                     type="button"
                     onClick={() => toggleTask(task)}
                     disabled={!tablesAvailable || isPending}
-                    className="flex w-full items-center gap-3 rounded-lg px-1 py-1.5 text-left text-sm transition-colors hover:bg-cos-bg disabled:cursor-wait"
+                    className="flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm transition-colors hover:border-cos-border hover:bg-cos-bg-alt disabled:cursor-wait"
                   >
                     {task.status === "done" ? (
                       <CheckCircle2
