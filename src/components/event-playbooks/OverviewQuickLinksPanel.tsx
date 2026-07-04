@@ -17,8 +17,11 @@ export function OverviewQuickLinksPanel({
 }: OverviewQuickLinksPanelProps) {
   const links = mergePlanningQuickLinks(event.planningQuickLinks);
 
+  const linkRowClass =
+    "flex items-center justify-between gap-2 bg-cos-card px-3 py-2.5 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg-alt";
+
   return (
-    <ul className="mt-2 space-y-2">
+    <ul className="mt-2 divide-y divide-cos-border overflow-hidden rounded-sm border border-cos-border">
       {PLANNING_QUICK_LINK_DEFINITIONS.map(({ key, label, icon: Icon }) => {
         const entry = links[key];
         const href =
@@ -32,7 +35,7 @@ export function OverviewQuickLinksPanel({
         const content = (
           <>
             <span className="flex min-w-0 items-center gap-2.5">
-              <Icon className="h-4 w-4 shrink-0 text-cos-muted" strokeWidth={1.5} />
+              <Icon className="h-4 w-4 shrink-0 text-cos-dark-muted" strokeWidth={1.5} />
               <span>{label}</span>
             </span>
             <span className="flex items-center gap-2">
@@ -44,12 +47,7 @@ export function OverviewQuickLinksPanel({
         if (entry.url.trim()) {
           return (
             <li key={key}>
-              <a
-                href={entry.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-between gap-2 border border-cos-border bg-cos-card px-3 py-2.5 text-sm text-cos-text transition-colors hover:bg-cos-bg"
-              >
+              <a href={entry.url} target="_blank" rel="noreferrer" className={linkRowClass}>
                 {content}
               </a>
             </li>
@@ -58,10 +56,7 @@ export function OverviewQuickLinksPanel({
 
         return (
           <li key={key}>
-            <Link
-              href={href}
-              className="flex items-center justify-between gap-2 border border-cos-border bg-cos-card px-3 py-2.5 text-sm text-cos-text transition-colors hover:bg-cos-bg"
-            >
+            <Link href={href} className={linkRowClass}>
               {content}
             </Link>
           </li>

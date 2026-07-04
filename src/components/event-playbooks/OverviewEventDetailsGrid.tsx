@@ -31,17 +31,15 @@ export function OverviewEventDetailsGrid({ event }: OverviewEventDetailsGridProp
   ];
 
   return (
-    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+    <div className="mt-6 grid gap-px overflow-hidden rounded-sm border border-cos-border bg-cos-border sm:grid-cols-2">
       {rows.map(({ icon: Icon, label, value }) => (
-        <div key={label} className="flex gap-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cos-bg text-cos-muted">
+        <div key={label} className="flex gap-3 bg-cos-card p-4">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cos-bg-alt text-cos-dark-muted">
             <Icon className="h-4 w-4" strokeWidth={1.5} />
           </span>
-          <div>
-            <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-              {label}
-            </p>
-            <p className="mt-1 text-sm text-cos-text">{value}</p>
+          <div className="min-w-0">
+            <p className="cos-section-title">{label}</p>
+            <p className="mt-1 text-sm font-medium text-cos-text">{value}</p>
           </div>
         </div>
       ))}

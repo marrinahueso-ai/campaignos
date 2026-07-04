@@ -80,7 +80,7 @@ export function OverviewTab({
                 {event.description || "Imported from school calendar."}
               </CardDescription>
             </CardHeader>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-cos-muted">
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 border-b border-cos-border pb-4 text-sm text-cos-dark-muted">
               {event.location && (
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 shrink-0" />
@@ -139,7 +139,7 @@ export function OverviewTab({
                 {pastEvents.map((past) => (
                   <li
                     key={past.id}
-                    className="flex items-center justify-between gap-4 border border-cos-border bg-cos-bg px-4 py-3 text-sm"
+                    className="flex items-center justify-between gap-4 border border-cos-border bg-cos-bg-alt px-4 py-3 text-sm"
                   >
                     <div>
                       <p className="font-medium text-cos-text">{past.title}</p>
@@ -176,11 +176,11 @@ export function OverviewTab({
               <CardTitle>Recent activity</CardTitle>
             </CardHeader>
             {hubData.activity.length > 0 ? (
-              <ul className="mt-2 space-y-3">
+              <ul className="mt-2 divide-y divide-cos-border border-t border-cos-border">
                 {hubData.activity.slice(0, 8).map((item) => (
-                  <li key={item.id} className="text-sm">
-                    <p className="text-cos-text">{item.action}</p>
-                    <p className="mt-0.5 text-xs text-cos-muted">
+                  <li key={item.id} className="py-3 text-sm first:pt-0">
+                    <p className="font-medium text-cos-text">{item.action}</p>
+                    <p className="mt-0.5 text-xs text-cos-dark-muted">
                       {item.actorName ?? "Someone"} ·{" "}
                       {new Date(item.createdAt).toLocaleDateString("en-US", {
                         month: "short",
@@ -214,13 +214,13 @@ function StatMiniCard({
   icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
 }) {
   return (
-    <div className="border border-cos-border bg-cos-bg p-4">
+    <div className="border border-cos-border bg-cos-card p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">{label}</p>
-        {Icon && <Icon className="h-4 w-4 text-cos-muted" strokeWidth={1.5} />}
+        <p className="cos-section-title">{label}</p>
+        {Icon && <Icon className="h-4 w-4 text-cos-dark-muted" strokeWidth={1.5} />}
       </div>
       <p className="font-display mt-2 text-xl text-cos-text">{value}</p>
-      {sub && <p className="mt-1 text-xs text-cos-muted">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-cos-dark-muted">{sub}</p>}
     </div>
   );
 }
