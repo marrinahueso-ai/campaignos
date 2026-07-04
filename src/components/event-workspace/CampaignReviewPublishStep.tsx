@@ -11,7 +11,7 @@ import {
 import {
   allReviewPublishMetaBundlesHandled,
   isReviewPublishVisibleBundle,
-} from "@/lib/meta-publishing/bundles";
+} from "@/lib/meta-publishing/bundle-display";
 import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { Event } from "@/types";

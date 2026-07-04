@@ -323,39 +323,6 @@ export function countBundlesByStatus(
   return bundles.filter((bundle) => statuses.includes(bundle.status)).length;
 }
 
-const REVIEW_PUBLISH_VISIBLE_STATUSES: MetaPublishBundleStatus[] = [
-  "ready",
-  "scheduled",
-  "approved",
-  "failed",
-  "needs_artwork",
-  "needs_caption",
-];
-
-export function isReviewPublishVisibleBundle(bundle: MetaPublishBundle): boolean {
-  return (
-    bundle.isMetaPost &&
-    bundle.status !== "skipped" &&
-    REVIEW_PUBLISH_VISIBLE_STATUSES.includes(bundle.status)
-  );
-}
-
-export function allReviewPublishMetaBundlesHandled(
-  bundles: MetaPublishBundle[],
-): boolean {
-  const activeMetaBundles = bundles.filter(
-    (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
-  );
-
-  if (activeMetaBundles.length === 0) {
-    return false;
-  }
-
-  return activeMetaBundles.every(
-    (bundle) => bundle.status === "published" || bundle.status === "posting",
-  );
-}
-
 /** True when this milestone has at least one Meta slot that auto-publishes via API. */
 export function bundleHasAutoPublishTargets(bundle: MetaPublishBundle): boolean {
   return bundle.isMetaPost && bundle.targets.length > 0;
