@@ -36,10 +36,10 @@ export function CampaignScheduleStep({
   return (
     <div className="space-y-6">
       <header>
-        <p className="studio-eyebrow">Schedule</p>
-        <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Posts & Schedule</h2>
+        <p className="studio-eyebrow">Captions</p>
+        <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">Captions</h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-          Draft captions and prepare each milestone in your communication plan. Expand any row
+          Draft captions and prepare each milestone in your campaign plan. Expand any row
           for artwork previews, channel details, and caption editing. Plans change? Use{" "}
           <span className="text-cos-text">Don&apos;t need this post</span> on any milestone you
           want to drop.

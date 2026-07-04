@@ -41,9 +41,9 @@ const FEATURES: FeatureDefinition[] = [
     icon: Megaphone,
     title: "Campaign workflow, step by step",
     summary:
-      "Every event moves through a clear path: plan → artwork → schedule → publish.",
+      "Every event moves through a clear path: plan → artwork → captions → publish.",
     details: [
-      "Communication plan tailored to your event type",
+      "Campaign plan tailored to your event type",
       "Artwork and captions stay tied to each milestone",
       "Review & publish when your team is ready",
     ],
@@ -236,10 +236,10 @@ function DashboardDemo() {
 
 function WorkflowDemo() {
   const steps = [
-    "Communication Plan",
+    "Campaign plan",
     "Artwork",
-    "Posts & Schedule",
-    "Review & Publish",
+    "Captions",
+    "Review & publish",
     "Published",
   ];
   const [activeStep, setActiveStep] = useState(1);

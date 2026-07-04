@@ -130,7 +130,7 @@ export function MetaSocialCaptionsSection({
               disabled={isPending}
               onClick={() => onNavigateToPublish?.(expandedMilestone!.relativeDay)}
             >
-              Continue to Review &amp; Publish
+              Continue to Review &amp; publish
             </Button>
           </div>
         )}

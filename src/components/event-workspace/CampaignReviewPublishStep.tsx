@@ -38,9 +38,9 @@ export function CampaignReviewPublishStep({
   return (
     <div className="space-y-6">
       <header>
-        <p className="studio-eyebrow">Review &amp; Publish</p>
+        <p className="studio-eyebrow">Review &amp; publish</p>
         <h2 className="font-display mt-2 text-3xl text-cos-text sm:text-4xl">
-          Review &amp; Publish
+          Review &amp; publish
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
           Confirm each milestone&apos;s go-live date, then schedule or publish to Facebook and
@@ -61,15 +61,15 @@ export function CampaignReviewPublishStep({
         <EmptyState
           icon={Send}
           title="Nothing ready to publish"
-          description="Approve artwork and captions in Posts & Schedule first."
-          action={{ label: "Go to Posts & Schedule", href: "#schedule" }}
+          description="Approve artwork and captions in Captions first."
+          action={{ label: "Go to Captions", href: "#schedule" }}
         />
       ) : !hasActionable ? (
         <EmptyState
           icon={CalendarClock}
           title="All milestones handled"
-          description="Published posts appear in the Published step. Need to adjust captions? Go back to Posts & Schedule."
-          action={{ label: "Go to Posts & Schedule", href: "#schedule" }}
+          description="Published posts appear in the Published step. Need to adjust captions? Go back to Captions."
+          action={{ label: "Go to Captions", href: "#schedule" }}
         />
       ) : (
         <MetaPublishBundlesPanel

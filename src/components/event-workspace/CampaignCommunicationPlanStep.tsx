@@ -49,7 +49,7 @@ export function CampaignCommunicationPlanStep({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Communication plan</CardTitle>
+          <CardTitle>Campaign plan</CardTitle>
           <CardDescription>
             Event type, outreach level, who approves, and when posts go out.
           </CardDescription>

@@ -279,7 +279,7 @@ export function MetaPublishBundleCard({
                 <p className="mt-1 text-xs text-cos-muted">
                   {bundle.status === "ready"
                     ? `Publishing requires approval from ${approvalRoleLabel}`
-                    : `Awaiting ${approvalRoleLabel} in Review & Publish`}
+                    : `Awaiting ${approvalRoleLabel} in Review & publish`}
                 </p>
               )}
             {!isMetaPost && !isSkipped && (

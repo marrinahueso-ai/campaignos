@@ -70,8 +70,8 @@ export function MetaPublishReviewPanel({ eventId, bundles }: MetaPublishReviewPa
       <EmptyState
         icon={Send}
         title="Nothing ready to publish"
-        description="Approve artwork and captions in Posts & Schedule first."
-        action={{ label: "Go to Posts & Schedule", href: "#schedule" }}
+        description="Approve artwork and captions in Captions first."
+        action={{ label: "Go to Captions", href: "#schedule" }}
       />
     );
   }

@@ -487,7 +487,7 @@ export function MetaSocialCaptionMilestoneCard({
                 <div className="space-y-2">
                   {approvalRoleLabel && (
                     <p className="text-xs text-cos-muted">
-                      Ready for {approvalRoleLabel} to review in Review &amp; Publish
+                      Ready for {approvalRoleLabel} to review in Review &amp; publish
                     </p>
                   )}
                   <Button
@@ -496,7 +496,7 @@ export function MetaSocialCaptionMilestoneCard({
                     disabled={disabled || isPending}
                     onClick={() => onNavigateToPublish(milestone.relativeDay)}
                   >
-                    Continue to Review &amp; Publish
+                    Continue to Review &amp; publish
                   </Button>
                 </div>
               )}

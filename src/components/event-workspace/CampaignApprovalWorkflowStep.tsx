@@ -57,7 +57,7 @@ export function CampaignApprovalWorkflowStep({
           icon={ClipboardCheck}
           title="No Meta bundles yet"
           description="Schedule milestones first, then approve them here."
-          action={{ label: "Go to Schedule", href: "#schedule" }}
+          action={{ label: "Go to Captions", href: "#schedule" }}
         />
       ) : (
         <MetaPublishBundlesPanel
