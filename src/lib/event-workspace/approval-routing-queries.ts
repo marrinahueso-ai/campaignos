@@ -306,12 +306,10 @@ async function enrichApprovalQueuePreviews(
   });
 }
 
-export async function getApprovalQueueForCurrentUser(): Promise<{
-  assignedToMe: ApprovalQueueItem[];
-  allPending: ApprovalQueueItem[];
-  changesRequested: ApprovalQueueItem[];
-  recentlyApproved: ApprovalQueueItem[];
+async function resolveApprovalQueueBase(): Promise<{
   actor: ApprovalActor | null;
+  rows: ApprovalQueueRow[];
+  items: ApprovalQueueItem[];
 }> {
   const [membership, rows] = await Promise.all([
     getActiveMembership(),
@@ -340,10 +338,36 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
   const refreshedRows = dedupePendingApprovalQueueRows(
     actor ? await fetchApprovalQueueRows() : rows,
   );
-  const mapped = refreshedRows
+  const items = refreshedRows
     .map((row) => mapQueueRow(row, actor))
     .filter((item): item is ApprovalQueueItem => item !== null);
-  const enriched = await enrichApprovalQueuePreviews(refreshedRows, mapped);
+
+  return { actor, rows: refreshedRows, items };
+}
+
+function filterPendingAssignedToMe(items: ApprovalQueueItem[]): ApprovalQueueItem[] {
+  return items.filter(
+    (item) =>
+      item.status === "pending" &&
+      isCommunicationApprovable(item.communicationStatus) &&
+      item.assignedToMe,
+  );
+}
+
+export async function getAssignedApprovalsCountForCurrentUser(): Promise<number> {
+  const { items } = await resolveApprovalQueueBase();
+  return filterPendingAssignedToMe(items).length;
+}
+
+export async function getApprovalQueueForCurrentUser(): Promise<{
+  assignedToMe: ApprovalQueueItem[];
+  allPending: ApprovalQueueItem[];
+  changesRequested: ApprovalQueueItem[];
+  recentlyApproved: ApprovalQueueItem[];
+  actor: ApprovalActor | null;
+}> {
+  const { actor, rows, items } = await resolveApprovalQueueBase();
+  const enriched = await enrichApprovalQueuePreviews(rows, items);
 
   const pending = enriched.filter(
     (item) =>

@@ -7,15 +7,20 @@ import { DashboardHeader } from "@/components/layout/DashboardHeader";
 interface DashboardShellProps {
   children: React.ReactNode;
   userEmail?: string | null;
+  assignedApprovalsCount?: number;
 }
 
-export function DashboardShell({ children, userEmail }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  userEmail,
+  assignedApprovalsCount = 0,
+}: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-cos-bg">
       <div className="hidden shrink-0 lg:block">
-        <Sidebar />
+        <Sidebar assignedApprovalsCount={assignedApprovalsCount} />
       </div>
 
       {mobileOpen && (
@@ -27,7 +32,11 @@ export function DashboardShell({ children, userEmail }: DashboardShellProps) {
             onClick={() => setMobileOpen(false)}
           />
           <div className="relative h-full w-72">
-            <Sidebar forceExpanded onNavigate={() => setMobileOpen(false)} />
+            <Sidebar
+              forceExpanded
+              assignedApprovalsCount={assignedApprovalsCount}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </div>
         </div>
       )}

@@ -34,9 +34,31 @@ const navItems: {
 interface SidebarProps {
   onNavigate?: () => void;
   forceExpanded?: boolean;
+  assignedApprovalsCount?: number;
 }
 
-export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
+function NavNotificationBadge({ count }: { count: number }) {
+  if (count <= 0) {
+    return null;
+  }
+
+  const label = count > 99 ? "99+" : String(count);
+
+  return (
+    <span
+      aria-label={`${count} approval${count === 1 ? "" : "s"} waiting`}
+      className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-semibold text-white tabular-nums"
+    >
+      {label}
+    </span>
+  );
+}
+
+export function Sidebar({
+  onNavigate,
+  forceExpanded = false,
+  assignedApprovalsCount = 0,
+}: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
@@ -120,6 +142,8 @@ export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
           const isActive =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
+          const notificationCount =
+            href === "/approvals" ? assignedApprovalsCount : 0;
 
           return (
             <Link
@@ -135,7 +159,14 @@ export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
                   : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+              <span className="relative shrink-0">
+                <Icon className="h-4 w-4" strokeWidth={1.5} />
+                {!showLabels && notificationCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5">
+                    <NavNotificationBadge count={notificationCount} />
+                  </span>
+                )}
+              </span>
               {showLabels && (
                 <span className="flex min-w-0 flex-1 items-center gap-2 tracking-wide">
                   <span className="truncate">{label}</span>
@@ -144,6 +175,9 @@ export function Sidebar({ onNavigate, forceExpanded = false }: SidebarProps) {
                       {badge}
                     </span>
                   )}
+                  <span className="ml-auto">
+                    <NavNotificationBadge count={notificationCount} />
+                  </span>
                 </span>
               )}
               {!showLabels && (

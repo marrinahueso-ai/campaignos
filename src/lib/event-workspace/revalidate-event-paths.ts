@@ -10,4 +10,5 @@ export function revalidateEventPaths(eventId: string): void {
   revalidatePath("/communications/calendar");
   revalidatePath("/publishing");
   revalidatePath("/approvals");
+  revalidatePath("/dashboard", "layout");
 }
