@@ -115,7 +115,7 @@ export function CalendarImportPlanList({
     }
 
     const confirmed = window.confirm(
-      `Delete ${selectedCount} selected event${selectedCount === 1 ? "" : "s"}? This cannot be undone.`,
+      `Permanently delete ${selectedCount} selected event${selectedCount === 1 ? "" : "s"}? This removes them from Calendar, Campaigns, Publishing, and Approvals.`,
     );
     if (!confirmed) {
       return;
@@ -143,7 +143,7 @@ export function CalendarImportPlanList({
     }
 
     const confirmed = window.confirm(
-      `Remove all ${events.length} events from your calendar and campaigns? This cannot be undone.`,
+      `Permanently delete all ${events.length} events from Calendar, Campaigns, Publishing, and Approvals? This cannot be undone.`,
     );
     if (!confirmed) {
       return;
@@ -155,6 +155,11 @@ export function CalendarImportPlanList({
       const result = await clearCalendarWindowEventsAction();
       if (!result.success) {
         setError(result.error ?? "Unable to clear calendar events.");
+        return;
+      }
+
+      if (result.deletedCount === 0 && events.length > 0) {
+        setError("No events were deleted. Refresh the page and try again.");
         return;
       }
 
@@ -191,8 +196,8 @@ export function CalendarImportPlanList({
           {events.length} events for {filename ?? "this school year"}
         </p>
         <p className="mt-1 text-sm text-cos-muted">
-          All imported events for the active school year. Select rows to remove bad
-          imports, or{" "}
+          All school-year events in your planning window. Select rows to permanently
+          delete bad imports, or{" "}
           <button
             type="button"
             onClick={handleClearAll}
@@ -225,7 +230,7 @@ export function CalendarImportPlanList({
               <span className="font-medium text-cos-text">{selectedCount}</span> selected
             </span>
           ) : (
-            <span>Select rows to delete individual events.</span>
+            <span>Select rows to permanently delete events.</span>
           )}
         </div>
         <div className="flex flex-wrap gap-2">

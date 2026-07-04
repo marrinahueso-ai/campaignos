@@ -129,6 +129,8 @@ export async function deleteEventAction(
   revalidatePath("/campaigns");
   revalidatePath("/calendar");
   revalidatePath("/communications/calendar");
+  revalidatePath("/publishing");
+  revalidatePath("/approvals");
   return { error: null, success: true };
 }
 

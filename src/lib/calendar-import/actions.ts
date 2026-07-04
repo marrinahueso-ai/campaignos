@@ -62,6 +62,8 @@ function revalidateCalendarPaths() {
   revalidatePath("/calendar/import");
   revalidatePath("/dashboard");
   revalidatePath("/events");
+  revalidatePath("/publishing");
+  revalidatePath("/approvals");
 }
 
 export async function parseCalendarImportAction(
@@ -291,15 +293,27 @@ export async function deleteImportedCalendarEventsAction(
 
 export async function bulkDeleteEventsAction(
   eventIds: string[],
-): Promise<CalendarImportActionState> {
-  const deleted = await deleteEventsByIds(eventIds);
+): Promise<CalendarImportActionState & { deletedCount?: number }> {
+  const organization = await getLatestOrganization();
+  if (!organization) {
+    return { error: "Complete school setup first.", success: false };
+  }
 
-  if (!deleted) {
-    return { error: "Unable to delete selected events.", success: false };
+  const { ok, deletedCount } = await deleteEventsByIds(
+    eventIds,
+    organization.id,
+  );
+
+  if (!ok || deletedCount === 0) {
+    return {
+      error: "Unable to delete selected events.",
+      success: false,
+      deletedCount: 0,
+    };
   }
 
   revalidateCalendarPaths();
-  return { error: null, success: true };
+  return { error: null, success: true, deletedCount };
 }
 
 export async function clearCalendarWindowEventsAction(): Promise<{
@@ -318,15 +332,19 @@ export async function clearCalendarWindowEventsAction(): Promise<{
     organizationSchoolYear: organization.schoolYear,
   });
 
-  const deletedCount = await getCalendarWindowEventCount(schoolYearLabel);
+  const deletedCount = await getCalendarWindowEventCount(
+    schoolYearLabel,
+    organization.id,
+  );
   if (deletedCount === 0) {
     return { success: true, error: null, deletedCount: 0 };
   }
 
   const { ok, deletedCount: removed } = await deleteCalendarWindowEvents(
     schoolYearLabel,
+    organization.id,
   );
-  if (!ok) {
+  if (!ok || removed === 0) {
     return {
       success: false,
       error: "Unable to clear calendar events.",
@@ -438,7 +456,10 @@ export async function findMissingCalendarEventsAction(
     activeSchoolYearLabel: activeSchoolYear?.label,
     organizationSchoolYear: organization?.schoolYear,
   });
-  const existingOnCalendar = await getCalendarWindowEventsForDedup(schoolYearLabel);
+  const existingOnCalendar = await getCalendarWindowEventsForDedup(
+    schoolYearLabel,
+    organization?.id ?? null,
+  );
 
   const knownEvents = [
     ...currentEvents.map((event) => ({ name: event.name, date: event.date })),

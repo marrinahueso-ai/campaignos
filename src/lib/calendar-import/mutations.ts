@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCalendarPlanningWindow } from "@/lib/calendar-import/calendar-window";
 import { mapCalendarImportRow } from "@/lib/organizations/mappers";
 import { toEventInsert } from "@/lib/events/mappers";
 import { mapEventRow } from "@/lib/events/mappers";
@@ -14,6 +13,12 @@ import {
   buildCalendarEventDedupeKeySet,
   filterDuplicateReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
+import {
+  getOrganizationSchoolYearIds,
+  resolveScopedOrganizationId,
+} from "@/lib/events/org-scope";
+import { getCalendarWindowEventIds } from "@/lib/calendar-import/calendar-window-scope";
+import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
@@ -167,20 +172,52 @@ async function getImportOrganizationId(
   return (data?.organization_id as string | undefined) ?? null;
 }
 
-export async function deleteEventsByIds(ids: string[]): Promise<boolean> {
+export async function deleteEventsByIds(
+  ids: string[],
+  organizationId?: string | null,
+): Promise<{ ok: boolean; deletedCount: number }> {
   if (ids.length === 0) {
-    return true;
+    return { ok: true, deletedCount: 0 };
+  }
+
+  const scopedOrgId = await resolveScopedOrganizationId(organizationId);
+  if (!scopedOrgId) {
+    return { ok: false, deletedCount: 0 };
+  }
+
+  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
+  if (!schoolYearIds.length) {
+    return { ok: false, deletedCount: 0 };
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("events").delete().in("id", ids);
+  const { data: scopedRows, error: scopeError } = await supabase
+    .from("events")
+    .select("id")
+    .in("id", ids)
+    .in("school_year_id", schoolYearIds);
+
+  if (scopeError) {
+    console.error("Failed to scope events for delete:", scopeError.message);
+    return { ok: false, deletedCount: 0 };
+  }
+
+  const scopedIds = (scopedRows ?? []).map((row) => row.id as string);
+  if (scopedIds.length === 0) {
+    return { ok: false, deletedCount: 0 };
+  }
+
+  const { error, count } = await supabase
+    .from("events")
+    .delete({ count: "exact" })
+    .in("id", scopedIds);
 
   if (error) {
     console.error("Failed to bulk delete events:", error.message);
-    return false;
+    return { ok: false, deletedCount: 0 };
   }
 
-  return true;
+  return { ok: true, deletedCount: count ?? scopedIds.length };
 }
 
 export async function deleteEventsForCalendarImport(
@@ -217,41 +254,35 @@ export async function deleteEventsForSchoolYear(
   return true;
 }
 
-/** Delete every event currently visible on the calendar (planning window). */
+/** Delete every event currently visible on the calendar (planning window) for this org. */
 export async function deleteCalendarWindowEvents(
   schoolYearLabel: string | null | undefined,
+  organizationId?: string | null,
 ): Promise<{ ok: boolean; deletedCount: number }> {
-  const window = getCalendarPlanningWindow(schoolYearLabel);
-  const supabase = await createClient();
-
-  const { data: rows, error: selectError } = await supabase
-    .from("events")
-    .select("id")
-    .gte("date", window.startDate)
-    .lte("date", window.endDate)
-    .neq("status", "archived");
-
-  if (selectError) {
-    console.error("Failed to list calendar window events:", selectError.message);
+  const organization = organizationId
+    ? { id: organizationId }
+    : await getLatestOrganization();
+  if (!organization) {
     return { ok: false, deletedCount: 0 };
   }
 
-  const eventIds = (rows ?? []).map((row) => row.id as string);
+  const eventIds = await getCalendarWindowEventIds(schoolYearLabel, organization.id);
   if (eventIds.length === 0) {
     return { ok: true, deletedCount: 0 };
   }
 
-  const { error: deleteError } = await supabase
+  const supabase = await createClient();
+  const { error, count } = await supabase
     .from("events")
-    .delete()
+    .delete({ count: "exact" })
     .in("id", eventIds);
 
-  if (deleteError) {
-    console.error("Failed to delete calendar window events:", deleteError.message);
+  if (error) {
+    console.error("Failed to delete calendar window events:", error.message);
     return { ok: false, deletedCount: 0 };
   }
 
-  return { ok: true, deletedCount: eventIds.length };
+  return { ok: true, deletedCount: count ?? eventIds.length };
 }
 
 export async function resetAllCalendarImportsForOrganization(

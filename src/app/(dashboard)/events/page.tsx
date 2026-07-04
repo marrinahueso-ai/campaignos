@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { getCampaignPageEvents, getMetaScheduledEventIds } from "@/lib/events/campaign-page-queries";
 import { groupEventsByMonth, sortCampaignMonthGroups } from "@/lib/events/campaign-page-utils";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
 import { buildEventRosterOwnershipMap } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { getTodayDateString } from "@/lib/utils/dates";
@@ -15,14 +15,14 @@ export const metadata = {
 
 export default async function EventsPage() {
   const today = getTodayDateString();
-  const events = await getCampaignPageEvents();
+  const organization = await getCurrentOrganization();
+  const events = await getCampaignPageEvents(organization?.id ?? null);
   const eventIds = events.map((event) => event.id);
   const groups = groupEventsByMonth(events);
   const monthGroups = sortCampaignMonthGroups(groups, today);
 
-  const [artworkByEventId, organization, metaScheduledEventIds] = await Promise.all([
+  const [artworkByEventId, metaScheduledEventIds] = await Promise.all([
     getEventArtworkMap(eventIds),
-    getLatestOrganization(),
     getMetaScheduledEventIds(eventIds),
   ]);
 

@@ -6,13 +6,28 @@ import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
 import type { Event, EventRow } from "@/types";
 
 /** Events on the Campaigns page — full campaigns and reminder-only social plans. */
-export async function getCampaignPageEvents(): Promise<Event[]> {
+export async function getCampaignPageEvents(
+  organizationId?: string | null,
+): Promise<Event[]> {
+  const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
+    await import("@/lib/events/org-scope");
+  const scopedOrgId = await resolveScopedOrganizationId(organizationId);
+  if (!scopedOrgId) {
+    return [];
+  }
+
+  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
+  if (!schoolYearIds.length) {
+    return [];
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("events")
     .select("*")
     .neq("status", "archived")
+    .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
 
   if (error) {

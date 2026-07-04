@@ -6,8 +6,10 @@ import {
   getCalendarPlanningWindow,
   resolveCalendarSchoolYearLabel,
 } from "@/lib/calendar-import/calendar-window";
+import { resolveOrganizationCalendarWindowScope } from "@/lib/calendar-import/calendar-window-scope";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
+import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import { buildCalendarReviewStats } from "@/lib/calendar-import/stats";
 import {
   parseRawReviewEvents,
@@ -103,6 +105,11 @@ export const getCalendarReviewPageData = cache(async (): Promise<{
   };
 });
 
+export {
+  getCalendarWindowEventCount,
+  getCalendarWindowEventIds,
+} from "@/lib/calendar-import/calendar-window-scope";
+
 export async function getSchoolYearCalendarEventCount(
   schoolYearId: string,
 ): Promise<number> {
@@ -112,40 +119,6 @@ export async function getSchoolYearCalendarEventCount(
     .select("*", { count: "exact", head: true })
     .eq("school_year_id", schoolYearId)
     .neq("status", "archived");
-
-  if (error) {
-    return 0;
-  }
-
-  return count ?? 0;
-}
-
-/** All non-archived events visible on the calendar (planning window). */
-export async function getCalendarWindowEventCount(
-  schoolYearLabel: string | null | undefined,
-  organizationId?: string | null,
-): Promise<number> {
-  const organization = organizationId
-    ? { id: organizationId }
-    : await getLatestOrganization();
-  if (!organization) {
-    return 0;
-  }
-
-  const activeSchoolYear = await getActiveSchoolYear(organization.id);
-  if (!activeSchoolYear) {
-    return 0;
-  }
-
-  const window = getCalendarPlanningWindow(schoolYearLabel);
-  const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("events")
-    .select("*", { count: "exact", head: true })
-    .gte("date", window.startDate)
-    .lte("date", window.endDate)
-    .neq("status", "archived")
-    .eq("school_year_id", activeSchoolYear.id);
 
   if (error) {
     return 0;
@@ -200,15 +173,24 @@ export async function getSchoolYearCalendarEventsForDedup(
 /** Events currently on the calendar — used for import dedup. */
 export async function getCalendarWindowEventsForDedup(
   schoolYearLabel: string | null | undefined,
+  organizationId?: string | null,
 ): Promise<{ title: string; date: string }[]> {
-  const window = getCalendarPlanningWindow(schoolYearLabel);
+  const scope = await resolveOrganizationCalendarWindowScope(
+    schoolYearLabel,
+    organizationId,
+  );
+  if (!scope) {
+    return [];
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
     .select("title, date")
-    .gte("date", window.startDate)
-    .lte("date", window.endDate)
+    .gte("date", scope.window.startDate)
+    .lte("date", scope.window.endDate)
     .neq("status", "archived")
+    .in("school_year_id", scope.schoolYearIds)
     .order("date", { ascending: true });
 
   if (error || !data) {
@@ -249,6 +231,11 @@ export async function getImportedEventsForCalendarList(): Promise<{
     return { filename: schoolYearLabel, events: [] };
   }
 
+  const schoolYearIds = await getOrganizationSchoolYearIds(organization.id);
+  if (!schoolYearIds.length) {
+    return { filename: schoolYearLabel, events: [] };
+  }
+
   const window = getCalendarPlanningWindow(schoolYearLabel);
 
   const supabase = await createClient();
@@ -258,7 +245,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
     .gte("date", window.startDate)
     .lte("date", window.endDate)
     .neq("status", "archived")
-    .eq("school_year_id", activeSchoolYear.id)
+    .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
 
   if (error || !data) {
