@@ -17,6 +17,7 @@ import {
 } from "@/lib/artwork-v2/campaign-phases";
 import type { MilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
+import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 import { cn } from "@/lib/utils/cn";
 
 export type ArtworkV2PickerEntry = ArtworkWorkflowItem & {
@@ -208,7 +209,7 @@ export function ArtworkV2PickerScreen({
 
             return (
               <li key={group.relativeDay}>
-                <article className="overflow-hidden border border-cos-border bg-cos-card">
+                <article {...milestoneAccordionCardProps(expanded)}>
                   <div className="flex items-start gap-2 border-b border-cos-border px-4 py-4">
                     <button
                       type="button"

@@ -40,6 +40,7 @@ import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
 import { cn } from "@/lib/utils/cn";
+import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 
 function isBundleDeprioritized(
   bundle: MetaPublishBundle,
@@ -220,10 +221,7 @@ export function MetaPublishBundleCard({
 
   return (
     <article
-      className={cn(
-        "overflow-hidden border border-cos-border bg-cos-card",
-        isSkipped && "opacity-75",
-      )}
+      {...milestoneAccordionCardProps(expanded, isSkipped ? "opacity-75" : undefined)}
     >
       <div className="flex items-start gap-2 border-b border-cos-border px-4 py-4">
         {onToggle && (

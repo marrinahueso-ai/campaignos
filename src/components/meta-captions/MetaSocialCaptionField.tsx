@@ -20,6 +20,7 @@ import type {
 import type { AiAssistantStatus } from "@/lib/ai";
 import { canApproveDraft, type CampaignRole } from "@/lib/auth/campaign-roles";
 import { cn } from "@/lib/utils/cn";
+import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 
 interface MetaSocialCaptionFieldProps {
   eventId: string;
@@ -391,7 +392,7 @@ export function MetaSocialCaptionMilestoneCard({
 
   return (
     <li id={`caption-milestone-${milestone.relativeDay}`}>
-      <article className="overflow-hidden border border-cos-border bg-cos-card">
+      <article {...milestoneAccordionCardProps(expanded)}>
         <div className="flex items-start gap-2 border-b border-cos-border px-4 py-4">
           <button
             type="button"

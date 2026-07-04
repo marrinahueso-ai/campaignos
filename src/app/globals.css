@@ -119,6 +119,17 @@ body {
     border-top: 1px solid color-mix(in srgb, var(--cos-border) 80%, transparent);
   }
 
+  .milestone-accordion-card {
+    overflow: hidden;
+    background: var(--cos-card);
+    border: 1px solid var(--cos-border);
+  }
+
+  .milestone-accordion-card[data-expanded="true"] {
+    border-color: color-mix(in srgb, var(--cos-accent) 70%, var(--cos-border));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--cos-accent) 28%, transparent);
+  }
+
   .studio-dark-section {
     background: var(--cos-dark);
     color: #f6f2eb;
