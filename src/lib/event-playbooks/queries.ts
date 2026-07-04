@@ -32,6 +32,18 @@ export async function areEventPlaybookTablesAvailable(): Promise<boolean> {
   return !error || !isMissingSchemaError(error);
 }
 
+export { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
+
+export async function areEventPlaybookTaskGroupsAvailable(): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("event_playbook_task_groups")
+    .select("id")
+    .limit(1);
+
+  return !error || !isMissingSchemaError(error);
+}
+
 /** Events eligible for Event Playbooks — non calendar-only, active school year when set. */
 export async function getEventPlaybookEvents(
   organizationId: string | null,

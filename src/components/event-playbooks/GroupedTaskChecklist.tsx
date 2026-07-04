@@ -38,6 +38,7 @@ import type {
   EventPlaybookTaskStatus,
 } from "@/types/event-playbooks";
 import { cn } from "@/lib/utils/cn";
+import { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
 import {
   readChecklistDragPayload,
   setGroupDragData,
@@ -56,6 +57,7 @@ interface GroupedTaskChecklistProps {
   tasks: EventPlaybookTask[];
   taskGroups: EventPlaybookTaskGroup[];
   tablesAvailable: boolean;
+  taskGroupsAvailable?: boolean;
   variant: "tasks" | "overview";
 }
 
@@ -64,6 +66,7 @@ export function GroupedTaskChecklist({
   tasks: tasksFromServer,
   taskGroups: groupsFromServer,
   tablesAvailable,
+  taskGroupsAvailable = true,
   variant,
 }: GroupedTaskChecklistProps) {
   const router = useRouter();
@@ -207,6 +210,11 @@ export function GroupedTaskChecklist({
   }
 
   function handleCreateGroup() {
+    if (!taskGroupsAvailable) {
+      setError(EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION);
+      return;
+    }
+
     setError(null);
     startTransition(async () => {
       const result = await createEventPlaybookTaskGroupAction(eventId, newGroupName);
@@ -566,7 +574,7 @@ export function GroupedTaskChecklist({
           <Button
             type="button"
             onClick={handleCreateGroup}
-            disabled={pending || !newGroupName.trim()}
+            disabled={pending || !newGroupName.trim() || !taskGroupsAvailable}
             size="sm"
             variant="secondary"
           >

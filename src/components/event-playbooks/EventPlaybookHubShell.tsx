@@ -33,6 +33,7 @@ interface EventPlaybookHubShellProps {
   pastLessonCount: number;
   aiStatus: AiAssistantStatus;
   tablesAvailable: boolean;
+  taskGroupsAvailable?: boolean;
   hasCampaign: boolean;
   socialMedia: React.ReactNode | null;
   calendarSettingsExtras?: React.ReactNode;
@@ -50,6 +51,7 @@ export function EventPlaybookHubShell({
   pastLessonCount,
   aiStatus,
   tablesAvailable,
+  taskGroupsAvailable = true,
   hasCampaign,
   socialMedia,
   calendarSettingsExtras,
@@ -139,6 +141,7 @@ export function EventPlaybookHubShell({
             tasks={hubData.tasks}
             taskGroups={hubData.taskGroups}
             tablesAvailable={tablesAvailable}
+            taskGroupsAvailable={taskGroupsAvailable}
           />
         }
         notes={

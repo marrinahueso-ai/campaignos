@@ -62,6 +62,7 @@ interface EventPlanningHubProps {
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
   tablesAvailable: boolean;
+  taskGroupsAvailable?: boolean;
   hasCampaign: boolean;
   campaignWorkspace?: CampaignWorkspaceBundle;
   calendarContext?: CalendarContextBundle;
@@ -76,6 +77,7 @@ export function EventPlanningHub({
   aiStatus,
   userRole,
   tablesAvailable,
+  taskGroupsAvailable = true,
   hasCampaign,
   campaignWorkspace,
   calendarContext,
@@ -140,6 +142,7 @@ export function EventPlanningHub({
       pastLessonCount={pastLessonCount}
       aiStatus={aiStatus}
       tablesAvailable={tablesAvailable}
+      taskGroupsAvailable={taskGroupsAvailable}
       hasCampaign={hasCampaign}
       socialMedia={socialMedia}
       calendarSettingsExtras={calendarSettingsExtras}

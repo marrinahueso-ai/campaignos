@@ -2,6 +2,7 @@
 
 import { GroupedTaskChecklist } from "@/components/event-playbooks/GroupedTaskChecklist";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
 import type { EventPlaybookTask, EventPlaybookTaskGroup } from "@/types/event-playbooks";
 
 interface TasksTabProps {
@@ -9,9 +10,16 @@ interface TasksTabProps {
   tasks: EventPlaybookTask[];
   taskGroups: EventPlaybookTaskGroup[];
   tablesAvailable: boolean;
+  taskGroupsAvailable: boolean;
 }
 
-export function TasksTab({ eventId, tasks, taskGroups, tablesAvailable }: TasksTabProps) {
+export function TasksTab({
+  eventId,
+  tasks,
+  taskGroups,
+  tablesAvailable,
+  taskGroupsAvailable,
+}: TasksTabProps) {
   if (!tablesAvailable) {
     return (
       <Card padding="lg">
@@ -33,6 +41,12 @@ export function TasksTab({ eventId, tasks, taskGroups, tablesAvailable }: TasksT
           <CardDescription>
             Track venue, budget, volunteers, and day-of tasks for this event. Group tasks and drag
             to reorder.
+            {!taskGroupsAvailable && (
+              <>
+                {" "}
+                {EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION}
+              </>
+            )}
           </CardDescription>
         </CardHeader>
 
@@ -42,6 +56,7 @@ export function TasksTab({ eventId, tasks, taskGroups, tablesAvailable }: TasksT
             tasks={tasks}
             taskGroups={taskGroups}
             tablesAvailable={tablesAvailable}
+            taskGroupsAvailable={taskGroupsAvailable}
             variant="tasks"
           />
         </div>

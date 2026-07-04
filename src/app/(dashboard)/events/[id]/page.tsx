@@ -32,6 +32,7 @@ import {
 } from "@/lib/playbooks/queries";
 import {
   areEventPlaybookTablesAvailable,
+  areEventPlaybookTaskGroupsAvailable,
   getEventPlaybookHubData,
   getPastEventLessonsForType,
   getPastEventsForType,
@@ -62,6 +63,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
   const hasCampaign = shouldAssignPlaybook(event.communicationStrategy);
 
   const tablesAvailable = await areEventPlaybookTablesAvailable();
+  const taskGroupsAvailable = await areEventPlaybookTaskGroupsAvailable();
   if (tablesAvailable) {
     await seedDefaultPlaybookTasks(event.id);
   }
@@ -140,6 +142,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           aiStatus={aiStatus}
           userRole={userRole}
           tablesAvailable={tablesAvailable}
+          taskGroupsAvailable={taskGroupsAvailable}
           hasCampaign={false}
           calendarContext={{
             nextStep: getEventNextStep(false, []),
@@ -225,6 +228,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
         aiStatus={aiStatus}
         userRole={userRole}
         tablesAvailable={tablesAvailable}
+        taskGroupsAvailable={taskGroupsAvailable}
         hasCampaign
         campaignWorkspace={{
           organizationName: organization?.name ?? null,

@@ -224,7 +224,7 @@ export async function seedDefaultPlaybookTasks(eventId: string): Promise<void> {
 export async function createEventPlaybookTaskGroup(
   eventId: string,
   name: string,
-): Promise<string | null> {
+): Promise<{ id: string | null; missingSchema: boolean }> {
   const supabase = await createClient();
 
   const { data: existing } = await supabase
@@ -251,21 +251,22 @@ export async function createEventPlaybookTaskGroup(
     .single();
 
   if (error || !data) {
-    if (!isMissingSchemaError(error)) {
+    const missingSchema = isMissingSchemaError(error);
+    if (!missingSchema) {
       console.error("Failed to create event playbook task group:", error?.message);
     }
-    return null;
+    return { id: null, missingSchema };
   }
 
   await logActivity(eventId, `Created task group "${name}"`);
-  return data.id as string;
+  return { id: data.id as string, missingSchema: false };
 }
 
 export async function deleteEventPlaybookTaskGroup(
   groupId: string,
   eventId: string,
   groupName: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; missingSchema: boolean }> {
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -275,21 +276,22 @@ export async function deleteEventPlaybookTaskGroup(
     .eq("event_id", eventId);
 
   if (error) {
-    if (!isMissingSchemaError(error)) {
+    const missingSchema = isMissingSchemaError(error);
+    if (!missingSchema) {
       console.error("Failed to delete event playbook task group:", error.message);
     }
-    return false;
+    return { ok: false, missingSchema };
   }
 
   await logActivity(eventId, `Removed task group "${groupName}"`);
-  return true;
+  return { ok: true, missingSchema: false };
 }
 
 export async function updateEventPlaybookTaskGroupCollapsed(
   groupId: string,
   eventId: string,
   collapsed: boolean,
-): Promise<boolean> {
+): Promise<{ ok: boolean; missingSchema: boolean }> {
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -299,13 +301,14 @@ export async function updateEventPlaybookTaskGroupCollapsed(
     .eq("event_id", eventId);
 
   if (error) {
-    if (!isMissingSchemaError(error)) {
+    const missingSchema = isMissingSchemaError(error);
+    if (!missingSchema) {
       console.error("Failed to update task group collapsed state:", error.message);
     }
-    return false;
+    return { ok: false, missingSchema };
   }
 
-  return true;
+  return { ok: true, missingSchema: false };
 }
 
 export async function persistEventPlaybookTaskOrder(
@@ -314,7 +317,7 @@ export async function persistEventPlaybookTaskOrder(
     groups: { id: string; sortOrder: number }[];
     tasks: { id: string; groupId: string | null; sortOrder: number }[];
   },
-): Promise<boolean> {
+): Promise<{ ok: boolean; missingSchema: boolean }> {
   const supabase = await createClient();
   const now = new Date().toISOString();
 
@@ -326,10 +329,11 @@ export async function persistEventPlaybookTaskOrder(
       .eq("event_id", eventId);
 
     if (error) {
-      if (!isMissingSchemaError(error)) {
+      const missingSchema = isMissingSchemaError(error);
+      if (!missingSchema) {
         console.error("Failed to reorder task groups:", error.message);
       }
-      return false;
+      return { ok: false, missingSchema };
     }
   }
 
@@ -345,12 +349,13 @@ export async function persistEventPlaybookTaskOrder(
       .eq("event_id", eventId);
 
     if (error) {
-      if (!isMissingSchemaError(error)) {
+      const missingSchema = isMissingSchemaError(error);
+      if (!missingSchema) {
         console.error("Failed to reorder tasks:", error.message);
       }
-      return false;
+      return { ok: false, missingSchema };
     }
   }
 
-  return true;
+  return { ok: true, missingSchema: false };
 }
