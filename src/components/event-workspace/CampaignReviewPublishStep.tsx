@@ -8,6 +8,10 @@ import {
   publishAllActionableMetaBundlesNowAction,
   scheduleAllReadyMetaBundlesAction,
 } from "@/lib/meta-publishing/actions";
+import {
+  allReviewPublishMetaBundlesHandled,
+  isReviewPublishVisibleBundle,
+} from "@/lib/meta-publishing/bundles";
 import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { Event } from "@/types";
@@ -28,11 +32,9 @@ export function CampaignReviewPublishStep({
   initialExpandedDay = null,
 }: CampaignReviewPublishStepProps) {
   const eventLink = resolveEventShareLink(event);
-  const activeBundles = metaPublishBundles.filter(
+  const visibleBundles = metaPublishBundles.filter(isReviewPublishVisibleBundle);
+  const activeMetaBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
-  );
-  const hasActionable = activeBundles.some((bundle) =>
-    ["ready", "scheduled", "approved", "failed"].includes(bundle.status),
   );
 
   return (
@@ -57,21 +59,22 @@ export function CampaignReviewPublishStep({
         )}
       </header>
 
-      {activeBundles.length === 0 ? (
+      {activeMetaBundles.length === 0 ? (
         <EmptyState
           icon={Send}
           title="Nothing ready to publish"
           description="Approve artwork and captions in Captions first."
           action={{ label: "Go to Captions", href: "#schedule" }}
         />
-      ) : !hasActionable ? (
+      ) : visibleBundles.length === 0 &&
+        allReviewPublishMetaBundlesHandled(metaPublishBundles) ? (
         <EmptyState
           icon={CalendarClock}
           title="All milestones handled"
           description="Published posts appear in the Published step. Need to adjust captions? Go back to Captions."
           action={{ label: "Go to Captions", href: "#schedule" }}
         />
-      ) : (
+      ) : visibleBundles.length > 0 ? (
         <MetaPublishBundlesPanel
           eventId={eventId}
           bundles={metaPublishBundles}
@@ -83,6 +86,13 @@ export function CampaignReviewPublishStep({
           onScheduleAll={() => scheduleAllReadyMetaBundlesAction(eventId)}
           onApproveAll={() => approveAllScheduledMetaBundlesAction(eventId)}
           onPublishAll={() => publishAllActionableMetaBundlesNowAction(eventId)}
+        />
+      ) : (
+        <EmptyState
+          icon={Send}
+          title="Nothing ready to publish"
+          description="Approve artwork and captions in Captions first."
+          action={{ label: "Go to Captions", href: "#schedule" }}
         />
       )}
     </div>

@@ -1,8 +1,10 @@
 import {
   META_SOCIAL_CHANNELS,
+  findCommunicationStepForRelativeDay,
   planMilestonesFromStepRowsForDisplay,
   resolveArtworkMilestonesForEvent,
 } from "@/lib/campaign-plan/resolve-plan-milestones";
+import { isStoryMilestoneDistinctlyApproved } from "@/lib/artwork-v2/milestone-assets";
 import {
   planDueDateToScheduledTime,
   resolveBundleScheduledFor,
@@ -163,7 +165,8 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         client
           .from("event_communication_steps")
           .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish, story_reminder_sent_at")
-          .eq("event_id", eventId),
+          .eq("event_id", eventId)
+          .order("sort_order", { ascending: true }),
       ),
   ]);
 
@@ -182,7 +185,9 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
   const milestoneGroups = groupArtworkPhasesByMilestone(phaseItems);
 
   return milestoneGroups.map((group) => {
-    const step = steps.find((entry) => entry.relative_day === group.relativeDay);
+    const step = findCommunicationStepForRelativeDay(steps, group.relativeDay, {
+      preferMetaSocial: true,
+    });
     const stepId = step?.id ?? null;
     const stepSkipped = step?.status === "skipped";
     const channel = (step?.channel as CommunicationChannel | undefined) ?? null;
@@ -210,7 +215,10 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const storyAsset = storyPhase ? resolveWorkflowAsset(storyPhase, null, assets) : null;
 
     const hasFeedArtwork = isApprovedArtworkAsset(feedAsset);
-    const hasStoryArtwork = isApprovedArtworkAsset(storyAsset);
+    const hasStoryArtwork =
+      storyPhase && feedPhase
+        ? isStoryMilestoneDistinctlyApproved(feedPhase, storyPhase, assets)
+        : isApprovedArtworkAsset(storyAsset);
     const missingArtwork: string[] = [];
 
     if (isFeedSurfaceEnabled(metaPublishSurfaces) && !hasFeedArtwork) {
@@ -313,6 +321,39 @@ export function countBundlesByStatus(
   statuses: MetaPublishBundleStatus[],
 ): number {
   return bundles.filter((bundle) => statuses.includes(bundle.status)).length;
+}
+
+const REVIEW_PUBLISH_VISIBLE_STATUSES: MetaPublishBundleStatus[] = [
+  "ready",
+  "scheduled",
+  "approved",
+  "failed",
+  "needs_artwork",
+  "needs_caption",
+];
+
+export function isReviewPublishVisibleBundle(bundle: MetaPublishBundle): boolean {
+  return (
+    bundle.isMetaPost &&
+    bundle.status !== "skipped" &&
+    REVIEW_PUBLISH_VISIBLE_STATUSES.includes(bundle.status)
+  );
+}
+
+export function allReviewPublishMetaBundlesHandled(
+  bundles: MetaPublishBundle[],
+): boolean {
+  const activeMetaBundles = bundles.filter(
+    (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
+  );
+
+  if (activeMetaBundles.length === 0) {
+    return false;
+  }
+
+  return activeMetaBundles.every(
+    (bundle) => bundle.status === "published" || bundle.status === "posting",
+  );
 }
 
 /** True when this milestone has at least one Meta slot that auto-publishes via API. */

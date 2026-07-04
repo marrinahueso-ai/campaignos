@@ -56,6 +56,34 @@ export function planMilestonesFromStepRowsForDisplay(
   return planMilestonesFromStepRows(steps);
 }
 
+/** Prefer the Meta social step when multiple plan rows share a relative day. */
+export function findCommunicationStepForRelativeDay(
+  steps: EventCommunicationStepRow[],
+  relativeDay: number,
+  options?: { preferMetaSocial?: boolean },
+): EventCommunicationStepRow | undefined {
+  const atDay = steps
+    .filter((step) => step.relative_day === relativeDay)
+    .sort(
+      (left, right) =>
+        left.sort_order - right.sort_order || left.relative_day - right.relative_day,
+    );
+
+  if (atDay.length === 0) {
+    return undefined;
+  }
+
+  if (options?.preferMetaSocial) {
+    return (
+      atDay.find((step) =>
+        META_SOCIAL_CHANNELS.includes(step.channel as CommunicationChannel),
+      ) ?? atDay[0]
+    );
+  }
+
+  return atDay[0];
+}
+
 export async function resolveArtworkMilestonesForEvent(
   eventId: string,
 ): Promise<MetaArtworkMilestone[]> {

@@ -5,7 +5,10 @@ import {
   META_PUBLISH_TARGETS,
 } from "@/lib/artwork-v2/campaign-phases";
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
-import { resolveSocialMetaMilestonesForEvent } from "@/lib/campaign-plan/resolve-plan-milestones";
+import {
+  findCommunicationStepForRelativeDay,
+  resolveSocialMetaMilestonesForEvent,
+} from "@/lib/campaign-plan/resolve-plan-milestones";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { buildCommunicationItemsByStepId, ensureStepCommunicationItemsForEvent } from "@/lib/event-workspace/communication-items";
@@ -128,7 +131,9 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
   }
 
   for (const milestone of milestones) {
-    const step = steps.find((entry) => entry.relative_day === milestone.relativeDay);
+    const step = findCommunicationStepForRelativeDay(steps, milestone.relativeDay, {
+      preferMetaSocial: true,
+    });
     const surfaces = resolveStepPublishSurfaces(step);
     const storyManualPublish = isStepStoryManualPublish(step);
     const communicationItemId = step
