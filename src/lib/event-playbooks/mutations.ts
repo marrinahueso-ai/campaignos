@@ -29,16 +29,25 @@ export async function createEventPlaybookTask(
     dueDate?: string | null;
     assigneeName?: string | null;
     assigneeInitials?: string | null;
+    groupId?: string | null;
   },
 ): Promise<string | null> {
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
+  let sortQuery = supabase
     .from("event_playbook_tasks")
     .select("sort_order")
     .eq("event_id", eventId)
     .order("sort_order", { ascending: false })
     .limit(1);
+
+  if (input.groupId) {
+    sortQuery = sortQuery.eq("group_id", input.groupId);
+  } else {
+    sortQuery = sortQuery.is("group_id", null);
+  }
+
+  const { data: existing } = await sortQuery;
 
   const nextSort =
     existing && existing.length > 0
@@ -54,6 +63,7 @@ export async function createEventPlaybookTask(
       due_date: input.dueDate ?? null,
       assignee_name: input.assigneeName ?? null,
       assignee_initials: input.assigneeInitials ?? null,
+      group_id: input.groupId ?? null,
       sort_order: nextSort,
     })
     .select("id")
@@ -209,4 +219,138 @@ export async function seedDefaultPlaybookTasks(eventId: string): Promise<void> {
   }
 
   await logActivity(eventId, "Started planning checklist");
+}
+
+export async function createEventPlaybookTaskGroup(
+  eventId: string,
+  name: string,
+): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("event_playbook_task_groups")
+    .select("sort_order")
+    .eq("event_id", eventId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextSort =
+    existing && existing.length > 0
+      ? ((existing[0]?.sort_order as number) ?? 0) + 1
+      : 0;
+
+  const { data, error } = await supabase
+    .from("event_playbook_task_groups")
+    .insert({
+      event_id: eventId,
+      name,
+      sort_order: nextSort,
+      collapsed: false,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to create event playbook task group:", error?.message);
+    }
+    return null;
+  }
+
+  await logActivity(eventId, `Created task group "${name}"`);
+  return data.id as string;
+}
+
+export async function deleteEventPlaybookTaskGroup(
+  groupId: string,
+  eventId: string,
+  groupName: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("event_playbook_task_groups")
+    .delete()
+    .eq("id", groupId)
+    .eq("event_id", eventId);
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to delete event playbook task group:", error.message);
+    }
+    return false;
+  }
+
+  await logActivity(eventId, `Removed task group "${groupName}"`);
+  return true;
+}
+
+export async function updateEventPlaybookTaskGroupCollapsed(
+  groupId: string,
+  eventId: string,
+  collapsed: boolean,
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("event_playbook_task_groups")
+    .update({ collapsed, updated_at: new Date().toISOString() })
+    .eq("id", groupId)
+    .eq("event_id", eventId);
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to update task group collapsed state:", error.message);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+export async function persistEventPlaybookTaskOrder(
+  eventId: string,
+  input: {
+    groups: { id: string; sortOrder: number }[];
+    tasks: { id: string; groupId: string | null; sortOrder: number }[];
+  },
+): Promise<boolean> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  for (const group of input.groups) {
+    const { error } = await supabase
+      .from("event_playbook_task_groups")
+      .update({ sort_order: group.sortOrder, updated_at: now })
+      .eq("id", group.id)
+      .eq("event_id", eventId);
+
+    if (error) {
+      if (!isMissingSchemaError(error)) {
+        console.error("Failed to reorder task groups:", error.message);
+      }
+      return false;
+    }
+  }
+
+  for (const task of input.tasks) {
+    const { error } = await supabase
+      .from("event_playbook_tasks")
+      .update({
+        group_id: task.groupId,
+        sort_order: task.sortOrder,
+        updated_at: now,
+      })
+      .eq("id", task.id)
+      .eq("event_id", eventId);
+
+    if (error) {
+      if (!isMissingSchemaError(error)) {
+        console.error("Failed to reorder tasks:", error.message);
+      }
+      return false;
+    }
+  }
+
+  return true;
 }

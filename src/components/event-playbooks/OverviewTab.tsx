@@ -122,6 +122,7 @@ export function OverviewTab({
             <OverviewChecklist
               eventId={eventId}
               tasks={hubData.tasks}
+              taskGroups={hubData.taskGroups}
               planningProgressPercent={hubData.planningProgressPercent}
               tablesAvailable={tablesAvailable}
             />

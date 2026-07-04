@@ -7,6 +7,7 @@ import {
   mapEventPlaybookActivityRow,
   mapEventPlaybookFileRow,
   mapEventPlaybookNoteRow,
+  mapEventPlaybookTaskGroupRow,
   mapEventPlaybookTaskRow,
 } from "@/lib/event-playbooks/mappers";
 import { computePlanningProgress } from "@/lib/event-playbooks/progress";
@@ -17,6 +18,7 @@ import type {
   EventPlaybookFileRow,
   EventPlaybookHubData,
   EventPlaybookNoteRow,
+  EventPlaybookTaskGroupRow,
   EventPlaybookTaskRow,
 } from "@/types/event-playbooks";
 
@@ -90,6 +92,7 @@ export async function getEventPlaybookHubData(
 ): Promise<EventPlaybookHubData> {
   const empty: EventPlaybookHubData = {
     tasks: [],
+    taskGroups: [],
     notes: [],
     files: [],
     activity: [],
@@ -102,9 +105,14 @@ export async function getEventPlaybookHubData(
 
   const supabase = await createClient();
 
-  const [tasksResult, notesResult, filesResult, activityResult] = await Promise.all([
+  const [tasksResult, groupsResult, notesResult, filesResult, activityResult] = await Promise.all([
     supabase
       .from("event_playbook_tasks")
+      .select("*")
+      .eq("event_id", eventId)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("event_playbook_task_groups")
       .select("*")
       .eq("event_id", eventId)
       .order("sort_order", { ascending: true }),
@@ -129,6 +137,12 @@ export async function getEventPlaybookHubData(
   const tasks = ((tasksResult.data ?? []) as EventPlaybookTaskRow[]).map(
     mapEventPlaybookTaskRow,
   );
+  const taskGroups =
+    groupsResult.error && isMissingSchemaError(groupsResult.error)
+      ? []
+      : ((groupsResult.data ?? []) as EventPlaybookTaskGroupRow[]).map(
+          mapEventPlaybookTaskGroupRow,
+        );
   const notes = ((notesResult.data ?? []) as EventPlaybookNoteRow[]).map(
     mapEventPlaybookNoteRow,
   );
@@ -141,6 +155,7 @@ export async function getEventPlaybookHubData(
 
   return {
     tasks,
+    taskGroups,
     notes,
     files,
     activity,

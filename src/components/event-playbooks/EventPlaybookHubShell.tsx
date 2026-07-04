@@ -137,6 +137,7 @@ export function EventPlaybookHubShell({
           <TasksTab
             eventId={event.id}
             tasks={hubData.tasks}
+            taskGroups={hubData.taskGroups}
             tablesAvailable={tablesAvailable}
           />
         }

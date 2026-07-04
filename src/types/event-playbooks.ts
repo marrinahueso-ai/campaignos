@@ -2,6 +2,16 @@ export type EventPlaybookTaskStatus = "todo" | "in_progress" | "done";
 
 export type EventPlaybookNoteType = "lesson" | "note";
 
+export interface EventPlaybookTaskGroupRow {
+  id: string;
+  event_id: string;
+  name: string;
+  sort_order: number;
+  collapsed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface EventPlaybookTaskRow {
   id: string;
   event_id: string;
@@ -10,6 +20,7 @@ export interface EventPlaybookTaskRow {
   due_date: string | null;
   assignee_name: string | null;
   assignee_initials: string | null;
+  group_id: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -41,6 +52,16 @@ export interface EventPlaybookActivityRow {
   created_at: string;
 }
 
+export interface EventPlaybookTaskGroup {
+  id: string;
+  eventId: string;
+  name: string;
+  sortOrder: number;
+  collapsed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EventPlaybookTask {
   id: string;
   eventId: string;
@@ -49,6 +70,7 @@ export interface EventPlaybookTask {
   dueDate: string | null;
   assigneeName: string | null;
   assigneeInitials: string | null;
+  groupId: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -82,6 +104,7 @@ export interface EventPlaybookActivity {
 
 export interface EventPlaybookHubData {
   tasks: EventPlaybookTask[];
+  taskGroups: EventPlaybookTaskGroup[];
   notes: EventPlaybookNote[];
   files: EventPlaybookFile[];
   activity: EventPlaybookActivity[];

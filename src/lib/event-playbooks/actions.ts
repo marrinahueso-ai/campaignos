@@ -6,7 +6,11 @@ import {
   createEventPlaybookFilePlaceholder,
   createEventPlaybookNote,
   createEventPlaybookTask,
+  createEventPlaybookTaskGroup,
   deleteEventPlaybookTask,
+  deleteEventPlaybookTaskGroup,
+  persistEventPlaybookTaskOrder,
+  updateEventPlaybookTaskGroupCollapsed,
   updateEventPlaybookTaskStatus,
 } from "@/lib/event-playbooks/mutations";
 import { generateEventPlaybookInsights } from "@/lib/event-playbooks/insights";
@@ -29,13 +33,14 @@ function revalidatePlaybookPaths(eventId: string) {
 export async function createEventPlaybookTaskAction(
   eventId: string,
   title: string,
+  groupId?: string | null,
 ): Promise<{ success: boolean; error: string | null }> {
   const trimmed = title.trim();
   if (!trimmed) {
     return { success: false, error: "Task title is required." };
   }
 
-  const id = await createEventPlaybookTask(eventId, { title: trimmed });
+  const id = await createEventPlaybookTask(eventId, { title: trimmed, groupId });
   if (!id) {
     return { success: false, error: "Unable to create task." };
   }
@@ -67,6 +72,68 @@ export async function deleteEventPlaybookTaskAction(
   const ok = await deleteEventPlaybookTask(taskId, eventId, taskTitle);
   if (!ok) {
     return { success: false, error: "Unable to delete task." };
+  }
+
+  revalidatePlaybookPaths(eventId);
+  return { success: true, error: null };
+}
+
+export async function createEventPlaybookTaskGroupAction(
+  eventId: string,
+  name: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return { success: false, error: "Group name is required." };
+  }
+
+  const id = await createEventPlaybookTaskGroup(eventId, trimmed);
+  if (!id) {
+    return { success: false, error: "Unable to create group." };
+  }
+
+  revalidatePlaybookPaths(eventId);
+  return { success: true, error: null };
+}
+
+export async function deleteEventPlaybookTaskGroupAction(
+  eventId: string,
+  groupId: string,
+  groupName: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const ok = await deleteEventPlaybookTaskGroup(groupId, eventId, groupName);
+  if (!ok) {
+    return { success: false, error: "Unable to delete group." };
+  }
+
+  revalidatePlaybookPaths(eventId);
+  return { success: true, error: null };
+}
+
+export async function toggleEventPlaybookTaskGroupCollapsedAction(
+  eventId: string,
+  groupId: string,
+  collapsed: boolean,
+): Promise<{ success: boolean; error: string | null }> {
+  const ok = await updateEventPlaybookTaskGroupCollapsed(groupId, eventId, collapsed);
+  if (!ok) {
+    return { success: false, error: "Unable to update group." };
+  }
+
+  revalidatePlaybookPaths(eventId);
+  return { success: true, error: null };
+}
+
+export async function reorderEventPlaybookTasksAction(
+  eventId: string,
+  input: {
+    groups: { id: string; sortOrder: number }[];
+    tasks: { id: string; groupId: string | null; sortOrder: number }[];
+  },
+): Promise<{ success: boolean; error: string | null }> {
+  const ok = await persistEventPlaybookTaskOrder(eventId, input);
+  if (!ok) {
+    return { success: false, error: "Unable to save task order." };
   }
 
   revalidatePlaybookPaths(eventId);

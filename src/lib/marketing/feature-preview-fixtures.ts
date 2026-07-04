@@ -147,6 +147,7 @@ export const previewPlanningHubOwnership: EventRosterOwnership = {
 
 export const previewPlanningHubData: EventPlaybookHubData = {
   planningProgressPercent: 58,
+  taskGroups: [],
   tasks: [
     {
       id: "ht1",
@@ -156,6 +157,7 @@ export const previewPlanningHubData: EventPlaybookHubData = {
       dueDate: "2026-07-20",
       assigneeName: PREVIEW_CHAIR_REBECCA,
       assigneeInitials: "RK",
+      groupId: null,
       sortOrder: 0,
       createdAt: "2026-05-15T12:00:00Z",
       updatedAt: "2026-07-18T12:00:00Z",
@@ -168,6 +170,7 @@ export const previewPlanningHubData: EventPlaybookHubData = {
       dueDate: "2026-08-01",
       assigneeName: PREVIEW_VP_EVENTS,
       assigneeInitials: "DO",
+      groupId: null,
       sortOrder: 1,
       createdAt: "2026-05-15T12:00:00Z",
       updatedAt: "2026-07-28T12:00:00Z",
@@ -180,6 +183,7 @@ export const previewPlanningHubData: EventPlaybookHubData = {
       dueDate: "2026-08-10",
       assigneeName: null,
       assigneeInitials: null,
+      groupId: null,
       sortOrder: 2,
       createdAt: "2026-05-15T12:00:00Z",
       updatedAt: "2026-05-15T12:00:00Z",
@@ -207,6 +211,7 @@ export const previewPlanningHubData: EventPlaybookHubData = {
 
 export const previewSpringCarnivalHubData: EventPlaybookHubData = {
   planningProgressPercent: 62,
+  taskGroups: [],
   tasks: [
     {
       id: "t1",
@@ -216,6 +221,7 @@ export const previewSpringCarnivalHubData: EventPlaybookHubData = {
       dueDate: "2026-06-20",
       assigneeName: PREVIEW_USER_FULL_NAME,
       assigneeInitials: "SC",
+      groupId: null,
       sortOrder: 0,
       createdAt: "2026-05-01T12:00:00Z",
       updatedAt: "2026-06-18T12:00:00Z",
@@ -228,6 +234,7 @@ export const previewSpringCarnivalHubData: EventPlaybookHubData = {
       dueDate: "2026-07-01",
       assigneeName: PREVIEW_PRESIDENT_NAME,
       assigneeInitials: "MP",
+      groupId: null,
       sortOrder: 1,
       createdAt: "2026-05-01T12:00:00Z",
       updatedAt: "2026-06-28T12:00:00Z",
@@ -240,6 +247,7 @@ export const previewSpringCarnivalHubData: EventPlaybookHubData = {
       dueDate: "2026-07-10",
       assigneeName: null,
       assigneeInitials: null,
+      groupId: null,
       sortOrder: 2,
       createdAt: "2026-05-01T12:00:00Z",
       updatedAt: "2026-05-01T12:00:00Z",
