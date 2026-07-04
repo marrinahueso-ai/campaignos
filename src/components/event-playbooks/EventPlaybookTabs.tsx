@@ -140,9 +140,9 @@ export function EventPlaybookTabs({
   };
 
   return (
-    <div className="overflow-hidden border border-cos-border bg-cos-card shadow-sm">
+    <div className="border border-cos-border bg-cos-card shadow-sm">
       <div
-        className="sticky top-0 z-10 border-b border-cos-border bg-cos-card px-4 pt-4 backdrop-blur-sm lg:px-6"
+        className="sticky-dashboard-subnav border-b border-cos-border px-4 pt-4 lg:px-6"
         role="navigation"
         aria-label="Planning hub sections"
       >

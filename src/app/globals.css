@@ -28,6 +28,11 @@
 
   --background: var(--cos-bg);
   --foreground: var(--cos-text);
+
+  /* Sticky dashboard chrome — keep in sync with DashboardHeader h-[4.25rem] */
+  --cos-dashboard-header-height: 4.25rem;
+  /* Planning hub section tabs (EventPlaybookTabs nav) */
+  --cos-playbook-tabs-sticky-height: 3.875rem;
 }
 
 @theme inline {
@@ -192,5 +197,27 @@ body {
   .calendar-drag-handle {
     -webkit-user-drag: none;
     touch-action: none;
+  }
+
+  .sticky-dashboard-subnav {
+    position: sticky;
+    z-index: 30;
+    top: var(--cos-dashboard-header-height);
+    background: var(--cos-card);
+    box-shadow: 0 1px 3px rgba(42, 38, 34, 0.08);
+  }
+
+  .sticky-campaign-workflow-nav {
+    position: sticky;
+    z-index: 30;
+    top: var(--cos-dashboard-header-height);
+    background: var(--cos-card);
+    box-shadow: 0 1px 3px rgba(42, 38, 34, 0.08);
+  }
+
+  .sticky-campaign-workflow-nav--in-playbook {
+    top: calc(
+      var(--cos-dashboard-header-height) + var(--cos-playbook-tabs-sticky-height)
+    );
   }
 }

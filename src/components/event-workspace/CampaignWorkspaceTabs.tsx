@@ -143,7 +143,10 @@ export function CampaignWorkspaceTabs({
   return (
     <div id={id} className="scroll-mt-8 border border-cos-border bg-cos-card">
       <div
-        className="sticky top-0 z-10 border-b border-cos-border bg-cos-card/95 px-4 pt-5 backdrop-blur-sm lg:px-6"
+        className={cn(
+          "sticky-campaign-workflow-nav border-b border-cos-border px-4 pt-5 lg:px-6",
+          !manageHash && "sticky-campaign-workflow-nav--in-playbook",
+        )}
         role="navigation"
         aria-label="Campaign workflow"
       >
