@@ -9,12 +9,15 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 
 interface MetaSocialCaptionsSectionProps {
   eventId: string;
   milestones: MetaSocialCaptionMilestone[];
+  metaPublishBundles?: MetaPublishBundle[];
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
   /** Auto-expand a milestone when navigating from artwork approval. */
@@ -35,6 +38,7 @@ function isMilestoneComplete(milestone: MetaSocialCaptionMilestone): boolean {
 export function MetaSocialCaptionsSection({
   eventId,
   milestones,
+  metaPublishBundles = [],
   aiStatus,
   userRole,
   initialExpandedDay = null,
@@ -92,6 +96,7 @@ export function MetaSocialCaptionsSection({
             key={milestone.relativeDay}
             eventId={eventId}
             milestone={milestone}
+            publishBundle={findMetaPublishBundleForDay(metaPublishBundles, milestone.relativeDay)}
             aiStatus={aiStatus}
             userRole={userRole}
             expanded={expandedDay === milestone.relativeDay}

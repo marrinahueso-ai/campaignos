@@ -55,6 +55,11 @@ import { normalizeReviewVersionIndices, ARTWORK_V2_MAX_INSPIRATION_IMAGES } from
 import type { ArtworkV2ApprovedFormat } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
+import {
+  findMetaPublishBundleForDay,
+  resolveMilestoneWorkflowBadgeStatus,
+} from "@/lib/meta-publishing/milestone-workflow-badge";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { Event } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
@@ -68,6 +73,7 @@ interface ArtworkV2ShellProps {
   communicationStrategy: CommunicationStrategy;
   communicationSteps: EventCommunicationStep[];
   assets: EventAsset[];
+  metaPublishBundles?: MetaPublishBundle[];
   onNavigateToCaptions?: (relativeDay: number) => void;
 }
 
@@ -164,6 +170,7 @@ export function ArtworkV2Shell({
   communicationStrategy,
   communicationSteps,
   assets,
+  metaPublishBundles = [],
   onNavigateToCaptions,
 }: ArtworkV2ShellProps) {
   const router = useRouter();
@@ -929,8 +936,12 @@ export function ArtworkV2Shell({
   const isPhaseWorkflow = phaseItems.length > 0;
 
   const getMilestoneStatus = useCallback(
-    (relativeDay: number) => resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets),
-    [phaseItems, assets],
+    (relativeDay: number) => {
+      const baseStatus = resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets);
+      const bundle = findMetaPublishBundleForDay(metaPublishBundles, relativeDay);
+      return resolveMilestoneWorkflowBadgeStatus(baseStatus, bundle);
+    },
+    [phaseItems, assets, metaPublishBundles],
   );
 
   function updateBatchMilestone(

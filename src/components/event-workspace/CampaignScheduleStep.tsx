@@ -50,6 +50,7 @@ export function CampaignScheduleStep({
         <MetaSocialCaptionsSection
           eventId={eventId}
           milestones={metaSocialCaptionMilestones}
+          metaPublishBundles={metaPublishBundles}
           aiStatus={aiStatus}
           userRole={userRole}
           initialExpandedDay={initialExpandedDay}

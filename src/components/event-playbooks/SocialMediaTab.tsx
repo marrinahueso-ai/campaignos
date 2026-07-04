@@ -172,6 +172,7 @@ export function SocialMediaTab({
             communicationStrategy={communicationStrategy}
             communicationSteps={playbookData.steps}
             assets={assets}
+            metaPublishBundles={metaPublishBundles}
             onNavigateToCaptions={handleNavigateToCaptions}
           />
         }

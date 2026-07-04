@@ -15,8 +15,12 @@ import {
   groupArtworkPhasesByMilestone,
   type ArtworkPhaseWorkflowItem,
 } from "@/lib/artwork-v2/campaign-phases";
-import type { MilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
+import {
+  milestoneWorkflowBadgeClassName,
+  milestoneWorkflowBadgeLabel,
+  type MilestoneWorkflowBadgeStatus,
+} from "@/lib/meta-publishing/milestone-workflow-badge";
 import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 import { cn } from "@/lib/utils/cn";
 
@@ -32,7 +36,7 @@ interface ArtworkV2PickerScreenProps {
   defaultExpandedDays?: number[];
   onSelect: (item: ArtworkWorkflowItem) => void;
   onSelectMilestone?: (relativeDay: number) => void;
-  getMilestoneStatus?: (relativeDay: number) => MilestoneArtworkStatus;
+  getMilestoneStatus?: (relativeDay: number) => MilestoneWorkflowBadgeStatus;
 }
 
 function isPhaseEntry(item: ArtworkV2PickerEntry): item is ArtworkV2PickerEntry & ArtworkPhaseWorkflowItem {
@@ -52,24 +56,11 @@ function milestoneProgress(formats: ArtworkV2PickerEntry[]): {
   };
 }
 
-function milestoneStatusLabel(status: MilestoneArtworkStatus): string {
-  switch (status) {
-    case "complete":
-      return "Complete";
-    case "ready_for_review":
-      return "Ready for review";
-    case "in_progress":
-      return "In progress";
-    default:
-      return "Not started";
-  }
-}
-
 function milestoneStatusDescription(
-  status: MilestoneArtworkStatus,
+  status: MilestoneWorkflowBadgeStatus,
   progress: ReturnType<typeof milestoneProgress>,
 ): string {
-  if (status === "complete") {
+  if (status === "complete" || status === "scheduled" || status === "published") {
     return "Feed (1:1) + Story (9:16) ready";
   }
   if (status === "ready_for_review") {
@@ -184,7 +175,9 @@ export function ArtworkV2PickerScreen({
             const story = group.formats.find((format) => format.metaPlacement === "story");
             const expanded = expandedDays.has(group.relativeDay);
             const openLabel =
-              milestoneStatus === "complete"
+              milestoneStatus === "complete" ||
+              milestoneStatus === "scheduled" ||
+              milestoneStatus === "published"
                 ? "View"
                 : milestoneStatus === "ready_for_review"
                   ? "Review"
@@ -226,16 +219,10 @@ export function ArtworkV2PickerScreen({
                         <span
                           className={cn(
                             "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                            milestoneStatus === "complete"
-                              ? "bg-emerald-50 text-emerald-700"
-                              : milestoneStatus === "ready_for_review"
-                                ? "bg-amber-50 text-amber-800"
-                                : milestoneStatus === "in_progress"
-                                  ? "bg-cos-bg text-cos-muted"
-                                  : "bg-cos-bg text-cos-muted",
+                            milestoneWorkflowBadgeClassName(milestoneStatus),
                           )}
                         >
-                          {milestoneStatusLabel(milestoneStatus)}
+                          {milestoneWorkflowBadgeLabel(milestoneStatus)}
                         </span>
                       </div>
                     </button>

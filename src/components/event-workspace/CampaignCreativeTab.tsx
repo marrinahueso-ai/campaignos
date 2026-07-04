@@ -5,6 +5,7 @@ import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { Event } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStep, EventType } from "@/types/playbooks";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 
 interface CampaignCreativeTabProps {
   eventId: string;
@@ -14,6 +15,7 @@ interface CampaignCreativeTabProps {
   communicationStrategy: CommunicationStrategy;
   communicationSteps: EventCommunicationStep[];
   assets: EventAsset[];
+  metaPublishBundles?: MetaPublishBundle[];
   onNavigateToCaptions?: (relativeDay: number) => void;
 }
 
@@ -25,6 +27,7 @@ export function CampaignCreativeTab({
   communicationStrategy,
   communicationSteps,
   assets,
+  metaPublishBundles = [],
   onNavigateToCaptions,
 }: CampaignCreativeTabProps) {
   return (
@@ -36,6 +39,7 @@ export function CampaignCreativeTab({
       communicationStrategy={communicationStrategy}
       communicationSteps={communicationSteps}
       assets={assets}
+      metaPublishBundles={metaPublishBundles}
       onNavigateToCaptions={onNavigateToCaptions}
     />
   );

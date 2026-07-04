@@ -19,6 +19,12 @@ import type {
 } from "@/lib/meta-captions/types";
 import type { AiAssistantStatus } from "@/lib/ai";
 import { canApproveDraft, type CampaignRole } from "@/lib/auth/campaign-roles";
+import {
+  milestoneWorkflowBadgeClassName,
+  milestoneWorkflowBadgeLabel,
+  resolvePublishWorkflowBadgeStatus,
+} from "@/lib/meta-publishing/milestone-workflow-badge";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { cn } from "@/lib/utils/cn";
 import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 
@@ -317,6 +323,7 @@ export function MetaSocialCaptionField({
 interface MetaSocialCaptionMilestoneCardProps {
   eventId: string;
   milestone: import("@/lib/meta-captions/types").MetaSocialCaptionMilestone;
+  publishBundle?: MetaPublishBundle;
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
   expanded: boolean;
@@ -326,9 +333,23 @@ interface MetaSocialCaptionMilestoneCardProps {
   onNavigateToPublish?: (relativeDay: number) => void;
 }
 
-function milestoneStatus(milestone: import("@/lib/meta-captions/types").MetaSocialCaptionMilestone) {
+function milestoneStatus(
+  milestone: import("@/lib/meta-captions/types").MetaSocialCaptionMilestone,
+  publishBundle?: MetaPublishBundle,
+) {
   const feedApproved = milestone.feed.status === "approved" && milestone.feed.content;
   const storyApproved = milestone.story.status === "approved" && milestone.story.content;
+
+  const publishBadge = resolvePublishWorkflowBadgeStatus(publishBundle?.status);
+  if (publishBadge) {
+    return {
+      label: milestoneWorkflowBadgeLabel(publishBadge),
+      subtitle: feedApproved && storyApproved
+        ? "Feed + Story captions ready"
+        : "Captions in progress",
+      className: milestoneWorkflowBadgeClassName(publishBadge),
+    };
+  }
 
   if (feedApproved && storyApproved) {
     return {
@@ -357,6 +378,7 @@ function milestoneStatus(milestone: import("@/lib/meta-captions/types").MetaSoci
 export function MetaSocialCaptionMilestoneCard({
   eventId,
   milestone,
+  publishBundle,
   aiStatus,
   userRole,
   expanded,
@@ -368,7 +390,7 @@ export function MetaSocialCaptionMilestoneCard({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const status = milestoneStatus(milestone);
+  const status = milestoneStatus(milestone, publishBundle);
 
   const feedReady = Boolean(milestone.feed.content?.trim());
   const storyReady = Boolean(milestone.story.content?.trim());
