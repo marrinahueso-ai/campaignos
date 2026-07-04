@@ -24,8 +24,8 @@ const navItems: {
   badge?: string;
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Campaigns", href: "/events", icon: Megaphone },
+  { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Publishing", href: "/publishing", icon: Send },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Insights", href: "/insights", icon: BarChart3 },
