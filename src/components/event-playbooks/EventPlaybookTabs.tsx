@@ -18,10 +18,10 @@ export type EventPlaybookTab =
 
 const ALL_TABS: { id: EventPlaybookTab; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "social-media", label: "Social Media" },
   { id: "tasks", label: "Tasks" },
   { id: "notes", label: "Notes & Lessons" },
   { id: "files", label: "Files" },
-  { id: "social-media", label: "Social Media" },
   { id: "ai-insights", label: "AI Insights" },
   { id: "settings", label: "Settings" },
 ];
