@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { MetaSocialCaptionMilestoneCard } from "@/components/meta-captions/MetaSocialCaptionField";
-import { Button } from "@/components/ui/Button";
 import {
   Card,
   CardDescription,
@@ -60,14 +59,6 @@ export function MetaSocialCaptionsSection({
   }, [initialExpandedDay]);
 
   const approvedCount = milestones.filter(isMilestoneComplete).length;
-  const expandedMilestone =
-    expandedDay != null
-      ? milestones.find((milestone) => milestone.relativeDay === expandedDay)
-      : null;
-  const showExpandedPublishCta =
-    expandedMilestone != null &&
-    isMilestoneComplete(expandedMilestone) &&
-    Boolean(onNavigateToPublish);
 
   function toggleMilestone(relativeDay: number) {
     setExpandedDay((current) => (current === relativeDay ? null : relativeDay));
@@ -92,17 +83,6 @@ export function MetaSocialCaptionsSection({
             {approvedCount} of {milestones.length} milestones approved for Schedule
             {approvalRoleLabel ? ` · Approver: ${approvalRoleLabel}` : ""}
           </p>
-        )}
-        {showExpandedPublishCta && (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onNavigateToPublish?.(expandedMilestone!.relativeDay)}
-            >
-              Continue to Review &amp; publish
-            </Button>
-          </div>
         )}
       </CardHeader>
 
