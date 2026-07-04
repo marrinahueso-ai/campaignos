@@ -100,24 +100,6 @@ export function StudioHomePage({
               </Button>
             )}
             <Link
-              href="/features"
-              className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
-            >
-              Features
-            </Link>
-            <span className="text-cos-border" aria-hidden>
-              ·
-            </span>
-            <Link
-              href="/about"
-              className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
-            >
-              Our story
-            </Link>
-            <span className="text-cos-border" aria-hidden>
-              ·
-            </span>
-            <Link
               href="/pricing"
               className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
             >

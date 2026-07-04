@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { MarketingSocialLinks } from "@/components/marketing/MarketingSocialLinks";
-import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/features", label: "Features" },
-  { href: "/about", label: "About" },
+  { href: "/about", label: "Our Story" },
   { href: "/pricing", label: "Pricing" },
 ];
 
@@ -50,18 +48,12 @@ export function StudioMarketingShell({
           <div className="flex items-center gap-2 sm:gap-3">
             <MarketingSocialLinks />
             {isSignedIn && (
-              <>
-                <Link
-                  href={workspaceHref}
-                  className="hidden text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text sm:inline"
-                >
-                  Workspace
-                </Link>
-                <Button href={workspaceHref} size="sm">
-                  Enter workspace
-                  <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-                </Button>
-              </>
+              <Link
+                href={workspaceHref}
+                className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+              >
+                Workspace
+              </Link>
             )}
           </div>
         </div>
