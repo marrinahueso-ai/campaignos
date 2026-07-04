@@ -1,7 +1,12 @@
 import {
   META_SOCIAL_CHANNELS,
+  planMilestonesFromStepRowsForDisplay,
   resolveArtworkMilestonesForEvent,
 } from "@/lib/campaign-plan/resolve-plan-milestones";
+import {
+  planDueDateToScheduledTime,
+  resolveBundleScheduledFor,
+} from "@/lib/campaign-plan/plan-milestone-display";
 import {
   buildArtworkPhaseItemsFromMilestones,
   filterMetaPublishTargetsBySurfaces,
@@ -138,20 +143,7 @@ function deriveChannelOnlyStatus(input: {
 function milestonesForScheduleDisplay(
   steps: EventCommunicationStepRow[],
 ): { relativeDay: number; title: string }[] {
-  const byDay = new Map<number, string>();
-
-  for (const step of [...steps].sort(
-    (left, right) =>
-      left.relative_day - right.relative_day || left.sort_order - right.sort_order,
-  )) {
-    if (!byDay.has(step.relative_day)) {
-      byDay.set(step.relative_day, step.title);
-    }
-  }
-
-  return Array.from(byDay.entries())
-    .sort(([leftDay], [rightDay]) => leftDay - rightDay)
-    .map(([relativeDay, title]) => ({ relativeDay, title }));
+  return planMilestonesFromStepRowsForDisplay(steps);
 }
 
 export async function getMetaPublishBundles(eventId: string): Promise<MetaPublishBundle[]> {
@@ -229,8 +221,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     }
 
     const dueDate = (step?.due_date as string | undefined) ?? null;
-    const scheduledFor =
-      dueDate != null ? `${String(dueDate).slice(0, 10)}T10:00:00.000Z` : null;
+    const scheduledFor = planDueDateToScheduledTime(dueDate);
 
     const feedArtworkUrl =
       hasFeedArtwork && feedAsset?.storagePath
@@ -270,8 +261,14 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const feedCaption = getFeedCaptionForMilestone(metaCaptions, group.relativeDay);
     const storyCaption = getStoryCaptionForMilestone(metaCaptions, group.relativeDay);
     const captionPreview = feedCaption?.trim().slice(0, 160) ?? null;
-    const metaScheduledFor =
-      groupSlots.find((slot) => slot.scheduledFor)?.scheduledFor ?? scheduledFor;
+    const committedSlot = groupSlots.find(
+      (slot) => slot.scheduledFor && ["scheduled", "approved", "posting", "published"].includes(slot.status),
+    );
+    const metaScheduledFor = resolveBundleScheduledFor({
+      dueDate,
+      slotScheduledFor: committedSlot?.scheduledFor,
+      slotStatus: committedSlot?.status,
+    });
 
     return {
       relativeDay: group.relativeDay,

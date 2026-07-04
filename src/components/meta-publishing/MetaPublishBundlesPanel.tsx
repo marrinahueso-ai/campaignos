@@ -35,6 +35,7 @@ import {
 import { PublishModeSelect } from "@/components/meta-publishing/PublishModeSelect";
 import { StoryPostKit } from "@/components/meta-publishing/StoryPostKit";
 import { formatDateTime } from "@/lib/utils/dates";
+import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
@@ -267,7 +268,7 @@ export function MetaPublishBundleCard({
             )}
             {!bundle.scheduledFor && isMetaPost && !isSkipped && bundle.dueDate && (
               <p className="mt-0.5 text-xs text-cos-muted">
-                Planned for {formatDateTime(`${bundle.dueDate.slice(0, 10)}T10:00:00.000Z`)}
+                Planned for {formatDateTime(planDueDateToScheduledTime(bundle.dueDate) ?? "")}
               </p>
             )}
             {approvalRoleLabel &&

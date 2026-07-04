@@ -2,7 +2,10 @@ import {
   buildArtworkPhaseItemsFromMilestones,
   isApprovedArtworkAsset,
 } from "@/lib/artwork-v2/campaign-phases";
-import { resolveArtworkMilestonesForEvent } from "@/lib/campaign-plan/resolve-plan-milestones";
+import {
+  planMilestonesFromStepRowsForDisplay,
+  resolveArtworkMilestonesForEvent,
+} from "@/lib/campaign-plan/resolve-plan-milestones";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
@@ -14,20 +17,7 @@ import type { EventCommunicationStepRow } from "@/types/playbooks";
 function milestonesForScheduleDisplay(
   steps: EventCommunicationStepRow[],
 ): { relativeDay: number; title: string }[] {
-  const byDay = new Map<number, string>();
-
-  for (const step of [...steps].sort(
-    (left, right) =>
-      left.relative_day - right.relative_day || left.sort_order - right.sort_order,
-  )) {
-    if (!byDay.has(step.relative_day)) {
-      byDay.set(step.relative_day, step.title);
-    }
-  }
-
-  return Array.from(byDay.entries())
-    .sort(([leftDay], [rightDay]) => leftDay - rightDay)
-    .map(([relativeDay, title]) => ({ relativeDay, title }));
+  return planMilestonesFromStepRowsForDisplay(steps);
 }
 
 export async function resolveMilestoneArtworkUrls(input: {

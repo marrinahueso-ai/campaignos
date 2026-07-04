@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestones";
+import { computeDueDate } from "@/lib/playbooks/mappers";
 import { localDateHourToIso } from "@/lib/posting-analytics/timezone-utils";
 import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles";
 import type { PlanningItemType } from "@/types/communications-calendar";
@@ -67,7 +69,28 @@ export async function reschedulePlanningItem(
         .from("events")
         .update({ date: newDate, updated_at: now })
         .eq("id", sourceId);
-      return !error;
+
+      if (error) {
+        return false;
+      }
+
+      const { data: steps } = await supabase
+        .from("event_communication_steps")
+        .select("id, relative_day")
+        .eq("event_id", sourceId);
+
+      for (const step of steps ?? []) {
+        await supabase
+          .from("event_communication_steps")
+          .update({
+            due_date: computeDueDate(newDate, step.relative_day as number),
+            updated_at: now,
+          })
+          .eq("id", step.id);
+      }
+
+      await resyncCampaignPlanDownstream(sourceId);
+      return true;
     }
     case "timeline_task":
     case "draft": {

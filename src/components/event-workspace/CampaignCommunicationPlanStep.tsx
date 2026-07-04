@@ -38,7 +38,11 @@ export function CampaignCommunicationPlanStep({
   ownership,
   assignedSteps,
 }: CampaignCommunicationPlanStepProps) {
-  const timing = getTimingPlanSummary({ eventType, communicationStrategy });
+  const timing = getTimingPlanSummary({
+    eventType,
+    communicationStrategy,
+    assignedSteps,
+  });
 
   const showTimelineEditor =
     assignedSteps.length > 0 &&

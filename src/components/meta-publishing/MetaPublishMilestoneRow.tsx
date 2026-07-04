@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
 import { cn } from "@/lib/utils/cn";
@@ -53,7 +54,7 @@ export function MetaPublishMilestoneRow({
   const when = bundle.scheduledFor
     ? formatDateTime(bundle.scheduledFor)
     : bundle.dueDate
-      ? formatDateTime(`${bundle.dueDate.slice(0, 10)}T10:00:00.000Z`)
+      ? formatDateTime(planDueDateToScheduledTime(bundle.dueDate) ?? "")
       : "Ready now";
 
   return (

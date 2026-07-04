@@ -6,20 +6,28 @@ import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { getEventById } from "@/lib/events/queries";
+import { getEventCommunicationSteps } from "@/lib/playbooks/queries";
+
+async function getPhaseItemsForEvent(eventId: string) {
+  const event = await getEventById(eventId);
+  if (!event) {
+    return [];
+  }
+
+  const communicationSteps = await getEventCommunicationSteps(eventId);
+
+  return getArtworkPhaseItems({
+    eventType: event.eventType,
+    communicationStrategy: event.communicationStrategy,
+    communicationSteps,
+  });
+}
 
 export async function getApprovedFeedArtworkUrlForMilestone(input: {
   eventId: string;
   relativeDay: number;
 }): Promise<string | null> {
-  const event = await getEventById(input.eventId);
-  if (!event) {
-    return null;
-  }
-
-  const phaseItems = getArtworkPhaseItems({
-    eventType: event.eventType,
-    communicationStrategy: event.communicationStrategy,
-  });
+  const phaseItems = await getPhaseItemsForEvent(input.eventId);
 
   const feedPhase = phaseItems.find(
     (phase) =>
@@ -43,16 +51,7 @@ export async function getApprovedFeedArtworkUrlForMilestone(input: {
 export async function getApprovedFeedArtworkByMilestone(
   eventId: string,
 ): Promise<Map<number, string>> {
-  const event = await getEventById(eventId);
-  if (!event) {
-    return new Map();
-  }
-
-  const phaseItems = getArtworkPhaseItems({
-    eventType: event.eventType,
-    communicationStrategy: event.communicationStrategy,
-  });
-
+  const phaseItems = await getPhaseItemsForEvent(eventId);
   const assets = await getCampaignAssetsForEvent(eventId);
   const urlsByDay = new Map<number, string>();
 

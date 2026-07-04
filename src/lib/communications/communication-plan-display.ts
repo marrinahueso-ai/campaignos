@@ -7,7 +7,7 @@ import {
 } from "@/lib/playbooks/timing-presets";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { EventAsset } from "@/types/event-workspace";
-import type { EventType } from "@/types/playbooks";
+import type { EventCommunicationStep, EventType } from "@/types/playbooks";
 
 export const COMMUNICATION_PLAN_STRATEGY_LABELS: Record<CommunicationStrategy, string> = {
   full_campaign: "Full Campaign",
@@ -39,6 +39,7 @@ export function getTimingPresetDisplayName(eventType: EventType | null): string 
 export function getTimingPlanSummary(input: {
   eventType: EventType | null;
   communicationStrategy: CommunicationStrategy;
+  assignedSteps?: EventCommunicationStep[];
 }): {
   presetName: string;
   summary: string;
@@ -61,6 +62,18 @@ export function getTimingPlanSummary(input: {
   }
 
   const presetName = getTimingPresetDisplayName(input.eventType);
+
+  if (input.assignedSteps && input.assignedSteps.length > 0) {
+    const stepLabels = input.assignedSteps.map((step) =>
+      formatRelativeTimingLabel(step.relativeDay),
+    );
+    return {
+      presetName: `${presetName} (customized)`,
+      summary: stepLabels.join(", "),
+      stepLabels,
+    };
+  }
+
   const steps = resolveTimingStepsForEvent(input);
   const stepLabels = steps.map((step) => formatRelativeTimingLabel(step.relativeDay));
   const summary = stepLabels.length > 0 ? stepLabels.join(", ") : "No timing steps for this plan";

@@ -4,6 +4,7 @@ import {
   isApprovedArtworkAsset,
   META_PUBLISH_TARGETS,
 } from "@/lib/artwork-v2/campaign-phases";
+import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import { resolveSocialMetaMilestonesForEvent } from "@/lib/campaign-plan/resolve-plan-milestones";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
@@ -42,29 +43,10 @@ function isTargetEnabled(
 }
 
 function defaultScheduledTime(dueDate: string | null): string | null {
-  if (!dueDate) {
-    return null;
-  }
-
-  const dateOnly = dueDate.slice(0, 10);
-  return `${dateOnly}T10:00:00.000Z`;
+  return planDueDateToScheduledTime(dueDate);
 }
 
 export async function ensureMetaPublicationSlots(eventId: string): Promise<void> {
-  const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("meta_publication_slots")
-    .select("*", { count: "exact", head: true })
-    .eq("event_id", eventId);
-
-  if (isMissingMetaSlotsTable(error)) {
-    return;
-  }
-
-  if ((count ?? 0) > 0) {
-    return;
-  }
-
   await syncMetaPublicationSlots(eventId);
 }
 
