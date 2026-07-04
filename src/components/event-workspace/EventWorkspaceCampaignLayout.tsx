@@ -27,6 +27,7 @@ import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
+import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 
 function scrollCampaignWorkflowIntoView() {
   document
@@ -109,6 +110,31 @@ export function EventWorkspaceCampaignLayout({
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
+  function handleNavigateToMilestone(step: CampaignWorkflowStep, relativeDay: number) {
+    if (step === "schedule") {
+      handleNavigateToCaptions(relativeDay);
+      return;
+    }
+    if (step === "publish") {
+      handleNavigateToPublish(relativeDay);
+      return;
+    }
+    if (step === "artwork") {
+      window.location.hash = "artwork";
+      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+      return;
+    }
+    if (step === "published") {
+      window.location.hash = "published";
+      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+    }
+  }
+
+  function handleViewPublished() {
+    window.location.hash = "published";
+    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
   return (
     <div className="space-y-6">
       <EventWorkspaceHero
@@ -164,6 +190,8 @@ export function EventWorkspaceCampaignLayout({
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={expandedPublishDay}
+            onNavigateToMilestone={handleNavigateToMilestone}
+            onViewPublished={handleViewPublished}
           />
         }
         published={

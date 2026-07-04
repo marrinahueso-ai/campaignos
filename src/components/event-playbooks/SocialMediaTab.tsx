@@ -120,6 +120,31 @@ export function SocialMediaTab({
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
+  function handleNavigateToMilestone(step: CampaignWorkflowStep, relativeDay: number) {
+    if (step === "schedule") {
+      handleNavigateToCaptions(relativeDay);
+      return;
+    }
+    if (step === "publish") {
+      handleNavigateToPublish(relativeDay);
+      return;
+    }
+    if (step === "artwork") {
+      setActiveStep("artwork");
+      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+      return;
+    }
+    if (step === "published") {
+      setActiveStep("published");
+      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+    }
+  }
+
+  function handleViewPublished() {
+    setActiveStep("published");
+    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
   return (
     <CampaignWorkspaceTabs
       activeStep={activeStep}
@@ -169,6 +194,8 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={expandedPublishDay}
+            onNavigateToMilestone={handleNavigateToMilestone}
+            onViewPublished={handleViewPublished}
           />
         }
         published={

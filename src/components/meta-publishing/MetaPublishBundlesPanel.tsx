@@ -33,8 +33,17 @@ import {
 } from "@/lib/meta-publishing/publish-mode";
 import { PublishModeSelect } from "@/components/meta-publishing/PublishModeSelect";
 import { StoryPostKit } from "@/components/meta-publishing/StoryPostKit";
+import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import {
+  MetaPublishConfirmationPanel,
+  type MetaPublishConfirmationAction,
+} from "@/components/meta-publishing/MetaPublishConfirmationPanel";
 import { formatDateTime } from "@/lib/utils/dates";
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
+import {
+  allMetaMilestonesComplete,
+  findNextIncompleteMilestone,
+} from "@/lib/meta-publishing/next-milestone";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
@@ -507,6 +516,8 @@ interface MetaPublishBundlesPanelProps {
   onPublishAll?: () => Promise<{ success: boolean; error?: string | null }>;
   eventLink?: string | null;
   showPostKit?: boolean;
+  onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
+  onViewPublished?: () => void;
 }
 
 export function MetaPublishBundlesPanel({
@@ -524,8 +535,14 @@ export function MetaPublishBundlesPanel({
   onPublishAll,
   eventLink = null,
   showPostKit = false,
+  onNavigateToMilestone,
+  onViewPublished,
 }: MetaPublishBundlesPanelProps) {
   const router = useRouter();
+  const [confirmation, setConfirmation] = useState<{
+    relativeDay: number;
+    action: MetaPublishConfirmationAction;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [skipPendingDay, setSkipPendingDay] = useState<number | null>(null);
@@ -643,6 +660,9 @@ export function MetaPublishBundlesPanel({
         setError(result.error ?? "Unable to schedule this milestone.");
         return;
       }
+      if (mode === "publishing") {
+        setConfirmation({ relativeDay, action: "scheduled" });
+      }
       router.refresh();
     });
   }
@@ -670,6 +690,9 @@ export function MetaPublishBundlesPanel({
         setPublishPendingDay(null);
         setError(result.error ?? "Unable to publish this milestone.");
         return;
+      }
+      if (mode === "publishing") {
+        setConfirmation({ relativeDay, action: "published" });
       }
       router.refresh();
     });
@@ -793,6 +816,49 @@ export function MetaPublishBundlesPanel({
     aiStatus &&
     userRole &&
     !captionsSectionSeparate;
+
+  const confirmedBundle =
+    confirmation == null
+      ? null
+      : bundles.find((entry) => entry.relativeDay === confirmation.relativeDay) ?? null;
+
+  const nextMilestone =
+    confirmation && confirmedBundle
+      ? findNextIncompleteMilestone(bundles, confirmation.relativeDay)
+      : null;
+
+  const allComplete = confirmation ? allMetaMilestonesComplete(bundles) : false;
+
+  function handleNextMilestone(step: CampaignWorkflowStep, relativeDay: number) {
+    setConfirmation(null);
+    onNavigateToMilestone?.(step, relativeDay);
+  }
+
+  function handleViewPublished() {
+    setConfirmation(null);
+    onViewPublished?.();
+  }
+
+  if (mode === "publishing" && confirmation && confirmedBundle) {
+    return (
+      <div className="space-y-6">
+        {error && (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+        <MetaPublishConfirmationPanel
+          bundle={confirmedBundle}
+          action={confirmation.action}
+          nextMilestone={nextMilestone}
+          allComplete={allComplete}
+          onNextMilestone={handleNextMilestone}
+          onViewPublished={onViewPublished ? handleViewPublished : undefined}
+          onContinueReviewing={() => setConfirmation(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -13,6 +13,7 @@ import {
 } from "@/lib/meta-publishing/bundle-display";
 import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { Event } from "@/types";
 
 interface CampaignReviewPublishStepProps {
@@ -21,6 +22,8 @@ interface CampaignReviewPublishStepProps {
   metaPublishBundles: MetaPublishBundle[];
   approvalRoleLabel?: string | null;
   initialExpandedDay?: number | null;
+  onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
+  onViewPublished?: () => void;
 }
 
 export function CampaignReviewPublishStep({
@@ -29,6 +32,8 @@ export function CampaignReviewPublishStep({
   metaPublishBundles,
   approvalRoleLabel = null,
   initialExpandedDay = null,
+  onNavigateToMilestone,
+  onViewPublished,
 }: CampaignReviewPublishStepProps) {
   const eventLink = resolveEventShareLink(event);
   const visibleBundles = metaPublishBundles.filter(isReviewPublishVisibleBundle);
@@ -82,6 +87,8 @@ export function CampaignReviewPublishStep({
           initialExpandedDay={initialExpandedDay}
           eventLink={eventLink}
           showPostKit
+          onNavigateToMilestone={onNavigateToMilestone}
+          onViewPublished={onViewPublished}
           onApproveAll={() => approveAllScheduledMetaBundlesAction(eventId)}
           onPublishAll={() => publishAllActionableMetaBundlesNowAction(eventId)}
         />
