@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -40,7 +38,6 @@ export function CampaignCommunicationPlanStep({
   ownership,
   assignedSteps,
 }: CampaignCommunicationPlanStepProps) {
-  const [timingOpen, setTimingOpen] = useState(false);
   const timing = getTimingPlanSummary({ eventType, communicationStrategy });
 
   const showTimelineEditor =
@@ -69,21 +66,9 @@ export function CampaignCommunicationPlanStep({
           />
 
           <div className="border-t border-cos-border pt-6">
-            <button
-              type="button"
-              onClick={() => setTimingOpen((value) => !value)}
-              className="flex w-full items-center justify-between gap-3 text-left"
-              aria-expanded={timingOpen}
-            >
+            <div className="flex w-full items-center justify-between gap-3">
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="flex items-center gap-2">
-                  {timingOpen ? (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-cos-muted" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-cos-muted" />
-                  )}
-                  <span className="text-sm font-medium text-cos-text">Timing</span>
-                </span>
+                <span className="text-sm font-medium text-cos-text">Timing</span>
                 <span className="text-sm text-cos-muted">{timing.presetName}</span>
               </span>
               {assignedSteps.length > 0 && (
@@ -92,22 +77,20 @@ export function CampaignCommunicationPlanStep({
                   {assignedSteps.length === 1 ? "milestone" : "milestones"}
                 </span>
               )}
-            </button>
+            </div>
 
-            {timingOpen && (
-              <div className="mt-4 space-y-4">
-                {assignedSteps.length === 0 && (
-                  <p className="text-sm text-cos-muted">{timing.summary}</p>
-                )}
+            <div className="mt-4 space-y-4">
+              {assignedSteps.length === 0 && (
+                <p className="text-sm text-cos-muted">{timing.summary}</p>
+              )}
 
-                {showTimelineEditor && (
-                  <CollapsiblePlaybookTimelineEditor
-                    eventId={eventId}
-                    steps={assignedSteps}
-                  />
-                )}
-              </div>
-            )}
+              {showTimelineEditor && (
+                <CollapsiblePlaybookTimelineEditor
+                  eventId={eventId}
+                  steps={assignedSteps}
+                />
+              )}
+            </div>
           </div>
         </div>
       </Card>
