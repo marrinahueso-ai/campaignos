@@ -30,9 +30,9 @@ import {
 import {
   isManualStoryEmailMode,
   isManualStoryOnlyMode,
-  PUBLISH_MODE_OPTIONS,
   type MetaPublishMode,
 } from "@/lib/meta-publishing/publish-mode";
+import { PublishModeSelect } from "@/components/meta-publishing/PublishModeSelect";
 import { StoryPostKit } from "@/components/meta-publishing/StoryPostKit";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { AiAssistantStatus } from "@/lib/ai";
@@ -390,37 +390,11 @@ export function MetaPublishBundleCard({
               ) : (
                 <>
                   {isMetaPost && onPublishModeChange && (
-                    <div className="space-y-2">
-                      <p className="cos-section-title">Publish mode</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {PUBLISH_MODE_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            disabled={publishModePending || publishPending || skipPending}
-                            onClick={() => onPublishModeChange(option.value)}
-                            className={cn(
-                              "rounded-lg border px-3 py-2.5 text-left transition-colors",
-                              bundle.publishMode === option.value
-                                ? "border-cos-text bg-cos-text text-white"
-                                : "border-cos-border bg-cos-bg text-cos-text hover:border-cos-muted",
-                            )}
-                          >
-                            <span className="block text-sm font-medium">{option.label}</span>
-                            <span
-                              className={cn(
-                                "mt-0.5 block text-xs",
-                                bundle.publishMode === option.value
-                                  ? "text-white/80"
-                                  : "text-cos-muted",
-                              )}
-                            >
-                              {option.description}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    <PublishModeSelect
+                      value={bundle.publishMode}
+                      disabled={publishModePending || publishPending || skipPending}
+                      onChange={onPublishModeChange}
+                    />
                   )}
 
                   {manualStoryEmail && !manualStoryOnly && bundle.status !== "ready" && (
