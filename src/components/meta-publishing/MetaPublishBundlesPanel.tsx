@@ -301,7 +301,7 @@ export function MetaPublishBundleCard({
               disabled={schedulePending || skipPending || publishPending}
               onClick={() => onSchedule?.()}
             >
-              {schedulePending ? "Scheduling…" : "Schedule"}
+              {schedulePending ? "Scheduling…" : "Schedule for Later"}
             </Button>
           ) : (
             <span
@@ -345,7 +345,7 @@ export function MetaPublishBundleCard({
                 ? "Working…"
                 : manualStoryOnly
                   ? "Send post kit"
-                  : "Publish now"}
+                  : "Publish Now"}
             </Button>
           )}
         </div>
@@ -762,12 +762,7 @@ export function MetaPublishBundlesPanel({
             label: `Approve all scheduled (${counts.scheduled})`,
             onClick: () => runAction(onApproveAll),
           }
-        : mode === "publishing" && counts.ready > 0 && onScheduleAll
-          ? {
-              label: `Schedule all ready (${counts.ready})`,
-              onClick: () => runAction(onScheduleAll),
-            }
-          : mode === "publishing" &&
+        : mode === "publishing" &&
               (counts.approved > 0 || counts.failed > 0) &&
               onPublishAll
             ? {
