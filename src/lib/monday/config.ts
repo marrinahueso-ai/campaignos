@@ -15,15 +15,69 @@ export const MONDAY_OAUTH_STATE_COOKIE = "monday_oauth_state";
 export const MONDAY_OAUTH_RETURN_COOKIE = "monday_oauth_return_to";
 export const MONDAY_OAUTH_REDIRECT_URI_COOKIE = "monday_oauth_redirect_uri";
 
+const MONDAY_CLIENT_SECRET_MIN_LENGTH = 10;
+
+/** Strip whitespace and surrounding quotes (common Vercel paste mistake). */
+function sanitizeMondayEnvCredential(raw: string | undefined): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  let value = raw.trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+
+  return value || undefined;
+}
+
+export type MondayClientSecretDiagnostics = {
+  length: number;
+  firstCharCode: number;
+  lastCharCode: number;
+  hasSurroundingQuotes: boolean;
+};
+
+export function describeMondayClientSecretForLogging(
+  secret: string,
+  raw?: string,
+): MondayClientSecretDiagnostics {
+  const rawTrimmed = raw?.trim() ?? "";
+  const hasSurroundingQuotes =
+    rawTrimmed.length >= 2 &&
+    ((rawTrimmed.startsWith('"') && rawTrimmed.endsWith('"')) ||
+      (rawTrimmed.startsWith("'") && rawTrimmed.endsWith("'")));
+
+  return {
+    length: secret.length,
+    firstCharCode: secret.charCodeAt(0),
+    lastCharCode: secret.charCodeAt(secret.length - 1),
+    hasSurroundingQuotes,
+  };
+}
+
+export class MondayClientSecretConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MondayClientSecretConfigError";
+  }
+}
+
 export function isMondayIntegrationConfigured(): boolean {
-  return Boolean(
-    process.env.MONDAY_CLIENT_ID?.trim() &&
-      process.env.MONDAY_CLIENT_SECRET?.trim(),
-  );
+  try {
+    getMondayClientId();
+    getMondayClientSecret();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getMondayClientId(): string {
-  const clientId = process.env.MONDAY_CLIENT_ID?.trim();
+  const clientId = sanitizeMondayEnvCredential(process.env.MONDAY_CLIENT_ID);
   if (!clientId) {
     throw new Error("MONDAY_CLIENT_ID is not configured.");
   }
@@ -31,10 +85,24 @@ export function getMondayClientId(): string {
 }
 
 export function getMondayClientSecret(): string {
-  const secret = process.env.MONDAY_CLIENT_SECRET?.trim();
+  const raw = process.env.MONDAY_CLIENT_SECRET;
+  const secret = sanitizeMondayEnvCredential(raw);
   if (!secret) {
     throw new Error("MONDAY_CLIENT_SECRET is not configured.");
   }
+
+  const rawTrimmed = raw?.trim() ?? "";
+  const hadSurroundingQuotes =
+    rawTrimmed.length >= 2 &&
+    ((rawTrimmed.startsWith('"') && rawTrimmed.endsWith('"')) ||
+      (rawTrimmed.startsWith("'") && rawTrimmed.endsWith("'")));
+
+  if (secret.length < MONDAY_CLIENT_SECRET_MIN_LENGTH) {
+    throw new MondayClientSecretConfigError(
+      `MONDAY_CLIENT_SECRET must be at least ${MONDAY_CLIENT_SECRET_MIN_LENGTH} characters after trimming${hadSurroundingQuotes ? " (surrounding quotes were stripped)" : ""}. Use Client Secret from Developer Center → Basic Information, not Signing Secret.`,
+    );
+  }
+
   return secret;
 }
 
@@ -89,6 +157,8 @@ export function getMondayOAuthCookieOptions(origin: string) {
 export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   not_configured:
     "Monday OAuth is not configured on the server (missing client ID or secret).",
+  invalid_client_secret_config:
+    "MONDAY_CLIENT_SECRET looks misconfigured (too short or empty after trimming). Use Client Secret from Developer Center → Basic Information, not Signing Secret.",
   missing_code:
     "Monday did not return an authorization code. Confirm the redirect URL in the Monday Developer Center matches exactly.",
   invalid_state: "OAuth session expired or was invalid. Click Connect Monday and try again.",
@@ -96,7 +166,7 @@ export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   token_exchange_failed:
     "Could not exchange the Monday authorization code for a token. Check client secret and redirect URL.",
   invalid_client:
-    "Monday rejected the client ID or client secret. Confirm MONDAY_CLIENT_ID and MONDAY_CLIENT_SECRET in Vercel match Developer Center → Basic Information.",
+    "Monday rejected the client ID or client secret. In Developer Center → Basic Information copy Client ID and Client Secret (not Signing Secret). Set both in Vercel Production (not Preview-only), without quotes, then redeploy.",
   invalid_grant:
     "Monday rejected the authorization code. The code may have expired, already been used, or the redirect URL did not match the authorize request.",
   save_failed: "Monday authorized successfully but CampaignOS could not save the connection.",

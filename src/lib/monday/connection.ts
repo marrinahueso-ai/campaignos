@@ -5,6 +5,7 @@ import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   MONDAY_TOKEN_URL,
+  describeMondayClientSecretForLogging,
   getMondayClientId,
   getMondayClientSecret,
 } from "@/lib/monday/config";
@@ -175,11 +176,27 @@ function parseMondayTokenErrorBody(
 
 async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenExchangeResult> {
   const redirectUri = body.get("redirect_uri");
+  const clientId = getMondayClientId();
+  const clientSecret = getMondayClientSecret();
+  const secretDiagnostics = describeMondayClientSecretForLogging(
+    clientSecret,
+    process.env.MONDAY_CLIENT_SECRET,
+  );
+
+  console.info("Monday token exchange request:", {
+    clientIdPrefix: clientId.slice(0, 8),
+    clientSecretLength: secretDiagnostics.length,
+    clientSecretFirstCharCode: secretDiagnostics.firstCharCode,
+    clientSecretLastCharCode: secretDiagnostics.lastCharCode,
+    clientSecretHadSurroundingQuotes: secretDiagnostics.hasSurroundingQuotes,
+    redirectUri,
+    grantType: body.get("grant_type"),
+  });
 
   const response = await fetch(MONDAY_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
+    body: body.toString(),
   });
 
   if (!response.ok) {
@@ -208,6 +225,7 @@ export async function exchangeMondayAuthorizationCode(input: {
   redirectUri: string;
 }): Promise<MondayTokenExchangeResult> {
   const body = new URLSearchParams({
+    grant_type: "authorization_code",
     client_id: getMondayClientId(),
     client_secret: getMondayClientSecret(),
     redirect_uri: input.redirectUri,

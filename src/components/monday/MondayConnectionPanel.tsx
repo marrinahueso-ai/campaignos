@@ -92,14 +92,27 @@ export function MondayConnectionPanel({
             match the authorize request exactly
           </li>
           <li>
+            Copy <strong>Client ID</strong> and <strong>Client Secret</strong> from Developer
+            Center → Basic Information (App credentials). Do not use Signing Secret — that field
+            is for monday app JWT verification, not OAuth token exchange.
+          </li>
+          <li>
             Set <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_ID</code> and{" "}
-            <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_SECRET</code> in env
+            <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_SECRET</code> in Vercel{" "}
+            <strong>Production</strong> (and Preview if you test preview URLs). Paste values without
+            quotes, then redeploy.
           </li>
           <li>
             Set <code className="rounded bg-cos-bg px-1">NEXT_PUBLIC_SITE_URL</code> to your
             public site origin (e.g.{" "}
             <code className="rounded bg-cos-bg px-1">https://campaignos-six.vercel.app</code>)
             so OAuth redirect URLs stay consistent in production
+          </li>
+          <li>
+            Draft-only apps can still complete OAuth (no Promote to Live required). If you test a
+            specific draft version as an app collaborator, pass{" "}
+            <code className="rounded bg-cos-bg px-1">app_version_id</code> on the authorize URL —
+            CampaignOS uses the default live-or-latest version.
           </li>
         </ul>
       </div>

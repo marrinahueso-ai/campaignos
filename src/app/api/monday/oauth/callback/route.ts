@@ -3,6 +3,7 @@ import {
   MONDAY_OAUTH_REDIRECT_URI_COOKIE,
   MONDAY_OAUTH_RETURN_COOKIE,
   MONDAY_OAUTH_STATE_COOKIE,
+  MondayClientSecretConfigError,
   getMondayOAuthCookieOptions,
   getMondayRedirectUri,
   isMondayIntegrationConfigured,
@@ -81,10 +82,21 @@ export async function GET(request: NextRequest) {
     request.cookies.get(MONDAY_OAUTH_REDIRECT_URI_COOKIE)?.value ||
     getMondayRedirectUri(origin);
 
-  const tokenResult = await exchangeMondayAuthorizationCode({
-    code,
-    redirectUri,
-  });
+  let tokenResult;
+  try {
+    tokenResult = await exchangeMondayAuthorizationCode({
+      code,
+      redirectUri,
+    });
+  } catch (error) {
+    if (error instanceof MondayClientSecretConfigError) {
+      console.error("Monday OAuth client secret config error:", error.message);
+      redirectTarget.searchParams.set("error", "invalid_client_secret_config");
+      redirectTarget.searchParams.set("error_description", error.message);
+      return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
+    }
+    throw error;
+  }
 
   if (!tokenResult.ok) {
     console.error("Monday OAuth token exchange failed for redirect_uri:", redirectUri);
