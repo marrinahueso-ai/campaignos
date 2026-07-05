@@ -101,3 +101,11 @@ export function taskHubScopeLabel(scope: TaskHubViewScope): string {
     ? "All committees"
     : "Your committees";
 }
+
+export function canEditTaskHub(scope: TaskHubViewScope): boolean {
+  return scope === "all_committees" || scope === "chaired_committees";
+}
+
+export function canAssignInScope(scope: TaskHubViewScope): boolean {
+  return scope === "all_committees" || scope === "chaired_committees";
+}

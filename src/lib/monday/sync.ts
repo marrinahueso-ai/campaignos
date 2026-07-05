@@ -6,7 +6,9 @@ import {
   createMondayItem,
   fetchMondayItemsByIds,
   getMondayBoardDetails,
+  updateMondayItem,
 } from "@/lib/monday/client";
+import { createClient } from "@/lib/supabase/server";
 import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForOrganization,
@@ -284,4 +286,173 @@ export async function fetchMondayOverlaysForTasks(input: {
 /** Phase 2: register webhooks for board change events. */
 export async function registerMondayWebhooksStub(): Promise<void> {
   // Intentionally unimplemented in Phase 1.
+}
+
+export async function pushTaskUpdateToMonday(input: {
+  organizationId: string;
+  taskId: string;
+  eventId: string;
+  origin: string;
+}): Promise<void> {
+  const connection = await getMondayConnectionForOrganization(input.organizationId);
+  if (!connection?.accessToken || !connection.mondaySyncEnabled) {
+    return;
+  }
+
+  const mapping = await getMondayBoardMappingForOrganization(input.organizationId);
+  if (!mapping || !isColumnMapConfigured(mapping.columnMap)) {
+    return;
+  }
+
+  const links = await getMondayTaskLinksForTaskIds([input.taskId]);
+  const link = links[0];
+  if (!link) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { data: row, error } = await supabase
+    .from("event_playbook_tasks")
+    .select("*")
+    .eq("id", input.taskId)
+    .eq("event_id", input.eventId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return;
+  }
+
+  const { data: eventRow } = await supabase
+    .from("events")
+    .select("id, title")
+    .eq("id", input.eventId)
+    .maybeSingle();
+
+  const task = mapEventPlaybookTaskRow(row as EventPlaybookTaskRow);
+  const eventUrl = new URL(
+    `/events/${input.eventId}?tab=tasks`,
+    input.origin,
+  ).toString();
+  const columnValues = buildMondayColumnValues({
+    columnMap: mapping.columnMap,
+    status: task.status,
+    dueDate: task.dueDate,
+    taskId: task.id,
+    eventTitle: (eventRow?.title as string) ?? "Event",
+    eventUrl,
+  });
+
+  try {
+    await updateMondayItem({
+      accessToken: connection.accessToken,
+      boardId: link.mondayBoardId,
+      itemId: link.mondayItemId,
+      itemName: task.title,
+      columnValues,
+    });
+  } catch (error) {
+    console.error("Failed to push task update to Monday:", error);
+  }
+}
+
+export async function pushTaskCreateToMonday(input: {
+  organizationId: string;
+  taskId: string;
+  eventId: string;
+  origin: string;
+  events: Event[];
+  workspace: OrganizationWorkspaceData;
+}): Promise<void> {
+  const connection = await getMondayConnectionForOrganization(input.organizationId);
+  if (!connection?.accessToken || !connection.mondaySyncEnabled) {
+    return;
+  }
+
+  const mapping = await getMondayBoardMappingForOrganization(input.organizationId);
+  if (!mapping || !isColumnMapConfigured(mapping.columnMap)) {
+    return;
+  }
+
+  const existingLinks = await getMondayTaskLinksForTaskIds([input.taskId]);
+  if (existingLinks.length > 0) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { data: row, error } = await supabase
+    .from("event_playbook_tasks")
+    .select("*")
+    .eq("id", input.taskId)
+    .eq("event_id", input.eventId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return;
+  }
+
+  const event = input.events.find((entry) => entry.id === input.eventId);
+  if (!event) {
+    return;
+  }
+
+  const task = mapEventPlaybookTaskRow(row as EventPlaybookTaskRow);
+  const committee = resolveCommitteeForEvent(event, input.workspace);
+
+  try {
+    const boardDetails = await getMondayBoardDetails(
+      connection.accessToken,
+      mapping.mondayBoardId,
+    );
+    if (!boardDetails) {
+      return;
+    }
+
+    let committeeGroups = { ...mapping.committeeGroups };
+    const groupResult = await ensureMondayGroupForCommittee({
+      accessToken: connection.accessToken,
+      boardId: mapping.mondayBoardId,
+      committeeGroups,
+      committee,
+      existingGroups: [...boardDetails.groups],
+    });
+    committeeGroups = groupResult.committeeGroups;
+
+    const eventUrl = new URL(
+      `/events/${input.eventId}?tab=tasks`,
+      input.origin,
+    ).toString();
+    const columnValues = buildMondayColumnValues({
+      columnMap: mapping.columnMap,
+      status: task.status,
+      dueDate: task.dueDate,
+      taskId: task.id,
+      eventTitle: event.title,
+      eventUrl,
+    });
+
+    const itemId = await createMondayItem({
+      accessToken: connection.accessToken,
+      boardId: mapping.mondayBoardId,
+      groupId: groupResult.groupId,
+      itemName: task.title,
+      columnValues,
+    });
+
+    if (!itemId) {
+      return;
+    }
+
+    await saveMondayTaskLink({
+      organizationId: input.organizationId,
+      eventPlaybookTaskId: task.id,
+      mondayItemId: itemId,
+      mondayBoardId: mapping.mondayBoardId,
+    });
+
+    if (JSON.stringify(committeeGroups) !== JSON.stringify(mapping.committeeGroups)) {
+      await updateMondayCommitteeGroups(input.organizationId, committeeGroups);
+    }
+  } catch (syncError) {
+    console.error("Failed to push new task to Monday:", syncError);
+  }
 }

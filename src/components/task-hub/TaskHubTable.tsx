@@ -35,6 +35,7 @@ export function TaskHubTable({ children, className }: TaskHubTableProps) {
             <th className="w-16 px-3 py-2.5 text-center text-[11px] font-medium tracking-wide text-cos-muted uppercase">
               Sync
             </th>
+            <th className="w-10 px-2 py-2.5" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>{children}</tbody>

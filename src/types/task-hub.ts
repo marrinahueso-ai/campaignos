@@ -14,6 +14,18 @@ export interface TaskHubEventContext {
   eventHref: string;
 }
 
+export interface TaskHubEventOption {
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+}
+
+export interface TaskHubOrgMember {
+  id: string;
+  displayName: string;
+  initials: string;
+}
+
 export interface TaskHubTaskItem extends EventPlaybookTask {
   event: TaskHubEventContext;
   /** Read-only overlay from Monday when linked and sync enabled. */
@@ -32,6 +44,7 @@ export interface TaskHubCommitteeGroup {
   chairName: string | null;
   sortOrder: number;
   tasks: TaskHubTaskItem[];
+  events: TaskHubEventOption[];
   doneCount: number;
   totalCount: number;
 }
@@ -44,4 +57,6 @@ export interface TaskHubPageData {
   totalTasks: number;
   openTasks: number;
   mondaySyncEnabled: boolean;
+  canEdit: boolean;
+  orgMembers: TaskHubOrgMember[];
 }

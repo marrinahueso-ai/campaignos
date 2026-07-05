@@ -224,6 +224,42 @@ export async function createMondayItem(input: {
   return data.create_item?.id ?? null;
 }
 
+export async function updateMondayItem(input: {
+  accessToken: string;
+  boardId: string;
+  itemId: string;
+  itemName?: string;
+  columnValues?: Record<string, unknown>;
+}): Promise<boolean> {
+  if (!input.itemName && !input.columnValues) {
+    return true;
+  }
+
+  const data = await mondayGraphQL<{ change_multiple_column_values: { id: string } | null }>(
+    input.accessToken,
+    `mutation ($boardId: ID!, $itemId: ID!, $itemName: String, $columnValues: JSON) {
+      change_multiple_column_values (
+        board_id: $boardId,
+        item_id: $itemId,
+        item_name: $itemName,
+        column_values: $columnValues
+      ) {
+        id
+      }
+    }`,
+    {
+      boardId: input.boardId,
+      itemId: input.itemId,
+      itemName: input.itemName ?? null,
+      columnValues: input.columnValues
+        ? JSON.stringify(input.columnValues)
+        : null,
+    },
+  );
+
+  return Boolean(data.change_multiple_column_values?.id);
+}
+
 export interface MondayItemColumnValue {
   id: string;
   type: string;

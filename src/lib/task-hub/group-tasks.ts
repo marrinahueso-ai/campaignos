@@ -6,6 +6,7 @@ import type { EventPlaybookTaskRow } from "@/types/event-playbooks";
 import type { OrganizationCommittee, OrganizationWorkspaceData } from "@/types/organization-workspace";
 import type {
   TaskHubCommitteeGroup,
+  TaskHubEventOption,
   TaskHubTaskItem,
 } from "@/types/task-hub";
 
@@ -34,6 +35,13 @@ function compareTasks(a: TaskHubTaskItem, b: TaskHubTaskItem): number {
   }
 
   return a.sortOrder - b.sortOrder;
+}
+
+function compareEvents(a: TaskHubEventOption, b: TaskHubEventOption): number {
+  return (
+    a.eventDate.localeCompare(b.eventDate) ||
+    a.eventTitle.localeCompare(b.eventTitle)
+  );
 }
 
 function resolveCommitteeForEvent(
@@ -78,6 +86,29 @@ export function groupTasksByCommittee(input: {
   );
 
   const tasksByCommitteeKey = new Map<string, TaskHubTaskItem[]>();
+  const eventsByCommitteeKey = new Map<string, TaskHubEventOption[]>();
+
+  for (const event of events) {
+    const committee = resolveCommitteeForEvent(event, ownershipMap, committeesByName);
+    const committeeKey = committee?.id ?? "__unassigned__";
+
+    if (committee && !visibleCommitteeIds.has(committee.id)) {
+      continue;
+    }
+
+    if (!committee && visibleCommittees.length > 0) {
+      continue;
+    }
+
+    const eventOption: TaskHubEventOption = {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventDate: event.date,
+    };
+    const eventBucket = eventsByCommitteeKey.get(committeeKey) ?? [];
+    eventBucket.push(eventOption);
+    eventsByCommitteeKey.set(committeeKey, eventBucket);
+  }
 
   for (const row of taskRows) {
     const event = eventsById.get(row.event_id);
@@ -116,7 +147,11 @@ export function groupTasksByCommittee(input: {
 
   for (const committee of visibleCommittees) {
     const tasks = (tasksByCommitteeKey.get(committee.id) ?? []).sort(compareTasks);
-    if (tasks.length === 0) {
+    const committeeEvents = (eventsByCommitteeKey.get(committee.id) ?? []).sort(
+      compareEvents,
+    );
+
+    if (tasks.length === 0 && committeeEvents.length === 0) {
       continue;
     }
 
@@ -126,6 +161,7 @@ export function groupTasksByCommittee(input: {
       chairName: resolveCommitteeChairName(committee),
       sortOrder: committee.sortOrder,
       tasks,
+      events: committeeEvents,
       doneCount: tasks.filter((task) => task.status === "done").length,
       totalCount: tasks.length,
     });
@@ -134,14 +170,21 @@ export function groupTasksByCommittee(input: {
   const unassignedTasks = (tasksByCommitteeKey.get("__unassigned__") ?? []).sort(
     compareTasks,
   );
+  const unassignedEvents = (eventsByCommitteeKey.get("__unassigned__") ?? []).sort(
+    compareEvents,
+  );
 
-  if (unassignedTasks.length > 0 && visibleCommittees.length === workspace.committees.length) {
+  if (
+    (unassignedTasks.length > 0 || unassignedEvents.length > 0) &&
+    visibleCommittees.length === workspace.committees.length
+  ) {
     groups.push({
       committeeId: null,
       committeeName: UNASSIGNED_COMMITTEE_NAME,
       chairName: null,
       sortOrder: Number.MAX_SAFE_INTEGER,
       tasks: unassignedTasks,
+      events: unassignedEvents,
       doneCount: unassignedTasks.filter((task) => task.status === "done").length,
       totalCount: unassignedTasks.length,
     });

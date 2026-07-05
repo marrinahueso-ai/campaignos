@@ -85,11 +85,45 @@ export async function updateEventPlaybookTaskStatus(
   status: EventPlaybookTaskStatus,
   taskTitle: string,
 ): Promise<boolean> {
+  return updateEventPlaybookTask(taskId, eventId, { status }, taskTitle);
+}
+
+export async function updateEventPlaybookTask(
+  taskId: string,
+  eventId: string,
+  input: {
+    title?: string;
+    status?: EventPlaybookTaskStatus;
+    dueDate?: string | null;
+    assigneeName?: string | null;
+    assigneeInitials?: string | null;
+  },
+  taskTitleForActivity?: string,
+): Promise<boolean> {
   const supabase = await createClient();
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.title !== undefined) {
+    updates.title = input.title;
+  }
+  if (input.status !== undefined) {
+    updates.status = input.status;
+  }
+  if (input.dueDate !== undefined) {
+    updates.due_date = input.dueDate;
+  }
+  if (input.assigneeName !== undefined) {
+    updates.assignee_name = input.assigneeName;
+  }
+  if (input.assigneeInitials !== undefined) {
+    updates.assignee_initials = input.assigneeInitials;
+  }
 
   const { error } = await supabase
     .from("event_playbook_tasks")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq("id", taskId)
     .eq("event_id", eventId);
 
@@ -98,10 +132,22 @@ export async function updateEventPlaybookTaskStatus(
     return false;
   }
 
-  await logActivity(
-    eventId,
-    `Marked "${taskTitle}" as ${taskStatusActivityLabel(status)}`,
-  );
+  const title = taskTitleForActivity ?? input.title ?? "task";
+  if (input.status !== undefined) {
+    await logActivity(
+      eventId,
+      `Marked "${title}" as ${taskStatusActivityLabel(input.status)}`,
+    );
+  } else if (input.title !== undefined) {
+    await logActivity(eventId, `Renamed task to "${input.title}"`);
+  } else if (input.assigneeName !== undefined) {
+    const assigneeLabel = input.assigneeName?.trim() || "unassigned";
+    await logActivity(eventId, `Assigned "${title}" to ${assigneeLabel}`);
+  } else if (input.dueDate !== undefined) {
+    const dueLabel = input.dueDate ?? "none";
+    await logActivity(eventId, `Set due date for "${title}" to ${dueLabel}`);
+  }
+
   return true;
 }
 

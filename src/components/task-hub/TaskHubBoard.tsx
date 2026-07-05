@@ -266,8 +266,40 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
                         committeeName={committeeByTaskId.get(task.id)}
                         isPending={isPending}
                         disabled={pending}
+                        canEdit={data.canEdit}
                         variant="board"
                         onToggleStatus={() => handleToggleStatus(task)}
+                        onStatusChange={(nextStatus) => {
+                          if (nextStatus === status) return;
+                          setTaskStatuses((currentMap) => ({
+                            ...currentMap,
+                            [task.id]: nextStatus,
+                          }));
+                          setPendingTaskIds((current) => new Set(current).add(task.id));
+                          startTransition(async () => {
+                            const result = await updateTaskHubTaskStatusAction(
+                              task.eventId,
+                              task.id,
+                              nextStatus,
+                              task.title,
+                            );
+                            setPendingTaskIds((current) => {
+                              const next = new Set(current);
+                              next.delete(task.id);
+                              return next;
+                            });
+                            if (result.success) {
+                              setTasks((current) =>
+                                current.map((entry) =>
+                                  entry.id === task.id
+                                    ? { ...entry, status: nextStatus }
+                                    : entry,
+                                ),
+                              );
+                              router.refresh();
+                            }
+                          });
+                        }}
                       />
                     </div>
                   );
@@ -303,8 +335,25 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
                   task={task}
                   status="done"
                   committeeName={committeeByTaskId.get(task.id)}
+                  canEdit={data.canEdit}
                   variant="board"
                   onToggleStatus={() => handleToggleStatus(task)}
+                  onStatusChange={(nextStatus) => {
+                    if (nextStatus === "done") return;
+                    setTaskStatuses((currentMap) => ({
+                      ...currentMap,
+                      [task.id]: nextStatus,
+                    }));
+                    startTransition(async () => {
+                      await updateTaskHubTaskStatusAction(
+                        task.eventId,
+                        task.id,
+                        nextStatus,
+                        task.title,
+                      );
+                      router.refresh();
+                    });
+                  }}
                 />
               ))}
             </div>

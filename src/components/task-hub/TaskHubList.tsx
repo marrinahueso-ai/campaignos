@@ -11,11 +11,15 @@ import {
   countTasksByStatus,
   TaskHubStatusSummaryBar,
 } from "@/components/task-hub/TaskHubStatusSummaryBar";
+import { TaskHubAddTaskRow } from "@/components/task-hub/TaskHubAddTaskRow";
 import { TaskHubTable } from "@/components/task-hub/TaskHubTable";
 import { TaskHubTaskRow } from "@/components/task-hub/TaskHubTaskRow";
 import { TaskHubToolbar } from "@/components/task-hub/TaskHubToolbar";
 import {
+  createTaskHubTaskAction,
+  deleteTaskHubTaskAction,
   reorderTaskHubTasksAction,
+  updateTaskHubTaskAction,
   updateTaskHubTaskStatusAction,
 } from "@/lib/task-hub/actions";
 import {
@@ -74,6 +78,9 @@ export function TaskHubList({
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<TaskHubSortMode>("default");
   const [statusFilter, setStatusFilter] = useState<TaskHubStatusFilter>("all");
+  const [creatingCommitteeKey, setCreatingCommitteeKey] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setCommittees(data.committees);
@@ -127,20 +134,23 @@ export function TaskHubList({
     });
   }
 
-  function handleToggleStatus(task: TaskHubTaskItem, currentStatus: EventPlaybookTaskStatus) {
-    if (pendingTaskIds.has(task.id)) {
+  function handleStatusChange(
+    task: TaskHubTaskItem,
+    currentStatus: EventPlaybookTaskStatus,
+    nextStatus: EventPlaybookTaskStatus,
+  ) {
+    if (pendingTaskIds.has(task.id) || nextStatus === currentStatus) {
       return;
     }
 
-    const status = nextTaskStatus(currentStatus);
-    setTaskStatuses((current) => ({ ...current, [task.id]: status }));
+    setTaskStatuses((current) => ({ ...current, [task.id]: nextStatus }));
     setPendingTaskIds((current) => new Set(current).add(task.id));
 
     startTransition(async () => {
       const result = await updateTaskHubTaskStatusAction(
         task.eventId,
         task.id,
-        status,
+        nextStatus,
         task.title,
       );
 
@@ -160,6 +170,96 @@ export function TaskHubList({
       }
 
       router.refresh();
+    });
+  }
+
+  function handleToggleStatus(task: TaskHubTaskItem, currentStatus: EventPlaybookTaskStatus) {
+    if (pendingTaskIds.has(task.id)) {
+      return;
+    }
+
+    const status = nextTaskStatus(currentStatus);
+    handleStatusChange(task, currentStatus, status);
+  }
+
+  function handleFieldUpdate(
+    task: TaskHubTaskItem,
+    input: {
+      title?: string;
+      dueDate?: string | null;
+      assigneeName?: string | null;
+    },
+  ) {
+    if (pendingTaskIds.has(task.id)) {
+      return;
+    }
+
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.eventId,
+        task.id,
+        input,
+        task.title,
+      );
+
+      setPendingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
+
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
+
+  function handleDeleteTask(task: TaskHubTaskItem) {
+    if (pendingTaskIds.has(task.id)) {
+      return;
+    }
+
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await deleteTaskHubTaskAction(
+        task.eventId,
+        task.id,
+        task.title,
+      );
+
+      setPendingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
+
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
+
+  function handleCreateTask(
+    committeeKey: string,
+    input: {
+      eventId: string;
+      title: string;
+      dueDate?: string | null;
+      assigneeName?: string | null;
+    },
+  ) {
+    setCreatingCommitteeKey(committeeKey);
+
+    startTransition(async () => {
+      const result = await createTaskHubTaskAction(input.eventId, input);
+      setCreatingCommitteeKey(null);
+
+      if (result.success) {
+        router.refresh();
+      }
     });
   }
 
@@ -232,10 +332,21 @@ export function TaskHubList({
           committeeName={committee.committeeName}
           isPending={isPending}
           disabled={pending}
+          canEdit={data.canEdit}
+          orgMembers={data.orgMembers}
           draggable={sortMode === "default"}
           showGrip={sortMode === "default"}
           dragOver={dragOverTaskId === task.id}
           onToggleStatus={() => handleToggleStatus(task, status)}
+          onStatusChange={(nextStatus) =>
+            handleStatusChange(task, status, nextStatus)
+          }
+          onTitleChange={(title) => handleFieldUpdate(task, { title })}
+          onDueDateChange={(dueDate) => handleFieldUpdate(task, { dueDate })}
+          onAssigneeChange={(assigneeName) =>
+            handleFieldUpdate(task, { assigneeName })
+          }
+          onDelete={() => handleDeleteTask(task)}
           onDragStart={(event) => {
             setTaskHubDragData(event, {
               taskId: task.id,
@@ -271,7 +382,7 @@ export function TaskHubList({
     const key = committeeKey(group);
     const preparedTasks = prepareTasks(group.tasks);
 
-    if (preparedTasks.length === 0) {
+    if (preparedTasks.length === 0 && !data.canEdit) {
       return (
         <p className="px-4 py-6 text-center text-sm text-cos-muted">
           No tasks match your filters.
@@ -296,7 +407,7 @@ export function TaskHubList({
 
               return [
                 <tr key={secondaryKey} className="bg-cos-bg/50">
-                  <td colSpan={8} className="px-4 py-2">
+                  <td colSpan={9} className="px-4 py-2">
                     <button
                       type="button"
                       onClick={() => toggleSecondaryCollapsed(secondaryKey)}
@@ -320,6 +431,15 @@ export function TaskHubList({
                 ...(!secondaryCollapsed ? renderTaskRows(group, secondary.tasks) : []),
               ];
             })}
+        {data.canEdit && group.events.length > 0 && (
+          <TaskHubAddTaskRow
+            events={group.events}
+            orgMembers={data.orgMembers}
+            disabled={pending}
+            isPending={creatingCommitteeKey === key}
+            onAdd={(input) => handleCreateTask(key, input)}
+          />
+        )}
       </TaskHubTable>
     );
   }
@@ -332,9 +452,27 @@ export function TaskHubList({
         sortMode,
         statusOverrides: taskStatuses,
       });
-      return filtered.length > 0;
+      if (filtered.length > 0) {
+        return true;
+      }
+      if (
+        data.canEdit &&
+        group.events.length > 0 &&
+        !searchQuery.trim() &&
+        statusFilter === "all"
+      ) {
+        return true;
+      }
+      return false;
     });
-  }, [committees, searchQuery, sortMode, statusFilter, taskStatuses]);
+  }, [
+    committees,
+    data.canEdit,
+    searchQuery,
+    sortMode,
+    statusFilter,
+    taskStatuses,
+  ]);
 
   return (
     <div className="space-y-4">

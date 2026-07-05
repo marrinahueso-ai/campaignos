@@ -14,10 +14,13 @@ import {
   resolveTaskHubViewScope,
   resolveVisibleCommittees,
   taskHubScopeLabel,
+  canEditTaskHub,
   type TaskHubUserContext,
 } from "@/lib/task-hub/access";
 import { groupTasksByCommittee } from "@/lib/task-hub/group-tasks";
+import { buildTaskHubOrgMembers } from "@/lib/task-hub/org-members";
 import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForOrganization,
@@ -46,6 +49,8 @@ function emptyTaskHubPage(scopeLabel: string, tablesAvailable: boolean): TaskHub
     totalTasks: 0,
     openTasks: 0,
     mondaySyncEnabled: false,
+    canEdit: false,
+    orgMembers: [],
   };
 }
 
@@ -78,7 +83,10 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
   const user = buildUserContext(authUser, membership, campaignRole);
   const visibleCommittees = resolveVisibleCommittees(workspace.committees, user);
 
-  const events = await getEventPlaybookEvents(organization.id);
+  const [events, orgUsers] = await Promise.all([
+    getEventPlaybookEvents(organization.id),
+    getOrganizationUsers(organization.id),
+  ]);
   const eventIds = events.map((event) => event.id);
   const taskRows = await getEventPlaybookTasksForEvents(eventIds);
 
@@ -88,6 +96,8 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     workspace,
     visibleCommittees,
   });
+
+  const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
 
   const mondayConnection = await getMondayConnectionForOrganization(organization.id);
   const mondayMapping = await getMondayBoardMappingForOrganization(organization.id);
@@ -127,5 +137,7 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     totalTasks,
     openTasks,
     mondaySyncEnabled,
+    canEdit: canEditTaskHub(scope) && committees.some((group) => group.events.length > 0),
+    orgMembers,
   };
 }
