@@ -108,6 +108,7 @@ export async function GET(request: NextRequest) {
         error: tokenResult.error,
         errorDescription: tokenResult.errorDescription,
         mondayOAuthEnv: {
+          hasClientId: diagnostics.hasClientId,
           hasClientSecret: diagnostics.hasClientSecret,
           secretLength: diagnostics.secretLength,
           clientIdPrefix: diagnostics.clientIdPrefix,

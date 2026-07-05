@@ -266,7 +266,10 @@ async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenEx
   console.info("Monday token exchange retrying with Basic Auth credentials");
   logMondayTokenExchangeDiagnostics(redirectUri, clientId, clientSecret, "basic");
 
+  // Monday requires client_id (and client_secret) in the form body even when using Basic Auth.
   const basicAuthBody = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
     redirect_uri: redirectUri,
     code,
   });

@@ -8,6 +8,7 @@ import {
   getMondayClientId,
   getMondayOAuthCookieOptions,
   getMondayRedirectUri,
+  hasMondayClientId,
   isMondayIntegrationConfigured,
   resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
@@ -17,6 +18,12 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const origin = resolveMondayOAuthOrigin(request.nextUrl.origin);
+
+  if (!hasMondayClientId()) {
+    const settingsUrl = new URL("/settings/monday", origin);
+    settingsUrl.searchParams.set("error", "missing_client_id");
+    return NextResponse.redirect(settingsUrl);
+  }
 
   if (!isMondayIntegrationConfigured()) {
     const settingsUrl = new URL("/settings/monday", origin);

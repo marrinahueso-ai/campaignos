@@ -12,6 +12,9 @@ export const MONDAY_OAUTH_SCOPES = [
   "workspaces:read",
 ].join(" ");
 
+/** Exact Vercel env var name for Monday OAuth client ID — do not alias or cache. */
+export const MONDAY_CLIENT_ID_ENV = "MONDAY_CLIENT_ID";
+
 export const MONDAY_OAUTH_STATE_COOKIE = "monday_oauth_state";
 export const MONDAY_OAUTH_RETURN_COOKIE = "monday_oauth_return_to";
 export const MONDAY_OAUTH_REDIRECT_URI_COOKIE = "monday_oauth_redirect_uri";
@@ -85,7 +88,7 @@ export function getMondayOAuthConfigDiagnostics(
   requestOrigin: string,
 ): MondayOAuthConfigDiagnostics {
   const rawSecret = process.env.MONDAY_CLIENT_SECRET;
-  const rawClientId = process.env.MONDAY_CLIENT_ID;
+  const rawClientId = process.env[MONDAY_CLIENT_ID_ENV];
 
   let secretLength = 0;
   let secretFirstCharCode: number | null = null;
@@ -124,6 +127,10 @@ export function getMondayOAuthConfigDiagnostics(
   };
 }
 
+export function hasMondayClientId(): boolean {
+  return Boolean(sanitizeMondayEnvCredential(process.env[MONDAY_CLIENT_ID_ENV]));
+}
+
 export function isMondayIntegrationConfigured(): boolean {
   try {
     getMondayClientId();
@@ -134,10 +141,13 @@ export function isMondayIntegrationConfigured(): boolean {
   }
 }
 
+/** Alias for isMondayIntegrationConfigured — OAuth routes use this name. */
+export const isMondayOAuthConfigured = isMondayIntegrationConfigured;
+
 export function getMondayClientId(): string {
-  const clientId = sanitizeMondayEnvCredential(process.env.MONDAY_CLIENT_ID);
+  const clientId = sanitizeMondayEnvCredential(process.env[MONDAY_CLIENT_ID_ENV]);
   if (!clientId) {
-    throw new Error("MONDAY_CLIENT_ID is not configured.");
+    throw new Error(`${MONDAY_CLIENT_ID_ENV} is not configured.`);
   }
   return clientId;
 }
@@ -219,6 +229,7 @@ export function getMondayOAuthCookieOptions(origin: string) {
 }
 
 export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  missing_client_id: `${MONDAY_CLIENT_ID_ENV} is missing or empty in Vercel. Set it in Production (exact name: ${MONDAY_CLIENT_ID_ENV}), paste without quotes, and redeploy.`,
   not_configured:
     "Monday OAuth is not configured on the server (missing client ID or secret).",
   invalid_client_secret_config:
