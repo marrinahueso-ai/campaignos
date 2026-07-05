@@ -1,12 +1,13 @@
 "use server";
 
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { listMondayBoardsForSettingsPicker } from "@/lib/monday/client";
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForCurrentOrg,
   isMondayConnectionConfigured,
 } from "@/lib/monday/connection";
+import { getLatestOrganization } from "@/lib/organizations/queries";
 import type { MondayBoardColumnMap } from "@/lib/monday/types";
 
 export type MondaySettingsPageState = {
@@ -22,6 +23,10 @@ export type MondaySettingsPageState = {
     mondayWorkspaceId: string | null;
     columnMap: MondayBoardColumnMap;
   } | null;
+  boards: { id: string; name: string; workspaceId: string | null }[];
+  workspaceId: string | null;
+  workspaceName: string | null;
+  boardsLoadError: string | null;
   pageLoadError: string | null;
 };
 
@@ -65,6 +70,26 @@ export async function getMondaySettingsPageStateAction(): Promise<MondaySettings
           }
         : null;
 
+    let boards: MondaySettingsPageState["boards"] = [];
+    let workspaceId: string | null = null;
+    let workspaceName: string | null = null;
+    let boardsLoadError: string | null = null;
+
+    if (connected && connection?.accessToken) {
+      try {
+        const picker = await listMondayBoardsForSettingsPicker(connection.accessToken);
+        boards = picker.boards;
+        workspaceId = picker.workspaceId;
+        workspaceName = picker.workspaceName;
+      } catch (boardError) {
+        console.error("Monday settings board picker failed:", boardError);
+        boardsLoadError =
+          boardError instanceof Error
+            ? boardError.message
+            : "Could not load Monday boards.";
+      }
+    }
+
     return sanitizeForClient({
       success: true,
       integrationConfigured,
@@ -73,6 +98,10 @@ export async function getMondaySettingsPageStateAction(): Promise<MondaySettings
       boardConfigured: isBoardConfigured(savedMapping),
       accountSlug: connection?.accountSlug ?? null,
       savedMapping,
+      boards,
+      workspaceId,
+      workspaceName,
+      boardsLoadError,
       pageLoadError: null,
     });
   } catch (error) {
@@ -86,6 +115,10 @@ export async function getMondaySettingsPageStateAction(): Promise<MondaySettings
       boardConfigured: false,
       accountSlug: null,
       savedMapping: null,
+      boards: [],
+      workspaceId: null,
+      workspaceName: null,
+      boardsLoadError: null,
       pageLoadError:
         "Some Monday settings could not be loaded. You can still disconnect below.",
     });

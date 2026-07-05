@@ -57,7 +57,7 @@ export function autoDetectColumnMap(
       null,
     campaignOsTaskIdColumnId:
       existing.campaignOsTaskIdColumnId ??
-      findColumnByTitles(columns, ["campaignos task id", "task id"], "text")?.id ??
+      findColumnByTitles(columns, ["task id", "campaignos task id"], "text")?.id ??
       null,
     vpColumnId:
       existing.vpColumnId ?? findColumnByTitles(columns, ["vp"], "people")?.id ?? null,

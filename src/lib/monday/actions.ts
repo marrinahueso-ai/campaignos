@@ -32,6 +32,8 @@ export type MondayActionResult = {
   error?: string | null;
 };
 
+const TEMPLATE_BOARD_TIMEOUT_MS = 60_000;
+
 function formatMondayActionError(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
@@ -216,13 +218,43 @@ export async function createPtoTemplateBoardAction(): Promise<
       return { success: false, error: "No Monday workspace found for this account." };
     }
 
-    const result = await createPtoEventProjectPlanningBoard({
-      accessToken: connection.accessToken,
-      workspaceId,
-    });
+    const result = await Promise.race([
+      createPtoEventProjectPlanningBoard({
+        accessToken: connection.accessToken,
+        workspaceId,
+      }),
+      new Promise<{ ok: false; error: string }>((resolve) => {
+        setTimeout(
+          () =>
+            resolve({
+              ok: false,
+              error:
+                "Template board creation timed out after 60 seconds. Try again — partial boards resume automatically.",
+            }),
+          TEMPLATE_BOARD_TIMEOUT_MS,
+        );
+      }),
+    ]);
 
     if (!result.ok) {
       return { success: false, error: result.error };
+    }
+
+    const saved = await saveMondayBoardMapping({
+      organizationId: auth.organizationId,
+      mondayBoardId: result.boardId,
+      mondayWorkspaceId: result.workspaceId,
+      columnMap: result.columnMap,
+    });
+
+    if (!saved) {
+      return {
+        success: false,
+        error: "Template board was created but mapping could not be saved. Try Save mapping below.",
+        boardId: result.boardId,
+        workspaceId: result.workspaceId,
+        columnMap: result.columnMap,
+      };
     }
 
     try {

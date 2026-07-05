@@ -125,7 +125,7 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
     }
   }, [activeView, data, handleSecondaryGroupChange, secondaryGroupMode]);
 
-  if (data.mondayBoard) {
+  if (data.mondaySyncEnabled && data.mondayBoard) {
     return <TaskHubMondayShell data={data} />;
   }
 

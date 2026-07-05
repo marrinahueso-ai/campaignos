@@ -16,15 +16,13 @@ export { PTO_TEMPLATE_BOARD_NAME };
 
 const PTO_TEMPLATE_GROUPS = ["Planning", "In Progress", "Completed"] as const;
 
+/** Core sync columns for the PTO Event Project Planning template board. */
 const PTO_TEMPLATE_COLUMNS: { title: string; type: string }[] = [
-  { title: "VP", type: "people" },
-  { title: "Priority", type: "status" },
-  { title: "Project Timeline", type: "timeline" },
   { title: "Status", type: "status" },
-  { title: "President", type: "people" },
-  { title: "Committee", type: "people" },
-  { title: "Phase", type: "status" },
-  { title: "Urgency", type: "status" },
+  { title: "Date", type: "date" },
+  { title: "Assignee", type: "people" },
+  { title: "Task ID", type: "text" },
+  { title: "Event link", type: "link" },
 ];
 
 const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
@@ -57,19 +55,47 @@ export type CreatePtoTemplateBoardResult =
 function boardHasTemplateShape(columns: { title: string }[]): boolean {
   const titles = new Set(columns.map((column) => column.title.trim().toLowerCase()));
   return (
-    titles.has("vp") &&
-    titles.has("priority") &&
-    titles.has("project timeline") &&
     titles.has("status") &&
-    titles.has("president") &&
-    titles.has("committee") &&
-    titles.has("phase") &&
-    titles.has("urgency")
+    titles.has("date") &&
+    titles.has("assignee") &&
+    titles.has("task id") &&
+    titles.has("event link")
   );
 }
 
 function formatMondayError(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+async function findExistingPtoBoard(
+  accessToken: string,
+  workspaceId: string,
+): Promise<{ id: string; workspaceId: string } | null> {
+  const [workspaceBoards, mainBoards] = await Promise.all([
+    listMondayBoards(accessToken, {
+      workspaceIds: [workspaceId],
+      limit: 100,
+      maxPages: 1,
+    }).catch(() => []),
+    listMondayBoards(accessToken, {
+      workspaceIds: [null],
+      limit: 100,
+      maxPages: 1,
+    }).catch(() => []),
+  ]);
+
+  const existing =
+    workspaceBoards.find((board) => board.name === PTO_TEMPLATE_BOARD_NAME) ??
+    mainBoards.find((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
+
+  if (!existing) {
+    return null;
+  }
+
+  return {
+    id: existing.id,
+    workspaceId: existing.workspaceId ?? workspaceId,
+  };
 }
 
 async function ensurePtoBoardGroups(
@@ -164,6 +190,11 @@ async function completePtoBoardSetup(input: {
   }
 
   if (boardHasTemplateShape(details.columns)) {
+    await ensurePtoBoardGroups(
+      input.accessToken,
+      input.boardId,
+      details.groups.map((group) => group.title),
+    );
     return finalizePtoBoardSetup(input);
   }
 
@@ -192,17 +223,12 @@ export async function createPtoEventProjectPlanningBoard(input: {
   workspaceId: string;
 }): Promise<CreatePtoTemplateBoardResult> {
   try {
-    const existingBoards = await listMondayBoards(input.accessToken, {
-      workspaceIds: [input.workspaceId],
-      limit: 100,
-    });
-
-    const existing = existingBoards.find((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
+    const existing = await findExistingPtoBoard(input.accessToken, input.workspaceId);
     if (existing) {
       return completePtoBoardSetup({
         accessToken: input.accessToken,
         boardId: existing.id,
-        workspaceId: input.workspaceId,
+        workspaceId: existing.workspaceId,
       });
     }
 

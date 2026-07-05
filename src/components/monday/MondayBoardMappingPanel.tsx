@@ -1,14 +1,17 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   backfillMondayTasksAction,
+  createPtoTemplateBoardAction,
   getMondayBoardColumnsAction,
   listMondayBoardsAction,
   saveMondayBoardMappingAction,
 } from "@/lib/monday/actions";
 import { autoDetectColumnMap } from "@/lib/monday/column-map-detect";
+import { PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/constants";
 import type { MondayBoardColumnMap, MondayBoardColumn } from "@/lib/monday/types";
 
 interface SavedBoardMapping {
@@ -17,11 +20,26 @@ interface SavedBoardMapping {
   columnMap: MondayBoardColumnMap;
 }
 
+interface MondayBoardSummary {
+  id: string;
+  name: string;
+  workspaceId: string | null;
+}
+
 interface MondayBoardMappingPanelProps {
   connected: boolean;
   syncEnabled: boolean;
   justConnected?: boolean;
   savedMapping?: SavedBoardMapping | null;
+  initialBoards?: MondayBoardSummary[];
+  initialWorkspaceId?: string | null;
+  initialWorkspaceName?: string | null;
+  initialBoardsLoadError?: string | null;
+  onBoardStateChange?: (update: {
+    boards?: MondayBoardSummary[];
+    savedMapping?: SavedBoardMapping | null;
+    boardConfigured?: boolean;
+  }) => void;
 }
 
 const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
@@ -86,14 +104,17 @@ export function MondayBoardMappingPanel({
   syncEnabled,
   justConnected = false,
   savedMapping = null,
+  initialBoards = [],
+  initialWorkspaceId = null,
+  initialWorkspaceName = null,
+  initialBoardsLoadError = null,
+  onBoardStateChange,
 }: MondayBoardMappingPanelProps) {
-  const [boards, setBoards] = useState<{ id: string; name: string; workspaceId: string | null }[]>(
-    [],
-  );
-  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
+  const [boards, setBoards] = useState<MondayBoardSummary[]>(initialBoards);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(initialWorkspaceName);
   const [selectedBoardId, setSelectedBoardId] = useState(savedMapping?.mondayBoardId ?? "");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-    savedMapping?.mondayWorkspaceId ?? null,
+    savedMapping?.mondayWorkspaceId ?? initialWorkspaceId,
   );
   const [columns, setColumns] = useState<MondayBoardColumn[]>([]);
   const [columnMap, setColumnMap] = useState<MondayBoardColumnMap>(
@@ -101,66 +122,30 @@ export function MondayBoardMappingPanel({
   );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [createTemplateError, setCreateTemplateError] = useState<string | null>(null);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(connected);
+  const [loadError, setLoadError] = useState<string | null>(initialBoardsLoadError);
+
+  const hasPtoTemplateBoard = boards.some((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
+  const showCreateTemplate =
+    connected && loaded && (boards.length === 0 || !hasPtoTemplateBoard || Boolean(loadError));
 
   useEffect(() => {
-    if (!connected) {
-      setLoaded(false);
-      setBoards([]);
-      setError(null);
-      setLoadError(null);
-      return;
+    setBoards(initialBoards);
+    setWorkspaceName(initialWorkspaceName);
+    setLoadError(initialBoardsLoadError);
+    setLoaded(connected);
+  }, [connected, initialBoards, initialBoardsLoadError, initialWorkspaceName]);
+
+  useEffect(() => {
+    if (savedMapping) {
+      setSelectedBoardId(savedMapping.mondayBoardId);
+      setSelectedWorkspaceId(savedMapping.mondayWorkspaceId);
+      setColumnMap(savedMapping.columnMap);
     }
-
-    let cancelled = false;
-
-    async function loadBoards() {
-      setError(null);
-      setLoadError(null);
-      setLoaded(false);
-
-      try {
-        const result = await listMondayBoardsAction();
-
-        if (cancelled) {
-          return;
-        }
-
-        if (result.success && result.boards) {
-          setBoards(result.boards);
-          setWorkspaceName(result.workspaceName ?? null);
-          if (result.workspaceId && !savedMapping) {
-            setSelectedWorkspaceId(result.workspaceId);
-          }
-        } else {
-          setBoards([]);
-          const failureMessage = result.error ?? "Could not load Monday boards.";
-          setLoadError(failureMessage);
-          setError(failureMessage);
-        }
-      } catch (loadFailure) {
-        if (cancelled) {
-          return;
-        }
-        const failureMessage =
-          loadFailure instanceof Error
-            ? loadFailure.message
-            : "Could not load Monday boards.";
-        setBoards([]);
-        setLoadError(failureMessage);
-        setError(failureMessage);
-      }
-
-      setLoaded(true);
-    }
-
-    void loadBoards();
-    return () => {
-      cancelled = true;
-    };
-  }, [connected, savedMapping]);
+  }, [savedMapping]);
 
   useEffect(() => {
     if (!connected || !selectedBoardId || !loaded) {
@@ -200,6 +185,75 @@ export function MondayBoardMappingPanel({
     setColumnMap(EMPTY_COLUMN_MAP);
   }
 
+  async function handleCreateTemplateBoard() {
+    setError(null);
+    setMessage(null);
+    setCreateTemplateError(null);
+    setIsCreatingTemplate(true);
+
+    try {
+      const result = await createPtoTemplateBoardAction();
+      if (!result.success) {
+        const failureMessage = result.error ?? "Could not create template board.";
+        setCreateTemplateError(failureMessage);
+        setError(failureMessage);
+        return;
+      }
+
+      const boardsResult = await listMondayBoardsAction();
+      if (boardsResult.success && boardsResult.boards) {
+        setBoards(boardsResult.boards);
+        setWorkspaceName(boardsResult.workspaceName ?? null);
+        setLoadError(null);
+        onBoardStateChange?.({ boards: boardsResult.boards });
+      } else if (result.boardId) {
+        const nextBoards = boards.some((board) => board.id === result.boardId)
+          ? boards
+          : [
+              ...boards,
+              {
+                id: result.boardId,
+                name: PTO_TEMPLATE_BOARD_NAME,
+                workspaceId: result.workspaceId ?? null,
+              },
+            ];
+        setBoards(nextBoards);
+        onBoardStateChange?.({ boards: nextBoards });
+      }
+
+      if (result.boardId) {
+        setSelectedBoardId(result.boardId);
+        setSelectedWorkspaceId(result.workspaceId ?? null);
+        if (result.columnMap) {
+          setColumnMap(result.columnMap);
+        }
+
+        const saved: SavedBoardMapping = {
+          mondayBoardId: result.boardId,
+          mondayWorkspaceId: result.workspaceId ?? null,
+          columnMap: result.columnMap ?? EMPTY_COLUMN_MAP,
+        };
+        onBoardStateChange?.({
+          savedMapping: saved,
+          boardConfigured: Boolean(result.columnMap?.statusColumnId),
+        });
+      }
+
+      setMessage(
+        `${PTO_TEMPLATE_BOARD_NAME} board is ready and mapping saved. Enable sync above when ready.`,
+      );
+    } catch (createError) {
+      const failureMessage =
+        createError instanceof Error
+          ? createError.message
+          : "Could not create template board.";
+      setCreateTemplateError(failureMessage);
+      setError(failureMessage);
+    } finally {
+      setIsCreatingTemplate(false);
+    }
+  }
+
   function handleSaveMapping() {
     setError(null);
     setMessage(null);
@@ -213,7 +267,16 @@ export function MondayBoardMappingPanel({
         setError(result.error ?? "Could not save mapping.");
         return;
       }
-      setMessage("Board mapping saved.");
+      const saved: SavedBoardMapping = {
+        mondayBoardId: selectedBoardId,
+        mondayWorkspaceId: selectedWorkspaceId,
+        columnMap,
+      };
+      onBoardStateChange?.({
+        savedMapping: saved,
+        boardConfigured: Boolean(columnMap.statusColumnId),
+      });
+      setMessage("Board mapping saved. You can now enable Monday sync above.");
     });
   }
 
@@ -235,10 +298,10 @@ export function MondayBoardMappingPanel({
   if (!connected) {
     return (
       <div className="rounded-md border border-dashed border-cos-border bg-cos-bg/40 p-4 text-sm text-cos-muted">
-        <p className="font-medium text-cos-text">Step 2: Pick a master board</p>
+        <p className="font-medium text-cos-text">Step 2: Create or pick a board</p>
         <p className="mt-1">
-          Complete <strong>Step 1: Connect Monday</strong> above first. Your boards appear here
-          after OAuth finishes.
+          Complete <strong>Step 1: Connect Monday</strong> above first. You can create the{" "}
+          <strong>{PTO_TEMPLATE_BOARD_NAME}</strong> template or pick an existing board.
         </p>
       </div>
     );
@@ -248,9 +311,39 @@ export function MondayBoardMappingPanel({
     <div className="space-y-6">
       {justConnected && (
         <p className="text-sm text-emerald-700" role="status">
-          Monday connected — loading your boards…
+          Monday connected — choose a board or create the template below.
         </p>
       )}
+
+      {showCreateTemplate && (
+        <div className="space-y-2 border border-dashed border-cos-border bg-cos-bg/40 p-4">
+          <p className="text-sm text-cos-text">
+            Create <strong>{PTO_TEMPLATE_BOARD_NAME}</strong> with Planning, In Progress, and
+            Completed groups plus Status, Date, Assignee, Task ID, and Event link columns.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            disabled={isPending || isCreatingTemplate}
+            onClick={() => void handleCreateTemplateBoard()}
+          >
+            {isCreatingTemplate ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                Creating board… (up to 60s)
+              </>
+            ) : (
+              "Create template board"
+            )}
+          </Button>
+          {createTemplateError && (
+            <p className="text-sm text-red-600" role="alert">
+              {createTemplateError}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         <label className="block space-y-1 text-sm">
           <span className="text-cos-text">Master board</span>
@@ -258,7 +351,7 @@ export function MondayBoardMappingPanel({
             value={selectedBoardId}
             onChange={(event) => handleBoardChange(event.target.value)}
             className="w-full border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-            disabled={!loaded || isPending}
+            disabled={!loaded || isPending || isCreatingTemplate}
           >
             <option value="">
               {!loaded ? "Loading boards…" : loadError ? "Could not load boards" : "Select board…"}
@@ -272,8 +365,8 @@ export function MondayBoardMappingPanel({
         </label>
         {loaded && boards.length === 0 && !loadError && (
           <p className="text-sm text-cos-muted">
-            No boards found in {workspaceName ?? "your connected workspace"}. Create a board in
-            Monday.com, then refresh this page.
+            No boards found in {workspaceName ?? "your default workspace"}. Create the template
+            above or add a board in Monday.com.
           </p>
         )}
         {loaded && loadError && (
@@ -283,8 +376,8 @@ export function MondayBoardMappingPanel({
         )}
         {loaded && boards.length > 0 && (
           <p className="text-xs text-cos-muted">
-            Showing boards from {workspaceName ?? "your default workspace"}. Pick any board you
-            want CampaignOS to sync tasks into.
+            Showing boards from {workspaceName ?? "your default workspace"}. Or create the template
+            above.
           </p>
         )}
       </div>

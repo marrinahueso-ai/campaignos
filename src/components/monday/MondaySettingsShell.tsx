@@ -19,6 +19,12 @@ interface SavedBoardMapping {
   columnMap: MondayBoardColumnMap;
 }
 
+interface MondayBoardSummary {
+  id: string;
+  name: string;
+  workspaceId: string | null;
+}
+
 interface MondaySettingsShellProps {
   organizationName: string | null;
   oauthCallbackUrl: string;
@@ -44,6 +50,10 @@ export function MondaySettingsShell({
         boardConfigured: boolean;
         accountSlug: string | null;
         savedMapping: SavedBoardMapping | null;
+        boards: MondayBoardSummary[];
+        workspaceId: string | null;
+        workspaceName: string | null;
+        boardsLoadError: string | null;
         pageLoadError: string | null;
       }
     | { status: "error"; message: string }
@@ -68,6 +78,10 @@ export function MondaySettingsShell({
             boardConfigured: false,
             accountSlug: null,
             savedMapping: null,
+            boards: [],
+            workspaceId: null,
+            workspaceName: null,
+            boardsLoadError: null,
             pageLoadError:
               result.error ??
               "Some Monday settings could not be loaded. You can still disconnect below.",
@@ -83,6 +97,10 @@ export function MondaySettingsShell({
           boardConfigured: result.boardConfigured,
           accountSlug: result.accountSlug,
           savedMapping: result.savedMapping,
+          boards: result.boards,
+          workspaceId: result.workspaceId,
+          workspaceName: result.workspaceName,
+          boardsLoadError: result.boardsLoadError,
           pageLoadError: result.pageLoadError,
         });
       } catch (error) {
@@ -116,12 +134,31 @@ export function MondaySettingsShell({
       ? loadState.message
       : ready?.pageLoadError ?? null;
 
+  function handleBoardStateChange(update: {
+    boards?: MondayBoardSummary[];
+    savedMapping?: SavedBoardMapping | null;
+    boardConfigured?: boolean;
+  }) {
+    setLoadState((current) => {
+      if (current.status !== "ready") {
+        return current;
+      }
+      return {
+        ...current,
+        boards: update.boards ?? current.boards,
+        savedMapping:
+          update.savedMapping !== undefined ? update.savedMapping : current.savedMapping,
+        boardConfigured: update.boardConfigured ?? current.boardConfigured,
+      };
+    });
+  }
+
   return (
     <div className="studio-page mx-auto max-w-2xl space-y-10 pb-12">
       <StudioPageHeader
         backHref="/settings"
         title="Monday"
-        description={`Sync playbook tasks with Monday.com for ${organizationName ?? "your PTO"}. One master board with groups per committee.`}
+        description={`Sync playbook tasks with Monday.com for ${organizationName ?? "your PTO"}. Connect, create or pick a board, map columns, then enable sync.`}
         eyebrow="Configure"
       />
 
@@ -152,7 +189,7 @@ export function MondaySettingsShell({
         <CardHeader>
           <CardTitle>{connected ? "Connected" : "Connect Monday"}</CardTitle>
           <CardDescription>
-            OAuth connection for your organization. Enable sync when you are ready to push tasks.
+            OAuth connection for your organization. Enable sync only after board mapping is saved.
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">
@@ -171,9 +208,8 @@ export function MondaySettingsShell({
         <CardHeader>
           <CardTitle>Board &amp; columns</CardTitle>
           <CardDescription>
-            {savedMapping?.mondayBoardId
-              ? "Update your master board or column mapping."
-              : "Pick a master board and map Status, Date, Assignee, Task ID, and Event link columns."}
+            Create the PTO template board or pick an existing board, then map Status, Date,
+            Assignee, Task ID, and Event link columns.
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">
@@ -185,6 +221,11 @@ export function MondaySettingsShell({
               syncEnabled={syncEnabled}
               justConnected={justConnected}
               savedMapping={savedMapping}
+              initialBoards={ready?.boards ?? []}
+              initialWorkspaceId={ready?.workspaceId ?? null}
+              initialWorkspaceName={ready?.workspaceName ?? null}
+              initialBoardsLoadError={ready?.boardsLoadError ?? null}
+              onBoardStateChange={handleBoardStateChange}
             />
           )}
         </div>
