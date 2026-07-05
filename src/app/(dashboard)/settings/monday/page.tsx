@@ -113,6 +113,15 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
             connected={connected}
             syncEnabled={syncEnabled}
             justConnected={params.connected === "1"}
+            savedMapping={
+              mapping
+                ? {
+                    mondayBoardId: mapping.mondayBoardId,
+                    mondayWorkspaceId: mapping.mondayWorkspaceId,
+                    columnMap: mapping.columnMap,
+                  }
+                : null
+            }
           />
         </div>
       </Card>

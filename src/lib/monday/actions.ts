@@ -16,8 +16,7 @@ import {
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import {
   getMondayBoardDetails,
-  listAllAccessibleMondayBoards,
-  listMondayWorkspaces,
+  listMondayBoardsForSettingsPicker,
   resolveMondayWorkspaceId,
 } from "@/lib/monday/client";
 import { PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/constants";
@@ -163,44 +162,15 @@ export async function listMondayBoardsAction(): Promise<{
       return { success: false, error: "Connect Monday in Settings first." };
     }
 
-    const workspaces = await listMondayWorkspaces(connection.accessToken, 25);
-    const resolvedWorkspaceId = await resolveMondayWorkspaceId(
+    const { boards, workspaceId, workspaceName } = await listMondayBoardsForSettingsPicker(
       connection.accessToken,
-      workspaces,
     );
-    const boards = await listAllAccessibleMondayBoards(connection.accessToken, {
-      limit: 50,
-      maxPages: 3,
-    });
-
-    const mainWorkspace = workspaces.find((workspace) =>
-      /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
-    );
-    const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
-    const preferredWorkspace = mainWorkspace ?? defaultWorkspace ?? workspaces[0] ?? null;
-
-    let workspaceName: string | null = null;
-    if (boards.length === 0) {
-      workspaceName = preferredWorkspace?.name ?? "your Monday account";
-      return {
-        success: false,
-        error:
-          "Could not load boards from Monday. Confirm boards:read and workspaces:read scopes are enabled, then reconnect Monday.",
-        boards: [],
-        workspaceId: resolvedWorkspaceId,
-        workspaceName,
-      };
-    } else if (preferredWorkspace) {
-      workspaceName = `${preferredWorkspace.name} and other workspaces`;
-    } else {
-      workspaceName = "all workspaces";
-    }
 
     return sanitizeMondayActionPayload({
       success: true,
       boards,
-      workspaceId: resolvedWorkspaceId,
-      workspaceName,
+      workspaceId,
+      workspaceName: workspaceName ?? "your Monday account",
     });
   } catch (error) {
     console.error("listMondayBoardsAction failed:", error);

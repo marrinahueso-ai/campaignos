@@ -148,6 +148,63 @@ function mergeMondayBoardSummaries(
 }
 
 /**
+ * Boards for the settings picker — default workspace + Main only, one page each.
+ * Avoids scanning every workspace (which caused Vercel timeouts and RSC digests).
+ */
+export async function listMondayBoardsForSettingsPicker(
+  accessToken: string,
+): Promise<{
+  boards: { id: string; name: string; workspaceId: string | null }[];
+  workspaceId: string | null;
+  workspaceName: string | null;
+}> {
+  const workspaces = await listMondayWorkspaces(accessToken, 10);
+  const workspaceId = await resolveMondayWorkspaceId(accessToken, workspaces);
+
+  const mainWorkspace = workspaces.find((workspace) =>
+    /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
+  );
+  const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
+  const preferredWorkspace = mainWorkspace ?? defaultWorkspace ?? workspaces[0] ?? null;
+
+  const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
+  const queries: Promise<{ id: string; name: string; workspaceId: string | null }[]>[] = [];
+
+  if (workspaceId) {
+    queries.push(
+      listMondayBoards(accessToken, {
+        workspaceIds: [workspaceId],
+        limit: 100,
+        maxPages: 1,
+      }),
+    );
+  }
+
+  queries.push(
+    listMondayBoards(accessToken, {
+      workspaceIds: [null],
+      limit: 100,
+      maxPages: 1,
+    }).catch(() => []),
+  );
+
+  const batches = await Promise.all(queries);
+  for (const batch of batches) {
+    mergeMondayBoardSummaries(byId, batch);
+  }
+
+  const boards = [...byId.values()].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+  );
+
+  return {
+    boards,
+    workspaceId,
+    workspaceName: preferredWorkspace?.name ?? null,
+  };
+}
+
+/**
  * List every board the token can read across workspaces, including Main (pre-migration
  * Main uses a null workspace_id and is queried with workspace_ids: [null]).
  */
