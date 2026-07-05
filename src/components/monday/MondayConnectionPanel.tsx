@@ -81,11 +81,11 @@ export function MondayConnectionPanel({
             <code className="rounded bg-cos-bg px-1">/api/monday/oauth/callback</code>
           </li>
           <li>
-            Add scopes:{" "}
+            Enable OAuth scopes (Developer Center → OAuth):{" "}
             <code className="rounded bg-cos-bg px-1">boards:read</code>,{" "}
             <code className="rounded bg-cos-bg px-1">boards:write</code>,{" "}
-            <code className="rounded bg-cos-bg px-1">workspaces:read</code>,{" "}
-            <code className="rounded bg-cos-bg px-1">webhooks:write</code>
+            <code className="rounded bg-cos-bg px-1">workspaces:read</code> — must
+            match the authorize request exactly
           </li>
           <li>
             Set <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_ID</code> and{" "}

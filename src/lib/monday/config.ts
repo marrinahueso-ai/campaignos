@@ -4,12 +4,11 @@ export const MONDAY_API_URL = "https://api.monday.com/v2";
 export const MONDAY_AUTHORIZE_URL = "https://auth.monday.com/oauth2/authorize";
 export const MONDAY_TOKEN_URL = "https://auth.monday.com/oauth2/token";
 
-/** Scopes needed for CampaignOS task hub sync (boards, items, webhooks). */
+/** Phase 1 OAuth scopes — must match Developer Center OAuth settings exactly. */
 export const MONDAY_OAUTH_SCOPES = [
   "boards:read",
   "boards:write",
   "workspaces:read",
-  "webhooks:write",
 ].join(" ");
 
 export const MONDAY_OAUTH_STATE_COOKIE = "monday_oauth_state";
