@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
-  MONDAY_OAUTH_ERROR_MESSAGES,
   MONDAY_OAUTH_RETURN_COOKIE,
   MONDAY_OAUTH_STATE_COOKIE,
   getMondayOAuthCookieOptions,
