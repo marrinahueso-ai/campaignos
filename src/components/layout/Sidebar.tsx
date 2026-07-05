@@ -63,8 +63,10 @@ function NavNotificationBadge({
     <span
       aria-label={ariaLabel}
       className={cn(
-        "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1 text-xs font-semibold text-white tabular-nums",
-        variant === "approval" ? "bg-red-500" : "bg-blue-900",
+        "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1 text-xs font-semibold tabular-nums",
+        variant === "approval"
+          ? "bg-red-500 text-white"
+          : "bg-cos-change-request text-cos-text",
       )}
     >
       {label}

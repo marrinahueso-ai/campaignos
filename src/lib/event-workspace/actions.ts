@@ -214,6 +214,7 @@ export async function requestCommunicationChangesAction(
 
 export async function appendChangeRequestCommentAction(
   eventId: string,
+  approvalRequestId: string,
   communicationItemId: string,
   comment: string,
 ): Promise<WorkspaceActionState> {
@@ -223,6 +224,7 @@ export async function appendChangeRequestCommentAction(
   ]);
   const result = await appendChangeRequestComment(
     eventId,
+    approvalRequestId,
     communicationItemId,
     role,
     comment,

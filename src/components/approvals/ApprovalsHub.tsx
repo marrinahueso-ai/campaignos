@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, MessageSquarePlus, RotateCcw } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, Plus, RotateCcw, X } from "lucide-react";
 import { ApprovalQueuePreviewPanel } from "@/components/approvals/ApprovalQueuePreviewPanel";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { Button } from "@/components/ui/Button";
@@ -48,7 +48,7 @@ function ChangeRequestNotes({ notes }: { notes: string }) {
   );
 }
 
-function ChangeRequestCommentForm({
+function ChangeRequestCommentDialog({
   item,
   onActionError,
 }: {
@@ -56,8 +56,18 @@ function ChangeRequestCommentForm({
   onActionError: (message: string) => void;
 }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  function handleClose() {
+    if (isSaving) {
+      return;
+    }
+
+    setOpen(false);
+    setComment("");
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -73,11 +83,13 @@ function ChangeRequestCommentForm({
     try {
       const result = await appendChangeRequestCommentAction(
         item.eventId,
+        item.id,
         item.communicationItemId,
         trimmed,
       );
 
       if (result.success) {
+        setOpen(false);
         setComment("");
         router.refresh();
         return;
@@ -92,27 +104,88 @@ function ChangeRequestCommentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-2 pl-5">
-      <label className="block text-xs font-medium text-cos-muted">
-        Add a follow-up comment before resubmitting
-      </label>
-      <textarea
-        value={comment}
-        onChange={(event) => setComment(event.target.value)}
-        rows={2}
-        placeholder="Explain what you changed or ask a clarifying question…"
-        className="w-full resize-y rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
-        disabled={isSaving}
-      />
-      <Button type="submit" size="sm" variant="secondary" disabled={isSaving}>
-        {isSaving ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <MessageSquarePlus className="h-4 w-4" />
-        )}
-        Add comment
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="h-7 w-7 shrink-0 p-0"
+        aria-label="Add follow-up comment"
+        onClick={() => setOpen(true)}
+      >
+        <Plus className="h-4 w-4" />
       </Button>
-    </form>
+
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`change-request-comment-title-${item.id}`}
+            className="w-full max-w-md rounded-xl border border-cos-border bg-cos-card shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-cos-border px-5 py-4">
+              <div>
+                <h2
+                  id={`change-request-comment-title-${item.id}`}
+                  className="text-sm font-semibold text-cos-text"
+                >
+                  Add follow-up comment
+                </h2>
+                <p className="mt-1 text-xs text-cos-muted">
+                  {channelLabel(item.channel)} · {item.eventTitle}
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 shrink-0 p-0"
+                aria-label="Close comment dialog"
+                disabled={isSaving}
+                onClick={handleClose}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
+              <label className="block text-xs font-medium text-cos-muted">
+                Comment before resubmitting
+              </label>
+              <textarea
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                rows={3}
+                autoFocus
+                placeholder="Explain what you changed or ask a clarifying question…"
+                className="w-full resize-y rounded-md border border-cos-border bg-cos-bg px-3 py-2 text-xs text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+                disabled={isSaving}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={isSaving}
+                  onClick={handleClose}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" variant="secondary" disabled={isSaving}>
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  Add comment
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -202,12 +275,18 @@ function ApprovalQueueList({
                 {item.notes && item.communicationStatus === "changes_requested" && (
                   <ChangeRequestNotes notes={item.notes} />
                 )}
-                {showCommentForm && item.submittedByMe && (
-                  <ChangeRequestCommentForm
-                    item={item}
-                    onActionError={onActionError}
-                  />
-                )}
+                {showCommentForm && item.submittedByMe ? (
+                  <div className="mt-2 flex items-center gap-2 pl-5">
+                    <p className="text-xs text-cos-muted">
+                      Add a follow-up comment before resubmitting
+                    </p>
+                    <ChangeRequestCommentDialog
+                      key={item.id}
+                      item={item}
+                      onActionError={onActionError}
+                    />
+                  </div>
+                ) : null}
               </div>
 
               {isExpanded && (
@@ -353,7 +432,7 @@ export function ApprovalsHub({
 
         <Card
           padding="none"
-          className="overflow-hidden border-l-4 border-l-blue-900 scroll-mt-8"
+          className="overflow-hidden border-l-4 border-l-cos-change-request scroll-mt-8"
           id="changes-requested"
         >
           <CardHeader className="border-b border-cos-border px-6 py-5">

@@ -25,6 +25,7 @@
   --cos-error: #b86b55;
   --cos-error-bg: #f5ece8;
   --cos-error-text: #8f4a38;
+  --cos-change-request: #f6e7b7;
 
   --background: var(--cos-bg);
   --foreground: var(--cos-text);
@@ -60,6 +61,7 @@
   --color-cos-error: var(--cos-error);
   --color-cos-error-bg: var(--cos-error-bg);
   --color-cos-error-text: var(--cos-error-text);
+  --color-cos-change-request: var(--cos-change-request);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-cormorant);

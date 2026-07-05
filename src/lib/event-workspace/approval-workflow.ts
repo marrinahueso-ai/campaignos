@@ -543,7 +543,10 @@ export async function requestCommunicationChanges(
   return { success: true };
 }
 
-async function getLatestApprovalRequestForItem(communicationItemId: string): Promise<{
+async function getApprovalRequestForComment(
+  approvalRequestId: string,
+  communicationItemId: string,
+): Promise<{
   id: string;
   notes: string | null;
   requested_by_user_id: string | null;
@@ -551,13 +554,11 @@ async function getLatestApprovalRequestForItem(communicationItemId: string): Pro
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("approval_requests")
-    .select("id, notes, requested_by_user_id")
-    .eq("communication_item_id", communicationItemId)
-    .order("requested_at", { ascending: false })
-    .limit(1)
+    .select("id, notes, requested_by_user_id, communication_item_id")
+    .eq("id", approvalRequestId)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error || !data || data.communication_item_id !== communicationItemId) {
     return null;
   }
 
@@ -566,6 +567,7 @@ async function getLatestApprovalRequestForItem(communicationItemId: string): Pro
 
 export async function appendChangeRequestComment(
   eventId: string,
+  approvalRequestId: string,
   communicationItemId: string,
   role: CampaignRole,
   comment: string,
@@ -595,7 +597,10 @@ export async function appendChangeRequestComment(
     };
   }
 
-  const approvalRequest = await getLatestApprovalRequestForItem(communicationItemId);
+  const approvalRequest = await getApprovalRequestForComment(
+    approvalRequestId,
+    communicationItemId,
+  );
   if (!approvalRequest) {
     return { success: false, error: "No change request found for this draft." };
   }
