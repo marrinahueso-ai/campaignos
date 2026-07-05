@@ -1,9 +1,17 @@
 import type { EventPlaybookTask } from "@/types/event-playbooks";
-import type { MondayTaskOverlay } from "@/lib/monday/types";
+import type { MondayBoardTaskHubData, MondayTaskOverlay } from "@/lib/monday/types";
 
 export type TaskHubViewScope = "all_committees" | "chaired_committees";
 
 export type TaskHubViewMode = "list" | "board" | "calendar";
+
+export type TaskHubMondayViewMode =
+  | "main_table"
+  | "event_timeline"
+  | "gantt"
+  | "calendar"
+  | "kanban"
+  | "table";
 
 export type TaskHubSecondaryGroupMode = "none" | "status" | "assignee" | "due_date";
 
@@ -57,6 +65,9 @@ export interface TaskHubPageData {
   totalTasks: number;
   openTasks: number;
   mondaySyncEnabled: boolean;
+  /** When Monday sync is enabled, primary board data for Task Hub. */
+  mondayBoard: MondayBoardTaskHubData | null;
   canEdit: boolean;
   orgMembers: TaskHubOrgMember[];
+  events: TaskHubEventOption[];
 }

@@ -57,5 +57,15 @@ function normalizeColumnMap(raw: MondayBoardColumnMap | null | undefined): Monda
     assigneeColumnId: raw?.assigneeColumnId ?? null,
     eventLinkColumnId: raw?.eventLinkColumnId ?? null,
     campaignOsTaskIdColumnId: raw?.campaignOsTaskIdColumnId ?? null,
+    vpColumnId: raw?.vpColumnId ?? null,
+    presidentColumnId: raw?.presidentColumnId ?? null,
+    committeeColumnId: raw?.committeeColumnId ?? null,
+    priorityColumnId: raw?.priorityColumnId ?? null,
+    phaseColumnId: raw?.phaseColumnId ?? null,
+    urgencyColumnId: raw?.urgencyColumnId ?? null,
+    timelineColumnId: raw?.timelineColumnId ?? null,
+    subitemStatusColumnId: raw?.subitemStatusColumnId ?? null,
+    subitemOwnerColumnId: raw?.subitemOwnerColumnId ?? null,
+    subitemDateColumnId: raw?.subitemDateColumnId ?? null,
   };
 }

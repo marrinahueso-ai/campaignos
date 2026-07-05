@@ -22,6 +22,16 @@ const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
   assigneeColumnId: null,
   eventLinkColumnId: null,
   campaignOsTaskIdColumnId: null,
+  vpColumnId: null,
+  presidentColumnId: null,
+  committeeColumnId: null,
+  priorityColumnId: null,
+  phaseColumnId: null,
+  urgencyColumnId: null,
+  timelineColumnId: null,
+  subitemStatusColumnId: null,
+  subitemOwnerColumnId: null,
+  subitemDateColumnId: null,
 };
 
 function columnsByType(columns: MondayBoardColumn[], type: string): MondayBoardColumn[] {
@@ -256,6 +266,101 @@ export function MondayBoardMappingPanel({
             columns={columnsByType(columns, "link")}
             onChange={(value) =>
               setColumnMap((current) => ({ ...current, eventLinkColumnId: value }))
+            }
+          />
+
+          <p className="border-t border-cos-border pt-3 text-xs font-semibold tracking-wide text-cos-muted uppercase">
+            Main item columns (PTO board)
+          </p>
+          <ColumnSelect
+            label="VP"
+            value={columnMap.vpColumnId}
+            columns={columnsByType(columns, "people")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, vpColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="President"
+            value={columnMap.presidentColumnId}
+            columns={columnsByType(columns, "people")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, presidentColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Committee"
+            value={columnMap.committeeColumnId}
+            columns={[
+              ...columnsByType(columns, "people"),
+              ...columnsByType(columns, "text"),
+            ]}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, committeeColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Priority"
+            value={columnMap.priorityColumnId}
+            columns={[
+              ...columnsByType(columns, "status"),
+              ...columnsByType(columns, "color"),
+            ]}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, priorityColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Phase"
+            value={columnMap.phaseColumnId}
+            columns={columnsByType(columns, "status")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, phaseColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Urgency"
+            value={columnMap.urgencyColumnId}
+            columns={columnsByType(columns, "status")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, urgencyColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Project timeline"
+            value={columnMap.timelineColumnId}
+            columns={columns.filter((column) => column.type === "timeline")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, timelineColumnId: value }))
+            }
+          />
+
+          <p className="border-t border-cos-border pt-3 text-xs text-cos-muted">
+            Subitem columns are auto-detected from your board&apos;s subitems board when
+            possible. Map manually if auto-detect misses them.
+          </p>
+          <ColumnSelect
+            label="Subitem status"
+            value={columnMap.subitemStatusColumnId}
+            columns={columnsByType(columns, "status")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, subitemStatusColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Subitem owner"
+            value={columnMap.subitemOwnerColumnId}
+            columns={columnsByType(columns, "people")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, subitemOwnerColumnId: value }))
+            }
+          />
+          <ColumnSelect
+            label="Subitem date"
+            value={columnMap.subitemDateColumnId}
+            columns={columnsByType(columns, "date")}
+            onChange={(value) =>
+              setColumnMap((current) => ({ ...current, subitemDateColumnId: value }))
             }
           />
           <Button

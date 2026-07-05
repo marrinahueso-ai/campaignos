@@ -7,7 +7,10 @@ export type MondayColumnType =
   | "people"
   | "link"
   | "long_text"
-  | "numbers";
+  | "numbers"
+  | "timeline"
+  | "color"
+  | "dropdown";
 
 export interface MondayBoardColumn {
   id: string;
@@ -27,6 +30,18 @@ export interface MondayBoardColumnMap {
   assigneeColumnId: string | null;
   eventLinkColumnId: string | null;
   campaignOsTaskIdColumnId: string | null;
+  /** Main item columns (PTO Event Project Planning board). */
+  vpColumnId: string | null;
+  presidentColumnId: string | null;
+  committeeColumnId: string | null;
+  priorityColumnId: string | null;
+  phaseColumnId: string | null;
+  urgencyColumnId: string | null;
+  timelineColumnId: string | null;
+  /** Subitem board columns. */
+  subitemStatusColumnId: string | null;
+  subitemOwnerColumnId: string | null;
+  subitemDateColumnId: string | null;
 }
 
 export interface MondayBoardMapping {
@@ -101,4 +116,79 @@ export interface MondayTaskOverlay {
   mondayStatusLabel: string | null;
   mondayDueDate: string | null;
   lastSyncedAt: string | null;
+}
+
+export interface MondayPersonValue {
+  id: string | null;
+  name: string;
+}
+
+export interface MondayTimelineValue {
+  from: string | null;
+  to: string | null;
+}
+
+export interface MondayRawColumnValue {
+  id: string;
+  type: string;
+  text: string | null;
+  value: string | null;
+}
+
+/** Parsed column values for a main board item. */
+export interface MondayItemColumnValues {
+  status: string | null;
+  priority: string | null;
+  phase: string | null;
+  urgency: string | null;
+  dueDate: string | null;
+  timeline: MondayTimelineValue | null;
+  vp: MondayPersonValue[];
+  president: MondayPersonValue[];
+  committee: string | null;
+  committeePeople: MondayPersonValue[];
+  raw: Record<string, MondayRawColumnValue>;
+}
+
+export interface MondaySubitemColumnValues {
+  status: string | null;
+  owner: MondayPersonValue[];
+  date: string | null;
+  raw: Record<string, MondayRawColumnValue>;
+}
+
+export interface MondayBoardItem {
+  id: string;
+  name: string;
+  groupId: string;
+  columnValues: MondayItemColumnValues;
+  subitems: MondayBoardSubitem[];
+  eventId: string | null;
+  eventHref: string | null;
+  mondayItemUrl: string | null;
+}
+
+export interface MondayBoardSubitem {
+  id: string;
+  name: string;
+  columnValues: MondaySubitemColumnValues;
+  playbookTaskId: string | null;
+  mondayItemUrl: string | null;
+}
+
+export interface MondayBoardGroupData {
+  id: string;
+  title: string;
+  color: string | null;
+  items: MondayBoardItem[];
+}
+
+export interface MondayBoardTaskHubData {
+  boardId: string;
+  boardName: string;
+  subitemsBoardId: string | null;
+  accountSlug: string | null;
+  columns: MondayBoardColumn[];
+  columnMap: MondayBoardColumnMap;
+  groups: MondayBoardGroupData[];
 }

@@ -17,8 +17,9 @@ export default async function TaskHubPage() {
         </p>
         <h1 className="mt-2 font-display text-3xl text-cos-text">Task hub</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-          Master checklist across active campaigns, grouped by committee. Tasks stay
-          synced with each event&apos;s planning hub.
+          {data.mondayBoard
+            ? "Your Monday event planning board, synced live with CampaignOS context."
+            : "Master checklist across active campaigns, grouped by committee. Tasks stay synced with each event's planning hub."}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-cos-muted">
           <span>{data.scopeLabel}</span>
@@ -26,7 +27,13 @@ export default async function TaskHubPage() {
           <span>
             {data.openTasks} open · {data.totalTasks} total
           </span>
-          {data.mondaySyncEnabled && (
+          {data.mondaySyncEnabled && data.mondayBoard && (
+            <>
+              <span aria-hidden>·</span>
+              <span>Monday board: {data.mondayBoard.boardName}</span>
+            </>
+          )}
+          {data.mondaySyncEnabled && !data.mondayBoard && (
             <>
               <span aria-hidden>·</span>
               <span>Monday overlay active</span>

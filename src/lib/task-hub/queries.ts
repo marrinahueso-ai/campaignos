@@ -25,6 +25,8 @@ import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForOrganization,
 } from "@/lib/monday/connection";
+import { fetchMondayBoardForTaskHub } from "@/lib/monday/board-reader";
+import { getMondayBoardDetails } from "@/lib/monday/client";
 import { fetchMondayOverlaysForTasks } from "@/lib/monday/sync";
 import type { TaskHubPageData } from "@/types/task-hub";
 
@@ -49,8 +51,10 @@ function emptyTaskHubPage(scopeLabel: string, tablesAvailable: boolean): TaskHub
     totalTasks: 0,
     openTasks: 0,
     mondaySyncEnabled: false,
+    mondayBoard: null,
     canEdit: false,
     orgMembers: [],
+    events: [],
   };
 }
 
@@ -105,7 +109,33 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId,
   );
 
-  if (mondaySyncEnabled) {
+  let mondayBoard = null;
+  if (mondaySyncEnabled && mondayConnection && mondayMapping) {
+    const visibleCommitteeNames =
+      scope === "all_committees"
+        ? null
+        : visibleCommittees.map((committee) => committee.name);
+
+    try {
+      const boardDetails = await getMondayBoardDetails(
+        mondayConnection.accessToken,
+        mondayMapping.mondayBoardId,
+      );
+      mondayBoard = await fetchMondayBoardForTaskHub({
+        accessToken: mondayConnection.accessToken,
+        boardId: mondayMapping.mondayBoardId,
+        boardName: boardDetails?.name ?? "Monday board",
+        columnMap: mondayMapping.columnMap,
+        accountSlug: mondayConnection.accountSlug,
+        events,
+        visibleCommitteeNames,
+      });
+    } catch (error) {
+      console.error("Failed to load Monday board for Task Hub:", error);
+    }
+  }
+
+  if (mondaySyncEnabled && !mondayBoard) {
     const allTaskIds = committees.flatMap((group) => group.tasks.map((task) => task.id));
     const overlays = await fetchMondayOverlaysForTasks({
       organizationId: organization.id,
@@ -122,12 +152,41 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     }
   }
 
-  const totalTasks = committees.reduce((sum, group) => sum + group.totalCount, 0);
-  const openTasks = committees.reduce(
-    (sum, group) =>
-      sum + group.tasks.filter((task) => isOpenTaskStatus(task.status)).length,
-    0,
-  );
+  const eventOptions: TaskHubPageData["events"] = events.map((event) => ({
+    eventId: event.id,
+    eventTitle: event.title,
+    eventDate: event.date,
+  }));
+
+  const totalTasks = mondayBoard
+    ? mondayBoard.groups.reduce(
+        (sum, group) =>
+          sum + group.items.reduce((itemSum, item) => itemSum + item.subitems.length, 0),
+        0,
+      )
+    : committees.reduce((sum, group) => sum + group.totalCount, 0);
+
+  const openTasks = mondayBoard
+    ? mondayBoard.groups.reduce(
+        (sum, group) =>
+          sum +
+          group.items.reduce(
+            (itemSum, item) =>
+              itemSum +
+              item.subitems.filter(
+                (sub) =>
+                  !sub.columnValues.status ||
+                  !/done|complete/i.test(sub.columnValues.status),
+              ).length,
+            0,
+          ),
+        0,
+      )
+    : committees.reduce(
+        (sum, group) =>
+          sum + group.tasks.filter((task) => isOpenTaskStatus(task.status)).length,
+        0,
+      );
 
   return {
     scope,
@@ -137,7 +196,9 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     totalTasks,
     openTasks,
     mondaySyncEnabled,
-    canEdit: canEditTaskHub(scope) && committees.some((group) => group.events.length > 0),
+    mondayBoard,
+    canEdit: canEditTaskHub(scope),
     orgMembers,
+    events: eventOptions,
   };
 }

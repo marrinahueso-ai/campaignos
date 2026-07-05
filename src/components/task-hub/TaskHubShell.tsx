@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TaskHubBoard } from "@/components/task-hub/TaskHubBoard";
 import { TaskHubCalendar } from "@/components/task-hub/TaskHubCalendar";
 import { TaskHubList } from "@/components/task-hub/TaskHubList";
+import { TaskHubMondayShell } from "@/components/task-hub/TaskHubMondayShell";
 import { cn } from "@/lib/utils/cn";
 import type {
   TaskHubPageData,
@@ -93,7 +94,7 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
       );
     }
 
-    if (data.committees.length === 0) {
+    if (data.committees.length === 0 && !data.mondayBoard) {
       return (
         <EmptyState
           icon={ListChecks}
@@ -123,6 +124,10 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
         );
     }
   }, [activeView, data, handleSecondaryGroupChange, secondaryGroupMode]);
+
+  if (data.mondayBoard) {
+    return <TaskHubMondayShell data={data} />;
+  }
 
   return (
     <>

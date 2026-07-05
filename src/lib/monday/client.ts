@@ -260,13 +260,6 @@ export async function updateMondayItem(input: {
   return Boolean(data.change_multiple_column_values?.id);
 }
 
-export interface MondayItemColumnValue {
-  id: string;
-  type: string;
-  text: string | null;
-  value: string | null;
-}
-
 export async function fetchMondayItemsByIds(
   accessToken: string,
   itemIds: string[],
@@ -321,4 +314,183 @@ export async function fetchMondayItemsByIds(
     groupId: item.group?.id ?? null,
     columnValues: item.column_values ?? [],
   }));
+}
+
+export interface MondayItemColumnValue {
+  id: string;
+  type: string;
+  text: string | null;
+  value: string | null;
+}
+
+export interface MondayBoardItemsPage {
+  subitemsBoardId: string | null;
+  columns: MondayBoardColumn[];
+  subitemColumns: MondayBoardColumn[];
+  groups: {
+    id: string;
+    title: string;
+    color: string | null;
+    items: {
+      id: string;
+      name: string;
+      columnValues: MondayItemColumnValue[];
+      subitems: {
+        id: string;
+        name: string;
+        columnValues: MondayItemColumnValue[];
+      }[];
+    }[];
+  }[];
+}
+
+/** Fetch full board structure for Task Hub (groups, items, subitems, columns). */
+export async function fetchMondayBoardItemsPage(
+  accessToken: string,
+  boardId: string,
+  itemsLimit = 500,
+): Promise<MondayBoardItemsPage | null> {
+  const data = await mondayGraphQL<{
+    boards: {
+      id: string;
+      name: string;
+      subitems_board_id: string | null;
+      columns: MondayBoardColumn[];
+      groups: {
+        id: string;
+        title: string;
+        color: string | null;
+        items_page: {
+          items: {
+            id: string;
+            name: string;
+            column_values: MondayItemColumnValue[];
+            subitems: {
+              id: string;
+              name: string;
+              column_values: MondayItemColumnValue[];
+            }[];
+          }[];
+        };
+      }[];
+    }[];
+  }>(
+    accessToken,
+    `query ($boardId: [ID!]!, $limit: Int!) {
+      boards (ids: $boardId) {
+        id
+        name
+        subitems_board_id
+        columns {
+          id
+          title
+          type
+        }
+        groups {
+          id
+          title
+          color
+          items_page (limit: $limit) {
+            items {
+              id
+              name
+              column_values {
+                id
+                type
+                text
+                value
+              }
+              subitems {
+                id
+                name
+                column_values {
+                  id
+                  type
+                  text
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }`,
+    { boardId: [boardId], limit: itemsLimit },
+  );
+
+  const board = data.boards?.[0];
+  if (!board) {
+    return null;
+  }
+
+  let subitemColumns: MondayBoardColumn[] = [];
+  if (board.subitems_board_id) {
+    const subData = await mondayGraphQL<{
+      boards: { id: string; columns: MondayBoardColumn[] }[];
+    }>(
+      accessToken,
+      `query ($boardId: [ID!]!) {
+        boards (ids: $boardId) {
+          id
+          columns {
+            id
+            title
+            type
+          }
+        }
+      }`,
+      { boardId: [board.subitems_board_id] },
+    );
+    subitemColumns = subData.boards?.[0]?.columns ?? [];
+  }
+
+  return {
+    subitemsBoardId: board.subitems_board_id,
+    columns: board.columns ?? [],
+    subitemColumns,
+    groups: (board.groups ?? []).map((group) => ({
+      id: group.id,
+      title: group.title,
+      color: group.color,
+      items: (group.items_page?.items ?? []).map((item) => ({
+        id: item.id,
+        name: item.name,
+        columnValues: item.column_values ?? [],
+        subitems: (item.subitems ?? []).map((subitem) => ({
+          id: subitem.id,
+          name: subitem.name,
+          columnValues: subitem.column_values ?? [],
+        })),
+      })),
+    })),
+  };
+}
+
+export async function createMondaySubitem(input: {
+  accessToken: string;
+  parentItemId: string;
+  itemName: string;
+  columnValues?: Record<string, unknown>;
+}): Promise<string | null> {
+  const data = await mondayGraphQL<{ create_subitem: { id: string } | null }>(
+    input.accessToken,
+    `mutation ($parentItemId: ID!, $itemName: String!, $columnValues: JSON) {
+      create_subitem (
+        parent_item_id: $parentItemId,
+        item_name: $itemName,
+        column_values: $columnValues
+      ) {
+        id
+      }
+    }`,
+    {
+      parentItemId: input.parentItemId,
+      itemName: input.itemName,
+      columnValues: input.columnValues
+        ? JSON.stringify(input.columnValues)
+        : null,
+    },
+  );
+
+  return data.create_subitem?.id ?? null;
 }
