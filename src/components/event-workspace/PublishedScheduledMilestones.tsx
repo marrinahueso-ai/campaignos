@@ -4,6 +4,7 @@ import { CalendarCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
+import { MilestoneCaptionPreview } from "@/components/event-workspace/MilestoneCaptionPreview";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import {
@@ -132,6 +133,11 @@ function ScheduledMilestoneCard({
           )}
         </div>
       )}
+
+      <MilestoneCaptionPreview
+        bundle={bundle}
+        className={hasThumbnails ? "border-t border-cos-border" : undefined}
+      />
     </article>
   );
 }

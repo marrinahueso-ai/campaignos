@@ -1,5 +1,6 @@
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
+import { MilestoneCaptionPreview } from "@/components/event-workspace/MilestoneCaptionPreview";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TimelineSection } from "@/components/event-workspace/TimelineSection";
 import { PublishedScheduledMilestones } from "@/components/event-workspace/PublishedScheduledMilestones";
@@ -142,6 +143,11 @@ function PublishedMilestoneCard({
           )}
         </div>
       )}
+
+      <MilestoneCaptionPreview
+        bundle={bundle}
+        className={hasThumbnails ? "border-t border-cos-border" : undefined}
+      />
     </article>
   );
 }
