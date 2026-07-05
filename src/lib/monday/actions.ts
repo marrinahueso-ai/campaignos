@@ -116,7 +116,7 @@ export async function setMondaySyncEnabledAction(enabled: boolean): Promise<Mond
           error: "Select a master board in Step 2 before enabling sync.",
         };
       }
-      if (!mapping.columnMap.statusColumnId?.trim()) {
+      if (!String(mapping.columnMap?.statusColumnId ?? "").trim()) {
         return {
           success: false,
           error: "Save column mapping (Status column required) before enabling sync.",

@@ -158,50 +158,59 @@ export async function listMondayBoardsForSettingsPicker(
   workspaceId: string | null;
   workspaceName: string | null;
 }> {
-  const workspaces = await listMondayWorkspaces(accessToken, 10);
-  const workspaceId = await resolveMondayWorkspaceId(accessToken, workspaces);
+  try {
+    const workspaces = await listMondayWorkspaces(accessToken, 10);
+    const workspaceId = await resolveMondayWorkspaceId(accessToken, workspaces);
 
-  const mainWorkspace = workspaces.find((workspace) =>
-    /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
-  );
-  const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
-  const preferredWorkspace = mainWorkspace ?? defaultWorkspace ?? workspaces[0] ?? null;
+    const mainWorkspace = workspaces.find((workspace) =>
+      /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
+    );
+    const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
+    const preferredWorkspace = mainWorkspace ?? defaultWorkspace ?? workspaces[0] ?? null;
 
-  const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
-  const queries: Promise<{ id: string; name: string; workspaceId: string | null }[]>[] = [];
+    const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
+    const queries: Promise<{ id: string; name: string; workspaceId: string | null }[]>[] = [];
 
-  if (workspaceId) {
+    if (workspaceId) {
+      queries.push(
+        listMondayBoards(accessToken, {
+          workspaceIds: [workspaceId],
+          limit: 100,
+          maxPages: 1,
+        }).catch(() => []),
+      );
+    }
+
     queries.push(
       listMondayBoards(accessToken, {
-        workspaceIds: [workspaceId],
+        workspaceIds: [null],
         limit: 100,
         maxPages: 1,
-      }),
+      }).catch(() => []),
     );
+
+    const batches = await Promise.all(queries);
+    for (const batch of batches) {
+      mergeMondayBoardSummaries(byId, batch);
+    }
+
+    const boards = [...byId.values()].sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+    );
+
+    return {
+      boards,
+      workspaceId,
+      workspaceName: preferredWorkspace?.name ?? null,
+    };
+  } catch (error) {
+    console.error("listMondayBoardsForSettingsPicker failed:", error);
+    return {
+      boards: [],
+      workspaceId: null,
+      workspaceName: null,
+    };
   }
-
-  queries.push(
-    listMondayBoards(accessToken, {
-      workspaceIds: [null],
-      limit: 100,
-      maxPages: 1,
-    }).catch(() => []),
-  );
-
-  const batches = await Promise.all(queries);
-  for (const batch of batches) {
-    mergeMondayBoardSummaries(byId, batch);
-  }
-
-  const boards = [...byId.values()].sort((left, right) =>
-    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
-  );
-
-  return {
-    boards,
-    workspaceId,
-    workspaceName: preferredWorkspace?.name ?? null,
-  };
 }
 
 /**

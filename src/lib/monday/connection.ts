@@ -325,32 +325,40 @@ export async function saveMondayConnectionFromTokenResponse(
 export async function disconnectMondayConnection(organizationId: string): Promise<boolean> {
   const supabase = await createClient();
 
-  const { error: mappingError } = await supabase
-    .from("organization_monday_board_mappings")
-    .delete()
-    .eq("organization_id", organizationId);
+  try {
+    const { error: mappingError } = await supabase
+      .from("organization_monday_board_mappings")
+      .delete()
+      .eq("organization_id", organizationId);
 
-  if (mappingError && mappingError.code !== "42P01") {
-    console.error("Failed to delete Monday board mapping:", mappingError.message);
+    if (mappingError && mappingError.code !== "42P01") {
+      console.warn("Monday disconnect: board mapping delete failed:", mappingError.message);
+    }
+
+    const { error: linksError } = await supabase
+      .from("event_playbook_task_monday_links")
+      .delete()
+      .eq("organization_id", organizationId);
+
+    if (linksError && linksError.code !== "42P01") {
+      console.warn("Monday disconnect: task links delete failed:", linksError.message);
+    }
+
+    const { error } = await supabase
+      .from("organization_monday_connections")
+      .delete()
+      .eq("organization_id", organizationId);
+
+    if (error && error.code !== "42P01") {
+      console.error("Failed to delete Monday connection:", error.message);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("disconnectMondayConnection failed:", error);
     return false;
   }
-
-  const { error: linksError } = await supabase
-    .from("event_playbook_task_monday_links")
-    .delete()
-    .eq("organization_id", organizationId);
-
-  if (linksError && linksError.code !== "42P01") {
-    console.error("Failed to delete Monday task links:", linksError.message);
-    return false;
-  }
-
-  const { error } = await supabase
-    .from("organization_monday_connections")
-    .delete()
-    .eq("organization_id", organizationId);
-
-  return !error || error.code === "42P01";
 }
 
 export async function setMondaySyncEnabled(

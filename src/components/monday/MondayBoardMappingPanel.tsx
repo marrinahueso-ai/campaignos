@@ -121,21 +121,34 @@ export function MondayBoardMappingPanel({
       setLoadError(null);
       setLoaded(false);
 
-      const result = await listMondayBoardsAction();
+      try {
+        const result = await listMondayBoardsAction();
 
-      if (cancelled) {
-        return;
-      }
-
-      if (result.success && result.boards) {
-        setBoards(result.boards);
-        setWorkspaceName(result.workspaceName ?? null);
-        if (result.workspaceId && !savedMapping) {
-          setSelectedWorkspaceId(result.workspaceId);
+        if (cancelled) {
+          return;
         }
-      } else {
+
+        if (result.success && result.boards) {
+          setBoards(result.boards);
+          setWorkspaceName(result.workspaceName ?? null);
+          if (result.workspaceId && !savedMapping) {
+            setSelectedWorkspaceId(result.workspaceId);
+          }
+        } else {
+          setBoards([]);
+          const failureMessage = result.error ?? "Could not load Monday boards.";
+          setLoadError(failureMessage);
+          setError(failureMessage);
+        }
+      } catch (loadFailure) {
+        if (cancelled) {
+          return;
+        }
+        const failureMessage =
+          loadFailure instanceof Error
+            ? loadFailure.message
+            : "Could not load Monday boards.";
         setBoards([]);
-        const failureMessage = result.error ?? "Could not load Monday boards.";
         setLoadError(failureMessage);
         setError(failureMessage);
       }

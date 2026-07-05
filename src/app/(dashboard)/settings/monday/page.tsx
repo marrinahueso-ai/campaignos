@@ -20,6 +20,7 @@ import {
   isMondayConnectionConfigured,
 } from "@/lib/monday/connection";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import type { MondayBoardMapping, MondayConnection } from "@/lib/monday/types";
 
 export const metadata = {
   title: "Monday",
@@ -28,22 +29,63 @@ export const metadata = {
 export const maxDuration = 60;
 
 interface MondaySettingsPageProps {
-  searchParams: Promise<{ connected?: string; error?: string; error_description?: string }>;
+  searchParams: Promise<{
+    connected?: string | string[];
+    error?: string | string[];
+    error_description?: string | string[];
+  }>;
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isMondayBoardConfigured(mapping: MondayBoardMapping | null): boolean {
+  if (!mapping) {
+    return false;
+  }
+
+  return Boolean(
+    String(mapping.mondayBoardId ?? "").trim() &&
+      String(mapping.columnMap?.statusColumnId ?? "").trim(),
+  );
+}
+
+async function loadMondaySettingsState(organizationId: string | null): Promise<{
+  connection: MondayConnection | null;
+  mapping: MondayBoardMapping | null;
+  pageLoadError: string | null;
+}> {
+  try {
+    const connection = await getMondayConnectionForCurrentOrg();
+    const mapping = organizationId
+      ? await getMondayBoardMappingForOrganization(organizationId)
+      : null;
+
+    return { connection, mapping, pageLoadError: null };
+  } catch (error) {
+    console.error("Monday settings page load failed:", error);
+    return {
+      connection: null,
+      mapping: null,
+      pageLoadError: "Some Monday settings could not be loaded. You can still disconnect below.",
+    };
+  }
 }
 
 export default async function MondaySettingsPage({ searchParams }: MondaySettingsPageProps) {
   const organization = await getLatestOrganization();
-  const connection = await getMondayConnectionForCurrentOrg();
-  const mapping = organization
-    ? await getMondayBoardMappingForOrganization(organization.id)
-    : null;
+  const { connection, mapping, pageLoadError } = await loadMondaySettingsState(
+    organization?.id ?? null,
+  );
   const params = await searchParams;
+  const connectedParam = firstSearchParam(params.connected);
+  const errorParam = firstSearchParam(params.error);
+  const errorDescriptionParam = firstSearchParam(params.error_description);
   const integrationConfigured = isMondayIntegrationConfigured();
   const connected = isMondayConnectionConfigured(connection);
   const syncEnabled = Boolean(connection?.mondaySyncEnabled);
-  const boardConfigured = Boolean(
-    mapping?.mondayBoardId?.trim() && mapping.columnMap.statusColumnId?.trim(),
-  );
+  const boardConfigured = isMondayBoardConfigured(mapping);
 
   const oauthCallbackUrl = getMondayOAuthCallbackUrl(
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -52,11 +94,20 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
   );
 
   const statusMessage =
-    params.connected === "1"
+    connectedParam === "1"
       ? "Monday connected successfully."
-      : params.error
-        ? formatMondayOAuthError(params.error, params.error_description)
+      : errorParam
+        ? formatMondayOAuthError(errorParam, errorDescriptionParam)
         : null;
+
+  const savedMapping =
+    mapping && String(mapping.mondayBoardId ?? "").trim()
+      ? {
+          mondayBoardId: mapping.mondayBoardId,
+          mondayWorkspaceId: mapping.mondayWorkspaceId,
+          columnMap: mapping.columnMap,
+        }
+      : null;
 
   return (
     <div className="studio-page mx-auto max-w-2xl space-y-10 pb-12">
@@ -67,10 +118,16 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
         eyebrow="Configure"
       />
 
+      {pageLoadError && (
+        <p className="text-sm text-amber-800" role="status">
+          {pageLoadError}
+        </p>
+      )}
+
       {statusMessage && (
         <p
           className={
-            params.connected === "1"
+            connectedParam === "1"
               ? "text-sm text-emerald-700"
               : "text-sm text-red-600"
           }
@@ -112,16 +169,8 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
           <MondayBoardMappingPanel
             connected={connected}
             syncEnabled={syncEnabled}
-            justConnected={params.connected === "1"}
-            savedMapping={
-              mapping
-                ? {
-                    mondayBoardId: mapping.mondayBoardId,
-                    mondayWorkspaceId: mapping.mondayWorkspaceId,
-                    columnMap: mapping.columnMap,
-                  }
-                : null
-            }
+            justConnected={connectedParam === "1"}
+            savedMapping={savedMapping}
           />
         </div>
       </Card>
