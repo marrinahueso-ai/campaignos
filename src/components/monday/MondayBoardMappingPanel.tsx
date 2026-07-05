@@ -23,6 +23,16 @@ interface MondayBoardMappingPanelProps {
 
 const BOARD_LOAD_TIMEOUT_MS = 25_000;
 
+function failedBoardsLoadResult(error: string): Awaited<ReturnType<typeof listMondayBoardsAction>> {
+  return { success: false, error, boards: [] };
+}
+
+function failedMappingLoadResult(
+  error: string,
+): Awaited<ReturnType<typeof getMondayBoardMappingAction>> {
+  return { success: false, error, mapping: null };
+}
+
 const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
   statusColumnId: "",
   dueDateColumnId: null,
@@ -127,7 +137,13 @@ export function MondayBoardMappingPanel({
         const loadPromise = Promise.all([
           listMondayBoardsAction(),
           getMondayBoardMappingAction(),
-        ]);
+        ]).catch((loadFailure: unknown) => {
+          const message =
+            loadFailure instanceof Error
+              ? loadFailure.message
+              : "Could not load Monday boards.";
+          return [failedBoardsLoadResult(message), failedMappingLoadResult(message)] as const;
+        });
         const timeoutPromise = new Promise<never>((_, reject) => {
           window.setTimeout(() => {
             reject(

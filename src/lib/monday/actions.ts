@@ -36,6 +36,20 @@ function formatMondayActionError(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+/** Strip non-JSON-serializable values before crossing the server action boundary. */
+function sanitizeMondayActionPayload<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function safeRevalidateMondaySettings(): void {
+  try {
+    revalidatePath("/settings/monday");
+    revalidatePath("/tasks");
+  } catch (revalidateError) {
+    console.warn("Monday settings revalidatePath failed:", revalidateError);
+  }
+}
+
 async function requireMondayManager(): Promise<
   { ok: true; organizationId: string } | { ok: false; error: string }
 > {
@@ -66,51 +80,65 @@ export async function getMondayConnectionStatusAction(): Promise<{
 }
 
 export async function disconnectMondayConnectionAction(): Promise<MondayActionResult> {
-  const auth = await requireMondayManager();
-  if (!auth.ok) {
-    return { success: false, error: auth.error };
-  }
+  try {
+    const auth = await requireMondayManager();
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
 
-  const ok = await disconnectMondayConnection(auth.organizationId);
-  if (!ok) {
-    return { success: false, error: "Could not disconnect Monday." };
-  }
+    const ok = await disconnectMondayConnection(auth.organizationId);
+    if (!ok) {
+      return { success: false, error: "Could not disconnect Monday." };
+    }
 
-  revalidatePath("/settings/monday");
-  revalidatePath("/tasks");
-  return { success: true };
+    safeRevalidateMondaySettings();
+    return { success: true };
+  } catch (error) {
+    console.error("disconnectMondayConnectionAction failed:", error);
+    return {
+      success: false,
+      error: formatMondayActionError(error, "Could not disconnect Monday."),
+    };
+  }
 }
 
 export async function setMondaySyncEnabledAction(enabled: boolean): Promise<MondayActionResult> {
-  const auth = await requireMondayManager();
-  if (!auth.ok) {
-    return { success: false, error: auth.error };
-  }
-
-  if (enabled) {
-    const mapping = await getMondayBoardMappingForOrganization(auth.organizationId);
-    if (!mapping?.mondayBoardId?.trim()) {
-      return {
-        success: false,
-        error: "Select a master board in Step 2 before enabling sync.",
-      };
+  try {
+    const auth = await requireMondayManager();
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
     }
-    if (!mapping.columnMap.statusColumnId?.trim()) {
-      return {
-        success: false,
-        error: "Save column mapping (Status column required) before enabling sync.",
-      };
+
+    if (enabled) {
+      const mapping = await getMondayBoardMappingForOrganization(auth.organizationId);
+      if (!mapping?.mondayBoardId?.trim()) {
+        return {
+          success: false,
+          error: "Select a master board in Step 2 before enabling sync.",
+        };
+      }
+      if (!mapping.columnMap.statusColumnId?.trim()) {
+        return {
+          success: false,
+          error: "Save column mapping (Status column required) before enabling sync.",
+        };
+      }
     }
-  }
 
-  const ok = await setMondaySyncEnabled(auth.organizationId, enabled);
-  if (!ok) {
-    return { success: false, error: "Could not update Monday sync setting." };
-  }
+    const ok = await setMondaySyncEnabled(auth.organizationId, enabled);
+    if (!ok) {
+      return { success: false, error: "Could not update Monday sync setting." };
+    }
 
-  revalidatePath("/settings/monday");
-  revalidatePath("/tasks");
-  return { success: true };
+    safeRevalidateMondaySettings();
+    return { success: true };
+  } catch (error) {
+    console.error("setMondaySyncEnabledAction failed:", error);
+    return {
+      success: false,
+      error: formatMondayActionError(error, "Could not update Monday sync setting."),
+    };
+  }
 }
 
 export async function listMondayBoardsAction(): Promise<{
@@ -135,7 +163,7 @@ export async function listMondayBoardsAction(): Promise<{
       return { success: false, error: "Connect Monday in Settings first." };
     }
 
-    const workspaces = await listMondayWorkspaces(connection.accessToken, 100);
+    const workspaces = await listMondayWorkspaces(connection.accessToken, 25);
     const resolvedWorkspaceId = await resolveMondayWorkspaceId(
       connection.accessToken,
       workspaces,
@@ -154,18 +182,26 @@ export async function listMondayBoardsAction(): Promise<{
     let workspaceName: string | null = null;
     if (boards.length === 0) {
       workspaceName = preferredWorkspace?.name ?? "your Monday account";
+      return {
+        success: false,
+        error:
+          "Could not load boards from Monday. Confirm boards:read and workspaces:read scopes are enabled, then reconnect Monday.",
+        boards: [],
+        workspaceId: resolvedWorkspaceId,
+        workspaceName,
+      };
     } else if (preferredWorkspace) {
       workspaceName = `${preferredWorkspace.name} and other workspaces`;
     } else {
       workspaceName = "all workspaces";
     }
 
-    return {
+    return sanitizeMondayActionPayload({
       success: true,
       boards,
       workspaceId: resolvedWorkspaceId,
       workspaceName,
-    };
+    });
   } catch (error) {
     console.error("listMondayBoardsAction failed:", error);
     return {
@@ -212,18 +248,17 @@ export async function createPtoTemplateBoardAction(): Promise<
     }
 
     try {
-      revalidatePath("/settings/monday");
-      revalidatePath("/tasks");
+      safeRevalidateMondaySettings();
     } catch (revalidateError) {
       console.warn("createPtoTemplateBoardAction revalidatePath failed:", revalidateError);
     }
 
-    return {
+    return sanitizeMondayActionPayload({
       success: true,
       boardId: result.boardId,
       workspaceId: result.workspaceId,
       columnMap: result.columnMap,
-    };
+    });
   } catch (error) {
     console.error("createPtoTemplateBoardAction failed:", error);
     return {
@@ -257,11 +292,11 @@ export async function getMondayBoardColumnsAction(boardId: string): Promise<{
       return { success: false, error: "Could not load board details." };
     }
 
-    return {
+    return sanitizeMondayActionPayload({
       success: true,
       boardName: board.name,
       columns: board.columns,
-    };
+    });
   } catch (error) {
     console.error("getMondayBoardColumnsAction failed:", error);
     return {
@@ -276,29 +311,36 @@ export async function saveMondayBoardMappingAction(input: {
   mondayWorkspaceId: string | null;
   columnMap: MondayBoardColumnMap;
 }): Promise<MondayActionResult> {
-  const auth = await requireMondayManager();
-  if (!auth.ok) {
-    return { success: false, error: auth.error };
+  try {
+    const auth = await requireMondayManager();
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
+    if (!input.columnMap.statusColumnId?.trim()) {
+      return { success: false, error: "Status column mapping is required." };
+    }
+
+    const ok = await saveMondayBoardMapping({
+      organizationId: auth.organizationId,
+      mondayBoardId: input.mondayBoardId,
+      mondayWorkspaceId: input.mondayWorkspaceId,
+      columnMap: input.columnMap,
+    });
+
+    if (!ok) {
+      return { success: false, error: "Could not save board mapping." };
+    }
+
+    safeRevalidateMondaySettings();
+    return { success: true };
+  } catch (error) {
+    console.error("saveMondayBoardMappingAction failed:", error);
+    return {
+      success: false,
+      error: formatMondayActionError(error, "Could not save board mapping."),
+    };
   }
-
-  if (!input.columnMap.statusColumnId?.trim()) {
-    return { success: false, error: "Status column mapping is required." };
-  }
-
-  const ok = await saveMondayBoardMapping({
-    organizationId: auth.organizationId,
-    mondayBoardId: input.mondayBoardId,
-    mondayWorkspaceId: input.mondayWorkspaceId,
-    columnMap: input.columnMap,
-  });
-
-  if (!ok) {
-    return { success: false, error: "Could not save board mapping." };
-  }
-
-  revalidatePath("/settings/monday");
-  revalidatePath("/tasks");
-  return { success: true };
 }
 
 export async function getMondayBoardMappingAction(): Promise<{
@@ -321,14 +363,14 @@ export async function getMondayBoardMappingAction(): Promise<{
       return { success: true, mapping: null };
     }
 
-    return {
+    return sanitizeMondayActionPayload({
       success: true,
       mapping: {
         mondayBoardId: mapping.mondayBoardId,
         mondayWorkspaceId: mapping.mondayWorkspaceId,
         columnMap: mapping.columnMap,
       },
-    };
+    });
   } catch (error) {
     console.error("getMondayBoardMappingAction failed:", error);
     return {
@@ -342,45 +384,52 @@ export async function getMondayBoardMappingAction(): Promise<{
 export async function backfillMondayTasksAction(): Promise<
   MondayActionResult & { created?: number; skipped?: number; failed?: number }
 > {
-  const auth = await requireMondayManager();
-  if (!auth.ok) {
-    return { success: false, error: auth.error };
+  try {
+    const auth = await requireMondayManager();
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
+    const organization = await getLatestOrganization();
+    if (!organization) {
+      return { success: false, error: "Organization not found." };
+    }
+
+    const workspace = await getOrganizationWorkspaceData(organization.id);
+    if (!workspace) {
+      return { success: false, error: "Organization workspace not found." };
+    }
+
+    const events = await getEventPlaybookEvents(organization.id);
+    const eventIds = events.map((event) => event.id);
+    const taskRows = await getEventPlaybookTasksForEvents(eventIds);
+
+    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    const result = await backfillOpenTasksToMonday({
+      organizationId: organization.id,
+      origin,
+      events,
+      taskRows,
+      workspace,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    safeRevalidateMondaySettings();
+
+    return sanitizeMondayActionPayload({
+      success: true,
+      created: result.created,
+      skipped: result.skipped,
+      failed: result.failed,
+    });
+  } catch (error) {
+    console.error("backfillMondayTasksAction failed:", error);
+    return {
+      success: false,
+      error: formatMondayActionError(error, "Backfill failed."),
+    };
   }
-
-  const organization = await getLatestOrganization();
-  if (!organization) {
-    return { success: false, error: "Organization not found." };
-  }
-
-  const workspace = await getOrganizationWorkspaceData(organization.id);
-  if (!workspace) {
-    return { success: false, error: "Organization workspace not found." };
-  }
-
-  const events = await getEventPlaybookEvents(organization.id);
-  const eventIds = events.map((event) => event.id);
-  const taskRows = await getEventPlaybookTasksForEvents(eventIds);
-
-  const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
-  const result = await backfillOpenTasksToMonday({
-    organizationId: organization.id,
-    origin,
-    events,
-    taskRows,
-    workspace,
-  });
-
-  if (!result.success) {
-    return { success: false, error: result.error };
-  }
-
-  revalidatePath("/tasks");
-  revalidatePath("/settings/monday");
-
-  return {
-    success: true,
-    created: result.created,
-    skipped: result.skipped,
-    failed: result.failed,
-  };
 }

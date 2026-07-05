@@ -25,6 +25,8 @@ export const metadata = {
   title: "Monday",
 };
 
+export const maxDuration = 60;
+
 interface MondaySettingsPageProps {
   searchParams: Promise<{ connected?: string; error?: string; error_description?: string }>;
 }

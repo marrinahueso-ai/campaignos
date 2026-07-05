@@ -174,10 +174,6 @@ export async function listAllAccessibleMondayBoards(
   mergeMondayBoardSummaries(byId, allBoards);
   mergeMondayBoardSummaries(byId, mainBoards);
 
-  if (byId.size === 0) {
-    throw new Error("Could not load boards from Monday.");
-  }
-
   return [...byId.values()].sort((left, right) =>
     left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
   );
