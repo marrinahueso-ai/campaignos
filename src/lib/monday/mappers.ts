@@ -10,34 +10,76 @@ import type {
   MondayItemLink,
 } from "@/lib/monday/types";
 
+function normalizeCommitteeGroups(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+
+  const groups: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (value == null) {
+      continue;
+    }
+    const coerced = String(value).trim();
+    if (coerced) {
+      groups[String(key)] = coerced;
+    }
+  }
+  return groups;
+}
+
 export function mapMondayConnectionRow(row: MondayConnectionRow): MondayConnection {
   return {
-    id: row.id,
-    organizationId: row.organization_id,
-    accessToken: row.access_token,
-    accountId: row.account_id,
-    accountSlug: row.account_slug,
-    scopes: row.scopes,
-    mondaySyncEnabled: row.monday_sync_enabled,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: String(row.id ?? ""),
+    organizationId: String(row.organization_id ?? ""),
+    accessToken: typeof row.access_token === "string" ? row.access_token : "",
+    accountId: row.account_id ? String(row.account_id) : null,
+    accountSlug: row.account_slug ? String(row.account_slug) : null,
+    scopes: row.scopes ? String(row.scopes) : null,
+    mondaySyncEnabled: Boolean(row.monday_sync_enabled),
+    createdAt: String(row.created_at ?? ""),
+    updatedAt: String(row.updated_at ?? ""),
   };
 }
 
 export function mapMondayBoardMappingRow(row: MondayBoardMappingRow): MondayBoardMapping {
   return {
-    id: row.id,
-    organizationId: row.organization_id,
+    id: String(row.id ?? ""),
+    organizationId: String(row.organization_id ?? ""),
     mondayBoardId: String(row.monday_board_id ?? "").trim(),
     mondayWorkspaceId: row.monday_workspace_id
       ? String(row.monday_workspace_id).trim()
       : null,
     committeeId: null,
     columnMap: normalizeColumnMap(row.column_map),
-    committeeGroups: row.committee_groups ?? {},
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    committeeGroups: normalizeCommitteeGroups(row.committee_groups),
+    createdAt: String(row.created_at ?? ""),
+    updatedAt: String(row.updated_at ?? ""),
   };
+}
+
+/** Never throws — returns null when a row cannot be mapped safely. */
+export function safeMapMondayBoardMappingRow(
+  row: MondayBoardMappingRow,
+): MondayBoardMapping | null {
+  try {
+    return mapMondayBoardMappingRow(row);
+  } catch (error) {
+    console.error("Failed to map Monday board mapping row:", error);
+    return null;
+  }
+}
+
+/** Never throws — returns null when a row cannot be mapped safely. */
+export function safeMapMondayConnectionRow(
+  row: MondayConnectionRow,
+): MondayConnection | null {
+  try {
+    return mapMondayConnectionRow(row);
+  } catch (error) {
+    console.error("Failed to map Monday connection row:", error);
+    return null;
+  }
 }
 
 export function mapMondayTaskLinkRow(row: MondayTaskLinkRow): MondayItemLink {

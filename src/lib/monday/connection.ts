@@ -12,9 +12,9 @@ import {
 import { fetchMondayAccountInfo } from "@/lib/monday/client";
 import type { MondayTokenResponse } from "@/lib/monday/db-types";
 import {
-  mapMondayBoardMappingRow,
-  mapMondayConnectionRow,
   mapMondayTaskLinkRow,
+  safeMapMondayBoardMappingRow,
+  safeMapMondayConnectionRow,
 } from "@/lib/monday/mappers";
 import type {
   MondayBoardMappingRow,
@@ -132,7 +132,7 @@ export async function getMondayConnectionForOrganization(
     return null;
   }
 
-  return mapMondayConnectionRow(data as MondayConnectionRow);
+  return safeMapMondayConnectionRow(data as MondayConnectionRow);
 }
 
 export async function getMondayConnectionForCurrentOrg(): Promise<MondayConnection | null> {
@@ -388,7 +388,7 @@ export async function getMondayBoardMappingForOrganization(
     return null;
   }
 
-  return mapMondayBoardMappingRow(data as MondayBoardMappingRow);
+  return safeMapMondayBoardMappingRow(data as MondayBoardMappingRow);
 }
 
 export async function saveMondayBoardMapping(input: {
