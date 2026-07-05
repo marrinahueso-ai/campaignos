@@ -17,6 +17,7 @@ import type { MondayBoardColumnMap, MondayBoardColumn } from "@/lib/monday/types
 interface MondayBoardMappingPanelProps {
   connected: boolean;
   syncEnabled: boolean;
+  justConnected?: boolean;
 }
 
 const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
@@ -79,6 +80,7 @@ function ColumnSelect({
 export function MondayBoardMappingPanel({
   connected,
   syncEnabled,
+  justConnected = false,
 }: MondayBoardMappingPanelProps) {
   const [boards, setBoards] = useState<{ id: string; name: string; workspaceId: string | null }[]>(
     [],
@@ -94,16 +96,22 @@ export function MondayBoardMappingPanel({
   const [loaded, setLoaded] = useState(false);
 
   const hasPtoTemplateBoard = boards.some((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
-  const showCreateTemplate = loaded && !hasPtoTemplateBoard;
+  const showCreateTemplate = connected && loaded && (boards.length === 0 || !hasPtoTemplateBoard);
 
   useEffect(() => {
     if (!connected) {
+      setLoaded(false);
+      setBoards([]);
+      setError(null);
       return;
     }
 
     let cancelled = false;
 
     async function load() {
+      setError(null);
+      setLoaded(false);
+
       const [boardsResult, mappingResult] = await Promise.all([
         listMondayBoardsAction(),
         getMondayBoardMappingAction(),
@@ -119,7 +127,8 @@ export function MondayBoardMappingPanel({
         if (boardsResult.workspaceId && !mappingResult.mapping) {
           setSelectedWorkspaceId(boardsResult.workspaceId);
         }
-      } else if (!boardsResult.success) {
+      } else {
+        setBoards([]);
         setError(boardsResult.error ?? "Could not load Monday boards.");
       }
 
@@ -136,7 +145,7 @@ export function MondayBoardMappingPanel({
     return () => {
       cancelled = true;
     };
-  }, [connected]);
+  }, [connected, justConnected]);
 
   useEffect(() => {
     if (!connected || !selectedBoardId || !loaded) {
@@ -244,14 +253,23 @@ export function MondayBoardMappingPanel({
 
   if (!connected) {
     return (
-      <p className="text-sm text-cos-muted">
-        Connect Monday above to select a master board and map columns.
-      </p>
+      <div className="rounded-md border border-dashed border-cos-border bg-cos-bg/40 p-4 text-sm text-cos-muted">
+        <p className="font-medium text-cos-text">Step 2: Pick a master board</p>
+        <p className="mt-1">
+          Complete <strong>Step 1: Connect Monday</strong> above first. Your boards (including{" "}
+          <strong>{PTO_TEMPLATE_BOARD_NAME}</strong>) appear here after OAuth finishes.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {justConnected && (
+        <p className="text-sm text-emerald-700" role="status">
+          Monday connected — loading your boards…
+        </p>
+      )}
       <div className="space-y-2">
         <label className="block space-y-1 text-sm">
           <span className="text-cos-text">Master board</span>
@@ -271,7 +289,7 @@ export function MondayBoardMappingPanel({
             ))}
           </select>
         </label>
-        {loaded && boards.length === 0 && (
+        {loaded && boards.length === 0 && !error && (
           <p className="text-sm text-cos-muted">
             No boards found in {workspaceName ?? "your connected workspace"} — create one in
             Monday or click Create template board below.

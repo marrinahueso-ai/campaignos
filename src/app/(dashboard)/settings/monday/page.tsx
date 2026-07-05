@@ -92,7 +92,11 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">
-          <MondayBoardMappingPanel connected={connected} syncEnabled={syncEnabled} />
+          <MondayBoardMappingPanel
+            connected={connected}
+            syncEnabled={syncEnabled}
+            justConnected={params.connected === "1"}
+          />
         </div>
       </Card>
     </div>

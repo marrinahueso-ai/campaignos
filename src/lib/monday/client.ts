@@ -129,38 +129,53 @@ export async function resolveMondayWorkspaceId(accessToken: string): Promise<str
 /** List boards the connected account can access (Phase 1 settings picker). */
 export async function listMondayBoards(
   accessToken: string,
-  options: { limit?: number; workspaceIds?: string[] } = {},
+  options: { limit?: number; workspaceIds?: string[]; maxPages?: number } = {},
 ): Promise<{ id: string; name: string; workspaceId: string | null }[]> {
-  const limit = options.limit ?? 50;
+  const pageSize = options.limit ?? 50;
   const workspaceIds = options.workspaceIds?.filter(Boolean) ?? [];
+  const maxPages = options.maxPages ?? 5;
+  const boards: { id: string; name: string; workspaceId: string | null }[] = [];
 
-  const data = await mondayGraphQL<{
-    boards: { id: string; name: string; workspace_id: string | null }[];
-  }>(
-    accessToken,
-    workspaceIds.length > 0
-      ? `query ($limit: Int!, $workspaceIds: [ID]) {
-          boards (limit: $limit, workspace_ids: $workspaceIds) {
-            id
-            name
-            workspace_id
-          }
-        }`
-      : `query ($limit: Int!) {
-          boards (limit: $limit) {
-            id
-            name
-            workspace_id
-          }
-        }`,
-    workspaceIds.length > 0 ? { limit, workspaceIds } : { limit },
-  );
+  for (let page = 1; page <= maxPages; page += 1) {
+    const data = await mondayGraphQL<{
+      boards: { id: string; name: string; workspace_id: string | null }[];
+    }>(
+      accessToken,
+      workspaceIds.length > 0
+        ? `query ($limit: Int!, $page: Int!, $workspaceIds: [ID]) {
+            boards (limit: $limit, page: $page, workspace_ids: $workspaceIds) {
+              id
+              name
+              workspace_id
+            }
+          }`
+        : `query ($limit: Int!, $page: Int!) {
+            boards (limit: $limit, page: $page) {
+              id
+              name
+              workspace_id
+            }
+          }`,
+      workspaceIds.length > 0
+        ? { limit: pageSize, page, workspaceIds }
+        : { limit: pageSize, page },
+    );
 
-  return (data.boards ?? []).map((board) => ({
-    id: board.id,
-    name: board.name,
-    workspaceId: board.workspace_id,
-  }));
+    const batch = data.boards ?? [];
+    boards.push(
+      ...batch.map((board) => ({
+        id: board.id,
+        name: board.name,
+        workspaceId: board.workspace_id,
+      })),
+    );
+
+    if (batch.length < pageSize) {
+      break;
+    }
+  }
+
+  return boards;
 }
 
 export async function createMondayBoard(input: {

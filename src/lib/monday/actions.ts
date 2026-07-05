@@ -114,15 +114,20 @@ export async function listMondayBoardsAction(): Promise<{
   }
 
   try {
+    const workspaces = await listMondayWorkspaces(connection.accessToken);
     const workspaceId = await resolveMondayWorkspaceId(connection.accessToken);
-    const boards = await listMondayBoards(connection.accessToken, {
+    let boards = await listMondayBoards(connection.accessToken, {
       workspaceIds: workspaceId ? [workspaceId] : undefined,
       limit: 100,
     });
 
+    // Workspace scoping can miss boards when OAuth default differs from where boards live.
+    if (boards.length === 0 && workspaceId) {
+      boards = await listMondayBoards(connection.accessToken, { limit: 100 });
+    }
+
     let workspaceName: string | null = null;
     if (workspaceId) {
-      const workspaces = await listMondayWorkspaces(connection.accessToken);
       workspaceName = workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? null;
     }
 

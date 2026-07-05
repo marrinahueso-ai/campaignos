@@ -98,50 +98,89 @@ export function MondayConnectionPanel({
 
   return (
     <div className="space-y-4">
-      {connected ? (
-        <>
-          <p className="text-sm text-cos-muted">
-            {accountSlug
-              ? `Connected to ${accountSlug}.monday.com.`
-              : "Your PTO Monday account is connected."}{" "}
-            Open tasks can sync to your master board when sync is enabled.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-cos-text">
-              <input
-                type="checkbox"
-                checked={syncEnabled}
-                disabled={isPending}
-                onChange={(event) => handleToggleSync(event.target.checked)}
-                className="h-4 w-4 rounded border-cos-border"
-              />
-              Enable Monday sync
-            </label>
+      <ol className="space-y-3 text-sm">
+        <li className="flex gap-3">
+          <span
+            className={
+              connected
+                ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800"
+                : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cos-bg text-xs font-semibold text-cos-text"
+            }
+            aria-hidden
+          >
+            {connected ? "✓" : "1"}
+          </span>
+          <div className="space-y-2">
+            <p className="font-medium text-cos-text">Connect your Monday account</p>
+            {connected ? (
+              <>
+                <p className="text-cos-muted">
+                  {accountSlug
+                    ? `Connected to ${accountSlug}.monday.com.`
+                    : "Your PTO Monday account is connected."}{" "}
+                  Open tasks can sync to your master board when sync is enabled.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-cos-text">
+                    <input
+                      type="checkbox"
+                      checked={syncEnabled}
+                      disabled={isPending}
+                      onChange={(event) => handleToggleSync(event.target.checked)}
+                      className="h-4 w-4 rounded border-cos-border"
+                    />
+                    Enable Monday sync
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button href={connectHref} variant="secondary" size="sm">
+                    Reconnect Monday
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={handleDisconnect}
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-cos-muted">
+                  Authorize CampaignOS in Monday.com. Installing the app in Monday alone does not
+                  connect your school — click the button below and approve access.
+                </p>
+                <Button href={connectHref}>Connect Monday</Button>
+              </>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button href={connectHref} variant="secondary" size="sm">
-              Reconnect Monday
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={isPending}
-              onClick={handleDisconnect}
-            >
-              Disconnect
-            </Button>
+        </li>
+        <li className="flex gap-3">
+          <span
+            className={
+              connected
+                ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cos-bg text-xs font-semibold text-cos-text"
+                : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-cos-border text-xs font-semibold text-cos-muted"
+            }
+            aria-hidden
+          >
+            2
+          </span>
+          <div>
+            <p className={connected ? "font-medium text-cos-text" : "font-medium text-cos-muted"}>
+              Pick a master board
+            </p>
+            {!connected && (
+              <p className="mt-1 text-cos-muted">
+                Complete step 1 first. The board picker loads automatically after you connect.
+              </p>
+            )}
           </div>
-        </>
-      ) : (
-        <>
-          <p className="text-sm text-cos-muted">
-            Connect once for your school. Then map a master board and push open playbook tasks
-            to Monday groups by committee.
-          </p>
-          <Button href={connectHref}>Connect Monday</Button>
-        </>
-      )}
+        </li>
+      </ol>
 
       {error && (
         <p className="text-sm text-red-600" role="alert">
