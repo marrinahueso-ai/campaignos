@@ -9,6 +9,17 @@ export type MondayColumnType =
   | "long_text"
   | "numbers";
 
+export interface MondayBoardColumn {
+  id: string;
+  title: string;
+  type: string;
+}
+
+export interface MondayBoardGroup {
+  id: string;
+  title: string;
+}
+
 /** Maps CampaignOS event playbook fields → Monday column roles. */
 export interface MondayBoardColumnMap {
   statusColumnId: string;
@@ -23,9 +34,11 @@ export interface MondayBoardMapping {
   organizationId: string;
   mondayBoardId: string;
   mondayWorkspaceId: string | null;
-  /** null = master board; otherwise committee id from organization workspace. */
+  /** null = master board config row. */
   committeeId: string | null;
   columnMap: MondayBoardColumnMap;
+  /** Committee id → Monday group id on the master board. */
+  committeeGroups: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +60,7 @@ export interface MondayConnection {
   accountId: string | null;
   accountSlug: string | null;
   scopes: string | null;
+  mondaySyncEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -77,4 +91,14 @@ export interface MondayItemSummary {
   boardId: string;
   groupId: string | null;
   columnValues: Record<string, unknown>;
+}
+
+/** Overlay data merged into task hub rows (read-only from Monday). */
+export interface MondayTaskOverlay {
+  mondayItemId: string;
+  mondayBoardId: string;
+  mondayItemUrl: string | null;
+  mondayStatusLabel: string | null;
+  mondayDueDate: string | null;
+  lastSyncedAt: string | null;
 }

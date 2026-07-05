@@ -26,6 +26,12 @@ export default async function TaskHubPage() {
           <span>
             {data.openTasks} open · {data.totalTasks} total
           </span>
+          {data.mondaySyncEnabled && (
+            <>
+              <span aria-hidden>·</span>
+              <span>Monday overlay active</span>
+            </>
+          )}
         </div>
       </header>
 

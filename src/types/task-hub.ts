@@ -1,4 +1,5 @@
 import type { EventPlaybookTask } from "@/types/event-playbooks";
+import type { MondayTaskOverlay } from "@/lib/monday/types";
 
 export type TaskHubViewScope = "all_committees" | "chaired_committees";
 
@@ -15,6 +16,8 @@ export interface TaskHubEventContext {
 
 export interface TaskHubTaskItem extends EventPlaybookTask {
   event: TaskHubEventContext;
+  /** Read-only overlay from Monday when linked and sync enabled. */
+  monday?: MondayTaskOverlay | null;
 }
 
 export interface TaskHubSecondaryGroup {
@@ -40,4 +43,5 @@ export interface TaskHubPageData {
   tablesAvailable: boolean;
   totalTasks: number;
   openTasks: number;
+  mondaySyncEnabled: boolean;
 }

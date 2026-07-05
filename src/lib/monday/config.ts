@@ -1,6 +1,8 @@
 import "server-only";
 
 export const MONDAY_API_URL = "https://api.monday.com/v2";
+export const MONDAY_AUTHORIZE_URL = "https://auth.monday.com/oauth2/authorize";
+export const MONDAY_TOKEN_URL = "https://auth.monday.com/oauth2/token";
 
 /** Scopes needed for CampaignOS task hub sync (boards, items, webhooks). */
 export const MONDAY_OAUTH_SCOPES = [

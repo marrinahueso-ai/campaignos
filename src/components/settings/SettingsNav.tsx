@@ -12,6 +12,7 @@ const SETTINGS_TABS = [
   { href: "/settings/organization", label: "Organization" },
   { href: "/settings/meta", label: "Meta" },
   { href: "/settings/canva", label: "Canva" },
+  { href: "/settings/monday", label: "Monday" },
   { href: "/settings/ai-brain", label: "AI Brain" },
   { href: "/settings/playbooks", label: "Playbooks" },
 ] as const;

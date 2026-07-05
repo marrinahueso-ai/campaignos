@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { nextTaskStatus, taskStatusLabel } from "@/lib/event-playbooks/task-status";
+import { mondayLabelToCampaignOsStatus } from "@/lib/monday/status-mapping";
 import { formatEventDate } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
@@ -84,6 +85,14 @@ export function TaskHubTaskRow({
   onDragLeave,
   onDrop,
 }: TaskHubTaskRowProps) {
+  const mondayOverlay = task.monday;
+  const overlayStatus =
+    mondayOverlay?.mondayStatusLabel != null
+      ? mondayLabelToCampaignOsStatus(mondayOverlay.mondayStatusLabel) ?? status
+      : status;
+  const displayStatus = mondayOverlay ? overlayStatus : status;
+  const displayDueDate = mondayOverlay?.mondayDueDate ?? task.dueDate;
+
   return (
     <div
       draggable={draggable}
@@ -110,7 +119,7 @@ export function TaskHubTaskRow({
         className="mt-0.5 shrink-0 text-cos-muted hover:text-cos-text disabled:opacity-50"
         aria-label={`Mark ${task.title} as ${taskStatusLabel(nextTaskStatus(status))}`}
       >
-        <StatusIcon status={status} isPending={isPending} />
+        <StatusIcon status={displayStatus} isPending={isPending} />
       </button>
 
       <div className="min-w-0 flex-1">
@@ -133,19 +142,39 @@ export function TaskHubTaskRow({
               <ExternalLink className="h-3 w-3" />
             </Link>
             <span>{formatEventDate(task.event.eventDate)}</span>
-            {task.dueDate && <span>Due {formatEventDate(task.dueDate)}</span>}
+            {displayDueDate && (
+              <span>
+                Due {formatEventDate(displayDueDate)}
+                {mondayOverlay?.mondayDueDate ? " · Monday" : ""}
+              </span>
+            )}
             {task.assigneeName && <span>{task.assigneeName}</span>}
           </div>
         )}
-        {compact && task.dueDate && (
+        {compact && displayDueDate && (
           <p className="mt-0.5 text-xs text-cos-muted">
-            Due {formatEventDate(task.dueDate)}
+            Due {formatEventDate(displayDueDate)}
+            {mondayOverlay?.mondayDueDate ? " · Monday" : ""}
           </p>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {statusBadge(status)}
+        {statusBadge(displayStatus)}
+        {mondayOverlay && (
+          mondayOverlay.mondayItemUrl ? (
+            <a
+              href={mondayOverlay.mondayItemUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex"
+            >
+              <Badge variant="default">Monday</Badge>
+            </a>
+          ) : (
+            <Badge variant="default">Monday</Badge>
+          )
+        )}
         {task.assigneeInitials && (
           <span className="flex h-7 w-7 items-center justify-center bg-cos-dark text-[10px] font-medium text-[#f6f2eb]">
             {task.assigneeInitials}
