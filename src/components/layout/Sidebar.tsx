@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  ListChecks,
   Megaphone,
   Send,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const navItems: {
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Campaigns", href: "/events", icon: Megaphone },
+  { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Publishing", href: "/publishing", icon: Send },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },

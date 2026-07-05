@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { GroupedTaskChecklist } from "@/components/event-playbooks/GroupedTaskChecklist";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
@@ -37,17 +39,28 @@ export function TasksTab({
     <div className="space-y-6">
       <Card padding="lg">
         <CardHeader>
-          <CardTitle>Planning checklist</CardTitle>
-          <CardDescription>
-            Track venue, budget, volunteers, and day-of tasks for this event. Group tasks and drag
-            to reorder.
-            {!taskGroupsAvailable && (
-              <>
-                {" "}
-                {EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION}
-              </>
-            )}
-          </CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Planning checklist</CardTitle>
+              <CardDescription>
+                Track venue, budget, volunteers, and day-of tasks for this event. Group tasks and
+                drag to reorder.
+                {!taskGroupsAvailable && (
+                  <>
+                    {" "}
+                    {EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION}
+                  </>
+                )}
+              </CardDescription>
+            </div>
+            <Link
+              href="/tasks"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
+            >
+              View in task hub
+              <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
+            </Link>
+          </div>
         </CardHeader>
 
         <div className="mt-6">
