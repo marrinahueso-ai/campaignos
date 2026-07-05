@@ -1,4 +1,5 @@
-import { TaskHubList } from "@/components/task-hub/TaskHubList";
+import { Suspense } from "react";
+import { TaskHubShell } from "@/components/task-hub/TaskHubShell";
 import { getTaskHubPageData } from "@/lib/task-hub/queries";
 
 export const metadata = {
@@ -28,26 +29,9 @@ export default async function TaskHubPage() {
         </div>
       </header>
 
-      {/* Phase 2: board and calendar views */}
-      <div className="mb-6 flex gap-2 border-b border-cos-border pb-3">
-        <span className="border-b-2 border-cos-dark px-2 pb-2 text-sm font-medium text-cos-text">
-          List
-        </span>
-        <span
-          className="px-2 pb-2 text-sm text-cos-muted"
-          title="Coming soon"
-        >
-          Board
-        </span>
-        <span
-          className="px-2 pb-2 text-sm text-cos-muted"
-          title="Coming soon"
-        >
-          Calendar
-        </span>
-      </div>
-
-      <TaskHubList data={data} />
+      <Suspense fallback={<div className="min-h-[16rem] animate-pulse bg-cos-bg/60" />}>
+        <TaskHubShell data={data} />
+      </Suspense>
     </div>
   );
 }

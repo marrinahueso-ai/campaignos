@@ -1,57 +1,51 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import {
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Circle,
-  ExternalLink,
-  ListChecks,
-  Loader2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { updateEventPlaybookTaskStatusAction } from "@/lib/event-playbooks/actions";
-import { formatEventDate } from "@/lib/utils/dates";
+  readTaskHubDragPayload,
+  setTaskHubDragData,
+} from "@/components/task-hub/task-hub-dnd";
+import { TaskHubTaskRow } from "@/components/task-hub/TaskHubTaskRow";
+import {
+  reorderTaskHubTasksAction,
+  updateTaskHubTaskStatusAction,
+} from "@/lib/task-hub/actions";
+import {
+  buildCommitteeOrderMap,
+  groupTasksBySecondary,
+  reorderCommitteeTasks,
+} from "@/lib/task-hub/grouping";
+import { nextTaskStatus } from "@/lib/event-playbooks/task-status";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
-import type { TaskHubCommitteeGroup, TaskHubPageData } from "@/types/task-hub";
-
-const STATUS_CYCLE: EventPlaybookTaskStatus[] = ["todo", "in_progress", "done"];
-
-function nextStatus(current: EventPlaybookTaskStatus): EventPlaybookTaskStatus {
-  const index = STATUS_CYCLE.indexOf(current);
-  return STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length] ?? "todo";
-}
-
-function statusBadge(status: EventPlaybookTaskStatus) {
-  switch (status) {
-    case "in_progress":
-      return <Badge variant="info">In progress</Badge>;
-    case "done":
-      return <Badge variant="success">Done</Badge>;
-    default:
-      return null;
-  }
-}
+import type {
+  TaskHubCommitteeGroup,
+  TaskHubPageData,
+  TaskHubSecondaryGroupMode,
+  TaskHubTaskItem,
+} from "@/types/task-hub";
 
 interface TaskHubListProps {
   data: TaskHubPageData;
+  secondaryGroupMode: TaskHubSecondaryGroupMode;
 }
 
-export function TaskHubList({ data }: TaskHubListProps) {
+function committeeKey(group: TaskHubCommitteeGroup): string {
+  return group.committeeId ?? group.committeeName;
+}
+
+export function TaskHubList({ data, secondaryGroupMode }: TaskHubListProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [committees, setCommittees] = useState(data.committees);
   const [collapsedCommittees, setCollapsedCommittees] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [collapsedSecondary, setCollapsedSecondary] = useState<Set<string>>(
     () => new Set(),
   );
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(
@@ -60,17 +54,21 @@ export function TaskHubList({ data }: TaskHubListProps) {
   const [taskStatuses, setTaskStatuses] = useState<
     Record<string, EventPlaybookTaskStatus>
   >({});
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragCommitteeKey, setDragCommitteeKey] = useState<string | null>(null);
 
-  function committeeKey(group: TaskHubCommitteeGroup): string {
-    return group.committeeId ?? group.committeeName;
+  useEffect(() => {
+    setCommittees(data.committees);
+  }, [data.committees]);
+
+  function resolveTaskStatus(
+    taskId: string,
+    fallback: EventPlaybookTaskStatus,
+  ): EventPlaybookTaskStatus {
+    return taskStatuses[taskId] ?? fallback;
   }
 
-  function isCommitteeCollapsed(group: TaskHubCommitteeGroup): boolean {
-    return collapsedCommittees.has(committeeKey(group));
-  }
-
-  function toggleCommitteeCollapsed(group: TaskHubCommitteeGroup) {
-    const key = committeeKey(group);
+  function toggleCommitteeCollapsed(key: string) {
     setCollapsedCommittees((current) => {
       const next = new Set(current);
       if (next.has(key)) {
@@ -82,45 +80,45 @@ export function TaskHubList({ data }: TaskHubListProps) {
     });
   }
 
-  function resolveTaskStatus(
-    taskId: string,
-    fallback: EventPlaybookTaskStatus,
-  ): EventPlaybookTaskStatus {
-    return taskStatuses[taskId] ?? fallback;
+  function toggleSecondaryCollapsed(key: string) {
+    setCollapsedSecondary((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   }
 
-  function handleToggleStatus(
-    eventId: string,
-    taskId: string,
-    title: string,
-    currentStatus: EventPlaybookTaskStatus,
-  ) {
-    if (pendingTaskIds.has(taskId)) {
+  function handleToggleStatus(task: TaskHubTaskItem, currentStatus: EventPlaybookTaskStatus) {
+    if (pendingTaskIds.has(task.id)) {
       return;
     }
 
-    const status = nextStatus(currentStatus);
-    setTaskStatuses((current) => ({ ...current, [taskId]: status }));
-    setPendingTaskIds((current) => new Set(current).add(taskId));
+    const status = nextTaskStatus(currentStatus);
+    setTaskStatuses((current) => ({ ...current, [task.id]: status }));
+    setPendingTaskIds((current) => new Set(current).add(task.id));
 
     startTransition(async () => {
-      const result = await updateEventPlaybookTaskStatusAction(
-        eventId,
-        taskId,
+      const result = await updateTaskHubTaskStatusAction(
+        task.eventId,
+        task.id,
         status,
-        title,
+        task.title,
       );
 
       setPendingTaskIds((current) => {
         const next = new Set(current);
-        next.delete(taskId);
+        next.delete(task.id);
         return next;
       });
 
       if (!result.success) {
         setTaskStatuses((current) => {
           const next = { ...current };
-          delete next[taskId];
+          delete next[task.id];
           return next;
         });
         return;
@@ -130,46 +128,122 @@ export function TaskHubList({ data }: TaskHubListProps) {
     });
   }
 
-  if (!data.tablesAvailable) {
-    return (
-      <Card padding="lg">
-        <CardHeader>
-          <CardTitle>Task hub unavailable</CardTitle>
-          <CardDescription>
-            Run migration 031_event_playbook_tables.sql to enable cross-event task tracking.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+  function persistCommitteeOrder(
+    key: string,
+    nextTasks: TaskHubTaskItem[],
+    previousCommittees: TaskHubCommitteeGroup[],
+  ) {
+    setCommittees((current) =>
+      current.map((group) =>
+        committeeKey(group) === key ? { ...group, tasks: nextTasks } : group,
+      ),
     );
+
+    startTransition(async () => {
+      const result = await reorderTaskHubTasksAction(
+        nextTasks.map((task) => ({ id: task.id, eventId: task.eventId })),
+      );
+      if (!result.success) {
+        setCommittees(previousCommittees);
+      } else {
+        router.refresh();
+      }
+    });
   }
 
-  if (data.committees.length === 0) {
+  function handleTaskDrop(
+    committee: TaskHubCommitteeGroup,
+    taskId: string,
+    targetIndex: number,
+  ) {
+    const key = committeeKey(committee);
+    const previous = committees;
+    const currentGroup = committees.find((group) => committeeKey(group) === key);
+    if (!currentGroup) {
+      return;
+    }
+
+    const nextTasks = reorderCommitteeTasks(currentGroup, taskId, targetIndex);
+    persistCommitteeOrder(key, nextTasks, previous);
+    setDragOverTaskId(null);
+    setDragCommitteeKey(null);
+  }
+
+  function renderTaskList(
+    committee: TaskHubCommitteeGroup,
+    tasks: TaskHubTaskItem[],
+  ) {
+    const key = committeeKey(committee);
+
     return (
-      <EmptyState
-        icon={ListChecks}
-        title="No tasks yet"
-        description={
-          data.scope === "chaired_committees"
-            ? "Tasks from your committee events will appear here once playbook checklists are created."
-            : "Playbook tasks from active campaigns will appear here, grouped by committee."
-        }
-        className="cos-card py-16"
-      />
+      <ul className="divide-y divide-cos-border">
+        {tasks.map((task, taskIndex) => {
+          const status = resolveTaskStatus(task.id, task.status);
+          const isPending = pendingTaskIds.has(task.id);
+
+          return (
+            <li key={task.id}>
+              <TaskHubTaskRow
+                task={task}
+                status={status}
+                isPending={isPending}
+                disabled={pending}
+                draggable
+                showGrip
+                dragOver={dragOverTaskId === task.id}
+                onToggleStatus={() => handleToggleStatus(task, status)}
+                onDragStart={(event) => {
+                  setTaskHubDragData(event, {
+                    taskId: task.id,
+                    committeeKey: key,
+                  });
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  event.dataTransfer.dropEffect = "move";
+                  setDragOverTaskId(task.id);
+                  setDragCommitteeKey(key);
+                }}
+                onDragLeave={() => {
+                  if (dragOverTaskId === task.id) {
+                    setDragOverTaskId(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const payload = readTaskHubDragPayload(event);
+                  if (payload?.committeeKey === key) {
+                    handleTaskDrop(committee, payload.taskId, taskIndex);
+                  }
+                }}
+              />
+            </li>
+          );
+        })}
+      </ul>
     );
   }
 
   return (
     <div className="space-y-4">
-      {data.committees.map((group) => {
-        const collapsed = isCommitteeCollapsed(group);
+      {committees.map((group) => {
+        const key = committeeKey(group);
+        const collapsed = collapsedCommittees.has(key);
         const openCount = group.totalCount - group.doneCount;
+        const secondaryGroups = groupTasksBySecondary(
+          group.tasks,
+          secondaryGroupMode,
+          group.chairName,
+        );
 
         return (
-          <Card key={committeeKey(group)} padding="none" className="overflow-hidden">
+          <Card key={key} padding="none" className="overflow-hidden">
             <div className="flex items-center gap-3 border-b border-cos-border bg-cos-bg px-4 py-3">
               <button
                 type="button"
-                onClick={() => toggleCommitteeCollapsed(group)}
+                onClick={() => toggleCommitteeCollapsed(key)}
                 className="inline-flex min-w-0 flex-1 items-center gap-2 text-left"
                 aria-expanded={!collapsed}
               >
@@ -181,6 +255,11 @@ export function TaskHubList({ data }: TaskHubListProps) {
                 <span className="truncate font-display text-base text-cos-text">
                   {group.committeeName}
                 </span>
+                {group.chairName && (
+                  <span className="truncate text-xs text-cos-muted">
+                    · {group.chairName}
+                  </span>
+                )}
                 <span className="text-xs text-cos-muted tabular-nums">
                   {group.doneCount}/{group.totalCount} done
                 </span>
@@ -191,76 +270,61 @@ export function TaskHubList({ data }: TaskHubListProps) {
             </div>
 
             {!collapsed && (
-              <ul className="divide-y divide-cos-border">
-                {group.tasks.map((task) => {
-                  const status = resolveTaskStatus(task.id, task.status);
-                  const isPending = pendingTaskIds.has(task.id);
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragCommitteeKey(key);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const payload = readTaskHubDragPayload(event);
+                  if (payload?.committeeKey === key) {
+                    handleTaskDrop(group, payload.taskId, group.tasks.length);
+                  }
+                }}
+                className={cn(
+                  dragCommitteeKey === key &&
+                    !dragOverTaskId &&
+                    "ring-1 ring-inset ring-cos-dark/30",
+                )}
+              >
+                {secondaryGroupMode === "none" ? (
+                  renderTaskList(group, group.tasks)
+                ) : (
+                  secondaryGroups.map((secondary) => {
+                    const secondaryKey = `${key}:${secondary.key}`;
+                    const secondaryCollapsed = collapsedSecondary.has(secondaryKey);
 
-                  return (
-                    <li
-                      key={task.id}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-cos-bg/60"
-                    >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleToggleStatus(
-                            task.eventId,
-                            task.id,
-                            task.title,
-                            status,
-                          )
-                        }
-                        disabled={isPending || pending}
-                        className="mt-0.5 shrink-0 text-cos-muted hover:text-cos-text disabled:opacity-50"
-                        aria-label={`Toggle ${task.title}`}
+                    return (
+                      <div
+                        key={secondaryKey}
+                        className="border-b border-cos-border last:border-b-0"
                       >
-                        {status === "done" ? (
-                          <CheckCircle2 className="h-5 w-5 text-cos-success-text" />
-                        ) : status === "in_progress" ? (
-                          <Loader2 className="h-5 w-5 animate-spin text-cos-info-text" />
-                        ) : (
-                          <Circle className="h-5 w-5" strokeWidth={1.5} />
-                        )}
-                      </button>
-
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            "text-sm text-cos-text",
-                            status === "done" && "text-cos-muted line-through",
-                          )}
+                        <button
+                          type="button"
+                          onClick={() => toggleSecondaryCollapsed(secondaryKey)}
+                          className="flex w-full items-center gap-2 bg-cos-bg/40 px-4 py-2 text-left"
+                          aria-expanded={!secondaryCollapsed}
                         >
-                          {task.title}
-                        </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-cos-muted">
-                          <Link
-                            href={task.event.eventHref}
-                            className="inline-flex items-center gap-1 hover:text-cos-text"
-                          >
-                            {task.event.eventTitle}
-                            <ExternalLink className="h-3 w-3" />
-                          </Link>
-                          <span>{formatEventDate(task.event.eventDate)}</span>
-                          {task.dueDate && (
-                            <span>Due {formatEventDate(task.dueDate)}</span>
+                          {secondaryCollapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5 text-cos-muted" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 text-cos-muted" />
                           )}
-                          {task.assigneeName && <span>{task.assigneeName}</span>}
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-2">
-                        {statusBadge(status)}
-                        {task.assigneeInitials && (
-                          <span className="flex h-7 w-7 items-center justify-center bg-cos-dark text-[10px] font-medium text-[#f6f2eb]">
-                            {task.assigneeInitials}
+                          <span className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+                            {secondary.label}
                           </span>
-                        )}
+                          <span className="text-xs text-cos-muted tabular-nums">
+                            ({secondary.tasks.length})
+                          </span>
+                        </button>
+                        {!secondaryCollapsed &&
+                          renderTaskList(group, secondary.tasks)}
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                    );
+                  })
+                )}
+              </div>
             )}
           </Card>
         );
@@ -268,3 +332,6 @@ export function TaskHubList({ data }: TaskHubListProps) {
     </div>
   );
 }
+
+// Keep order map export for tests if needed
+export { buildCommitteeOrderMap };

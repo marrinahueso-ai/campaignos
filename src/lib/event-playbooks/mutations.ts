@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
+import { taskStatusActivityLabel } from "@/lib/event-playbooks/task-status";
 import type {
   EventPlaybookNoteType,
   EventPlaybookTaskStatus,
@@ -97,9 +98,10 @@ export async function updateEventPlaybookTaskStatus(
     return false;
   }
 
-  const statusLabel =
-    status === "done" ? "completed" : status === "in_progress" ? "started" : "reopened";
-  await logActivity(eventId, `Marked "${taskTitle}" as ${statusLabel}`);
+  await logActivity(
+    eventId,
+    `Marked "${taskTitle}" as ${taskStatusActivityLabel(status)}`,
+  );
   return true;
 }
 
@@ -358,4 +360,28 @@ export async function persistEventPlaybookTaskOrder(
   }
 
   return { ok: true, missingSchema: false };
+}
+
+export async function persistTaskHubTaskSortOrders(
+  updates: { eventId: string; tasks: { id: string; sortOrder: number }[] }[],
+): Promise<boolean> {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  for (const batch of updates) {
+    for (const task of batch.tasks) {
+      const { error } = await supabase
+        .from("event_playbook_tasks")
+        .update({ sort_order: task.sortOrder, updated_at: now })
+        .eq("id", task.id)
+        .eq("event_id", batch.eventId);
+
+      if (error) {
+        console.error("Failed to update task hub sort order:", error.message);
+        return false;
+      }
+    }
+  }
+
+  return true;
 }

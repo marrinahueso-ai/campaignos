@@ -1,4 +1,8 @@
-export type EventPlaybookTaskStatus = "todo" | "in_progress" | "done";
+export type EventPlaybookTaskStatus =
+  | "todo"
+  | "in_progress"
+  | "blocked"
+  | "done";
 
 export type EventPlaybookNoteType = "lesson" | "note";
 

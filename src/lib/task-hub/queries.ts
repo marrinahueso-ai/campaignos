@@ -17,6 +17,7 @@ import {
   type TaskHubUserContext,
 } from "@/lib/task-hub/access";
 import { groupTasksByCommittee } from "@/lib/task-hub/group-tasks";
+import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
 import type { TaskHubPageData } from "@/types/task-hub";
 
 function buildUserContext(
@@ -84,7 +85,8 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
 
   const totalTasks = committees.reduce((sum, group) => sum + group.totalCount, 0);
   const openTasks = committees.reduce(
-    (sum, group) => sum + group.totalCount - group.doneCount,
+    (sum, group) =>
+      sum + group.tasks.filter((task) => isOpenTaskStatus(task.status)).length,
     0,
   );
 

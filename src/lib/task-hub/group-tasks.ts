@@ -1,4 +1,5 @@
 import { buildEventRosterOwnershipMap } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
 import { mapEventPlaybookTaskRow } from "@/lib/event-playbooks/mappers";
 import type { Event } from "@/types";
 import type { EventPlaybookTaskRow } from "@/types/event-playbooks";
@@ -48,6 +49,14 @@ function resolveCommitteeForEvent(
   }
 
   return committeesByName.get(committeeName.toLowerCase()) ?? null;
+}
+
+function resolveCommitteeChairName(committee: OrganizationCommittee | null): string | null {
+  if (!committee?.contactName?.trim()) {
+    return null;
+  }
+  const names = parseCommitteeChairNames(committee.contactName);
+  return names[0] ?? committee.contactName.trim();
 }
 
 export function groupTasksByCommittee(input: {
@@ -114,6 +123,7 @@ export function groupTasksByCommittee(input: {
     groups.push({
       committeeId: committee.id,
       committeeName: committee.name,
+      chairName: resolveCommitteeChairName(committee),
       sortOrder: committee.sortOrder,
       tasks,
       doneCount: tasks.filter((task) => task.status === "done").length,
@@ -129,6 +139,7 @@ export function groupTasksByCommittee(input: {
     groups.push({
       committeeId: null,
       committeeName: UNASSIGNED_COMMITTEE_NAME,
+      chairName: null,
       sortOrder: Number.MAX_SAFE_INTEGER,
       tasks: unassignedTasks,
       doneCount: unassignedTasks.filter((task) => task.status === "done").length,

@@ -9,6 +9,7 @@ import {
   Circle,
   GripVertical,
   Loader2,
+  OctagonAlert,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -35,7 +36,6 @@ import { formatEventDate } from "@/lib/utils/dates";
 import type {
   EventPlaybookTask,
   EventPlaybookTaskGroup,
-  EventPlaybookTaskStatus,
 } from "@/types/event-playbooks";
 import { cn } from "@/lib/utils/cn";
 import { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
@@ -45,12 +45,9 @@ import {
   setTaskDragData,
 } from "@/components/event-playbooks/task-checklist-dnd";
 
-const STATUS_CYCLE: EventPlaybookTaskStatus[] = ["todo", "in_progress", "done"];
-
-function nextStatus(current: EventPlaybookTaskStatus): EventPlaybookTaskStatus {
-  const index = STATUS_CYCLE.indexOf(current);
-  return STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length] ?? "todo";
-}
+import {
+  nextTaskStatus,
+} from "@/lib/event-playbooks/task-status";
 
 interface GroupedTaskChecklistProps {
   eventId: string;
@@ -166,7 +163,7 @@ export function GroupedTaskChecklist({
         ? task.status === "done"
           ? "todo"
           : "done"
-        : nextStatus(task.status);
+        : nextTaskStatus(task.status);
 
     const previousTasks = allTasks;
     setSections((current) =>
@@ -463,6 +460,8 @@ export function GroupedTaskChecklist({
                             <CheckCircle2 className="h-5 w-5 text-cos-success-text" />
                           ) : task.status === "in_progress" ? (
                             <Loader2 className="h-5 w-5 animate-spin text-cos-info-text" />
+                          ) : task.status === "blocked" ? (
+                            <OctagonAlert className="h-5 w-5 text-cos-warning-text" />
                           ) : (
                             <Circle className="h-5 w-5" strokeWidth={1.5} />
                           )}
