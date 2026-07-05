@@ -72,23 +72,88 @@ export async function mondayGraphQL<T>(
   return payload.data;
 }
 
+export interface MondayWorkspaceSummary {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
+/** List workspaces the connected account can access. */
+export async function listMondayWorkspaces(
+  accessToken: string,
+  limit = 25,
+): Promise<MondayWorkspaceSummary[]> {
+  const data = await mondayGraphQL<{
+    workspaces: { id: string; name: string; is_default_workspace: boolean | null }[];
+  }>(
+    accessToken,
+    `query ($limit: Int!) {
+      workspaces (limit: $limit) {
+        id
+        name
+        is_default_workspace
+      }
+    }`,
+    { limit },
+  );
+
+  return (data.workspaces ?? []).map((workspace) => ({
+    id: workspace.id,
+    name: workspace.name,
+    isDefault: Boolean(workspace.is_default_workspace),
+  }));
+}
+
+/** Prefer the workspace selected during OAuth install (default / Main). */
+export async function resolveMondayWorkspaceId(accessToken: string): Promise<string | null> {
+  const workspaces = await listMondayWorkspaces(accessToken);
+  if (workspaces.length === 0) {
+    return null;
+  }
+
+  const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
+  if (defaultWorkspace) {
+    return defaultWorkspace.id;
+  }
+
+  const mainWorkspace = workspaces.find((workspace) =>
+    /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
+  );
+  if (mainWorkspace) {
+    return mainWorkspace.id;
+  }
+
+  return workspaces[0]?.id ?? null;
+}
+
 /** List boards the connected account can access (Phase 1 settings picker). */
 export async function listMondayBoards(
   accessToken: string,
-  limit = 50,
+  options: { limit?: number; workspaceIds?: string[] } = {},
 ): Promise<{ id: string; name: string; workspaceId: string | null }[]> {
+  const limit = options.limit ?? 50;
+  const workspaceIds = options.workspaceIds?.filter(Boolean) ?? [];
+
   const data = await mondayGraphQL<{
     boards: { id: string; name: string; workspace_id: string | null }[];
   }>(
     accessToken,
-    `query ($limit: Int!) {
-      boards (limit: $limit) {
-        id
-        name
-        workspace_id
-      }
-    }`,
-    { limit },
+    workspaceIds.length > 0
+      ? `query ($limit: Int!, $workspaceIds: [ID]) {
+          boards (limit: $limit, workspace_ids: $workspaceIds) {
+            id
+            name
+            workspace_id
+          }
+        }`
+      : `query ($limit: Int!) {
+          boards (limit: $limit) {
+            id
+            name
+            workspace_id
+          }
+        }`,
+    workspaceIds.length > 0 ? { limit, workspaceIds } : { limit },
   );
 
   return (data.boards ?? []).map((board) => ({
@@ -96,6 +161,78 @@ export async function listMondayBoards(
     name: board.name,
     workspaceId: board.workspace_id,
   }));
+}
+
+export async function createMondayBoard(input: {
+  accessToken: string;
+  boardName: string;
+  workspaceId: string;
+}): Promise<string | null> {
+  const data = await mondayGraphQL<{ create_board: { id: string } | null }>(
+    input.accessToken,
+    `mutation ($boardName: String!, $workspaceId: ID!) {
+      create_board (
+        board_name: $boardName,
+        board_kind: public,
+        workspace_id: $workspaceId
+      ) {
+        id
+      }
+    }`,
+    { boardName: input.boardName, workspaceId: input.workspaceId },
+  );
+
+  return data.create_board?.id ?? null;
+}
+
+export async function createMondayColumn(input: {
+  accessToken: string;
+  boardId: string;
+  title: string;
+  columnType: string;
+}): Promise<string | null> {
+  const data = await mondayGraphQL<{ create_column: { id: string } | null }>(
+    input.accessToken,
+    `mutation ($boardId: ID!, $title: String!, $columnType: ColumnType!) {
+      create_column (
+        board_id: $boardId,
+        title: $title,
+        column_type: $columnType
+      ) {
+        id
+      }
+    }`,
+    {
+      boardId: input.boardId,
+      title: input.title,
+      columnType: input.columnType,
+    },
+  );
+
+  return data.create_column?.id ?? null;
+}
+
+export async function changeMondayColumnTitle(
+  accessToken: string,
+  boardId: string,
+  columnId: string,
+  title: string,
+): Promise<boolean> {
+  const data = await mondayGraphQL<{ change_column_title: { id: string } | null }>(
+    accessToken,
+    `mutation ($boardId: ID!, $columnId: String!, $title: String!) {
+      change_column_title (
+        board_id: $boardId,
+        column_id: $columnId,
+        title: $title
+      ) {
+        id
+      }
+    }`,
+    { boardId, columnId, title },
+  );
+
+  return Boolean(data.change_column_title?.id);
 }
 
 export async function fetchMondayAccountInfo(

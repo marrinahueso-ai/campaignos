@@ -4,11 +4,14 @@ import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import {
   backfillMondayTasksAction,
+  createPtoTemplateBoardAction,
   getMondayBoardColumnsAction,
   getMondayBoardMappingAction,
   listMondayBoardsAction,
+  PTO_TEMPLATE_BOARD_NAME,
   saveMondayBoardMappingAction,
 } from "@/lib/monday/actions";
+import { autoDetectColumnMap } from "@/lib/monday/column-map-detect";
 import type { MondayBoardColumnMap, MondayBoardColumn } from "@/lib/monday/types";
 
 interface MondayBoardMappingPanelProps {
@@ -80,6 +83,7 @@ export function MondayBoardMappingPanel({
   const [boards, setBoards] = useState<{ id: string; name: string; workspaceId: string | null }[]>(
     [],
   );
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [columns, setColumns] = useState<MondayBoardColumn[]>([]);
@@ -88,6 +92,9 @@ export function MondayBoardMappingPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
+
+  const hasPtoTemplateBoard = boards.some((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
+  const showCreateTemplate = loaded && !hasPtoTemplateBoard;
 
   useEffect(() => {
     if (!connected) {
@@ -108,6 +115,12 @@ export function MondayBoardMappingPanel({
 
       if (boardsResult.success && boardsResult.boards) {
         setBoards(boardsResult.boards);
+        setWorkspaceName(boardsResult.workspaceName ?? null);
+        if (boardsResult.workspaceId && !mappingResult.mapping) {
+          setSelectedWorkspaceId(boardsResult.workspaceId);
+        }
+      } else if (!boardsResult.success) {
+        setError(boardsResult.error ?? "Could not load Monday boards.");
       }
 
       if (mappingResult.mapping) {
@@ -139,6 +152,12 @@ export function MondayBoardMappingPanel({
       }
       if (result.success && result.columns) {
         setColumns(result.columns);
+        setColumnMap((current) => {
+          if (current.statusColumnId) {
+            return current;
+          }
+          return autoDetectColumnMap(result.columns ?? [], EMPTY_COLUMN_MAP);
+        });
       }
     }
 
@@ -153,6 +172,42 @@ export function MondayBoardMappingPanel({
     const board = boards.find((entry) => entry.id === boardId);
     setSelectedWorkspaceId(board?.workspaceId ?? null);
     setColumnMap(EMPTY_COLUMN_MAP);
+  }
+
+  function handleCreateTemplateBoard() {
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      const result = await createPtoTemplateBoardAction();
+      if (!result.success) {
+        setError(result.error ?? "Could not create template board.");
+        return;
+      }
+
+      if (result.boardId) {
+        setBoards((current) => {
+          const exists = current.some((board) => board.id === result.boardId);
+          if (exists) {
+            return current;
+          }
+          return [
+            ...current,
+            {
+              id: result.boardId!,
+              name: PTO_TEMPLATE_BOARD_NAME,
+              workspaceId: result.workspaceId ?? null,
+            },
+          ];
+        });
+        setSelectedBoardId(result.boardId);
+        setSelectedWorkspaceId(result.workspaceId ?? null);
+        if (result.columnMap) {
+          setColumnMap(result.columnMap);
+        }
+      }
+
+      setMessage(`${PTO_TEMPLATE_BOARD_NAME} board is ready. Review the column mapping below.`);
+    });
   }
 
   function handleSaveMapping() {
@@ -204,8 +259,11 @@ export function MondayBoardMappingPanel({
             value={selectedBoardId}
             onChange={(event) => handleBoardChange(event.target.value)}
             className="w-full border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+            disabled={!loaded || isPending}
           >
-            <option value="">Select board…</option>
+            <option value="">
+              {loaded ? "Select board…" : "Loading boards…"}
+            </option>
             {boards.map((board) => (
               <option key={board.id} value={board.id}>
                 {board.name}
@@ -213,9 +271,34 @@ export function MondayBoardMappingPanel({
             ))}
           </select>
         </label>
-        <p className="text-xs text-cos-muted">
-          Committee groups on this board will mirror your organization committees.
-        </p>
+        {loaded && boards.length === 0 && (
+          <p className="text-sm text-cos-muted">
+            No boards found in {workspaceName ?? "your connected workspace"} — create one in
+            Monday or click Create template board below.
+          </p>
+        )}
+        {loaded && boards.length > 0 && (
+          <p className="text-xs text-cos-muted">
+            Showing boards from {workspaceName ?? "your connected workspace"}. Committee groups on
+            this board will mirror your organization committees.
+          </p>
+        )}
+        {showCreateTemplate && (
+          <div className="space-y-2 border border-dashed border-cos-border bg-cos-bg/40 p-4">
+            <p className="text-sm text-cos-text">
+              CampaignOS expects a <strong>{PTO_TEMPLATE_BOARD_NAME}</strong> board with Planning,
+              In Progress, and Completed groups.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              disabled={isPending}
+              onClick={handleCreateTemplateBoard}
+            >
+              Create template board
+            </Button>
+          </div>
+        )}
       </div>
 
       {selectedBoardId && columns.length > 0 && (

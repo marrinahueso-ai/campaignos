@@ -17,7 +17,10 @@ import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import {
   getMondayBoardDetails,
   listMondayBoards,
+  listMondayWorkspaces,
+  resolveMondayWorkspaceId,
 } from "@/lib/monday/client";
+import { createPtoEventProjectPlanningBoard, PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/template-board";
 import type { MondayBoardColumn } from "@/lib/monday/types";
 import { canManageMondayIntegration } from "@/lib/monday/permissions";
 import { backfillOpenTasksToMonday } from "@/lib/monday/sync";
@@ -93,6 +96,8 @@ export async function listMondayBoardsAction(): Promise<{
   success: boolean;
   error?: string | null;
   boards?: { id: string; name: string; workspaceId: string | null }[];
+  workspaceId?: string | null;
+  workspaceName?: string | null;
 }> {
   const auth = await requireMondayManager();
   if (!auth.ok) {
@@ -108,9 +113,82 @@ export async function listMondayBoardsAction(): Promise<{
     return { success: false, error: "Connect Monday in Settings first." };
   }
 
-  const boards = await listMondayBoards(connection.accessToken);
-  return { success: true, boards };
+  try {
+    const workspaceId = await resolveMondayWorkspaceId(connection.accessToken);
+    const boards = await listMondayBoards(connection.accessToken, {
+      workspaceIds: workspaceId ? [workspaceId] : undefined,
+      limit: 100,
+    });
+
+    let workspaceName: string | null = null;
+    if (workspaceId) {
+      const workspaces = await listMondayWorkspaces(connection.accessToken);
+      workspaceName = workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? null;
+    }
+
+    return { success: true, boards, workspaceId, workspaceName };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not load Monday boards.",
+    };
+  }
 }
+
+export async function createPtoTemplateBoardAction(): Promise<
+  MondayActionResult & {
+    boardId?: string;
+    workspaceId?: string | null;
+    columnMap?: MondayBoardColumnMap;
+  }
+> {
+  const auth = await requireMondayManager();
+  if (!auth.ok) {
+    return { success: false, error: auth.error };
+  }
+
+  if (!isMondayIntegrationConfigured()) {
+    return { success: false, error: "Monday integration is not configured." };
+  }
+
+  const connection = await getMondayConnectionForCurrentOrg();
+  if (!isMondayConnectionConfigured(connection)) {
+    return { success: false, error: "Connect Monday in Settings first." };
+  }
+
+  try {
+    const workspaceId = await resolveMondayWorkspaceId(connection.accessToken);
+    if (!workspaceId) {
+      return { success: false, error: "No Monday workspace found for this account." };
+    }
+
+    const result = await createPtoEventProjectPlanningBoard({
+      accessToken: connection.accessToken,
+      workspaceId,
+    });
+
+    if (!result.ok) {
+      return { success: false, error: result.error };
+    }
+
+    revalidatePath("/settings/monday");
+    revalidatePath("/tasks");
+
+    return {
+      success: true,
+      boardId: result.boardId,
+      workspaceId: result.workspaceId,
+      columnMap: result.columnMap,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Could not create template board.",
+    };
+  }
+}
+
+export { PTO_TEMPLATE_BOARD_NAME };
 
 export async function getMondayBoardColumnsAction(boardId: string): Promise<{
   success: boolean;
