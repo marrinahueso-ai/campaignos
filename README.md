@@ -37,6 +37,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Troubleshooting
+
+| Symptom | Fix |
+| -------- | ----- |
+| Browser **connection refused** on localhost | Start the dev server: `npm run dev` (listens on port **3000**). |
+| **500** errors or `Cannot find module` under `.next` | Clear the Next cache and restart: `npm run dev:clean`. |
+| **Monday Connect** fails locally | Add `MONDAY_CLIENT_ID` and `MONDAY_CLIENT_SECRET` to `.env.local` (copy from Vercel Production or Monday Developer Center). Register `http://localhost:3000/api/monday/oauth/callback` in Monday Developer Center → OAuth. Do not set `NEXT_PUBLIC_SITE_URL` to your Vercel URL when testing OAuth on localhost. If secrets exist only on Vercel, test Monday on the deployed site instead. |
+| **Supabase auth** redirect errors | In Supabase → Authentication → URL configuration, add `http://localhost:3000/auth/callback` to redirect URLs. |
+
+Optional for easier local signup: `CAMPAIGNOS_REQUIRE_ACCESS_CODE=false` in `.env.local`.
+
+
 ## Project Structure
 
 ```
