@@ -15,6 +15,7 @@ import { flattenCommitteeTasks, tasksByBoardColumn } from "@/lib/task-hub/groupi
 import {
   BOARD_COLUMN_STATUSES,
   nextTaskStatus,
+  taskStatusLabel,
 } from "@/lib/event-playbooks/task-status";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
@@ -27,11 +28,22 @@ interface TaskHubBoardProps {
 
 const COLUMN_META: Record<
   (typeof BOARD_COLUMN_STATUSES)[number],
-  { label: string; description: string }
+  { label: string; headerClass: string }
 > = {
-  todo: { label: "To do", description: "Not started yet" },
-  in_progress: { label: "In progress", description: "Active work" },
-  blocked: { label: "Blocked", description: "Waiting on something" },
+  todo: {
+    label: taskStatusLabel("todo"),
+    headerClass: "border-t-[3px] border-t-[var(--cos-status-todo)] bg-[var(--cos-status-todo-bg)]",
+  },
+  in_progress: {
+    label: taskStatusLabel("in_progress"),
+    headerClass:
+      "border-t-[3px] border-t-[var(--cos-status-progress)] bg-[var(--cos-status-progress-bg)]",
+  },
+  blocked: {
+    label: taskStatusLabel("blocked"),
+    headerClass:
+      "border-t-[3px] border-t-[var(--cos-status-blocked)] bg-[var(--cos-status-blocked-bg)]",
+  },
 };
 
 export function TaskHubBoard({ data }: TaskHubBoardProps) {
@@ -203,8 +215,9 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
               key={columnStatus}
               padding="none"
               className={cn(
-                "flex min-h-[20rem] flex-col overflow-hidden",
-                dragOverColumn === columnStatus && "ring-2 ring-cos-dark",
+                "flex min-h-[22rem] flex-col overflow-hidden",
+                dragOverColumn === columnStatus &&
+                  "ring-2 ring-cos-accent ring-offset-2 ring-offset-cos-bg",
               )}
               onDragOver={(event) => {
                 event.preventDefault();
@@ -218,25 +231,25 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
               }}
               onDrop={(event) => handleColumnDrop(columnStatus, event)}
             >
-              <div className="border-b border-cos-border bg-cos-bg px-4 py-3">
+              <div
+                className={cn(
+                  "border-b border-cos-border px-4 py-3",
+                  meta.headerClass,
+                )}
+              >
                 <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-medium text-cos-text">
-                      {meta.label}
-                    </h3>
-                    <p className="text-xs text-cos-muted">{meta.description}</p>
-                  </div>
+                  <h3 className="text-sm font-semibold text-cos-text">{meta.label}</h3>
                   <Badge variant="default">{columnTasks.length}</Badge>
                 </div>
               </div>
 
-              <ul className="flex-1 divide-y divide-cos-border overflow-y-auto">
+              <div className="flex-1 overflow-y-auto bg-cos-bg/30 py-1">
                 {columnTasks.map((task) => {
                   const status = resolveStatus(task);
                   const isPending = pendingTaskIds.has(task.id);
 
                   return (
-                    <li
+                    <div
                       key={task.id}
                       draggable
                       onDragStart={(event) => {
@@ -253,18 +266,18 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
                         committeeName={committeeByTaskId.get(task.id)}
                         isPending={isPending}
                         disabled={pending}
-                        compact
+                        variant="board"
                         onToggleStatus={() => handleToggleStatus(task)}
                       />
-                    </li>
+                    </div>
                   );
                 })}
                 {columnTasks.length === 0 && (
-                  <li className="px-4 py-8 text-center text-sm text-cos-muted">
+                  <p className="px-4 py-10 text-center text-sm text-cos-muted">
                     Drop tasks here
-                  </li>
+                  </p>
                 )}
-              </ul>
+              </div>
             </Card>
           );
         })}
@@ -275,29 +288,26 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
           <button
             type="button"
             onClick={() => setShowDone((value) => !value)}
-            className="flex w-full items-center justify-between border-b border-cos-border bg-cos-bg px-4 py-3 text-left"
+            className="flex w-full items-center justify-between border-t-[3px] border-t-[var(--cos-status-done)] border-b border-cos-border bg-[var(--cos-status-done-bg)] px-4 py-3 text-left transition-colors hover:opacity-90"
           >
-            <span className="text-sm font-medium text-cos-text">
-              Done ({columns.done.length})
+            <span className="text-sm font-semibold text-[var(--cos-status-done-text)]">
+              {taskStatusLabel("done")} ({columns.done.length})
             </span>
-            <span className="text-xs text-cos-muted">
-              {showDone ? "Hide" : "Show"}
-            </span>
+            <span className="text-xs text-cos-muted">{showDone ? "Hide" : "Show"}</span>
           </button>
           {showDone && (
-            <ul className="divide-y divide-cos-border">
+            <div className="grid gap-0 bg-cos-bg/30 sm:grid-cols-2 lg:grid-cols-3">
               {columns.done.map((task) => (
-                <li key={task.id}>
-                  <TaskHubTaskRow
-                    task={task}
-                    status="done"
-                    committeeName={committeeByTaskId.get(task.id)}
-                    compact
-                    onToggleStatus={() => handleToggleStatus(task)}
-                  />
-                </li>
+                <TaskHubTaskRow
+                  key={task.id}
+                  task={task}
+                  status="done"
+                  committeeName={committeeByTaskId.get(task.id)}
+                  variant="board"
+                  onToggleStatus={() => handleToggleStatus(task)}
+                />
               ))}
-            </ul>
+            </div>
           )}
         </Card>
       )}

@@ -5,7 +5,7 @@ export type TaskHubViewScope = "all_committees" | "chaired_committees";
 
 export type TaskHubViewMode = "list" | "board" | "calendar";
 
-export type TaskHubSecondaryGroupMode = "none" | "assignee" | "due_date";
+export type TaskHubSecondaryGroupMode = "none" | "status" | "assignee" | "due_date";
 
 export interface TaskHubEventContext {
   eventId: string;

@@ -18,21 +18,16 @@ import type {
   TaskHubSecondaryGroupMode,
   TaskHubViewMode,
 } from "@/types/task-hub";
-import { ListChecks } from "lucide-react";
+import { LayoutGrid, List, CalendarDays, ListChecks } from "lucide-react";
 
-const VIEW_TABS: { id: TaskHubViewMode; label: string }[] = [
-  { id: "list", label: "List" },
-  { id: "board", label: "Board" },
-  { id: "calendar", label: "Calendar" },
-];
-
-const SECONDARY_GROUP_OPTIONS: {
-  value: TaskHubSecondaryGroupMode;
+const VIEW_TABS: {
+  id: TaskHubViewMode;
   label: string;
+  icon: typeof List;
 }[] = [
-  { value: "none", label: "Flat list" },
-  { value: "assignee", label: "Group by chair" },
-  { value: "due_date", label: "Group by due date" },
+  { id: "list", label: "List", icon: List },
+  { id: "board", label: "Board", icon: LayoutGrid },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
 ];
 
 function parseViewMode(value: string | null): TaskHubViewMode {
@@ -43,7 +38,7 @@ function parseViewMode(value: string | null): TaskHubViewMode {
 }
 
 function parseSecondaryGroup(value: string | null): TaskHubSecondaryGroupMode {
-  if (value === "assignee" || value === "due_date") {
+  if (value === "status" || value === "assignee" || value === "due_date") {
     return value;
   }
   return "none";
@@ -76,7 +71,12 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
     [router, searchParams],
   );
 
-  const showSecondaryGrouping = activeView === "list";
+  const handleSecondaryGroupChange = useCallback(
+    (mode: TaskHubSecondaryGroupMode) => {
+      replaceParams({ group: mode === "none" ? null : mode });
+    },
+    [replaceParams],
+  );
 
   const content = useMemo(() => {
     if (!data.tablesAvailable) {
@@ -115,21 +115,26 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
         return <TaskHubCalendar data={data} />;
       default:
         return (
-          <TaskHubList data={data} secondaryGroupMode={secondaryGroupMode} />
+          <TaskHubList
+            data={data}
+            secondaryGroupMode={secondaryGroupMode}
+            onSecondaryGroupChange={handleSecondaryGroupChange}
+          />
         );
     }
-  }, [activeView, data, secondaryGroupMode]);
+  }, [activeView, data, handleSecondaryGroupChange, secondaryGroupMode]);
 
   return (
     <>
-      <div className="mb-6 space-y-4">
+      <div className="mb-6">
         <div
-          className="flex gap-0 overflow-x-auto border border-cos-border bg-cos-bg p-1"
+          className="inline-flex gap-0.5 overflow-x-auto rounded-md border border-cos-border bg-cos-bg p-1"
           role="tablist"
           aria-label="Task hub views"
         >
           {VIEW_TABS.map((tab) => {
             const isActive = activeView === tab.id;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
@@ -138,44 +143,18 @@ export function TaskHubShell({ data }: TaskHubShellProps) {
                 aria-selected={isActive}
                 onClick={() => replaceParams({ view: tab.id === "list" ? null : tab.id })}
                 className={cn(
-                  "shrink-0 px-4 py-2 text-sm font-medium transition-colors",
+                  "inline-flex shrink-0 items-center gap-2 rounded-sm px-4 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-cos-card text-cos-text shadow-sm"
                     : "text-cos-muted hover:text-cos-text",
                 )}
               >
+                <Icon className="h-4 w-4" aria-hidden />
                 {tab.label}
               </button>
             );
           })}
         </div>
-
-        {showSecondaryGrouping && data.committees.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-              Within committees
-            </span>
-            {SECONDARY_GROUP_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() =>
-                  replaceParams({
-                    group: option.value === "none" ? null : option.value,
-                  })
-                }
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                  secondaryGroupMode === option.value
-                    ? "bg-cos-dark text-[#f6f2eb]"
-                    : "bg-cos-bg text-cos-muted ring-1 ring-cos-border hover:text-cos-text",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {content}

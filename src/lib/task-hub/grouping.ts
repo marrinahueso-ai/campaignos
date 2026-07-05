@@ -1,6 +1,9 @@
 import type { TaskHubCommitteeGroup, TaskHubSecondaryGroup, TaskHubSecondaryGroupMode, TaskHubTaskItem } from "@/types/task-hub";
 import type { BoardColumnStatus } from "@/lib/event-playbooks/task-status";
+import { taskStatusLabel } from "@/lib/event-playbooks/task-status";
+import { mondayLabelToCampaignOsStatus } from "@/lib/monday/status-mapping";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
+import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 
 const UNASSIGNED_LABEL = "Unassigned";
 
@@ -8,13 +11,29 @@ export function effectiveTaskDueDate(task: TaskHubTaskItem): string {
   return task.dueDate ?? task.event.eventDate;
 }
 
+export function resolveTaskDisplayStatus(
+  task: TaskHubTaskItem,
+  statusOverride?: EventPlaybookTaskStatus,
+): EventPlaybookTaskStatus {
+  const base = statusOverride ?? task.status;
+  if (task.monday?.mondayStatusLabel != null) {
+    return mondayLabelToCampaignOsStatus(task.monday.mondayStatusLabel) ?? base;
+  }
+  return base;
+}
+
 export function groupTasksBySecondary(
   tasks: TaskHubTaskItem[],
   mode: TaskHubSecondaryGroupMode,
   committeeChairName: string | null,
+  statusOverrides?: Record<string, EventPlaybookTaskStatus>,
 ): TaskHubSecondaryGroup[] {
   if (mode === "none") {
     return [{ key: "all", label: "All tasks", tasks }];
+  }
+
+  if (mode === "status") {
+    return groupByStatus(tasks, statusOverrides);
   }
 
   if (mode === "assignee") {
@@ -22,6 +41,36 @@ export function groupTasksBySecondary(
   }
 
   return groupByDueDateUrgency(tasks);
+}
+
+const STATUS_GROUP_ORDER: EventPlaybookTaskStatus[] = [
+  "todo",
+  "in_progress",
+  "blocked",
+  "done",
+];
+
+function groupByStatus(
+  tasks: TaskHubTaskItem[],
+  statusOverrides?: Record<string, EventPlaybookTaskStatus>,
+): TaskHubSecondaryGroup[] {
+  const buckets = new Map<EventPlaybookTaskStatus, TaskHubTaskItem[]>();
+  for (const status of STATUS_GROUP_ORDER) {
+    buckets.set(status, []);
+  }
+
+  for (const task of tasks) {
+    const status = resolveTaskDisplayStatus(task, statusOverrides?.[task.id]);
+    buckets.get(status)?.push(task);
+  }
+
+  return STATUS_GROUP_ORDER.filter(
+    (status) => (buckets.get(status)?.length ?? 0) > 0,
+  ).map((status) => ({
+    key: `status:${status}`,
+    label: taskStatusLabel(status),
+    tasks: buckets.get(status) ?? [],
+  }));
 }
 
 function resolveAssigneeLabel(
