@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -94,6 +95,8 @@ export function MondayBoardMappingPanel({
   const [columnMap, setColumnMap] = useState<MondayBoardColumnMap>(EMPTY_COLUMN_MAP);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [createTemplateError, setCreateTemplateError] = useState<string | null>(null);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -102,7 +105,6 @@ export function MondayBoardMappingPanel({
   const showCreateTemplate =
     connected &&
     loaded &&
-    !isPending &&
     (boards.length === 0 || !hasPtoTemplateBoard || Boolean(loadError));
 
   useEffect(() => {
@@ -236,51 +238,62 @@ export function MondayBoardMappingPanel({
     setColumnMap(EMPTY_COLUMN_MAP);
   }
 
-  function handleCreateTemplateBoard() {
+  async function handleCreateTemplateBoard() {
     setError(null);
     setMessage(null);
-    startTransition(() => {
-      void (async () => {
-        try {
-          const result = await createPtoTemplateBoardAction();
-          if (!result.success) {
-            setError(result.error ?? "Could not create template board.");
-            return;
-          }
+    setCreateTemplateError(null);
+    setIsCreatingTemplate(true);
 
-          if (result.boardId) {
-            setBoards((current) => {
-              const exists = current.some((board) => board.id === result.boardId);
-              if (exists) {
-                return current;
-              }
-              return [
-                ...current,
-                {
-                  id: result.boardId!,
-                  name: PTO_TEMPLATE_BOARD_NAME,
-                  workspaceId: result.workspaceId ?? null,
-                },
-              ];
-            });
-            setSelectedBoardId(result.boardId);
-            setSelectedWorkspaceId(result.workspaceId ?? null);
-            setLoadError(null);
-            if (result.columnMap) {
-              setColumnMap(result.columnMap);
-            }
-          }
+    try {
+      const result = await createPtoTemplateBoardAction();
+      if (!result.success) {
+        const failureMessage = result.error ?? "Could not create template board.";
+        setCreateTemplateError(failureMessage);
+        setError(failureMessage);
+        return;
+      }
 
-          setMessage(`${PTO_TEMPLATE_BOARD_NAME} board is ready. Review the column mapping below.`);
-        } catch (createError) {
-          setError(
-            createError instanceof Error
-              ? createError.message
-              : "Could not create template board.",
-          );
+      const boardsResult = await listMondayBoardsAction();
+      if (boardsResult.success && boardsResult.boards) {
+        setBoards(boardsResult.boards);
+        setWorkspaceName(boardsResult.workspaceName ?? null);
+        setLoadError(null);
+      } else if (result.boardId) {
+        setBoards((current) => {
+          const exists = current.some((board) => board.id === result.boardId);
+          if (exists) {
+            return current;
+          }
+          return [
+            ...current,
+            {
+              id: result.boardId!,
+              name: PTO_TEMPLATE_BOARD_NAME,
+              workspaceId: result.workspaceId ?? null,
+            },
+          ];
+        });
+      }
+
+      if (result.boardId) {
+        setSelectedBoardId(result.boardId);
+        setSelectedWorkspaceId(result.workspaceId ?? null);
+        if (result.columnMap) {
+          setColumnMap(result.columnMap);
         }
-      })();
-    });
+      }
+
+      setMessage(`${PTO_TEMPLATE_BOARD_NAME} board is ready. Review the column mapping below.`);
+    } catch (createError) {
+      const failureMessage =
+        createError instanceof Error
+          ? createError.message
+          : "Could not create template board.";
+      setCreateTemplateError(failureMessage);
+      setError(failureMessage);
+    } finally {
+      setIsCreatingTemplate(false);
+    }
   }
 
   function handleSaveMapping() {
@@ -341,7 +354,7 @@ export function MondayBoardMappingPanel({
             value={selectedBoardId}
             onChange={(event) => handleBoardChange(event.target.value)}
             className="w-full border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-            disabled={!loaded || isPending}
+            disabled={!loaded || isPending || isCreatingTemplate}
           >
             <option value="">
               {!loaded ? "Loading boards…" : loadError ? "Could not load boards" : "Select board…"}
@@ -379,11 +392,23 @@ export function MondayBoardMappingPanel({
             <Button
               type="button"
               size="sm"
-              disabled={isPending}
-              onClick={handleCreateTemplateBoard}
+              disabled={isPending || isCreatingTemplate}
+              onClick={() => void handleCreateTemplateBoard()}
             >
-              Create template board
+              {isCreatingTemplate ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  Creating board…
+                </>
+              ) : (
+                "Create template board"
+              )}
             </Button>
+            {createTemplateError && (
+              <p className="text-sm text-red-600" role="alert">
+                {createTemplateError}
+              </p>
+            )}
           </div>
         )}
       </div>
