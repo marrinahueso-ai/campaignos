@@ -197,6 +197,7 @@ export function EventWorkspaceCampaignLayout({
         }
         published={
           <CampaignPublishedStep
+            eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             timeline={timeline}
           />

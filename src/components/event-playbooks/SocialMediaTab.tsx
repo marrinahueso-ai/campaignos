@@ -201,6 +201,7 @@ export function SocialMediaTab({
         }
         published={
           <CampaignPublishedStep
+            eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             timeline={timeline}
           />

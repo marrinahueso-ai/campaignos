@@ -54,6 +54,11 @@ function buildMetaMilestoneItems(
     const first = group[0]!;
     const scheduledDate = toDateOnly(first.scheduledFor!);
     const aggregateStatus = aggregateMetaStatus(group);
+
+    if (aggregateStatus === "draft") {
+      continue;
+    }
+
     const eventTitle = eventTitleById.get(first.eventId) ?? "Event";
 
     items.push({

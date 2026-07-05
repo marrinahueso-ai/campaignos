@@ -434,6 +434,108 @@ export async function publishAllApprovedMetaBundlesAction(
   };
 }
 
+export async function unscheduleMetaBundleAction(
+  eventId: string,
+  relativeDay: number,
+): Promise<MetaPublishActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to unschedule posts." };
+  }
+
+  const bundle = (await getMetaPublishBundles(eventId)).find(
+    (entry) => entry.relativeDay === relativeDay,
+  );
+
+  if (!bundle) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  if (!["scheduled", "approved"].includes(bundle.status)) {
+    return { success: false, error: "This milestone is not scheduled." };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  if (bundleIsManualStoryOnly(bundle)) {
+    if (!bundle.stepId) {
+      return { success: false, error: "Unable to unschedule this milestone." };
+    }
+
+    const { error } = await supabase
+      .from("event_communication_steps")
+      .update({ story_reminder_sent_at: null, updated_at: now })
+      .eq("id", bundle.stepId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidateMetaPaths(eventId);
+    return { success: true, updatedCount: 1, error: null };
+  }
+
+  const { data: slots, error: lookupError } = await supabase
+    .from("meta_publication_slots")
+    .select("id, status")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay);
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  const blocked = slots?.some((slot) =>
+    ["published", "posting"].includes(slot.status as string),
+  );
+  if (blocked) {
+    return {
+      success: false,
+      error: "Cannot unschedule — this milestone has already published or is posting.",
+    };
+  }
+
+  const schedulableSlots = slots?.filter((slot) =>
+    ["scheduled", "approved"].includes(slot.status as string),
+  );
+
+  if (!schedulableSlots?.length) {
+    return { success: false, error: "Nothing scheduled to unschedule." };
+  }
+
+  const { data, error } = await supabase
+    .from("meta_publication_slots")
+    .update({
+      status: "draft",
+      scheduled_for: null,
+      updated_at: now,
+    })
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .in("status", ["scheduled", "approved"])
+    .select("id");
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const updatedCount = data?.length ?? 0;
+  if (updatedCount === 0) {
+    return { success: false, error: "Unable to unschedule this milestone." };
+  }
+
+  if (bundle.stepId && bundle.storyReminderSentAt) {
+    await supabase
+      .from("event_communication_steps")
+      .update({ story_reminder_sent_at: null, updated_at: now })
+      .eq("id", bundle.stepId);
+  }
+
+  revalidateMetaPaths(eventId);
+  return { success: true, updatedCount, error: null };
+}
+
 export async function scheduleMetaBundleAction(
   eventId: string,
   relativeDay: number,

@@ -2,6 +2,7 @@ import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TimelineSection } from "@/components/event-workspace/TimelineSection";
+import { PublishedScheduledMilestones } from "@/components/event-workspace/PublishedScheduledMilestones";
 import {
   Card,
   CardDescription,
@@ -25,6 +26,7 @@ import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publ
 import { cn } from "@/lib/utils/cn";
 
 interface CampaignPublishedStepProps {
+  eventId: string;
   metaPublishBundles: MetaPublishBundle[];
   timeline: ActivityLogEntry[];
 }
@@ -187,6 +189,7 @@ function MilestoneSection({
 }
 
 export function CampaignPublishedStep({
+  eventId,
   metaPublishBundles,
   timeline,
 }: CampaignPublishedStepProps) {
@@ -206,15 +209,7 @@ export function CampaignPublishedStep({
 
   return (
     <div className="space-y-6">
-      <MilestoneSection
-        title="Scheduled milestones"
-        description="Meta posts queued or waiting for their go-live time."
-        bundles={scheduledBundles}
-        section="scheduled"
-        emptyIcon={CalendarCheck}
-        emptyTitle="Nothing scheduled yet"
-        emptyDescription="When you schedule posts in Review & publish, they will appear here with their go-live date and time."
-      />
+      <PublishedScheduledMilestones eventId={eventId} bundles={scheduledBundles} />
 
       <MilestoneSection
         title="Published milestones"
