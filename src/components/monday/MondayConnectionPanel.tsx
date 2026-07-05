@@ -13,6 +13,7 @@ interface MondayConnectionPanelProps {
   integrationConfigured: boolean;
   syncEnabled: boolean;
   accountSlug: string | null;
+  oauthCallbackUrl?: string;
   returnTo?: string;
 }
 
@@ -21,6 +22,7 @@ export function MondayConnectionPanel({
   integrationConfigured,
   syncEnabled,
   accountSlug,
+  oauthCallbackUrl,
   returnTo = "/settings/monday",
 }: MondayConnectionPanelProps) {
   const router = useRouter();
@@ -77,8 +79,10 @@ export function MondayConnectionPanel({
             </a>
           </li>
           <li>
-            Set redirect URL to{" "}
-            <code className="rounded bg-cos-bg px-1">/api/monday/oauth/callback</code>
+            Add this exact redirect URL in Developer Center → OAuth (must match character-for-character):{" "}
+            <code className="break-all rounded bg-cos-bg px-1">
+              {oauthCallbackUrl ?? "https://your-domain/api/monday/oauth/callback"}
+            </code>
           </li>
           <li>
             Enable OAuth scopes (Developer Center → OAuth):{" "}

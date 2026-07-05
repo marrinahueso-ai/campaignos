@@ -21,6 +21,9 @@ const PUBLIC_PATHS = [
   "/auth/callback",
   "/auth/signout",
   "/api/cron",
+  "/api/monday/oauth/callback",
+  "/api/canva/oauth/callback",
+  "/api/meta/oauth/callback",
 ];
 
 function isPublicPath(pathname: string): boolean {

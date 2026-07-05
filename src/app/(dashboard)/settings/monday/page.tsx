@@ -9,7 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
-import { isMondayIntegrationConfigured } from "@/lib/monday/config";
+import {
+  MONDAY_OAUTH_ERROR_MESSAGES,
+  getMondayOAuthCallbackUrl,
+  isMondayIntegrationConfigured,
+} from "@/lib/monday/config";
 import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForCurrentOrg,
@@ -36,11 +40,18 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
   const connected = isMondayConnectionConfigured(connection);
   const syncEnabled = Boolean(connection?.mondaySyncEnabled);
 
+  const oauthCallbackUrl = getMondayOAuthCallbackUrl(
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+      process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+      "http://localhost:3000",
+  );
+
   const statusMessage =
     params.connected === "1"
       ? "Monday connected successfully."
       : params.error
-        ? `Could not connect Monday (${params.error.replaceAll("_", " ")}).`
+        ? (MONDAY_OAUTH_ERROR_MESSAGES[params.error] ??
+          `Could not connect Monday (${params.error.replaceAll("_", " ")}).`)
         : null;
 
   return (
@@ -78,6 +89,7 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
             integrationConfigured={integrationConfigured}
             syncEnabled={syncEnabled}
             accountSlug={connection?.accountSlug ?? null}
+            oauthCallbackUrl={oauthCallbackUrl}
           />
         </div>
       </Card>

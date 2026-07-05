@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -27,8 +27,78 @@ import type {
   MondayItemLink,
 } from "@/lib/monday/types";
 
-export function createMondayOAuthState(): string {
-  return randomBytes(24).toString("hex");
+const MONDAY_OAUTH_STATE_TTL_SECONDS = 60 * 10;
+const MONDAY_OAUTH_DEFAULT_RETURN = "/settings/monday";
+
+function signMondayOAuthStatePayload(payload: string): string {
+  return createHmac("sha256", getMondayClientSecret()).update(payload).digest("base64url");
+}
+
+function safeCompareMondayStateSignatures(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function normalizeMondayOAuthReturnTo(returnTo: string): string {
+  return returnTo.startsWith("/") && !returnTo.startsWith("//")
+    ? returnTo
+    : MONDAY_OAUTH_DEFAULT_RETURN;
+}
+
+/** Signed OAuth state survives cross-site redirects without relying on cookies. */
+export function createMondayOAuthState(returnTo: string): string {
+  const safeReturnTo = normalizeMondayOAuthReturnTo(returnTo);
+  const nonce = randomBytes(32).toString("base64url");
+  const issuedAt = Math.floor(Date.now() / 1000).toString();
+  const encodedReturnTo = Buffer.from(safeReturnTo, "utf8").toString("base64url");
+  const payload = `${nonce}.${issuedAt}.${encodedReturnTo}`;
+  return `${payload}.${signMondayOAuthStatePayload(payload)}`;
+}
+
+export function parseMondayOAuthState(
+  state: string | null | undefined,
+): { valid: boolean; returnTo: string | null } {
+  if (!state) {
+    return { valid: false, returnTo: null };
+  }
+
+  const parts = state.split(".");
+  if (parts.length !== 4) {
+    return { valid: false, returnTo: null };
+  }
+
+  const [nonce, issuedAtRaw, encodedReturnTo, signature] = parts;
+  if (!nonce || !issuedAtRaw || !encodedReturnTo || !signature) {
+    return { valid: false, returnTo: null };
+  }
+
+  const payload = `${nonce}.${issuedAtRaw}.${encodedReturnTo}`;
+  if (!safeCompareMondayStateSignatures(signature, signMondayOAuthStatePayload(payload))) {
+    return { valid: false, returnTo: null };
+  }
+
+  const issuedAt = Number(issuedAtRaw);
+  if (!Number.isFinite(issuedAt)) {
+    return { valid: false, returnTo: null };
+  }
+
+  const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
+  if (ageSeconds < 0 || ageSeconds > MONDAY_OAUTH_STATE_TTL_SECONDS) {
+    return { valid: false, returnTo: null };
+  }
+
+  try {
+    const returnTo = normalizeMondayOAuthReturnTo(
+      Buffer.from(encodedReturnTo, "base64url").toString("utf8"),
+    );
+    return { valid: true, returnTo };
+  } catch {
+    return { valid: false, returnTo: null };
+  }
 }
 
 export function isMondayConnectionConfigured(

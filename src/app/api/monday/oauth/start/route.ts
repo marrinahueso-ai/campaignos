@@ -5,14 +5,18 @@ import {
   MONDAY_OAUTH_SCOPES,
   MONDAY_OAUTH_STATE_COOKIE,
   getMondayClientId,
+  getMondayOAuthCookieOptions,
   getMondayRedirectUri,
   isMondayIntegrationConfigured,
+  resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
 import { createMondayOAuthState } from "@/lib/monday/connection";
 
 export async function GET(request: NextRequest) {
+  const origin = resolveMondayOAuthOrigin(request.nextUrl.origin);
+
   if (!isMondayIntegrationConfigured()) {
-    const settingsUrl = new URL("/settings/monday", request.nextUrl.origin);
+    const settingsUrl = new URL("/settings/monday", origin);
     settingsUrl.searchParams.set("error", "not_configured");
     return NextResponse.redirect(settingsUrl);
   }
@@ -21,24 +25,19 @@ export async function GET(request: NextRequest) {
   const safeReturnTo =
     returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/monday";
 
-  const state = createMondayOAuthState();
-  const redirectUri = getMondayRedirectUri(request.nextUrl.origin);
+  const state = createMondayOAuthState(safeReturnTo);
+  const redirectUri = getMondayRedirectUri(origin);
 
   const authorizeUrl = new URL(MONDAY_AUTHORIZE_URL);
   authorizeUrl.searchParams.set("client_id", getMondayClientId());
   authorizeUrl.searchParams.set("redirect_uri", redirectUri);
   authorizeUrl.searchParams.set("scope", MONDAY_OAUTH_SCOPES);
   authorizeUrl.searchParams.set("state", state);
+  authorizeUrl.searchParams.set("response_type", "code");
   authorizeUrl.searchParams.set("force_install_if_needed", "true");
 
   const response = NextResponse.redirect(authorizeUrl);
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 10,
-  };
+  const cookieOptions = getMondayOAuthCookieOptions(origin);
 
   response.cookies.set(MONDAY_OAUTH_STATE_COOKIE, state, cookieOptions);
   response.cookies.set(MONDAY_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);
