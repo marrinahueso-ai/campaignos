@@ -158,7 +158,10 @@ export async function listAllAccessibleMondayBoards(
   const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
 
   const [allBoards, mainBoards] = await Promise.all([
-    listMondayBoards(accessToken, options),
+    listMondayBoards(accessToken, options).catch((error) => {
+      console.warn("Monday all-workspaces board query failed:", error);
+      return [];
+    }),
     listMondayBoards(accessToken, {
       ...options,
       workspaceIds: [null],
@@ -170,6 +173,10 @@ export async function listAllAccessibleMondayBoards(
 
   mergeMondayBoardSummaries(byId, allBoards);
   mergeMondayBoardSummaries(byId, mainBoards);
+
+  if (byId.size === 0) {
+    throw new Error("Could not load boards from Monday.");
+  }
 
   return [...byId.values()].sort((left, right) =>
     left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),

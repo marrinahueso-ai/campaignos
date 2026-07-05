@@ -8,10 +8,10 @@ import {
   getMondayBoardColumnsAction,
   getMondayBoardMappingAction,
   listMondayBoardsAction,
-  PTO_TEMPLATE_BOARD_NAME,
   saveMondayBoardMappingAction,
 } from "@/lib/monday/actions";
 import { autoDetectColumnMap } from "@/lib/monday/column-map-detect";
+import { PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/constants";
 import type { MondayBoardColumnMap, MondayBoardColumn } from "@/lib/monday/types";
 
 interface MondayBoardMappingPanelProps {
@@ -158,10 +158,12 @@ export function MondayBoardMappingPanel({
           setError(message);
         }
 
-        if (mappingResult.mapping) {
+        if (mappingResult.success && mappingResult.mapping) {
           setSelectedBoardId(mappingResult.mapping.mondayBoardId);
           setSelectedWorkspaceId(mappingResult.mapping.mondayWorkspaceId);
           setColumnMap(mappingResult.mapping.columnMap);
+        } else if (!mappingResult.success && mappingResult.error) {
+          console.warn("Could not load saved Monday board mapping:", mappingResult.error);
         }
       } catch (loadError) {
         if (cancelled) {
@@ -193,18 +195,31 @@ export function MondayBoardMappingPanel({
     let cancelled = false;
 
     async function loadColumns() {
-      const result = await getMondayBoardColumnsAction(selectedBoardId);
-      if (cancelled) {
-        return;
-      }
-      if (result.success && result.columns) {
-        setColumns(result.columns);
-        setColumnMap((current) => {
-          if (current.statusColumnId) {
-            return current;
-          }
-          return autoDetectColumnMap(result.columns ?? [], EMPTY_COLUMN_MAP);
-        });
+      try {
+        const result = await getMondayBoardColumnsAction(selectedBoardId);
+        if (cancelled) {
+          return;
+        }
+        if (result.success && result.columns) {
+          setColumns(result.columns);
+          setColumnMap((current) => {
+            if (current.statusColumnId) {
+              return current;
+            }
+            return autoDetectColumnMap(result.columns ?? [], EMPTY_COLUMN_MAP);
+          });
+        } else if (result.error) {
+          setError(result.error);
+        }
+      } catch (columnLoadError) {
+        if (cancelled) {
+          return;
+        }
+        setError(
+          columnLoadError instanceof Error
+            ? columnLoadError.message
+            : "Could not load board columns.",
+        );
       }
     }
 
@@ -224,36 +239,47 @@ export function MondayBoardMappingPanel({
   function handleCreateTemplateBoard() {
     setError(null);
     setMessage(null);
-    startTransition(async () => {
-      const result = await createPtoTemplateBoardAction();
-      if (!result.success) {
-        setError(result.error ?? "Could not create template board.");
-        return;
-      }
-
-      if (result.boardId) {
-        setBoards((current) => {
-          const exists = current.some((board) => board.id === result.boardId);
-          if (exists) {
-            return current;
+    startTransition(() => {
+      void (async () => {
+        try {
+          const result = await createPtoTemplateBoardAction();
+          if (!result.success) {
+            setError(result.error ?? "Could not create template board.");
+            return;
           }
-          return [
-            ...current,
-            {
-              id: result.boardId!,
-              name: PTO_TEMPLATE_BOARD_NAME,
-              workspaceId: result.workspaceId ?? null,
-            },
-          ];
-        });
-        setSelectedBoardId(result.boardId);
-        setSelectedWorkspaceId(result.workspaceId ?? null);
-        if (result.columnMap) {
-          setColumnMap(result.columnMap);
-        }
-      }
 
-      setMessage(`${PTO_TEMPLATE_BOARD_NAME} board is ready. Review the column mapping below.`);
+          if (result.boardId) {
+            setBoards((current) => {
+              const exists = current.some((board) => board.id === result.boardId);
+              if (exists) {
+                return current;
+              }
+              return [
+                ...current,
+                {
+                  id: result.boardId!,
+                  name: PTO_TEMPLATE_BOARD_NAME,
+                  workspaceId: result.workspaceId ?? null,
+                },
+              ];
+            });
+            setSelectedBoardId(result.boardId);
+            setSelectedWorkspaceId(result.workspaceId ?? null);
+            setLoadError(null);
+            if (result.columnMap) {
+              setColumnMap(result.columnMap);
+            }
+          }
+
+          setMessage(`${PTO_TEMPLATE_BOARD_NAME} board is ready. Review the column mapping below.`);
+        } catch (createError) {
+          setError(
+            createError instanceof Error
+              ? createError.message
+              : "Could not create template board.",
+          );
+        }
+      })();
     });
   }
 
