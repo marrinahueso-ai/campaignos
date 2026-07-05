@@ -22,6 +22,8 @@ export class MondayApiError extends Error {
  * Server-side Monday.com GraphQL client.
  * All CampaignOS UI reads/writes should go through this — never call Monday from the browser.
  */
+const MONDAY_FETCH_TIMEOUT_MS = 15_000;
+
 export async function mondayGraphQL<T>(
   accessToken: string,
   query: string,
@@ -35,6 +37,7 @@ export async function mondayGraphQL<T>(
       "API-Version": "2024-10",
     },
     body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(MONDAY_FETCH_TIMEOUT_MS),
   });
 
   const retryAfter = response.headers.get("Retry-After");
@@ -154,19 +157,19 @@ export async function listAllAccessibleMondayBoards(
 ): Promise<{ id: string; name: string; workspaceId: string | null }[]> {
   const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
 
-  mergeMondayBoardSummaries(byId, await listMondayBoards(accessToken, options));
+  const [allBoards, mainBoards] = await Promise.all([
+    listMondayBoards(accessToken, options),
+    listMondayBoards(accessToken, {
+      ...options,
+      workspaceIds: [null],
+    }).catch((error) => {
+      console.warn("Monday main-workspace board query failed:", error);
+      return [];
+    }),
+  ]);
 
-  try {
-    mergeMondayBoardSummaries(
-      byId,
-      await listMondayBoards(accessToken, {
-        ...options,
-        workspaceIds: [null],
-      }),
-    );
-  } catch (error) {
-    console.warn("Monday main-workspace board query failed:", error);
-  }
+  mergeMondayBoardSummaries(byId, allBoards);
+  mergeMondayBoardSummaries(byId, mainBoards);
 
   return [...byId.values()].sort((left, right) =>
     left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),

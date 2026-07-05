@@ -135,9 +135,11 @@ export async function listMondayBoardsAction(): Promise<{
       connection.accessToken,
       workspaces,
     );
+    // Keep pagination modest — the settings picker only needs a representative list,
+    // and unbounded sequential Monday API calls can exceed Vercel function timeouts.
     const boards = await listAllAccessibleMondayBoards(connection.accessToken, {
-      limit: 100,
-      maxPages: 10,
+      limit: 50,
+      maxPages: 3,
     });
 
     const mainWorkspace = workspaces.find((workspace) =>

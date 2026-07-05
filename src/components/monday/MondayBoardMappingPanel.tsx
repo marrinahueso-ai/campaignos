@@ -20,6 +20,8 @@ interface MondayBoardMappingPanelProps {
   justConnected?: boolean;
 }
 
+const BOARD_LOAD_TIMEOUT_MS = 25_000;
+
 const EMPTY_COLUMN_MAP: MondayBoardColumnMap = {
   statusColumnId: "",
   dueDateColumnId: null,
@@ -120,9 +122,23 @@ export function MondayBoardMappingPanel({
       setLoaded(false);
 
       try {
-        const [boardsResult, mappingResult] = await Promise.all([
+        const loadPromise = Promise.all([
           listMondayBoardsAction(),
           getMondayBoardMappingAction(),
+        ]);
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          window.setTimeout(() => {
+            reject(
+              new Error(
+                "Loading boards timed out. Try refreshing the page or reconnecting Monday.",
+              ),
+            );
+          }, BOARD_LOAD_TIMEOUT_MS);
+        });
+
+        const [boardsResult, mappingResult] = await Promise.race([
+          loadPromise,
+          timeoutPromise,
         ]);
 
         if (cancelled) {
