@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  MONDAY_OAUTH_REDIRECT_URI_COOKIE,
   MONDAY_OAUTH_RETURN_COOKIE,
   MONDAY_OAUTH_STATE_COOKIE,
   getMondayOAuthCookieOptions,
@@ -75,19 +76,29 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
-  const redirectUri = getMondayRedirectUri(origin);
-  const token = await exchangeMondayAuthorizationCode({
+  const redirectUri =
+    (parsedState.valid && parsedState.redirectUri) ||
+    request.cookies.get(MONDAY_OAUTH_REDIRECT_URI_COOKIE)?.value ||
+    getMondayRedirectUri(origin);
+
+  const tokenResult = await exchangeMondayAuthorizationCode({
     code,
     redirectUri,
   });
 
-  if (!token) {
+  if (!tokenResult.ok) {
     console.error("Monday OAuth token exchange failed for redirect_uri:", redirectUri);
-    redirectTarget.searchParams.set("error", "token_exchange_failed");
+    redirectTarget.searchParams.set("error", tokenResult.error);
+    if (tokenResult.errorDescription) {
+      redirectTarget.searchParams.set("error_description", tokenResult.errorDescription);
+    }
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
-  const saved = await saveMondayConnectionFromTokenResponse(organization.id, token);
+  const saved = await saveMondayConnectionFromTokenResponse(
+    organization.id,
+    tokenResult.token,
+  );
   if (!saved) {
     redirectTarget.searchParams.set("error", "save_failed");
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
@@ -101,5 +112,6 @@ function clearOAuthCookies(response: NextResponse, origin: string): NextResponse
   const cookieOptions = getMondayOAuthCookieOptions(origin);
   response.cookies.set(MONDAY_OAUTH_STATE_COOKIE, "", { ...cookieOptions, maxAge: 0 });
   response.cookies.set(MONDAY_OAUTH_RETURN_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+  response.cookies.set(MONDAY_OAUTH_REDIRECT_URI_COOKIE, "", { ...cookieOptions, maxAge: 0 });
   return response;
 }

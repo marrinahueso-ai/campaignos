@@ -49,55 +49,65 @@ function normalizeMondayOAuthReturnTo(returnTo: string): string {
     : MONDAY_OAUTH_DEFAULT_RETURN;
 }
 
+function encodeMondayOAuthStateField(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
+function decodeMondayOAuthStateField(value: string): string {
+  return Buffer.from(value, "base64url").toString("utf8");
+}
+
 /** Signed OAuth state survives cross-site redirects without relying on cookies. */
-export function createMondayOAuthState(returnTo: string): string {
+export function createMondayOAuthState(returnTo: string, redirectUri: string): string {
   const safeReturnTo = normalizeMondayOAuthReturnTo(returnTo);
   const nonce = randomBytes(32).toString("base64url");
   const issuedAt = Math.floor(Date.now() / 1000).toString();
-  const encodedReturnTo = Buffer.from(safeReturnTo, "utf8").toString("base64url");
-  const payload = `${nonce}.${issuedAt}.${encodedReturnTo}`;
+  const encodedReturnTo = encodeMondayOAuthStateField(safeReturnTo);
+  const encodedRedirectUri = encodeMondayOAuthStateField(redirectUri);
+  const payload = `${nonce}.${issuedAt}.${encodedReturnTo}.${encodedRedirectUri}`;
   return `${payload}.${signMondayOAuthStatePayload(payload)}`;
 }
 
 export function parseMondayOAuthState(
   state: string | null | undefined,
-): { valid: boolean; returnTo: string | null } {
+): { valid: boolean; returnTo: string | null; redirectUri: string | null } {
   if (!state) {
-    return { valid: false, returnTo: null };
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
   const parts = state.split(".");
-  if (parts.length !== 4) {
-    return { valid: false, returnTo: null };
+  if (parts.length !== 5) {
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
-  const [nonce, issuedAtRaw, encodedReturnTo, signature] = parts;
-  if (!nonce || !issuedAtRaw || !encodedReturnTo || !signature) {
-    return { valid: false, returnTo: null };
+  const [nonce, issuedAtRaw, encodedReturnTo, encodedRedirectUri, signature] = parts;
+  if (!nonce || !issuedAtRaw || !encodedReturnTo || !encodedRedirectUri || !signature) {
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
-  const payload = `${nonce}.${issuedAtRaw}.${encodedReturnTo}`;
+  const payload = `${nonce}.${issuedAtRaw}.${encodedReturnTo}.${encodedRedirectUri}`;
   if (!safeCompareMondayStateSignatures(signature, signMondayOAuthStatePayload(payload))) {
-    return { valid: false, returnTo: null };
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
   const issuedAt = Number(issuedAtRaw);
   if (!Number.isFinite(issuedAt)) {
-    return { valid: false, returnTo: null };
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
   const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
   if (ageSeconds < 0 || ageSeconds > MONDAY_OAUTH_STATE_TTL_SECONDS) {
-    return { valid: false, returnTo: null };
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 
   try {
     const returnTo = normalizeMondayOAuthReturnTo(
-      Buffer.from(encodedReturnTo, "base64url").toString("utf8"),
+      decodeMondayOAuthStateField(encodedReturnTo),
     );
-    return { valid: true, returnTo };
+    const redirectUri = decodeMondayOAuthStateField(encodedRedirectUri);
+    return { valid: true, returnTo, redirectUri };
   } catch {
-    return { valid: false, returnTo: null };
+    return { valid: false, returnTo: null, redirectUri: null };
   }
 }
 
@@ -132,7 +142,40 @@ export async function getMondayConnectionForCurrentOrg(): Promise<MondayConnecti
   return getMondayConnectionForOrganization(organization.id);
 }
 
-async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenResponse | null> {
+export type MondayTokenExchangeResult =
+  | { ok: true; token: MondayTokenResponse }
+  | {
+      ok: false;
+      error: string;
+      errorDescription: string | null;
+      status: number;
+    };
+
+function parseMondayTokenErrorBody(
+  text: string,
+): { error: string; errorDescription: string | null } {
+  try {
+    const parsed = JSON.parse(text) as {
+      error?: string;
+      error_description?: string;
+      message?: string;
+    };
+    return {
+      error: parsed.error?.trim() || "token_exchange_failed",
+      errorDescription: parsed.error_description?.trim() || parsed.message?.trim() || null,
+    };
+  } catch {
+    const trimmed = text.trim();
+    return {
+      error: "token_exchange_failed",
+      errorDescription: trimmed || null,
+    };
+  }
+}
+
+async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenExchangeResult> {
+  const redirectUri = body.get("redirect_uri");
+
   const response = await fetch(MONDAY_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -141,19 +184,30 @@ async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenRe
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("Monday token exchange failed:", response.status, text);
-    return null;
+    const parsed = parseMondayTokenErrorBody(text);
+    console.error("Monday token exchange failed:", {
+      status: response.status,
+      error: parsed.error,
+      errorDescription: parsed.errorDescription,
+      redirectUri,
+      body: text,
+    });
+    return {
+      ok: false,
+      error: parsed.error,
+      errorDescription: parsed.errorDescription,
+      status: response.status,
+    };
   }
 
-  return (await response.json()) as MondayTokenResponse;
+  return { ok: true, token: (await response.json()) as MondayTokenResponse };
 }
 
 export async function exchangeMondayAuthorizationCode(input: {
   code: string;
   redirectUri: string;
-}): Promise<MondayTokenResponse | null> {
+}): Promise<MondayTokenExchangeResult> {
   const body = new URLSearchParams({
-    grant_type: "authorization_code",
     client_id: getMondayClientId(),
     client_secret: getMondayClientSecret(),
     redirect_uri: input.redirectUri,

@@ -95,6 +95,12 @@ export function MondayConnectionPanel({
             Set <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_ID</code> and{" "}
             <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_SECRET</code> in env
           </li>
+          <li>
+            Set <code className="rounded bg-cos-bg px-1">NEXT_PUBLIC_SITE_URL</code> to your
+            public site origin (e.g.{" "}
+            <code className="rounded bg-cos-bg px-1">https://campaignos-six.vercel.app</code>)
+            so OAuth redirect URLs stay consistent in production
+          </li>
         </ul>
       </div>
     );

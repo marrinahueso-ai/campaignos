@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   MONDAY_AUTHORIZE_URL,
+  MONDAY_OAUTH_REDIRECT_URI_COOKIE,
   MONDAY_OAUTH_RETURN_COOKIE,
   MONDAY_OAUTH_SCOPES,
   MONDAY_OAUTH_STATE_COOKIE,
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
   const safeReturnTo =
     returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/monday";
 
-  const state = createMondayOAuthState(safeReturnTo);
   const redirectUri = getMondayRedirectUri(origin);
+  const state = createMondayOAuthState(safeReturnTo, redirectUri);
 
   const authorizeUrl = new URL(MONDAY_AUTHORIZE_URL);
   authorizeUrl.searchParams.set("client_id", getMondayClientId());
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
 
   response.cookies.set(MONDAY_OAUTH_STATE_COOKIE, state, cookieOptions);
   response.cookies.set(MONDAY_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);
+  response.cookies.set(MONDAY_OAUTH_REDIRECT_URI_COOKIE, redirectUri, cookieOptions);
 
   return response;
 }

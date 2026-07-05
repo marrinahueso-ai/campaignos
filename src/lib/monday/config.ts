@@ -13,6 +13,7 @@ export const MONDAY_OAUTH_SCOPES = [
 
 export const MONDAY_OAUTH_STATE_COOKIE = "monday_oauth_state";
 export const MONDAY_OAUTH_RETURN_COOKIE = "monday_oauth_return_to";
+export const MONDAY_OAUTH_REDIRECT_URI_COOKIE = "monday_oauth_redirect_uri";
 
 export function isMondayIntegrationConfigured(): boolean {
   return Boolean(
@@ -94,6 +95,10 @@ export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   no_organization: "Sign in to CampaignOS before connecting Monday.",
   token_exchange_failed:
     "Could not exchange the Monday authorization code for a token. Check client secret and redirect URL.",
+  invalid_client:
+    "Monday rejected the client ID or client secret. Confirm MONDAY_CLIENT_ID and MONDAY_CLIENT_SECRET in Vercel match Developer Center → Basic Information.",
+  invalid_grant:
+    "Monday rejected the authorization code. The code may have expired, already been used, or the redirect URL did not match the authorize request.",
   save_failed: "Monday authorized successfully but CampaignOS could not save the connection.",
   access_denied: "Monday access was denied.",
   invalid_scope: "Requested OAuth scopes do not match your Monday app configuration.",
@@ -102,3 +107,19 @@ export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   server_error: "Monday returned a server error during OAuth.",
   temporary_unavailable: "Monday OAuth is temporarily unavailable. Try again shortly.",
 };
+
+export function formatMondayOAuthError(
+  error: string,
+  errorDescription?: string | null,
+): string {
+  const base =
+    MONDAY_OAUTH_ERROR_MESSAGES[error] ??
+    `Could not connect Monday (${error.replaceAll("_", " ")}).`;
+
+  const detail = errorDescription?.trim();
+  if (!detail) {
+    return base;
+  }
+
+  return `${base} Monday says: ${detail}`;
+}

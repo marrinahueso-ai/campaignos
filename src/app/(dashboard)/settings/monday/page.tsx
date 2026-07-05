@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import {
-  MONDAY_OAUTH_ERROR_MESSAGES,
+  formatMondayOAuthError,
   getMondayOAuthCallbackUrl,
   isMondayIntegrationConfigured,
 } from "@/lib/monday/config";
@@ -26,7 +26,7 @@ export const metadata = {
 };
 
 interface MondaySettingsPageProps {
-  searchParams: Promise<{ connected?: string; error?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string; error_description?: string }>;
 }
 
 export default async function MondaySettingsPage({ searchParams }: MondaySettingsPageProps) {
@@ -50,8 +50,7 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
     params.connected === "1"
       ? "Monday connected successfully."
       : params.error
-        ? (MONDAY_OAUTH_ERROR_MESSAGES[params.error] ??
-          `Could not connect Monday (${params.error.replaceAll("_", " ")}).`)
+        ? formatMondayOAuthError(params.error, params.error_description)
         : null;
 
   return (
