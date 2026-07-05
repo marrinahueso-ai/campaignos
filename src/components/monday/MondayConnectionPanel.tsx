@@ -86,10 +86,12 @@ export function MondayConnectionPanel({
           </li>
           <li>
             Enable OAuth scopes (Developer Center → OAuth):{" "}
+            <code className="rounded bg-cos-bg px-1">me:read</code>,{" "}
             <code className="rounded bg-cos-bg px-1">boards:read</code>,{" "}
             <code className="rounded bg-cos-bg px-1">boards:write</code>,{" "}
             <code className="rounded bg-cos-bg px-1">workspaces:read</code> — must
-            match the authorize request exactly
+            match the authorize request exactly. After changing scopes, click Connect Monday
+            again to re-authorize.
           </li>
           <li>
             Copy <strong>Client ID</strong> and <strong>Client Secret</strong> from Developer

@@ -6,6 +6,7 @@ export const MONDAY_TOKEN_URL = "https://auth.monday.com/oauth2/token";
 
 /** Phase 1 OAuth scopes — must match Developer Center OAuth settings exactly. */
 export const MONDAY_OAUTH_SCOPES = [
+  "me:read",
   "boards:read",
   "boards:write",
   "workspaces:read",
