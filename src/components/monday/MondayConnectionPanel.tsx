@@ -12,6 +12,7 @@ interface MondayConnectionPanelProps {
   connected: boolean;
   integrationConfigured: boolean;
   syncEnabled: boolean;
+  boardConfigured: boolean;
   accountSlug: string | null;
   oauthCallbackUrl?: string;
   returnTo?: string;
@@ -21,6 +22,7 @@ export function MondayConnectionPanel({
   connected,
   integrationConfigured,
   syncEnabled,
+  boardConfigured,
   accountSlug,
   oauthCallbackUrl,
   returnTo = "/settings/monday",
@@ -157,12 +159,17 @@ export function MondayConnectionPanel({
                     <input
                       type="checkbox"
                       checked={syncEnabled}
-                      disabled={isPending}
+                      disabled={isPending || !boardConfigured}
                       onChange={(event) => handleToggleSync(event.target.checked)}
                       className="h-4 w-4 rounded border-cos-border"
                     />
                     Enable Monday sync
                   </label>
+                  {!boardConfigured && (
+                    <span className="text-xs text-cos-muted">
+                      Complete Step 2 (board + column mapping) first.
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button href={connectHref} variant="secondary" size="sm">

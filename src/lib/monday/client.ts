@@ -58,6 +58,12 @@ export async function mondayGraphQL<T>(
   const payload = (await response.json()) as MondayGraphQLResponse<T>;
 
   if (payload.errors?.length) {
+    console.error("Monday GraphQL errors:", {
+      messages: payload.errors.map((entry) => entry.message),
+      errors: payload.errors,
+      queryPreview: query.replace(/\s+/g, " ").trim().slice(0, 240),
+      variables,
+    });
     throw new MondayApiError(
       payload.errors.map((e) => e.message).join("; "),
       200,
@@ -105,34 +111,76 @@ export async function listMondayWorkspaces(
 }
 
 /** Prefer the workspace selected during OAuth install (default / Main). */
-export async function resolveMondayWorkspaceId(accessToken: string): Promise<string | null> {
-  const workspaces = await listMondayWorkspaces(accessToken);
-  if (workspaces.length === 0) {
+export async function resolveMondayWorkspaceId(
+  accessToken: string,
+  workspaces?: MondayWorkspaceSummary[],
+): Promise<string | null> {
+  const resolvedWorkspaces = workspaces ?? (await listMondayWorkspaces(accessToken));
+  if (resolvedWorkspaces.length === 0) {
     return null;
   }
 
-  const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
+  const defaultWorkspace = resolvedWorkspaces.find((workspace) => workspace.isDefault);
   if (defaultWorkspace) {
     return defaultWorkspace.id;
   }
 
-  const mainWorkspace = workspaces.find((workspace) =>
+  const mainWorkspace = resolvedWorkspaces.find((workspace) =>
     /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
   );
   if (mainWorkspace) {
     return mainWorkspace.id;
   }
 
-  return workspaces[0]?.id ?? null;
+  return resolvedWorkspaces[0]?.id ?? null;
+}
+
+function mergeMondayBoardSummaries(
+  target: Map<string, { id: string; name: string; workspaceId: string | null }>,
+  boards: { id: string; name: string; workspaceId: string | null }[],
+): void {
+  for (const board of boards) {
+    target.set(board.id, board);
+  }
+}
+
+/**
+ * List every board the token can read across workspaces, including Main (pre-migration
+ * Main uses a null workspace_id and is queried with workspace_ids: [null]).
+ */
+export async function listAllAccessibleMondayBoards(
+  accessToken: string,
+  options: { limit?: number; maxPages?: number } = {},
+): Promise<{ id: string; name: string; workspaceId: string | null }[]> {
+  const byId = new Map<string, { id: string; name: string; workspaceId: string | null }>();
+
+  mergeMondayBoardSummaries(byId, await listMondayBoards(accessToken, options));
+
+  try {
+    mergeMondayBoardSummaries(
+      byId,
+      await listMondayBoards(accessToken, {
+        ...options,
+        workspaceIds: [null],
+      }),
+    );
+  } catch (error) {
+    console.warn("Monday main-workspace board query failed:", error);
+  }
+
+  return [...byId.values()].sort((left, right) =>
+    left.name.localeCompare(right.name, undefined, { sensitivity: "base" }),
+  );
 }
 
 /** List boards the connected account can access (Phase 1 settings picker). */
 export async function listMondayBoards(
   accessToken: string,
-  options: { limit?: number; workspaceIds?: string[]; maxPages?: number } = {},
+  options: { limit?: number; workspaceIds?: (string | null)[]; maxPages?: number } = {},
 ): Promise<{ id: string; name: string; workspaceId: string | null }[]> {
   const pageSize = options.limit ?? 50;
-  const workspaceIds = options.workspaceIds?.filter(Boolean) ?? [];
+  const workspaceIds =
+    options.workspaceIds?.filter((workspaceId) => workspaceId !== undefined) ?? [];
   const maxPages = options.maxPages ?? 5;
   const boards: { id: string; name: string; workspaceId: string | null }[] = [];
 
@@ -143,14 +191,14 @@ export async function listMondayBoards(
       accessToken,
       workspaceIds.length > 0
         ? `query ($limit: Int!, $page: Int!, $workspaceIds: [ID]) {
-            boards (limit: $limit, page: $page, workspace_ids: $workspaceIds) {
+            boards (limit: $limit, page: $page, workspace_ids: $workspaceIds, state: active) {
               id
               name
               workspace_id
             }
           }`
         : `query ($limit: Int!, $page: Int!) {
-            boards (limit: $limit, page: $page) {
+            boards (limit: $limit, page: $page, state: active) {
               id
               name
               workspace_id

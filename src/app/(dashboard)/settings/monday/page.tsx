@@ -39,6 +39,9 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
   const integrationConfigured = isMondayIntegrationConfigured();
   const connected = isMondayConnectionConfigured(connection);
   const syncEnabled = Boolean(connection?.mondaySyncEnabled);
+  const boardConfigured = Boolean(
+    mapping?.mondayBoardId?.trim() && mapping.columnMap.statusColumnId?.trim(),
+  );
 
   const oauthCallbackUrl = getMondayOAuthCallbackUrl(
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -87,6 +90,7 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
             connected={connected}
             integrationConfigured={integrationConfigured}
             syncEnabled={syncEnabled}
+            boardConfigured={boardConfigured}
             accountSlug={connection?.accountSlug ?? null}
             oauthCallbackUrl={oauthCallbackUrl}
           />

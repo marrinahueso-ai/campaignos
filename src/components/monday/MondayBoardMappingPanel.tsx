@@ -94,15 +94,21 @@ export function MondayBoardMappingPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const hasPtoTemplateBoard = boards.some((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
-  const showCreateTemplate = connected && loaded && (boards.length === 0 || !hasPtoTemplateBoard);
+  const showCreateTemplate =
+    connected &&
+    loaded &&
+    !isPending &&
+    (boards.length === 0 || !hasPtoTemplateBoard || Boolean(loadError));
 
   useEffect(() => {
     if (!connected) {
       setLoaded(false);
       setBoards([]);
       setError(null);
+      setLoadError(null);
       return;
     }
 
@@ -110,42 +116,58 @@ export function MondayBoardMappingPanel({
 
     async function load() {
       setError(null);
+      setLoadError(null);
       setLoaded(false);
 
-      const [boardsResult, mappingResult] = await Promise.all([
-        listMondayBoardsAction(),
-        getMondayBoardMappingAction(),
-      ]);
+      try {
+        const [boardsResult, mappingResult] = await Promise.all([
+          listMondayBoardsAction(),
+          getMondayBoardMappingAction(),
+        ]);
 
-      if (cancelled) {
-        return;
-      }
-
-      if (boardsResult.success && boardsResult.boards) {
-        setBoards(boardsResult.boards);
-        setWorkspaceName(boardsResult.workspaceName ?? null);
-        if (boardsResult.workspaceId && !mappingResult.mapping) {
-          setSelectedWorkspaceId(boardsResult.workspaceId);
+        if (cancelled) {
+          return;
         }
-      } else {
+
+        if (boardsResult.success && boardsResult.boards) {
+          setBoards(boardsResult.boards);
+          setWorkspaceName(boardsResult.workspaceName ?? null);
+          if (boardsResult.workspaceId && !mappingResult.mapping) {
+            setSelectedWorkspaceId(boardsResult.workspaceId);
+          }
+        } else {
+          setBoards([]);
+          const message = boardsResult.error ?? "Could not load Monday boards.";
+          setLoadError(message);
+          setError(message);
+        }
+
+        if (mappingResult.mapping) {
+          setSelectedBoardId(mappingResult.mapping.mondayBoardId);
+          setSelectedWorkspaceId(mappingResult.mapping.mondayWorkspaceId);
+          setColumnMap(mappingResult.mapping.columnMap);
+        }
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+        const message =
+          loadError instanceof Error ? loadError.message : "Could not load Monday boards.";
         setBoards([]);
-        setError(boardsResult.error ?? "Could not load Monday boards.");
+        setLoadError(message);
+        setError(message);
+      } finally {
+        if (!cancelled) {
+          setLoaded(true);
+        }
       }
-
-      if (mappingResult.mapping) {
-        setSelectedBoardId(mappingResult.mapping.mondayBoardId);
-        setSelectedWorkspaceId(mappingResult.mapping.mondayWorkspaceId);
-        setColumnMap(mappingResult.mapping.columnMap);
-      }
-
-      setLoaded(true);
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [connected, justConnected]);
+  }, [connected]);
 
   useEffect(() => {
     if (!connected || !selectedBoardId || !loaded) {
@@ -280,7 +302,7 @@ export function MondayBoardMappingPanel({
             disabled={!loaded || isPending}
           >
             <option value="">
-              {loaded ? "Select board…" : "Loading boards…"}
+              {!loaded ? "Loading boards…" : loadError ? "Could not load boards" : "Select board…"}
             </option>
             {boards.map((board) => (
               <option key={board.id} value={board.id}>
@@ -289,16 +311,21 @@ export function MondayBoardMappingPanel({
             ))}
           </select>
         </label>
-        {loaded && boards.length === 0 && !error && (
+        {loaded && boards.length === 0 && !loadError && (
           <p className="text-sm text-cos-muted">
-            No boards found in {workspaceName ?? "your connected workspace"} — create one in
+            No boards found in {workspaceName ?? "your connected workspaces"} — create one in
             Monday or click Create template board below.
+          </p>
+        )}
+        {loaded && loadError && (
+          <p className="text-sm text-red-600" role="alert">
+            {loadError}
           </p>
         )}
         {loaded && boards.length > 0 && (
           <p className="text-xs text-cos-muted">
-            Showing boards from {workspaceName ?? "your connected workspace"}. Committee groups on
-            this board will mirror your organization committees.
+            Showing boards from {workspaceName ?? "all workspaces you can access"}. Committee
+            groups on this board will mirror your organization committees.
           </p>
         )}
         {showCreateTemplate && (
@@ -472,6 +499,16 @@ export function MondayBoardMappingPanel({
           >
             Save mapping
           </Button>
+        </div>
+      )}
+
+      {syncEnabled && (!selectedBoardId || !columnMap.statusColumnId) && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="font-medium">Finish board setup before syncing</p>
+          <p className="mt-1">
+            Select your master board, map at least the Status column, click Save mapping, then use
+            Sync now.
+          </p>
         </div>
       )}
 

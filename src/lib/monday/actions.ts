@@ -16,7 +16,7 @@ import {
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import {
   getMondayBoardDetails,
-  listMondayBoards,
+  listAllAccessibleMondayBoards,
   listMondayWorkspaces,
   resolveMondayWorkspaceId,
 } from "@/lib/monday/client";
@@ -82,6 +82,22 @@ export async function setMondaySyncEnabledAction(enabled: boolean): Promise<Mond
     return { success: false, error: auth.error };
   }
 
+  if (enabled) {
+    const mapping = await getMondayBoardMappingForOrganization(auth.organizationId);
+    if (!mapping?.mondayBoardId?.trim()) {
+      return {
+        success: false,
+        error: "Select a master board in Step 2 before enabling sync.",
+      };
+    }
+    if (!mapping.columnMap.statusColumnId?.trim()) {
+      return {
+        success: false,
+        error: "Save column mapping (Status column required) before enabling sync.",
+      };
+    }
+  }
+
   const ok = await setMondaySyncEnabled(auth.organizationId, enabled);
   if (!ok) {
     return { success: false, error: "Could not update Monday sync setting." };
@@ -114,25 +130,39 @@ export async function listMondayBoardsAction(): Promise<{
   }
 
   try {
-    const workspaces = await listMondayWorkspaces(connection.accessToken);
-    const workspaceId = await resolveMondayWorkspaceId(connection.accessToken);
-    let boards = await listMondayBoards(connection.accessToken, {
-      workspaceIds: workspaceId ? [workspaceId] : undefined,
+    const workspaces = await listMondayWorkspaces(connection.accessToken, 100);
+    const resolvedWorkspaceId = await resolveMondayWorkspaceId(
+      connection.accessToken,
+      workspaces,
+    );
+    const boards = await listAllAccessibleMondayBoards(connection.accessToken, {
       limit: 100,
+      maxPages: 10,
     });
 
-    // Workspace scoping can miss boards when OAuth default differs from where boards live.
-    if (boards.length === 0 && workspaceId) {
-      boards = await listMondayBoards(connection.accessToken, { limit: 100 });
-    }
+    const mainWorkspace = workspaces.find((workspace) =>
+      /^(main(\s+workspace)?)$/i.test(workspace.name.trim()),
+    );
+    const defaultWorkspace = workspaces.find((workspace) => workspace.isDefault);
+    const preferredWorkspace = mainWorkspace ?? defaultWorkspace ?? workspaces[0] ?? null;
 
     let workspaceName: string | null = null;
-    if (workspaceId) {
-      workspaceName = workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? null;
+    if (boards.length === 0) {
+      workspaceName = preferredWorkspace?.name ?? "your Monday account";
+    } else if (preferredWorkspace) {
+      workspaceName = `${preferredWorkspace.name} and other workspaces`;
+    } else {
+      workspaceName = "all workspaces";
     }
 
-    return { success: true, boards, workspaceId, workspaceName };
+    return {
+      success: true,
+      boards,
+      workspaceId: resolvedWorkspaceId,
+      workspaceName,
+    };
   } catch (error) {
+    console.error("listMondayBoardsAction failed:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Could not load Monday boards.",
