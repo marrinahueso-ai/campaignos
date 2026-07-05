@@ -174,28 +174,53 @@ function parseMondayTokenErrorBody(
   }
 }
 
-async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenExchangeResult> {
-  const redirectUri = body.get("redirect_uri");
-  const clientId = getMondayClientId();
-  const clientSecret = getMondayClientSecret();
+function shouldRetryMondayTokenWithBasicAuth(result: MondayTokenExchangeResult): boolean {
+  if (result.ok) {
+    return false;
+  }
+
+  const description = result.errorDescription?.toLowerCase() ?? "";
+  return (
+    result.error === "invalid_client" ||
+    (result.error === "invalid_request" && description.includes("client_secret"))
+  );
+}
+
+function logMondayTokenExchangeDiagnostics(
+  redirectUri: string | null,
+  clientId: string,
+  clientSecret: string,
+  authMode: "body" | "basic",
+): void {
   const secretDiagnostics = describeMondayClientSecretForLogging(
     clientSecret,
     process.env.MONDAY_CLIENT_SECRET,
   );
 
   console.info("Monday token exchange request:", {
+    authMode,
     clientIdPrefix: clientId.slice(0, 8),
+    clientSecretDefined: Boolean(process.env.MONDAY_CLIENT_SECRET),
     clientSecretLength: secretDiagnostics.length,
     clientSecretFirstCharCode: secretDiagnostics.firstCharCode,
     clientSecretLastCharCode: secretDiagnostics.lastCharCode,
     clientSecretHadSurroundingQuotes: secretDiagnostics.hasSurroundingQuotes,
     redirectUri,
-    grantType: body.get("grant_type"),
   });
+}
+
+async function postMondayToken(
+  body: URLSearchParams,
+  extraHeaders?: Record<string, string>,
+): Promise<MondayTokenExchangeResult> {
+  const redirectUri = body.get("redirect_uri");
 
   const response = await fetch(MONDAY_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...extraHeaders,
+    },
     body: body.toString(),
   });
 
@@ -207,6 +232,7 @@ async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenEx
       error: parsed.error,
       errorDescription: parsed.errorDescription,
       redirectUri,
+      authMode: extraHeaders?.Authorization ? "basic" : "body",
       body: text,
     });
     return {
@@ -220,12 +246,42 @@ async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenEx
   return { ok: true, token: (await response.json()) as MondayTokenResponse };
 }
 
+async function exchangeMondayToken(body: URLSearchParams): Promise<MondayTokenExchangeResult> {
+  const clientId = getMondayClientId();
+  const clientSecret = getMondayClientSecret();
+  const redirectUri = body.get("redirect_uri");
+
+  logMondayTokenExchangeDiagnostics(redirectUri, clientId, clientSecret, "body");
+
+  const primaryResult = await postMondayToken(body);
+  if (primaryResult.ok || !shouldRetryMondayTokenWithBasicAuth(primaryResult)) {
+    return primaryResult;
+  }
+
+  const code = body.get("code");
+  if (!code || !redirectUri) {
+    return primaryResult;
+  }
+
+  console.info("Monday token exchange retrying with Basic Auth credentials");
+  logMondayTokenExchangeDiagnostics(redirectUri, clientId, clientSecret, "basic");
+
+  const basicAuthBody = new URLSearchParams({
+    redirect_uri: redirectUri,
+    code,
+  });
+
+  const basicAuthHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  return postMondayToken(basicAuthBody, {
+    Authorization: `Basic ${basicAuthHeader}`,
+  });
+}
+
 export async function exchangeMondayAuthorizationCode(input: {
   code: string;
   redirectUri: string;
 }): Promise<MondayTokenExchangeResult> {
   const body = new URLSearchParams({
-    grant_type: "authorization_code",
     client_id: getMondayClientId(),
     client_secret: getMondayClientSecret(),
     redirect_uri: input.redirectUri,

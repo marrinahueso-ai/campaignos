@@ -96,6 +96,13 @@ export function MondayConnectionPanel({
             Center → Basic Information (App credentials). Do not use Signing Secret — that field
             is for monday app JWT verification, not OAuth token exchange.
           </li>
+          <li className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-950">
+            <strong>Client Secret must NOT start with</strong>{" "}
+            <code className="rounded bg-amber-100 px-1">sk_live_</code> or{" "}
+            <code className="rounded bg-amber-100 px-1">sk_test_</code> — those are Stripe keys.
+            Monday Client Secret is a hex string from Basic Information (similar format to Client
+            ID).
+          </li>
           <li>
             Set <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_ID</code> and{" "}
             <code className="rounded bg-cos-bg px-1">MONDAY_CLIENT_SECRET</code> in Vercel{" "}

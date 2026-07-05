@@ -13,6 +13,8 @@ import {
 } from "@/lib/monday/config";
 import { createMondayOAuthState } from "@/lib/monday/connection";
 
+export const runtime = "nodejs";
+
 export async function GET(request: NextRequest) {
   const origin = resolveMondayOAuthOrigin(request.nextUrl.origin);
 
