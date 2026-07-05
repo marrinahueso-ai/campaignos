@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, RotateCcw } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, MessageSquarePlus, RotateCcw } from "lucide-react";
 import { ApprovalQueuePreviewPanel } from "@/components/approvals/ApprovalQueuePreviewPanel";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { Button } from "@/components/ui/Button";
@@ -15,9 +15,11 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { channelLabel } from "@/lib/ai/content";
 import {
+  appendChangeRequestCommentAction,
   approveCommunicationAction,
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
+import { CHANGE_REQUEST_NOTE_SEPARATOR } from "@/lib/event-workspace/approval-notes";
 import { formatDateTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -29,15 +31,102 @@ interface ApprovalsHubProps {
   recentlyApproved: ApprovalQueueItem[];
 }
 
+function ChangeRequestNotes({ notes }: { notes: string }) {
+  const segments = notes.split(CHANGE_REQUEST_NOTE_SEPARATOR);
+
+  return (
+    <div className="space-y-2 pl-5">
+      {segments.map((segment, index) => (
+        <p
+          key={`${index}-${segment.slice(0, 24)}`}
+          className="rounded-md border border-cos-border bg-cos-bg px-3 py-2 text-xs leading-relaxed text-cos-text"
+        >
+          {segment.trim()}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function ChangeRequestCommentForm({
+  item,
+  onActionError,
+}: {
+  item: ApprovalQueueItem;
+  onActionError: (message: string) => void;
+}) {
+  const router = useRouter();
+  const [comment, setComment] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+
+    const trimmed = comment.trim();
+    if (!trimmed) {
+      onActionError("Enter a comment before saving.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const result = await appendChangeRequestCommentAction(
+        item.eventId,
+        item.communicationItemId,
+        trimmed,
+      );
+
+      if (result.success) {
+        setComment("");
+        router.refresh();
+        return;
+      }
+
+      onActionError(result.error ?? "Unable to add comment.");
+    } catch {
+      onActionError("Something went wrong. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-2 pl-5">
+      <label className="block text-xs font-medium text-cos-muted">
+        Add a follow-up comment before resubmitting
+      </label>
+      <textarea
+        value={comment}
+        onChange={(event) => setComment(event.target.value)}
+        rows={2}
+        placeholder="Explain what you changed or ask a clarifying question…"
+        className="w-full resize-y rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+        disabled={isSaving}
+      />
+      <Button type="submit" size="sm" variant="secondary" disabled={isSaving}>
+        {isSaving ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <MessageSquarePlus className="h-4 w-4" />
+        )}
+        Add comment
+      </Button>
+    </form>
+  );
+}
+
 function ApprovalQueueList({
   items,
   showActions = false,
+  showCommentForm = false,
   expandedId,
   onToggleExpand,
   onActionError,
 }: {
   items: ApprovalQueueItem[];
   showActions?: boolean;
+  showCommentForm?: boolean;
   expandedId: string | null;
   onToggleExpand: (id: string) => void;
   onActionError: (message: string) => void;
@@ -111,7 +200,13 @@ function ApprovalQueueList({
                     : null}
                 </p>
                 {item.notes && item.communicationStatus === "changes_requested" && (
-                  <p className="pl-5 text-xs text-cos-muted">{item.notes}</p>
+                  <ChangeRequestNotes notes={item.notes} />
+                )}
+                {showCommentForm && item.submittedByMe && (
+                  <ChangeRequestCommentForm
+                    item={item}
+                    onActionError={onActionError}
+                  />
                 )}
               </div>
 
@@ -221,7 +316,11 @@ export function ApprovalsHub({
       </header>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card padding="none" className="overflow-hidden scroll-mt-8" id="needs-approval">
+        <Card
+          padding="none"
+          className="overflow-hidden border-l-4 border-l-red-500 scroll-mt-8"
+          id="needs-approval"
+        >
           <CardHeader className="border-b border-cos-border px-6 py-5">
             <CardTitle className="text-base">Assigned to you</CardTitle>
             <CardDescription>
@@ -252,7 +351,11 @@ export function ApprovalsHub({
           />
         </Card>
 
-        <Card padding="none" className="overflow-hidden scroll-mt-8" id="changes-requested">
+        <Card
+          padding="none"
+          className="overflow-hidden border-l-4 border-l-blue-900 scroll-mt-8"
+          id="changes-requested"
+        >
           <CardHeader className="border-b border-cos-border px-6 py-5">
             <CardTitle className="text-base">Changes requested</CardTitle>
             <CardDescription>
@@ -261,6 +364,7 @@ export function ApprovalsHub({
           </CardHeader>
           <ApprovalQueueList
             items={changesRequested}
+            showCommentForm
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
             onActionError={setActionError}

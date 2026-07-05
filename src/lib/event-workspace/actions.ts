@@ -6,6 +6,7 @@ import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-
 import { getEventById } from "@/lib/events/queries";
 import {
   approveCommunicationDraft,
+  appendChangeRequestComment,
   requestCommunicationChanges,
   sendCommunicationForApproval,
 } from "@/lib/event-workspace/approval-workflow";
@@ -203,6 +204,34 @@ export async function requestCommunicationChangesAction(
   if (!result.success) {
     return {
       error: result.error ?? "Unable to request changes.",
+      success: false,
+    };
+  }
+
+  revalidateEventPaths(eventId);
+  return { error: null, success: true };
+}
+
+export async function appendChangeRequestCommentAction(
+  eventId: string,
+  communicationItemId: string,
+  comment: string,
+): Promise<WorkspaceActionState> {
+  const [role, actor] = await Promise.all([
+    getCurrentCampaignRole(),
+    getApprovalActor(),
+  ]);
+  const result = await appendChangeRequestComment(
+    eventId,
+    communicationItemId,
+    role,
+    comment,
+    actor,
+  );
+
+  if (!result.success) {
+    return {
+      error: result.error ?? "Unable to add comment.",
       success: false,
     };
   }

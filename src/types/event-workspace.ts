@@ -230,6 +230,7 @@ export interface ApprovalQueueItem {
   requestedAt: string;
   assigneeDisplayName: string;
   assignedToMe: boolean;
+  submittedByMe: boolean;
   notes: string | null;
   preview: ApprovalQueuePreview;
 }

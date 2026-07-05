@@ -1,21 +1,22 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getAssignedApprovalsCountForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
+import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [user, assignedApprovalsCount] = await Promise.all([
+  const [user, sidebarCounts] = await Promise.all([
     getAuthUser(),
-    getAssignedApprovalsCountForCurrentUser(),
+    getApprovalSidebarCountsForCurrentUser(),
   ]);
 
   return (
     <DashboardShell
       userEmail={user?.email ?? null}
-      assignedApprovalsCount={assignedApprovalsCount}
+      assignedApprovalsCount={sidebarCounts.assignedApprovalsCount}
+      changeRequestsCount={sidebarCounts.changeRequestsCount}
     >
       {children}
     </DashboardShell>

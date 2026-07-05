@@ -8,19 +8,24 @@ interface DashboardShellProps {
   children: React.ReactNode;
   userEmail?: string | null;
   assignedApprovalsCount?: number;
+  changeRequestsCount?: number;
 }
 
 export function DashboardShell({
   children,
   userEmail,
   assignedApprovalsCount = 0,
+  changeRequestsCount = 0,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-cos-bg">
       <div className="hidden shrink-0 lg:block">
-        <Sidebar assignedApprovalsCount={assignedApprovalsCount} />
+        <Sidebar
+          assignedApprovalsCount={assignedApprovalsCount}
+          changeRequestsCount={changeRequestsCount}
+        />
       </div>
 
       {mobileOpen && (
@@ -35,6 +40,7 @@ export function DashboardShell({
             <Sidebar
               forceExpanded
               assignedApprovalsCount={assignedApprovalsCount}
+              changeRequestsCount={changeRequestsCount}
               onNavigate={() => setMobileOpen(false)}
             />
           </div>

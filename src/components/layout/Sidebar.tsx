@@ -37,21 +37,56 @@ interface SidebarProps {
   onNavigate?: () => void;
   forceExpanded?: boolean;
   assignedApprovalsCount?: number;
+  changeRequestsCount?: number;
 }
 
-function NavNotificationBadge({ count }: { count: number }) {
+type NavBadgeVariant = "approval" | "changeRequest";
+
+function NavNotificationBadge({
+  count,
+  variant,
+}: {
+  count: number;
+  variant: NavBadgeVariant;
+}) {
   if (count <= 0) {
     return null;
   }
 
   const label = count > 99 ? "99+" : String(count);
+  const ariaLabel =
+    variant === "approval"
+      ? `${count} approval${count === 1 ? "" : "s"} waiting`
+      : `${count} change request${count === 1 ? "" : "s"} for you`;
 
   return (
     <span
-      aria-label={`${count} approval${count === 1 ? "" : "s"} waiting`}
-      className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-semibold text-white tabular-nums"
+      aria-label={ariaLabel}
+      className={cn(
+        "flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1 text-xs font-semibold text-white tabular-nums",
+        variant === "approval" ? "bg-red-500" : "bg-blue-900",
+      )}
     >
       {label}
+    </span>
+  );
+}
+
+function NavNotificationBadges({
+  assignedApprovalsCount,
+  changeRequestsCount,
+}: {
+  assignedApprovalsCount: number;
+  changeRequestsCount: number;
+}) {
+  if (assignedApprovalsCount <= 0 && changeRequestsCount <= 0) {
+    return null;
+  }
+
+  return (
+    <span className="flex items-center gap-1">
+      <NavNotificationBadge count={assignedApprovalsCount} variant="approval" />
+      <NavNotificationBadge count={changeRequestsCount} variant="changeRequest" />
     </span>
   );
 }
@@ -60,6 +95,7 @@ export function Sidebar({
   onNavigate,
   forceExpanded = false,
   assignedApprovalsCount = 0,
+  changeRequestsCount = 0,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -144,8 +180,7 @@ export function Sidebar({
           const isActive =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
-          const notificationCount =
-            href === "/approvals" ? assignedApprovalsCount : 0;
+          const showApprovalBadges = href === "/approvals";
 
           return (
             <Link
@@ -163,9 +198,16 @@ export function Sidebar({
             >
               <span className="relative shrink-0">
                 <Icon className="h-4 w-4" strokeWidth={1.5} />
-                {!showLabels && notificationCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5">
-                    <NavNotificationBadge count={notificationCount} />
+                {!showLabels && showApprovalBadges && (
+                  <span className="absolute -top-2 -right-3 flex flex-col items-end gap-0.5">
+                    <NavNotificationBadge
+                      count={assignedApprovalsCount}
+                      variant="approval"
+                    />
+                    <NavNotificationBadge
+                      count={changeRequestsCount}
+                      variant="changeRequest"
+                    />
                   </span>
                 )}
               </span>
@@ -177,9 +219,14 @@ export function Sidebar({
                       {badge}
                     </span>
                   )}
-                  <span className="ml-auto">
-                    <NavNotificationBadge count={notificationCount} />
-                  </span>
+                  {showApprovalBadges && (
+                    <span className="ml-auto">
+                      <NavNotificationBadges
+                        assignedApprovalsCount={assignedApprovalsCount}
+                        changeRequestsCount={changeRequestsCount}
+                      />
+                    </span>
+                  )}
                 </span>
               )}
               {!showLabels && (

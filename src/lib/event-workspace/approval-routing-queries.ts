@@ -99,6 +99,10 @@ function mapQueueRow(
     requestedAt: row.requested_at,
     assigneeDisplayName: resolveAssigneeDisplayName(row),
     assignedToMe: isAssignedToActor(row, actor),
+    submittedByMe: Boolean(
+      actor?.organizationUserId &&
+        row.requested_by_user_id === actor.organizationUserId,
+    ),
     notes: row.notes,
     preview,
   };
@@ -354,9 +358,34 @@ function filterPendingAssignedToMe(items: ApprovalQueueItem[]): ApprovalQueueIte
   );
 }
 
+function filterChangeRequestsForSubmitter(
+  items: ApprovalQueueItem[],
+): ApprovalQueueItem[] {
+  return items.filter(
+    (item) =>
+      item.communicationStatus === "changes_requested" && item.submittedByMe,
+  );
+}
+
 export async function getAssignedApprovalsCountForCurrentUser(): Promise<number> {
   const { items } = await resolveApprovalQueueBase();
   return filterPendingAssignedToMe(items).length;
+}
+
+export async function getChangeRequestsCountForCurrentUser(): Promise<number> {
+  const { items } = await resolveApprovalQueueBase();
+  return filterChangeRequestsForSubmitter(items).length;
+}
+
+export async function getApprovalSidebarCountsForCurrentUser(): Promise<{
+  assignedApprovalsCount: number;
+  changeRequestsCount: number;
+}> {
+  const { items } = await resolveApprovalQueueBase();
+  return {
+    assignedApprovalsCount: filterPendingAssignedToMe(items).length,
+    changeRequestsCount: filterChangeRequestsForSubmitter(items).length,
+  };
 }
 
 export async function getApprovalQueueForCurrentUser(): Promise<{

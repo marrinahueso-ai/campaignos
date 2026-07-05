@@ -11,6 +11,7 @@ import {
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { cancelDuplicatePendingApprovalRequests } from "@/lib/event-workspace/approval-request-dedupe";
+import { CHANGE_REQUEST_NOTE_SEPARATOR } from "@/lib/event-workspace/approval-notes";
 import { syncMetaPublicationSlotsForApprovedItem } from "@/lib/event-workspace/meta-approval-sync";
 import { createClient } from "@/lib/supabase/server";
 import type { CommunicationChannel, CommunicationStatus } from "@/types/event-workspace";
@@ -538,6 +539,99 @@ export async function requestCommunicationChanges(
     : `${label} needs edits before approval.`;
 
   await logApprovalActivity(eventId, "Changes requested", detail);
+
+  return { success: true };
+}
+
+async function getLatestApprovalRequestForItem(communicationItemId: string): Promise<{
+  id: string;
+  notes: string | null;
+  requested_by_user_id: string | null;
+} | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_requests")
+    .select("id, notes, requested_by_user_id")
+    .eq("communication_item_id", communicationItemId)
+    .order("requested_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
+}
+
+export async function appendChangeRequestComment(
+  eventId: string,
+  communicationItemId: string,
+  role: CampaignRole,
+  comment: string,
+  actor?: ApprovalActor | null,
+): Promise<ApprovalWorkflowResult> {
+  if (!canSubmitForApproval(role)) {
+    return {
+      success: false,
+      error: "You do not have permission to comment on this draft.",
+    };
+  }
+
+  const trimmed = comment.trim();
+  if (!trimmed) {
+    return { success: false, error: "Enter a comment before saving." };
+  }
+
+  const item = await getCommunicationItem(communicationItemId, eventId);
+  if (!item) {
+    return { success: false, error: "Communication not found." };
+  }
+
+  if (item.status !== "changes_requested") {
+    return {
+      success: false,
+      error: "Comments can only be added while changes are requested.",
+    };
+  }
+
+  const approvalRequest = await getLatestApprovalRequestForItem(communicationItemId);
+  if (!approvalRequest) {
+    return { success: false, error: "No change request found for this draft." };
+  }
+
+  const isSubmitter =
+    Boolean(actor?.organizationUserId) &&
+    approvalRequest.requested_by_user_id === actor?.organizationUserId;
+
+  if (!isSubmitter && role !== "admin") {
+    return {
+      success: false,
+      error: "Only the submitter can add follow-up comments on this draft.",
+    };
+  }
+
+  const existingNotes = approvalRequest.notes?.trim() ?? "";
+  const nextNotes = existingNotes
+    ? `${existingNotes}${CHANGE_REQUEST_NOTE_SEPARATOR}${trimmed}`
+    : trimmed;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("approval_requests")
+    .update({ notes: nextNotes })
+    .eq("id", approvalRequest.id);
+
+  if (error) {
+    return { success: false, error: "Unable to save comment." };
+  }
+
+  const label = channelLabel(item.channel);
+  await logApprovalActivity(
+    eventId,
+    "Change request comment added",
+    `${label}: ${trimmed}`,
+  );
 
   return { success: true };
 }
