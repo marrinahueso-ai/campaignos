@@ -27,6 +27,7 @@ import {
 } from "@/lib/monday/connection";
 import { fetchMondayBoardForTaskHub } from "@/lib/monday/board-reader";
 import { getMondayBoardDetails } from "@/lib/monday/client";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { fetchMondayOverlaysForTasks } from "@/lib/monday/sync";
 import type { TaskHubPageData } from "@/types/task-hub";
 
@@ -103,11 +104,16 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
 
   const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
 
-  const mondayConnection = await getMondayConnectionForOrganization(organization.id);
-  const mondayMapping = await getMondayBoardMappingForOrganization(organization.id);
-  const mondaySyncEnabled = Boolean(
-    mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId,
-  );
+  const mondayIntegrationEnabled = isMondayIntegrationEnabled();
+  const mondayConnection = mondayIntegrationEnabled
+    ? await getMondayConnectionForOrganization(organization.id)
+    : null;
+  const mondayMapping = mondayIntegrationEnabled
+    ? await getMondayBoardMappingForOrganization(organization.id)
+    : null;
+  const mondaySyncEnabled =
+    mondayIntegrationEnabled &&
+    Boolean(mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId);
 
   let mondayBoard = null;
   if (mondaySyncEnabled && mondayConnection && mondayMapping) {

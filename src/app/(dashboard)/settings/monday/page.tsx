@@ -1,8 +1,17 @@
+import Link from "next/link";
 import { MondaySettingsShell } from "@/components/monday/MondaySettingsShell";
+import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import {
   formatMondayOAuthError,
   getMondayOAuthCallbackUrl,
 } from "@/lib/monday/config";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const metadata = {
@@ -47,6 +56,32 @@ async function safeOrganizationName(): Promise<string | null> {
 }
 
 export default async function MondaySettingsPage({ searchParams }: MondaySettingsPageProps) {
+  if (!isMondayIntegrationEnabled()) {
+    return (
+      <div className="studio-page mx-auto max-w-2xl space-y-8 pb-12">
+        <StudioPageHeader
+          backHref="/settings"
+          title="Monday"
+          description="Monday integration is paused while Task Hub runs on CampaignOS-native tasks."
+          eyebrow="Configure"
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Integration temporarily disabled</CardTitle>
+            <CardDescription>
+              Use Task Hub at{" "}
+              <Link href="/tasks" className="text-cos-primary underline-offset-2 hover:underline">
+                /tasks
+              </Link>{" "}
+              for playbook checklists grouped by committee. Monday sync will return when the
+              integration is re-enabled.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   const params = await searchParams;
   const connectedParam = firstSearchParam(params.connected);
   const errorParam = firstSearchParam(params.error);

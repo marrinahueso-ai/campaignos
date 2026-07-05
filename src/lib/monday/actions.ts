@@ -14,6 +14,7 @@ import {
   setMondaySyncEnabled,
 } from "@/lib/monday/connection";
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import {
   getMondayBoardDetails,
   listMondayBoardsForSettingsPicker,
@@ -52,6 +53,13 @@ function safeRevalidateMondaySettings(): void {
 async function requireMondayManager(): Promise<
   { ok: true; organizationId: string } | { ok: false; error: string }
 > {
+  if (!isMondayIntegrationEnabled()) {
+    return {
+      ok: false,
+      error: "Monday integration is temporarily disabled. Use Task Hub without Monday sync.",
+    };
+  }
+
   const role = await getCurrentCampaignRole();
   if (!canManageMondayIntegration(role)) {
     return { ok: false, error: "You do not have permission to manage Monday integration." };

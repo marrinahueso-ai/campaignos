@@ -15,6 +15,7 @@ import {
   parseMondayOAuthState,
   saveMondayConnectionFromTokenResponse,
 } from "@/lib/monday/connection";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const runtime = "nodejs";
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest) {
   const fallbackReturn = "/settings/monday";
 
   try {
+    if (!isMondayIntegrationEnabled()) {
+      const url = new URL(fallbackReturn, origin);
+      url.searchParams.set("error", "not_configured");
+      return clearOAuthCookies(NextResponse.redirect(url), origin);
+    }
+
     if (!isMondayIntegrationConfigured()) {
       const url = new URL(fallbackReturn, origin);
       url.searchParams.set("error", "not_configured");

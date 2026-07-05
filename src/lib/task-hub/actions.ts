@@ -10,6 +10,7 @@ import {
 } from "@/lib/event-playbooks/mutations";
 import { getEventPlaybookEvents } from "@/lib/event-playbooks/queries";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { pushTaskCreateToMonday, pushTaskUpdateToMonday } from "@/lib/monday/sync";
 import { deriveInitials } from "@/lib/task-hub/org-members";
 import { assertTaskHubEventAccess } from "@/lib/task-hub/permissions";
@@ -40,6 +41,10 @@ async function syncTaskToMonday(
   eventId: string,
   mode: "create" | "update",
 ): Promise<void> {
+  if (!isMondayIntegrationEnabled()) {
+    return;
+  }
+
   const origin = await resolveOrigin();
   if (mode === "create") {
     const [events, workspace] = await Promise.all([

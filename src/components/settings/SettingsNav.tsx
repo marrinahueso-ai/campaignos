@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { cn } from "@/lib/utils/cn";
 
 const SETTINGS_TABS = [
@@ -12,7 +13,9 @@ const SETTINGS_TABS = [
   { href: "/settings/organization", label: "Organization" },
   { href: "/settings/meta", label: "Meta" },
   { href: "/settings/canva", label: "Canva" },
-  { href: "/settings/monday", label: "Monday" },
+  ...(isMondayIntegrationEnabled()
+    ? [{ href: "/settings/monday" as const, label: "Monday" as const }]
+    : []),
   { href: "/settings/ai-brain", label: "AI Brain" },
   { href: "/settings/playbooks", label: "Playbooks" },
 ] as const;

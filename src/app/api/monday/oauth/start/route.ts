@@ -13,11 +13,18 @@ import {
   resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
 import { createMondayOAuthState } from "@/lib/monday/connection";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const origin = resolveMondayOAuthOrigin(request.nextUrl.origin);
+
+  if (!isMondayIntegrationEnabled()) {
+    const settingsUrl = new URL("/settings/monday", origin);
+    settingsUrl.searchParams.set("error", "not_configured");
+    return NextResponse.redirect(settingsUrl);
+  }
 
   if (!hasMondayClientId()) {
     const settingsUrl = new URL("/settings/monday", origin);

@@ -23,6 +23,7 @@ import {
 } from "@/lib/monday/status-mapping";
 import type { MondayBoardColumnMap, MondayTaskOverlay } from "@/lib/monday/types";
 import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
+import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { mapEventPlaybookTaskRow } from "@/lib/event-playbooks/mappers";
 import type { Event } from "@/types";
 import type { EventPlaybookTaskRow } from "@/types/event-playbooks";
@@ -99,6 +100,16 @@ export async function backfillOpenTasksToMonday(input: {
   taskRows: EventPlaybookTaskRow[];
   workspace: OrganizationWorkspaceData;
 }): Promise<MondayBackfillResult> {
+  if (!isMondayIntegrationEnabled()) {
+    return {
+      success: false,
+      error: "Monday integration is temporarily disabled.",
+      created: 0,
+      skipped: 0,
+      failed: 0,
+    };
+  }
+
   const connection = await getMondayConnectionForOrganization(input.organizationId);
   if (!connection?.accessToken) {
     return { success: false, error: "Connect Monday in Settings first.", created: 0, skipped: 0, failed: 0 };
@@ -294,6 +305,10 @@ export async function pushTaskUpdateToMonday(input: {
   eventId: string;
   origin: string;
 }): Promise<void> {
+  if (!isMondayIntegrationEnabled()) {
+    return;
+  }
+
   const connection = await getMondayConnectionForOrganization(input.organizationId);
   if (!connection?.accessToken || !connection.mondaySyncEnabled) {
     return;
@@ -363,6 +378,10 @@ export async function pushTaskCreateToMonday(input: {
   events: Event[];
   workspace: OrganizationWorkspaceData;
 }): Promise<void> {
+  if (!isMondayIntegrationEnabled()) {
+    return;
+  }
+
   const connection = await getMondayConnectionForOrganization(input.organizationId);
   if (!connection?.accessToken || !connection.mondaySyncEnabled) {
     return;
