@@ -1,7 +1,9 @@
+import { buildCommentPostMetadata } from "@/lib/inbox/comment-post-preview";
 import { missingInstagramCommentScopes } from "@/lib/inbox/scopes";
 import {
   asRecord,
   asRecordArray,
+  inboxGraphGet,
   inboxGraphGetAllPages,
   readIsoTime,
   readString,
@@ -9,7 +11,8 @@ import {
 } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 
-const MEDIA_FIELDS = "id,caption,timestamp,permalink";
+const MEDIA_FIELDS =
+  "id,caption,timestamp,permalink,media_url,thumbnail_url,media_type";
 const COMMENT_FIELDS =
   "id,text,timestamp,username,from{id,username},replies{id,text,timestamp,username,from{id,username}}";
 
@@ -37,10 +40,45 @@ function buildInstagramCommentEmptyWarning(input: {
   return parts.join(" ");
 }
 
+function resolveInstagramMediaImageUrl(media: Record<string, unknown>): string | null {
+  const mediaType = readString(media.media_type);
+  const mediaUrl = readString(media.media_url);
+  const thumbnailUrl = readString(media.thumbnail_url);
+
+  if (mediaType === "VIDEO") {
+    return thumbnailUrl ?? mediaUrl;
+  }
+
+  return mediaUrl ?? thumbnailUrl;
+}
+
+async function resolveInstagramPostImageUrl(input: {
+  mediaId: string;
+  media: Record<string, unknown>;
+  pageAccessToken: string;
+}): Promise<string | null> {
+  const fromMedia = resolveInstagramMediaImageUrl(input.media);
+  if (fromMedia) {
+    return fromMedia;
+  }
+
+  const mediaDetails = await inboxGraphGet<Record<string, unknown>>(`/${input.mediaId}`, {
+    fields: "media_url,thumbnail_url,media_type",
+    access_token: input.pageAccessToken,
+  });
+
+  if (!mediaDetails.ok) {
+    return null;
+  }
+
+  return resolveInstagramMediaImageUrl(mediaDetails.data);
+}
+
 function normalizeInstagramComment(input: {
   mediaId: string;
   mediaCaption: string | null;
   mediaPermalink: string | null;
+  mediaImageUrl: string | null;
   comment: Record<string, unknown>;
   threadExternalId: string;
   isReply?: boolean;
@@ -64,6 +102,15 @@ function normalizeInstagramComment(input: {
     readString(from?.username) ??
     "Instagram user";
   const sentAt = readIsoTime(input.comment.timestamp);
+  const postMetadata = buildCommentPostMetadata({
+    caption: input.mediaCaption,
+    imageUrl: input.mediaImageUrl,
+    permalink: input.mediaPermalink,
+    mediaId: input.mediaId,
+    extra: {
+      isReply: input.isReply ?? false,
+    },
+  });
 
   return {
     thread: {
@@ -75,11 +122,7 @@ function normalizeInstagramComment(input: {
       subject: input.mediaCaption ? snippet(input.mediaCaption, 80) : "Instagram post",
       lastMessageSnippet: snippet(body),
       lastMessageAt: sentAt,
-      metadata: {
-        mediaId: input.mediaId,
-        permalink: input.mediaPermalink,
-        isReply: input.isReply ?? false,
-      },
+      metadata: postMetadata,
     },
     message: {
       channelType: "instagram_comment",
@@ -90,11 +133,7 @@ function normalizeInstagramComment(input: {
       senderName,
       senderExternalId: senderId,
       sentAt,
-      metadata: {
-        mediaId: input.mediaId,
-        permalink: input.mediaPermalink,
-        isReply: input.isReply ?? false,
-      },
+      metadata: postMetadata,
     },
   };
 }
@@ -103,6 +142,7 @@ function ingestInstagramCommentsForMedia(input: {
   mediaId: string;
   mediaCaption: string | null;
   mediaPermalink: string | null;
+  mediaImageUrl: string | null;
   comments: Record<string, unknown>[];
   threadMap: Map<string, NormalizedInboxThread>;
   messages: NormalizedInboxMessage[];
@@ -113,6 +153,7 @@ function ingestInstagramCommentsForMedia(input: {
       mediaId: input.mediaId,
       mediaCaption: input.mediaCaption,
       mediaPermalink: input.mediaPermalink,
+      mediaImageUrl: input.mediaImageUrl,
       comment,
       threadExternalId,
     });
@@ -141,6 +182,7 @@ function ingestInstagramCommentsForMedia(input: {
         mediaId: input.mediaId,
         mediaCaption: input.mediaCaption,
         mediaPermalink: input.mediaPermalink,
+        mediaImageUrl: input.mediaImageUrl,
         comment: reply,
         threadExternalId: replyThreadId,
         isReply: true,
@@ -225,6 +267,11 @@ export async function fetchInstagramMediaComments(input: {
 
     const mediaCaption = readString(media.caption);
     const mediaPermalink = readString(media.permalink);
+    const mediaImageUrl = await resolveInstagramPostImageUrl({
+      mediaId,
+      media,
+      pageAccessToken: input.pageAccessToken,
+    });
 
     const commentsResult = await inboxGraphGetAllPages(
       `/${mediaId}/comments`,
@@ -251,6 +298,7 @@ export async function fetchInstagramMediaComments(input: {
       mediaId,
       mediaCaption,
       mediaPermalink,
+      mediaImageUrl,
       comments: commentsResult.data,
       threadMap,
       messages,

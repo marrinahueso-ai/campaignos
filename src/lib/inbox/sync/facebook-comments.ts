@@ -1,3 +1,4 @@
+import { buildCommentPostMetadata } from "@/lib/inbox/comment-post-preview";
 import { missingFacebookCommentScopes } from "@/lib/inbox/scopes";
 import {
   asRecord,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 
-const POST_FIELDS = "id,message,created_time,permalink_url";
+const POST_FIELDS = "id,message,created_time,permalink_url,full_picture,thumbnail_url";
 const COMMENT_FIELDS = "id,message,from,created_time,comment_count";
 
 function buildFacebookCommentEmptyWarning(input: {
@@ -85,6 +86,14 @@ export async function fetchFacebookPostComments(input: {
 
     const postMessage = readString(post.message);
     const permalink = readString(post.permalink_url);
+    const postImageUrl =
+      readString(post.full_picture) ?? readString(post.thumbnail_url);
+    const postMetadata = buildCommentPostMetadata({
+      caption: postMessage,
+      imageUrl: postImageUrl,
+      permalink,
+      postId,
+    });
 
     const commentsResult = await inboxGraphGetAllPages(
       `/${postId}/comments`,
@@ -126,10 +135,7 @@ export async function fetchFacebookPostComments(input: {
         subject: postMessage ? snippet(postMessage, 80) : "Facebook post",
         lastMessageSnippet: snippet(body),
         lastMessageAt: sentAt,
-        metadata: {
-          postId,
-          permalink,
-        },
+        metadata: postMetadata,
       };
 
       const existing = threadMap.get(threadExternalId);
@@ -150,10 +156,7 @@ export async function fetchFacebookPostComments(input: {
         senderName,
         senderExternalId: senderId,
         sentAt,
-        metadata: {
-          postId,
-          permalink,
-        },
+        metadata: postMetadata,
       });
     }
   }

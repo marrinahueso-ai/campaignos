@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDown, Inbox, MessageCircle, MessagesSquare } from "lucide-react";
+import { InboxCommentPostPreview } from "@/components/inbox/InboxCommentPostPreview";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
@@ -13,6 +14,7 @@ import {
   INBOX_CHANNEL_SHORT_LABELS,
   INBOX_CHANNEL_TYPES,
   INBOX_TAG_CHANNEL_TYPES,
+  isCommentChannel,
   isReplyChannel,
   isTaggedChannel,
 } from "@/lib/inbox/constants";
@@ -330,7 +332,15 @@ export function InboxHub({ data }: InboxHubProps) {
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border border-cos-border bg-cos-bg">
                         <InboxPlatformIcon channelType={thread.channelType} size="md" />
                       </div>
-                      <div className="min-w-0 flex-1">
+                      <InboxCommentPostPreview
+                        thread={thread}
+                        className={isCommentChannel(thread.channelType) ? "min-w-0 flex-1" : undefined}
+                      >
+                      <div
+                        className={
+                          isCommentChannel(thread.channelType) ? "min-w-0" : "min-w-0 flex-1"
+                        }
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <p className="text-sm font-medium text-cos-text">
                             {thread.participantName ??
@@ -371,6 +381,7 @@ export function InboxHub({ data }: InboxHubProps) {
                           </p>
                         ) : null}
                       </div>
+                      </InboxCommentPostPreview>
                       <ChevronDown
                         className={cn(
                           "mt-1 h-4 w-4 shrink-0 text-cos-muted transition-transform",
