@@ -60,7 +60,7 @@ function formatSourceContext(sourceUsed: InboxAiSourceUsed): string {
 
   if (sourceUsed.answerFrom) {
     return `Sources checked (in order): ${checkedLabels || "none configured"}
-Answer found on: ${sourceUsed.answerFrom.label}
+Answer from: ${sourceUsed.answerFrom.label}
 Source URL: ${sourceUsed.answerFrom.url}
 Verified excerpt (use ONLY this for factual claims):
 ${sourceUsed.answerFrom.excerpt}
@@ -69,8 +69,8 @@ Include the source link in the reply when helpful.`;
   }
 
   return `Sources checked (in order): ${checkedLabels || "none configured"}
-No verified answer was found on configured pages.
-Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
+Answer from: none — no verified answer was found on configured pages.
+Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies. Do NOT answer from unrelated pages (e.g. early release dismissal times for bus route questions).`;
 }
 
 function buildVerifiedAnswerSystemPrompt(): string {

@@ -39,6 +39,26 @@ function isLikelyAuthWall(text) {
 const busTimesQuestion =
   "I am new to the school can you please tell me how I can find my sons bus times?";
 
+const earlyReleaseExcerpt =
+  "Early release days: dismissal at 1:58 PM. See the early release calendar for dates.";
+const busRouteExcerpt =
+  "Bus routes for 2025-26: Route 12 departs at 7:45 AM. Find your bus stop on the district transportation page.";
+
+function detectBusQuestion(question) {
+  return /\bbus(?:es)?\b/i.test(question) || /\bbus\s+time/i.test(question);
+}
+
+function excerptHasBusContent(excerpt) {
+  return /\bbus(?:es)?\b/i.test(excerpt) || /\btransportation\b/i.test(excerpt);
+}
+
+function isGenericScheduleOnly(excerpt) {
+  const hasTime = /\b\d{1,2}:\d{2}\s*(?:am|pm)\b/i.test(excerpt);
+  const hasEarlyRelease = /\bearly\s+release\b/i.test(excerpt);
+  const hasDismissal = /\bdismissal\b/i.test(excerpt);
+  return (hasTime || hasEarlyRelease || hasDismissal) && !excerptHasBusContent(excerpt);
+}
+
 const followUp = buildFollowUpDraft({
   senderName: "Sarah",
   organizationName: "EES PTO",
@@ -70,6 +90,20 @@ if (isLikelyAuthWall("Bus routes for 2025-26: Route 12 departs at 7:45 AM from O
 // Bus times question should never be answered from general knowledge in follow-up path
 if (followUp.toLowerCase().includes("district website")) {
   failures.push("Follow-up must not redirect to general knowledge sources");
+}
+
+if (detectBusQuestion(busTimesQuestion) && excerptHasBusContent(earlyReleaseExcerpt)) {
+  failures.push("Early release excerpt must not satisfy bus question keyword rules");
+}
+
+if (detectBusQuestion(busTimesQuestion) && isGenericScheduleOnly(earlyReleaseExcerpt)) {
+  // Expected: early release dismissal should be rejected for bus questions
+} else if (detectBusQuestion(busTimesQuestion)) {
+  failures.push("Early release excerpt should be flagged as generic schedule only for bus questions");
+}
+
+if (detectBusQuestion(busTimesQuestion) && !excerptHasBusContent(busRouteExcerpt)) {
+  failures.push("Bus route excerpt should satisfy bus question keyword rules");
 }
 
 console.log("Bus times question:", busTimesQuestion);

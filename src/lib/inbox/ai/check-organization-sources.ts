@@ -3,6 +3,11 @@ import "server-only";
 import { generateText } from "@/lib/ai";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import { fetchPublicPageText } from "@/lib/inbox/ai/fetch-page-text";
+import {
+  detectQuestionTopics,
+  formatQuestionTopicLabel,
+  passesTopicKeywordRules,
+} from "@/lib/inbox/ai/question-topic-matching";
 import type { OrderedInboxAiSource } from "@/lib/organizations/inbox-ai-sources/queries";
 import type {
   InboxAiSourceCheckRecord,
@@ -20,6 +25,8 @@ export async function checkOrganizationSources(input: {
 }): Promise<InboxAiSourceUsed> {
   const sourcesChecked: InboxAiSourceCheckRecord[] = [];
   let answerFrom: InboxAiSourceUsed["answerFrom"] = null;
+  const questionTopics = detectQuestionTopics(input.question);
+  const questionTopicLabel = formatQuestionTopicLabel(questionTopics);
 
   for (const source of input.sources) {
     const record: InboxAiSourceCheckRecord = {
@@ -45,6 +52,7 @@ export async function checkOrganizationSources(input: {
 
     const analysis = await analyzeSourceForQuestion({
       question: input.question,
+      questionTopicLabel,
       sourceLabel: source.label,
       sourceUrl: source.url,
       pageText: fetched.text,
@@ -72,19 +80,25 @@ export async function checkOrganizationSources(input: {
 
 async function analyzeSourceForQuestion(input: {
   question: string;
+  questionTopicLabel: string | null;
   sourceLabel: string;
   sourceUrl: string;
   pageText: string;
 }): Promise<SourceAnalysisResult> {
   const snippet = input.pageText.slice(0, 8_000);
+  const topicRules = input.questionTopicLabel
+    ? `\n- The question is specifically about ${input.questionTopicLabel}. answerFound is true ONLY when the page contains information about that exact topic.
+- Do NOT match generic dismissal times, early release schedules, or school hours when the question is about a different topic (e.g. bus routes).
+- Do NOT match on time-of-day alone (such as "1:58 PM") unless it directly answers the question topic.`
+    : "";
 
   const generation = await generateText({
     systemPrompt: `You evaluate whether a school/PTO web page contains a factual answer to a parent question.
 Return JSON only: {"answerFound": boolean, "excerpt": string|null}
-- answerFound is true ONLY when the page clearly contains specific facts that answer the question.
+- answerFound is true ONLY when the page clearly contains specific facts that directly answer the question.
 - excerpt must quote or closely paraphrase ONLY facts present in the page text (max 400 chars).
 - If dates, times, locations, prices, deadlines, or policies are not explicitly on the page, answerFound must be false.
-- Never invent information.`,
+- Never invent information.${topicRules}`,
     userPrompt: `Question from inbox:
 ${input.question}
 
@@ -101,7 +115,63 @@ ${snippet}`,
     return { answerFound: false, excerpt: null };
   }
 
-  return parseAnalysisJson(generation.text);
+  const parsed = parseAnalysisJson(generation.text);
+  if (!parsed.answerFound || !parsed.excerpt) {
+    return { answerFound: false, excerpt: null };
+  }
+
+  if (
+    !passesTopicKeywordRules({
+      question: input.question,
+      excerpt: parsed.excerpt,
+    })
+  ) {
+    return { answerFound: false, excerpt: null };
+  }
+
+  const isRelevant = await verifyExcerptRelevance({
+    question: input.question,
+    questionTopicLabel: input.questionTopicLabel,
+    excerpt: parsed.excerpt,
+  });
+
+  if (!isRelevant) {
+    return { answerFound: false, excerpt: null };
+  }
+
+  return parsed;
+}
+
+async function verifyExcerptRelevance(input: {
+  question: string;
+  questionTopicLabel: string | null;
+  excerpt: string;
+}): Promise<boolean> {
+  const topicClause = input.questionTopicLabel
+    ? ` about ${input.questionTopicLabel}`
+    : "";
+
+  const generation = await generateText({
+    systemPrompt: `You verify whether a source excerpt directly answers a parent question.
+Reply with ONLY "yes" or "no".
+- yes ONLY if the excerpt contains specific facts that directly answer the question${topicClause}.
+- no if the excerpt is about a different topic (for example, early release dismissal times when asked about bus routes).
+- no if the excerpt only mentions generic times, dates, or dismissal schedules unrelated to the question topic.`,
+    userPrompt: `Question: ${input.question}
+
+Excerpt from source page:
+${input.excerpt}
+
+Does this excerpt directly answer the parent's question?`,
+    model: resolveFastDraftModel(),
+    maxTokens: 10,
+  });
+
+  if (!generation.success || !generation.text?.trim()) {
+    return false;
+  }
+
+  return generation.text.trim().toLowerCase().startsWith("yes");
 }
 
 function parseAnalysisJson(raw: string): SourceAnalysisResult {
