@@ -15,6 +15,8 @@ import {
   generateInboxAiDraftAction,
   sendInboxReplyAction,
 } from "@/lib/inbox/actions";
+import { isCommentChannel } from "@/lib/inbox/constants";
+import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -38,13 +40,14 @@ function statusLabel(status: InboxMessage["status"]): string {
 
 export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPanelProps) {
   const router = useRouter();
-  const replyTarget = useMemo(() => {
-    const inbound = messages.filter((message) => message.direction === "inbound");
-    const pending = inbound.find(
-      (message) => message.status !== "sent" && message.status !== "archived",
-    );
-    return pending ?? inbound[inbound.length - 1] ?? null;
-  }, [messages]);
+  const replyTarget = useMemo(
+    () =>
+      resolveInboxReplyTarget({
+        channelType: thread.channelType,
+        messages,
+      }),
+    [messages, thread.channelType],
+  );
 
   const initialBody =
     replyTarget?.approvedBody ??
@@ -94,19 +97,24 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
       draftRequested ||
       replyTarget.aiDraftBody ||
       replyTarget.approvedBody ||
-      replyTarget.status === "sent"
+      replyTarget.status === "sent" ||
+      (replyTarget.direction === "outbound" && isCommentChannel(thread.channelType))
     ) {
       return;
     }
 
     setDraftRequested(true);
     requestDraft();
-  }, [draftRequested, replyTarget, requestDraft]);
+  }, [draftRequested, replyTarget, requestDraft, thread.channelType]);
 
   if (!replyTarget) {
     return (
       <div className="shrink-0 border-t border-cos-border bg-cos-card px-4 py-3">
-        <p className="text-xs text-cos-muted">No inbound message to reply to in this thread.</p>
+        <p className="text-xs text-cos-muted">
+          {messages.length === 0
+            ? "No messages in this thread yet."
+            : "No inbound message to reply to in this thread."}
+        </p>
       </div>
     );
   }

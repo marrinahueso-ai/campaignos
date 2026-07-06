@@ -16,6 +16,18 @@ import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/
 const POST_FIELDS = "id,message,created_time,permalink_url,full_picture,thumbnail_url";
 const COMMENT_FIELDS = "id,message,from,created_time,comment_count";
 
+function readGraphId(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return null;
+}
+
 function buildFacebookCommentEmptyWarning(input: {
   pageId: string;
   missingScopes: string[];
@@ -125,7 +137,7 @@ export async function fetchFacebookPostComments(input: {
       }
 
       const from = asRecord(comment.from);
-      const senderId = readString(from?.id);
+      const senderId = readGraphId(from?.id);
       const senderName = readString(from?.name) ?? "Facebook user";
       const sentAt = readIsoTime(comment.created_time);
       const threadExternalId = `${postId}:${externalMessageId}`;
@@ -155,7 +167,8 @@ export async function fetchFacebookPostComments(input: {
         channelType: "facebook_comment",
         externalThreadId: threadExternalId,
         externalMessageId,
-        direction: senderId === input.pageId ? "outbound" : "inbound",
+        direction:
+          senderId && senderId === readGraphId(input.pageId) ? "outbound" : "inbound",
         body,
         senderName,
         senderExternalId: senderId,

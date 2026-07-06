@@ -42,6 +42,68 @@ function buildThreadUpsertRow(input: {
   return row;
 }
 
+async function messageExists(
+  supabase: SupabaseClient,
+  input: {
+    organizationId: string;
+    channelType: string;
+    externalMessageId: string;
+  },
+): Promise<boolean | null> {
+  const { data, error } = await supabase
+    .from("inbox_messages")
+    .select("id")
+    .eq("organization_id", input.organizationId)
+    .eq("channel_type", input.channelType)
+    .eq("external_message_id", input.externalMessageId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[inbox] message lookup failed:", error.message);
+    return null;
+  }
+
+  return Boolean(data);
+}
+
+async function incrementThreadUnreadForInboundMessage(
+  supabase: SupabaseClient,
+  input: {
+    threadId: string;
+    direction: NormalizedInboxMessage["direction"];
+    isNewMessage: boolean;
+    now: string;
+  },
+): Promise<void> {
+  if (!input.isNewMessage || input.direction !== "inbound") {
+    return;
+  }
+
+  const { data: threadData, error: threadError } = await supabase
+    .from("inbox_threads")
+    .select("unread_count")
+    .eq("id", input.threadId)
+    .single();
+
+  if (threadError || !threadData) {
+    console.error("[inbox] unread increment lookup failed:", threadError?.message);
+    return;
+  }
+
+  const nextUnreadCount = (threadData.unread_count as number | null) ?? 0;
+  const { error: unreadError } = await supabase
+    .from("inbox_threads")
+    .update({
+      unread_count: nextUnreadCount + 1,
+      updated_at: input.now,
+    })
+    .eq("id", input.threadId);
+
+  if (unreadError) {
+    console.error("[inbox] unread increment failed:", unreadError.message);
+  }
+}
+
 async function upsertInboxBatchWithClient(
   supabase: SupabaseClient,
   input: {
@@ -105,6 +167,17 @@ async function upsertInboxBatchWithClient(
       continue;
     }
 
+    const existingMessage = await messageExists(supabase, {
+      organizationId: input.organizationId,
+      channelType: message.channelType,
+      externalMessageId: message.externalMessageId,
+    });
+    if (existingMessage === null) {
+      continue;
+    }
+
+    const isNewMessage = !existingMessage;
+
     const { error } = await supabase.from("inbox_messages").upsert(
       {
         organization_id: input.organizationId,
@@ -124,6 +197,12 @@ async function upsertInboxBatchWithClient(
 
     if (!error) {
       messagesUpserted += 1;
+      await incrementThreadUnreadForInboundMessage(supabase, {
+        threadId,
+        direction: message.direction,
+        isNewMessage,
+        now,
+      });
     }
   }
 
@@ -151,19 +230,13 @@ export async function upsertWebhookMessage(input: {
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
-  const { data: existingMessage, error: existingMessageError } = await admin
-    .from("inbox_messages")
-    .select("id")
-    .eq("organization_id", input.organizationId)
-    .eq("channel_type", input.message.channelType)
-    .eq("external_message_id", input.message.externalMessageId)
-    .maybeSingle();
+  const existingMessage = await messageExists(admin, {
+    organizationId: input.organizationId,
+    channelType: input.message.channelType,
+    externalMessageId: input.message.externalMessageId,
+  });
 
-  if (existingMessageError) {
-    console.error(
-      "[inbox webhook] message lookup failed:",
-      existingMessageError.message,
-    );
+  if (existingMessage === null) {
     return false;
   }
 
@@ -179,7 +252,7 @@ export async function upsertWebhookMessage(input: {
       }),
       { onConflict: "organization_id,channel_type,external_thread_id" },
     )
-    .select("id, unread_count")
+    .select("id")
     .single();
 
   if (threadError || !threadData?.id) {
@@ -209,20 +282,12 @@ export async function upsertWebhookMessage(input: {
     return false;
   }
 
-  if (isNewMessage && input.message.direction === "inbound") {
-    const nextUnreadCount = (threadData.unread_count as number | null) ?? 0;
-    const { error: unreadError } = await admin
-      .from("inbox_threads")
-      .update({
-        unread_count: nextUnreadCount + 1,
-        updated_at: now,
-      })
-      .eq("id", threadData.id);
-
-    if (unreadError) {
-      console.error("[inbox webhook] unread increment failed:", unreadError.message);
-    }
-  }
+  await incrementThreadUnreadForInboundMessage(admin, {
+    threadId: threadData.id as string,
+    direction: input.message.direction,
+    isNewMessage,
+    now,
+  });
 
   return true;
 }

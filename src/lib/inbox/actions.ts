@@ -8,8 +8,9 @@ import { generateInboxAiDraft } from "@/lib/inbox/ai-draft";
 import {
   getInboxMessageById,
   getInboxThreadById,
-  getLatestInboundReplyTarget,
+  getLatestReplyTarget,
 } from "@/lib/inbox/message-queries";
+import { canApproveReplyAnchor } from "@/lib/inbox/reply-target";
 import { refreshInboxScopesFromPageToken, getOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { sendInboxReply } from "@/lib/inbox/send-reply";
 import {
@@ -160,24 +161,28 @@ export async function generateInboxAiDraftAction(input: {
     return { success: false, error: "AI drafts are only available for reply threads." };
   }
 
-  const inboundMessage = input.messageId
+  const replyMessage = input.messageId
     ? await getInboxMessageById({
         organizationId: access.organizationId,
         messageId: input.messageId,
       })
-    : await getLatestInboundReplyTarget({
+    : await getLatestReplyTarget({
         organizationId: access.organizationId,
         threadId: input.threadId,
       });
 
-  if (!inboundMessage) {
-    return { success: false, error: "No inbound message found to reply to." };
+  if (!replyMessage) {
+    return { success: false, error: "No message found to reply to in this thread." };
+  }
+
+  if (!canApproveReplyAnchor({ channelType: thread.channelType, message: replyMessage })) {
+    return { success: false, error: "This message cannot be used as a reply target." };
   }
 
   const result = await generateInboxAiDraft({
     organizationId: access.organizationId,
     thread,
-    inboundMessage,
+    inboundMessage: replyMessage,
   });
 
   revalidatePath("/inbox");
@@ -213,8 +218,16 @@ export async function approveInboxReplyAction(input: {
     return { success: false, error: "Message not found." };
   }
 
-  if (message.direction !== "inbound") {
-    return { success: false, error: "Only inbound messages can be approved for reply." };
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: message.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  if (!canApproveReplyAnchor({ channelType: thread.channelType, message })) {
+    return { success: false, error: "This message cannot be approved for reply." };
   }
 
   const user = await getAuthUser();
