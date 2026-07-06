@@ -1,4 +1,7 @@
-import { buildCommentPostMetadata } from "@/lib/inbox/comment-post-preview";
+import {
+  buildCommentPostMetadata,
+  resolveFacebookPostPermalink,
+} from "@/lib/inbox/comment-post-preview";
 import { missingFacebookCommentScopes } from "@/lib/inbox/scopes";
 import {
   asRecord,
@@ -85,7 +88,8 @@ export async function fetchFacebookPostComments(input: {
     }
 
     const postMessage = readString(post.message);
-    const permalink = readString(post.permalink_url);
+    const graphPermalink = readString(post.permalink_url);
+    const permalink = resolveFacebookPostPermalink({ postId, graphPermalink });
     const postImageUrl =
       readString(post.full_picture) ?? readString(post.thumbnail_url);
     const postMetadata = buildCommentPostMetadata({

@@ -1,7 +1,10 @@
 import {
+  buildCommentPostMetadata,
+  resolveFacebookPostPermalink,
+} from "@/lib/inbox/comment-post-preview";
+import {
   asRecord,
   asRecordArray,
-  inboxGraphGet,
   inboxGraphGetAllPages,
   readIsoTime,
   readString,
@@ -47,7 +50,8 @@ export async function fetchFacebookTaggedPosts(input: {
     }
 
     const message = readString(post.message);
-    const permalink = readString(post.permalink_url);
+    const graphPermalink = readString(post.permalink_url);
+    const permalink = resolveFacebookPostPermalink({ postId, graphPermalink });
     const mediaUrl = readString(post.full_picture);
     const sentAt = readIsoTime(post.created_time);
     const from = asRecord(post.from);
@@ -56,6 +60,16 @@ export async function fetchFacebookTaggedPosts(input: {
 
     const subject = message ? snippet(message, 80) : "Tagged Facebook post";
     const body = message ?? "Tagged your Page on Facebook.";
+    const postMetadata = buildCommentPostMetadata({
+      caption: message,
+      imageUrl: mediaUrl,
+      permalink,
+      postId,
+      extra: {
+        mediaUrl,
+        tagged: true,
+      },
+    });
 
     threads.push({
       channelType: "facebook_tag",
@@ -66,12 +80,7 @@ export async function fetchFacebookTaggedPosts(input: {
       subject,
       lastMessageSnippet: snippet(body),
       lastMessageAt: sentAt,
-      metadata: {
-        postId,
-        permalink,
-        mediaUrl,
-        tagged: true,
-      },
+      metadata: postMetadata,
     });
 
     messages.push({
@@ -83,12 +92,7 @@ export async function fetchFacebookTaggedPosts(input: {
       senderName,
       senderExternalId: senderId,
       sentAt,
-      metadata: {
-        postId,
-        permalink,
-        mediaUrl,
-        tagged: true,
-      },
+      metadata: postMetadata,
     });
   }
 

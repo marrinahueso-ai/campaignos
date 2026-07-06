@@ -2,6 +2,10 @@ import "server-only";
 
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  buildCommentPostMetadata,
+  resolveFacebookPostPermalink,
+} from "@/lib/inbox/comment-post-preview";
 import { snippet } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
@@ -182,6 +186,12 @@ async function handleFeedCommentChange(input: {
   }
 
   const threadExternalId = `${postId}:${commentId}`;
+  const postMetadata = buildCommentPostMetadata({
+    caption: null,
+    imageUrl: null,
+    permalink: resolveFacebookPostPermalink({ postId }),
+    postId,
+  });
   const thread: NormalizedInboxThread = {
     channelType: "facebook_comment",
     externalThreadId: threadExternalId,
@@ -191,6 +201,7 @@ async function handleFeedCommentChange(input: {
     subject: "Facebook post comment",
     lastMessageSnippet: snippet(message),
     lastMessageAt: createdTime,
+    metadata: postMetadata,
   };
 
   const normalizedMessage: NormalizedInboxMessage = {
@@ -202,6 +213,7 @@ async function handleFeedCommentChange(input: {
     senderName,
     senderExternalId: senderId,
     sentAt: createdTime,
+    metadata: postMetadata,
   };
 
   return upsertWebhookMessage({
@@ -235,6 +247,12 @@ async function handleInstagramCommentChange(input: {
   }
 
   const threadExternalId = `${mediaId}:${commentId}`;
+  const postMetadata = buildCommentPostMetadata({
+    caption: null,
+    imageUrl: null,
+    permalink: null,
+    mediaId,
+  });
   const thread: NormalizedInboxThread = {
     channelType: "instagram_comment",
     externalThreadId: threadExternalId,
@@ -243,6 +261,7 @@ async function handleInstagramCommentChange(input: {
     subject: "Instagram post comment",
     lastMessageSnippet: snippet(text),
     lastMessageAt: timestamp,
+    metadata: postMetadata,
   };
 
   const normalizedMessage: NormalizedInboxMessage = {
@@ -253,6 +272,7 @@ async function handleInstagramCommentChange(input: {
     body: text,
     senderName: username,
     sentAt: timestamp,
+    metadata: postMetadata,
   };
 
   return upsertWebhookMessage({

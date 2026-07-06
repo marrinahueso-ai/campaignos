@@ -9,7 +9,6 @@ import {
   MessagesSquare,
   Settings,
 } from "lucide-react";
-import { InboxCommentPostPreview } from "@/components/inbox/InboxCommentPostPreview";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
@@ -211,74 +210,72 @@ function ConversationListRow({
   const hasUnread = thread.unreadCount > 0;
 
   return (
-    <InboxCommentPostPreview thread={thread} className="block">
-      <button
-        type="button"
-        onClick={onSelect}
-        className={cn(
-          "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
-          selected
-            ? "bg-cos-dark text-[#f6f2eb]"
-            : "hover:bg-cos-bg/70",
-        )}
-        aria-current={selected ? "true" : undefined}
-      >
-        <ThreadAvatar thread={thread} selected={selected} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p
-              className={cn(
-                "truncate text-sm font-medium",
-                selected ? "text-[#f6f2eb]" : "text-cos-text",
-                hasUnread && !selected && "font-semibold",
-              )}
-            >
-              {displayName}
-            </p>
-            {thread.lastMessageAt ? (
-              <time
-                className={cn(
-                  "shrink-0 text-[10px] tabular-nums",
-                  selected ? "text-[#f6f2eb]/70" : "text-cos-muted",
-                )}
-                dateTime={thread.lastMessageAt}
-              >
-                {formatRelativeUpdated(thread.lastMessageAt)}
-              </time>
-            ) : null}
-          </div>
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
+        selected
+          ? "bg-cos-dark text-[#f6f2eb]"
+          : "hover:bg-cos-bg/70",
+      )}
+      aria-current={selected ? "true" : undefined}
+    >
+      <ThreadAvatar thread={thread} selected={selected} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
           <p
             className={cn(
-              "mt-0.5 truncate text-xs",
-              selected ? "text-[#f6f2eb]/75" : "text-cos-muted",
+              "truncate text-sm font-medium",
+              selected ? "text-[#f6f2eb]" : "text-cos-text",
+              hasUnread && !selected && "font-semibold",
             )}
           >
-            {INBOX_CHANNEL_SHORT_LABELS[thread.channelType]}
-            {thread.status === "sent" ? " · Replied" : null}
+            {displayName}
           </p>
-          {thread.lastMessageSnippet ? (
-            <p
+          {thread.lastMessageAt ? (
+            <time
               className={cn(
-                "mt-1 truncate text-sm",
-                selected ? "text-[#f6f2eb]/90" : "text-cos-text/80",
-                hasUnread && !selected && "font-medium text-cos-text",
+                "shrink-0 text-[10px] tabular-nums",
+                selected ? "text-[#f6f2eb]/70" : "text-cos-muted",
               )}
+              dateTime={thread.lastMessageAt}
             >
-              {thread.lastMessageSnippet}
-            </p>
+              {formatRelativeUpdated(thread.lastMessageAt)}
+            </time>
           ) : null}
         </div>
-        {hasUnread ? (
-          <span
+        <p
+          className={cn(
+            "mt-0.5 truncate text-xs",
+            selected ? "text-[#f6f2eb]/75" : "text-cos-muted",
+          )}
+        >
+          {INBOX_CHANNEL_SHORT_LABELS[thread.channelType]}
+          {thread.status === "sent" ? " · Replied" : null}
+        </p>
+        {thread.lastMessageSnippet ? (
+          <p
             className={cn(
-              "mt-2 h-2 w-2 shrink-0 rounded-full",
-              selected ? "bg-[#f6f2eb]" : "bg-cos-accent",
+              "mt-1 truncate text-sm",
+              selected ? "text-[#f6f2eb]/90" : "text-cos-text/80",
+              hasUnread && !selected && "font-medium text-cos-text",
             )}
-            aria-label="Unread"
-          />
+          >
+            {thread.lastMessageSnippet}
+          </p>
         ) : null}
-      </button>
-    </InboxCommentPostPreview>
+      </div>
+      {hasUnread ? (
+        <span
+          className={cn(
+            "mt-2 h-2 w-2 shrink-0 rounded-full",
+            selected ? "bg-[#f6f2eb]" : "bg-cos-accent",
+          )}
+          aria-label="Unread"
+        />
+      ) : null}
+    </button>
   );
 }
 
