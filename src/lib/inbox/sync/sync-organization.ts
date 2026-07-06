@@ -106,6 +106,7 @@ export async function syncInboxForOrganization(
   const instagramComments = await fetchInstagramMediaComments({
     instagramAccountId,
     pageAccessToken: connection.pageAccessToken,
+    grantedScopes,
   });
   channelResults.push(
     channelResult({
@@ -113,6 +114,7 @@ export async function syncInboxForOrganization(
       threadsFound: instagramComments.threads.length,
       messagesFound: instagramComments.messages.length,
       error: instagramComments.error,
+      warning: instagramComments.warning,
     }),
   );
   if (instagramComments.error) {
@@ -121,10 +123,14 @@ export async function syncInboxForOrganization(
     allThreads.push(...instagramComments.threads);
     allMessages.push(...instagramComments.messages);
   }
+  if (instagramComments.warning) {
+    warnings.push(`Instagram comments: ${instagramComments.warning}`);
+  }
 
   const facebookComments = await fetchFacebookPostComments({
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
+    grantedScopes,
   });
   channelResults.push(
     channelResult({
@@ -132,6 +138,7 @@ export async function syncInboxForOrganization(
       threadsFound: facebookComments.threads.length,
       messagesFound: facebookComments.messages.length,
       error: facebookComments.error,
+      warning: facebookComments.warning,
     }),
   );
   if (facebookComments.error) {
@@ -139,6 +146,9 @@ export async function syncInboxForOrganization(
   } else {
     allThreads.push(...facebookComments.threads);
     allMessages.push(...facebookComments.messages);
+  }
+  if (facebookComments.warning) {
+    warnings.push(`Facebook comments: ${facebookComments.warning}`);
   }
 
   const upserted = await upsertInboxBatch({

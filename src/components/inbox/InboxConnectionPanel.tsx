@@ -187,8 +187,13 @@ export function InboxConnectionPanel({
         <div className="mt-3 space-y-3 text-cos-muted">
           <p>
             Inbox sync uses additional Meta permissions. In Development mode, app admins and
-            testers can use inbox features without App Review. For production, submit your app
-            for{" "}
+            testers can use inbox features without App Review. Instagram DMs only sync from
+            tester/admin accounts until the app has Advanced Access for{" "}
+            <code className="rounded bg-cos-bg px-1">instagram_manage_messages</code>. IG and FB
+            comments sync from recent posts when{" "}
+            <code className="rounded bg-cos-bg px-1">instagram_manage_comments</code> and{" "}
+            <code className="rounded bg-cos-bg px-1">pages_read_user_content</code> are granted.
+            For production, submit your app for{" "}
             <a
               href="https://developers.facebook.com/docs/app-review"
               target="_blank"
@@ -247,6 +252,7 @@ export function InboxConnectionPanel({
         <p
           className={
             message.includes("Meta returned 0 Instagram") ||
+            message.includes("Meta returned 0 Facebook") ||
             message.includes("Missing token scopes")
               ? "text-sm text-amber-800"
               : "text-sm text-emerald-700"

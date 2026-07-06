@@ -1,3 +1,4 @@
+import { missingFacebookCommentScopes } from "@/lib/inbox/scopes";
 import {
   asRecord,
   asRecordArray,
@@ -8,17 +9,54 @@ import {
 } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 
-const POST_FIELDS =
-  "id,message,created_time,permalink_url,comments{id,message,from,created_time,comment_count}";
+const POST_FIELDS = "id,message,created_time,permalink_url";
+const COMMENT_FIELDS = "id,message,from,created_time,comment_count";
+
+function buildFacebookCommentEmptyWarning(input: {
+  pageId: string;
+  missingScopes: string[];
+  postsChecked: number;
+  lastGraphError: string | null;
+}): string {
+  if (input.missingScopes.length > 0) {
+    return `Missing token scopes: ${input.missingScopes.join(", ")}. Reconnect with inbox permissions.`;
+  }
+
+  const parts = [
+    "Meta returned 0 Facebook post comments.",
+    `Checked ${input.postsChecked} recent post(s) on Page ${input.pageId}.`,
+    "Comment on a Page post, then run Sync now. Requires pages_read_user_content on the Page token.",
+  ];
+
+  if (input.lastGraphError) {
+    parts.push(`Last Graph error: ${input.lastGraphError}`);
+  }
+
+  return parts.join(" ");
+}
 
 export async function fetchFacebookPostComments(input: {
   pageId: string;
   pageAccessToken: string;
+  grantedScopes?: string[];
 }): Promise<{
   threads: NormalizedInboxThread[];
   messages: NormalizedInboxMessage[];
   error: string | null;
+  warning: string | null;
 }> {
+  const missingScopes = missingFacebookCommentScopes(input.grantedScopes ?? []);
+  if (missingScopes.length > 0) {
+    const error = `Missing token scopes for Facebook comments: ${missingScopes.join(", ")}.`;
+    console.warn(`Facebook comment sync blocked for page ${input.pageId}: ${error}`);
+    return {
+      threads: [],
+      messages: [],
+      error,
+      warning: null,
+    };
+  }
+
   const postsResult = await inboxGraphGetAllPages(
     `/${input.pageId}/posts`,
     {
@@ -32,11 +70,12 @@ export async function fetchFacebookPostComments(input: {
   );
 
   if (!postsResult.ok) {
-    return { threads: [], messages: [], error: postsResult.error };
+    return { threads: [], messages: [], error: postsResult.error, warning: null };
   }
 
   const threadMap = new Map<string, NormalizedInboxThread>();
   const messages: NormalizedInboxMessage[] = [];
+  let lastGraphError: string | null = null;
 
   for (const post of postsResult.data) {
     const postId = readString(post.id);
@@ -45,10 +84,27 @@ export async function fetchFacebookPostComments(input: {
     }
 
     const postMessage = readString(post.message);
-    const commentsContainer = asRecord(post.comments);
-    const comments = asRecordArray(commentsContainer?.data ?? post.comments);
+    const permalink = readString(post.permalink_url);
 
-    for (const comment of comments) {
+    const commentsResult = await inboxGraphGetAllPages(
+      `/${postId}/comments`,
+      {
+        fields: COMMENT_FIELDS,
+        limit: "50",
+        access_token: input.pageAccessToken,
+      },
+      (payload) => asRecordArray(payload.data),
+      (payload) => readString(payload.paging && asRecord(payload.paging)?.next) ?? null,
+      2,
+    );
+
+    if (!commentsResult.ok) {
+      lastGraphError = commentsResult.error;
+      console.warn(`Facebook comments fetch failed for post ${postId}:`, commentsResult.error);
+      continue;
+    }
+
+    for (const comment of commentsResult.data) {
       const externalMessageId = readString(comment.id);
       const body = readString(comment.message) ?? "";
       if (!externalMessageId) {
@@ -72,7 +128,7 @@ export async function fetchFacebookPostComments(input: {
         lastMessageAt: sentAt,
         metadata: {
           postId,
-          permalink: readString(post.permalink_url),
+          permalink,
         },
       };
 
@@ -96,14 +152,33 @@ export async function fetchFacebookPostComments(input: {
         sentAt,
         metadata: {
           postId,
+          permalink,
         },
       });
     }
   }
 
+  const threads = [...threadMap.values()];
+  if (threads.length === 0) {
+    const warning = buildFacebookCommentEmptyWarning({
+      pageId: input.pageId,
+      missingScopes,
+      postsChecked: postsResult.data.length,
+      lastGraphError,
+    });
+    console.warn("Facebook comment sync returned no comments:", warning);
+    return {
+      threads: [],
+      messages: [],
+      error: lastGraphError,
+      warning,
+    };
+  }
+
   return {
-    threads: [...threadMap.values()],
+    threads,
     messages,
     error: null,
+    warning: null,
   };
 }

@@ -61,6 +61,14 @@ export function missingInstagramDmScopes(scopes: string[]): string[] {
   return INSTAGRAM_DM_SCOPES.filter((scope) => !scopes.includes(scope));
 }
 
+export function missingInstagramCommentScopes(scopes: string[]): string[] {
+  return INSTAGRAM_COMMENT_SCOPES.filter((scope) => !scopes.includes(scope));
+}
+
+export function missingFacebookCommentScopes(scopes: string[]): string[] {
+  return FACEBOOK_COMMENT_SCOPES.filter((scope) => !scopes.includes(scope));
+}
+
 export function hasCommentScopes(scopes: string[]): boolean {
   return INBOX_COMMENT_SCOPES.some((scope) => scopes.includes(scope));
 }

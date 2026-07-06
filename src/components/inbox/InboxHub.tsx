@@ -75,7 +75,22 @@ function ChannelFilterButton({
   );
 }
 
-function ThreadMessageList({ messages }: { messages: InboxMessage[] }) {
+function readThreadPermalink(thread: InboxPageData["threads"][number]): string | null {
+  const permalink = thread.metadata?.permalink;
+  return typeof permalink === "string" && permalink.trim() ? permalink : null;
+}
+
+function isCommentChannel(channelType: InboxChannelType): boolean {
+  return channelType === "instagram_comment" || channelType === "facebook_comment";
+}
+
+function ThreadMessageList({
+  messages,
+  channelType,
+}: {
+  messages: InboxMessage[];
+  channelType: InboxChannelType;
+}) {
   if (messages.length === 0) {
     return (
       <p className="px-6 py-4 text-sm text-cos-muted">
@@ -110,6 +125,15 @@ function ThreadMessageList({ messages }: { messages: InboxMessage[] }) {
           </li>
         ))}
       </ul>
+      {isCommentChannel(channelType) ? (
+        <div className="mt-4 rounded-md border border-dashed border-cos-border bg-cos-card/60 px-3 py-3">
+          <p className="text-xs font-medium text-cos-text">Reply (Phase 4)</p>
+          <p className="mt-1 text-xs text-cos-muted">
+            Approve-and-send replies to comments will ship in a later phase. For now, open the
+            post link below to respond on Instagram or Facebook.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -226,6 +250,7 @@ export function InboxHub({ data }: InboxHubProps) {
                 const Icon = CHANNEL_ICONS[thread.channelType];
                 const expanded = expandedThreadId === thread.id;
                 const messages = messagesByThreadId[thread.id] ?? [];
+                const postPermalink = readThreadPermalink(thread);
 
                 return (
                   <li key={thread.id}>
@@ -259,6 +284,17 @@ export function InboxHub({ data }: InboxHubProps) {
                           {INBOX_CHANNEL_LABELS[thread.channelType]}
                           {thread.subject ? ` · ${thread.subject}` : null}
                         </p>
+                        {postPermalink ? (
+                          <a
+                            href={postPermalink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block text-xs font-medium text-cos-accent hover:text-cos-muted"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            View post on {thread.channelType === "instagram_comment" ? "Instagram" : "Facebook"}
+                          </a>
+                        ) : null}
                         {thread.lastMessageSnippet ? (
                           <p className="mt-2 line-clamp-2 text-sm text-cos-text/90">
                             {thread.lastMessageSnippet}
@@ -272,7 +308,9 @@ export function InboxHub({ data }: InboxHubProps) {
                         )}
                       />
                     </button>
-                    {expanded ? <ThreadMessageList messages={messages} /> : null}
+                    {expanded ? (
+                      <ThreadMessageList messages={messages} channelType={thread.channelType} />
+                    ) : null}
                   </li>
                 );
               })}

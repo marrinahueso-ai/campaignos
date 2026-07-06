@@ -16,6 +16,7 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     unreadCount: row.unread_count,
     status: row.status,
     syncedAt: row.synced_at,
+    metadata: row.metadata ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

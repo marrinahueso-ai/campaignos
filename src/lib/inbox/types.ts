@@ -22,6 +22,7 @@ export interface InboxThread {
   unreadCount: number;
   status: InboxItemStatus;
   syncedAt: string | null;
+  metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
