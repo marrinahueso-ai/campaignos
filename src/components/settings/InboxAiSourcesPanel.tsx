@@ -1,6 +1,14 @@
 "use client";
 
-import { FormEvent, useActionState, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useActionState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
 import { Link2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -37,28 +45,32 @@ function serializeCustomSources(
 }
 
 export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) {
+  const router = useRouter();
   const [customSources, setCustomSources] = useState(initialInput.customSources);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState(() =>
+    serializeCustomSources(initialInput.customSources),
+  );
   const [clientError, setClientError] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState(
     saveInboxAiSourcesAction,
     INITIAL_STATE,
   );
 
-  const savedSnapshot = useMemo(
-    () => serializeCustomSources(initialInput.customSources),
-    [initialInput.customSources],
-  );
   const currentSnapshot = useMemo(
     () => serializeCustomSources(customSources),
     [customSources],
   );
-  const hasUnsavedCustomSources = savedSnapshot !== currentSnapshot;
+  const hasUnsavedCustomSources = lastSavedSnapshot !== currentSnapshot;
 
-  useEffect(() => {
-    if (state.success && state.savedCustomSources) {
-      setCustomSources(state.savedCustomSources);
+  useLayoutEffect(() => {
+    if (!state.success || !state.savedCustomSources) {
+      return;
     }
-  }, [state.success, state.savedCustomSources]);
+
+    setCustomSources(state.savedCustomSources);
+    setLastSavedSnapshot(serializeCustomSources(state.savedCustomSources));
+    router.refresh();
+  }, [state.success, state.savedCustomSources, router]);
 
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -119,6 +131,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
   }
 
   const displayError = clientError ?? state.error;
+  const showSuccessMessage = state.success && !hasUnsavedCustomSources;
 
   return (
     <form action={formAction} onSubmit={handleSubmit} className="cos-card space-y-6 p-6">
@@ -245,7 +258,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
         </p>
       ) : null}
 
-      {state.success ? (
+      {showSuccessMessage ? (
         <p className="text-sm text-green-700">Inbox AI sources saved.</p>
       ) : null}
 

@@ -6,6 +6,7 @@ import {
   validateInboxAiSourcesInput,
 } from "@/lib/organizations/inbox-ai-sources/mutations";
 import {
+  getCustomInboxAiSources,
   getInboxAiSourcesSettings,
 } from "@/lib/organizations/inbox-ai-sources/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -93,7 +94,12 @@ export async function saveInboxAiSourcesAction(
   revalidatePath("/settings/ai-brain");
   revalidatePath("/inbox");
 
-  const savedCustomSources = input.customSources.filter((source) => source.url.trim());
+  const persistedCustomSources = await getCustomInboxAiSources(organization.id);
+  const savedCustomSources = persistedCustomSources.map((source) => ({
+    id: source.id,
+    label: source.label,
+    url: source.url,
+  }));
 
   return { error: null, success: true, savedCustomSources };
 }
