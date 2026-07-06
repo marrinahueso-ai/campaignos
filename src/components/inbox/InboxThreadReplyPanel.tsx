@@ -9,7 +9,6 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
-import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -107,9 +106,9 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
 
   if (!replyTarget) {
     return (
-      <p className="mt-4 text-xs text-cos-muted">
-        No inbound message to reply to in this thread.
-      </p>
+      <div className="border-t border-cos-border bg-cos-card px-6 py-4">
+        <p className="text-xs text-cos-muted">No inbound message to reply to in this thread.</p>
+      </div>
     );
   }
 
@@ -133,19 +132,21 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
   }
 
   return (
-    <div className="mt-4 rounded-md border border-cos-border bg-cos-card/60 px-3 py-3">
+    <div className="border-t-2 border-cos-border bg-cos-card px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text">
-          <InboxPlatformIcon channelType={thread.channelType} size="xs" />
-          Reply
+          {replyTarget.aiDraftBody && !isSent ? (
+            <Sparkles className="h-3.5 w-3.5 text-cos-accent" aria-hidden />
+          ) : null}
+          {isSent ? "Sent reply" : "Suggested reply"}
         </p>
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
             isSent
-              ? "bg-emerald-100 text-emerald-800"
+              ? "bg-cos-success-bg text-cos-success-text"
               : isApproved
-                ? "bg-amber-100 text-amber-900"
+                ? "bg-cos-warning text-cos-warning-text"
                 : "bg-cos-bg text-cos-muted",
           )}
         >
@@ -154,9 +155,9 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
       </div>
 
       {replyTarget.aiDraftBody && !isSent ? (
-        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-cos-muted">
-          <Sparkles className="h-3 w-3 text-cos-accent" />
-          AI suggested draft — review and approve before sending
+        <p className="mt-1.5 text-[11px] text-cos-muted">
+          Review and approve before sending to{" "}
+          {thread.participantName ?? "this conversation"}.
         </p>
       ) : null}
 

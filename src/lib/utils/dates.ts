@@ -96,6 +96,16 @@ export function formatDateTime(isoDate: string): string {
   });
 }
 
+/** Compact timestamp for inline message bubbles. */
+export function formatMessageTime(isoDate: string): string {
+  return new Date(isoDate).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function formatLocalDate(
   date: string,
   options: Intl.DateTimeFormatOptions,

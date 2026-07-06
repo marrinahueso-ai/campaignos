@@ -19,7 +19,7 @@ import {
   isTaggedChannel,
 } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxConnectionStatus, InboxMessage, InboxPageData } from "@/lib/inbox/types";
-import { formatDateTime } from "@/lib/utils/dates";
+import { formatDateTime, formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 type ChannelFilter = "all" | "tagged" | InboxChannelType;
@@ -134,27 +134,56 @@ function readThreadPermalink(thread: InboxPageData["threads"][number]): string |
   return typeof permalink === "string" && permalink.trim() ? permalink : null;
 }
 
+function ThreadHeader({
+  channelType,
+  participantName,
+  pageName,
+}: {
+  channelType: InboxChannelType;
+  participantName: string | null;
+  pageName: string | null;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-cos-border/60 bg-cos-card/50 px-6 py-3">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <InboxPlatformIcon channelType={channelType} size="sm" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-cos-text">
+            {INBOX_CHANNEL_LABELS[channelType]}
+          </p>
+          {participantName ? (
+            <p className="mt-0.5 truncate text-[11px] text-cos-muted">
+              with {participantName}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      {pageName ? (
+        <p className="shrink-0 text-[11px] text-cos-muted">via {pageName}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function ThreadMessageList({
   thread,
   messages,
   channelType,
+  pageName,
 }: {
   thread: InboxPageData["threads"][number];
   messages: InboxMessage[];
   channelType: InboxChannelType;
+  pageName: string | null;
 }) {
   if (messages.length === 0 && !isTaggedChannel(channelType)) {
     return (
       <div className="border-t border-cos-border bg-cos-bg/40">
-        <div className="flex items-center gap-2 border-b border-cos-border/60 px-6 py-3">
-          <InboxPlatformIcon channelType={channelType} size="sm" />
-          <p className="text-xs font-medium text-cos-text">
-            {INBOX_CHANNEL_LABELS[channelType]}
-          </p>
-          {thread.participantName ? (
-            <span className="text-xs text-cos-muted">· {thread.participantName}</span>
-          ) : null}
-        </div>
+        <ThreadHeader
+          channelType={channelType}
+          participantName={thread.participantName}
+          pageName={pageName}
+        />
         <p className="px-6 py-4 text-sm text-cos-muted">No messages in this thread yet.</p>
       </div>
     );
@@ -162,41 +191,46 @@ function ThreadMessageList({
 
   return (
     <div className="border-t border-cos-border bg-cos-bg/40">
-      <div className="flex items-center gap-2 border-b border-cos-border/60 px-6 py-3">
-        <InboxPlatformIcon channelType={channelType} size="sm" />
-        <p className="text-xs font-medium text-cos-text">
-          {INBOX_CHANNEL_LABELS[channelType]}
-        </p>
-        {thread.participantName ? (
-          <span className="text-xs text-cos-muted">· {thread.participantName}</span>
-        ) : null}
-      </div>
-      <div className="px-6 py-4">
+      <ThreadHeader
+        channelType={channelType}
+        participantName={thread.participantName}
+        pageName={pageName}
+      />
+
       {messages.length > 0 ? (
-        <ul className="space-y-3">
-          {messages.map((message) => (
-            <li
-              key={message.id}
-              className={cn(
-                "rounded-md border px-3 py-2 text-sm",
-                message.direction === "outbound"
-                  ? "ml-8 border-cos-border bg-cos-card"
-                  : "mr-8 border-cos-border bg-white",
-              )}
-            >
-              <div className="flex items-center justify-between gap-3 text-xs text-cos-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <InboxPlatformIcon channelType={channelType} size="xs" />
-                  {message.senderName ??
-                    (message.direction === "outbound" ? "You" : "Customer")}
-                </span>
+        <ul className="flex flex-col gap-3 px-6 py-4" role="list">
+          {messages.map((message) => {
+            const isOutbound = message.direction === "outbound";
+
+            return (
+              <li
+                key={message.id}
+                className={cn(
+                  "flex max-w-[88%] flex-col",
+                  isOutbound ? "ml-auto items-end" : "mr-auto items-start",
+                )}
+              >
+                <div
+                  className={cn(
+                    "rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
+                    isOutbound
+                      ? "rounded-br-sm bg-cos-dark text-[#f6f2eb]"
+                      : "rounded-bl-sm border border-cos-border/80 bg-white text-cos-text",
+                  )}
+                >
+                  <p className="whitespace-pre-wrap">{message.body}</p>
+                </div>
                 {message.sentAt ? (
-                  <time dateTime={message.sentAt}>{formatDateTime(message.sentAt)}</time>
+                  <time
+                    className="mt-1 px-0.5 text-[10px] tabular-nums text-cos-muted"
+                    dateTime={message.sentAt}
+                  >
+                    {formatMessageTime(message.sentAt)}
+                  </time>
                 ) : null}
-              </div>
-              <p className="mt-1 whitespace-pre-wrap text-cos-text">{message.body}</p>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 
@@ -204,8 +238,11 @@ function ThreadMessageList({
         <InboxThreadReplyPanel thread={thread} messages={messages} />
       ) : null}
 
-      {isTaggedChannel(channelType) ? <InboxTaggedPanel thread={thread} /> : null}
-      </div>
+      {isTaggedChannel(channelType) ? (
+        <div className="px-6 pb-4">
+          <InboxTaggedPanel thread={thread} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -394,6 +431,7 @@ export function InboxHub({ data }: InboxHubProps) {
                         thread={thread}
                         messages={messages}
                         channelType={thread.channelType}
+                        pageName={connection.pageName}
                       />
                     ) : null}
                   </li>
