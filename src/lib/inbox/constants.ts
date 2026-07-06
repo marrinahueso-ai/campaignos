@@ -56,3 +56,17 @@ export function isTaggedFilter(
 ): filter is "tagged" {
   return filter === "tagged";
 }
+
+export type InboxPlatform = "facebook" | "instagram";
+
+export function getInboxPlatform(channelType: InboxChannelType): InboxPlatform {
+  return channelType.startsWith("instagram") ? "instagram" : "facebook";
+}
+
+export function isInstagramChannel(channelType: InboxChannelType): boolean {
+  return getInboxPlatform(channelType) === "instagram";
+}
+
+export function isFacebookChannel(channelType: InboxChannelType): boolean {
+  return getInboxPlatform(channelType) === "facebook";
+}

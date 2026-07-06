@@ -1,17 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  AtSign,
-  ChevronDown,
-  Inbox,
-  MessageCircle,
-  MessageSquare,
-  MessagesSquare,
-  Share2,
-  Tag,
-} from "lucide-react";
+import { ChevronDown, Inbox, MessageCircle, MessagesSquare } from "lucide-react";
 import { InboxConnectionPanel } from "@/components/inbox/InboxConnectionPanel";
+import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
 import {
@@ -39,25 +31,18 @@ interface InboxHubProps {
   data: InboxPageData;
 }
 
-const CHANNEL_ICONS: Record<InboxChannelType, typeof MessageCircle> = {
-  instagram_dm: MessageCircle,
-  facebook_message: MessagesSquare,
-  instagram_comment: AtSign,
-  facebook_comment: MessageSquare,
-  instagram_tag: Tag,
-  facebook_tag: Share2,
-};
-
 function ChannelFilterButton({
   label,
   count,
   active,
   onClick,
+  icon,
 }: {
   label: string;
   count: number;
   active: boolean;
   onClick: () => void;
+  icon?: React.ReactNode;
 }) {
   return (
     <button
@@ -71,6 +56,7 @@ function ChannelFilterButton({
       )}
       aria-pressed={active}
     >
+      {icon}
       <span>{label}</span>
       <span
         className={cn(
@@ -100,14 +86,35 @@ function ThreadMessageList({
 }) {
   if (messages.length === 0 && !isTaggedChannel(channelType)) {
     return (
-      <p className="px-6 py-4 text-sm text-cos-muted">
-        No messages synced for this thread yet.
-      </p>
+      <div className="border-t border-cos-border bg-cos-bg/40">
+        <div className="flex items-center gap-2 border-b border-cos-border/60 px-6 py-3">
+          <InboxPlatformIcon channelType={channelType} size="sm" />
+          <p className="text-xs font-medium text-cos-text">
+            {INBOX_CHANNEL_LABELS[channelType]}
+          </p>
+          {thread.participantName ? (
+            <span className="text-xs text-cos-muted">· {thread.participantName}</span>
+          ) : null}
+        </div>
+        <p className="px-6 py-4 text-sm text-cos-muted">
+          No messages synced for this thread yet.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="border-t border-cos-border bg-cos-bg/40 px-6 py-4">
+    <div className="border-t border-cos-border bg-cos-bg/40">
+      <div className="flex items-center gap-2 border-b border-cos-border/60 px-6 py-3">
+        <InboxPlatformIcon channelType={channelType} size="sm" />
+        <p className="text-xs font-medium text-cos-text">
+          {INBOX_CHANNEL_LABELS[channelType]}
+        </p>
+        {thread.participantName ? (
+          <span className="text-xs text-cos-muted">· {thread.participantName}</span>
+        ) : null}
+      </div>
+      <div className="px-6 py-4">
       {messages.length > 0 ? (
         <ul className="space-y-3">
           {messages.map((message) => (
@@ -121,7 +128,8 @@ function ThreadMessageList({
               )}
             >
               <div className="flex items-center justify-between gap-3 text-xs text-cos-muted">
-                <span>
+                <span className="inline-flex items-center gap-1.5">
+                  <InboxPlatformIcon channelType={channelType} size="xs" />
                   {message.senderName ??
                     (message.direction === "outbound" ? "You" : "Customer")}
                 </span>
@@ -140,6 +148,7 @@ function ThreadMessageList({
       ) : null}
 
       {isTaggedChannel(channelType) ? <InboxTaggedPanel thread={thread} /> : null}
+      </div>
     </div>
   );
 }
@@ -230,6 +239,7 @@ export function InboxHub({ data }: InboxHubProps) {
               count={channelCounts[channel]}
               active={channelFilter === channel}
               onClick={() => setChannelFilter(channel)}
+              icon={<InboxPlatformIcon channelType={channel} size="xs" />}
             />
           ))}
         </div>
@@ -266,7 +276,6 @@ export function InboxHub({ data }: InboxHubProps) {
           ) : (
             <ul className="divide-y divide-cos-border">
               {filteredThreads.map((thread) => {
-                const Icon = CHANNEL_ICONS[thread.channelType];
                 const expanded = expandedThreadId === thread.id;
                 const messages = messagesByThreadId[thread.id] ?? [];
                 const postPermalink = readThreadPermalink(thread);
@@ -282,7 +291,7 @@ export function InboxHub({ data }: InboxHubProps) {
                       }
                     >
                       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border border-cos-border bg-cos-bg">
-                        <Icon className="h-4 w-4 text-cos-accent" strokeWidth={1.5} />
+                        <InboxPlatformIcon channelType={thread.channelType} size="md" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-3">

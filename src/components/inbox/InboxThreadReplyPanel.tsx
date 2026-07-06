@@ -9,6 +9,7 @@ import {
   Send,
   Sparkles,
 } from "lucide-react";
+import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -134,7 +135,10 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
   return (
     <div className="mt-4 rounded-md border border-cos-border bg-cos-card/60 px-3 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-medium text-cos-text">Reply</p>
+        <p className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text">
+          <InboxPlatformIcon channelType={thread.channelType} size="xs" />
+          Reply
+        </p>
         <span
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
