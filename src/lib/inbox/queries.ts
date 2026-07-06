@@ -46,7 +46,6 @@ function buildConnectionStatus(
     messagingReady: isMessagingReady({
       metaConnected,
       grantedScopes,
-      syncEnabled: inboxSettings?.syncEnabled,
     }),
     organizationName,
     syncEnabled: inboxSettings?.syncEnabled ?? false,

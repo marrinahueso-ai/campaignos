@@ -181,15 +181,17 @@ export async function GET(request: NextRequest) {
   }
 
   const oauthFlow = request.cookies.get(META_OAUTH_FLOW_COOKIE)?.value?.trim();
-  if (oauthFlow === "inbox" || oauthFlow === "inbox_permissions") {
-    const page = pickPageFromTokenResult(pages, preferredPageId || undefined);
-    if (page?.accessToken) {
-      await refreshInboxScopesFromPageToken({
-        organizationId: organization.id,
-        pageAccessToken: page.accessToken,
-        enableSync: true,
-      });
+  const inboxOAuthFlow = oauthFlow === "inbox" || oauthFlow === "inbox_permissions";
+  const page = pickPageFromTokenResult(pages, preferredPageId || undefined);
 
+  if (page?.accessToken) {
+    await refreshInboxScopesFromPageToken({
+      organizationId: organization.id,
+      pageAccessToken: page.accessToken,
+      enableSync: inboxOAuthFlow,
+    });
+
+    if (inboxOAuthFlow) {
       const subscribe = await subscribeMetaInboxWebhooks({
         pageId: page.id,
         instagramAccountId: page.instagramAccountId,

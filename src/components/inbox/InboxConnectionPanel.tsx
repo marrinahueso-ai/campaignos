@@ -42,7 +42,7 @@ export function InboxConnectionPanel({
 
   const inboxPermissionsParams = new URLSearchParams({
     returnTo,
-    flow: "inbox_permissions",
+    flow: "inbox",
     auth_type: "rerequest",
   });
   const inboxPermissionsHref = `/api/meta/oauth/start?${inboxPermissionsParams.toString()}`;

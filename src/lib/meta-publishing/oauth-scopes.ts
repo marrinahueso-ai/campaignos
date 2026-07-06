@@ -24,12 +24,14 @@ export const META_OAUTH_SCOPE_LIST = [
  *
  * - pages_messaging — read/reply to Facebook Page Messenger conversations
  * - pages_manage_metadata — webhooks and conversation metadata
+ * - pages_read_user_content — read Facebook post comments (author + body)
  * - instagram_manage_messages — read/reply to Instagram DMs
  * - instagram_manage_comments — moderate Instagram comments
  */
 export const META_INBOX_OAUTH_SCOPE_LIST = [
   "pages_messaging",
   "pages_manage_metadata",
+  "pages_read_user_content",
   "instagram_manage_messages",
   "instagram_manage_comments",
 ] as const;

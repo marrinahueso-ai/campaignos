@@ -8,9 +8,14 @@ export const INBOX_MESSAGING_SCOPES = [
   "instagram_manage_messages",
 ] as const;
 
+/** Facebook post comments require pages_read_user_content (not pages_read_engagement alone). */
+export const FACEBOOK_COMMENT_SCOPES = ["pages_read_user_content"] as const;
+
+export const INSTAGRAM_COMMENT_SCOPES = ["instagram_manage_comments"] as const;
+
 export const INBOX_COMMENT_SCOPES = [
-  "pages_read_engagement",
-  "instagram_manage_comments",
+  ...FACEBOOK_COMMENT_SCOPES,
+  ...INSTAGRAM_COMMENT_SCOPES,
 ] as const;
 
 export function parseGrantedScopes(raw: string | null | undefined): string[] {
@@ -45,18 +50,18 @@ export function hasCommentScopes(scopes: string[]): boolean {
   return INBOX_COMMENT_SCOPES.some((scope) => scopes.includes(scope));
 }
 
+export function hasInboxOAuthScopes(scopes: string[]): boolean {
+  return hasMessagingScopes(scopes) || hasCommentScopes(scopes);
+}
+
+/** True only when debug_token / stored scopes include inbox permissions — not sync history. */
 export function isMessagingReady(input: {
   metaConnected: boolean;
   grantedScopes: string[];
-  syncEnabled?: boolean;
 }): boolean {
   if (!input.metaConnected) {
     return false;
   }
 
-  if (input.syncEnabled) {
-    return true;
-  }
-
-  return hasMessagingScopes(input.grantedScopes) || hasCommentScopes(input.grantedScopes);
+  return hasInboxOAuthScopes(input.grantedScopes);
 }

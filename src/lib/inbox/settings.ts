@@ -4,6 +4,7 @@ import { debugToken } from "@/lib/meta-publishing/graph-api";
 import {
   filterInboxRelevantScopes,
   formatGrantedScopes,
+  hasInboxOAuthScopes,
   parseGrantedScopes,
 } from "@/lib/inbox/scopes";
 import type { OrganizationInboxSettingsRow } from "@/lib/inbox/db-types";
@@ -97,11 +98,12 @@ export async function refreshInboxScopesFromPageToken(input: {
 }): Promise<OrganizationInboxSettings | null> {
   const debug = await debugToken({ inputToken: input.pageAccessToken });
   const scopes = filterInboxRelevantScopes(debug.scopes);
+  const inboxReady = hasInboxOAuthScopes(scopes);
 
   return upsertOrganizationInboxSettings({
     organizationId: input.organizationId,
     messagingScopesGranted: scopes,
-    syncEnabled: input.enableSync ?? scopes.length > 0,
+    syncEnabled: inboxReady && (input.enableSync ?? inboxReady),
     lastSyncError: debug.error,
   });
 }

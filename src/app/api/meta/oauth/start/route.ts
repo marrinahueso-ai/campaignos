@@ -7,10 +7,7 @@ import {
   META_OAUTH_SCOPES,
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
-import {
-  META_COMBINED_OAUTH_SCOPES,
-  META_INBOX_OAUTH_SCOPES,
-} from "@/lib/meta-publishing/oauth-scopes";
+import { META_COMBINED_OAUTH_SCOPES } from "@/lib/meta-publishing/oauth-scopes";
 import {
   createMetaOAuthState,
   getMetaAppId,
@@ -47,12 +44,16 @@ export async function GET(request: NextRequest) {
   authorizeUrl.searchParams.set("state", state);
   authorizeUrl.searchParams.set("response_type", "code");
 
+  const inboxFlow = flow === "inbox" || flow === "inbox_permissions";
+
   if (configId) {
     authorizeUrl.searchParams.set("config_id", configId);
-  } else if (flow === "inbox") {
+    // Login configurations define permissions; scope is ignored but kept for non-config apps.
+    if (inboxFlow) {
+      authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
+    }
+  } else if (inboxFlow) {
     authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
-  } else if (flow === "inbox_permissions") {
-    authorizeUrl.searchParams.set("scope", META_INBOX_OAUTH_SCOPES);
   } else {
     authorizeUrl.searchParams.set("scope", META_OAUTH_SCOPES);
   }
