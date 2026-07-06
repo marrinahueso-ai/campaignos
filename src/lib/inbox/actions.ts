@@ -10,8 +10,12 @@ import {
   getInboxThreadById,
   getLatestInboundReplyTarget,
 } from "@/lib/inbox/message-queries";
-import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
+import { refreshInboxScopesFromPageToken, getOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { sendInboxReply } from "@/lib/inbox/send-reply";
+import {
+  missingFacebookCommentReplyScopes,
+  missingInstagramCommentScopes,
+} from "@/lib/inbox/scopes";
 import { isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
@@ -276,6 +280,33 @@ export async function sendInboxReplyAction(input: {
   const connection = await getMetaConnectionForCurrentOrg();
   if (!connection?.pageAccessToken || !connection.facebookPageId) {
     return { success: false, error: "Connect your Facebook Page before sending replies." };
+  }
+
+  const inboxSettings = await getOrganizationInboxSettings(access.organizationId);
+  const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
+
+  if (thread.channelType === "facebook_comment") {
+    const missing = missingFacebookCommentReplyScopes(grantedScopes);
+    if (missing.length > 0) {
+      return {
+        success: false,
+        error:
+          "Cannot reply to Facebook comments — missing pages_manage_engagement on your Page token. " +
+          "Go to Settings → Meta and reconnect Facebook to grant comment reply permissions.",
+      };
+    }
+  }
+
+  if (thread.channelType === "instagram_comment") {
+    const missing = missingInstagramCommentScopes(grantedScopes);
+    if (missing.length > 0) {
+      return {
+        success: false,
+        error:
+          "Cannot reply to Instagram comments — missing instagram_manage_comments on your Page token. " +
+          "Go to Settings → Meta and reconnect Facebook.",
+      };
+    }
   }
 
   const sendResult = await sendInboxReply({

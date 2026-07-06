@@ -7,20 +7,18 @@ export function buildFollowUpDraft(input: {
   channelType: InboxChannelType;
 }): string {
   const greeting = input.senderName?.trim()
-    ? `Hi ${input.senderName.trim()}!`
-    : "Hi there!";
-
-  const teamLabel = input.organizationName?.trim() || "our team";
+    ? `Hey ${input.senderName.trim()}!`
+    : "Hey!";
 
   switch (input.channelType) {
     case "instagram_dm":
     case "facebook_message":
-      return `${greeting} Thanks for reaching out — we're checking on this and someone from ${teamLabel} will follow up with you soon.`;
+      return `${greeting} Good question — I'm checking on this and we'll get back to you soon!`;
     case "instagram_comment":
     case "facebook_comment":
-      return `Thanks for your question! We're checking on this and will follow up soon.`;
+      return `Good question! I'm checking on this and we'll follow up soon.`;
     default:
-      return `${greeting} Thanks for reaching out. We're checking on this and someone from ${teamLabel} will follow up with you soon.`;
+      return `${greeting} Good question — I'm checking on this and we'll get back to you soon!`;
   }
 }
 

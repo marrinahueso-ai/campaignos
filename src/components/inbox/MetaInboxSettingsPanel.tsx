@@ -119,8 +119,11 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
             tester/admin accounts until the app has Advanced Access for{" "}
             <code className="rounded bg-cos-bg px-1">instagram_manage_messages</code>. IG and FB
             comments sync from recent posts when{" "}
-            <code className="rounded bg-cos-bg px-1">instagram_manage_comments</code> and{" "}
-            <code className="rounded bg-cos-bg px-1">pages_read_user_content</code> are granted.
+            <code className="rounded bg-cos-bg px-1">instagram_manage_comments</code>,{" "}
+            <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>, and{" "}
+            <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code> are granted.
+            FB comment replies require{" "}
+            <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code>.
             For production, submit your app for{" "}
             <a
               href="https://developers.facebook.com/docs/app-review"

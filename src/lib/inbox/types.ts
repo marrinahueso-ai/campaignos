@@ -20,6 +20,8 @@ export interface InboxThread {
   externalPostId: string | null;
   participantName: string | null;
   participantExternalId: string | null;
+  participantAvatarUrl: string | null;
+  pageAvatarUrl: string | null;
   subject: string | null;
   lastMessageSnippet: string | null;
   lastMessageAt: string | null;
@@ -71,6 +73,7 @@ export interface InboxConnectionStatus {
   metaConfiguredViaEnv: boolean;
   integrationConfigured: boolean;
   pageName: string | null;
+  pagePictureUrl: string | null;
   hasInstagram: boolean;
   messagingReady: boolean;
   organizationName: string | null;

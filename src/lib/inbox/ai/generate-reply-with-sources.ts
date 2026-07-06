@@ -26,12 +26,12 @@ function channelReplyGuidance(channelType: InboxChannelType): string {
   switch (channelType) {
     case "instagram_dm":
     case "facebook_message":
-      return "Write a warm, concise direct message reply (1–3 short sentences).";
+      return "Reply like a friendly PTO parent in a DM — warm, casual, 1–3 short sentences. No emojis.";
     case "instagram_comment":
     case "facebook_comment":
-      return "Write a friendly public comment reply (1–2 sentences).";
+      return "Reply like a friendly PTO parent in a public comment — warm and brief, 1–2 sentences. No emojis.";
     default:
-      return "Write a helpful, concise reply.";
+      return "Reply like a friendly PTO parent helping another parent — warm, casual, and concise. No emojis.";
   }
 }
 
@@ -58,17 +58,25 @@ Source URL: ${sourceUsed.answerFrom.url}
 Source details (use ONLY this for factual claims — do NOT invent steps or account details):
 ${sourceUsed.answerFrom.excerpt}
 
-Include the source link in the reply.`;
+Weave the source link in naturally (e.g. "here's the page with all the details: [url]").`;
   }
 
   return `Matched source: none — no configured source matched this question.
-Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
+Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
 }
 
 function buildVerifiedAnswerSystemPrompt(): string {
   return `${GROUNDING_SYSTEM_RULES}
 
-You draft replies for a school PTO social inbox.
+You draft replies for a school PTO social inbox — like a friendly parent volunteer answering messages, not a school office or marketing team.
+
+VOICE & TONE:
+- Warm, casual, and helpful — like a volunteer mom texting another parent.
+- Use plain language and short sentences. Contractions are fine (we're, here's, you'll).
+- Sound conversational but still clear and useful.
+- No emojis.
+- Avoid corporate or stiff phrases like "For information about...", "you can check out...", "Please visit this link for more information", or overly formal greetings.
+- Weave links in naturally — e.g. "SACC is our after-school program — here's the page with all the details: [url]" — not as a formal citation.
 
 STRICT INBOX RULES:
 - Use ONLY the matched source details in SOURCE CHECK RESULTS for factual claims.

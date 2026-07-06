@@ -8,6 +8,7 @@ import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils
 import { mapInboxMessageRow, mapInboxThreadRow } from "@/lib/inbox/mappers";
 import { getOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { isMessagingReady } from "@/lib/inbox/scopes";
+import { fetchConnectedPageProfilePictures } from "@/lib/inbox/sync/profile-pictures";
 import type {
   InboxChannelCounts,
   InboxConnectionStatus,
@@ -35,6 +36,7 @@ function buildConnectionStatus(
   organizationName: string | null,
   metaConnection: Awaited<ReturnType<typeof getMetaConnectionForCurrentOrg>>,
   inboxSettings: Awaited<ReturnType<typeof getOrganizationInboxSettings>>,
+  pagePictureUrl: string | null,
 ): InboxConnectionStatus {
   const metaConnected = isMetaConnectionConfigured(metaConnection);
   const hasInstagram = isInstagramPublishingConfigured(metaConnection);
@@ -45,6 +47,7 @@ function buildConnectionStatus(
     metaConfiguredViaEnv: metaConnection?.id === "env",
     integrationConfigured: isMetaIntegrationConfigured(),
     pageName: metaConnection?.pageName ?? null,
+    pagePictureUrl,
     hasInstagram,
     messagingReady: isMessagingReady({
       metaConnected,
@@ -79,6 +82,22 @@ async function getInboxChannelCounts(organizationId: string): Promise<InboxChann
   }
 
   return counts;
+}
+
+async function resolveConnectionPagePictureUrl(
+  metaConnection: Awaited<ReturnType<typeof getMetaConnectionForCurrentOrg>>,
+): Promise<string | null> {
+  if (!metaConnection?.pageAccessToken || !metaConnection.facebookPageId) {
+    return null;
+  }
+
+  const pictures = await fetchConnectedPageProfilePictures({
+    pageId: metaConnection.facebookPageId,
+    instagramAccountId: metaConnection.instagramAccountId ?? "",
+    pageAccessToken: metaConnection.pageAccessToken,
+  });
+
+  return pictures.pageAvatarUrl;
 }
 
 async function listInboxThreadsForOrganization(organizationId: string) {
@@ -160,6 +179,7 @@ export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus>
     organization?.name ?? null,
     metaConnection,
     inboxSettings,
+    await resolveConnectionPagePictureUrl(metaConnection),
   );
 }
 
@@ -172,10 +192,14 @@ export async function getInboxPageData(options?: {
   const inboxSettings = organization?.id
     ? await getOrganizationInboxSettings(organization.id)
     : null;
+
+  const pagePictureUrl = await resolveConnectionPagePictureUrl(metaConnection);
+
   const connection = buildConnectionStatus(
     organization?.name ?? null,
     metaConnection,
     inboxSettings,
+    pagePictureUrl,
   );
 
   if (!organization?.id) {

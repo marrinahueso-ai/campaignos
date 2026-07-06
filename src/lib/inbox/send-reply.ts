@@ -19,7 +19,48 @@ export type SendInboxReplyResult = {
   error: string | null;
 };
 
+function formatSendReplyError(input: {
+  channelType: InboxChannelType;
+  graphError: string;
+  errorCode?: number;
+}): string {
+  const isPermissionError =
+    input.errorCode === 200 ||
+    input.graphError.includes("Permissions error") ||
+    input.graphError.includes("OAuthException");
+
+  if (!isPermissionError) {
+    return input.graphError;
+  }
+
+  switch (input.channelType) {
+    case "facebook_comment":
+      return (
+        "Facebook denied this comment reply. Reconnect Facebook in Settings → Meta to grant " +
+        "pages_manage_engagement (comment replies). If the app is Live, submit that scope for Meta App Review first."
+      );
+    case "instagram_comment":
+      return (
+        "Instagram denied this comment reply. Reconnect Facebook in Settings → Meta to grant " +
+        "instagram_manage_comments."
+      );
+    case "facebook_message":
+      return (
+        "Facebook Messenger denied this reply. Reconnect Facebook in Settings → Meta to grant " +
+        "pages_messaging."
+      );
+    case "instagram_dm":
+      return (
+        "Instagram DM denied this reply. Reconnect Facebook in Settings → Meta to grant " +
+        "instagram_manage_messages."
+      );
+    default:
+      return input.graphError;
+  }
+}
+
 async function sendFacebookMessengerReply(input: {
+  channelType: "facebook_message" | "instagram_dm";
   pageId: string;
   recipientId: string;
   body: string;
@@ -36,7 +77,15 @@ async function sendFacebookMessengerReply(input: {
   );
 
   if (!result.ok) {
-    return { success: false, externalSendId: null, error: result.error };
+    return {
+      success: false,
+      externalSendId: null,
+      error: formatSendReplyError({
+        channelType: input.channelType,
+        graphError: result.error,
+        errorCode: result.errorCode,
+      }),
+    };
   }
 
   const externalSendId =
@@ -55,7 +104,15 @@ async function sendFacebookCommentReply(input: {
   });
 
   if (!result.ok) {
-    return { success: false, externalSendId: null, error: result.error };
+    return {
+      success: false,
+      externalSendId: null,
+      error: formatSendReplyError({
+        channelType: "facebook_comment",
+        graphError: result.error,
+        errorCode: result.errorCode,
+      }),
+    };
   }
 
   const externalSendId = String(result.data.id ?? "") || null;
@@ -73,7 +130,15 @@ async function sendInstagramCommentReply(input: {
   });
 
   if (!result.ok) {
-    return { success: false, externalSendId: null, error: result.error };
+    return {
+      success: false,
+      externalSendId: null,
+      error: formatSendReplyError({
+        channelType: "instagram_comment",
+        graphError: result.error,
+        errorCode: result.errorCode,
+      }),
+    };
   }
 
   const externalSendId = String(result.data.id ?? "") || null;
@@ -102,6 +167,7 @@ export async function sendInboxReply(
       }
 
       return sendFacebookMessengerReply({
+        channelType: "facebook_message",
         pageId: input.pageId,
         recipientId,
         body,
@@ -122,6 +188,7 @@ export async function sendInboxReply(
       }
 
       return sendFacebookMessengerReply({
+        channelType: "instagram_dm",
         pageId: input.pageId,
         recipientId,
         body,

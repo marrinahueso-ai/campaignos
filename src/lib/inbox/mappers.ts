@@ -1,7 +1,13 @@
+import {
+  readParticipantAvatarUrl,
+  resolveThreadPageAvatarUrl,
+} from "@/lib/inbox/avatars";
 import type { InboxMessageRow, InboxThreadRow } from "@/lib/inbox/db-types";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 
 export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
+  const metadata = row.metadata ?? {};
+
   return {
     id: row.id,
     organizationId: row.organization_id,
@@ -10,13 +16,18 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     externalPostId: row.external_post_id,
     participantName: row.participant_name,
     participantExternalId: row.participant_external_id,
+    participantAvatarUrl: readParticipantAvatarUrl(metadata),
+    pageAvatarUrl: resolveThreadPageAvatarUrl({
+      channelType: row.channel_type,
+      metadata,
+    }),
     subject: row.subject,
     lastMessageSnippet: row.last_message_snippet,
     lastMessageAt: row.last_message_at,
     unreadCount: row.unread_count,
     status: row.status,
     syncedAt: row.synced_at,
-    metadata: row.metadata ?? {},
+    metadata,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

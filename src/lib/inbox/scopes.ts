@@ -15,13 +15,20 @@ export const INSTAGRAM_DM_SCOPES = [
   "pages_manage_metadata",
 ] as const;
 
-/** Facebook post comments require pages_read_user_content (not pages_read_engagement alone). */
-export const FACEBOOK_COMMENT_SCOPES = ["pages_read_user_content"] as const;
+/** Read Facebook post comments (sync). */
+export const FACEBOOK_COMMENT_READ_SCOPES = ["pages_read_user_content"] as const;
+
+/** Reply to Facebook post comments (send). Requires pages_manage_engagement. */
+export const FACEBOOK_COMMENT_REPLY_SCOPES = ["pages_manage_engagement"] as const;
+
+/** @deprecated Use FACEBOOK_COMMENT_READ_SCOPES */
+export const FACEBOOK_COMMENT_SCOPES = FACEBOOK_COMMENT_READ_SCOPES;
 
 export const INSTAGRAM_COMMENT_SCOPES = ["instagram_manage_comments"] as const;
 
 export const INBOX_COMMENT_SCOPES = [
-  ...FACEBOOK_COMMENT_SCOPES,
+  ...FACEBOOK_COMMENT_READ_SCOPES,
+  ...FACEBOOK_COMMENT_REPLY_SCOPES,
   ...INSTAGRAM_COMMENT_SCOPES,
 ] as const;
 
@@ -66,7 +73,11 @@ export function missingInstagramCommentScopes(scopes: string[]): string[] {
 }
 
 export function missingFacebookCommentScopes(scopes: string[]): string[] {
-  return FACEBOOK_COMMENT_SCOPES.filter((scope) => !scopes.includes(scope));
+  return FACEBOOK_COMMENT_READ_SCOPES.filter((scope) => !scopes.includes(scope));
+}
+
+export function missingFacebookCommentReplyScopes(scopes: string[]): string[] {
+  return FACEBOOK_COMMENT_REPLY_SCOPES.filter((scope) => !scopes.includes(scope));
 }
 
 export function hasCommentScopes(scopes: string[]): boolean {

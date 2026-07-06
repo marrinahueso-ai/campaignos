@@ -17,6 +17,7 @@ import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel"
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
+import { resolveThreadPageAvatarUrl } from "@/lib/inbox/avatars";
 import {
   INBOX_CHANNEL_LABELS,
   INBOX_CHANNEL_SHORT_LABELS,
@@ -174,17 +175,29 @@ function ThreadAvatar({
   thread: InboxThread;
   selected: boolean;
 }) {
+  const avatarUrl = thread.participantAvatarUrl;
+
   return (
     <div className="relative shrink-0">
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-full border text-xs font-semibold",
+          "flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border text-xs font-semibold",
           selected
             ? "border-white/30 bg-white/15 text-[#f6f2eb]"
             : "border-cos-border bg-cos-bg text-cos-text",
         )}
       >
-        {participantInitials(thread.participantName)}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          participantInitials(thread.participantName)
+        )}
       </div>
       <span
         className={cn(
@@ -281,10 +294,47 @@ function ConversationListRow({
   );
 }
 
+function MessageAvatar({
+  imageUrl,
+  name,
+  align,
+}: {
+  imageUrl: string | null;
+  name: string | null;
+  align: "start" | "end";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cos-border bg-cos-bg text-[10px] font-semibold text-cos-text",
+        align === "end" ? "order-2" : "order-1",
+      )}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        participantInitials(name)
+      )}
+    </div>
+  );
+}
+
 function ThreadMessageList({
   messages,
+  thread,
+  pagePictureUrl,
+  pageName,
 }: {
   messages: InboxMessage[];
+  thread: InboxThread;
+  pagePictureUrl?: string | null;
+  pageName?: string | null;
 }) {
   if (messages.length === 0) {
     return (
@@ -298,33 +348,55 @@ function ThreadMessageList({
     <ul className="flex flex-col gap-3" role="list">
       {messages.map((message) => {
         const isOutbound = message.direction === "outbound";
+        const avatarUrl = isOutbound
+          ? resolveThreadPageAvatarUrl({
+              channelType: thread.channelType,
+              metadata: thread.metadata,
+              connectionPagePictureUrl: pagePictureUrl,
+            }) ?? thread.pageAvatarUrl
+          : thread.participantAvatarUrl;
+        const avatarName = isOutbound
+          ? pageName ?? message.senderName
+          : message.senderName ?? thread.participantName;
 
         return (
           <li
             key={message.id}
             className={cn(
-              "flex max-w-[85%] flex-col",
-              isOutbound ? "ml-auto items-end" : "mr-auto items-start",
+              "flex max-w-[85%] items-end gap-2",
+              isOutbound ? "ml-auto flex-row-reverse" : "mr-auto",
             )}
           >
+            <MessageAvatar
+              imageUrl={avatarUrl}
+              name={avatarName}
+              align={isOutbound ? "end" : "start"}
+            />
             <div
               className={cn(
-                "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
-                isOutbound
-                  ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
-                  : "rounded-bl-md border border-cos-border/80 bg-white text-cos-text",
+                "flex flex-col",
+                isOutbound ? "items-end" : "items-start",
               )}
             >
-              <p className="whitespace-pre-wrap">{message.body}</p>
-            </div>
-            {message.sentAt ? (
-              <time
-                className="mt-1 px-1 text-[10px] tabular-nums text-cos-muted"
-                dateTime={message.sentAt}
+              <div
+                className={cn(
+                  "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
+                  isOutbound
+                    ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
+                    : "rounded-bl-md border border-cos-border/80 bg-white text-cos-text",
+                )}
               >
-                {formatMessageTime(message.sentAt)}
-              </time>
-            ) : null}
+                <p className="whitespace-pre-wrap">{message.body}</p>
+              </div>
+              {message.sentAt ? (
+                <time
+                  className="mt-1 px-1 text-[10px] tabular-nums text-cos-muted"
+                  dateTime={message.sentAt}
+                >
+                  {formatMessageTime(message.sentAt)}
+                </time>
+              ) : null}
+            </div>
           </li>
         );
       })}
@@ -336,12 +408,14 @@ function ConversationPanel({
   thread,
   messages,
   pageName,
+  pagePictureUrl,
   onBack,
   showBack,
 }: {
   thread: InboxThread;
   messages: InboxMessage[];
   pageName: string | null;
+  pagePictureUrl?: string | null;
   onBack?: () => void;
   showBack?: boolean;
 }) {
@@ -388,7 +462,12 @@ function ConversationPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-cos-bg/60 px-4 py-4">
-        <ThreadMessageList messages={messages} />
+        <ThreadMessageList
+          messages={messages}
+          thread={thread}
+          pagePictureUrl={pagePictureUrl}
+          pageName={pageName}
+        />
 
         {isTaggedChannel(thread.channelType) ? (
           <div className="mt-4 border-t border-cos-border/60 pt-4">
@@ -605,6 +684,7 @@ export function InboxHub({ data }: InboxHubProps) {
                   thread={selectedThread}
                   messages={messagesByThreadId[selectedThread.id] ?? []}
                   pageName={connection.pageName}
+                  pagePictureUrl={connection.pagePictureUrl}
                   showBack
                   onBack={handleBackToList}
                 />

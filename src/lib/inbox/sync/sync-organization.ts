@@ -11,6 +11,10 @@ import { fetchFacebookTaggedPosts } from "@/lib/inbox/sync/facebook-tags";
 import { fetchInstagramMediaComments } from "@/lib/inbox/sync/instagram-comments";
 import { fetchInstagramDirectMessages } from "@/lib/inbox/sync/instagram-dms";
 import { fetchInstagramTaggedMedia } from "@/lib/inbox/sync/instagram-tags";
+import {
+  enrichInboxThreadsWithAvatars,
+  fetchConnectedPageProfilePictures,
+} from "@/lib/inbox/sync/profile-pictures";
 import type { InboxSyncChannelResult, InboxSyncResult } from "@/lib/inbox/sync/types";
 import { upsertInboxBatch } from "@/lib/inbox/sync/upsert";
 
@@ -198,6 +202,19 @@ export async function syncInboxForOrganization(
   if (facebookTags.warning) {
     warnings.push(`Facebook tags: ${facebookTags.warning}`);
   }
+
+  const { pageAvatarUrl, instagramAvatarUrl } = await fetchConnectedPageProfilePictures({
+    pageId: connection.facebookPageId,
+    instagramAccountId,
+    pageAccessToken: connection.pageAccessToken,
+  });
+
+  await enrichInboxThreadsWithAvatars({
+    threads: allThreads,
+    pageAvatarUrl,
+    instagramAvatarUrl,
+    pageAccessToken: connection.pageAccessToken,
+  });
 
   const upserted = await upsertInboxBatch({
     organizationId,
