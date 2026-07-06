@@ -2,7 +2,9 @@ export type InboxChannelType =
   | "instagram_dm"
   | "facebook_message"
   | "instagram_comment"
-  | "facebook_comment";
+  | "facebook_comment"
+  | "instagram_tag"
+  | "facebook_tag";
 
 export type InboxItemStatus = "pending" | "approved" | "sent" | "archived";
 
@@ -56,6 +58,9 @@ export interface InboxChannelCounts {
   facebook_message: number;
   instagram_comment: number;
   facebook_comment: number;
+  instagram_tag: number;
+  facebook_tag: number;
+  tagged: number;
 }
 
 export interface InboxConnectionStatus {

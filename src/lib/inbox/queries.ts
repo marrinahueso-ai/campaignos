@@ -25,6 +25,9 @@ function emptyChannelCounts(): InboxChannelCounts {
     facebook_message: 0,
     instagram_comment: 0,
     facebook_comment: 0,
+    instagram_tag: 0,
+    facebook_tag: 0,
+    tagged: 0,
   };
 }
 
@@ -70,6 +73,9 @@ async function getInboxChannelCounts(organizationId: string): Promise<InboxChann
   for (const row of data as Pick<InboxThreadRow, "channel_type">[]) {
     counts.all += 1;
     counts[row.channel_type] += 1;
+    if (row.channel_type === "instagram_tag" || row.channel_type === "facebook_tag") {
+      counts.tagged += 1;
+    }
   }
 
   return counts;

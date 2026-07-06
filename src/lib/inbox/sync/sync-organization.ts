@@ -7,8 +7,10 @@ import {
 import { getOrganizationInboxSettings, upsertOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { fetchFacebookPostComments } from "@/lib/inbox/sync/facebook-comments";
 import { fetchFacebookPageMessages } from "@/lib/inbox/sync/facebook-messages";
+import { fetchFacebookTaggedPosts } from "@/lib/inbox/sync/facebook-tags";
 import { fetchInstagramMediaComments } from "@/lib/inbox/sync/instagram-comments";
 import { fetchInstagramDirectMessages } from "@/lib/inbox/sync/instagram-dms";
+import { fetchInstagramTaggedMedia } from "@/lib/inbox/sync/instagram-tags";
 import type { InboxSyncChannelResult, InboxSyncResult } from "@/lib/inbox/sync/types";
 import { upsertInboxBatch } from "@/lib/inbox/sync/upsert";
 
@@ -149,6 +151,52 @@ export async function syncInboxForOrganization(
   }
   if (facebookComments.warning) {
     warnings.push(`Facebook comments: ${facebookComments.warning}`);
+  }
+
+  const instagramTags = await fetchInstagramTaggedMedia({
+    instagramAccountId,
+    pageAccessToken: connection.pageAccessToken,
+  });
+  channelResults.push(
+    channelResult({
+      channel: "instagram_tag",
+      threadsFound: instagramTags.threads.length,
+      messagesFound: instagramTags.messages.length,
+      error: instagramTags.error,
+      warning: instagramTags.warning,
+    }),
+  );
+  if (instagramTags.error) {
+    errors.push(`Instagram tags: ${instagramTags.error}`);
+  } else {
+    allThreads.push(...instagramTags.threads);
+    allMessages.push(...instagramTags.messages);
+  }
+  if (instagramTags.warning) {
+    warnings.push(`Instagram tags: ${instagramTags.warning}`);
+  }
+
+  const facebookTags = await fetchFacebookTaggedPosts({
+    pageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+  });
+  channelResults.push(
+    channelResult({
+      channel: "facebook_tag",
+      threadsFound: facebookTags.threads.length,
+      messagesFound: facebookTags.messages.length,
+      error: facebookTags.error,
+      warning: facebookTags.warning,
+    }),
+  );
+  if (facebookTags.error) {
+    errors.push(`Facebook tags: ${facebookTags.error}`);
+  } else {
+    allThreads.push(...facebookTags.threads);
+    allMessages.push(...facebookTags.messages);
+  }
+  if (facebookTags.warning) {
+    warnings.push(`Facebook tags: ${facebookTags.warning}`);
   }
 
   const upserted = await upsertInboxBatch({

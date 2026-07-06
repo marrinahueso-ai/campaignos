@@ -8,8 +8,12 @@ import {
   MessageCircle,
   MessageSquare,
   MessagesSquare,
+  Share2,
+  Tag,
 } from "lucide-react";
 import { InboxConnectionPanel } from "@/components/inbox/InboxConnectionPanel";
+import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
+import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
 import {
   Card,
   CardDescription,
@@ -21,12 +25,15 @@ import {
   INBOX_CHANNEL_LABELS,
   INBOX_CHANNEL_SHORT_LABELS,
   INBOX_CHANNEL_TYPES,
+  INBOX_TAG_CHANNEL_TYPES,
+  isReplyChannel,
+  isTaggedChannel,
 } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxMessage, InboxPageData } from "@/lib/inbox/types";
 import { formatDateTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
-type ChannelFilter = "all" | InboxChannelType;
+type ChannelFilter = "all" | "tagged" | InboxChannelType;
 
 interface InboxHubProps {
   data: InboxPageData;
@@ -37,6 +44,8 @@ const CHANNEL_ICONS: Record<InboxChannelType, typeof MessageCircle> = {
   facebook_message: MessagesSquare,
   instagram_comment: AtSign,
   facebook_comment: MessageSquare,
+  instagram_tag: Tag,
+  facebook_tag: Share2,
 };
 
 function ChannelFilterButton({
@@ -80,18 +89,16 @@ function readThreadPermalink(thread: InboxPageData["threads"][number]): string |
   return typeof permalink === "string" && permalink.trim() ? permalink : null;
 }
 
-function isCommentChannel(channelType: InboxChannelType): boolean {
-  return channelType === "instagram_comment" || channelType === "facebook_comment";
-}
-
 function ThreadMessageList({
+  thread,
   messages,
   channelType,
 }: {
+  thread: InboxPageData["threads"][number];
   messages: InboxMessage[];
   channelType: InboxChannelType;
 }) {
-  if (messages.length === 0) {
+  if (messages.length === 0 && !isTaggedChannel(channelType)) {
     return (
       <p className="px-6 py-4 text-sm text-cos-muted">
         No messages synced for this thread yet.
@@ -101,39 +108,38 @@ function ThreadMessageList({
 
   return (
     <div className="border-t border-cos-border bg-cos-bg/40 px-6 py-4">
-      <ul className="space-y-3">
-        {messages.map((message) => (
-          <li
-            key={message.id}
-            className={cn(
-              "rounded-md border px-3 py-2 text-sm",
-              message.direction === "outbound"
-                ? "ml-8 border-cos-border bg-cos-card"
-                : "mr-8 border-cos-border bg-white",
-            )}
-          >
-            <div className="flex items-center justify-between gap-3 text-xs text-cos-muted">
-              <span>
-                {message.senderName ??
-                  (message.direction === "outbound" ? "You" : "Customer")}
-              </span>
-              {message.sentAt ? (
-                <time dateTime={message.sentAt}>{formatDateTime(message.sentAt)}</time>
-              ) : null}
-            </div>
-            <p className="mt-1 whitespace-pre-wrap text-cos-text">{message.body}</p>
-          </li>
-        ))}
-      </ul>
-      {isCommentChannel(channelType) ? (
-        <div className="mt-4 rounded-md border border-dashed border-cos-border bg-cos-card/60 px-3 py-3">
-          <p className="text-xs font-medium text-cos-text">Reply (Phase 4)</p>
-          <p className="mt-1 text-xs text-cos-muted">
-            Approve-and-send replies to comments will ship in a later phase. For now, open the
-            post link below to respond on Instagram or Facebook.
-          </p>
-        </div>
+      {messages.length > 0 ? (
+        <ul className="space-y-3">
+          {messages.map((message) => (
+            <li
+              key={message.id}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm",
+                message.direction === "outbound"
+                  ? "ml-8 border-cos-border bg-cos-card"
+                  : "mr-8 border-cos-border bg-white",
+              )}
+            >
+              <div className="flex items-center justify-between gap-3 text-xs text-cos-muted">
+                <span>
+                  {message.senderName ??
+                    (message.direction === "outbound" ? "You" : "Customer")}
+                </span>
+                {message.sentAt ? (
+                  <time dateTime={message.sentAt}>{formatDateTime(message.sentAt)}</time>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-cos-text">{message.body}</p>
+            </li>
+          ))}
+        </ul>
       ) : null}
+
+      {isReplyChannel(channelType) ? (
+        <InboxThreadReplyPanel thread={thread} messages={messages} />
+      ) : null}
+
+      {isTaggedChannel(channelType) ? <InboxTaggedPanel thread={thread} /> : null}
     </div>
   );
 }
@@ -147,6 +153,9 @@ export function InboxHub({ data }: InboxHubProps) {
   const filteredThreads = useMemo(() => {
     if (channelFilter === "all") {
       return threads;
+    }
+    if (channelFilter === "tagged") {
+      return threads.filter((thread) => isTaggedChannel(thread.channelType));
     }
     return threads.filter((thread) => thread.channelType === channelFilter);
   }, [channelFilter, threads]);
@@ -166,8 +175,8 @@ export function InboxHub({ data }: InboxHubProps) {
             <p className="studio-eyebrow">Workspace</p>
             <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Inbox</h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-              Instagram DMs, Facebook Page messages, and social comments in one place — synced from
-              Meta with approve/edit/send workflow coming in later phases.
+              Instagram DMs, Facebook Page messages, comments, and tagged posts — with AI-suggested
+              replies you approve before sending.
             </p>
           </div>
         </div>
@@ -194,7 +203,7 @@ export function InboxHub({ data }: InboxHubProps) {
           <div>
             <h2 className="font-display text-2xl text-cos-text">Conversations</h2>
             <p className="mt-1 text-sm text-cos-muted">
-              Filter by channel. Click a thread to view messages.
+              Filter by channel. Expand a thread for AI drafts, replies, or reposts.
             </p>
           </div>
         </div>
@@ -206,15 +215,23 @@ export function InboxHub({ data }: InboxHubProps) {
             active={channelFilter === "all"}
             onClick={() => setChannelFilter("all")}
           />
-          {INBOX_CHANNEL_TYPES.map((channel) => (
-              <ChannelFilterButton
-                key={channel}
-                label={INBOX_CHANNEL_SHORT_LABELS[channel]}
-                count={channelCounts[channel]}
-                active={channelFilter === channel}
-                onClick={() => setChannelFilter(channel)}
-              />
-            ))}
+          <ChannelFilterButton
+            label="Tagged in"
+            count={channelCounts.tagged}
+            active={channelFilter === "tagged"}
+            onClick={() => setChannelFilter("tagged")}
+          />
+          {INBOX_CHANNEL_TYPES.filter(
+            (channel) => !INBOX_TAG_CHANNEL_TYPES.includes(channel),
+          ).map((channel) => (
+            <ChannelFilterButton
+              key={channel}
+              label={INBOX_CHANNEL_SHORT_LABELS[channel]}
+              count={channelCounts[channel]}
+              active={channelFilter === channel}
+              onClick={() => setChannelFilter(channel)}
+            />
+          ))}
         </div>
 
         <Card padding="none" className="overflow-hidden">
@@ -235,7 +252,9 @@ export function InboxHub({ data }: InboxHubProps) {
               title={
                 channelFilter === "all"
                   ? "No messages yet"
-                  : `No ${INBOX_CHANNEL_LABELS[channelFilter].toLowerCase()} yet`
+                  : channelFilter === "tagged"
+                    ? "No tagged posts yet"
+                    : `No ${INBOX_CHANNEL_LABELS[channelFilter].toLowerCase()} yet`
               }
               description={
                 connection.messagingReady
@@ -283,6 +302,7 @@ export function InboxHub({ data }: InboxHubProps) {
                         <p className="mt-1 text-xs text-cos-muted">
                           {INBOX_CHANNEL_LABELS[thread.channelType]}
                           {thread.subject ? ` · ${thread.subject}` : null}
+                          {thread.status === "sent" ? " · Replied" : null}
                         </p>
                         {postPermalink ? (
                           <a
@@ -292,7 +312,11 @@ export function InboxHub({ data }: InboxHubProps) {
                             className="mt-1 inline-block text-xs font-medium text-cos-accent hover:text-cos-muted"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            View post on {thread.channelType === "instagram_comment" ? "Instagram" : "Facebook"}
+                            View post on{" "}
+                            {thread.channelType === "instagram_comment" ||
+                            thread.channelType === "instagram_tag"
+                              ? "Instagram"
+                              : "Facebook"}
                           </a>
                         ) : null}
                         {thread.lastMessageSnippet ? (
@@ -309,7 +333,11 @@ export function InboxHub({ data }: InboxHubProps) {
                       />
                     </button>
                     {expanded ? (
-                      <ThreadMessageList messages={messages} channelType={thread.channelType} />
+                      <ThreadMessageList
+                        thread={thread}
+                        messages={messages}
+                        channelType={thread.channelType}
+                      />
                     ) : null}
                   </li>
                 );
