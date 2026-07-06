@@ -1,4 +1,4 @@
-import { isCommentChannel } from "@/lib/inbox/constants";
+import { isCommentChannel, isTaggedChannel } from "@/lib/inbox/constants";
 import type { InboxThread } from "@/lib/inbox/types";
 
 export interface CommentPostPreviewData {
@@ -70,4 +70,24 @@ export function hasCommentPostPreview(thread: InboxThread): boolean {
   }
 
   return Boolean(preview.caption || preview.imageUrl || preview.permalink);
+}
+
+export function readThreadPostPermalink(thread: InboxThread): string | null {
+  const meta = thread.metadata;
+  const postPermalink =
+    typeof meta.post_permalink === "string" && meta.post_permalink.trim()
+      ? meta.post_permalink
+      : null;
+  const permalink =
+    typeof meta.permalink === "string" && meta.permalink.trim() ? meta.permalink : null;
+
+  return postPermalink ?? permalink;
+}
+
+export function hasThreadPostPermalink(thread: InboxThread): boolean {
+  if (!isCommentChannel(thread.channelType) && !isTaggedChannel(thread.channelType)) {
+    return false;
+  }
+
+  return Boolean(readThreadPostPermalink(thread));
 }

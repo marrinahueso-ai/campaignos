@@ -1,6 +1,5 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
 import {
   getInboxPlatform,
   isCommentChannel,
@@ -74,13 +73,6 @@ export function InboxCommentPostPreview({
               <p className="mt-1.5 text-[10px] leading-snug text-cos-muted">
                 Image unavailable — text-only or link post, or sync again to refresh.
               </p>
-            ) : null}
-
-            {preview.permalink ? (
-              <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-cos-accent">
-                View on {platformLabel}
-                <ExternalLink className="h-3 w-3" aria-hidden />
-              </span>
             ) : null}
           </div>
         </div>

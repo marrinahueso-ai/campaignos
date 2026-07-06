@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Loader2, Share2 } from "lucide-react";
+import { Loader2, Share2 } from "lucide-react";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
@@ -19,15 +19,9 @@ function readMediaUrl(thread: InboxThread): string | null {
   return typeof mediaUrl === "string" && mediaUrl.trim() ? mediaUrl : null;
 }
 
-function readPermalink(thread: InboxThread): string | null {
-  const permalink = thread.metadata?.permalink;
-  return typeof permalink === "string" && permalink.trim() ? permalink : null;
-}
-
 export function InboxTaggedPanel({ thread }: InboxTaggedPanelProps) {
   const router = useRouter();
   const mediaUrl = readMediaUrl(thread);
-  const permalink = readPermalink(thread);
   const repostedAt =
     typeof thread.metadata.repostedAt === "string" ? thread.metadata.repostedAt : null;
 
@@ -79,18 +73,6 @@ export function InboxTaggedPanel({ thread }: InboxTaggedPanelProps) {
             className="max-h-64 w-full object-contain"
           />
         </div>
-      ) : null}
-
-      {permalink ? (
-        <a
-          href={permalink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-cos-accent hover:text-cos-muted"
-        >
-          View original post
-          <ExternalLink className="h-3 w-3" />
-        </a>
       ) : null}
 
       {!isReposted ? (

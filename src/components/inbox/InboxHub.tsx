@@ -10,11 +10,13 @@ import {
   Settings,
 } from "lucide-react";
 import { InboxCommentPostPreview } from "@/components/inbox/InboxCommentPostPreview";
+import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
 import {
   INBOX_CHANNEL_LABELS,
   INBOX_CHANNEL_SHORT_LABELS,
@@ -346,6 +348,7 @@ function ConversationPanel({
 }) {
   const displayName =
     thread.participantName ?? INBOX_CHANNEL_LABELS[thread.channelType];
+  const showDirectPostLink = hasThreadPostPermalink(thread);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -373,13 +376,16 @@ function ConversationPanel({
           </div>
         </div>
 
-        <Link
-          href="/settings/meta"
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cos-border px-2.5 py-1.5 text-[11px] text-cos-muted transition-colors hover:border-cos-muted hover:text-cos-text"
-        >
-          <Settings className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Settings</span>
-        </Link>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {showDirectPostLink ? <InboxDirectPostLinkButton thread={thread} /> : null}
+          <Link
+            href="/settings/meta"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cos-border px-2.5 py-1.5 text-[11px] text-cos-muted transition-colors hover:border-cos-muted hover:text-cos-text"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Settings</span>
+          </Link>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-cos-bg/60 px-4 py-4">
