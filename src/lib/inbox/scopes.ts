@@ -8,6 +8,13 @@ export const INBOX_MESSAGING_SCOPES = [
   "instagram_manage_messages",
 ] as const;
 
+/** Required on the Page token for Instagram Messaging / Conversations API. */
+export const INSTAGRAM_DM_SCOPES = [
+  "instagram_basic",
+  "instagram_manage_messages",
+  "pages_manage_metadata",
+] as const;
+
 /** Facebook post comments require pages_read_user_content (not pages_read_engagement alone). */
 export const FACEBOOK_COMMENT_SCOPES = ["pages_read_user_content"] as const;
 
@@ -44,6 +51,14 @@ export function filterInboxRelevantScopes(scopes: string[]): string[] {
 
 export function hasMessagingScopes(scopes: string[]): boolean {
   return INBOX_MESSAGING_SCOPES.some((scope) => scopes.includes(scope));
+}
+
+export function hasInstagramDmScopes(scopes: string[]): boolean {
+  return INSTAGRAM_DM_SCOPES.every((scope) => scopes.includes(scope));
+}
+
+export function missingInstagramDmScopes(scopes: string[]): string[] {
+  return INSTAGRAM_DM_SCOPES.filter((scope) => !scopes.includes(scope));
 }
 
 export function hasCommentScopes(scopes: string[]): boolean {

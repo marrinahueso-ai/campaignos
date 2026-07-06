@@ -73,9 +73,13 @@ export function InboxConnectionPanel({
 
       const threadCount = result.threadsUpserted ?? 0;
       const messageCount = result.messagesUpserted ?? 0;
+      const syncSummary = `Sync complete — ${threadCount} thread${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`;
       setMessage(
-        `Sync complete — ${threadCount} thread${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`,
+        result.warning ? `${syncSummary} ${result.warning}` : syncSummary,
       );
+      if (result.warning) {
+        setError(null);
+      }
       router.refresh();
     });
   }
@@ -239,7 +243,18 @@ export function InboxConnectionPanel({
           {error}
         </p>
       )}
-      {message && <p className="text-sm text-emerald-700">{message}</p>}
+      {message && (
+        <p
+          className={
+            message.includes("Meta returned 0 Instagram") ||
+            message.includes("Missing token scopes")
+              ? "text-sm text-amber-800"
+              : "text-sm text-emerald-700"
+          }
+        >
+          {message}
+        </p>
+      )}
 
       {!connection.metaConnected && (
         <p className="text-xs text-cos-muted">

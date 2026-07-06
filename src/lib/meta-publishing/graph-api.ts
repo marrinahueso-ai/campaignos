@@ -1352,6 +1352,48 @@ export async function debugToken(input: {
   };
 }
 
+export async function resolveLinkedInstagramForPage(input: {
+  pageId: string;
+  accessToken: string;
+}): Promise<{
+  instagramAccountId: string | null;
+  pageName: string | null;
+  error: string | null;
+}> {
+  const probe = await probePageNode({
+    pageId: input.pageId,
+    accessToken: input.accessToken,
+    fieldSets: ["instagram_business_account", "name,instagram_business_account"],
+  });
+
+  if (probe.ok) {
+    return {
+      instagramAccountId: probe.instagramAccountId,
+      pageName: probe.name,
+      error: null,
+    };
+  }
+
+  const meAsPage = await probeMeAsPage({
+    accessToken: input.accessToken,
+    expectedPageId: input.pageId,
+  });
+
+  if (meAsPage) {
+    return {
+      instagramAccountId: meAsPage.instagramAccountId,
+      pageName: meAsPage.name,
+      error: null,
+    };
+  }
+
+  return {
+    instagramAccountId: null,
+    pageName: null,
+    error: probe.error ?? "Could not resolve linked Instagram account for this Page.",
+  };
+}
+
 export async function verifyMetaConnection(input: {
   pageId: string;
   instagramAccountId?: string;

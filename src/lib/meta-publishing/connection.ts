@@ -68,3 +68,58 @@ export async function getMetaConnectionForCurrentOrg(): Promise<MetaConnection |
   const organization = await getLatestOrganization();
   return getMetaConnectionForOrganization(organization?.id ?? null);
 }
+
+export async function refreshOrganizationInstagramAccountId(input: {
+  organizationId: string;
+  facebookPageId: string;
+  pageAccessToken: string;
+  instagramAccountId: string;
+}): Promise<string> {
+  const { resolveLinkedInstagramForPage } = await import(
+    "@/lib/meta-publishing/graph-api"
+  );
+
+  const resolved = await resolveLinkedInstagramForPage({
+    pageId: input.facebookPageId,
+    accessToken: input.pageAccessToken,
+  });
+
+  const linked = resolved.instagramAccountId?.trim() ?? "";
+  const current = input.instagramAccountId.trim();
+
+  if (!linked) {
+    if (resolved.error) {
+      console.warn(
+        `Could not refresh Instagram account for org ${input.organizationId}:`,
+        resolved.error,
+      );
+    }
+    return current;
+  }
+
+  if (linked === current) {
+    return current;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_meta_connections")
+    .update({
+      instagram_account_id: linked,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("organization_id", input.organizationId);
+
+  if (error) {
+    console.warn(
+      `Could not persist refreshed Instagram account ID for org ${input.organizationId}:`,
+      error.message,
+    );
+    return linked;
+  }
+
+  console.info(
+    `Refreshed Instagram account ID for org ${input.organizationId}: ${current || "(empty)"} -> ${linked}`,
+  );
+  return linked;
+}

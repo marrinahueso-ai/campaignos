@@ -30,6 +30,7 @@ export interface InboxSyncChannelResult {
   threadsFound: number;
   messagesFound: number;
   error: string | null;
+  warning: string | null;
 }
 
 export interface InboxSyncResult {
@@ -38,4 +39,5 @@ export interface InboxSyncResult {
   messagesUpserted: number;
   channels: InboxSyncChannelResult[];
   error: string | null;
+  warnings: string[];
 }

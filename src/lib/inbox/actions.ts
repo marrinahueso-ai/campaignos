@@ -12,6 +12,7 @@ import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection
 export type InboxActionResult = {
   success: boolean;
   error?: string | null;
+  warning?: string | null;
   threadsUpserted?: number;
   messagesUpserted?: number;
 };
@@ -52,6 +53,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
     return {
       success: false,
       error: `${result.error}${subscribeNote}`,
+      warning: result.warnings.length > 0 ? result.warnings.join(" | ") : null,
       threadsUpserted: result.threadsUpserted,
       messagesUpserted: result.messagesUpserted,
     };
@@ -60,6 +62,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
   revalidatePath("/inbox");
   return {
     success: true,
+    warning: result.warnings.length > 0 ? result.warnings.join(" | ") : null,
     threadsUpserted: result.threadsUpserted,
     messagesUpserted: result.messagesUpserted,
   };

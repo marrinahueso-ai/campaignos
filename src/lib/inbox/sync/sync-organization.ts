@@ -1,7 +1,10 @@
 import "server-only";
 
-import { getMetaConnectionForOrganization } from "@/lib/meta-publishing/connection";
-import { upsertOrganizationInboxSettings } from "@/lib/inbox/settings";
+import {
+  getMetaConnectionForOrganization,
+  refreshOrganizationInstagramAccountId,
+} from "@/lib/meta-publishing/connection";
+import { getOrganizationInboxSettings, upsertOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { fetchFacebookPostComments } from "@/lib/inbox/sync/facebook-comments";
 import { fetchFacebookPageMessages } from "@/lib/inbox/sync/facebook-messages";
 import { fetchInstagramMediaComments } from "@/lib/inbox/sync/instagram-comments";
@@ -9,10 +12,21 @@ import { fetchInstagramDirectMessages } from "@/lib/inbox/sync/instagram-dms";
 import type { InboxSyncChannelResult, InboxSyncResult } from "@/lib/inbox/sync/types";
 import { upsertInboxBatch } from "@/lib/inbox/sync/upsert";
 
+function channelResult(
+  partial: Omit<InboxSyncChannelResult, "warning"> & { warning?: string | null },
+): InboxSyncChannelResult {
+  return {
+    ...partial,
+    warning: partial.warning ?? null,
+  };
+}
+
 export async function syncInboxForOrganization(
   organizationId: string,
 ): Promise<InboxSyncResult> {
   const connection = await getMetaConnectionForOrganization(organizationId);
+  const inboxSettings = await getOrganizationInboxSettings(organizationId);
+  const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
 
   if (!connection?.pageAccessToken || !connection.facebookPageId) {
     const error = "Meta Page connection is required before inbox sync.";
@@ -27,25 +41,36 @@ export async function syncInboxForOrganization(
       messagesUpserted: 0,
       channels: [],
       error,
+      warnings: [],
     };
   }
+
+  const instagramAccountId = await refreshOrganizationInstagramAccountId({
+    organizationId,
+    facebookPageId: connection.facebookPageId,
+    pageAccessToken: connection.pageAccessToken,
+    instagramAccountId: connection.instagramAccountId,
+  });
 
   const channelResults: InboxSyncChannelResult[] = [];
   const allThreads = [];
   const allMessages = [];
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   const facebookMessages = await fetchFacebookPageMessages({
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
     pageName: connection.pageName,
   });
-  channelResults.push({
-    channel: "facebook_message",
-    threadsFound: facebookMessages.threads.length,
-    messagesFound: facebookMessages.messages.length,
-    error: facebookMessages.error,
-  });
+  channelResults.push(
+    channelResult({
+      channel: "facebook_message",
+      threadsFound: facebookMessages.threads.length,
+      messagesFound: facebookMessages.messages.length,
+      error: facebookMessages.error,
+    }),
+  );
   if (facebookMessages.error) {
     errors.push(`Facebook messages: ${facebookMessages.error}`);
   } else {
@@ -55,32 +80,41 @@ export async function syncInboxForOrganization(
 
   const instagramDms = await fetchInstagramDirectMessages({
     pageId: connection.facebookPageId,
-    instagramAccountId: connection.instagramAccountId,
+    instagramAccountId,
     pageAccessToken: connection.pageAccessToken,
+    grantedScopes,
   });
-  channelResults.push({
-    channel: "instagram_dm",
-    threadsFound: instagramDms.threads.length,
-    messagesFound: instagramDms.messages.length,
-    error: instagramDms.error,
-  });
+  channelResults.push(
+    channelResult({
+      channel: "instagram_dm",
+      threadsFound: instagramDms.threads.length,
+      messagesFound: instagramDms.messages.length,
+      error: instagramDms.error,
+      warning: instagramDms.warning,
+    }),
+  );
   if (instagramDms.error) {
     errors.push(`Instagram DMs: ${instagramDms.error}`);
   } else {
     allThreads.push(...instagramDms.threads);
     allMessages.push(...instagramDms.messages);
   }
+  if (instagramDms.warning) {
+    warnings.push(`Instagram DMs: ${instagramDms.warning}`);
+  }
 
   const instagramComments = await fetchInstagramMediaComments({
-    instagramAccountId: connection.instagramAccountId,
+    instagramAccountId,
     pageAccessToken: connection.pageAccessToken,
   });
-  channelResults.push({
-    channel: "instagram_comment",
-    threadsFound: instagramComments.threads.length,
-    messagesFound: instagramComments.messages.length,
-    error: instagramComments.error,
-  });
+  channelResults.push(
+    channelResult({
+      channel: "instagram_comment",
+      threadsFound: instagramComments.threads.length,
+      messagesFound: instagramComments.messages.length,
+      error: instagramComments.error,
+    }),
+  );
   if (instagramComments.error) {
     errors.push(`Instagram comments: ${instagramComments.error}`);
   } else {
@@ -92,12 +126,14 @@ export async function syncInboxForOrganization(
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
   });
-  channelResults.push({
-    channel: "facebook_comment",
-    threadsFound: facebookComments.threads.length,
-    messagesFound: facebookComments.messages.length,
-    error: facebookComments.error,
-  });
+  channelResults.push(
+    channelResult({
+      channel: "facebook_comment",
+      threadsFound: facebookComments.threads.length,
+      messagesFound: facebookComments.messages.length,
+      error: facebookComments.error,
+    }),
+  );
   if (facebookComments.error) {
     errors.push(`Facebook comments: ${facebookComments.error}`);
   } else {
@@ -113,14 +149,19 @@ export async function syncInboxForOrganization(
 
   const hasData = upserted.threadsUpserted > 0 || upserted.messagesUpserted > 0;
   const allFailed = channelResults.every((channel) => channel.error && channel.threadsFound === 0);
+  const syncIssues = [...errors, ...warnings];
   const syncError =
-    allFailed && errors.length > 0 ? errors.join(" | ") : errors.length > 0 ? errors.join(" | ") : null;
+    allFailed && errors.length > 0
+      ? errors.join(" | ")
+      : syncIssues.length > 0
+        ? syncIssues.join(" | ")
+        : null;
 
   await upsertOrganizationInboxSettings({
     organizationId,
     syncEnabled: hasData || errors.length < channelResults.length,
     lastSyncedAt: new Date().toISOString(),
-    lastSyncError: allFailed ? syncError : errors.length > 0 ? syncError : null,
+    lastSyncError: syncError,
   });
 
   return {
@@ -128,7 +169,8 @@ export async function syncInboxForOrganization(
     threadsUpserted: upserted.threadsUpserted,
     messagesUpserted: upserted.messagesUpserted,
     channels: channelResults,
-    error: allFailed ? syncError : null,
+    error: allFailed ? errors.join(" | ") : null,
+    warnings,
   };
 }
 
