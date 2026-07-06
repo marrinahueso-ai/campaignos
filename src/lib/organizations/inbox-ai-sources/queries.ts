@@ -20,6 +20,7 @@ export function mapInboxAiSourceRow(row: OrganizationInboxAiSourceRow): Organiza
     organizationId: row.organization_id,
     label: row.label,
     url: row.url,
+    description: row.description,
     sourceType: row.source_type,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -64,6 +65,7 @@ export async function getCustomInboxAiSources(
 export interface OrderedInboxAiSource {
   label: string;
   url: string;
+  description: string | null;
   sourceType: OrganizationInboxAiSource["sourceType"];
 }
 
@@ -95,6 +97,7 @@ export function buildOrderedInboxAiSources(input: {
         "custom"
       >],
       url,
+      description: null,
       sourceType: entry.sourceType,
     });
   }
@@ -108,6 +111,7 @@ export function buildOrderedInboxAiSources(input: {
     ordered.push({
       label: source.label.trim() || "Custom source",
       url,
+      description: source.description?.trim() || null,
       sourceType: "custom",
     });
   }
@@ -130,6 +134,7 @@ export async function getInboxAiSourcesSettings(
       id: source.id,
       label: source.label,
       url: source.url,
+      description: source.description ?? "",
     })),
   };
 }

@@ -59,11 +59,15 @@ function formatSourceContext(sourceUsed: InboxAiSourceUsed): string {
     .join(", ");
 
   if (sourceUsed.answerFrom) {
+    const descriptionNote = sourceUsed.answerFrom.fromDescription
+      ? "\nNote: The source page could not be read (login required). Use ONLY the label, description, and link below — do NOT invent steps or account details."
+      : "";
+
     return `Sources checked (in order): ${checkedLabels || "none configured"}
 Answer from: ${sourceUsed.answerFrom.label}
 Source URL: ${sourceUsed.answerFrom.url}
 Verified excerpt (use ONLY this for factual claims):
-${sourceUsed.answerFrom.excerpt}
+${sourceUsed.answerFrom.excerpt}${descriptionNote}
 
 Include the source link in the reply when helpful.`;
   }

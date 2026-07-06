@@ -38,11 +38,17 @@ function parseCustomSources(formData: FormData): InboxAiSourcesSettingsInput["cu
       const parsed: unknown = JSON.parse(jsonValue);
       if (Array.isArray(parsed)) {
         return parsed.map((entry) => {
-          const source = entry as { id?: string; label?: string; url?: string };
+          const source = entry as {
+            id?: string;
+            label?: string;
+            url?: string;
+            description?: string;
+          };
           return {
             id: typeof source.id === "string" ? source.id : undefined,
             label: String(source.label ?? ""),
             url: String(source.url ?? ""),
+            description: String(source.description ?? ""),
           };
         });
       }
@@ -99,6 +105,7 @@ export async function saveInboxAiSourcesAction(
     id: source.id,
     label: source.label,
     url: source.url,
+    description: source.description ?? "",
   }));
 
   return { error: null, success: true, savedCustomSources };

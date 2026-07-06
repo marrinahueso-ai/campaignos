@@ -5,6 +5,7 @@ export interface OrganizationInboxAiSource {
   organizationId: string;
   label: string;
   url: string;
+  description: string | null;
   sourceType: InboxAiSourceType;
   sortOrder: number;
   createdAt: string;
@@ -16,6 +17,7 @@ export interface OrganizationInboxAiSourceRow {
   organization_id: string;
   label: string;
   url: string;
+  description: string | null;
   source_type: InboxAiSourceType;
   sort_order: number;
   created_at: string;
@@ -36,6 +38,8 @@ export interface InboxAiSourceCheckRecord {
   checked: boolean;
   fetchError?: string | null;
   answerFound: boolean;
+  descriptionUsed?: string | null;
+  usedDescriptionFallback?: boolean;
 }
 
 export interface InboxAiSourceUsed {
@@ -44,6 +48,7 @@ export interface InboxAiSourceUsed {
     label: string;
     url: string;
     excerpt: string;
+    fromDescription?: boolean;
   } | null;
   noAnswerFound: boolean;
 }
@@ -57,5 +62,6 @@ export interface InboxAiSourcesSettingsInput {
     id?: string;
     label: string;
     url: string;
+    description?: string;
   }>;
 }

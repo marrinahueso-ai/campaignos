@@ -24,6 +24,69 @@ export const QUESTION_TOPICS: QuestionTopic[] = [
       /\broute\s+\d+/i,
     ],
   },
+  {
+    id: "lunch_money",
+    label: "lunch money, meal payments, or cafeteria account funding",
+    detectInQuestion: [
+      /\blunch\s+money\b/i,
+      /\bmeal\s+(?:payment|pay|account|money)\b/i,
+      /\bcafeteria\b/i,
+      /\bfood\s+(?:account|service)\b/i,
+      /\badd\s+money\b/i,
+      /\baccount\s+money\b/i,
+      /\bpay\s+(?:for\s+)?(?:lunch|meals?)\b/i,
+    ],
+    requireInContent: [
+      /\blunch\b/i,
+      /\bmeal\b/i,
+      /\bmeals\b/i,
+      /\bfood\b/i,
+      /\bcafeteria\b/i,
+      /\bpayment\b/i,
+      /\bpay\b/i,
+      /\baccount\b/i,
+      /\bmoney\b/i,
+      /\bschool\s*bucks\b/i,
+      /\bmyschoolbucks\b/i,
+    ],
+  },
+  {
+    id: "grades_attendance",
+    label: "grades, attendance, or student academic records",
+    detectInQuestion: [
+      /\bgrades?\b/i,
+      /\battendance\b/i,
+      /\breport\s+card\b/i,
+      /\bacademic\b/i,
+      /\bstudent\s+info\b/i,
+    ],
+    requireInContent: [
+      /\bgrades?\b/i,
+      /\battendance\b/i,
+      /\bstudent\b/i,
+      /\bportal\b/i,
+      /\bskyward\b/i,
+      /\bacademic\b/i,
+    ],
+  },
+  {
+    id: "before_after_care",
+    label: "before school or after school care",
+    detectInQuestion: [
+      /\bbefore\s+(?:school|care)\b/i,
+      /\bafter\s+(?:school|care)\b/i,
+      /\bsacc\b/i,
+      /\bchildcare\b/i,
+      /\bextended\s+day\b/i,
+    ],
+    requireInContent: [
+      /\bbefore\b/i,
+      /\bafter\b/i,
+      /\bcare\b/i,
+      /\bsacc\b/i,
+      /\bchildcare\b/i,
+    ],
+  },
 ];
 
 const GENERIC_SCHEDULE_PATTERNS = [
@@ -96,4 +159,32 @@ export function passesTopicKeywordRules(input: {
   }
 
   return true;
+}
+
+/** Match a question topic to a source label + description without scraping the page. */
+export function sourceDescriptionMatchesQuestion(input: {
+  question: string;
+  label: string;
+  description: string;
+}): boolean {
+  const topics = detectQuestionTopics(input.question);
+  if (topics.length === 0) {
+    return false;
+  }
+
+  const sourceText = `${input.label} ${input.description}`.trim();
+  if (!sourceText) {
+    return false;
+  }
+
+  return topics.every((topic) => contentMatchesTopic(sourceText, topic));
+}
+
+export function buildDescriptionFallbackExcerpt(input: {
+  label: string;
+  description: string;
+  url: string;
+}): string {
+  const description = input.description.trim();
+  return `${input.label}: ${description}. Visit ${input.url}`;
 }

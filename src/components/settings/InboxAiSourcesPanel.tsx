@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   saveInboxAiSourcesAction,
   type InboxAiSourcesActionState,
@@ -40,6 +41,7 @@ function serializeCustomSources(
       id: source.id,
       label: source.label,
       url: source.url,
+      description: source.description ?? "",
     })),
   );
 }
@@ -88,7 +90,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
 
   function addCustomSource() {
     setClientError(null);
-    setCustomSources((current) => [...current, { label: "", url: "" }]);
+    setCustomSources((current) => [...current, { label: "", url: "", description: "" }]);
   }
 
   function removeCustomSource(index: number) {
@@ -98,7 +100,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
 
   function updateCustomSource(
     index: number,
-    field: "label" | "url",
+    field: "label" | "url" | "description",
     value: string,
   ) {
     setClientError(null);
@@ -149,7 +151,8 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
         </CardTitle>
         <CardDescription>
           Before drafting inbox replies, CampaignOS checks these pages in order: events,
-          calendar, resources, then FAQ. Add custom pages after the defaults.
+          calendar, resources, then FAQ. Add custom pages after the defaults. For login-only
+          sites, add a short description so the AI can still point parents to the right link.
         </CardDescription>
       </CardHeader>
 
@@ -207,39 +210,53 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
             {customSources.map((source, index) => (
               <div
                 key={source.id ?? `custom-${index}`}
-                className="grid gap-3 rounded-lg border border-cos-border bg-cos-bg/40 p-3 sm:grid-cols-[1fr_1fr_auto]"
+                className="space-y-3 rounded-lg border border-cos-border bg-cos-bg/40 p-3"
               >
-                <Input
-                  id={`custom-label-${index}`}
-                  label="Label"
-                  placeholder="Volunteer handbook"
-                  value={source.label}
-                  onChange={(event) =>
-                    updateCustomSource(index, "label", event.target.value)
-                  }
-                />
-                <Input
-                  id={`custom-url-${index}`}
-                  label="URL"
-                  type="url"
-                  placeholder="https://..."
-                  value={source.url}
-                  onChange={(event) =>
-                    updateCustomSource(index, "url", event.target.value)
-                  }
-                />
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="text-red-600"
-                    onClick={() => removeCustomSource(index)}
-                    aria-label={`Remove custom source ${index + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                  <Input
+                    id={`custom-label-${index}`}
+                    label="Label"
+                    placeholder="School Bucks"
+                    value={source.label}
+                    onChange={(event) =>
+                      updateCustomSource(index, "label", event.target.value)
+                    }
+                  />
+                  <Input
+                    id={`custom-url-${index}`}
+                    label="URL"
+                    type="url"
+                    placeholder="https://..."
+                    value={source.url}
+                    onChange={(event) =>
+                      updateCustomSource(index, "url", event.target.value)
+                    }
+                  />
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-600"
+                      onClick={() => removeCustomSource(index)}
+                      aria-label={`Remove custom source ${index + 1}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+                <Textarea
+                  id={`custom-description-${index}`}
+                  label="Description"
+                  placeholder="Add lunch money and pay for school meals online"
+                  hint="Used when the page requires login or cannot be read."
+                  value={source.description ?? ""}
+                  onChange={(event) =>
+                    updateCustomSource(index, "description", event.target.value)
+                  }
+                  rows={2}
+                  className="min-h-16"
+                />
               </div>
             ))}
           </div>

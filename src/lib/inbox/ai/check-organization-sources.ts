@@ -4,9 +4,11 @@ import { generateText } from "@/lib/ai";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import { fetchPublicPageText } from "@/lib/inbox/ai/fetch-page-text";
 import {
+  buildDescriptionFallbackExcerpt,
   detectQuestionTopics,
   formatQuestionTopicLabel,
   passesTopicKeywordRules,
+  sourceDescriptionMatchesQuestion,
 } from "@/lib/inbox/ai/question-topic-matching";
 import type { OrderedInboxAiSource } from "@/lib/organizations/inbox-ai-sources/queries";
 import type {
@@ -40,12 +42,40 @@ export async function checkOrganizationSources(input: {
     const fetched = await fetchPublicPageText(source.url);
     if ("error" in fetched) {
       record.fetchError = fetched.error;
+      const descriptionMatch = await tryDescriptionFallback({
+        question: input.question,
+        source,
+      });
+
+      if (descriptionMatch) {
+        record.answerFound = true;
+        record.descriptionUsed = source.description;
+        record.usedDescriptionFallback = true;
+        sourcesChecked.push(record);
+        answerFrom = descriptionMatch;
+        break;
+      }
+
       sourcesChecked.push(record);
       continue;
     }
 
     if (!fetched.text.trim()) {
       record.fetchError = "No readable text found";
+      const descriptionMatch = await tryDescriptionFallback({
+        question: input.question,
+        source,
+      });
+
+      if (descriptionMatch) {
+        record.answerFound = true;
+        record.descriptionUsed = source.description;
+        record.usedDescriptionFallback = true;
+        sourcesChecked.push(record);
+        answerFrom = descriptionMatch;
+        break;
+      }
+
       sourcesChecked.push(record);
       continue;
     }
@@ -76,6 +106,77 @@ export async function checkOrganizationSources(input: {
     answerFrom,
     noAnswerFound: answerFrom === null,
   };
+}
+
+async function tryDescriptionFallback(input: {
+  question: string;
+  source: OrderedInboxAiSource;
+}): Promise<InboxAiSourceUsed["answerFrom"]> {
+  const description = input.source.description?.trim();
+  const label = input.source.label.trim();
+
+  if (!description || !label) {
+    return null;
+  }
+
+  const keywordMatch = sourceDescriptionMatchesQuestion({
+    question: input.question,
+    label,
+    description,
+  });
+
+  const llmMatch =
+    keywordMatch ||
+    (await matchQuestionToSourceDescription({
+      question: input.question,
+      label,
+      description,
+      url: input.source.url,
+    }));
+
+  if (!llmMatch) {
+    return null;
+  }
+
+  return {
+    label,
+    url: input.source.url,
+    excerpt: buildDescriptionFallbackExcerpt({
+      label,
+      description,
+      url: input.source.url,
+    }),
+    fromDescription: true,
+  };
+}
+
+async function matchQuestionToSourceDescription(input: {
+  question: string;
+  label: string;
+  description: string;
+  url: string;
+}): Promise<boolean> {
+  const generation = await generateText({
+    systemPrompt: `You decide whether a configured school source is the right place to answer a parent question.
+Reply with ONLY "yes" or "no".
+- yes ONLY if the source label and description clearly indicate this source helps with the parent's question.
+- no if the source is unrelated, too generic, or only tangentially related.`,
+    userPrompt: `Question: ${input.question}
+
+Source label: ${input.label}
+Source description: ${input.description}
+Source URL: ${input.url}
+
+Is this source relevant to answering the question?`,
+    model: resolveFastDraftModel(),
+    maxTokens: 10,
+  });
+
+  if (!generation.success || !generation.text?.trim()) {
+    return false;
+  }
+
+  return generation.text.trim().toLowerCase().startsWith("yes");
 }
 
 async function analyzeSourceForQuestion(input: {

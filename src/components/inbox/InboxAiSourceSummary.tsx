@@ -6,6 +6,20 @@ interface InboxAiSourceSummaryProps {
   sourceUsed: InboxAiSourceUsed | null | undefined;
 }
 
+function formatCheckedSourceLabel(
+  source: InboxAiSourceUsed["sourcesChecked"][number],
+): string {
+  if (source.usedDescriptionFallback) {
+    return `${source.label} (page unavailable — used source description)`;
+  }
+
+  if (source.fetchError) {
+    return `${source.label} (unavailable)`;
+  }
+
+  return source.label;
+}
+
 export function InboxAiSourceSummary({ sourceUsed }: InboxAiSourceSummaryProps) {
   if (!sourceUsed) {
     return null;
@@ -13,9 +27,11 @@ export function InboxAiSourceSummary({ sourceUsed }: InboxAiSourceSummaryProps) 
 
   const checkedLabels = sourceUsed.sourcesChecked
     .filter((source) => source.checked)
-    .map((source) =>
-      source.fetchError ? `${source.label} (unavailable)` : source.label,
-    );
+    .map((source) => formatCheckedSourceLabel(source));
+
+  const descriptionFallbackSource = sourceUsed.sourcesChecked.find(
+    (source) => source.usedDescriptionFallback && source.descriptionUsed,
+  );
 
   return (
     <div className="mt-2 space-y-1.5 rounded-lg border border-cos-border bg-cos-bg/50 px-3 py-2 text-[11px] leading-relaxed text-cos-muted">
@@ -24,10 +40,20 @@ export function InboxAiSourceSummary({ sourceUsed }: InboxAiSourceSummaryProps) 
         {checkedLabels.length > 0 ? checkedLabels.join(", ") : "None configured"}
       </p>
 
+      {descriptionFallbackSource?.descriptionUsed ? (
+        <p>
+          <span className="font-medium text-cos-text">Description used:</span>{" "}
+          {descriptionFallbackSource.descriptionUsed}
+        </p>
+      ) : null}
+
       {sourceUsed.answerFrom ? (
         <p>
           <span className="font-medium text-cos-text">Answer from:</span>{" "}
           {sourceUsed.answerFrom.label}
+          {sourceUsed.answerFrom.fromDescription
+            ? " (page unavailable — used source description)"
+            : null}
           {" · "}
           <Link
             href={sourceUsed.answerFrom.url}

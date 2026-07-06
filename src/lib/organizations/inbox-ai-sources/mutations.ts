@@ -86,6 +86,7 @@ export async function saveInboxAiSourcesSettings(
       organization_id: organizationId,
       label: source.label.trim() || "Custom source",
       url: source.url.trim(),
+      description: source.description?.trim() || null,
       source_type: "custom" as const,
       sort_order: index,
       updated_at: now,
