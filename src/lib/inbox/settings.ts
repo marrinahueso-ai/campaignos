@@ -9,6 +9,7 @@ import {
 } from "@/lib/inbox/scopes";
 import type { OrganizationInboxSettingsRow } from "@/lib/inbox/db-types";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface OrganizationInboxSettings {
   id: string;
@@ -89,6 +90,26 @@ export async function upsertOrganizationInboxSettings(input: {
   }
 
   return mapSettingsRow(data as OrganizationInboxSettingsRow);
+}
+
+export async function touchOrganizationInboxSyncedAt(
+  organizationId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { error } = await admin.from("organization_inbox_settings").upsert(
+    {
+      organization_id: organizationId,
+      last_synced_at: now,
+      updated_at: now,
+    },
+    { onConflict: "organization_id" },
+  );
+
+  if (error) {
+    console.error("[inbox webhook] failed to update last_synced_at:", error.message);
+  }
 }
 
 export async function refreshInboxScopesFromPageToken(input: {

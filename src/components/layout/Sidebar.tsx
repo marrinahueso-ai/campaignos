@@ -40,6 +40,7 @@ interface SidebarProps {
   forceExpanded?: boolean;
   assignedApprovalsCount?: number;
   changeRequestsCount?: number;
+  inboxUnreadCount?: number;
 }
 
 type NavBadgeVariant = "approval" | "changeRequest";
@@ -100,6 +101,7 @@ export function Sidebar({
   forceExpanded = false,
   assignedApprovalsCount = 0,
   changeRequestsCount = 0,
+  inboxUnreadCount = 0,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -185,6 +187,7 @@ export function Sidebar({
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
+          const showInboxBadge = href === "/inbox";
 
           return (
             <Link
@@ -214,6 +217,11 @@ export function Sidebar({
                     />
                   </span>
                 )}
+                {!showLabels && showInboxBadge && (
+                  <span className="absolute -top-2 -right-3">
+                    <NavNotificationBadge count={inboxUnreadCount} variant="approval" />
+                  </span>
+                )}
               </span>
               {showLabels && (
                 <span className="flex min-w-0 flex-1 items-center gap-2 tracking-wide">
@@ -229,6 +237,11 @@ export function Sidebar({
                         assignedApprovalsCount={assignedApprovalsCount}
                         changeRequestsCount={changeRequestsCount}
                       />
+                    </span>
+                  )}
+                  {showInboxBadge && (
+                    <span className="ml-auto">
+                      <NavNotificationBadge count={inboxUnreadCount} variant="approval" />
                     </span>
                   )}
                 </span>

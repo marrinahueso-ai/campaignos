@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -33,6 +34,7 @@ import type {
   InboxThread,
 } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
+import { markInboxThreadReadAction } from "@/lib/inbox/actions";
 import { cn } from "@/lib/utils/cn";
 
 type ChannelFilter = "all" | "tagged" | InboxChannelType;
@@ -403,10 +405,55 @@ function ConversationPanel({
 }
 
 export function InboxHub({ data }: InboxHubProps) {
+  const router = useRouter();
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const { connection, threads, messagesByThreadId, channelCounts } = data;
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    function refreshInbox() {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    }
+
+    function startPolling() {
+      if (intervalId) {
+        return;
+      }
+      intervalId = setInterval(refreshInbox, 60_000);
+    }
+
+    function stopPolling() {
+      if (!intervalId) {
+        return;
+      }
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshInbox();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router]);
 
   const filteredThreads = useMemo(() => {
     if (channelFilter === "all") {
@@ -437,6 +484,11 @@ export function InboxHub({ data }: InboxHubProps) {
   function handleSelectThread(threadId: string) {
     setSelectedThreadId(threadId);
     setMobileShowDetail(true);
+    void markInboxThreadReadAction({ threadId }).then((result) => {
+      if (result.success) {
+        router.refresh();
+      }
+    });
   }
 
   function handleBackToList() {

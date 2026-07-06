@@ -9,6 +9,7 @@ interface DashboardShellProps {
   userEmail?: string | null;
   assignedApprovalsCount?: number;
   changeRequestsCount?: number;
+  inboxUnreadCount?: number;
 }
 
 export function DashboardShell({
@@ -16,6 +17,7 @@ export function DashboardShell({
   userEmail,
   assignedApprovalsCount = 0,
   changeRequestsCount = 0,
+  inboxUnreadCount = 0,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -25,6 +27,7 @@ export function DashboardShell({
         <Sidebar
           assignedApprovalsCount={assignedApprovalsCount}
           changeRequestsCount={changeRequestsCount}
+          inboxUnreadCount={inboxUnreadCount}
         />
       </div>
 
@@ -41,6 +44,7 @@ export function DashboardShell({
               forceExpanded
               assignedApprovalsCount={assignedApprovalsCount}
               changeRequestsCount={changeRequestsCount}
+              inboxUnreadCount={inboxUnreadCount}
               onNavigate={() => setMobileOpen(false)}
             />
           </div>

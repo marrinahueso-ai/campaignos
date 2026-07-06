@@ -8,6 +8,7 @@ import {
 } from "@/lib/inbox/comment-post-preview";
 import { snippet } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
+import { touchOrganizationInboxSyncedAt } from "@/lib/inbox/settings";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
 import { getMetaAppSecret } from "@/lib/meta-publishing/config.server";
 
@@ -83,6 +84,39 @@ function messagingChannelType(
   return isInstagram ? "instagram_dm" : "facebook_message";
 }
 
+async function resolveMessagingThreadExternalId(input: {
+  organizationId: string;
+  channelType: "instagram_dm" | "facebook_message";
+  messagingEvent: Record<string, unknown>;
+  senderId: string | null;
+  recipientId: string | null;
+  participantId: string | null;
+}): Promise<string | null> {
+  if (typeof input.messagingEvent.thread_id === "string" && input.messagingEvent.thread_id) {
+    return input.messagingEvent.thread_id;
+  }
+
+  if (input.participantId) {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("inbox_threads")
+      .select("external_thread_id")
+      .eq("organization_id", input.organizationId)
+      .eq("channel_type", input.channelType)
+      .eq("participant_external_id", input.participantId)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data?.external_thread_id) {
+      return data.external_thread_id as string;
+    }
+  }
+
+  const fallback = [input.senderId, input.recipientId].filter(Boolean).sort().join(":");
+  return fallback || null;
+}
+
 async function handleMessagingEvent(input: {
   connection: MetaWebhookConnection;
   messagingEvent: Record<string, unknown>;
@@ -114,21 +148,25 @@ async function handleMessagingEvent(input: {
     return false;
   }
 
-  const conversationId =
-    typeof input.messagingEvent.thread_id === "string"
-      ? input.messagingEvent.thread_id
-      : [senderId, recipientId].filter(Boolean).sort().join(":");
-
-  if (!conversationId) {
-    return false;
-  }
-
   const channelType = messagingChannelType(input.isInstagram);
   const pageOrIgId = input.isInstagram
     ? input.connection.instagramAccountId || input.connection.facebookPageId
     : input.connection.facebookPageId;
   const direction = senderId === pageOrIgId ? "outbound" : "inbound";
   const participantId = direction === "inbound" ? senderId : recipientId;
+  const conversationId = await resolveMessagingThreadExternalId({
+    organizationId: input.connection.organizationId,
+    channelType,
+    messagingEvent: input.messagingEvent,
+    senderId,
+    recipientId,
+    participantId,
+  });
+
+  if (!conversationId) {
+    return false;
+  }
+
   const sentAt =
     typeof input.messagingEvent.timestamp === "number"
       ? new Date(input.messagingEvent.timestamp).toISOString()
@@ -290,6 +328,7 @@ export async function processMetaWebhookPayload(
 
   let processed = 0;
   let skipped = 0;
+  const syncedOrganizationIds = new Set<string>();
 
   for (const entry of entries) {
     if (typeof entry !== "object" || entry === null) {
@@ -306,6 +345,7 @@ export async function processMetaWebhookPayload(
 
     const connection = await findWebhookConnection(entryId);
     if (!connection) {
+      console.warn("[inbox webhook] no org connection for entry id:", entryId);
       skipped += 1;
       continue;
     }
@@ -325,6 +365,7 @@ export async function processMetaWebhookPayload(
 
       if (saved) {
         processed += 1;
+        syncedOrganizationIds.add(connection.organizationId);
       } else {
         skipped += 1;
       }
@@ -361,10 +402,19 @@ export async function processMetaWebhookPayload(
 
       if (saved) {
         processed += 1;
+        syncedOrganizationIds.add(connection.organizationId);
       } else {
         skipped += 1;
       }
     }
+  }
+
+  if (syncedOrganizationIds.size > 0) {
+    await Promise.all(
+      [...syncedOrganizationIds].map((organizationId) =>
+        touchOrganizationInboxSyncedAt(organizationId),
+      ),
+    );
   }
 
   return { processed, skipped };

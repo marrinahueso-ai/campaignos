@@ -129,6 +129,26 @@ async function listMessagesForThreads(
   return grouped;
 }
 
+export async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return 0;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("inbox_threads")
+    .select("unread_count")
+    .eq("organization_id", organization.id)
+    .gt("unread_count", 0);
+
+  if (error || !data) {
+    return 0;
+  }
+
+  return data.reduce((total, row) => total + (row.unread_count as number), 0);
+}
+
 export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
