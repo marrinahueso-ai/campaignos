@@ -88,6 +88,7 @@ const PHRASE_BONUSES: Array<{ phrase: RegExp; bonus: number }> = [
   { phrase: /\bbus\s+(?:route|routes|stop|stops|time|times|schedule)\b/i, bonus: 6 },
   { phrase: /\bbefore\s+(?:school|care)\b/i, bonus: 5 },
   { phrase: /\bafter\s+(?:school|care)\b/i, bonus: 5 },
+  { phrase: /\bsacc\b/i, bonus: 6 },
   { phrase: /\b(?:report\s+card|grades?|attendance)\b/i, bonus: 5 },
 ];
 
