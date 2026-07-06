@@ -50,9 +50,9 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
   );
 
   const initialBody =
-    replyTarget?.approvedBody ??
-    replyTarget?.aiDraftBody ??
-    "";
+    replyTarget?.status === "approved" && replyTarget.approvedBody
+      ? replyTarget.approvedBody
+      : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
 
   const [draftBody, setDraftBody] = useState(initialBody);
   const [actionError, setActionError] = useState<string | null>(null);

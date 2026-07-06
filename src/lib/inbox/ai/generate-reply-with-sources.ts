@@ -2,7 +2,6 @@ import "server-only";
 
 import { generateText, isAiConfigured } from "@/lib/ai";
 import { resolveFastDraftModel } from "@/lib/ai/models";
-import { GROUNDING_SYSTEM_RULES } from "@/lib/ai-grounding";
 import {
   buildOrganizationGroundingFacts,
 } from "@/lib/ai-grounding/organization-facts";
@@ -10,7 +9,7 @@ import type {
   OrganizationGroundingFacts,
 } from "@/lib/ai-grounding/types";
 import { checkOrganizationSources } from "@/lib/inbox/ai/check-organization-sources";
-import { buildFollowUpDraft } from "@/lib/inbox/ai/draft-templates";
+import { buildFollowUpDraft, humanizeInboxDraft } from "@/lib/inbox/ai/draft-templates";
 import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
@@ -58,29 +57,41 @@ Source URL: ${sourceUsed.answerFrom.url}
 Source details (use ONLY this for factual claims — do NOT invent steps or account details):
 ${sourceUsed.answerFrom.excerpt}
 
-Weave the source link in naturally (e.g. "here's the page with all the details: [url]").`;
+Weave the source link in naturally (e.g. "SACC is our after-school program — here's the page with all the details: ${sourceUsed.answerFrom.url}").`;
   }
 
   return `Matched source: none — no configured source matched this question.
 Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
 }
 
+const INBOX_GROUNDING_RULES = [
+  "Use ONLY verified facts from SOURCE CHECK RESULTS — never invent dates, times, locations, prices, deadlines, or policies.",
+  "When information is missing from the source, say you are checking — do not guess.",
+].join(" ");
+
 function buildVerifiedAnswerSystemPrompt(): string {
-  return `${GROUNDING_SYSTEM_RULES}
+  return `${INBOX_GROUNDING_RULES}
 
-You draft replies for a school PTO social inbox — like a friendly parent volunteer answering messages, not a school office or marketing team.
+You draft replies for a school PTO social inbox — like a friendly parent volunteer answering messages, NOT a school office, district admin, or marketing team.
 
-VOICE & TONE:
+VOICE & TONE (this overrides any formal org voice notes):
 - Warm, casual, and helpful — like a volunteer mom texting another parent.
 - Use plain language and short sentences. Contractions are fine (we're, here's, you'll).
 - Sound conversational but still clear and useful.
 - No emojis.
-- Avoid corporate or stiff phrases like "For information about...", "you can check out...", "Please visit this link for more information", or overly formal greetings.
-- Weave links in naturally — e.g. "SACC is our after-school program — here's the page with all the details: [url]" — not as a formal citation.
+- NEVER use corporate or stiff phrases like "For information about...", "you can check out...", "Please visit this link", or "Visit our website".
+- Weave links in naturally — not as formal citations.
+
+GOOD EXAMPLES (match this tone):
+- "Hey! SACC is our after-school care program — here's the page with signup info: https://example.com/sacc"
+- "Good question! Lunch money goes through School Bucks — here's how it works: https://example.com/lunch"
+
+BAD EXAMPLES (never write like this):
+- "For information about SACC, please visit our website at https://example.com/sacc."
+- "You can find details about after-school care by checking out this link: https://example.com/sacc"
 
 STRICT INBOX RULES:
 - Use ONLY the matched source details in SOURCE CHECK RESULTS for factual claims.
-- NEVER invent dates, times, locations, prices, deadlines, or policies beyond what the source provides.
 - Include the source page link when helpful.
 - Do NOT mention unrelated PTO events or generic website invitations.
 
@@ -109,7 +120,7 @@ ${conversationLines.join("\n")}
 SOURCE CHECK RESULTS (authoritative — use ONLY this for facts):
 ${input.sourceBlock}
 
-Voice/style (tone only — not a source of facts):
+Voice/style (background only — inbox replies stay casual even if org voice is formal):
 ${input.voiceBlock}
 
 ${channelReplyGuidance(input.thread.channelType)}`;
@@ -130,6 +141,10 @@ async function saveInboxDraft(input: {
       ai_draft_body: input.draftBody,
       ai_draft_generated_at: now,
       ai_source_used: input.sourceUsed,
+      approved_body: null,
+      approved_at: null,
+      approved_by_user_id: null,
+      status: "pending",
       updated_at: now,
     })
     .eq("id", input.messageId)
@@ -221,6 +236,7 @@ export async function generateInboxReplyWithSources(input: {
     }),
     model: resolveFastDraftModel(),
     maxTokens: 300,
+    temperature: 0.35,
   });
 
   if (!generation.success || !generation.text?.trim()) {
@@ -232,7 +248,7 @@ export async function generateInboxReplyWithSources(input: {
     };
   }
 
-  const draftBody = generation.text.trim();
+  const draftBody = humanizeInboxDraft(generation.text);
   const saved = await saveInboxDraft({
     organizationId: input.organizationId,
     messageId: input.inboundMessage.id,

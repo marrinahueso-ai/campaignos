@@ -117,5 +117,5 @@ export function buildDescriptionFallbackExcerpt(input: {
 }): string {
   const description = input.description.trim();
   const detail = description || input.label.trim();
-  return `${input.label}: ${detail}. Visit ${input.url}`;
+  return `${input.label} — ${detail}. Link: ${input.url}`;
 }
