@@ -10,6 +10,7 @@
     "clean": "bash scripts/clean.sh",
     "dev:clean": "npm run clean && npm run dev",
     "verify": "bash scripts/verify.sh",
+    "test:webhook": "node scripts/test-meta-webhook.mjs",
     "capture:features": "node scripts/capture-feature-screenshots.mjs",
     "capture:features-videos": "node scripts/capture-feature-videos.mjs"
   },

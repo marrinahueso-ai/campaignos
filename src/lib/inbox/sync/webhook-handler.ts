@@ -1,7 +1,6 @@
 import "server-only";
 
-import crypto from "crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import {
   buildCommentPostMetadata,
   resolveFacebookPostPermalink,
@@ -10,6 +9,13 @@ import { snippet } from "@/lib/inbox/sync/graph-client";
 import type { NormalizedInboxMessage, NormalizedInboxThread } from "@/lib/inbox/sync/types";
 import { touchOrganizationInboxSyncedAt } from "@/lib/inbox/settings";
 import { upsertWebhookMessage } from "@/lib/inbox/sync/upsert";
+import {
+  collectMessagingEventsFromEntry,
+  describeMessagingSkipReason,
+  parseMetaWebhookTimestamp,
+  readMetaId,
+  verifyMetaWebhookSignatureWithSecret,
+} from "@/lib/inbox/sync/webhook-payload";
 import { getMetaAppSecret } from "@/lib/meta-publishing/config.server";
 
 interface MetaWebhookConnection {
@@ -22,29 +28,32 @@ export function verifyMetaWebhookSignature(input: {
   rawBody: string;
   signatureHeader: string | null;
 }): boolean {
-  const appSecret = getMetaAppSecret();
-  if (!appSecret || !input.signatureHeader?.startsWith("sha256=")) {
-    return false;
-  }
-
-  const expected = `sha256=${crypto
-    .createHmac("sha256", appSecret)
-    .update(input.rawBody, "utf8")
-    .digest("hex")}`;
-
+  let appSecret: string;
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(expected),
-      Buffer.from(input.signatureHeader),
-    );
+    appSecret = getMetaAppSecret();
   } catch {
+    console.error("[inbox webhook] signature check failed: META_APP_SECRET not configured");
     return false;
   }
+
+  return verifyMetaWebhookSignatureWithSecret({
+    rawBody: input.rawBody,
+    signatureHeader: input.signatureHeader,
+    appSecret,
+  });
 }
 
 async function findWebhookConnection(
   externalId: string,
 ): Promise<MetaWebhookConnection | null> {
+  if (!isSupabaseAdminConfigured()) {
+    console.error(
+      "[inbox webhook] org lookup failed: SUPABASE_SERVICE_ROLE_KEY not configured",
+      { externalId },
+    );
+    return null;
+  }
+
   const admin = createAdminClient();
 
   const byPage = await admin
@@ -52,6 +61,13 @@ async function findWebhookConnection(
     .select("organization_id, facebook_page_id, instagram_account_id")
     .eq("facebook_page_id", externalId)
     .maybeSingle();
+
+  if (byPage.error) {
+    console.error("[inbox webhook] org lookup by page failed:", {
+      externalId,
+      error: byPage.error.message,
+    });
+  }
 
   if (byPage.data) {
     return {
@@ -66,6 +82,13 @@ async function findWebhookConnection(
     .select("organization_id, facebook_page_id, instagram_account_id")
     .eq("instagram_account_id", externalId)
     .maybeSingle();
+
+  if (byInstagram.error) {
+    console.error("[inbox webhook] org lookup by instagram failed:", {
+      externalId,
+      error: byInstagram.error.message,
+    });
+  }
 
   if (byInstagram.data) {
     return {
@@ -92,24 +115,34 @@ async function resolveMessagingThreadExternalId(input: {
   recipientId: string | null;
   participantId: string | null;
 }): Promise<string | null> {
-  if (typeof input.messagingEvent.thread_id === "string" && input.messagingEvent.thread_id) {
-    return input.messagingEvent.thread_id;
+  const threadId = readMetaId(input.messagingEvent.thread_id);
+  if (threadId) {
+    return threadId;
   }
 
   if (input.participantId) {
     const admin = createAdminClient();
-    const { data } = await admin
+    const { data, error } = await admin
       .from("inbox_threads")
       .select("external_thread_id")
       .eq("organization_id", input.organizationId)
       .eq("channel_type", input.channelType)
       .eq("participant_external_id", input.participantId)
       .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
 
-    if (data?.external_thread_id) {
-      return data.external_thread_id as string;
+    if (error) {
+      console.error("[inbox webhook] thread lookup by participant failed:", {
+        organizationId: input.organizationId,
+        channelType: input.channelType,
+        participantId: input.participantId,
+        error: error.message,
+      });
+    }
+
+    const row = data?.[0];
+    if (row?.external_thread_id) {
+      return row.external_thread_id as string;
     }
   }
 
@@ -121,16 +154,22 @@ async function handleMessagingEvent(input: {
   connection: MetaWebhookConnection;
   messagingEvent: Record<string, unknown>;
   isInstagram: boolean;
+  eventSource: "messaging" | "standby";
 }): Promise<boolean> {
   const message = input.messagingEvent.message as Record<string, unknown> | undefined;
   if (!message || typeof message !== "object") {
+    console.error("[inbox webhook] skipped messaging event:", {
+      reason: describeMessagingSkipReason(input.messagingEvent),
+      eventSource: input.eventSource,
+      pageId: input.connection.facebookPageId,
+    });
     return false;
   }
 
   const sender = input.messagingEvent.sender as Record<string, unknown> | undefined;
   const recipient = input.messagingEvent.recipient as Record<string, unknown> | undefined;
-  const senderId = typeof sender?.id === "string" ? sender.id : null;
-  const recipientId = typeof recipient?.id === "string" ? recipient.id : null;
+  const senderId = readMetaId(sender?.id);
+  const recipientId = readMetaId(recipient?.id);
   const externalMessageId =
     typeof message.mid === "string"
       ? message.mid
@@ -145,6 +184,11 @@ async function handleMessagingEvent(input: {
         : "";
 
   if (!externalMessageId) {
+    console.error("[inbox webhook] skipped messaging event:", {
+      reason: "missing_message_id",
+      eventSource: input.eventSource,
+      pageId: input.connection.facebookPageId,
+    });
     return false;
   }
 
@@ -164,13 +208,17 @@ async function handleMessagingEvent(input: {
   });
 
   if (!conversationId) {
+    console.error("[inbox webhook] skipped messaging event:", {
+      reason: "missing_conversation_id",
+      eventSource: input.eventSource,
+      pageId: input.connection.facebookPageId,
+      senderId,
+      recipientId,
+    });
     return false;
   }
 
-  const sentAt =
-    typeof input.messagingEvent.timestamp === "number"
-      ? new Date(input.messagingEvent.timestamp).toISOString()
-      : new Date().toISOString();
+  const sentAt = parseMetaWebhookTimestamp(input.messagingEvent.timestamp);
 
   const thread: NormalizedInboxThread = {
     channelType,
@@ -191,11 +239,23 @@ async function handleMessagingEvent(input: {
     sentAt,
   };
 
-  return upsertWebhookMessage({
+  const saved = await upsertWebhookMessage({
     organizationId: input.connection.organizationId,
     thread,
     message: normalizedMessage,
   });
+
+  if (!saved) {
+    console.error("[inbox webhook] upsert failed:", {
+      organizationId: input.connection.organizationId,
+      channelType,
+      externalMessageId,
+      conversationId,
+      eventSource: input.eventSource,
+    });
+  }
+
+  return saved;
 }
 
 async function handleFeedCommentChange(input: {
@@ -212,7 +272,7 @@ async function handleFeedCommentChange(input: {
       : "Facebook user";
   const senderId =
     typeof value.from === "object" && value.from !== null
-      ? ((value.from as Record<string, unknown>).id as string | undefined) ?? null
+      ? readMetaId((value.from as Record<string, unknown>).id)
       : null;
   const createdTime =
     typeof value.created_time === "number"
@@ -220,6 +280,10 @@ async function handleFeedCommentChange(input: {
       : new Date().toISOString();
 
   if (!commentId || !postId) {
+    console.error("[inbox webhook] skipped feed comment:", {
+      reason: "missing_comment_or_post_id",
+      pageId: input.connection.facebookPageId,
+    });
     return false;
   }
 
@@ -269,7 +333,7 @@ async function handleInstagramCommentChange(input: {
   const commentId = typeof value.id === "string" ? value.id : null;
   const mediaId =
     typeof value.media === "object" && value.media !== null
-      ? ((value.media as Record<string, unknown>).id as string | undefined) ?? null
+      ? readMetaId((value.media as Record<string, unknown>).id)
       : typeof value.media_id === "string"
         ? value.media_id
         : null;
@@ -281,6 +345,10 @@ async function handleInstagramCommentChange(input: {
       : new Date().toISOString();
 
   if (!commentId || !mediaId) {
+    console.error("[inbox webhook] skipped instagram comment:", {
+      reason: "missing_comment_or_media_id",
+      instagramAccountId: input.connection.instagramAccountId,
+    });
     return false;
   }
 
@@ -323,12 +391,23 @@ async function handleInstagramCommentChange(input: {
 export async function processMetaWebhookPayload(
   payload: Record<string, unknown>,
 ): Promise<{ processed: number; skipped: number }> {
+  if (!isSupabaseAdminConfigured()) {
+    console.error(
+      "[inbox webhook] payload processing aborted: SUPABASE_SERVICE_ROLE_KEY not configured",
+    );
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  }
+
   const object = typeof payload.object === "string" ? payload.object : "";
   const entries = Array.isArray(payload.entry) ? payload.entry : [];
 
   let processed = 0;
   let skipped = 0;
   const syncedOrganizationIds = new Set<string>();
+
+  if (entries.length === 0) {
+    console.error("[inbox webhook] payload has no entries:", { object });
+  }
 
   for (const entry of entries) {
     if (typeof entry !== "object" || entry === null) {
@@ -337,30 +416,43 @@ export async function processMetaWebhookPayload(
     }
 
     const entryRecord = entry as Record<string, unknown>;
-    const entryId = typeof entryRecord.id === "string" ? entryRecord.id : null;
+    const entryId = readMetaId(entryRecord.id);
     if (!entryId) {
+      console.error("[inbox webhook] skipped entry: missing id", { object });
       skipped += 1;
       continue;
     }
 
     const connection = await findWebhookConnection(entryId);
     if (!connection) {
-      console.warn("[inbox webhook] no org connection for entry id:", entryId);
+      console.error("[inbox webhook] no org connection for entry id:", {
+        entryId,
+        object,
+      });
       skipped += 1;
       continue;
     }
 
-    const messaging = Array.isArray(entryRecord.messaging) ? entryRecord.messaging : [];
-    for (const event of messaging) {
-      if (typeof event !== "object" || event === null) {
-        skipped += 1;
-        continue;
+    const { events, sources } = collectMessagingEventsFromEntry(entryRecord);
+    if (events.length === 0) {
+      const hasChanges = Array.isArray(entryRecord.changes) && entryRecord.changes.length > 0;
+      if (!hasChanges) {
+        console.error("[inbox webhook] entry has no messaging, standby, or changes:", {
+          entryId,
+          object,
+        });
       }
+    }
+
+    for (let index = 0; index < events.length; index += 1) {
+      const event = events[index];
+      const eventSource = sources[index] ?? "messaging";
 
       const saved = await handleMessagingEvent({
         connection,
-        messagingEvent: event as Record<string, unknown>,
+        messagingEvent: event,
         isInstagram: object === "instagram",
+        eventSource,
       });
 
       if (saved) {

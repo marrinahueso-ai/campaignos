@@ -7,6 +7,7 @@ const PAGE_SUBSCRIBED_FIELDS = [
   "messaging_postbacks",
   "message_deliveries",
   "message_reads",
+  "standby",
   "feed",
 ].join(",");
 

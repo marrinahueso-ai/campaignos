@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { syncInboxNowAction } from "@/lib/inbox/actions";
+import { syncInboxNowAction, subscribeInboxWebhooksAction } from "@/lib/inbox/actions";
 import {
   META_COMBINED_OAUTH_SCOPE_LIST,
   META_INBOX_OAUTH_SCOPE_LIST,
@@ -19,6 +19,22 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSyncing, startSyncTransition] = useTransition();
+  const [isSubscribing, startSubscribeTransition] = useTransition();
+
+  function handleSubscribeWebhooks() {
+    setError(null);
+    setMessage(null);
+    startSubscribeTransition(async () => {
+      const result = await subscribeInboxWebhooksAction();
+      if (!result.success) {
+        setError(result.error ?? "Webhook subscribe failed.");
+        return;
+      }
+
+      setMessage("Page webhook subscriptions refreshed (messages, standby, comments).");
+      router.refresh();
+    });
+  }
 
   function handleSyncNow() {
     setError(null);
@@ -77,6 +93,15 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
           onClick={handleSyncNow}
         >
           {isSyncing ? "Syncing…" : "Sync now"}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={isSubscribing}
+          onClick={handleSubscribeWebhooks}
+        >
+          {isSubscribing ? "Subscribing…" : "Refresh webhooks"}
         </Button>
         <p className="text-xs text-cos-muted">
           Manual sync is for troubleshooting. Normal use relies on webhooks and daily refresh.
