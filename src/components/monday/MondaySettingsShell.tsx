@@ -19,18 +19,30 @@ interface SavedBoardMapping {
   columnMap: MondayBoardColumnMap;
 }
 
-interface MondayBoardSummary {
-  id: string;
-  name: string;
-  workspaceId: string | null;
-}
-
 interface MondaySettingsShellProps {
   organizationName: string | null;
   oauthCallbackUrl: string;
   statusMessage: string | null;
   statusTone: "success" | "error" | null;
   justConnected: boolean;
+}
+
+type ReadyLoadState = {
+  status: "ready";
+  connected: boolean;
+  integrationConfigured: boolean;
+  syncEnabled: boolean;
+  boardConfigured: boolean;
+  accountSlug: string | null;
+  savedMapping: SavedBoardMapping | null;
+  pageLoadError: string | null;
+};
+
+function formatClientLoadError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
 
 export function MondaySettingsShell({
@@ -40,24 +52,9 @@ export function MondaySettingsShell({
   statusTone,
   justConnected,
 }: MondaySettingsShellProps) {
-  const [loadState, setLoadState] = useState<
-    | { status: "loading" }
-    | {
-        status: "ready";
-        connected: boolean;
-        integrationConfigured: boolean;
-        syncEnabled: boolean;
-        boardConfigured: boolean;
-        accountSlug: string | null;
-        savedMapping: SavedBoardMapping | null;
-        boards: MondayBoardSummary[];
-        workspaceId: string | null;
-        workspaceName: string | null;
-        boardsLoadError: string | null;
-        pageLoadError: string | null;
-      }
-    | { status: "error"; message: string }
-  >({ status: "loading" });
+  const [loadState, setLoadState] = useState<ReadyLoadState | { status: "loading" }>({
+    status: "loading",
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +66,28 @@ export function MondaySettingsShell({
           return;
         }
 
+        if (!result) {
+          console.error(
+            "Monday settings client load failed: server action returned no payload. Hard refresh the page after deploy.",
+          );
+          setLoadState({
+            status: "ready",
+            connected: false,
+            integrationConfigured: false,
+            syncEnabled: false,
+            boardConfigured: false,
+            accountSlug: null,
+            savedMapping: null,
+            pageLoadError: null,
+          });
+          return;
+        }
+
         if (!result.success) {
+          console.warn(
+            "Monday settings partial load failure:",
+            result.error ?? "unknown error",
+          );
           setLoadState({
             status: "ready",
             connected: false,
@@ -78,13 +96,9 @@ export function MondaySettingsShell({
             boardConfigured: false,
             accountSlug: null,
             savedMapping: null,
-            boards: [],
-            workspaceId: null,
-            workspaceName: null,
-            boardsLoadError: null,
             pageLoadError:
               result.error ??
-              "Some Monday settings could not be loaded. You can still disconnect below.",
+              "Some Monday settings could not be loaded. You can still connect Monday below.",
           });
           return;
         }
@@ -97,21 +111,26 @@ export function MondaySettingsShell({
           boardConfigured: result.boardConfigured,
           accountSlug: result.accountSlug,
           savedMapping: result.savedMapping,
-          boards: result.boards,
-          workspaceId: result.workspaceId,
-          workspaceName: result.workspaceName,
-          boardsLoadError: result.boardsLoadError,
           pageLoadError: result.pageLoadError,
         });
       } catch (error) {
         if (cancelled) {
           return;
         }
-        console.error("Monday settings client load failed:", error);
+        console.error(
+          "Monday settings client load failed (server action transport error):",
+          formatClientLoadError(error),
+          error,
+        );
         setLoadState({
-          status: "error",
-          message:
-            "Monday settings failed to load. Refresh the page or disconnect Monday below if the problem continues.",
+          status: "ready",
+          connected: false,
+          integrationConfigured: false,
+          syncEnabled: false,
+          boardConfigured: false,
+          accountSlug: null,
+          savedMapping: null,
+          pageLoadError: null,
         });
       }
     }
@@ -129,13 +148,9 @@ export function MondaySettingsShell({
   const boardConfigured = ready?.boardConfigured ?? false;
   const accountSlug = ready?.accountSlug ?? null;
   const savedMapping = ready?.savedMapping ?? null;
-  const pageLoadError =
-    loadState.status === "error"
-      ? loadState.message
-      : ready?.pageLoadError ?? null;
+  const pageLoadError = ready?.pageLoadError ?? null;
 
   function handleBoardStateChange(update: {
-    boards?: MondayBoardSummary[];
     savedMapping?: SavedBoardMapping | null;
     boardConfigured?: boolean;
   }) {
@@ -145,7 +160,6 @@ export function MondaySettingsShell({
       }
       return {
         ...current,
-        boards: update.boards ?? current.boards,
         savedMapping:
           update.savedMapping !== undefined ? update.savedMapping : current.savedMapping,
         boardConfigured: update.boardConfigured ?? current.boardConfigured,
@@ -221,10 +235,6 @@ export function MondaySettingsShell({
               syncEnabled={syncEnabled}
               justConnected={justConnected}
               savedMapping={savedMapping}
-              initialBoards={ready?.boards ?? []}
-              initialWorkspaceId={ready?.workspaceId ?? null}
-              initialWorkspaceName={ready?.workspaceName ?? null}
-              initialBoardsLoadError={ready?.boardsLoadError ?? null}
               onBoardStateChange={handleBoardStateChange}
             />
           )}

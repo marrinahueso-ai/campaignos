@@ -31,12 +31,7 @@ interface MondayBoardMappingPanelProps {
   syncEnabled: boolean;
   justConnected?: boolean;
   savedMapping?: SavedBoardMapping | null;
-  initialBoards?: MondayBoardSummary[];
-  initialWorkspaceId?: string | null;
-  initialWorkspaceName?: string | null;
-  initialBoardsLoadError?: string | null;
   onBoardStateChange?: (update: {
-    boards?: MondayBoardSummary[];
     savedMapping?: SavedBoardMapping | null;
     boardConfigured?: boolean;
   }) => void;
@@ -104,17 +99,13 @@ export function MondayBoardMappingPanel({
   syncEnabled,
   justConnected = false,
   savedMapping = null,
-  initialBoards = [],
-  initialWorkspaceId = null,
-  initialWorkspaceName = null,
-  initialBoardsLoadError = null,
   onBoardStateChange,
 }: MondayBoardMappingPanelProps) {
-  const [boards, setBoards] = useState<MondayBoardSummary[]>(initialBoards);
-  const [workspaceName, setWorkspaceName] = useState<string | null>(initialWorkspaceName);
+  const [boards, setBoards] = useState<MondayBoardSummary[]>([]);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState(savedMapping?.mondayBoardId ?? "");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
-    savedMapping?.mondayWorkspaceId ?? initialWorkspaceId,
+    savedMapping?.mondayWorkspaceId ?? null,
   );
   const [columns, setColumns] = useState<MondayBoardColumn[]>([]);
   const [columnMap, setColumnMap] = useState<MondayBoardColumnMap>(
@@ -125,19 +116,63 @@ export function MondayBoardMappingPanel({
   const [createTemplateError, setCreateTemplateError] = useState<string | null>(null);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [loaded, setLoaded] = useState(connected);
-  const [loadError, setLoadError] = useState<string | null>(initialBoardsLoadError);
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const hasPtoTemplateBoard = boards.some((board) => board.name === PTO_TEMPLATE_BOARD_NAME);
   const showCreateTemplate =
     connected && loaded && (boards.length === 0 || !hasPtoTemplateBoard || Boolean(loadError));
 
   useEffect(() => {
-    setBoards(initialBoards);
-    setWorkspaceName(initialWorkspaceName);
-    setLoadError(initialBoardsLoadError);
-    setLoaded(connected);
-  }, [connected, initialBoards, initialBoardsLoadError, initialWorkspaceName]);
+    if (!connected) {
+      setBoards([]);
+      setWorkspaceName(null);
+      setLoadError(null);
+      setLoaded(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoaded(false);
+    setLoadError(null);
+
+    async function loadBoards() {
+      try {
+        const result = await listMondayBoardsAction();
+        if (cancelled) {
+          return;
+        }
+
+        if (result.success && result.boards) {
+          setBoards(result.boards);
+          setWorkspaceName(result.workspaceName ?? null);
+          setLoadError(null);
+          return;
+        }
+
+        const failureMessage = result.error ?? "Could not load Monday boards.";
+        console.error("Monday board picker failed:", failureMessage);
+        setLoadError(failureMessage);
+      } catch (boardError) {
+        if (cancelled) {
+          return;
+        }
+        const failureMessage =
+          boardError instanceof Error ? boardError.message : "Could not load Monday boards.";
+        console.error("Monday board picker transport failed:", boardError);
+        setLoadError(failureMessage);
+      } finally {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      }
+    }
+
+    void loadBoards();
+    return () => {
+      cancelled = true;
+    };
+  }, [connected, justConnected]);
 
   useEffect(() => {
     if (savedMapping) {
@@ -205,7 +240,6 @@ export function MondayBoardMappingPanel({
         setBoards(boardsResult.boards);
         setWorkspaceName(boardsResult.workspaceName ?? null);
         setLoadError(null);
-        onBoardStateChange?.({ boards: boardsResult.boards });
       } else if (result.boardId) {
         const nextBoards = boards.some((board) => board.id === result.boardId)
           ? boards
@@ -218,7 +252,6 @@ export function MondayBoardMappingPanel({
               },
             ];
         setBoards(nextBoards);
-        onBoardStateChange?.({ boards: nextBoards });
       }
 
       if (result.boardId) {
