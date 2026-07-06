@@ -5,15 +5,18 @@ import {
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
-import { mapInboxThreadRow } from "@/lib/inbox/mappers";
+import { mapInboxMessageRow, mapInboxThreadRow } from "@/lib/inbox/mappers";
+import { getOrganizationInboxSettings } from "@/lib/inbox/settings";
+import { isMessagingReady } from "@/lib/inbox/scopes";
 import type {
   InboxChannelCounts,
   InboxConnectionStatus,
+  InboxMessage,
   InboxPageData,
 } from "@/lib/inbox/types";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createClient } from "@/lib/supabase/server";
-import type { InboxThreadRow } from "@/lib/inbox/db-types";
+import type { InboxMessageRow, InboxThreadRow } from "@/lib/inbox/db-types";
 
 function emptyChannelCounts(): InboxChannelCounts {
   return {
@@ -28,9 +31,11 @@ function emptyChannelCounts(): InboxChannelCounts {
 function buildConnectionStatus(
   organizationName: string | null,
   metaConnection: Awaited<ReturnType<typeof getMetaConnectionForCurrentOrg>>,
+  inboxSettings: Awaited<ReturnType<typeof getOrganizationInboxSettings>>,
 ): InboxConnectionStatus {
   const metaConnected = isMetaConnectionConfigured(metaConnection);
   const hasInstagram = isInstagramPublishingConfigured(metaConnection);
+  const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
 
   return {
     metaConnected,
@@ -38,8 +43,16 @@ function buildConnectionStatus(
     integrationConfigured: isMetaIntegrationConfigured(),
     pageName: metaConnection?.pageName ?? null,
     hasInstagram,
-    messagingReady: false,
+    messagingReady: isMessagingReady({
+      metaConnected,
+      grantedScopes,
+      syncEnabled: inboxSettings?.syncEnabled,
+    }),
     organizationName,
+    syncEnabled: inboxSettings?.syncEnabled ?? false,
+    lastSyncedAt: inboxSettings?.lastSyncedAt ?? null,
+    lastSyncError: inboxSettings?.lastSyncError ?? null,
+    grantedScopes,
   };
 }
 
@@ -79,18 +92,58 @@ async function listInboxThreadsForOrganization(organizationId: string) {
   return (data as InboxThreadRow[]).map(mapInboxThreadRow);
 }
 
+async function listMessagesForThreads(
+  organizationId: string,
+  threadIds: string[],
+): Promise<Record<string, InboxMessage[]>> {
+  if (threadIds.length === 0) {
+    return {};
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("inbox_messages")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .in("thread_id", threadIds)
+    .order("sent_at", { ascending: true, nullsFirst: false });
+
+  if (error || !data) {
+    return {};
+  }
+
+  const grouped: Record<string, InboxMessage[]> = {};
+  for (const row of data as InboxMessageRow[]) {
+    const message = mapInboxMessageRow(row);
+    if (!grouped[message.threadId]) {
+      grouped[message.threadId] = [];
+    }
+    grouped[message.threadId].push(message);
+  }
+
+  return grouped;
+}
+
 export async function getInboxPageData(options?: {
   oauthErrorCode?: string | null;
   connectedJustNow?: boolean;
 }): Promise<InboxPageData> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
-  const connection = buildConnectionStatus(organization?.name ?? null, metaConnection);
+  const inboxSettings = organization?.id
+    ? await getOrganizationInboxSettings(organization.id)
+    : null;
+  const connection = buildConnectionStatus(
+    organization?.name ?? null,
+    metaConnection,
+    inboxSettings,
+  );
 
   if (!organization?.id) {
     return {
       connection,
       threads: [],
+      messagesByThreadId: {},
       channelCounts: emptyChannelCounts(),
       oauthError: options?.oauthErrorCode
         ? getMetaOAuthErrorMessage(options.oauthErrorCode)
@@ -104,9 +157,15 @@ export async function getInboxPageData(options?: {
     getInboxChannelCounts(organization.id),
   ]);
 
+  const messagesByThreadId = await listMessagesForThreads(
+    organization.id,
+    threads.map((thread) => thread.id),
+  );
+
   return {
     connection,
     threads,
+    messagesByThreadId,
     channelCounts,
     oauthError: options?.oauthErrorCode
       ? getMetaOAuthErrorMessage(options.oauthErrorCode)

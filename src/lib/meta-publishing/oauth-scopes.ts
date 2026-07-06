@@ -36,3 +36,11 @@ export const META_INBOX_OAUTH_SCOPE_LIST = [
 
 export const META_OAUTH_SCOPES = META_OAUTH_SCOPE_LIST.join(",");
 export const META_INBOX_OAUTH_SCOPES = META_INBOX_OAUTH_SCOPE_LIST.join(",");
+
+/** Publish + inbox scopes for unified connect / inbox permission reconnect. */
+export const META_COMBINED_OAUTH_SCOPE_LIST = [
+  ...META_OAUTH_SCOPE_LIST,
+  ...META_INBOX_OAUTH_SCOPE_LIST,
+] as const;
+
+export const META_COMBINED_OAUTH_SCOPES = META_COMBINED_OAUTH_SCOPE_LIST.join(",");

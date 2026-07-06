@@ -1,11 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   META_OAUTH_AUTHORIZE_URL,
+  META_OAUTH_FLOW_COOKIE,
   META_OAUTH_RETURN_COOKIE,
   META_OAUTH_PAGE_ID_COOKIE,
   META_OAUTH_SCOPES,
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
+import {
+  META_COMBINED_OAUTH_SCOPES,
+  META_INBOX_OAUTH_SCOPES,
+} from "@/lib/meta-publishing/oauth-scopes";
 import {
   createMetaOAuthState,
   getMetaAppId,
@@ -30,6 +35,7 @@ export async function GET(request: NextRequest) {
     getMetaFacebookPageId() ||
     "";
   const authType = request.nextUrl.searchParams.get("auth_type")?.trim() ?? "";
+  const flow = request.nextUrl.searchParams.get("flow")?.trim() ?? "";
 
   const state = createMetaOAuthState({ pageId: pageId || undefined });
   const redirectUri = getMetaRedirectUri(request.nextUrl.origin);
@@ -43,6 +49,10 @@ export async function GET(request: NextRequest) {
 
   if (configId) {
     authorizeUrl.searchParams.set("config_id", configId);
+  } else if (flow === "inbox") {
+    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
+  } else if (flow === "inbox_permissions") {
+    authorizeUrl.searchParams.set("scope", META_INBOX_OAUTH_SCOPES);
   } else {
     authorizeUrl.searchParams.set("scope", META_OAUTH_SCOPES);
   }
@@ -58,6 +68,9 @@ export async function GET(request: NextRequest) {
   response.cookies.set(META_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);
   if (pageId) {
     response.cookies.set(META_OAUTH_PAGE_ID_COOKIE, pageId, cookieOptions);
+  }
+  if (flow === "inbox" || flow === "inbox_permissions") {
+    response.cookies.set(META_OAUTH_FLOW_COOKIE, flow, cookieOptions);
   }
 
   return response;

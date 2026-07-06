@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import {
   disconnectMetaConnectionAction,
 } from "@/lib/meta-publishing/connection-actions";
+import { syncInboxNowAction } from "@/lib/inbox/actions";
 import {
   META_INBOX_OAUTH_SCOPE_LIST,
   META_OAUTH_SCOPE_LIST,
@@ -30,13 +31,21 @@ export function InboxConnectionPanel({
     connectedJustNow ? "Meta connected successfully." : null,
   );
   const [isPending, startTransition] = useTransition();
+  const [isSyncing, startSyncTransition] = useTransition();
 
   const returnTo = "/inbox";
-  const reconnectParams = new URLSearchParams({ returnTo });
+  const reconnectParams = new URLSearchParams({ returnTo, flow: "inbox" });
   if (connection.metaConnected && connection.pageName) {
     reconnectParams.set("auth_type", "rerequest");
   }
   const connectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
+
+  const inboxPermissionsParams = new URLSearchParams({
+    returnTo,
+    flow: "inbox_permissions",
+    auth_type: "rerequest",
+  });
+  const inboxPermissionsHref = `/api/meta/oauth/start?${inboxPermissionsParams.toString()}`;
 
   function handleDisconnect() {
     setError(null);
@@ -48,6 +57,25 @@ export function InboxConnectionPanel({
         return;
       }
       setMessage("Meta disconnected.");
+      router.refresh();
+    });
+  }
+
+  function handleSyncNow() {
+    setError(null);
+    setMessage(null);
+    startSyncTransition(async () => {
+      const result = await syncInboxNowAction();
+      if (!result.success) {
+        setError(result.error ?? "Inbox sync failed.");
+        return;
+      }
+
+      const threadCount = result.threadsUpserted ?? 0;
+      const messageCount = result.messagesUpserted ?? 0;
+      setMessage(
+        `Sync complete — ${threadCount} thread${threadCount === 1 ? "" : "s"}, ${messageCount} message${messageCount === 1 ? "" : "s"}.`,
+      );
       router.refresh();
     });
   }
@@ -76,25 +104,37 @@ export function InboxConnectionPanel({
       )}
 
       {connection.metaConnected && !connection.metaConfiguredViaEnv && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div
+          className={
+            connection.messagingReady
+              ? "rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+              : "rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          }
+        >
           <p>
             Connected to <strong>{connection.pageName ?? "Facebook Page"}</strong>.
             {connection.hasInstagram
-              ? " Instagram is linked for publishing."
+              ? " Instagram is linked."
               : " Link Instagram to your Page to enable IG channels."}
           </p>
-          <p className="mt-2 text-emerald-900/80">
-            Publishing is ready. Message and comment sync will activate in Phase 2 after Meta App
-            Review for inbox permissions.
+          <p className="mt-2 opacity-90">
+            {connection.messagingReady
+              ? "Inbox permissions are active. Sync now or wait for webhooks to pull new messages."
+              : "Publishing is ready. Grant inbox permissions below to sync DMs and comments."}
           </p>
+          {connection.lastSyncedAt && (
+            <p className="mt-2 text-xs opacity-80">
+              Last synced {new Date(connection.lastSyncedAt).toLocaleString()}
+            </p>
+          )}
         </div>
       )}
 
       {!connection.metaConnected && !connection.metaConfiguredViaEnv && (
         <div className="space-y-3">
           <p className="text-sm text-cos-muted">
-            Connect your Facebook Page and linked Instagram account once. CampaignOS reuses this
-            connection for publishing today and will sync DMs and comments here in Phase 2.
+            Connect your Facebook Page and linked Instagram account. CampaignOS will request
+            publish and inbox permissions in one flow.
           </p>
           <Button href={connectHref} disabled={isPending}>
             Connect with Facebook
@@ -104,6 +144,18 @@ export function InboxConnectionPanel({
 
       {connection.metaConnected && !connection.metaConfiguredViaEnv && (
         <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={isSyncing || isPending}
+            onClick={handleSyncNow}
+          >
+            {isSyncing ? "Syncing…" : "Sync now"}
+          </Button>
+          {!connection.messagingReady && (
+            <Button href={inboxPermissionsHref} variant="secondary" disabled={isPending}>
+              Grant inbox permissions
+            </Button>
+          )}
           <Button href={connectHref} variant="secondary" disabled={isPending}>
             Reconnect with Facebook
           </Button>
@@ -116,15 +168,23 @@ export function InboxConnectionPanel({
         </div>
       )}
 
+      {connection.metaConnected && connection.metaConfiguredViaEnv && (
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" disabled={isSyncing} onClick={handleSyncNow}>
+            {isSyncing ? "Syncing…" : "Sync now"}
+          </Button>
+        </div>
+      )}
+
       <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
         <summary className="cursor-pointer font-medium text-cos-text">
-          Meta App Review for inbox (Phase 2+)
+          Meta App Review for inbox
         </summary>
         <div className="mt-3 space-y-3 text-cos-muted">
           <p>
-            Publishing uses scopes already enabled on your Meta app. To pull DMs and comments into
-            this inbox and send replies, CampaignOS will request additional permissions and submit
-            your app for{" "}
+            Inbox sync uses additional Meta permissions. In Development mode, app admins and
+            testers can use inbox features without App Review. For production, submit your app
+            for{" "}
             <a
               href="https://developers.facebook.com/docs/app-review"
               target="_blank"
@@ -135,7 +195,7 @@ export function InboxConnectionPanel({
             </a>
             .
           </p>
-          <p>Current publish scopes:</p>
+          <p>Publish scopes:</p>
           <p>
             {META_OAUTH_SCOPE_LIST.map((scope) => (
               <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
@@ -143,7 +203,7 @@ export function InboxConnectionPanel({
               </code>
             ))}
           </p>
-          <p>Future inbox scopes (Phase 2 sync + Phase 4 send):</p>
+          <p>Inbox scopes:</p>
           <p>
             {META_INBOX_OAUTH_SCOPE_LIST.map((scope) => (
               <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
@@ -151,13 +211,24 @@ export function InboxConnectionPanel({
               </code>
             ))}
           </p>
-          <p>
-            Until App Review is approved, you can connect your Page here for publishing. Inbox sync
-            stays empty until Phase 2 is enabled on your deployment.
-          </p>
+          {connection.grantedScopes.length > 0 && (
+            <p>
+              Granted on this Page token:{" "}
+              {connection.grantedScopes.map((scope) => (
+                <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
+                  {scope}
+                </code>
+              ))}
+            </p>
+          )}
         </div>
       </details>
 
+      {connection.lastSyncError && (
+        <p className="text-sm text-red-600" role="alert">
+          Last sync error: {connection.lastSyncError}
+        </p>
+      )}
       {oauthError && (
         <p className="text-sm text-red-600" role="alert">
           {oauthError}

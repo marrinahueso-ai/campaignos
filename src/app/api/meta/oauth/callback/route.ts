@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  META_OAUTH_FLOW_COOKIE,
   META_OAUTH_PAGE_ID_COOKIE,
   META_OAUTH_RETURN_COOKIE,
   META_OAUTH_STATE_COOKIE,
@@ -20,6 +21,9 @@ import {
   mergeResolvedMetaPages,
 } from "@/lib/meta-publishing/graph-api";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
+import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
+import { pickPageFromTokenResult } from "@/lib/meta-publishing/connection-utils";
 
 export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
@@ -176,6 +180,28 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
+  const oauthFlow = request.cookies.get(META_OAUTH_FLOW_COOKIE)?.value?.trim();
+  if (oauthFlow === "inbox" || oauthFlow === "inbox_permissions") {
+    const page = pickPageFromTokenResult(pages, preferredPageId || undefined);
+    if (page?.accessToken) {
+      await refreshInboxScopesFromPageToken({
+        organizationId: organization.id,
+        pageAccessToken: page.accessToken,
+        enableSync: true,
+      });
+
+      const subscribe = await subscribeMetaInboxWebhooks({
+        pageId: page.id,
+        instagramAccountId: page.instagramAccountId,
+        pageAccessToken: page.accessToken,
+      });
+
+      if (subscribe.error) {
+        console.warn("Meta inbox webhook subscribe after OAuth:", subscribe.error);
+      }
+    }
+  }
+
   redirectTarget.searchParams.set("connected", "1");
   return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
 }
@@ -186,6 +212,7 @@ function clearOAuthCookies(response: NextResponse, origin: string): NextResponse
     META_OAUTH_STATE_COOKIE,
     META_OAUTH_RETURN_COOKIE,
     META_OAUTH_PAGE_ID_COOKIE,
+    META_OAUTH_FLOW_COOKIE,
   ]) {
     response.cookies.set(name, "", { ...cookieOptions, maxAge: 0 });
   }

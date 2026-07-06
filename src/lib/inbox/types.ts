@@ -49,16 +49,6 @@ export interface InboxMessage {
   updatedAt: string;
 }
 
-export interface InboxConnectionStatus {
-  metaConnected: boolean;
-  metaConfiguredViaEnv: boolean;
-  integrationConfigured: boolean;
-  pageName: string | null;
-  hasInstagram: boolean;
-  messagingReady: boolean;
-  organizationName: string | null;
-}
-
 export interface InboxChannelCounts {
   all: number;
   instagram_dm: number;
@@ -67,9 +57,24 @@ export interface InboxChannelCounts {
   facebook_comment: number;
 }
 
+export interface InboxConnectionStatus {
+  metaConnected: boolean;
+  metaConfiguredViaEnv: boolean;
+  integrationConfigured: boolean;
+  pageName: string | null;
+  hasInstagram: boolean;
+  messagingReady: boolean;
+  organizationName: string | null;
+  syncEnabled: boolean;
+  lastSyncedAt: string | null;
+  lastSyncError: string | null;
+  grantedScopes: string[];
+}
+
 export interface InboxPageData {
   connection: InboxConnectionStatus;
   threads: InboxThread[];
+  messagesByThreadId: Record<string, InboxMessage[]>;
   channelCounts: InboxChannelCounts;
   oauthError: string | null;
   connectedJustNow: boolean;
