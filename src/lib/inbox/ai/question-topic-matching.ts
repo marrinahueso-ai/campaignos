@@ -166,13 +166,14 @@ export function sourceDescriptionMatchesQuestion(input: {
   question: string;
   label: string;
   description: string;
+  url?: string;
 }): boolean {
   const topics = detectQuestionTopics(input.question);
   if (topics.length === 0) {
     return false;
   }
 
-  const sourceText = `${input.label} ${input.description}`.trim();
+  const sourceText = `${input.label} ${input.description} ${input.url ?? ""}`.trim();
   if (!sourceText) {
     return false;
   }

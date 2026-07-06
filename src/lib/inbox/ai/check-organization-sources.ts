@@ -21,12 +21,24 @@ interface SourceAnalysisResult {
   excerpt: string | null;
 }
 
+interface SourceMatchCandidate {
+  answer: NonNullable<InboxAiSourceUsed["answerFrom"]>;
+  score: number;
+}
+
+/** Page content that passed topic + relevance checks. */
+const PAGE_MATCH_SCORE = 100;
+/** Description matched topic keywords — configured sources win over generic pages. */
+const DESCRIPTION_KEYWORD_MATCH_SCORE = 110;
+/** Description matched via LLM only. */
+const DESCRIPTION_LLM_MATCH_SCORE = 75;
+
 export async function checkOrganizationSources(input: {
   question: string;
   sources: OrderedInboxAiSource[];
 }): Promise<InboxAiSourceUsed> {
   const sourcesChecked: InboxAiSourceCheckRecord[] = [];
-  let answerFrom: InboxAiSourceUsed["answerFrom"] = null;
+  const candidates: SourceMatchCandidate[] = [];
   const questionTopics = detectQuestionTopics(input.question);
   const questionTopicLabel = formatQuestionTopicLabel(questionTopics);
 
@@ -39,67 +51,57 @@ export async function checkOrganizationSources(input: {
       answerFound: false,
     };
 
+    let bestForSource: SourceMatchCandidate | null = null;
+
     const fetched = await fetchPublicPageText(source.url);
     if ("error" in fetched) {
       record.fetchError = fetched.error;
-      const descriptionMatch = await tryDescriptionFallback({
-        question: input.question,
-        source,
-      });
-
-      if (descriptionMatch) {
-        record.answerFound = true;
-        record.descriptionUsed = source.description;
-        record.usedDescriptionFallback = true;
-        sourcesChecked.push(record);
-        answerFrom = descriptionMatch;
-        break;
-      }
-
-      sourcesChecked.push(record);
-      continue;
-    }
-
-    if (!fetched.text.trim()) {
+    } else if (!fetched.text.trim()) {
       record.fetchError = "No readable text found";
-      const descriptionMatch = await tryDescriptionFallback({
+    } else {
+      const analysis = await analyzeSourceForQuestion({
         question: input.question,
-        source,
+        questionTopicLabel,
+        sourceLabel: source.label,
+        sourceUrl: source.url,
+        pageText: fetched.text,
       });
 
-      if (descriptionMatch) {
-        record.answerFound = true;
-        record.descriptionUsed = source.description;
-        record.usedDescriptionFallback = true;
-        sourcesChecked.push(record);
-        answerFrom = descriptionMatch;
-        break;
+      if (analysis.answerFound && analysis.excerpt) {
+        bestForSource = {
+          answer: {
+            label: source.label,
+            url: source.url,
+            excerpt: analysis.excerpt,
+          },
+          score: PAGE_MATCH_SCORE,
+        };
       }
-
-      sourcesChecked.push(record);
-      continue;
     }
 
-    const analysis = await analyzeSourceForQuestion({
+    const descriptionMatch = await tryDescriptionFallback({
       question: input.question,
-      questionTopicLabel,
-      sourceLabel: source.label,
-      sourceUrl: source.url,
-      pageText: fetched.text,
+      source,
     });
 
-    record.answerFound = analysis.answerFound;
-    sourcesChecked.push(record);
-
-    if (analysis.answerFound && analysis.excerpt) {
-      answerFrom = {
-        label: source.label,
-        url: source.url,
-        excerpt: analysis.excerpt,
-      };
-      break;
+    if (
+      descriptionMatch &&
+      (!bestForSource || descriptionMatch.score > bestForSource.score)
+    ) {
+      bestForSource = descriptionMatch;
+      record.usedDescriptionFallback = true;
+      record.descriptionUsed = source.description;
     }
+
+    if (bestForSource) {
+      record.answerFound = true;
+      candidates.push(bestForSource);
+    }
+
+    sourcesChecked.push(record);
   }
+
+  const answerFrom = pickBestCandidate(candidates);
 
   return {
     sourcesChecked,
@@ -108,10 +110,24 @@ export async function checkOrganizationSources(input: {
   };
 }
 
+function pickBestCandidate(
+  candidates: SourceMatchCandidate[],
+): InboxAiSourceUsed["answerFrom"] {
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const best = candidates.reduce((current, candidate) =>
+    candidate.score > current.score ? candidate : current,
+  );
+
+  return best.answer;
+}
+
 async function tryDescriptionFallback(input: {
   question: string;
   source: OrderedInboxAiSource;
-}): Promise<InboxAiSourceUsed["answerFrom"]> {
+}): Promise<SourceMatchCandidate | null> {
   const description = input.source.description?.trim();
   const label = input.source.label.trim();
 
@@ -123,30 +139,48 @@ async function tryDescriptionFallback(input: {
     question: input.question,
     label,
     description,
+    url: input.source.url,
   });
 
-  const llmMatch =
-    keywordMatch ||
-    (await matchQuestionToSourceDescription({
-      question: input.question,
-      label,
-      description,
-      url: input.source.url,
-    }));
+  if (keywordMatch) {
+    return {
+      answer: {
+        label,
+        url: input.source.url,
+        excerpt: buildDescriptionFallbackExcerpt({
+          label,
+          description,
+          url: input.source.url,
+        }),
+        fromDescription: true,
+      },
+      score: DESCRIPTION_KEYWORD_MATCH_SCORE,
+    };
+  }
+
+  const llmMatch = await matchQuestionToSourceDescription({
+    question: input.question,
+    label,
+    description,
+    url: input.source.url,
+  });
 
   if (!llmMatch) {
     return null;
   }
 
   return {
-    label,
-    url: input.source.url,
-    excerpt: buildDescriptionFallbackExcerpt({
+    answer: {
       label,
-      description,
       url: input.source.url,
-    }),
-    fromDescription: true,
+      excerpt: buildDescriptionFallbackExcerpt({
+        label,
+        description,
+        url: input.source.url,
+      }),
+      fromDescription: true,
+    },
+    score: DESCRIPTION_LLM_MATCH_SCORE,
   };
 }
 
