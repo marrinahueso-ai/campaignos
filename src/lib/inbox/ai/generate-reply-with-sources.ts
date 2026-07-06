@@ -5,23 +5,21 @@ import { resolveFastDraftModel } from "@/lib/ai/models";
 import { GROUNDING_SYSTEM_RULES } from "@/lib/ai-grounding";
 import {
   buildOrganizationGroundingFacts,
-  buildSchoolSetupGroundingFacts,
 } from "@/lib/ai-grounding/organization-facts";
 import type {
   OrganizationGroundingFacts,
-  SchoolSetupGroundingFacts,
 } from "@/lib/ai-grounding/types";
 import { checkOrganizationSources } from "@/lib/inbox/ai/check-organization-sources";
+import { buildFollowUpDraft } from "@/lib/inbox/ai/draft-templates";
 import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
-import { getUpcomingEvents } from "@/lib/events/queries";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
 import {
   buildOrderedInboxAiSources,
   getCustomInboxAiSources,
   urlSettingsFromOrganization,
 } from "@/lib/organizations/inbox-ai-sources/queries";
-import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
+import { getOrganizationById } from "@/lib/organizations/queries";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,54 +36,20 @@ function channelReplyGuidance(channelType: InboxChannelType): string {
   }
 }
 
-function formatOrganizationBlock(input: {
+function formatVoiceBlock(input: {
   organization: OrganizationGroundingFacts;
-  schoolSetup: SchoolSetupGroundingFacts;
 }): string {
   const lines = [
-    input.organization.name ? `- School / organization: ${input.organization.name}` : null,
-    input.organization.district ? `- District: ${input.organization.district}` : null,
-    input.organization.ptoWebsite ? `- PTO website: ${input.organization.ptoWebsite}` : null,
-    input.organization.schoolWebsite
-      ? `- School website: ${input.organization.schoolWebsite}`
-      : null,
+    input.organization.name ? `- Organization: ${input.organization.name}` : null,
     input.organization.organizationVoice
       ? `- Organization voice: ${input.organization.organizationVoice}`
       : null,
     input.organization.writingStyle
       ? `- Writing style: ${input.organization.writingStyle}`
       : null,
-    input.organization.communicationPreferences
-      ? `- Communication preferences: ${input.organization.communicationPreferences}`
-      : null,
   ].filter(Boolean);
 
-  return lines.length > 0 ? lines.join("\n") : "- (No organization profile on file)";
-}
-
-function formatEventContext(
-  events: Awaited<ReturnType<typeof getUpcomingEvents>>,
-): string {
-  if (events.length === 0) {
-    return "No upcoming events on file.";
-  }
-
-  return events
-    .slice(0, 5)
-    .map((event) => {
-      const parts = [`- ${event.title}`];
-      if (event.date) {
-        parts.push(`on ${event.date}`);
-      }
-      if (event.time) {
-        parts.push(`at ${event.time}`);
-      }
-      if (event.location) {
-        parts.push(`(${event.location})`);
-      }
-      return parts.join(" ");
-    })
-    .join("\n");
+  return lines.length > 0 ? lines.join("\n") : "- (No voice profile on file)";
 }
 
 function formatSourceContext(sourceUsed: InboxAiSourceUsed): string {
@@ -109,26 +73,24 @@ No verified answer was found on configured pages.
 Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
 }
 
-function buildInboxDraftSystemPrompt(): string {
+function buildVerifiedAnswerSystemPrompt(): string {
   return `${GROUNDING_SYSTEM_RULES}
 
 You draft replies for a school PTO social inbox.
 
 STRICT INBOX RULES:
-- Check organization source excerpts BEFORE answering factual questions.
-- NEVER invent dates, times, locations, prices, deadlines, or policies.
-- Use ONLY facts from SOURCE CHECK RESULTS, organization context, or upcoming events list.
-- If no verified answer was found, say you're checking and will follow up — do not guess.
-- When a helpful page link is provided in source results, include it naturally in the reply.
+- Use ONLY the verified excerpt in SOURCE CHECK RESULTS for factual claims.
+- NEVER invent dates, times, locations, prices, deadlines, or policies beyond the excerpt.
+- Include the source page link when helpful.
+- Do NOT mention unrelated PTO events or generic website invitations.
 
 Return ONLY the reply text — no quotes, labels, or markdown.`;
 }
 
-function buildInboxDraftUserPrompt(input: {
+function buildVerifiedAnswerUserPrompt(input: {
   thread: InboxThread;
   inboundMessage: InboxMessage;
-  organizationBlock: string;
-  eventsBlock: string;
+  voiceBlock: string;
   sourceBlock: string;
 }): string {
   const channelLabel = INBOX_CHANNEL_LABELS[input.thread.channelType];
@@ -144,16 +106,40 @@ ${input.thread.subject ? `Context: ${input.thread.subject}` : ""}
 Recent message to reply to:
 ${conversationLines.join("\n")}
 
-SOURCE CHECK RESULTS (authoritative for factual answers):
+SOURCE CHECK RESULTS (authoritative — use ONLY this for facts):
 ${input.sourceBlock}
 
-Organization context:
-${input.organizationBlock}
-
-Upcoming events in CampaignOS (use only if relevant and listed here):
-${input.eventsBlock}
+Voice/style (tone only — not a source of facts):
+${input.voiceBlock}
 
 ${channelReplyGuidance(input.thread.channelType)}`;
+}
+
+async function saveInboxDraft(input: {
+  organizationId: string;
+  messageId: string;
+  draftBody: string;
+  sourceUsed: InboxAiSourceUsed;
+}): Promise<{ success: boolean; error: string | null }> {
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("inbox_messages")
+    .update({
+      ai_draft_body: input.draftBody,
+      ai_draft_generated_at: now,
+      ai_source_used: input.sourceUsed,
+      updated_at: now,
+    })
+    .eq("id", input.messageId)
+    .eq("organization_id", input.organizationId);
+
+  if (error) {
+    return { success: false, error: "Draft was generated but could not be saved." };
+  }
+
+  return { success: true, error: null };
 }
 
 export async function generateInboxReplyWithSources(input: {
@@ -175,20 +161,20 @@ export async function generateInboxReplyWithSources(input: {
     };
   }
 
-  const [organization, schoolProfile, upcomingEvents, customSources] = await Promise.all([
-    getLatestOrganization(),
-    getSchoolProfile(),
-    getUpcomingEvents(5, input.organizationId),
+  const [organization, customSources] = await Promise.all([
+    getOrganizationById(input.organizationId),
     getCustomInboxAiSources(input.organizationId),
   ]);
 
   const orderedSources = buildOrderedInboxAiSources({
-    urlSettings: organization ? urlSettingsFromOrganization(organization) : {
-      eventsUrl: null,
-      calendarUrl: null,
-      resourcesUrl: null,
-      faqUrl: null,
-    },
+    urlSettings: organization
+      ? urlSettingsFromOrganization(organization)
+      : {
+          eventsUrl: null,
+          calendarUrl: null,
+          resourcesUrl: null,
+          faqUrl: null,
+        },
     customSources,
   });
 
@@ -197,26 +183,50 @@ export async function generateInboxReplyWithSources(input: {
     sources: orderedSources,
   });
 
+  if (sourceUsed.noAnswerFound) {
+    const profile = organization
+      ? await getAiProfileByOrganizationId(organization.id)
+      : null;
+    const orgFacts = buildOrganizationGroundingFacts({ organization, profile });
+
+    const draftBody = buildFollowUpDraft({
+      senderName: input.inboundMessage.senderName,
+      organizationName: orgFacts.name,
+      channelType: input.thread.channelType,
+    });
+
+    const saved = await saveInboxDraft({
+      organizationId: input.organizationId,
+      messageId: input.inboundMessage.id,
+      draftBody,
+      sourceUsed,
+    });
+
+    if (!saved.success) {
+      return {
+        success: false,
+        draftBody: null,
+        aiSourceUsed: sourceUsed,
+        error: saved.error,
+      };
+    }
+
+    return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
+  }
+
   const profile = organization
     ? await getAiProfileByOrganizationId(organization.id)
     : null;
-
   const orgFacts = buildOrganizationGroundingFacts({ organization, profile });
-  const schoolFacts = buildSchoolSetupGroundingFacts(schoolProfile);
-  const organizationBlock = formatOrganizationBlock({
-    organization: orgFacts,
-    schoolSetup: schoolFacts,
-  });
-  const eventsBlock = formatEventContext(upcomingEvents);
+  const voiceBlock = formatVoiceBlock({ organization: orgFacts });
   const sourceBlock = formatSourceContext(sourceUsed);
 
   const generation = await generateText({
-    systemPrompt: buildInboxDraftSystemPrompt(),
-    userPrompt: buildInboxDraftUserPrompt({
+    systemPrompt: buildVerifiedAnswerSystemPrompt(),
+    userPrompt: buildVerifiedAnswerUserPrompt({
       thread: input.thread,
       inboundMessage: input.inboundMessage,
-      organizationBlock,
-      eventsBlock,
+      voiceBlock,
       sourceBlock,
     }),
     model: resolveFastDraftModel(),
@@ -233,26 +243,19 @@ export async function generateInboxReplyWithSources(input: {
   }
 
   const draftBody = generation.text.trim();
-  const now = new Date().toISOString();
-  const supabase = await createClient();
+  const saved = await saveInboxDraft({
+    organizationId: input.organizationId,
+    messageId: input.inboundMessage.id,
+    draftBody,
+    sourceUsed,
+  });
 
-  const { error } = await supabase
-    .from("inbox_messages")
-    .update({
-      ai_draft_body: draftBody,
-      ai_draft_generated_at: now,
-      ai_source_used: sourceUsed,
-      updated_at: now,
-    })
-    .eq("id", input.inboundMessage.id)
-    .eq("organization_id", input.organizationId);
-
-  if (error) {
+  if (!saved.success) {
     return {
       success: false,
       draftBody: null,
       aiSourceUsed: sourceUsed,
-      error: "Draft was generated but could not be saved.",
+      error: saved.error,
     };
   }
 

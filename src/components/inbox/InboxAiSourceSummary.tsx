@@ -13,7 +13,9 @@ export function InboxAiSourceSummary({ sourceUsed }: InboxAiSourceSummaryProps) 
 
   const checkedLabels = sourceUsed.sourcesChecked
     .filter((source) => source.checked)
-    .map((source) => source.label);
+    .map((source) =>
+      source.fetchError ? `${source.label} (unavailable)` : source.label,
+    );
 
   return (
     <div className="mt-2 space-y-1.5 rounded-lg border border-cos-border bg-cos-bg/50 px-3 py-2 text-[11px] leading-relaxed text-cos-muted">
@@ -40,7 +42,10 @@ export function InboxAiSourceSummary({ sourceUsed }: InboxAiSourceSummaryProps) 
       ) : (
         <p className="inline-flex items-start gap-1 text-amber-700">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-          No verified answer found on configured pages — draft uses a follow-up response.
+          <span>
+            <span className="font-medium text-cos-text">Answer from:</span> none — follow up
+            needed
+          </span>
         </p>
       )}
     </div>

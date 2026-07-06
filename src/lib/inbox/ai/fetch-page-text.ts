@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isLikelyAuthWall } from "@/lib/inbox/ai/draft-templates";
+
 const FETCH_TIMEOUT_MS = 12_000;
 const USER_AGENT = "CampaignOS-InboxAI/1.0 (+https://campaignos.app)";
 
@@ -27,10 +29,19 @@ export async function fetchPublicPageText(
     const raw = await response.text();
 
     if (contentType.includes("text/plain")) {
-      return { text: normalizeWhitespace(raw).slice(0, 12_000) };
+      const text = normalizeWhitespace(raw).slice(0, 12_000);
+      if (isLikelyAuthWall(text)) {
+        return { error: "Page requires sign-in (no public content)" };
+      }
+      return { text };
     }
 
-    return { text: extractTextFromHtml(raw).slice(0, 12_000) };
+    const text = extractTextFromHtml(raw).slice(0, 12_000);
+    if (isLikelyAuthWall(text)) {
+      return { error: "Page requires sign-in (no public content)" };
+    }
+
+    return { text };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return { error: "Request timed out" };
