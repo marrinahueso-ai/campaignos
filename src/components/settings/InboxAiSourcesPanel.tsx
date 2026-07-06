@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useActionState, useState } from "react";
+import { FormEvent, useActionState, useEffect, useMemo, useState } from "react";
 import { Link2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -24,29 +24,111 @@ interface InboxAiSourcesPanelProps {
   initialInput: InboxAiSourcesSettingsInput;
 }
 
+function serializeCustomSources(
+  customSources: InboxAiSourcesSettingsInput["customSources"],
+): string {
+  return JSON.stringify(
+    customSources.map((source) => ({
+      id: source.id,
+      label: source.label,
+      url: source.url,
+    })),
+  );
+}
+
 export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) {
   const [customSources, setCustomSources] = useState(initialInput.customSources);
+  const [clientError, setClientError] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState(
     saveInboxAiSourcesAction,
     INITIAL_STATE,
   );
 
+  const savedSnapshot = useMemo(
+    () => serializeCustomSources(initialInput.customSources),
+    [initialInput.customSources],
+  );
+  const currentSnapshot = useMemo(
+    () => serializeCustomSources(customSources),
+    [customSources],
+  );
+  const hasUnsavedCustomSources = savedSnapshot !== currentSnapshot;
+
+  useEffect(() => {
+    if (state.success && state.savedCustomSources) {
+      setCustomSources(state.savedCustomSources);
+    }
+  }, [state.success, state.savedCustomSources]);
+
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedCustomSources) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedCustomSources]);
+
   function addCustomSource() {
+    setClientError(null);
     setCustomSources((current) => [...current, { label: "", url: "" }]);
   }
 
   function removeCustomSource(index: number) {
+    setClientError(null);
     setCustomSources((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (customSources.some((source) => source.url.trim() && !source.label.trim())) {
-      event.preventDefault();
-    }
+  function updateCustomSource(
+    index: number,
+    field: "label" | "url",
+    value: string,
+  ) {
+    setClientError(null);
+    setCustomSources((current) =>
+      current.map((source, itemIndex) =>
+        itemIndex === index ? { ...source, [field]: value } : source,
+      ),
+    );
   }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    for (const source of customSources) {
+      const hasLabel = source.label.trim().length > 0;
+      const hasUrl = source.url.trim().length > 0;
+
+      if (hasUrl && !hasLabel) {
+        event.preventDefault();
+        setClientError("Each custom source needs a label.");
+        return;
+      }
+
+      if (hasLabel && !hasUrl) {
+        event.preventDefault();
+        setClientError("Each custom source needs a URL.");
+        return;
+      }
+    }
+
+    setClientError(null);
+  }
+
+  const displayError = clientError ?? state.error;
 
   return (
     <form action={formAction} onSubmit={handleSubmit} className="cos-card space-y-6 p-6">
+      <input
+        type="hidden"
+        name="customSourcesJson"
+        value={serializeCustomSources(customSources)}
+        readOnly
+      />
+
       <CardHeader className="px-0 pt-0">
         <CardTitle className="flex items-center gap-2">
           <Link2 className="h-5 w-5 text-cos-accent" />
@@ -115,17 +197,23 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
                 className="grid gap-3 rounded-lg border border-cos-border bg-cos-bg/40 p-3 sm:grid-cols-[1fr_1fr_auto]"
               >
                 <Input
-                  name="customLabel"
+                  id={`custom-label-${index}`}
                   label="Label"
                   placeholder="Volunteer handbook"
-                  defaultValue={source.label}
+                  value={source.label}
+                  onChange={(event) =>
+                    updateCustomSource(index, "label", event.target.value)
+                  }
                 />
                 <Input
-                  name="customUrl"
+                  id={`custom-url-${index}`}
                   label="URL"
                   type="url"
                   placeholder="https://..."
-                  defaultValue={source.url}
+                  value={source.url}
+                  onChange={(event) =>
+                    updateCustomSource(index, "url", event.target.value)
+                  }
                 />
                 <div className="flex items-end">
                   <Button
@@ -145,9 +233,15 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
         )}
       </div>
 
-      {state.error ? (
+      {hasUnsavedCustomSources ? (
+        <p className="text-xs text-amber-700">
+          You have unsaved custom source changes. Save before leaving this page.
+        </p>
+      ) : null}
+
+      {displayError ? (
         <p className="text-sm text-red-600" role="alert">
-          {state.error}
+          {displayError}
         </p>
       ) : null}
 

@@ -14,6 +14,7 @@ import type { InboxAiSourcesSettingsInput } from "@/types/inbox-ai-sources";
 export interface InboxAiSourcesActionState {
   error: string | null;
   success: boolean;
+  savedCustomSources?: InboxAiSourcesSettingsInput["customSources"];
 }
 
 export async function getInboxAiSourcesSettingsData(): Promise<{
@@ -30,6 +31,25 @@ export async function getInboxAiSourcesSettingsData(): Promise<{
 }
 
 function parseCustomSources(formData: FormData): InboxAiSourcesSettingsInput["customSources"] {
+  const jsonValue = formData.get("customSourcesJson");
+  if (typeof jsonValue === "string" && jsonValue.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(jsonValue);
+      if (Array.isArray(parsed)) {
+        return parsed.map((entry) => {
+          const source = entry as { id?: string; label?: string; url?: string };
+          return {
+            id: typeof source.id === "string" ? source.id : undefined,
+            label: String(source.label ?? ""),
+            url: String(source.url ?? ""),
+          };
+        });
+      }
+    } catch {
+      // Fall back to legacy field names below.
+    }
+  }
+
   const labels = formData.getAll("customLabel").map((value) => String(value));
   const urls = formData.getAll("customUrl").map((value) => String(value));
 
@@ -73,5 +93,7 @@ export async function saveInboxAiSourcesAction(
   revalidatePath("/settings/ai-brain");
   revalidatePath("/inbox");
 
-  return { error: null, success: true };
+  const savedCustomSources = input.customSources.filter((source) => source.url.trim());
+
+  return { error: null, success: true, savedCustomSources };
 }

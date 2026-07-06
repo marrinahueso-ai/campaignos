@@ -33,8 +33,15 @@ export function validateInboxAiSourcesInput(
   }
 
   for (const source of input.customSources) {
-    if (source.url.trim() && !source.label.trim()) {
+    const hasLabel = source.label.trim().length > 0;
+    const hasUrl = source.url.trim().length > 0;
+
+    if (hasUrl && !hasLabel) {
       return "Each custom source needs a label.";
+    }
+
+    if (hasLabel && !hasUrl) {
+      return "Each custom source needs a URL.";
     }
   }
 
