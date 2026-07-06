@@ -3,6 +3,7 @@ import type {
   InboxItemStatus,
   InboxMessageDirection,
 } from "@/lib/inbox/types";
+import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 
 export interface InboxThreadRow {
   id: string;
@@ -37,6 +38,7 @@ export interface InboxMessageRow {
   status: InboxItemStatus;
   ai_draft_body: string | null;
   ai_draft_generated_at: string | null;
+  ai_source_used: InboxAiSourceUsed | null;
   approved_body: string | null;
   approved_at: string | null;
   approved_by_user_id: string | null;

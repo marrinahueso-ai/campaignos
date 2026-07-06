@@ -105,6 +105,10 @@ export interface Organization {
   principal: string | null;
   schoolWebsite: string | null;
   ptoWebsite: string | null;
+  eventsUrl: string | null;
+  calendarUrl: string | null;
+  resourcesUrl: string | null;
+  faqUrl: string | null;
   timezone: string;
   preferredPostingHours: PreferredPostingWindow[] | null;
   foundingAccessCode: string | null;
@@ -121,6 +125,10 @@ export interface OrganizationRow {
   principal: string | null;
   school_website: string | null;
   pto_website: string | null;
+  events_url?: string | null;
+  calendar_url?: string | null;
+  resources_url?: string | null;
+  faq_url?: string | null;
   timezone?: string | null;
   preferred_posting_hours?: PreferredPostingWindow[] | null;
   founding_access_code?: string | null;

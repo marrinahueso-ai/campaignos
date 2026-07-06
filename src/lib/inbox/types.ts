@@ -10,6 +10,8 @@ export type InboxItemStatus = "pending" | "approved" | "sent" | "archived";
 
 export type InboxMessageDirection = "inbound" | "outbound";
 
+import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
+
 export interface InboxThread {
   id: string;
   organizationId: string;
@@ -43,6 +45,7 @@ export interface InboxMessage {
   status: InboxItemStatus;
   aiDraftBody: string | null;
   aiDraftGeneratedAt: string | null;
+  aiSourceUsed: InboxAiSourceUsed | null;
   approvedBody: string | null;
   approvedAt: string | null;
   approvedByUserId: string | null;

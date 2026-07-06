@@ -37,6 +37,7 @@ export function mapInboxMessageRow(row: InboxMessageRow): InboxMessage {
     status: row.status,
     aiDraftBody: row.ai_draft_body,
     aiDraftGeneratedAt: row.ai_draft_generated_at,
+    aiSourceUsed: row.ai_source_used ?? null,
     approvedBody: row.approved_body,
     approvedAt: row.approved_at,
     approvedByUserId: row.approved_by_user_id,

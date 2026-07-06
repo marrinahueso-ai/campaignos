@@ -22,6 +22,7 @@ import {
 } from "@/lib/meta-publishing/graph-api";
 import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
 import { createClient } from "@/lib/supabase/server";
+import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 
 export type InboxActionResult = {
   success: boolean;
@@ -35,6 +36,7 @@ export type InboxReplyActionResult = {
   success: boolean;
   error?: string | null;
   draftBody?: string | null;
+  aiSourceUsed?: InboxAiSourceUsed | null;
   status?: string | null;
 };
 
@@ -180,6 +182,7 @@ export async function generateInboxAiDraftAction(input: {
     success: result.success,
     error: result.error,
     draftBody: result.draftBody,
+    aiSourceUsed: result.aiSourceUsed,
     status: "pending",
   };
 }
