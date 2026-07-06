@@ -84,6 +84,9 @@ export interface InboxConnectionStatus {
   lastSyncError: string | null;
   grantedScopes: string[];
   missingFacebookCommentReplyScopes: string[];
+  metaTokenValid: boolean;
+  metaTokenNeverExpires: boolean;
+  metaReconnectRequired: boolean;
 }
 
 export interface InboxPageData {

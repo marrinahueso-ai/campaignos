@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { getLatestOrganization } from "@/lib/organizations/queries";
-import { pickPageFromTokenResult } from "@/lib/meta-publishing/connection-utils";
+import { pickBestPageFromTokenResult } from "@/lib/meta-publishing/connection-token-select";
+import { resolvePageTokenExpiresAt } from "@/lib/meta-publishing/connection-token-health";
+import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
 import {
   verifyMetaConnection,
+  exchangeShortLivedForLongLived,
   fetchPagesFromUserToken,
   type ResolvedMetaPage,
 } from "@/lib/meta-publishing/graph-api";
@@ -77,6 +80,12 @@ export async function saveMetaConnectionAction(input: {
     return { success: false, error: error.message };
   }
 
+  await refreshInboxScopesFromPageToken({
+    organizationId: organization.id,
+    pageAccessToken: token,
+    enableSync: true,
+  });
+
   revalidatePath("/settings/meta");
   return { success: true, pageName: verified.pageName };
 }
@@ -110,9 +119,8 @@ export async function saveMetaConnectionFromOAuth(input: {
   organizationId: string;
   pages: ResolvedMetaPage[];
   preferredPageId?: string;
-  tokenExpiresAt: string | null;
 }): Promise<{ success: boolean; errorCode?: string; pageName?: string | null }> {
-  const page = pickPageFromTokenResult(input.pages, input.preferredPageId);
+  const page = await pickBestPageFromTokenResult(input.pages, input.preferredPageId);
   if (!page) {
     return { success: false, errorCode: "no_pages" };
   }
@@ -127,6 +135,7 @@ export async function saveMetaConnectionFromOAuth(input: {
     return { success: false, errorCode: "verify_failed" };
   }
 
+  const tokenExpiresAt = await resolvePageTokenExpiresAt(page.accessToken);
   const supabase = await createClient();
   const now = new Date().toISOString();
 
@@ -137,7 +146,7 @@ export async function saveMetaConnectionFromOAuth(input: {
       instagram_account_id: page.instagramAccountId ?? "",
       page_access_token: page.accessToken,
       page_name: verified.pageName ?? page.name,
-      token_expires_at: input.tokenExpiresAt,
+      token_expires_at: tokenExpiresAt,
       updated_at: now,
     },
     { onConflict: "organization_id" },
@@ -149,6 +158,12 @@ export async function saveMetaConnectionFromOAuth(input: {
     }
     return { success: false, errorCode: "save_failed" };
   }
+
+  await refreshInboxScopesFromPageToken({
+    organizationId: input.organizationId,
+    pageAccessToken: page.accessToken,
+    enableSync: true,
+  });
 
   revalidatePath("/settings/meta");
   return { success: true, pageName: verified.pageName ?? page.name };
@@ -174,16 +189,20 @@ export async function connectMetaWithUserTokenAction(input: {
       return { success: false, error: "Paste the access token from Graph API Explorer." };
     }
 
-    const { pages, error } = await fetchPagesFromUserToken(token, {
+    const longLived = await exchangeShortLivedForLongLived({ shortLivedToken: token });
+    const userToken = longLived.accessToken ?? token;
+
+    const { pages, error } = await fetchPagesFromUserToken(userToken, {
       fallbackPageIds: input.preferredPageId?.trim()
         ? [input.preferredPageId.trim()]
         : undefined,
+      alternateTokens: longLived.accessToken ? [token] : undefined,
     });
     if (error) {
       return { success: false, error };
     }
 
-    const page = pickPageFromTokenResult(pages, input.preferredPageId?.trim());
+    const page = await pickBestPageFromTokenResult(pages, input.preferredPageId?.trim());
     if (!page) {
       return { success: false, error: "Could not find a Facebook Page for this token." };
     }
@@ -198,6 +217,7 @@ export async function connectMetaWithUserTokenAction(input: {
       return { success: false, error: verified.error ?? "Could not verify Meta connection." };
     }
 
+    const tokenExpiresAt = await resolvePageTokenExpiresAt(page.accessToken);
     const supabase = await createClient();
     const now = new Date().toISOString();
 
@@ -208,7 +228,7 @@ export async function connectMetaWithUserTokenAction(input: {
         instagram_account_id: page.instagramAccountId ?? "",
         page_access_token: page.accessToken,
         page_name: verified.pageName ?? page.name,
-        token_expires_at: null,
+        token_expires_at: tokenExpiresAt,
         updated_at: now,
       },
       { onConflict: "organization_id" },
@@ -223,6 +243,12 @@ export async function connectMetaWithUserTokenAction(input: {
       }
       return { success: false, error: saveError.message };
     }
+
+    await refreshInboxScopesFromPageToken({
+      organizationId: organization.id,
+      pageAccessToken: page.accessToken,
+      enableSync: true,
+    });
 
     revalidatePath("/settings/meta");
     return {

@@ -12,6 +12,7 @@ import {
 import {
   getMetaConnectionForCurrentOrg,
 } from "@/lib/meta-publishing/connection";
+import { ensureMetaConnectionHealthyForOrganization } from "@/lib/meta-publishing/connection-token-health";
 import {
   isInstagramPublishingConfigured,
   isMetaConnectionConfigured,
@@ -216,7 +217,7 @@ export async function publishMetaMilestoneBundle(input: {
 }): Promise<PublishMilestoneResult> {
   const connection = input.connection ?? (await getMetaConnectionForCurrentOrg());
 
-  if (!isMetaConnectionConfigured(connection)) {
+  if (!connection || !isMetaConnectionConfigured(connection)) {
     return {
       success: false,
       error:
@@ -224,6 +225,19 @@ export async function publishMetaMilestoneBundle(input: {
       publishedCount: 0,
       failedCount: 0,
     };
+  }
+
+  if (connection?.organizationId && connection.id !== "env") {
+    const health = await ensureMetaConnectionHealthyForOrganization(connection.organizationId);
+    if (health && !health.tokenValid) {
+      return {
+        success: false,
+        error:
+          "Meta connection expired or was revoked. Reconnect once in Settings → Meta Publishing.",
+        publishedCount: 0,
+        failedCount: 0,
+      };
+    }
   }
 
   const { surfaces, storyManualPublish } = await getMilestonePublishSettings(

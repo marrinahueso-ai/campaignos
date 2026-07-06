@@ -18,13 +18,13 @@ import {
   exchangeCodeForUserToken,
   exchangeShortLivedForLongLived,
   fetchPagesFromUserToken,
-  mergeResolvedMetaPages,
 } from "@/lib/meta-publishing/graph-api";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
+import { missingFacebookCommentReplyScopes } from "@/lib/inbox/scopes";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
-import { pickPageFromTokenResult } from "@/lib/meta-publishing/connection-utils";
+import { pickBestPageFromTokenResult } from "@/lib/meta-publishing/connection-token-select";
 
 export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
@@ -109,32 +109,29 @@ export async function GET(request: NextRequest) {
   let pages = shortLivedResult.pages;
   let pagesError = shortLivedResult.error;
   let debugHint = shortLivedResult.debugHint;
-  let tokenExpiresAt: string | null = null;
+  let longLivedPages: typeof pages = [];
 
   if (longLived.accessToken) {
-    if (longLived.expiresIn != null) {
-      tokenExpiresAt = new Date(Date.now() + longLived.expiresIn * 1000).toISOString();
-    }
-
     const longLivedResult = await fetchPagesFromUserToken(longLived.accessToken, {
       fallbackPageIds,
       alternateTokens: [shortLived.accessToken],
       preferAlternateFirst: pages.length === 0,
     });
 
-    pages = mergeResolvedMetaPages(pages, longLivedResult.pages);
+    longLivedPages = longLivedResult.pages;
     if (pages.length === 0) {
+      pages = longLivedPages;
       pagesError = longLivedResult.error ?? shortLivedResult.error;
       debugHint = longLivedResult.debugHint ?? shortLivedResult.debugHint;
     } else {
       pagesError = null;
       debugHint = shortLivedResult.debugHint ?? longLivedResult.debugHint;
     }
-  } else if (isPageScopedToken && shortLivedDebug.expiresAt) {
-    tokenExpiresAt = shortLivedDebug.expiresAt;
   }
 
-  if (pages.length === 0) {
+  const pageCandidates = [...pages, ...longLivedPages];
+
+  if (pageCandidates.length === 0) {
     console.error("Meta OAuth callback: no pages resolved", {
       pagesError,
       debugHint,
@@ -171,9 +168,8 @@ export async function GET(request: NextRequest) {
 
   const saved = await saveMetaConnectionFromOAuth({
     organizationId: organization.id,
-    pages,
+    pages: pageCandidates,
     preferredPageId: preferredPageId || undefined,
-    tokenExpiresAt,
   });
 
   if (!saved.success) {
@@ -181,14 +177,21 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
-  const page = pickPageFromTokenResult(pages, preferredPageId || undefined);
+  const page = await pickBestPageFromTokenResult(pageCandidates, preferredPageId || undefined);
 
   if (page?.accessToken) {
-    await refreshInboxScopesFromPageToken({
+    const refreshedSettings = await refreshInboxScopesFromPageToken({
       organizationId: organization.id,
       pageAccessToken: page.accessToken,
       enableSync: true,
     });
+
+    if (
+      refreshedSettings &&
+      missingFacebookCommentReplyScopes(refreshedSettings.messagingScopesGranted).length > 0
+    ) {
+      redirectTarget.searchParams.set("scope_warning", "missing_engagement");
+    }
 
     const subscribe = await subscribeMetaInboxWebhooks({
       pageId: page.id,

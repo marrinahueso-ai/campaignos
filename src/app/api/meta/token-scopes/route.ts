@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import {
-  getMetaTokenScopeDiagnostics,
-  refreshInboxScopesFromPageToken,
-} from "@/lib/inbox/settings";
+  ensureMetaConnectionHealthyForOrganization,
+} from "@/lib/meta-publishing/connection-token-health";
 import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -24,24 +23,28 @@ export async function GET() {
     return NextResponse.json({ error: "Meta not connected" }, { status: 400 });
   }
 
-  const diagnostics = await getMetaTokenScopeDiagnostics({
-    pageAccessToken: connection.pageAccessToken,
-  });
-
-  await refreshInboxScopesFromPageToken({
-    organizationId: organization.id,
-    pageAccessToken: connection.pageAccessToken,
-    enableSync: true,
-  });
+  const health = await ensureMetaConnectionHealthyForOrganization(organization.id);
+  if (!health) {
+    return NextResponse.json({ error: "Meta not connected" }, { status: 400 });
+  }
 
   return NextResponse.json({
-    pageId: connection.facebookPageId,
-    pageName: connection.pageName,
-    ...diagnostics,
-    reconnectRequired: diagnostics.missingFacebookCommentReplyScopes.length > 0,
-    reconnectHint:
-      diagnostics.missingFacebookCommentReplyScopes.length > 0
-        ? "pages_manage_engagement is missing on this Page token. Set it to Ready for testing in Meta Developer Dashboard, then click Reconnect with Facebook in Settings → Meta."
+    pageId: health.connection.facebookPageId,
+    pageName: health.connection.pageName,
+    tokenValid: health.tokenValid,
+    tokenNeverExpires: health.tokenNeverExpires,
+    tokenExpiresAt: health.tokenExpiresAt,
+    tokenType: health.tokenType,
+    grantedScopes: health.grantedScopes,
+    inboxRelevantScopes: health.inboxRelevantScopes,
+    missingFacebookCommentReplyScopes: health.missingFacebookCommentReplyScopes,
+    facebookCommentReplyReady: health.facebookCommentReplyReady,
+    reconnectRequired: health.reconnectRequired,
+    reconnectHint: health.reconnectRequired
+      ? "Your Facebook Page token is no longer valid. Reconnect once in Settings → Meta Publishing."
+      : health.missingFacebookCommentReplyScopes.length > 0
+        ? "Facebook comment replies need pages_manage_engagement. Publishing and inbox sync still work — reconnect only if you need comment replies."
         : null,
+    debugError: health.error,
   });
 }

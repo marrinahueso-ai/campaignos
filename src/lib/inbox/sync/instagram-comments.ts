@@ -23,7 +23,7 @@ function buildInstagramCommentEmptyWarning(input: {
   lastGraphError: string | null;
 }): string {
   if (input.missingScopes.length > 0) {
-    return `Missing token scopes: ${input.missingScopes.join(", ")}. Reconnect with inbox permissions.`;
+    return `Missing token scopes: ${input.missingScopes.join(", ")}. Some inbox channels may be unavailable until scopes are granted on reconnect.`;
   }
 
   const parts = [

@@ -22,6 +22,10 @@ import type {
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { InboxMessageRow, InboxThreadRow } from "@/lib/inbox/db-types";
+import {
+  ensureMetaConnectionHealthyForOrganization,
+  type MetaTokenHealthStatus,
+} from "@/lib/meta-publishing/connection-token-health";
 
 function emptyChannelCounts(): InboxChannelCounts {
   return {
@@ -41,11 +45,15 @@ function buildConnectionStatus(
   metaConnection: Awaited<ReturnType<typeof getMetaConnectionForCurrentOrg>>,
   inboxSettings: Awaited<ReturnType<typeof getOrganizationInboxSettings>>,
   pagePictureUrl: string | null,
+  tokenHealth: MetaTokenHealthStatus | null,
 ): InboxConnectionStatus {
   const metaConnected = isMetaConnectionConfigured(metaConnection);
   const hasInstagram = isInstagramPublishingConfigured(metaConnection);
-  const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
-  const missingReplyScopes = missingFacebookCommentReplyScopes(grantedScopes);
+  const grantedScopes =
+    tokenHealth?.inboxRelevantScopes ?? inboxSettings?.messagingScopesGranted ?? [];
+  const missingReplyScopes =
+    tokenHealth?.missingFacebookCommentReplyScopes ??
+    missingFacebookCommentReplyScopes(grantedScopes);
 
   return {
     metaConnected,
@@ -60,13 +68,17 @@ function buildConnectionStatus(
       grantedScopes,
     }),
     facebookCommentReplyReady:
-      metaConnected && hasFacebookCommentReplyScopes(grantedScopes),
+      metaConnected &&
+      (tokenHealth?.facebookCommentReplyReady ?? hasFacebookCommentReplyScopes(grantedScopes)),
     organizationName,
     syncEnabled: inboxSettings?.syncEnabled ?? false,
     lastSyncedAt: inboxSettings?.lastSyncedAt ?? null,
     lastSyncError: inboxSettings?.lastSyncError ?? null,
     grantedScopes,
     missingFacebookCommentReplyScopes: missingReplyScopes,
+    metaTokenValid: tokenHealth?.tokenValid ?? metaConnected,
+    metaTokenNeverExpires: tokenHealth?.tokenNeverExpires ?? metaConnected,
+    metaReconnectRequired: tokenHealth?.reconnectRequired ?? false,
   };
 }
 
@@ -180,15 +192,20 @@ export async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
 export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
+  const tokenHealth =
+    organization?.id && metaConnection?.pageAccessToken && metaConnection.id !== "env"
+      ? await ensureMetaConnectionHealthyForOrganization(organization.id)
+      : null;
   const inboxSettings = organization?.id
     ? await getOrganizationInboxSettings(organization.id)
     : null;
 
   return buildConnectionStatus(
     organization?.name ?? null,
-    metaConnection,
+    tokenHealth?.connection ?? metaConnection,
     inboxSettings,
-    await resolveConnectionPagePictureUrl(metaConnection),
+    await resolveConnectionPagePictureUrl(tokenHealth?.connection ?? metaConnection),
+    tokenHealth,
   );
 }
 
@@ -198,17 +215,23 @@ export async function getInboxPageData(options?: {
 }): Promise<InboxPageData> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
+  const tokenHealth =
+    organization?.id && metaConnection?.pageAccessToken && metaConnection.id !== "env"
+      ? await ensureMetaConnectionHealthyForOrganization(organization.id)
+      : null;
   const inboxSettings = organization?.id
     ? await getOrganizationInboxSettings(organization.id)
     : null;
 
-  const pagePictureUrl = await resolveConnectionPagePictureUrl(metaConnection);
+  const resolvedConnection = tokenHealth?.connection ?? metaConnection;
+  const pagePictureUrl = await resolveConnectionPagePictureUrl(resolvedConnection);
 
   const connection = buildConnectionStatus(
     organization?.name ?? null,
-    metaConnection,
+    resolvedConnection,
     inboxSettings,
     pagePictureUrl,
+    tokenHealth,
   );
 
   if (!organization?.id) {

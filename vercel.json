@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/inbox-sync",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/meta-token-health",
+      "schedule": "0 8 * * *"
     }
   ]
 }

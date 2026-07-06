@@ -4,6 +4,7 @@ import {
   getMetaConnectionForOrganization,
   refreshOrganizationInstagramAccountId,
 } from "@/lib/meta-publishing/connection";
+import { ensureMetaConnectionHealthyForOrganization } from "@/lib/meta-publishing/connection-token-health";
 import { getOrganizationInboxSettings, upsertOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { fetchFacebookPostComments } from "@/lib/inbox/sync/facebook-comments";
 import { fetchFacebookPageMessages } from "@/lib/inbox/sync/facebook-messages";
@@ -30,7 +31,28 @@ function channelResult(
 export async function syncInboxForOrganization(
   organizationId: string,
 ): Promise<InboxSyncResult> {
-  const connection = await getMetaConnectionForOrganization(organizationId);
+  const refreshed = await ensureMetaConnectionHealthyForOrganization(organizationId);
+  const connection =
+    refreshed?.connection ?? (await getMetaConnectionForOrganization(organizationId));
+
+  if (refreshed && !refreshed.tokenValid) {
+    const error =
+      "Meta connection expired or was revoked. Reconnect once in Settings → Meta Publishing.";
+    await upsertOrganizationInboxSettings({
+      organizationId,
+      lastSyncError: error,
+    });
+
+    return {
+      ok: false,
+      threadsUpserted: 0,
+      messagesUpserted: 0,
+      channels: [],
+      error,
+      warnings: [],
+    };
+  }
+
   const inboxSettings = await getOrganizationInboxSettings(organizationId);
   const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
 

@@ -27,6 +27,7 @@ interface MetaPublishingSettingsPageProps {
     hint?: string;
     scopes?: string;
     pages?: string;
+    scope_warning?: string;
   }>;
 }
 
@@ -34,10 +35,8 @@ export default async function MetaPublishingSettingsPage({
   searchParams,
 }: MetaPublishingSettingsPageProps) {
   const organization = await getLatestOrganization();
-  const [connection, inboxConnection] = await Promise.all([
-    getMetaConnectionForCurrentOrg(),
-    getInboxConnectionStatus(),
-  ]);
+  const connection = await getMetaConnectionForCurrentOrg();
+  const inboxConnection = await getInboxConnectionStatus();
   const params = await searchParams;
   const configuredViaEnv = connection?.id === "env";
   const isConnected = isMetaConnectionConfigured(connection);
@@ -45,9 +44,15 @@ export default async function MetaPublishingSettingsPage({
 
   const statusMessage =
     params.connected === "1"
-      ? "Meta connected successfully."
+      ? params.scope_warning === "missing_engagement"
+        ? "Meta connected, but your Page token is still missing pages_manage_engagement for comment replies."
+        : "Meta connected successfully."
       : getMetaOAuthErrorMessage(params.error);
   const statusHint = params.error && params.hint ? params.hint : null;
+  const scopeWarningHint =
+    params.connected === "1" && params.scope_warning === "missing_engagement"
+      ? "Add pages_manage_engagement to your Login for Business configuration (campaignstudiopush2), set it to Ready for testing, then click Reconnect with Facebook once more. This is not a routine step — existing tokens never pick up new permissions automatically."
+      : null;
 
   return (
     <div className="studio-page mx-auto max-w-2xl space-y-10 pb-12">
@@ -66,6 +71,7 @@ export default async function MetaPublishingSettingsPage({
           role="status"
         >
           <p>{statusMessage}</p>
+          {scopeWarningHint ? <p className="text-amber-800">{scopeWarningHint}</p> : null}
           {statusHint ? <p className="text-cos-muted">{statusHint}</p> : null}
           {params.error === "no_pages" && params.pages ? (
             <p className="text-cos-muted">
@@ -99,6 +105,8 @@ export default async function MetaPublishingSettingsPage({
             configuredViaEnv={configuredViaEnv}
             integrationConfigured={integrationConfigured}
             oauthError={params.error ?? null}
+            tokenNeverExpires={inboxConnection.metaTokenNeverExpires}
+            reconnectRequired={inboxConnection.metaReconnectRequired}
           />
         </div>
       </Card>

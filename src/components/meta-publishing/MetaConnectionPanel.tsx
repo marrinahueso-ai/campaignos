@@ -22,6 +22,8 @@ interface MetaConnectionPanelProps {
   integrationConfigured: boolean;
   returnTo?: string;
   oauthError?: string | null;
+  tokenNeverExpires?: boolean;
+  reconnectRequired?: boolean;
 }
 
 export function MetaConnectionPanel({
@@ -30,6 +32,8 @@ export function MetaConnectionPanel({
   integrationConfigured,
   returnTo = "/settings/meta",
   oauthError = null,
+  tokenNeverExpires = false,
+  reconnectRequired = false,
 }: MetaConnectionPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +46,6 @@ export function MetaConnectionPanel({
   const reconnectParams = new URLSearchParams({ returnTo });
   if (connected && connection?.facebookPageId) {
     reconnectParams.set("pageId", connection.facebookPageId);
-    reconnectParams.set("auth_type", "rerequest");
   }
   const connectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
 
@@ -359,10 +362,12 @@ export function MetaConnectionPanel({
           {hasInstagram
             ? " Facebook and Instagram auto-posting is ready."
             : " Facebook auto-posting is ready. Link Instagram to your Page to enable IG posts."}
-          {connection.tokenExpiresAt ? (
+          {tokenNeverExpires || !connection.tokenExpiresAt ? (
+            <> Page token does not expire — no periodic reconnect needed.</>
+          ) : (
             <>
               {" "}
-              Token refreshes before{" "}
+              Token expires{" "}
               {new Date(connection.tokenExpiresAt).toLocaleDateString(undefined, {
                 month: "short",
                 day: "numeric",
@@ -370,17 +375,30 @@ export function MetaConnectionPanel({
               })}
               .
             </>
-          ) : null}
+          )}
         </p>
       )}
 
+      {connection && !configuredViaEnv && connected && reconnectRequired ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
+          <p className="font-medium">Reconnect required</p>
+          <p className="mt-2">
+            Meta reports your Page token is no longer valid (revoked, expired, or password changed).
+            Reconnect once — publishing and inbox resume automatically.
+          </p>
+          <div className="mt-4">
+            <Button href={connectHref}>Reconnect with Facebook</Button>
+          </div>
+        </div>
+      ) : null}
+
       {!configuredViaEnv && integrationConfigured && (
         <div className="space-y-4">
-          <Button href={connectHref} disabled={isPending}>
-            {connected ? "Reconnect with Facebook" : "Connect with Facebook"}
-          </Button>
-          {!connected && (
+          {!connected ? (
             <>
+              <Button href={connectHref} disabled={isPending}>
+                Connect with Facebook
+              </Button>
               <p className="text-sm text-cos-muted">
                 Sign in with Facebook once. CampaignOS handles Page access for publishing and inbox
                 — no separate authorization step.
@@ -391,8 +409,8 @@ export function MetaConnectionPanel({
                   Set <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on
                   your server to your numeric Page ID, confirm your Login for Business configuration
                   includes <code className="rounded bg-white/80 px-1">business_management</code> and{" "}
-                  <code className="rounded bg-white/80 px-1">pages_show_list</code>, then click{" "}
-                  <strong>Reconnect with Facebook</strong>.
+                  <code className="rounded bg-white/80 px-1">pages_show_list</code>, then connect
+                  again.
                 </p>
               ) : null}
               <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
@@ -413,7 +431,12 @@ export function MetaConnectionPanel({
                 </div>
               </details>
             </>
-          )}
+          ) : connected && !reconnectRequired ? (
+            <p className="text-sm text-cos-muted">
+              Connection is active. Use Disconnect below only if you want to switch Pages or remove
+              access.
+            </p>
+          ) : null}
         </div>
       )}
 

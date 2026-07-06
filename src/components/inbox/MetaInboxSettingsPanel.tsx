@@ -45,14 +45,14 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
   const reconnectParams = new URLSearchParams({ returnTo: "/settings/meta" });
   if (connection.facebookPageId) {
     reconnectParams.set("pageId", connection.facebookPageId);
-    reconnectParams.set("auth_type", "rerequest");
   }
   const reconnectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
 
-  const needsCommentReplyReconnect =
+  const showCommentReplyNote =
     connection.metaConnected &&
     !connection.metaConfiguredViaEnv &&
-    connection.missingFacebookCommentReplyScopes.length > 0;
+    !connection.facebookCommentReplyReady &&
+    connection.metaTokenValid;
 
   function handleRefreshScopes() {
     setError(null);
@@ -67,7 +67,7 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
       setLiveScopes(result.grantedScopes ?? []);
       if (result.missingFacebookCommentReplyScopes?.length) {
         setMessage(
-          "Live token check: pages_manage_engagement is still missing. Click Reconnect with Facebook above to get a new token.",
+          "Live token check: pages_manage_engagement is not on this Page token. Publishing and inbox sync still work; reconnect only if you need Facebook comment replies.",
         );
       } else {
         setMessage("Token scopes refreshed — pages_manage_engagement is present.");
@@ -122,29 +122,29 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
 
   return (
     <div className="space-y-5">
-      {needsCommentReplyReconnect ? (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm text-amber-950">
-          <p className="font-medium">Reconnect required for Facebook comment replies</p>
+      {connection.metaReconnectRequired ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
+          <p className="font-medium">Meta token expired</p>
           <p className="mt-2">
-            Your Page token does not include{" "}
-            <code className="rounded bg-white/80 px-1">pages_manage_engagement</code>. Setting it
-            to <strong>Ready for testing</strong> in Meta Developer Dashboard does not update tokens
-            you already issued — you must reconnect to get a new token.
+            Your Facebook Page token is no longer valid. Reconnect once in the Connect Meta section
+            above — inbox and publishing resume automatically.
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-4">
             <Button href={reconnectHref} size="sm">
               Reconnect with Facebook
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={isRefreshingScopes}
-              onClick={handleRefreshScopes}
-            >
-              {isRefreshingScopes ? "Checking token…" : "Check token scopes"}
-            </Button>
           </div>
+        </div>
+      ) : null}
+
+      {showCommentReplyNote ? (
+        <div className="rounded-xl border border-cos-border bg-cos-bg/40 px-4 py-4 text-sm text-cos-muted">
+          <p className="font-medium text-cos-text">Facebook comment replies optional</p>
+          <p className="mt-2">
+            Your connection is active for publishing and inbox sync. Comment replies need{" "}
+            <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code> — reconnect
+            only if you want that feature.
+          </p>
         </div>
       ) : null}
 
@@ -158,7 +158,9 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
         <p>
           {connection.messagingReady
             ? "Inbox is active. New messages arrive automatically via webhooks."
-            : "Publishing is connected. Reconnect with Facebook above to grant inbox permissions if DMs or comments are missing."}
+            : connection.metaTokenValid
+              ? "Publishing is connected. Inbox permissions can be expanded by reconnecting if you need DMs or comments."
+              : "Connect Meta above to enable inbox sync."}
         </p>
         {connection.facebookCommentReplyReady ? (
           <p className="mt-2 text-xs opacity-80">
@@ -212,7 +214,7 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
         </p>
       </div>
 
-      <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm" open={needsCommentReplyReconnect}>
+      <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm" open={showCommentReplyNote}>
         <summary className="cursor-pointer font-medium text-cos-text">
           Token scopes (from your Page token)
         </summary>
@@ -244,7 +246,7 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
             </p>
           ) : (
             <p className="text-amber-800">
-              No scopes stored yet. Click Reconnect with Facebook or Refresh scope diagnostics.
+              No scopes stored yet. Click Refresh scope diagnostics to read from Meta.
             </p>
           )}
           <p className="text-xs">
