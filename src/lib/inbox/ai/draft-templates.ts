@@ -53,6 +53,42 @@ export function buildFollowUpDraft(input: {
   }
 }
 
+/** Warm thank-you for compliments and social comments — no links or source lookup. */
+export function buildAcknowledgementDraft(input: {
+  messageBody: string;
+  senderName?: string | null;
+  channelType: InboxChannelType;
+}): string {
+  const body = input.messageBody.toLowerCase();
+  const isPublicComment =
+    input.channelType === "instagram_comment" ||
+    input.channelType === "facebook_comment";
+
+  if (/\b(?:thank you|thanks|thx|ty)\b/.test(body)) {
+    return isPublicComment
+      ? "Aw, thanks so much — we really appreciate it!"
+      : input.senderName?.trim()
+        ? `Aw, thanks ${input.senderName.trim()} — we really appreciate it!`
+        : "Aw, thanks so much — we really appreciate it!";
+  }
+
+  if (/\blogo\b/.test(body)) {
+    return isPublicComment
+      ? "Thanks! We're so glad you like the logo — that really means a lot!"
+      : "Aw, thanks so much! We're really proud of the logo too!";
+  }
+
+  if (/\b(?:team|community|volunteer|pto)\b/.test(body)) {
+    return isPublicComment
+      ? "Thanks — we love this community too!"
+      : "Aw, thanks! We feel the same way about this team!";
+  }
+
+  return isPublicComment
+    ? "Thanks so much — that really means a lot to us!"
+    : "Aw, thanks so much — that really means a lot!";
+}
+
 /** Returns true when fetched page text looks like a login/auth wall rather than content. */
 export function isLikelyAuthWall(text: string): boolean {
   const normalized = text.toLowerCase().replace(/\s+/g, " ").trim();

@@ -45,6 +45,41 @@ const STOP_WORDS = new Set([
   "find",
 ]);
 
+/** Generic praise/social words — too weak to tie a message to a configured source. */
+const GENERIC_KEYWORDS = new Set([
+  "great",
+  "good",
+  "awesome",
+  "amazing",
+  "love",
+  "loved",
+  "nice",
+  "wonderful",
+  "fantastic",
+  "beautiful",
+  "fabulous",
+  "thanks",
+  "thank",
+  "team",
+  "working",
+  "work",
+  "things",
+  "better",
+  "feel",
+  "feels",
+  "like",
+  "proud",
+  "job",
+  "keep",
+  "really",
+  "very",
+  "much",
+  "just",
+  "so",
+  "well",
+  "done",
+]);
+
 /** Phrase overlap between question and source text earns a strong bonus. */
 const PHRASE_BONUSES: Array<{ phrase: RegExp; bonus: number }> = [
   { phrase: /\blunch\s+money\b/i, bonus: 8 },
@@ -61,7 +96,10 @@ function extractKeywords(text: string): string[] {
     .toLowerCase()
     .replace(/[^\w\s-]/g, " ")
     .split(/\s+/)
-    .filter((word) => word.length > 2 && !STOP_WORDS.has(word));
+    .filter(
+      (word) =>
+        word.length > 2 && !STOP_WORDS.has(word) && !GENERIC_KEYWORDS.has(word),
+    );
 }
 
 /** Score how well a configured source matches a parent question (label + description + URL only). */
@@ -82,6 +120,8 @@ export function scoreSourceAgainstQuestion(input: {
   const combinedSource = `${labelText} ${descriptionText} ${urlText}`;
 
   let score = 0;
+  let labelHits = 0;
+  let phraseBonus = 0;
 
   for (const keyword of questionKeywords) {
     if (!combinedSource.includes(keyword)) {
@@ -90,6 +130,7 @@ export function scoreSourceAgainstQuestion(input: {
 
     if (labelText.includes(keyword)) {
       score += 3;
+      labelHits += 1;
     } else if (descriptionText.includes(keyword)) {
       score += 2;
     } else {
@@ -100,15 +141,29 @@ export function scoreSourceAgainstQuestion(input: {
   const questionLower = input.question.toLowerCase();
   for (const { phrase, bonus } of PHRASE_BONUSES) {
     if (phrase.test(questionLower) && phrase.test(combinedSource)) {
-      score += bonus;
+      phraseBonus += bonus;
     }
+  }
+
+  score += phraseBonus;
+
+  const effectiveMinScore =
+    labelHits > 0 && score >= 3 ? 3 : SOURCE_MATCH_MIN_SCORE;
+
+  if (score < effectiveMinScore) {
+    return 0;
+  }
+
+  // Require a label keyword or phrase overlap — URL-only or description-only hits are too weak.
+  if (labelHits === 0 && phraseBonus === 0) {
+    return 0;
   }
 
   return score;
 }
 
 /** Minimum keyword score to treat a source as a match without LLM confirmation. */
-export const SOURCE_MATCH_MIN_SCORE = 2;
+export const SOURCE_MATCH_MIN_SCORE = 4;
 
 export function buildDescriptionFallbackExcerpt(input: {
   label: string;

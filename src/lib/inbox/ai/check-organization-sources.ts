@@ -7,6 +7,7 @@ import {
   scoreSourceAgainstQuestion,
   SOURCE_MATCH_MIN_SCORE,
 } from "@/lib/inbox/ai/question-topic-matching";
+import { messageNeedsSourceAnswer } from "@/lib/inbox/ai/message-intent";
 import type { OrderedInboxAiSource } from "@/lib/organizations/inbox-ai-sources/queries";
 import type {
   InboxAiSourceCheckRecord,
@@ -27,6 +28,20 @@ export async function checkOrganizationSources(input: {
   question: string;
   sources: OrderedInboxAiSource[];
 }): Promise<InboxAiSourceUsed> {
+  if (!messageNeedsSourceAnswer(input.question)) {
+    return {
+      sourcesChecked: input.sources.map((source) => ({
+        label: source.label.trim() || source.label,
+        url: source.url,
+        sourceType: source.sourceType,
+        checked: false,
+        answerFound: false,
+      })),
+      answerFrom: null,
+      noAnswerFound: true,
+    };
+  }
+
   const sourcesChecked: InboxAiSourceCheckRecord[] = [];
   const candidates: SourceMatchCandidate[] = [];
 
@@ -157,7 +172,8 @@ async function matchQuestionToSourceDescription(input: {
     systemPrompt: `You decide whether a configured school source is the best place to answer a parent question.
 Reply with ONLY "yes" or "no".
 - yes ONLY if the source label and description clearly indicate this source helps with the parent's question.
-- no if the source is unrelated, too generic, or only tangentially related.`,
+- no if the source is unrelated, too generic, or only tangentially related.
+- no if the message is a compliment, thank-you, or social comment with no information request.`,
     userPrompt: `Question: ${input.question}
 
 Source label: ${input.label}

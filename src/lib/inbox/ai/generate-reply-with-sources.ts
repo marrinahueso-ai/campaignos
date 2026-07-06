@@ -9,7 +9,12 @@ import type {
   OrganizationGroundingFacts,
 } from "@/lib/ai-grounding/types";
 import { checkOrganizationSources } from "@/lib/inbox/ai/check-organization-sources";
-import { buildFollowUpDraft, humanizeInboxDraft } from "@/lib/inbox/ai/draft-templates";
+import {
+  buildAcknowledgementDraft,
+  buildFollowUpDraft,
+  humanizeInboxDraft,
+} from "@/lib/inbox/ai/draft-templates";
+import { messageNeedsSourceAnswer } from "@/lib/inbox/ai/message-intent";
 import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
@@ -57,11 +62,11 @@ Source URL: ${sourceUsed.answerFrom.url}
 Source details (use ONLY this for factual claims — do NOT invent steps or account details):
 ${sourceUsed.answerFrom.excerpt}
 
-Weave the source link in naturally (e.g. "SACC is our after-school program — here's the page with all the details: ${sourceUsed.answerFrom.url}").`;
+Weave the source link in naturally ONLY when the parent is asking for that information (e.g. "SACC is our after-school program — here's the page with all the details: ${sourceUsed.answerFrom.url}").`;
   }
 
   return `Matched source: none — no configured source matched this question.
-Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
+Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies. Do NOT include links.`;
 }
 
 const INBOX_GROUNDING_RULES = [
@@ -92,8 +97,9 @@ BAD EXAMPLES (never write like this):
 
 STRICT INBOX RULES:
 - Use ONLY the matched source details in SOURCE CHECK RESULTS for factual claims.
-- Include the source page link when helpful.
+- Include the source page link ONLY when the parent is asking for that information — never add links to compliments or thank-yous.
 - Do NOT mention unrelated PTO events or generic website invitations.
+- Do NOT pivot to a matched source when the message is praise, thanks, or social chatter.
 
 Return ONLY the reply text — no quotes, labels, or markdown.`;
 }
@@ -182,6 +188,43 @@ export async function generateInboxReplyWithSources(input: {
   ]);
 
   const orderedSources = buildOrderedInboxAiSources({ customSources });
+
+  if (!messageNeedsSourceAnswer(input.inboundMessage.body)) {
+    const draftBody = buildAcknowledgementDraft({
+      messageBody: input.inboundMessage.body,
+      senderName: input.inboundMessage.senderName,
+      channelType: input.thread.channelType,
+    });
+    const sourceUsed: InboxAiSourceUsed = {
+      sourcesChecked: orderedSources.map((source) => ({
+        label: source.label.trim() || source.label,
+        url: source.url,
+        sourceType: source.sourceType,
+        checked: false,
+        answerFound: false,
+      })),
+      answerFrom: null,
+      noAnswerFound: true,
+    };
+
+    const saved = await saveInboxDraft({
+      organizationId: input.organizationId,
+      messageId: input.inboundMessage.id,
+      draftBody,
+      sourceUsed,
+    });
+
+    if (!saved.success) {
+      return {
+        success: false,
+        draftBody: null,
+        aiSourceUsed: sourceUsed,
+        error: saved.error,
+      };
+    }
+
+    return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
+  }
 
   const sourceUsed = await checkOrganizationSources({
     question: input.inboundMessage.body,
