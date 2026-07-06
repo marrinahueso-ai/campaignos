@@ -22,7 +22,7 @@ export default async function InboxAiSourcesSettingsPage() {
         <StudioPageHeader
           backHref="/settings"
           title="Inbox AI Sources"
-          description="Tell CampaignOS which school pages to check before drafting inbox replies."
+          description="Tell CampaignOS which school pages and tools to use when drafting inbox replies."
           eyebrow="Configure"
         />
 
@@ -45,7 +45,7 @@ export default async function InboxAiSourcesSettingsPage() {
       <StudioPageHeader
         backHref="/settings"
         title="Inbox AI Sources"
-        description="CampaignOS checks these pages in order before drafting inbox replies. Only verified facts from these sources are used — never invented details."
+        description="Add sources with names, descriptions, and links so CampaignOS can match inbox questions to the right page."
         eyebrow="Configure"
       />
 

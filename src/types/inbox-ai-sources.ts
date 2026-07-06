@@ -54,10 +54,6 @@ export interface InboxAiSourceUsed {
 }
 
 export interface InboxAiSourcesSettingsInput {
-  eventsUrl: string;
-  calendarUrl: string;
-  resourcesUrl: string;
-  faqUrl: string;
   customSources: Array<{
     id?: string;
     label: string;

@@ -150,49 +150,17 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
           Inbox AI sources
         </CardTitle>
         <CardDescription>
-          Before drafting inbox replies, CampaignOS checks these pages in order: events,
-          calendar, resources, then FAQ. Add custom pages after the defaults. For login-only
-          sites, add a short description so the AI can still point parents to the right link.
+          Add pages and tools parents ask about. For each source, include a short
+          description so the AI can match questions to the right link.
         </CardDescription>
       </CardHeader>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Input
-          name="eventsUrl"
-          label="School events page URL"
-          type="url"
-          placeholder="https://yourschool.org/events"
-          defaultValue={initialInput.eventsUrl}
-        />
-        <Input
-          name="calendarUrl"
-          label="School calendar page URL"
-          type="url"
-          placeholder="https://yourschool.org/calendar"
-          defaultValue={initialInput.calendarUrl}
-        />
-        <Input
-          name="resourcesUrl"
-          label="Resources page URL"
-          type="url"
-          placeholder="https://yourschool.org/resources"
-          defaultValue={initialInput.resourcesUrl}
-        />
-        <Input
-          name="faqUrl"
-          label="FAQ / knowledge base URL"
-          type="url"
-          placeholder="https://yourschool.org/faq"
-          defaultValue={initialInput.faqUrl}
-        />
-      </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-medium text-cos-text">Custom sources</h3>
+            <h3 className="text-sm font-medium text-cos-text">Sources</h3>
             <p className="text-xs text-cos-muted">
-              Checked after the four default pages above.
+              Name, description, and link for each page or tool.
             </p>
           </div>
           <Button type="button" size="sm" variant="secondary" onClick={addCustomSource}>
@@ -203,7 +171,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
 
         {customSources.length === 0 ? (
           <p className="rounded-lg border border-dashed border-cos-border px-4 py-3 text-xs text-cos-muted">
-            No custom sources yet.
+            No sources yet. Add one to help the AI point parents to the right link.
           </p>
         ) : (
           <div className="space-y-3">
@@ -249,7 +217,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
                   id={`custom-description-${index}`}
                   label="Description"
                   placeholder="Add lunch money and pay for school meals online"
-                  hint="Used when the page requires login or cannot be read."
+                  hint="Used to match parent questions to this source."
                   value={source.description ?? ""}
                   onChange={(event) =>
                     updateCustomSource(index, "description", event.target.value)
@@ -265,7 +233,7 @@ export function InboxAiSourcesPanel({ initialInput }: InboxAiSourcesPanelProps) 
 
       {hasUnsavedCustomSources ? (
         <p className="text-xs text-amber-700">
-          You have unsaved custom source changes. Save before leaving this page.
+          You have unsaved source changes. Save before leaving this page.
         </p>
       ) : null}
 

@@ -17,7 +17,6 @@ import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/qu
 import {
   buildOrderedInboxAiSources,
   getCustomInboxAiSources,
-  urlSettingsFromOrganization,
 } from "@/lib/organizations/inbox-ai-sources/queries";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
@@ -53,28 +52,17 @@ function formatVoiceBlock(input: {
 }
 
 function formatSourceContext(sourceUsed: InboxAiSourceUsed): string {
-  const checkedLabels = sourceUsed.sourcesChecked
-    .filter((source) => source.checked)
-    .map((source) => source.label)
-    .join(", ");
-
   if (sourceUsed.answerFrom) {
-    const descriptionNote = sourceUsed.answerFrom.fromDescription
-      ? "\nNote: The source page could not be read (login required). Use ONLY the label, description, and link below — do NOT invent steps or account details."
-      : "";
-
-    return `Sources checked (in order): ${checkedLabels || "none configured"}
-Answer from: ${sourceUsed.answerFrom.label}
+    return `Matched source: ${sourceUsed.answerFrom.label}
 Source URL: ${sourceUsed.answerFrom.url}
-Verified excerpt (use ONLY this for factual claims):
-${sourceUsed.answerFrom.excerpt}${descriptionNote}
+Source details (use ONLY this for factual claims — do NOT invent steps or account details):
+${sourceUsed.answerFrom.excerpt}
 
-Include the source link in the reply when helpful.`;
+Include the source link in the reply.`;
   }
 
-  return `Sources checked (in order): ${checkedLabels || "none configured"}
-Answer from: none — no verified answer was found on configured pages.
-Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies. Do NOT answer from unrelated pages (e.g. early release dismissal times for bus route questions).`;
+  return `Matched source: none — no configured source matched this question.
+Draft a brief reply saying the team is checking and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies.`;
 }
 
 function buildVerifiedAnswerSystemPrompt(): string {
@@ -83,8 +71,8 @@ function buildVerifiedAnswerSystemPrompt(): string {
 You draft replies for a school PTO social inbox.
 
 STRICT INBOX RULES:
-- Use ONLY the verified excerpt in SOURCE CHECK RESULTS for factual claims.
-- NEVER invent dates, times, locations, prices, deadlines, or policies beyond the excerpt.
+- Use ONLY the matched source details in SOURCE CHECK RESULTS for factual claims.
+- NEVER invent dates, times, locations, prices, deadlines, or policies beyond what the source provides.
 - Include the source page link when helpful.
 - Do NOT mention unrelated PTO events or generic website invitations.
 
@@ -170,17 +158,7 @@ export async function generateInboxReplyWithSources(input: {
     getCustomInboxAiSources(input.organizationId),
   ]);
 
-  const orderedSources = buildOrderedInboxAiSources({
-    urlSettings: organization
-      ? urlSettingsFromOrganization(organization)
-      : {
-          eventsUrl: null,
-          calendarUrl: null,
-          resourcesUrl: null,
-          faqUrl: null,
-        },
-    customSources,
-  });
+  const orderedSources = buildOrderedInboxAiSources({ customSources });
 
   const sourceUsed = await checkOrganizationSources({
     question: input.inboundMessage.body,

@@ -106,6 +106,62 @@ if (detectBusQuestion(busTimesQuestion) && !excerptHasBusContent(busRouteExcerpt
   failures.push("Bus route excerpt should satisfy bus question keyword rules");
 }
 
+function extractKeywords(text) {
+  const stopWords = new Set([
+    "how", "do", "can", "the", "a", "an", "to", "for", "my", "me", "you", "please",
+    "tell", "what", "where", "when", "is", "are", "on", "in", "at", "of", "and", "or",
+    "it", "this", "that", "we", "our", "i", "add",
+  ]);
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !stopWords.has(word));
+}
+
+function scoreSourceAgainstQuestion({ question, label, description, url }) {
+  const questionKeywords = extractKeywords(question);
+  const labelText = label.toLowerCase();
+  const descriptionText = description.toLowerCase();
+  const combinedSource = `${labelText} ${descriptionText} ${url.toLowerCase()}`;
+
+  let score = 0;
+  for (const keyword of questionKeywords) {
+    if (!combinedSource.includes(keyword)) continue;
+    if (labelText.includes(keyword)) score += 3;
+    else if (descriptionText.includes(keyword)) score += 2;
+    else score += 1;
+  }
+
+  if (/\blunch\s+money\b/i.test(question) && /\blunch\s+money\b/i.test(combinedSource)) {
+    score += 8;
+  }
+
+  return score;
+}
+
+const lunchQuestion = "How do I add lunch money";
+const schoolBucksScore = scoreSourceAgainstQuestion({
+  question: lunchQuestion,
+  label: "School Bucks",
+  description: "Add lunch money and pay for school meals online",
+  url: "https://schoolbucks.example.com",
+});
+const skywardScore = scoreSourceAgainstQuestion({
+  question: lunchQuestion,
+  label: "Skyward",
+  description: "Student portal for grades, attendance, and family information",
+  url: "https://skyward.example.com",
+});
+
+if (schoolBucksScore < 2) {
+  failures.push("School Bucks description should match lunch money questions");
+}
+
+if (skywardScore >= schoolBucksScore) {
+  failures.push("School Bucks should score higher than Skyward for lunch money questions");
+}
+
 console.log("Bus times question:", busTimesQuestion);
 console.log("Follow-up draft:", followUp);
 

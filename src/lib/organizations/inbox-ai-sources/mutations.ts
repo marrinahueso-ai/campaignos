@@ -1,11 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { InboxAiSourcesSettingsInput } from "@/types/inbox-ai-sources";
 
-function normalizeUrl(value: string): string | null {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function isValidHttpUrl(value: string): boolean {
   try {
     const parsed = new URL(value);
@@ -18,13 +13,9 @@ function isValidHttpUrl(value: string): boolean {
 export function validateInboxAiSourcesInput(
   input: InboxAiSourcesSettingsInput,
 ): string | null {
-  const urls = [
-    input.eventsUrl,
-    input.calendarUrl,
-    input.resourcesUrl,
-    input.faqUrl,
-    ...input.customSources.map((source) => source.url),
-  ].filter((url) => url.trim().length > 0);
+  const urls = input.customSources
+    .map((source) => source.url)
+    .filter((url) => url.trim().length > 0);
 
   for (const url of urls) {
     if (!isValidHttpUrl(url.trim())) {
@@ -54,21 +45,6 @@ export async function saveInboxAiSourcesSettings(
 ): Promise<boolean> {
   const supabase = await createClient();
   const now = new Date().toISOString();
-
-  const { error: orgError } = await supabase
-    .from("organizations")
-    .update({
-      events_url: normalizeUrl(input.eventsUrl),
-      calendar_url: normalizeUrl(input.calendarUrl),
-      resources_url: normalizeUrl(input.resourcesUrl),
-      faq_url: normalizeUrl(input.faqUrl),
-    })
-    .eq("id", organizationId);
-
-  if (orgError) {
-    console.error("Failed to save inbox AI URL settings:", orgError.message);
-    return false;
-  }
 
   const { error: deleteError } = await supabase
     .from("organization_inbox_ai_sources")

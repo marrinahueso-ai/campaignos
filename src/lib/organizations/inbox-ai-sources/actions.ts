@@ -76,10 +76,6 @@ export async function saveInboxAiSourcesAction(
   }
 
   const input: InboxAiSourcesSettingsInput = {
-    eventsUrl: String(formData.get("eventsUrl") ?? ""),
-    calendarUrl: String(formData.get("calendarUrl") ?? ""),
-    resourcesUrl: String(formData.get("resourcesUrl") ?? ""),
-    faqUrl: String(formData.get("faqUrl") ?? ""),
     customSources: parseCustomSources(formData),
   };
 

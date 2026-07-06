@@ -16,8 +16,6 @@ import {
   sendInboxReplyAction,
 } from "@/lib/inbox/actions";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
-import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
-import { InboxAiSourceSummary } from "@/components/inbox/InboxAiSourceSummary";
 import { cn } from "@/lib/utils/cn";
 
 interface InboxThreadReplyPanelProps {
@@ -58,17 +56,13 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [draftRequested, setDraftRequested] = useState(false);
-  const [aiSourceUsed, setAiSourceUsed] = useState<InboxAiSourceUsed | null>(
-    replyTarget?.aiSourceUsed ?? null,
-  );
 
   useEffect(() => {
     setDraftBody(initialBody);
     setIsEditing(false);
     setActionError(null);
     setDraftRequested(false);
-    setAiSourceUsed(replyTarget?.aiSourceUsed ?? null);
-  }, [replyTarget?.id, initialBody, replyTarget?.aiSourceUsed]);
+  }, [replyTarget?.id, initialBody]);
 
   const requestDraft = useCallback(() => {
     if (!replyTarget) {
@@ -89,9 +83,6 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
 
       if (result.draftBody) {
         setDraftBody(result.draftBody);
-      }
-      if (result.aiSourceUsed) {
-        setAiSourceUsed(result.aiSourceUsed);
       }
       router.refresh();
     });
@@ -170,8 +161,6 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
           {statusLabel(replyTarget.status)}
         </span>
       </div>
-
-      <InboxAiSourceSummary sourceUsed={aiSourceUsed} />
 
       <div className="flex items-end gap-2">
         <textarea

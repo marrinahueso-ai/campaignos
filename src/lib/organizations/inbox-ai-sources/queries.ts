@@ -7,13 +7,6 @@ import type {
 } from "@/types/inbox-ai-sources";
 import type { Organization } from "@/types";
 
-const DEFAULT_SOURCE_LABELS = {
-  events: "Events page",
-  calendar: "Calendar page",
-  resources: "Resources page",
-  faq: "FAQ / knowledge base",
-} as const;
-
 export function mapInboxAiSourceRow(row: OrganizationInboxAiSourceRow): OrganizationInboxAiSource {
   return {
     id: row.id,
@@ -70,37 +63,9 @@ export interface OrderedInboxAiSource {
 }
 
 export function buildOrderedInboxAiSources(input: {
-  urlSettings: OrganizationInboxAiUrlSettings;
   customSources: OrganizationInboxAiSource[];
 }): OrderedInboxAiSource[] {
   const ordered: OrderedInboxAiSource[] = [];
-
-  const defaults: Array<{
-    key: keyof OrganizationInboxAiUrlSettings;
-    sourceType: OrganizationInboxAiSource["sourceType"];
-  }> = [
-    { key: "eventsUrl", sourceType: "events" },
-    { key: "calendarUrl", sourceType: "calendar" },
-    { key: "resourcesUrl", sourceType: "resources" },
-    { key: "faqUrl", sourceType: "faq" },
-  ];
-
-  for (const entry of defaults) {
-    const url = input.urlSettings[entry.key]?.trim();
-    if (!url) {
-      continue;
-    }
-
-    ordered.push({
-      label: DEFAULT_SOURCE_LABELS[entry.sourceType as Exclude<
-        OrganizationInboxAiSource["sourceType"],
-        "custom"
-      >],
-      url,
-      description: null,
-      sourceType: entry.sourceType,
-    });
-  }
 
   for (const source of input.customSources) {
     const url = source.url.trim();
@@ -123,13 +88,8 @@ export async function getInboxAiSourcesSettings(
   organization: Organization,
 ): Promise<InboxAiSourcesSettingsInput> {
   const customSources = await getCustomInboxAiSources(organization.id);
-  const urlSettings = urlSettingsFromOrganization(organization);
 
   return {
-    eventsUrl: urlSettings.eventsUrl ?? "",
-    calendarUrl: urlSettings.calendarUrl ?? "",
-    resourcesUrl: urlSettings.resourcesUrl ?? "",
-    faqUrl: urlSettings.faqUrl ?? "",
     customSources: customSources.map((source) => ({
       id: source.id,
       label: source.label,
