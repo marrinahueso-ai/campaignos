@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Inbox,
   LayoutDashboard,
   ListChecks,
   Megaphone,
@@ -29,6 +30,7 @@ const navItems: {
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Publishing", href: "/publishing", icon: Send },
+  { label: "Inbox", href: "/inbox", icon: Inbox },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Insights", href: "/insights", icon: BarChart3 },
 ];

@@ -18,4 +18,21 @@ export const META_OAUTH_SCOPE_LIST = [
   "instagram_content_publish",
 ] as const;
 
+/**
+ * Additional scopes for Unified Inbox (Phase 2+). Not requested during publish OAuth yet.
+ * Each requires Meta App Review before production use.
+ *
+ * - pages_messaging — read/reply to Facebook Page Messenger conversations
+ * - pages_manage_metadata — webhooks and conversation metadata
+ * - instagram_manage_messages — read/reply to Instagram DMs
+ * - instagram_manage_comments — moderate Instagram comments
+ */
+export const META_INBOX_OAUTH_SCOPE_LIST = [
+  "pages_messaging",
+  "pages_manage_metadata",
+  "instagram_manage_messages",
+  "instagram_manage_comments",
+] as const;
+
 export const META_OAUTH_SCOPES = META_OAUTH_SCOPE_LIST.join(",");
+export const META_INBOX_OAUTH_SCOPES = META_INBOX_OAUTH_SCOPE_LIST.join(",");

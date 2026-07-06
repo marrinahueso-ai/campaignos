@@ -12,6 +12,7 @@ import {
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
+import { META_INBOX_OAUTH_SCOPE_LIST } from "@/lib/meta-publishing/oauth-scopes";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const metadata = {
@@ -85,7 +86,8 @@ export default async function MetaPublishingSettingsPage({
           <CardTitle>{isConnected ? "Connected" : "Connect Meta"}</CardTitle>
           <CardDescription>
             After approval, CampaignOS publishes to the Meta surfaces you configure per milestone
-            (feed, story, or both) — no manual posting required.
+            (feed, story, or both) — no manual posting required. Unified Inbox (DMs and comments)
+            reuses this connection and requires additional Meta App Review permissions in Phase 2.
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">
@@ -95,6 +97,45 @@ export default async function MetaPublishingSettingsPage({
             integrationConfigured={integrationConfigured}
             oauthError={params.error ?? null}
           />
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Unified Inbox (coming soon)</CardTitle>
+          <CardDescription>
+            DMs and comments will sync to the Inbox after Meta App Review approves messaging
+            permissions. Connect your Page above first — inbox sync builds on the same OAuth
+            connection.
+          </CardDescription>
+        </CardHeader>
+        <div className="space-y-3 px-6 pb-6 text-sm text-cos-muted">
+          <p>
+            Phase 2 will request these additional scopes and submit your Meta app for{" "}
+            <a
+              href="https://developers.facebook.com/docs/app-review"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-cos-accent hover:text-cos-muted"
+            >
+              App Review
+            </a>
+            :
+          </p>
+          <p>
+            {META_INBOX_OAUTH_SCOPE_LIST.map((scope) => (
+              <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
+                {scope}
+              </code>
+            ))}
+          </p>
+          <p>
+            Manage inbox connection status from{" "}
+            <a href="/inbox" className="font-medium text-cos-accent hover:text-cos-muted">
+              Inbox
+            </a>
+            .
+          </p>
         </div>
       </Card>
     </div>
