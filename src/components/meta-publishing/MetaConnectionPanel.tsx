@@ -67,7 +67,9 @@ export function MetaConnectionPanel({
         → Customize → Permissions and features → enable{" "}
         <code className="rounded bg-cos-bg px-1">pages_show_list</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_read_engagement</code>,{" "}
-        <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>, and{" "}
+        <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>, and{" "}
         <code className="rounded bg-cos-bg px-1">business_management</code> (set each to{" "}
         <strong className="font-medium text-cos-text">Ready for testing</strong>).
       </li>
@@ -80,8 +82,9 @@ export function MetaConnectionPanel({
       </li>
       <li>
         Under <strong className="font-medium text-cos-text">Facebook Login for Business → Configurations</strong>,
-        create a configuration including the permissions above. Copy its{" "}
-        <code className="rounded bg-cos-bg px-1">config_id</code> into{" "}
+        create a configuration including the permissions above (including{" "}
+        <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code> for comment replies).
+        Copy its <code className="rounded bg-cos-bg px-1">config_id</code> into{" "}
         <code className="rounded bg-cos-bg px-1">META_OAUTH_CONFIG_ID</code> on your server (optional
         but recommended for Business apps).
       </li>

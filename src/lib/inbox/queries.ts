@@ -7,7 +7,11 @@ import {
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
 import { mapInboxMessageRow, mapInboxThreadRow } from "@/lib/inbox/mappers";
 import { getOrganizationInboxSettings } from "@/lib/inbox/settings";
-import { isMessagingReady } from "@/lib/inbox/scopes";
+import {
+  hasFacebookCommentReplyScopes,
+  isMessagingReady,
+  missingFacebookCommentReplyScopes,
+} from "@/lib/inbox/scopes";
 import { fetchConnectedPageProfilePictures } from "@/lib/inbox/sync/profile-pictures";
 import type {
   InboxChannelCounts,
@@ -41,11 +45,13 @@ function buildConnectionStatus(
   const metaConnected = isMetaConnectionConfigured(metaConnection);
   const hasInstagram = isInstagramPublishingConfigured(metaConnection);
   const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
+  const missingReplyScopes = missingFacebookCommentReplyScopes(grantedScopes);
 
   return {
     metaConnected,
     metaConfiguredViaEnv: metaConnection?.id === "env",
     integrationConfigured: isMetaIntegrationConfigured(),
+    facebookPageId: metaConnection?.facebookPageId ?? null,
     pageName: metaConnection?.pageName ?? null,
     pagePictureUrl,
     hasInstagram,
@@ -53,11 +59,14 @@ function buildConnectionStatus(
       metaConnected,
       grantedScopes,
     }),
+    facebookCommentReplyReady:
+      metaConnected && hasFacebookCommentReplyScopes(grantedScopes),
     organizationName,
     syncEnabled: inboxSettings?.syncEnabled ?? false,
     lastSyncedAt: inboxSettings?.lastSyncedAt ?? null,
     lastSyncError: inboxSettings?.lastSyncError ?? null,
     grantedScopes,
+    missingFacebookCommentReplyScopes: missingReplyScopes,
   };
 }
 

@@ -72,15 +72,18 @@ export interface InboxConnectionStatus {
   metaConnected: boolean;
   metaConfiguredViaEnv: boolean;
   integrationConfigured: boolean;
+  facebookPageId: string | null;
   pageName: string | null;
   pagePictureUrl: string | null;
   hasInstagram: boolean;
   messagingReady: boolean;
+  facebookCommentReplyReady: boolean;
   organizationName: string | null;
   syncEnabled: boolean;
   lastSyncedAt: string | null;
   lastSyncError: string | null;
   grantedScopes: string[];
+  missingFacebookCommentReplyScopes: string[];
 }
 
 export interface InboxPageData {

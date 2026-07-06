@@ -497,6 +497,42 @@ function targetIdsFromGranularEntry(entry: GranularScopeEntry): string[] {
   return ids;
 }
 
+/** Scope names from Login for Business granular_scopes (flat scopes[] is often empty). */
+export function scopeNamesFromGranularScopes(
+  granularScopes: GranularScopeEntry[] | undefined,
+): string[] {
+  if (!granularScopes?.length) {
+    return [];
+  }
+
+  const names = new Set<string>();
+  for (const entry of granularScopes) {
+    const scope = String(entry.scope ?? "").trim();
+    if (scope) {
+      names.add(scope);
+    }
+  }
+
+  return [...names];
+}
+
+function mergeDebugTokenScopes(input: {
+  flatScopes: string[] | undefined;
+  granularScopes: GranularScopeEntry[] | undefined;
+}): string[] {
+  const merged = new Set<string>();
+  for (const scope of input.flatScopes ?? []) {
+    const trimmed = scope.trim();
+    if (trimmed) {
+      merged.add(trimmed);
+    }
+  }
+  for (const scope of scopeNamesFromGranularScopes(input.granularScopes)) {
+    merged.add(scope);
+  }
+  return [...merged];
+}
+
 function pageIdsFromGranularScopes(
   granularScopes: GranularScopeEntry[] | undefined,
 ): string[] {
@@ -1336,12 +1372,16 @@ export async function debugToken(input: {
 
   const profileId = normalizeTargetId(data?.profile_id);
   const granularScopes = data?.granular_scopes;
+  const scopes = mergeDebugTokenScopes({
+    flatScopes: Array.isArray(data?.scopes) ? data.scopes : [],
+    granularScopes,
+  });
 
   return {
     ok: true,
     isValid: Boolean(data?.is_valid),
     expiresAt,
-    scopes: Array.isArray(data?.scopes) ? data.scopes : [],
+    scopes,
     granularPageIds: pageIdsFromGranularScopes(granularScopes),
     granularInstagramIds: instagramIdsFromGranularScopes(granularScopes),
     granularTargetIds: allTargetIdsFromGranularScopes(granularScopes),

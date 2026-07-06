@@ -5,6 +5,7 @@ import {
   filterInboxRelevantScopes,
   formatGrantedScopes,
   hasInboxOAuthScopes,
+  missingFacebookCommentReplyScopes,
   parseGrantedScopes,
 } from "@/lib/inbox/scopes";
 import type { OrganizationInboxSettingsRow } from "@/lib/inbox/db-types";
@@ -127,4 +128,29 @@ export async function refreshInboxScopesFromPageToken(input: {
     syncEnabled: inboxReady && (input.enableSync ?? inboxReady),
     lastSyncError: debug.error,
   });
+}
+
+export type MetaTokenScopeDiagnostics = {
+  tokenValid: boolean;
+  tokenType: string | null;
+  grantedScopes: string[];
+  inboxRelevantScopes: string[];
+  missingFacebookCommentReplyScopes: string[];
+  debugError: string | null;
+};
+
+export async function getMetaTokenScopeDiagnostics(input: {
+  pageAccessToken: string;
+}): Promise<MetaTokenScopeDiagnostics> {
+  const debug = await debugToken({ inputToken: input.pageAccessToken });
+  const inboxRelevantScopes = filterInboxRelevantScopes(debug.scopes);
+
+  return {
+    tokenValid: debug.isValid,
+    tokenType: debug.tokenType,
+    grantedScopes: debug.scopes,
+    inboxRelevantScopes,
+    missingFacebookCommentReplyScopes: missingFacebookCommentReplyScopes(inboxRelevantScopes),
+    debugError: debug.error,
+  };
 }

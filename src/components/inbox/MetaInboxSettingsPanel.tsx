@@ -3,7 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { syncInboxNowAction, subscribeInboxWebhooksAction } from "@/lib/inbox/actions";
+import {
+  refreshMetaTokenScopesAction,
+  syncInboxNowAction,
+  subscribeInboxWebhooksAction,
+} from "@/lib/inbox/actions";
 import {
   META_COMBINED_OAUTH_SCOPE_LIST,
   META_INBOX_OAUTH_SCOPE_LIST,
@@ -14,12 +18,63 @@ interface MetaInboxSettingsPanelProps {
   connection: InboxConnectionStatus;
 }
 
+function ScopeBadge({ scope, granted }: { scope: string; granted: boolean }) {
+  return (
+    <code
+      className={
+        granted
+          ? "mr-1 rounded bg-emerald-100 px-1 text-emerald-900"
+          : "mr-1 rounded bg-amber-100 px-1 text-amber-900"
+      }
+    >
+      {scope}
+      {granted ? " ✓" : " ✗"}
+    </code>
+  );
+}
+
 export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [liveScopes, setLiveScopes] = useState<string[] | null>(null);
   const [isSyncing, startSyncTransition] = useTransition();
   const [isSubscribing, startSubscribeTransition] = useTransition();
+  const [isRefreshingScopes, startRefreshScopesTransition] = useTransition();
+
+  const reconnectParams = new URLSearchParams({ returnTo: "/settings/meta" });
+  if (connection.facebookPageId) {
+    reconnectParams.set("pageId", connection.facebookPageId);
+    reconnectParams.set("auth_type", "rerequest");
+  }
+  const reconnectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
+
+  const needsCommentReplyReconnect =
+    connection.metaConnected &&
+    !connection.metaConfiguredViaEnv &&
+    connection.missingFacebookCommentReplyScopes.length > 0;
+
+  function handleRefreshScopes() {
+    setError(null);
+    setMessage(null);
+    startRefreshScopesTransition(async () => {
+      const result = await refreshMetaTokenScopesAction();
+      if (!result.success) {
+        setError(result.error ?? "Could not refresh token scopes.");
+        return;
+      }
+
+      setLiveScopes(result.grantedScopes ?? []);
+      if (result.missingFacebookCommentReplyScopes?.length) {
+        setMessage(
+          "Live token check: pages_manage_engagement is still missing. Click Reconnect with Facebook above to get a new token.",
+        );
+      } else {
+        setMessage("Token scopes refreshed — pages_manage_engagement is present.");
+      }
+      router.refresh();
+    });
+  }
 
   function handleSubscribeWebhooks() {
     setError(null);
@@ -63,8 +118,36 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
     );
   }
 
+  const displayedScopes = liveScopes ?? connection.grantedScopes;
+
   return (
     <div className="space-y-5">
+      {needsCommentReplyReconnect ? (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+          <p className="font-medium">Reconnect required for Facebook comment replies</p>
+          <p className="mt-2">
+            Your Page token does not include{" "}
+            <code className="rounded bg-white/80 px-1">pages_manage_engagement</code>. Setting it
+            to <strong>Ready for testing</strong> in Meta Developer Dashboard does not update tokens
+            you already issued — you must reconnect to get a new token.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button href={reconnectHref} size="sm">
+              Reconnect with Facebook
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isRefreshingScopes}
+              onClick={handleRefreshScopes}
+            >
+              {isRefreshingScopes ? "Checking token…" : "Check token scopes"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className={
           connection.messagingReady
@@ -77,6 +160,18 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
             ? "Inbox is active. New messages arrive automatically via webhooks."
             : "Publishing is connected. Reconnect with Facebook above to grant inbox permissions if DMs or comments are missing."}
         </p>
+        {connection.facebookCommentReplyReady ? (
+          <p className="mt-2 text-xs opacity-80">
+            Facebook comment replies: ready (
+            <code className="rounded bg-white/60 px-1">pages_manage_engagement</code> granted).
+          </p>
+        ) : connection.metaConnected ? (
+          <p className="mt-2 text-xs opacity-80">
+            Facebook comment replies: not ready — missing{" "}
+            <code className="rounded bg-white/60 px-1">pages_manage_engagement</code> on your Page
+            token.
+          </p>
+        ) : null}
         {connection.lastSyncedAt ? (
           <p className="mt-2 text-xs opacity-80">
             Last synced {new Date(connection.lastSyncedAt).toLocaleString()}
@@ -103,10 +198,61 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
         >
           {isSubscribing ? "Subscribing…" : "Refresh webhooks"}
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={isRefreshingScopes}
+          onClick={handleRefreshScopes}
+        >
+          {isRefreshingScopes ? "Checking…" : "Refresh scope diagnostics"}
+        </Button>
         <p className="text-xs text-cos-muted">
           Manual sync is for troubleshooting. Normal use relies on webhooks and daily refresh.
         </p>
       </div>
+
+      <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm" open={needsCommentReplyReconnect}>
+        <summary className="cursor-pointer font-medium text-cos-text">
+          Token scopes (from your Page token)
+        </summary>
+        <div className="mt-3 space-y-3 text-cos-muted">
+          <p>
+            These are the permissions Meta actually granted on your stored Page token — not what the
+            Developer Dashboard lists as available. Use{" "}
+            <code className="rounded bg-cos-bg px-1">Refresh scope diagnostics</code> to re-read
+            from Meta&apos;s <code className="rounded bg-cos-bg px-1">debug_token</code> API.
+          </p>
+          <p>Inbox scopes requested on connect:</p>
+          <p>
+            {META_INBOX_OAUTH_SCOPE_LIST.map((scope) => (
+              <ScopeBadge
+                key={scope}
+                scope={scope}
+                granted={displayedScopes.includes(scope)}
+              />
+            ))}
+          </p>
+          {displayedScopes.length > 0 ? (
+            <p>
+              All granted on this token:{" "}
+              {displayedScopes.map((scope) => (
+                <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
+                  {scope}
+                </code>
+              ))}
+            </p>
+          ) : (
+            <p className="text-amber-800">
+              No scopes stored yet. Click Reconnect with Facebook or Refresh scope diagnostics.
+            </p>
+          )}
+          <p className="text-xs">
+            Debug API:{" "}
+            <code className="rounded bg-cos-bg px-1">GET /api/meta/token-scopes</code> (admin only).
+          </p>
+        </div>
+      </details>
 
       <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
         <summary className="cursor-pointer font-medium text-cos-text">
@@ -135,14 +281,6 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
             </a>
             .
           </p>
-          <p>Inbox scopes (included in connect):</p>
-          <p>
-            {META_INBOX_OAUTH_SCOPE_LIST.map((scope) => (
-              <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
-                {scope}
-              </code>
-            ))}
-          </p>
           <p>All OAuth scopes requested on connect:</p>
           <p>
             {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
@@ -151,16 +289,11 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
               </code>
             ))}
           </p>
-          {connection.grantedScopes.length > 0 ? (
-            <p>
-              Granted on this Page token:{" "}
-              {connection.grantedScopes.map((scope) => (
-                <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
-                  {scope}
-                </code>
-              ))}
-            </p>
-          ) : null}
+          <p>
+            If you use <code className="rounded bg-cos-bg px-1">META_OAUTH_CONFIG_ID</code>, add{" "}
+            <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code> to that Login for
+            Business configuration — the URL scope param alone is not enough.
+          </p>
         </div>
       </details>
 
@@ -174,6 +307,12 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
           <p>
             Messaging ready:{" "}
             <span className="text-cos-text">{connection.messagingReady ? "Yes" : "No"}</span>
+          </p>
+          <p>
+            FB comment replies ready:{" "}
+            <span className="text-cos-text">
+              {connection.facebookCommentReplyReady ? "Yes" : "No"}
+            </span>
           </p>
           {connection.lastSyncError ? (
             <p className="text-red-600" role="alert">
@@ -195,7 +334,8 @@ export function MetaInboxSettingsPanel({ connection }: MetaInboxSettingsPanelPro
           className={
             message.includes("Meta returned 0 Instagram") ||
             message.includes("Meta returned 0 Facebook") ||
-            message.includes("Missing token scopes")
+            message.includes("Missing token scopes") ||
+            message.includes("still missing")
               ? "text-sm text-amber-800"
               : "text-sm text-emerald-700"
           }

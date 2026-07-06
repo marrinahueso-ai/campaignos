@@ -124,6 +124,56 @@ export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult>
   return { success: true };
 }
 
+export type RefreshMetaTokenScopesResult = {
+  success: boolean;
+  error?: string | null;
+  tokenValid?: boolean;
+  tokenType?: string | null;
+  grantedScopes?: string[];
+  inboxRelevantScopes?: string[];
+  missingFacebookCommentReplyScopes?: string[];
+};
+
+export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenScopesResult> {
+  const role = await getCurrentCampaignRole();
+  if (!canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to refresh Meta token scopes." };
+  }
+
+  const organization = await getLatestOrganization();
+  if (!organization?.id) {
+    return { success: false, error: "Set up your organization first." };
+  }
+
+  const connection = await getMetaConnectionForCurrentOrg();
+  if (!connection?.pageAccessToken) {
+    return { success: false, error: "Connect your Facebook Page first." };
+  }
+
+  const { getMetaTokenScopeDiagnostics } = await import("@/lib/inbox/settings");
+  const diagnostics = await getMetaTokenScopeDiagnostics({
+    pageAccessToken: connection.pageAccessToken,
+  });
+
+  await refreshInboxScopesFromPageToken({
+    organizationId: organization.id,
+    pageAccessToken: connection.pageAccessToken,
+    enableSync: true,
+  });
+
+  revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
+
+  return {
+    success: true,
+    tokenValid: diagnostics.tokenValid,
+    tokenType: diagnostics.tokenType,
+    grantedScopes: diagnostics.grantedScopes,
+    inboxRelevantScopes: diagnostics.inboxRelevantScopes,
+    missingFacebookCommentReplyScopes: diagnostics.missingFacebookCommentReplyScopes,
+  };
+}
+
 async function requireInboxPermission(): Promise<
   { ok: true; organizationId: string } | { ok: false; error: string }
 > {
@@ -299,13 +349,25 @@ export async function sendInboxReplyAction(input: {
   const grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
 
   if (thread.channelType === "facebook_comment") {
-    const missing = missingFacebookCommentReplyScopes(grantedScopes);
+    let grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
+    let missing = missingFacebookCommentReplyScopes(grantedScopes);
+
+    if (missing.length > 0) {
+      const refreshed = await refreshInboxScopesFromPageToken({
+        organizationId: access.organizationId,
+        pageAccessToken: connection.pageAccessToken,
+      });
+      grantedScopes = refreshed?.messagingScopesGranted ?? grantedScopes;
+      missing = missingFacebookCommentReplyScopes(grantedScopes);
+    }
+
     if (missing.length > 0) {
       return {
         success: false,
         error:
-          "Cannot reply to Facebook comments — missing pages_manage_engagement on your Page token. " +
-          "Go to Settings → Meta and reconnect Facebook to grant comment reply permissions.",
+          "Cannot reply to Facebook comments — your stored Page token is missing pages_manage_engagement. " +
+          "Adding the scope in Meta Developer Dashboard does not update an existing token. " +
+          "Go to Settings → Meta and click Reconnect with Facebook to issue a new token with comment-reply permissions.",
       };
     }
   }

@@ -36,8 +36,10 @@ function formatSendReplyError(input: {
   switch (input.channelType) {
     case "facebook_comment":
       return (
-        "Facebook denied this comment reply. Reconnect Facebook in Settings → Meta to grant " +
-        "pages_manage_engagement (comment replies). If the app is Live, submit that scope for Meta App Review first."
+        "Facebook denied this comment reply. Your Page token likely lacks pages_manage_engagement. " +
+        "If you already set that permission to Ready for testing in Meta Developer Dashboard, you must still " +
+        "click Reconnect with Facebook in Settings → Meta — dashboard changes do not update existing tokens. " +
+        "If you use META_OAUTH_CONFIG_ID, add pages_manage_engagement to that Login for Business configuration too."
       );
     case "instagram_comment":
       return (

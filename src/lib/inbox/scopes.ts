@@ -80,6 +80,24 @@ export function missingFacebookCommentReplyScopes(scopes: string[]): string[] {
   return FACEBOOK_COMMENT_REPLY_SCOPES.filter((scope) => !scopes.includes(scope));
 }
 
+export function hasFacebookCommentReplyScopes(scopes: string[]): boolean {
+  return missingFacebookCommentReplyScopes(scopes).length === 0;
+}
+
+export function inboxScopeStatus(scopes: string[]): {
+  missingFacebookCommentReply: string[];
+  missingFacebookCommentRead: string[];
+  missingInstagramComments: string[];
+  missingMessaging: string[];
+} {
+  return {
+    missingFacebookCommentReply: missingFacebookCommentReplyScopes(scopes),
+    missingFacebookCommentRead: missingFacebookCommentScopes(scopes),
+    missingInstagramComments: missingInstagramCommentScopes(scopes),
+    missingMessaging: INBOX_MESSAGING_SCOPES.filter((scope) => !scopes.includes(scope)),
+  };
+}
+
 export function hasCommentScopes(scopes: string[]): boolean {
   return INBOX_COMMENT_SCOPES.some((scope) => scopes.includes(scope));
 }
