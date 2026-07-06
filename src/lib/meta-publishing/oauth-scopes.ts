@@ -19,7 +19,7 @@ export const META_OAUTH_SCOPE_LIST = [
 ] as const;
 
 /**
- * Additional scopes for Unified Inbox (Phase 2+). Not requested during publish OAuth yet.
+ * Additional scopes for Unified Inbox. Requested together with publish scopes on connect.
  * Each requires Meta App Review before production use.
  *
  * - pages_messaging — read/reply to Facebook Page Messenger conversations

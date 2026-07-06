@@ -117,7 +117,7 @@ export function InboxTaggedPanel({ thread }: InboxTaggedPanelProps) {
           </Button>
           {!mediaUrl ? (
             <p className="text-[11px] text-cos-muted">
-              Media URL missing — run Sync now to refresh tagged posts.
+              Media URL missing — sync from Meta settings to refresh tagged posts.
             </p>
           ) : null}
         </div>

@@ -129,6 +129,20 @@ async function listMessagesForThreads(
   return grouped;
 }
 
+export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus> {
+  const organization = await getLatestOrganization();
+  const metaConnection = await getMetaConnectionForCurrentOrg();
+  const inboxSettings = organization?.id
+    ? await getOrganizationInboxSettings(organization.id)
+    : null;
+
+  return buildConnectionStatus(
+    organization?.name ?? null,
+    metaConnection,
+    inboxSettings,
+  );
+}
+
 export async function getInboxPageData(options?: {
   oauthErrorCode?: string | null;
   connectedJustNow?: boolean;

@@ -1,10 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   META_OAUTH_AUTHORIZE_URL,
-  META_OAUTH_FLOW_COOKIE,
   META_OAUTH_RETURN_COOKIE,
   META_OAUTH_PAGE_ID_COOKIE,
-  META_OAUTH_SCOPES,
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
 import { META_COMBINED_OAUTH_SCOPES } from "@/lib/meta-publishing/oauth-scopes";
@@ -32,7 +30,6 @@ export async function GET(request: NextRequest) {
     getMetaFacebookPageId() ||
     "";
   const authType = request.nextUrl.searchParams.get("auth_type")?.trim() ?? "";
-  const flow = request.nextUrl.searchParams.get("flow")?.trim() ?? "";
 
   const state = createMetaOAuthState({ pageId: pageId || undefined });
   const redirectUri = getMetaRedirectUri(request.nextUrl.origin);
@@ -44,18 +41,12 @@ export async function GET(request: NextRequest) {
   authorizeUrl.searchParams.set("state", state);
   authorizeUrl.searchParams.set("response_type", "code");
 
-  const inboxFlow = flow === "inbox" || flow === "inbox_permissions";
-
   if (configId) {
     authorizeUrl.searchParams.set("config_id", configId);
-    // Login configurations define permissions; scope is ignored but kept for non-config apps.
-    if (inboxFlow) {
-      authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
-    }
-  } else if (inboxFlow) {
+    // Login configurations define permissions; scope is kept for non-config apps.
     authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
   } else {
-    authorizeUrl.searchParams.set("scope", META_OAUTH_SCOPES);
+    authorizeUrl.searchParams.set("scope", META_COMBINED_OAUTH_SCOPES);
   }
 
   if (authType === "rerequest") {
@@ -69,9 +60,6 @@ export async function GET(request: NextRequest) {
   response.cookies.set(META_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);
   if (pageId) {
     response.cookies.set(META_OAUTH_PAGE_ID_COOKIE, pageId, cookieOptions);
-  }
-  if (flow === "inbox" || flow === "inbox_permissions") {
-    response.cookies.set(META_OAUTH_FLOW_COOKIE, flow, cookieOptions);
   }
 
   return response;

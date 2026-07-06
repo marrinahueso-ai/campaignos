@@ -5,19 +5,8 @@ export const metadata = {
   title: "Inbox",
 };
 
-interface InboxPageProps {
-  searchParams: Promise<{
-    connected?: string;
-    error?: string;
-  }>;
-}
-
-export default async function InboxPage({ searchParams }: InboxPageProps) {
-  const params = await searchParams;
-  const data = await getInboxPageData({
-    oauthErrorCode: params.error ?? null,
-    connectedJustNow: params.connected === "1",
-  });
+export default async function InboxPage() {
+  const data = await getInboxPageData();
 
   return <InboxHub data={data} />;
 }

@@ -1,17 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDown, Inbox, MessageCircle, MessagesSquare } from "lucide-react";
-import { InboxConnectionPanel } from "@/components/inbox/InboxConnectionPanel";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   INBOX_CHANNEL_LABELS,
@@ -21,7 +16,7 @@ import {
   isReplyChannel,
   isTaggedChannel,
 } from "@/lib/inbox/constants";
-import type { InboxChannelType, InboxMessage, InboxPageData } from "@/lib/inbox/types";
+import type { InboxChannelType, InboxConnectionStatus, InboxMessage, InboxPageData } from "@/lib/inbox/types";
 import { formatDateTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
@@ -29,6 +24,68 @@ type ChannelFilter = "all" | "tagged" | InboxChannelType;
 
 interface InboxHubProps {
   data: InboxPageData;
+}
+
+function formatRelativeUpdated(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) {
+    return "just now";
+  }
+  if (minutes < 60) {
+    return `${minutes} min ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hr ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) {
+  if (!connection.integrationConfigured && !connection.metaConfiguredViaEnv) {
+    return (
+      <Link
+        href="/settings/meta"
+        className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs text-amber-900 transition-colors hover:border-amber-300"
+      >
+        Meta not configured
+        <span className="font-medium">Settings</span>
+      </Link>
+    );
+  }
+
+  if (!connection.metaConnected && !connection.metaConfiguredViaEnv) {
+    return (
+      <Link
+        href="/settings/meta"
+        className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-cos-card px-3 py-1 text-xs text-cos-muted transition-colors hover:border-cos-muted hover:text-cos-text"
+      >
+        Not connected
+        <span className="font-medium text-cos-accent">Connect in Settings</span>
+      </Link>
+    );
+  }
+
+  const label = connection.pageName ?? connection.organizationName ?? "Connected";
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Link
+        href="/settings/meta"
+        className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-800 transition-colors hover:border-emerald-300"
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+        Connected · {label}
+      </Link>
+      {connection.lastSyncedAt ? (
+        <span className="text-xs text-cos-muted">
+          Last updated {formatRelativeUpdated(connection.lastSyncedAt)}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 function ChannelFilterButton({
@@ -96,9 +153,7 @@ function ThreadMessageList({
             <span className="text-xs text-cos-muted">· {thread.participantName}</span>
           ) : null}
         </div>
-        <p className="px-6 py-4 text-sm text-cos-muted">
-          No messages synced for this thread yet.
-        </p>
+        <p className="px-6 py-4 text-sm text-cos-muted">No messages in this thread yet.</p>
       </div>
     );
   }
@@ -156,8 +211,7 @@ function ThreadMessageList({
 export function InboxHub({ data }: InboxHubProps) {
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
-  const { connection, threads, messagesByThreadId, channelCounts, oauthError, connectedJustNow } =
-    data;
+  const { connection, threads, messagesByThreadId, channelCounts } = data;
 
   const filteredThreads = useMemo(() => {
     if (channelFilter === "all") {
@@ -176,36 +230,23 @@ export function InboxHub({ data }: InboxHubProps) {
   return (
     <div className="studio-page space-y-10">
       <header className="border-b border-cos-border pb-8">
-        <div className="flex items-start gap-5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-cos-border bg-cos-card">
-            <Inbox className="h-5 w-5 text-cos-accent" strokeWidth={1.5} />
+        <div className="flex items-start justify-between gap-5">
+          <div className="flex items-start gap-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-cos-border bg-cos-card">
+              <Inbox className="h-5 w-5 text-cos-accent" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="studio-eyebrow">Workspace</p>
+              <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Inbox</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
+                Instagram DMs, Facebook Page messages, comments, and tagged posts — with AI-suggested
+                replies you approve before sending.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="studio-eyebrow">Workspace</p>
-            <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Inbox</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-              Instagram DMs, Facebook Page messages, comments, and tagged posts — with AI-suggested
-              replies you approve before sending.
-            </p>
-          </div>
+          <InboxStatusChip connection={connection} />
         </div>
       </header>
-
-      <Card id="connection">
-        <CardHeader>
-          <CardTitle>Connection</CardTitle>
-          <CardDescription>
-            Connect Meta, grant inbox permissions, then sync or receive messages via webhooks.
-          </CardDescription>
-        </CardHeader>
-        <div className="px-6 pb-6">
-          <InboxConnectionPanel
-            connection={connection}
-            oauthError={oauthError}
-            connectedJustNow={connectedJustNow}
-          />
-        </div>
-      </Card>
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -249,10 +290,10 @@ export function InboxHub({ data }: InboxHubProps) {
             <EmptyState
               icon={MessagesSquare}
               title="Connect Meta to get started"
-              description="Link your Facebook Page and Instagram account above, then grant inbox permissions and run Sync now."
+              description="Link your Facebook Page and Instagram in Settings. Messages will appear here automatically."
               action={{
-                label: "View connection settings",
-                href: "#connection",
+                label: "Open Meta settings",
+                href: "/settings/meta",
               }}
               className="py-16"
             />
@@ -266,11 +307,7 @@ export function InboxHub({ data }: InboxHubProps) {
                     ? "No tagged posts yet"
                     : `No ${INBOX_CHANNEL_LABELS[channelFilter].toLowerCase()} yet`
               }
-              description={
-                connection.messagingReady
-                  ? "Run Sync now above, or wait for new webhook events to arrive."
-                  : "Your Page is connected for publishing. Grant inbox permissions and run Sync now to pull DMs and comments."
-              }
+              description="New DMs, comments, and tags will show up here as they arrive."
               className="py-16"
             />
           ) : (

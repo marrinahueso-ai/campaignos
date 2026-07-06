@@ -23,6 +23,7 @@ import {
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
+import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
 import { pickPageFromTokenResult } from "@/lib/meta-publishing/connection-utils";
 
 export async function GET(request: NextRequest) {
@@ -180,28 +181,28 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
-  const oauthFlow = request.cookies.get(META_OAUTH_FLOW_COOKIE)?.value?.trim();
-  const inboxOAuthFlow = oauthFlow === "inbox" || oauthFlow === "inbox_permissions";
   const page = pickPageFromTokenResult(pages, preferredPageId || undefined);
 
   if (page?.accessToken) {
     await refreshInboxScopesFromPageToken({
       organizationId: organization.id,
       pageAccessToken: page.accessToken,
-      enableSync: inboxOAuthFlow,
+      enableSync: true,
     });
 
-    if (inboxOAuthFlow) {
-      const subscribe = await subscribeMetaInboxWebhooks({
-        pageId: page.id,
-        instagramAccountId: page.instagramAccountId,
-        pageAccessToken: page.accessToken,
-      });
+    const subscribe = await subscribeMetaInboxWebhooks({
+      pageId: page.id,
+      instagramAccountId: page.instagramAccountId,
+      pageAccessToken: page.accessToken,
+    });
 
-      if (subscribe.error) {
-        console.warn("Meta inbox webhook subscribe after OAuth:", subscribe.error);
-      }
+    if (subscribe.error) {
+      console.warn("Meta inbox webhook subscribe after OAuth:", subscribe.error);
     }
+
+    void syncInboxForOrganization(organization.id).catch((err) => {
+      console.warn("Initial inbox backfill after OAuth:", err);
+    });
   }
 
   redirectTarget.searchParams.set("connected", "1");

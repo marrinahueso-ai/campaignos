@@ -71,6 +71,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
   if (!result.ok && result.error) {
     const subscribeNote = subscribe.error ? ` Webhook subscribe: ${subscribe.error}` : "";
     revalidatePath("/inbox");
+    revalidatePath("/settings/meta");
     return {
       success: false,
       error: `${result.error}${subscribeNote}`,
@@ -81,6 +82,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
   }
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return {
     success: true,
     warning: result.warnings.length > 0 ? result.warnings.join(" | ") : null,
@@ -111,6 +113,7 @@ export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult>
   }
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return { success: true };
 }
 
@@ -172,6 +175,7 @@ export async function generateInboxAiDraftAction(input: {
   });
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return {
     success: result.success,
     error: result.error,
@@ -227,6 +231,7 @@ export async function approveInboxReplyAction(input: {
   }
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return { success: true, status: "approved" };
 }
 
@@ -333,6 +338,7 @@ export async function sendInboxReplyAction(input: {
     .eq("organization_id", access.organizationId);
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return { success: true, status: "sent" };
 }
 
@@ -358,7 +364,7 @@ export async function repostTaggedPostAction(input: {
   if (!mediaUrl) {
     return {
       success: false,
-      error: "No media URL available for this tagged post. Run Sync now and try again.",
+      error: "No media URL available for this tagged post. Try syncing from Meta settings.",
     };
   }
 
@@ -418,5 +424,6 @@ export async function repostTaggedPostAction(input: {
     .eq("organization_id", access.organizationId);
 
   revalidatePath("/inbox");
+  revalidatePath("/settings/meta");
   return { success: true, status: "sent" };
 }

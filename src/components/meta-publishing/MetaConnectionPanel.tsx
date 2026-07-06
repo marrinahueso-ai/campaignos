@@ -13,7 +13,7 @@ import {
   isInstagramPublishingConfigured,
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection-utils";
-import { META_OAUTH_SCOPE_LIST } from "@/lib/meta-publishing/oauth-scopes";
+import { META_COMBINED_OAUTH_SCOPE_LIST } from "@/lib/meta-publishing/oauth-scopes";
 import type { MetaConnection } from "@/lib/meta-publishing/types";
 
 interface MetaConnectionPanelProps {
@@ -308,7 +308,7 @@ export function MetaConnectionPanel({
                   </li>
                   <li>
                     Enable scopes (Ready for testing):{" "}
-                    {META_OAUTH_SCOPE_LIST.map((scope) => (
+                    {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
                       <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
                         {scope}
                       </code>
@@ -379,8 +379,8 @@ export function MetaConnectionPanel({
           {!connected && (
             <>
               <p className="text-sm text-cos-muted">
-                Sign in with Facebook once. CampaignOS handles Page access so approved posts publish
-                automatically.
+                Sign in with Facebook once. CampaignOS handles Page access for publishing and inbox
+                — no separate authorization step.
               </p>
               {oauthError === "no_pages" ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -398,8 +398,8 @@ export function MetaConnectionPanel({
                 </summary>
                 <div className="mt-3 space-y-3 text-cos-muted">
                   <p>
-                    CampaignOS requests:{" "}
-                    {META_OAUTH_SCOPE_LIST.map((scope) => (
+                    CampaignOS requests publish and inbox scopes in one connect:{" "}
+                    {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
                       <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
                         {scope}
                       </code>

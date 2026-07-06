@@ -1,4 +1,5 @@
 import { MetaConnectionPanel } from "@/components/meta-publishing/MetaConnectionPanel";
+import { MetaInboxSettingsPanel } from "@/components/inbox/MetaInboxSettingsPanel";
 import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
 import {
   Card,
@@ -6,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { getInboxConnectionStatus } from "@/lib/inbox/queries";
 import {
   getMetaConnectionForCurrentOrg,
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
-import { META_INBOX_OAUTH_SCOPE_LIST } from "@/lib/meta-publishing/oauth-scopes";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const metadata = {
@@ -33,7 +34,10 @@ export default async function MetaPublishingSettingsPage({
   searchParams,
 }: MetaPublishingSettingsPageProps) {
   const organization = await getLatestOrganization();
-  const connection = await getMetaConnectionForCurrentOrg();
+  const [connection, inboxConnection] = await Promise.all([
+    getMetaConnectionForCurrentOrg(),
+    getInboxConnectionStatus(),
+  ]);
   const params = await searchParams;
   const configuredViaEnv = connection?.id === "env";
   const isConnected = isMetaConnectionConfigured(connection);
@@ -50,7 +54,7 @@ export default async function MetaPublishingSettingsPage({
       <StudioPageHeader
         backHref="/settings"
         title="Meta Publishing"
-        description={`Connect Facebook and Instagram once for ${organization?.name ?? "your PTO"}. Approved milestones auto-post to the feed and/or story surfaces you choose on each milestone.`}
+        description={`Connect Facebook and Instagram once for ${organization?.name ?? "your PTO"}. Publishing, inbox DMs, and comments all use the same OAuth connection.`}
         eyebrow="Configure"
       />
 
@@ -85,9 +89,8 @@ export default async function MetaPublishingSettingsPage({
         <CardHeader>
           <CardTitle>{isConnected ? "Connected" : "Connect Meta"}</CardTitle>
           <CardDescription>
-            After approval, CampaignOS publishes to the Meta surfaces you configure per milestone
-            (feed, story, or both) — no manual posting required. Unified Inbox (DMs and comments)
-            reuses this connection and requires additional Meta App Review permissions in Phase 2.
+            One Facebook sign-in covers auto-publishing and Unified Inbox. Approved milestones post
+            automatically; DMs and comments sync in the background.
           </CardDescription>
         </CardHeader>
         <div className="px-6 pb-6">
@@ -102,40 +105,14 @@ export default async function MetaPublishingSettingsPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Unified Inbox (coming soon)</CardTitle>
+          <CardTitle>Unified Inbox</CardTitle>
           <CardDescription>
-            DMs and comments will sync to the Inbox after Meta App Review approves messaging
-            permissions. Connect your Page above first — inbox sync builds on the same OAuth
-            connection.
+            Webhooks deliver new messages automatically. Use manual sync below only if something
+            looks out of date.
           </CardDescription>
         </CardHeader>
-        <div className="space-y-3 px-6 pb-6 text-sm text-cos-muted">
-          <p>
-            Phase 2 will request these additional scopes and submit your Meta app for{" "}
-            <a
-              href="https://developers.facebook.com/docs/app-review"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-cos-accent hover:text-cos-muted"
-            >
-              App Review
-            </a>
-            :
-          </p>
-          <p>
-            {META_INBOX_OAUTH_SCOPE_LIST.map((scope) => (
-              <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
-                {scope}
-              </code>
-            ))}
-          </p>
-          <p>
-            Manage inbox connection status from{" "}
-            <a href="/inbox" className="font-medium text-cos-accent hover:text-cos-muted">
-              Inbox
-            </a>
-            .
-          </p>
+        <div className="px-6 pb-6">
+          <MetaInboxSettingsPanel connection={inboxConnection} />
         </div>
       </Card>
     </div>
