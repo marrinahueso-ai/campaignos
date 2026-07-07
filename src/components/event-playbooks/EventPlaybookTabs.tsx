@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import {
   stepFromHash as campaignStepFromHash,
   type CampaignWorkflowStep,
 } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import { subscribeToLocationHash } from "@/lib/navigation/location-hash";
 import { cn } from "@/lib/utils/cn";
 
 export type EventPlaybookTab =
@@ -101,6 +103,7 @@ export function EventPlaybookTabs({
   initialCampaignStep = "plan",
   onCampaignStepChange,
 }: EventPlaybookTabsProps) {
+  const pathname = usePathname();
   const visibleTabs = hasCampaign
     ? ALL_TABS
     : ALL_TABS.filter((tab) => tab.id !== "social-media");
@@ -149,9 +152,15 @@ export function EventPlaybookTabs({
   useEffect(() => {
     syncFromHash();
     setInitialized(true);
-    window.addEventListener("hashchange", syncFromHash);
-    return () => window.removeEventListener("hashchange", syncFromHash);
-  }, [syncFromHash]);
+
+    const unsubscribe = subscribeToLocationHash(syncFromHash);
+    const frame = requestAnimationFrame(() => syncFromHash());
+
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(frame);
+    };
+  }, [syncFromHash, pathname]);
 
   function selectTab(tab: EventPlaybookTab) {
     navigateToTab(tab);

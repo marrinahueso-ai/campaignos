@@ -19,6 +19,11 @@ import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
 import { RalliAiAssistantWidget } from "@/components/layout/RalliAiAssistantWidget";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
+import {
+  getLocationHash,
+  setLocationHash as applyLocationHash,
+  subscribeToLocationHash,
+} from "@/lib/navigation/location-hash";
 import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
@@ -68,28 +73,30 @@ function resolveCreativeStudioHref(
   return "/events";
 }
 
-function navigateToCreativeStudioHash(hash: string) {
-  const normalized = hash.replace("#", "");
-  if (window.location.hash.replace("#", "") === normalized) {
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
-    return;
-  }
-  window.location.hash = normalized;
-}
-
 function handleCreativeStudioClick(
   event: MouseEvent<HTMLAnchorElement>,
   linkHref: string,
   pathname: string,
 ) {
+  event.preventDefault();
+
   const [pathPart, hashPart = CREATIVE_STUDIO_HASH] = linkHref.split("#");
+  const hash = hashPart.replace(/^#/, "");
   const currentEventId = extractEventId(pathname);
   const targetEventId = extractEventId(pathPart);
 
-  if (currentEventId && targetEventId && currentEventId === targetEventId) {
-    event.preventDefault();
-    navigateToCreativeStudioHash(hashPart);
+  if (pathPart === "/events" && !targetEventId) {
+    window.location.assign("/events");
+    return;
   }
+
+  if (currentEventId && targetEventId && currentEventId === targetEventId) {
+    applyLocationHash(hash);
+    return;
+  }
+
+  // App Router client navigation can drop hash fragments on dynamic routes.
+  window.location.assign(`${pathPart}#${hash}`);
 }
 
 function isCreativeStudioActive(pathname: string, hash: string): boolean {
@@ -224,7 +231,12 @@ export function Sidebar({
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
   const [locationHash, setLocationHash] = useState("");
-  const [lastEventId, setLastEventId] = useState<string | null>(null);
+  const [lastEventId, setLastEventId] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    return localStorage.getItem(LAST_EVENT_STORAGE_KEY);
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -244,10 +256,9 @@ export function Sidebar({
   }, [pathname]);
 
   useEffect(() => {
-    const syncHash = () => setLocationHash(window.location.hash);
+    const syncHash = () => setLocationHash(getLocationHash());
     syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
+    return subscribeToLocationHash(syncHash);
   }, [pathname]);
 
   function toggleExpanded() {

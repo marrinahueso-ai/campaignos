@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CampaignWorkspaceTabs, stepFromHash } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import { subscribeToLocationHash } from "@/lib/navigation/location-hash";
 import { CampaignPlanPage } from "@/components/event-workspace/plan/CampaignPlanPage";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
@@ -144,8 +145,7 @@ export function SocialMediaTab({
     }
 
     syncWorkflowStepFromHash();
-    window.addEventListener("hashchange", syncWorkflowStepFromHash);
-    return () => window.removeEventListener("hashchange", syncWorkflowStepFromHash);
+    return subscribeToLocationHash(syncWorkflowStepFromHash);
   }, [onCampaignStepChange]);
 
   function navigateToWorkflowStep(step: CampaignWorkflowStep) {
