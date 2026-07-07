@@ -12,7 +12,6 @@ import {
   enrichMilestoneItemsWithBundles,
   milestoneItemsFromSteps,
   milestoneItemsToPlaybookSteps,
-  MILESTONE_PLANNING_COLORS,
   suggestTimeline,
   type MilestonePlanningItem,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
@@ -159,29 +158,15 @@ export function MilestonePlanningSection({
   }
 
   return (
-    <div
-      className="border"
-      style={{
-        borderColor: MILESTONE_PLANNING_COLORS.border,
-        backgroundColor: "#FFFFFF",
-      }}
-    >
-      <div className="flex flex-col gap-4 border-b px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+    <div className="border border-cos-border bg-cos-card">
+      <div className="flex flex-col gap-4 border-b border-cos-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
         <div className="flex min-w-0 items-start gap-3">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-            style={{ backgroundColor: "#F5F0E0", color: "#8A7355" }}
-          >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cos-warning text-cos-accent">
             <Megaphone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
           </span>
           <div className="min-w-0">
-            <h2
-              className="font-display text-xl"
-              style={{ color: MILESTONE_PLANNING_COLORS.text }}
-            >
-              Milestone planning
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed" style={{ color: "#7A7268" }}>
+            <h2 className="font-display text-xl text-cos-text">Milestone planning</h2>
+            <p className="mt-1 text-sm leading-relaxed text-cos-muted">
               Define your posting milestones for Facebook and Instagram. Drag to reorder,
               edit times, and choose platforms.
             </p>
@@ -193,12 +178,7 @@ export function MilestonePlanningSection({
             type="button"
             onClick={handleSuggestTimeline}
             disabled={isPending}
-            className="inline-flex h-9 items-center justify-center gap-1.5 border px-4 text-xs font-medium transition-colors hover:bg-[#FAF7F2] disabled:opacity-50"
-            style={{
-              borderColor: MILESTONE_PLANNING_COLORS.border,
-              color: MILESTONE_PLANNING_COLORS.text,
-              backgroundColor: "#FFFFFF",
-            }}
+            className="inline-flex h-9 items-center justify-center gap-1.5 border border-cos-border bg-cos-card px-4 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             Suggest timeline
@@ -207,8 +187,7 @@ export function MilestonePlanningSection({
             type="button"
             onClick={handleAddMilestone}
             disabled={isPending}
-            className="inline-flex h-9 items-center justify-center gap-1.5 px-4 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            style={{ backgroundColor: MILESTONE_PLANNING_COLORS.text }}
+            className="inline-flex h-9 items-center justify-center gap-1.5 bg-cos-text px-4 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             Add milestone
@@ -217,10 +196,7 @@ export function MilestonePlanningSection({
       </div>
 
       <div>
-        <div
-          className="hidden border-b px-4 py-2.5 text-[0.6875rem] font-medium uppercase tracking-[0.12em] sm:grid sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]"
-          style={{ borderColor: MILESTONE_PLANNING_COLORS.border, color: "#7A7268" }}
-        >
+        <div className="hidden border-b border-cos-border px-4 py-2.5 text-[0.6875rem] font-medium tracking-[0.12em] text-cos-muted uppercase sm:grid sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]">
           <span aria-hidden className="w-4" />
           <span>Milestone</span>
           <span>Platform</span>
@@ -230,7 +206,7 @@ export function MilestonePlanningSection({
         </div>
 
         {items.length === 0 ? (
-          <div className="px-4 py-10 text-center text-sm" style={{ color: "#7A7268" }}>
+          <div className="px-4 py-10 text-center text-sm text-cos-muted">
             No milestones yet. Add one or use Suggest timeline to get started.
           </div>
         ) : (
@@ -284,7 +260,7 @@ export function MilestonePlanningSection({
       </div>
 
       {error && (
-        <p className="px-4 py-3 text-sm text-[#B42318]" role="alert">
+        <p className="px-4 py-3 text-sm text-cos-error" role="alert">
           {error}
         </p>
       )}

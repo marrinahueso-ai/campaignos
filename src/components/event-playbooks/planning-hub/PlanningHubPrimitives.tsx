@@ -19,7 +19,7 @@ export function PlanningHubPage({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("space-y-5 rounded-[12px] bg-cos-bg p-1 sm:p-0", className)}>
+    <div className={cn("space-y-4 rounded-[12px] bg-cos-bg pt-0", className)}>
       {children}
     </div>
   );

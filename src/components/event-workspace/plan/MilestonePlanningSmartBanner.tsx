@@ -1,7 +1,6 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
 
 interface MilestonePlanningSmartBannerProps {
   onApplySuggestedTimes?: () => void;
@@ -11,27 +10,15 @@ export function MilestonePlanningSmartBanner({
   onApplySuggestedTimes,
 }: MilestonePlanningSmartBannerProps) {
   return (
-    <div
-      className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-      style={{
-        backgroundColor: MILESTONE_PLANNING_COLORS.suggestionBg,
-        borderColor: MILESTONE_PLANNING_COLORS.border,
-      }}
-    >
+    <div className="flex flex-col gap-3 border-t border-cos-border bg-cos-status-todo-bg px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="flex min-w-0 items-start gap-2.5">
         <Sparkles
-          className="mt-0.5 h-4 w-4 shrink-0"
-          style={{ color: MILESTONE_PLANNING_COLORS.suggestionText }}
+          className="mt-0.5 h-4 w-4 shrink-0 text-cos-status-todo-text"
           aria-hidden
         />
         <div>
-          <p
-            className="text-sm font-medium"
-            style={{ color: MILESTONE_PLANNING_COLORS.suggestionText }}
-          >
-            Smart suggestion
-          </p>
-          <p className="mt-0.5 text-sm" style={{ color: MILESTONE_PLANNING_COLORS.suggestionText }}>
+          <p className="text-sm font-medium text-cos-status-todo-text">Smart suggestion</p>
+          <p className="mt-0.5 text-sm text-cos-status-todo-text">
             Based on similar campaigns, posting between 9–11 AM gets the most engagement.
           </p>
         </div>
@@ -39,11 +26,7 @@ export function MilestonePlanningSmartBanner({
       <button
         type="button"
         onClick={onApplySuggestedTimes}
-        className="inline-flex h-9 shrink-0 items-center justify-center border bg-white px-4 text-xs font-medium transition-colors hover:bg-white/80"
-        style={{
-          borderColor: MILESTONE_PLANNING_COLORS.suggestionText,
-          color: MILESTONE_PLANNING_COLORS.suggestionText,
-        }}
+        className="inline-flex h-9 shrink-0 items-center justify-center border border-cos-status-todo-text bg-cos-card px-4 text-xs font-medium text-cos-status-todo-text transition-colors hover:bg-cos-bg"
       >
         Apply all suggested times
       </button>

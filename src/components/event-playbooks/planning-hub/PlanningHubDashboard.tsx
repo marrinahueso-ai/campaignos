@@ -63,17 +63,19 @@ export function PlanningHubDashboard({
 
   return (
     <PlanningHubPage>
-      <PlanningHubContextBar
-        notificationCount={notificationCount}
-        greetingName={greetingName}
-        userEmail={userEmail}
-      />
+      <div className="space-y-2">
+        <PlanningHubContextBar
+          notificationCount={notificationCount}
+          greetingName={greetingName}
+          userEmail={userEmail}
+        />
 
-      <PlanningHubHeader
-        event={event}
-        campaignEvents={campaignEvents}
-        onNavigateTab={onNavigateTab}
-      />
+        <PlanningHubHeader
+          event={event}
+          campaignEvents={campaignEvents}
+          onNavigateTab={onNavigateTab}
+        />
+      </div>
 
       <PlanningHubKpiRow
         event={event}

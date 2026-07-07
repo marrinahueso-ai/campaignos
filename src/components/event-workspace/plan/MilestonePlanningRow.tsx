@@ -14,7 +14,6 @@ import {
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import {
   formatMilestoneTiming,
-  MILESTONE_PLANNING_COLORS,
   resolvePrimaryPlatform,
   type MilestonePlanningItem,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
@@ -43,11 +42,11 @@ function PlatformCell({ milestone }: { milestone: MilestonePlanningItem }) {
   const platform = resolvePrimaryPlatform(milestone);
 
   if (!platform) {
-    return <span className="text-xs" style={{ color: "#7A7268" }}>—</span>;
+    return <span className="text-xs text-cos-muted">—</span>;
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: "#7A7268" }}>
+    <span className="inline-flex items-center gap-1.5 text-sm text-cos-muted">
       {platform === "facebook" ? (
         <FacebookPlatformIcon className="h-3.5 w-3.5" />
       ) : (
@@ -87,12 +86,11 @@ export function MilestonePlanningRow({
       onDragOver={(event) => event.preventDefault()}
       onDragEnd={onDragEnd}
       className={cn(
-        "grid cursor-pointer items-center gap-3 border-b px-4 py-3.5 transition-colors sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]",
+        "grid cursor-pointer items-center gap-3 border-b border-cos-border px-4 py-3.5 transition-colors sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]",
         isDragging && "opacity-40",
-        isDragOver && "bg-[#FAF7F2]",
-        isExpanded && "bg-[#FAF7F2]",
+        isDragOver && "bg-cos-bg",
+        isExpanded && "bg-cos-bg",
       )}
-      style={{ borderColor: MILESTONE_PLANNING_COLORS.border }}
       onClick={onToggleExpand}
       role="button"
       tabIndex={0}
@@ -106,7 +104,7 @@ export function MilestonePlanningRow({
     >
       <button
         type="button"
-        className="cursor-grab text-[#B8AFA4] active:cursor-grabbing"
+        className="cursor-grab text-cos-dark-muted active:cursor-grabbing"
         aria-label={`Drag ${milestone.title}`}
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
@@ -122,16 +120,9 @@ export function MilestonePlanningRow({
           <CategoryIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p
-            className="truncate text-sm font-medium"
-            style={{ color: MILESTONE_PLANNING_COLORS.text }}
-          >
-            {milestone.title}
-          </p>
+          <p className="truncate text-sm font-medium text-cos-text">{milestone.title}</p>
           {milestone.description && (
-            <p className="truncate text-xs" style={{ color: "#7A7268" }}>
-              {milestone.description}
-            </p>
+            <p className="truncate text-xs text-cos-muted">{milestone.description}</p>
           )}
         </div>
       </div>
@@ -140,24 +131,16 @@ export function MilestonePlanningRow({
         <PlatformCell milestone={milestone} />
       </div>
 
-      <div className="hidden text-sm sm:block" style={{ color: "#7A7268" }}>
-        {timingLabel}
-      </div>
+      <div className="hidden text-sm text-cos-muted sm:block">{timingLabel}</div>
 
       <div className="hidden sm:block">
         <span
-          className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-          style={
+          className={cn(
+            "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
             milestone.status === "scheduled"
-              ? {
-                  backgroundColor: MILESTONE_PLANNING_COLORS.successBg,
-                  color: MILESTONE_PLANNING_COLORS.success,
-                }
-              : {
-                  backgroundColor: MILESTONE_PLANNING_COLORS.notStartedBg,
-                  color: MILESTONE_PLANNING_COLORS.notStartedText,
-                }
-          }
+              ? "bg-cos-success-bg text-cos-success-text"
+              : "bg-cos-warning text-cos-warning-text",
+          )}
         >
           {milestone.status === "scheduled" ? "Scheduled" : "Not started"}
         </span>
@@ -165,7 +148,7 @@ export function MilestonePlanningRow({
 
       <button
         type="button"
-        className="hidden p-1 text-[#7A7268] hover:text-[#1A1A1A] sm:inline-flex"
+        className="hidden p-1 text-cos-muted hover:text-cos-text sm:inline-flex"
         aria-label={`More actions for ${milestone.title}`}
         onClick={(event) => event.stopPropagation()}
       >

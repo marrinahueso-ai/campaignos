@@ -6,7 +6,6 @@ import {
   InstagramPlatformIcon,
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import {
-  MILESTONE_PLANNING_COLORS,
   relativeDayFromDate,
   type MilestoneContentPlatforms,
   type MilestonePlanningItem,
@@ -23,9 +22,15 @@ interface MilestonePlanningEditorProps {
   onSave: () => void;
 }
 
+const fieldClassName =
+  "border border-cos-border bg-cos-card px-3 text-sm text-cos-text focus:outline-none focus:ring-1 focus:ring-cos-text/10";
+
+const labelClassName =
+  "text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-cos-muted";
+
 function CharCount({ current, max }: { current: number; max: number }) {
   return (
-    <span className="text-xs tabular-nums" style={{ color: "#7A7268" }}>
+    <span className="text-xs tabular-nums text-cos-muted">
       {current}/{max}
     </span>
   );
@@ -56,9 +61,10 @@ function PlatformCheckbox({
         <span
           className={cn(
             "flex h-4 w-4 items-center justify-center border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-1",
-            checked ? "border-transparent text-white" : "border-[#DDD4C8] bg-white",
+            checked
+              ? "border-transparent bg-cos-success text-white"
+              : "border-cos-border bg-cos-card",
           )}
-          style={checked ? { backgroundColor: MILESTONE_PLANNING_COLORS.success } : undefined}
         >
           {checked && (
             <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" aria-hidden>
@@ -75,14 +81,10 @@ function PlatformCheckbox({
         </span>
       </span>
       <span className="min-w-0">
-        <span className="flex items-center gap-1.5 text-sm" style={{ color: MILESTONE_PLANNING_COLORS.text }}>
+        <span className="flex items-center gap-1.5 text-sm text-cos-text">
           {icon}
           {label}
-          {sublabel && (
-            <span className="text-xs" style={{ color: "#7A7268" }}>
-              {sublabel}
-            </span>
-          )}
+          {sublabel && <span className="text-xs text-cos-muted">{sublabel}</span>}
         </span>
       </span>
     </label>
@@ -122,13 +124,9 @@ export function MilestonePlanningEditor({
   }
 
   return (
-    <div
-      className="relative mx-4 mb-4 border bg-white px-4 py-5 sm:px-5"
-      style={{ borderColor: MILESTONE_PLANNING_COLORS.success }}
-    >
+    <div className="relative mx-4 mb-4 border border-cos-success bg-cos-card px-4 py-5 sm:px-5">
       <div
-        className="absolute -top-2 left-12 h-4 w-4 rotate-45 border-t border-l bg-white"
-        style={{ borderColor: MILESTONE_PLANNING_COLORS.success }}
+        className="absolute -top-2 left-12 h-4 w-4 rotate-45 border-t border-l border-cos-success bg-cos-card"
         aria-hidden
       />
 
@@ -138,8 +136,7 @@ export function MilestonePlanningEditor({
             <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`milestone-title-${milestone.relativeDay}`}
-                className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-                style={{ color: "#7A7268" }}
+                className={labelClassName}
               >
                 Title
               </label>
@@ -150,11 +147,7 @@ export function MilestonePlanningEditor({
               value={milestone.title}
               maxLength={50}
               onChange={(event) => onChange({ title: event.target.value })}
-              className="h-10 w-full border bg-white px-3 text-sm focus:outline-none focus:ring-1"
-              style={{
-                borderColor: MILESTONE_PLANNING_COLORS.border,
-                color: MILESTONE_PLANNING_COLORS.text,
-              }}
+              className={cn(fieldClassName, "h-10 w-full")}
             />
           </div>
 
@@ -162,8 +155,7 @@ export function MilestonePlanningEditor({
             <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`milestone-description-${milestone.relativeDay}`}
-                className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-                style={{ color: "#7A7268" }}
+                className={labelClassName}
               >
                 Description
               </label>
@@ -175,11 +167,7 @@ export function MilestonePlanningEditor({
               maxLength={120}
               rows={2}
               onChange={(event) => onChange({ description: event.target.value })}
-              className="w-full border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1"
-              style={{
-                borderColor: MILESTONE_PLANNING_COLORS.border,
-                color: MILESTONE_PLANNING_COLORS.text,
-              }}
+              className={cn(fieldClassName, "w-full py-2")}
             />
           </div>
 
@@ -187,8 +175,7 @@ export function MilestonePlanningEditor({
             <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`milestone-notes-${milestone.relativeDay}`}
-                className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-                style={{ color: "#7A7268" }}
+                className={labelClassName}
               >
                 Internal notes
               </label>
@@ -201,22 +188,16 @@ export function MilestonePlanningEditor({
               rows={2}
               placeholder="Team-only context (not shown in posts)"
               onChange={(event) => onChange({ internalNotes: event.target.value })}
-              className="w-full border bg-white px-3 py-2 text-sm placeholder:text-[#B8AFA4] focus:outline-none focus:ring-1"
-              style={{
-                borderColor: MILESTONE_PLANNING_COLORS.border,
-                color: MILESTONE_PLANNING_COLORS.text,
-              }}
+              className={cn(
+                fieldClassName,
+                "w-full py-2 placeholder:text-cos-dark-muted",
+              )}
             />
           </div>
         </div>
 
         <div className="space-y-3">
-          <p
-            className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-            style={{ color: "#7A7268" }}
-          >
-            Content to create
-          </p>
+          <p className={labelClassName}>Content to create</p>
           <div className="space-y-3">
             <PlatformCheckbox
               checked={milestone.contentPlatforms.instagramFeed}
@@ -277,33 +258,20 @@ export function MilestonePlanningEditor({
               }
             />
           </div>
-          <button
-            type="button"
-            className="text-xs font-medium"
-            style={{ color: MILESTONE_PLANNING_COLORS.suggestionText }}
-          >
+          <button type="button" className="text-xs font-medium text-cos-status-todo-text">
             + Add another platform
           </button>
         </div>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <p
-              className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-              style={{ color: "#7A7268" }}
-            >
-              Schedule
-            </p>
+            <p className={labelClassName}>Schedule</p>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="date"
                 value={milestone.dueDate ? milestone.dueDate.slice(0, 10) : ""}
                 onChange={(event) => handleDateChange(event.target.value)}
-                className="h-10 w-full border bg-white px-3 text-sm focus:outline-none focus:ring-1"
-                style={{
-                  borderColor: MILESTONE_PLANNING_COLORS.border,
-                  color: MILESTONE_PLANNING_COLORS.text,
-                }}
+                className={cn(fieldClassName, "h-10 w-full")}
               />
               <input
                 type="time"
@@ -311,23 +279,16 @@ export function MilestonePlanningEditor({
                 onChange={(event) =>
                   onChange({ scheduleTime: event.target.value, status: "scheduled" })
                 }
-                className="h-10 w-full border bg-white px-3 text-sm focus:outline-none focus:ring-1"
-                style={{
-                  borderColor: MILESTONE_PLANNING_COLORS.border,
-                  color: MILESTONE_PLANNING_COLORS.text,
-                }}
+                className={cn(fieldClassName, "h-10 w-full")}
               />
             </div>
-            <p className="text-xs" style={{ color: "#7A7268" }}>
-              Times shown in your local timezone
-            </p>
+            <p className="text-xs text-cos-muted">Times shown in your local timezone</p>
           </div>
 
           <div className="space-y-1.5">
             <label
               htmlFor={`milestone-status-${milestone.relativeDay}`}
-              className="text-[0.6875rem] font-medium uppercase tracking-[0.12em]"
-              style={{ color: "#7A7268" }}
+              className={labelClassName}
             >
               Status
             </label>
@@ -337,15 +298,13 @@ export function MilestonePlanningEditor({
               onChange={(event) =>
                 handleStatusChange(event.target.value as MilestonePlanningStatus)
               }
-              className="h-10 w-full border bg-white px-3 text-sm focus:outline-none focus:ring-1"
-              style={{
-                borderColor: MILESTONE_PLANNING_COLORS.border,
-                color: MILESTONE_PLANNING_COLORS.success,
-                backgroundColor:
-                  milestone.status === "scheduled"
-                    ? MILESTONE_PLANNING_COLORS.successBg
-                    : MILESTONE_PLANNING_COLORS.notStartedBg,
-              }}
+              className={cn(
+                fieldClassName,
+                "h-10 w-full",
+                milestone.status === "scheduled"
+                  ? "bg-cos-success-bg text-cos-success-text"
+                  : "bg-cos-warning text-cos-warning-text",
+              )}
             >
               <option value="scheduled">Scheduled</option>
               <option value="not_started">Not started</option>
@@ -354,13 +313,11 @@ export function MilestonePlanningEditor({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between"
-        style={{ borderColor: MILESTONE_PLANNING_COLORS.border }}
-      >
+      <div className="mt-6 flex flex-col gap-3 border-t border-cos-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#B42318]"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-cos-error"
         >
           <Trash2 className="h-4 w-4" aria-hidden />
           Delete milestone
@@ -369,20 +326,14 @@ export function MilestonePlanningEditor({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center justify-center border px-4 text-xs font-medium"
-            style={{
-              borderColor: MILESTONE_PLANNING_COLORS.border,
-              color: MILESTONE_PLANNING_COLORS.text,
-              backgroundColor: "#FFFFFF",
-            }}
+            className="inline-flex h-9 items-center justify-center border border-cos-border bg-cos-card px-4 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onSave}
-            className="inline-flex h-9 items-center justify-center px-4 text-xs font-medium text-white"
-            style={{ backgroundColor: MILESTONE_PLANNING_COLORS.text }}
+            className="inline-flex h-9 items-center justify-center bg-cos-text px-4 text-xs font-medium text-white transition-opacity hover:opacity-90"
           >
             Save changes
           </button>

@@ -10,7 +10,6 @@ import {
 import { buildEventDetailsFormState } from "@/lib/event-workspace/event-form-utils";
 import { updateEventDetailsAction } from "@/lib/event-workspace/actions";
 import { assignPlaybookToEventAction } from "@/lib/playbooks/actions";
-import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
 import type { Event } from "@/types";
 import type { CommunicationPlaybook } from "@/types/playbooks";
 
@@ -25,9 +24,10 @@ interface MilestonePlanningContextSelectorsProps {
 }
 
 const selectClassName =
-  "h-9 w-full appearance-none border bg-white px-3 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-[#1A1A1A]/10 disabled:cursor-not-allowed disabled:opacity-50";
+  "h-9 w-full appearance-none border border-cos-border bg-cos-card px-3 pr-8 text-xs text-cos-text focus:outline-none focus:ring-2 focus:ring-cos-text/10 disabled:cursor-not-allowed disabled:opacity-50";
 
-const labelClassName = "mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.12em]";
+const labelClassName =
+  "mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-cos-muted";
 
 function PlanningSelect({
   id,
@@ -46,7 +46,7 @@ function PlanningSelect({
 }) {
   return (
     <div className="min-w-0 flex-1 sm:max-w-[15rem]">
-      <label htmlFor={id} className={labelClassName} style={{ color: "#7A7268" }}>
+      <label htmlFor={id} className={labelClassName}>
         {label}
       </label>
       <div className="relative">
@@ -56,11 +56,6 @@ function PlanningSelect({
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
           className={selectClassName}
-          style={{
-            borderColor: MILESTONE_PLANNING_COLORS.border,
-            color: MILESTONE_PLANNING_COLORS.text,
-            borderRadius: "2px",
-          }}
         >
           {children}
         </select>
@@ -193,7 +188,7 @@ export function MilestonePlanningContextSelectors({
       </div>
 
       {error && (
-        <p className="text-xs text-red-600" role="alert">
+        <p className="text-xs text-cos-error" role="alert">
           {error}
         </p>
       )}

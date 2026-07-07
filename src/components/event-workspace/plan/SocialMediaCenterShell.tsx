@@ -9,7 +9,6 @@ import {
   type CampaignWorkflowStep,
 } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { SocialMediaCenterSidebar } from "@/components/event-workspace/plan/SocialMediaCenterSidebar";
-import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
 import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { formatEventDate } from "@/lib/utils/dates";
@@ -28,16 +27,6 @@ const STEPPER_STEPS: CampaignWorkflowStep[] = [
   "publish",
   "published",
 ];
-
-const SHELL_COLORS = {
-  activeStepPill: "#F5F0E0",
-  campaignCardBg: "#FFFFFF",
-  openButtonBg: "#E8DCC8",
-  openButtonText: "#1A1A1A",
-  strategyPillBg: "#F5F0E0",
-  strategyPillText: "#5C4D3C",
-  stepComplete: "#006B5D",
-} as const;
 
 interface SocialMediaCenterShellProps {
   event: Event;
@@ -84,11 +73,7 @@ function SocialMediaCenterStepper({
 
   return (
     <nav
-      className="flex items-center gap-0 overflow-x-auto border-b px-4 py-3 sm:px-6"
-      style={{
-        borderColor: MILESTONE_PLANNING_COLORS.border,
-        backgroundColor: "#FFFFFF",
-      }}
+      className="flex items-center gap-0 overflow-x-auto border-b border-cos-border bg-cos-card px-4 py-3 sm:px-6"
       aria-label="Campaign progress"
     >
       {STEPPER_STEPS.map((step, index) => {
@@ -101,8 +86,7 @@ function SocialMediaCenterStepper({
           <div key={step} className="flex shrink-0 items-center">
             {index > 0 && (
               <ChevronRight
-                className="mx-1.5 h-3.5 w-3.5 shrink-0"
-                style={{ color: MILESTONE_PLANNING_COLORS.border }}
+                className="mx-1.5 h-3.5 w-3.5 shrink-0 text-cos-border"
                 aria-hidden
               />
             )}
@@ -113,63 +97,36 @@ function SocialMediaCenterStepper({
               className={cn(
                 "flex items-center gap-2 rounded-full px-2 py-1.5 text-left transition-colors sm:px-3",
                 !onStepSelect && "cursor-default",
+                isActive && "bg-cos-warning",
                 !isActive && onStepSelect && "hover:opacity-80",
               )}
-              style={isActive ? { backgroundColor: SHELL_COLORS.activeStepPill } : undefined}
               aria-current={isActive ? "step" : undefined}
             >
               {isComplete ? (
-                <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"
-                  style={{ backgroundColor: SHELL_COLORS.stepComplete }}
-                >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cos-success text-white">
                   <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
                 </span>
               ) : isActive ? (
-                <Sparkles
-                  className="h-4 w-4 shrink-0"
-                  style={{ color: "#8A7355" }}
-                  aria-hidden
-                />
+                <Sparkles className="h-4 w-4 shrink-0 text-cos-accent" aria-hidden />
               ) : (
-                <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium"
-                  style={{
-                    borderColor: MILESTONE_PLANNING_COLORS.border,
-                    color: "#7A7268",
-                    backgroundColor: "#FFFFFF",
-                  }}
-                >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-xs font-medium text-cos-muted">
                   {stepNumber}
                 </span>
               )}
 
               {isActive ? (
                 <span className="flex flex-col leading-tight">
-                  <span
-                    className="text-[10px] font-medium tracking-[0.14em] uppercase"
-                    style={{ color: "#7A7268" }}
-                  >
+                  <span className="text-[10px] font-medium tracking-[0.14em] text-cos-muted uppercase">
                     Step {stepNumber}
                   </span>
-                  <span
-                    className="text-sm font-medium"
-                    style={{ color: MILESTONE_PLANNING_COLORS.text }}
-                  >
-                    {label}
-                  </span>
+                  <span className="text-sm font-medium text-cos-text">{label}</span>
                 </span>
               ) : (
                 <span
                   className={cn(
                     "whitespace-nowrap text-sm",
-                    isComplete ? "font-medium" : "",
+                    isComplete ? "font-medium text-cos-text" : "text-cos-muted",
                   )}
-                  style={{
-                    color: isComplete
-                      ? MILESTONE_PLANNING_COLORS.text
-                      : "#7A7268",
-                  }}
                 >
                   {label}
                 </span>
@@ -197,18 +154,9 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div
-      className="w-full shrink-0 border p-4 sm:w-[17.5rem] lg:absolute lg:top-0 lg:right-0"
-      style={{
-        borderColor: MILESTONE_PLANNING_COLORS.border,
-        backgroundColor: SHELL_COLORS.campaignCardBg,
-      }}
-    >
+    <div className="w-full shrink-0 border border-cos-border bg-cos-card p-4 sm:w-[17.5rem] lg:absolute lg:top-0 lg:right-0">
       <div className="flex gap-3">
-        <div
-          className="relative h-14 w-14 shrink-0 overflow-hidden border"
-          style={{ borderColor: MILESTONE_PLANNING_COLORS.border }}
-        >
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-cos-border">
           {showArtwork && artwork?.imageUrl ? (
             <Image
               src={artwork.imageUrl}
@@ -218,61 +166,36 @@ function CampaignSummaryCard({
               unoptimized
             />
           ) : (
-            <div
-              className="flex h-full w-full items-center justify-center text-xs font-medium"
-              style={{ backgroundColor: "#F5F0E0", color: "#8A7355" }}
-            >
+            <div className="flex h-full w-full items-center justify-center bg-cos-warning text-xs font-medium text-cos-warning-text">
               {event.title.slice(0, 2).toUpperCase()}
             </div>
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p
-            className="font-display truncate text-base leading-tight"
-            style={{ color: MILESTONE_PLANNING_COLORS.text }}
-          >
+          <p className="font-display truncate text-base leading-tight text-cos-text">
             {event.title}
           </p>
-          <p
-            className="mt-1 flex items-center gap-1 text-xs"
-            style={{ color: "#7A7268" }}
-          >
+          <p className="mt-1 flex items-center gap-1 text-xs text-cos-muted">
             <Calendar className="h-3 w-3 shrink-0" aria-hidden />
             {formatEventDate(event.date)}
           </p>
-          <span
-            className="mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium"
-            style={{
-              backgroundColor: SHELL_COLORS.strategyPillBg,
-              color: SHELL_COLORS.strategyPillText,
-            }}
-          >
+          <span className="mt-1.5 inline-flex rounded-full bg-cos-warning px-2 py-0.5 text-[10px] font-medium text-cos-warning-text">
             {strategyLabel(communicationStrategy)}
           </span>
         </div>
       </div>
 
-      <div
-        className="mt-3 flex items-center justify-between gap-2 border-t pt-3"
-        style={{ borderColor: MILESTONE_PLANNING_COLORS.border }}
-      >
-        <p
-          className="flex min-w-0 items-center gap-1.5 truncate text-xs"
-          style={{ color: "#7A7268" }}
-        >
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-cos-border pt-3">
+        <p className="flex min-w-0 items-center gap-1.5 truncate text-xs text-cos-muted">
           <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>
-            Chair: <span style={{ color: MILESTONE_PLANNING_COLORS.text }}>{chairLabel}</span>
+            Chair: <span className="text-cos-text">{chairLabel}</span>
           </span>
         </p>
         <Link
           href={`/events/${event.id}`}
-          className="inline-flex h-7 shrink-0 items-center justify-center px-3 text-xs font-medium transition-opacity hover:opacity-80"
-          style={{
-            backgroundColor: SHELL_COLORS.openButtonBg,
-            color: SHELL_COLORS.openButtonText,
-          }}
+          className="inline-flex h-7 shrink-0 items-center justify-center bg-cos-accent-soft px-3 text-xs font-medium text-cos-text transition-opacity hover:opacity-80"
         >
           Open
         </Link>
@@ -297,15 +220,11 @@ export function SocialMediaCenterShell({
   const resolvedBackHref = backHref ?? `/events/${event.id}`;
 
   return (
-    <div
-      className="overflow-hidden"
-      style={{ backgroundColor: MILESTONE_PLANNING_COLORS.pageBg }}
-    >
+    <div className="overflow-hidden bg-cos-bg">
       <div className="px-4 pt-5 sm:px-6 lg:px-8">
         <Link
           href={resolvedBackHref}
-          className="inline-flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-          style={{ color: "#7A7268" }}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-muted transition-opacity hover:text-cos-text"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Back to campaign
@@ -313,13 +232,10 @@ export function SocialMediaCenterShell({
 
         <div className="relative mt-4 lg:pr-[19rem]">
           <div className="min-w-0 max-w-2xl">
-            <h1
-              className="font-display text-3xl sm:text-[2.25rem] sm:leading-tight"
-              style={{ color: MILESTONE_PLANNING_COLORS.text }}
-            >
+            <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Social Media Center
             </h1>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: "#7A7268" }}>
+            <p className="mt-2 text-sm leading-relaxed text-cos-muted">
               Plan, create, and schedule content that connects and inspires.
             </p>
           </div>

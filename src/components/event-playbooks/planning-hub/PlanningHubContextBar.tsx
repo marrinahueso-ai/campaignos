@@ -37,7 +37,7 @@ export function PlanningHubContextBar({
   const displayName = greetingName.trim() || userEmail?.split("@")[0] || "Account";
 
   return (
-    <div className="flex items-center justify-end gap-1 py-1 sm:gap-2">
+    <div className="flex items-center justify-end gap-1 sm:gap-2">
       <Link
         href="/approvals"
         aria-label="Notifications"

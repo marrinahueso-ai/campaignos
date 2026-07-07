@@ -100,7 +100,7 @@ export function PlanningHubHeader({
       : [event];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-0" ref={campaignRef}>
           <button

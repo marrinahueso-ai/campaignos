@@ -221,7 +221,11 @@ export function EventPlaybookTabs({
         </div>
       )}
 
-      <div className={cn(isFullBleedView ? undefined : "bg-cos-bg p-6 lg:p-8")}>
+      <div
+        className={cn(
+          isFullBleedView ? "-mt-8 pt-0 lg:-mt-10" : "bg-cos-bg p-6 lg:p-8",
+        )}
+      >
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse bg-cos-bg/60" />
         ) : (
