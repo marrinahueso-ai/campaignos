@@ -146,25 +146,25 @@ export function CaptionsOptionsPanel({
                 </button>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex gap-2">
-                    <Sparkles
-                      className="mt-0.5 h-4 w-4 shrink-0 text-violet-500"
-                      aria-hidden
+                  {isEditing ? (
+                    <Textarea
+                      value={editDraft}
+                      onChange={(event) => setEditDraft(event.target.value)}
+                      rows={5}
+                      className="min-h-[120px] w-full text-sm leading-6"
+                      autoFocus
                     />
-                    {isEditing ? (
-                      <Textarea
-                        value={editDraft}
-                        onChange={(event) => setEditDraft(event.target.value)}
-                        rows={4}
-                        className="flex-1 text-sm leading-6"
-                        autoFocus
+                  ) : (
+                    <div className="flex gap-2">
+                      <Sparkles
+                        className="mt-0.5 h-4 w-4 shrink-0 text-violet-500"
+                        aria-hidden
                       />
-                    ) : (
-                      <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap text-cos-text">
+                      <p className="min-w-0 flex-1 text-sm leading-relaxed whitespace-pre-wrap text-cos-text">
                         {option.text}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-cos-muted">

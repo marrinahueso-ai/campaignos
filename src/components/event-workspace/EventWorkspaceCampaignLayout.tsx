@@ -171,6 +171,10 @@ export function EventWorkspaceCampaignLayout({
             committeePersonOptions={committeePersonOptions}
             defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
+            metaPublishBundles={metaPublishBundles}
+            artwork={artwork}
+            ownership={ownership}
+            communicationStrategy={communicationStrategy}
             onWorkflowStepSelect={(step) => {
               setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
