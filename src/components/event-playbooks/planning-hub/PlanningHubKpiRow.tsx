@@ -38,7 +38,7 @@ interface PlanningHubKpiRowProps {
 
 function CompactProgressRing({
   percent,
-  size = 64,
+  size = 56,
   strokeWidth = 5,
 }: {
   percent: number;
@@ -128,13 +128,15 @@ export function PlanningHubKpiRow({
   }
 
   const kpiCardClass =
-    "flex min-h-[9.5rem] flex-col items-center p-5 text-center";
+    "flex flex-col items-center p-4 text-center";
+  const kpiValueClass =
+    "mt-3 flex flex-1 flex-col items-center justify-center [&>button]:w-auto [&>button]:text-center";
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CalendarDays} label="Event date" />
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+        <div className={kpiValueClass}>
           <OverviewInlineText
             value={event.date}
             displayValue={formatEventDate(event.date)}
@@ -146,14 +148,14 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink href={calendarUrl} className="mt-3">
+        <PlanningHubActionLink href={calendarUrl} className="mt-3 self-center">
           Add to calendar →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+        <div className="mt-3 flex flex-1 flex-col items-center justify-center">
           <p className="font-display text-[2.75rem] leading-none text-cos-text">
             {countdown.isPast ? "0" : countdown.daysRemaining}
           </p>
@@ -165,7 +167,7 @@ export function PlanningHubKpiRow({
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Users} label="Expected attendance" />
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+        <div className={kpiValueClass}>
           <OverviewInlineText
             value={event.expectedAttendance ?? ""}
             displayValue={attendanceEstimate}
@@ -176,14 +178,14 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-3">
+        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-3 self-center">
           Update estimate →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={DollarSign} label="Budget" />
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+        <div className={kpiValueClass}>
           <OverviewInlineText
             value={event.budget ?? ""}
             displayValue={budgetDisplay}
@@ -194,20 +196,20 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-3">
+        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-3 self-center">
           Set budget →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CheckSquareIcon} label="Task progress" />
-        <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2">
+        <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-2">
           <CompactProgressRing percent={taskProgressPercent} />
           <p className="font-display text-xl leading-tight text-cos-text">
             {doneTaskCount} of {totalTaskCount} tasks
           </p>
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-3">
+        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-3 self-center">
           View tasks →
         </PlanningHubActionLink>
       </PlanningHubCard>
