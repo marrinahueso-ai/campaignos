@@ -38,7 +38,7 @@ interface PlanningHubKpiRowProps {
 
 function CompactProgressRing({
   percent,
-  size = 56,
+  size = 64,
   strokeWidth = 5,
 }: {
   percent: number;
@@ -72,7 +72,7 @@ function CompactProgressRing({
           strokeLinecap="round"
         />
       </svg>
-      <span className="absolute text-sm font-semibold text-cos-text">
+      <span className="absolute text-base font-semibold text-cos-text">
         {percent}%
       </span>
     </div>
@@ -127,17 +127,20 @@ export function PlanningHubKpiRow({
     }
   }
 
+  const kpiCardClass =
+    "flex min-h-[9.5rem] flex-col items-center p-5 text-center";
+
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <PlanningHubCard className="flex flex-col p-4">
+      <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CalendarDays} label="Event date" />
-        <div className="mt-3 flex-1">
+        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
           <OverviewInlineText
             value={event.date}
             displayValue={formatEventDate(event.date)}
             placeholder="Set date"
             inputType="date"
-            valueClassName="font-display text-xl leading-tight"
+            valueClassName="font-display text-2xl leading-tight"
             onSave={async (date) => {
               await saveEventDetails({ date });
             }}
@@ -148,24 +151,26 @@ export function PlanningHubKpiRow({
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="flex flex-col p-4">
+      <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
-        <p className="mt-3 font-display text-[2rem] leading-none text-cos-text">
-          {countdown.isPast ? "0" : countdown.daysRemaining}
-        </p>
-        <p className="mt-2 flex-1 text-xs text-cos-muted">
-          {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
-        </p>
+        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
+          <p className="font-display text-[2.75rem] leading-none text-cos-text">
+            {countdown.isPast ? "0" : countdown.daysRemaining}
+          </p>
+          <p className="mt-2 text-sm text-cos-muted">
+            {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
+          </p>
+        </div>
       </PlanningHubCard>
 
-      <PlanningHubCard className="flex flex-col p-4">
+      <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Users} label="Expected attendance" />
-        <div className="mt-3 flex-1">
+        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
           <OverviewInlineText
             value={event.expectedAttendance ?? ""}
             displayValue={attendanceEstimate}
             placeholder="TBD"
-            valueClassName="font-display text-xl leading-tight"
+            valueClassName="font-display text-2xl leading-tight"
             onSave={async (expectedAttendance) => {
               await savePlanningField({ expectedAttendance });
             }}
@@ -176,14 +181,14 @@ export function PlanningHubKpiRow({
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="flex flex-col p-4">
+      <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={DollarSign} label="Budget" />
-        <div className="mt-3 flex-1">
+        <div className="mt-4 flex flex-1 flex-col items-center justify-center">
           <OverviewInlineText
             value={event.budget ?? ""}
             displayValue={budgetDisplay}
             placeholder="Not set"
-            valueClassName="font-display text-xl leading-tight"
+            valueClassName="font-display text-2xl leading-tight"
             onSave={async (budget) => {
               await savePlanningField({ budget });
             }}
@@ -194,19 +199,17 @@ export function PlanningHubKpiRow({
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="flex flex-col p-4">
+      <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CheckSquareIcon} label="Task progress" />
-        <div className="mt-3 flex flex-1 items-center gap-3">
+        <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2">
           <CompactProgressRing percent={taskProgressPercent} />
-          <div className="min-w-0">
-            <p className="font-display text-lg leading-tight text-cos-text">
-              {doneTaskCount} of {totalTaskCount} tasks
-            </p>
-            <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-1">
-              View tasks →
-            </PlanningHubActionLink>
-          </div>
+          <p className="font-display text-xl leading-tight text-cos-text">
+            {doneTaskCount} of {totalTaskCount} tasks
+          </p>
         </div>
+        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-3">
+          View tasks →
+        </PlanningHubActionLink>
       </PlanningHubCard>
     </div>
   );

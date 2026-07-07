@@ -113,11 +113,11 @@ export function PlanningHubKpiLabel({
   label: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <p className="text-[10px] font-semibold tracking-[0.14em] text-cos-dark-muted uppercase">
+    <div className="flex w-full items-center justify-center gap-1.5">
+      <Icon className="h-4 w-4 shrink-0 text-cos-dark-muted" strokeWidth={1.5} />
+      <p className="text-[11px] font-semibold tracking-[0.14em] text-cos-dark-muted uppercase">
         {label}
       </p>
-      <Icon className="h-4 w-4 text-cos-dark-muted" strokeWidth={1.5} />
     </div>
   );
 }

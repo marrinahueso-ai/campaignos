@@ -112,7 +112,7 @@ export function PlanningHubSocialCenter({
         })}
       </div>
 
-      <ul className="mt-3 flex flex-1 flex-col justify-center space-y-2">
+      <ul className="mt-3 flex flex-1 flex-col space-y-2">
         {posts.length === 0 ? (
           <li className="flex flex-1 items-center justify-center">
             <p className="w-full rounded-[10px] border border-dashed border-cos-border px-3 py-8 text-center text-sm text-cos-muted">
@@ -127,9 +127,9 @@ export function PlanningHubSocialCenter({
             return (
               <li
                 key={`${bundle.relativeDay}-${bundle.title}-${index}`}
-                className="flex items-center gap-3 rounded-[10px] border border-cos-border bg-cos-bg px-3 py-2.5"
+                className="grid grid-cols-[2.75rem_2.75rem_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[10px] border border-cos-border bg-cos-bg py-2.5 pl-3 pr-3"
               >
-                <div className="flex w-11 shrink-0 flex-col items-center leading-none text-cos-dark-muted">
+                <div className="flex flex-col items-center self-stretch justify-center border-r border-cos-border pr-3 leading-none text-cos-dark-muted">
                   <span className="text-[9px] font-bold tracking-wide">{dateColumn.month}</span>
                   <span className="text-lg font-bold text-cos-text">
                     {dateColumn.day}
@@ -155,7 +155,7 @@ export function PlanningHubSocialCenter({
                   )}
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-cos-text">
                     {bundle.title}
                   </p>
@@ -164,10 +164,12 @@ export function PlanningHubSocialCenter({
                   </p>
                 </div>
 
-                {isScheduledSocialPost(bundle) && (
+                {isScheduledSocialPost(bundle) ? (
                   <span className="shrink-0 rounded-full bg-cos-success-bg px-2 py-0.5 text-[10px] font-semibold text-cos-success-text">
                     Scheduled
                   </span>
+                ) : (
+                  <span aria-hidden="true" />
                 )}
               </li>
             );
