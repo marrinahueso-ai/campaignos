@@ -82,7 +82,7 @@ function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-cos-border bg-cos-card p-4">
+    <div className="border border-cos-border bg-cos-card p-3.5">
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-display text-base text-cos-text">{title}</h3>
         {action}

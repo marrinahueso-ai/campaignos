@@ -182,7 +182,7 @@ export function MilestonePlanningSection({
 
   return (
     <div className="border border-cos-border bg-cos-card">
-      <div className="flex flex-col gap-4 border-b border-cos-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+      <div className="flex flex-col gap-4 border-b border-cos-border px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cos-warning text-cos-accent">
             <Megaphone className="h-4 w-4" strokeWidth={1.75} aria-hidden />
@@ -229,7 +229,7 @@ export function MilestonePlanningSection({
         layout="inline"
         committeeLabel="Committee"
         idPrefix="milestone-planning"
-        className="border-b border-cos-border px-4 py-3 sm:px-5"
+        className="border-b border-cos-border px-4 py-3"
       />
 
       <div>

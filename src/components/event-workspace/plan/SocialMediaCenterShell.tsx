@@ -28,6 +28,10 @@ const STEPPER_STEPS: CampaignWorkflowStep[] = [
   "published",
 ];
 
+/** Shared main/sidebar column ratio — matches planning hub mockup (~65% / ~35%). */
+const STUDIO_GRID_CLASS =
+  "lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:gap-x-6";
+
 interface SocialMediaCenterShellProps {
   event: Event;
   artwork?: HeroArtworkSelection | null;
@@ -73,7 +77,7 @@ function SocialMediaCenterStepper({
 
   return (
     <nav
-      className="flex items-center gap-0 overflow-x-auto border-b border-cos-border bg-cos-card px-4 py-3 sm:px-6"
+      className="flex items-center gap-0 overflow-x-auto bg-cos-card py-3"
       aria-label="Campaign progress"
     >
       {STEPPER_STEPS.map((step, index) => {
@@ -156,7 +160,7 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className={cn("flex h-full w-full shrink-0 bg-cos-card shadow-sm sm:w-[22rem]", className)}>
+    <div className={cn("flex h-full w-full shrink-0 bg-cos-card shadow-sm", className)}>
       <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
@@ -224,8 +228,8 @@ export function SocialMediaCenterShell({
   const resolvedBackHref = backHref ?? `/events/${event.id}`;
 
   return (
-    <div className="overflow-hidden bg-cos-bg">
-      <div className="px-4 pt-5 sm:px-6 lg:px-8">
+    <div className="-mx-4 overflow-hidden bg-cos-bg lg:-mx-8">
+      <div className="px-5 pt-5 pb-6 lg:px-6">
         <Link
           href={resolvedBackHref}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-muted transition-opacity hover:text-cos-text"
@@ -234,7 +238,7 @@ export function SocialMediaCenterShell({
           Back to campaign
         </Link>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:gap-x-6">
+        <div className={cn("mt-4 grid gap-4 lg:items-end", STUDIO_GRID_CLASS)}>
           <div className="flex min-w-0 flex-col justify-center lg:pb-1">
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Creative Studio
@@ -249,23 +253,23 @@ export function SocialMediaCenterShell({
             artwork={artwork}
             ownership={ownership}
             communicationStrategy={communicationStrategy}
-            className="lg:mb-5"
+            className="lg:mb-1"
           />
         </div>
 
-        <div className="-mx-4 mt-1 sm:-mx-6 lg:-mx-8">
+        <div className="mt-4 border-y border-cos-border">
           <SocialMediaCenterStepper activeStep={activeStep} onStepSelect={onStepSelect} />
         </div>
-      </div>
 
-      <div className="grid gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_17.5rem] lg:gap-6 lg:px-8 lg:py-6">
-        <div className="min-w-0">{children}</div>
-        <SocialMediaCenterSidebar
-          eventId={event.id}
-          tasks={tasks}
-          metaPublishBundles={metaPublishBundles}
-          onCreateMilestone={onCreateMilestone}
-        />
+        <div className={cn("mt-5 grid gap-5 lg:items-start", STUDIO_GRID_CLASS)}>
+          <div className="min-w-0">{children}</div>
+          <SocialMediaCenterSidebar
+            eventId={event.id}
+            tasks={tasks}
+            metaPublishBundles={metaPublishBundles}
+            onCreateMilestone={onCreateMilestone}
+          />
+        </div>
       </div>
     </div>
   );
