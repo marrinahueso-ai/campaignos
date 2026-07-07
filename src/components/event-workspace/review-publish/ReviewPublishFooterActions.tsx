@@ -6,6 +6,7 @@ import type { ReviewPublishTimingOption } from "@/components/event-workspace/rev
 interface ReviewPublishFooterActionsProps {
   timingOption: ReviewPublishTimingOption;
   isPending?: boolean;
+  isPlatformPending?: boolean;
   onSaveDraft: () => void;
   onScheduleForLater: () => void;
   onPublishNow: () => void;
@@ -14,10 +15,13 @@ interface ReviewPublishFooterActionsProps {
 export function ReviewPublishFooterActions({
   timingOption,
   isPending = false,
+  isPlatformPending = false,
   onSaveDraft,
   onScheduleForLater,
   onPublishNow,
 }: ReviewPublishFooterActionsProps) {
+  const actionsDisabled = isPending || isPlatformPending;
+
   return (
     <footer className="flex flex-col gap-3 border-t border-cos-border bg-cos-bg/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-5 sm:py-5">
       <Button
@@ -26,7 +30,7 @@ export function ReviewPublishFooterActions({
         size="sm"
         className="h-9 border-cos-accent-soft bg-cos-bg px-4 hover:bg-cos-accent-soft/60"
         onClick={onSaveDraft}
-        disabled={isPending}
+        disabled={actionsDisabled}
       >
         Save as draft
       </Button>
@@ -36,7 +40,7 @@ export function ReviewPublishFooterActions({
         size="sm"
         className="h-9 px-4"
         onClick={onScheduleForLater}
-        disabled={isPending}
+        disabled={actionsDisabled}
       >
         {isPending && timingOption === "schedule" ? "Scheduling…" : "Schedule for later"}
       </Button>
@@ -45,9 +49,9 @@ export function ReviewPublishFooterActions({
         size="sm"
         className="h-9 px-4"
         onClick={onPublishNow}
-        disabled={isPending}
+        disabled={actionsDisabled}
       >
-        {isPending ? "Publishing…" : "Publish now"}
+        {isPending && timingOption === "now" ? "Publishing…" : "Publish now"}
       </Button>
     </footer>
   );

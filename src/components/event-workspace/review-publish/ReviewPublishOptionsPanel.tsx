@@ -18,6 +18,7 @@ interface ReviewPublishOptionsPanelProps {
   schedulePlatforms: Record<ReviewPublishPlatformId, boolean>;
   onPublishPlatformToggle: (id: ReviewPublishPlatformId) => void;
   onSchedulePlatformToggle: (id: ReviewPublishPlatformId) => void;
+  platformsDisabled?: boolean;
   scheduleDate: string;
   scheduleTime: string;
   onScheduleDateChange: (value: string) => void;
@@ -57,6 +58,7 @@ export function ReviewPublishOptionsPanel({
   schedulePlatforms,
   onPublishPlatformToggle,
   onSchedulePlatformToggle,
+  platformsDisabled = false,
   scheduleDate,
   scheduleTime,
   onScheduleDateChange,
@@ -74,6 +76,7 @@ export function ReviewPublishOptionsPanel({
             type="button"
             role="switch"
             aria-checked={bestTimeSuggestions}
+            aria-label="Best time suggestions"
             onClick={() => onBestTimeSuggestionsChange(!bestTimeSuggestions)}
             className={cn(
               "relative h-5 w-9 shrink-0 rounded-full transition-colors",
@@ -126,6 +129,7 @@ export function ReviewPublishOptionsPanel({
                   <ReviewPublishPlatformCheckboxes
                     platforms={publishPlatforms}
                     onToggle={onPublishPlatformToggle}
+                    disabled={platformsDisabled}
                   />
                 </div>
               )}
@@ -146,9 +150,8 @@ export function ReviewPublishOptionsPanel({
                         type="date"
                         value={scheduleDate}
                         onChange={(event) => onScheduleDateChange(event.target.value)}
-                        className="pointer-events-none absolute inset-0 opacity-0"
-                        tabIndex={-1}
-                        aria-hidden
+                        className="sr-only"
+                        aria-label="Schedule date"
                       />
                     </div>
                     <label className="inline-flex min-w-[7rem] items-center rounded-sm border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text">
@@ -165,6 +168,7 @@ export function ReviewPublishOptionsPanel({
                   <ReviewPublishPlatformCheckboxes
                     platforms={schedulePlatforms}
                     onToggle={onSchedulePlatformToggle}
+                    disabled={platformsDisabled}
                   />
                 </div>
               )}

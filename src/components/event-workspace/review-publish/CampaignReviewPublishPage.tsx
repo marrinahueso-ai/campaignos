@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarClock, Send } from "lucide-react";
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
@@ -20,7 +20,6 @@ import {
   resolveDefaultScheduleTime,
   type ReviewPublishTimingOption,
 } from "@/components/event-workspace/review-publish/schedule-utils";
-import { MetaPublishConfirmationPanel } from "@/components/meta-publishing/MetaPublishConfirmationPanel";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import {
@@ -31,23 +30,15 @@ import {
 import {
   publishMetaBundleNowAction,
   scheduleMetaBundlesAtAction,
+  setMetaPublishPlatformEnabledAction,
 } from "@/lib/meta-publishing/actions";
-import {
-  allMetaMilestonesComplete,
-  findNextIncompleteMilestone,
-} from "@/lib/meta-publishing/next-milestone";
 import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 
-const DEFAULT_PUBLISH_PLATFORMS: Record<ReviewPublishPlatformId, boolean> = {
+const DEFAULT_PLATFORMS: Record<ReviewPublishPlatformId, boolean> = {
   instagram: true,
   facebook: true,
-};
-
-const DEFAULT_SCHEDULE_PLATFORMS: Record<ReviewPublishPlatformId, boolean> = {
-  instagram: false,
-  facebook: false,
 };
 
 function resolveReviewPublishRelativeDay(
@@ -80,15 +71,9 @@ interface CampaignReviewPublishPageProps {
   backHref?: string;
 }
 
-type ConfirmationState = {
-  relativeDay: number;
-  action: "scheduled" | "published";
-};
-
 export function CampaignReviewPublishPage({
   eventId,
   metaPublishBundles,
-  approvalRoleLabel = null,
   initialExpandedDay = null,
   onFocusedMilestoneChange,
   onWorkflowStepSelect,
@@ -98,8 +83,8 @@ export function CampaignReviewPublishPage({
 }: CampaignReviewPublishPageProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isPlatformPending, startPlatformTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
 
   const reviewMilestones = useMemo(
     () =>
@@ -131,8 +116,7 @@ export function CampaignReviewPublishPage({
 
   const [timingOption, setTimingOption] = useState<ReviewPublishTimingOption>("now");
   const [bestTimeSuggestions, setBestTimeSuggestions] = useState(true);
-  const [publishPlatforms, setPublishPlatforms] = useState(DEFAULT_PUBLISH_PLATFORMS);
-  const [schedulePlatforms, setSchedulePlatforms] = useState(DEFAULT_SCHEDULE_PLATFORMS);
+  const [platforms, setPlatforms] = useState(DEFAULT_PLATFORMS);
 
   const focusBundles = useMemo(
     () => resolveFocusBundles(metaPublishBundles, selectedRelativeDay),
@@ -164,32 +148,64 @@ export function CampaignReviewPublishPage({
     setScheduleTime(resolveDefaultScheduleTime(primaryBundle.scheduledFor));
   }, [bestTimeSuggestions, primaryBundle]);
 
-  const togglePublishPlatform = useCallback((id: ReviewPublishPlatformId) => {
-    setPublishPlatforms((current) => ({ ...current, [id]: !current[id] }));
-  }, []);
+  useEffect(() => {
+    if (!primaryBundle) {
+      return;
+    }
 
-  const toggleSchedulePlatform = useCallback((id: ReviewPublishPlatformId) => {
-    setSchedulePlatforms((current) => ({ ...current, [id]: !current[id] }));
-  }, []);
+    setPlatforms({
+      instagram: primaryBundle.publishPlatforms.instagram,
+      facebook: primaryBundle.publishPlatforms.facebook,
+    });
+  }, [primaryBundle]);
+
+  function togglePlatform(id: ReviewPublishPlatformId) {
+    if (selectedRelativeDay == null) {
+      return;
+    }
+
+    setError(null);
+    setPlatforms((current) => {
+      const nextEnabled = !current[id];
+      const previousEnabled = current[id];
+
+      startPlatformTransition(async () => {
+        try {
+          const result = await setMetaPublishPlatformEnabledAction(
+            eventId,
+            selectedRelativeDay,
+            id,
+            nextEnabled,
+          );
+
+          if (!result.success) {
+            setPlatforms((latest) => ({ ...latest, [id]: previousEnabled }));
+            setError(result.error ?? "Unable to update publish platforms.");
+            return;
+          }
+
+          router.refresh();
+        } catch {
+          setPlatforms((latest) => ({ ...latest, [id]: previousEnabled }));
+          setError("Unable to update publish platforms. Refresh the page and try again.");
+        }
+      });
+
+      return { ...current, [id]: nextEnabled };
+    });
+  }
 
   const activeMetaBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
   );
   const visibleBundles = metaPublishBundles.filter(isReviewPublishVisibleBundle);
 
-  const confirmationBundle = confirmation
-    ? metaPublishBundles.find((bundle) => bundle.relativeDay === confirmation.relativeDay)
-    : null;
-
-  const nextMilestone =
-    confirmationBundle && confirmation
-      ? findNextIncompleteMilestone(metaPublishBundles, confirmation.relativeDay)
-      : null;
-  const allComplete = confirmationBundle
-    ? allMetaMilestonesComplete(metaPublishBundles)
-    : false;
-
   function handleEditCaptionsOrArtwork(step: CampaignWorkflowStep) {
+    if (selectedRelativeDay != null && onNavigateToMilestone) {
+      onNavigateToMilestone(step, selectedRelativeDay);
+      return;
+    }
+
     onWorkflowStepSelect?.(step);
   }
 
@@ -201,7 +217,7 @@ export function CampaignReviewPublishPage({
     reviewMilestones.length > 0 && selectedRelativeDay != null;
 
   function runPublishNow() {
-    if (!publishPlatforms.instagram && !publishPlatforms.facebook) {
+    if (!platforms.instagram && !platforms.facebook) {
       setError("Select at least one platform to publish.");
       return;
     }
@@ -219,19 +235,19 @@ export function CampaignReviewPublishPage({
     setTimingOption("now");
     startTransition(async () => {
       try {
-        let publishedCount = 0;
+        let handledCount = 0;
         let firstError: string | null = null;
 
         for (const relativeDay of relativeDays) {
           const result = await publishMetaBundleNowAction(eventId, relativeDay);
           if (result.success) {
-            publishedCount += result.publishedCount ?? 0;
+            handledCount += 1;
           } else {
             firstError ??= result.error ?? "Unable to publish.";
           }
         }
 
-        if (publishedCount === 0) {
+        if (handledCount === 0) {
           setError(firstError ?? "Unable to publish.");
           return;
         }
@@ -245,6 +261,11 @@ export function CampaignReviewPublishPage({
   }
 
   function runScheduleForLater() {
+    if (!platforms.instagram && !platforms.facebook) {
+      setError("Select at least one platform to schedule.");
+      return;
+    }
+
     const scheduledFor = combineDateAndTimeToIso(scheduleDate, scheduleTime);
     if (!scheduledFor) {
       setError("Enter a valid date and time.");
@@ -281,6 +302,7 @@ export function CampaignReviewPublishPage({
   function runSaveDraft() {
     setError(null);
     setTimingOption("draft");
+    router.refresh();
   }
 
   if (activeMetaBundles.length === 0) {
@@ -316,38 +338,6 @@ export function CampaignReviewPublishPage({
         description="Approve artwork and captions in Captions first."
         action={{ label: "Go to Captions", href: "#schedule" }}
       />
-    );
-  }
-
-  if (confirmation && confirmationBundle) {
-    return (
-      <div className="space-y-6">
-        <CreativeStudioStepHeader
-          eventId={eventId}
-          title="Review & publish"
-          description="Review your content and choose when and where to publish."
-          backHref={backHref}
-        />
-
-        <div className="overflow-hidden border border-cos-border bg-cos-card">
-          <CaptionsProgressStepper
-            activeStep="publish"
-            onStepSelect={onWorkflowStepSelect}
-          />
-          <div className="p-5 lg:p-6">
-            <MetaPublishConfirmationPanel
-              bundle={confirmationBundle}
-              action={confirmation.action}
-              approvalRoleLabel={approvalRoleLabel}
-              nextMilestone={nextMilestone}
-              allComplete={allComplete}
-              onNextMilestone={onNavigateToMilestone}
-              onViewPublished={onViewPublished}
-              onContinueReviewing={() => setConfirmation(null)}
-            />
-          </div>
-        </div>
-      </div>
     );
   }
 
@@ -394,10 +384,11 @@ export function CampaignReviewPublishPage({
               onTimingOptionChange={setTimingOption}
               bestTimeSuggestions={bestTimeSuggestions}
               onBestTimeSuggestionsChange={setBestTimeSuggestions}
-              publishPlatforms={publishPlatforms}
-              schedulePlatforms={schedulePlatforms}
-              onPublishPlatformToggle={togglePublishPlatform}
-              onSchedulePlatformToggle={toggleSchedulePlatform}
+              publishPlatforms={platforms}
+              schedulePlatforms={platforms}
+              onPublishPlatformToggle={togglePlatform}
+              onSchedulePlatformToggle={togglePlatform}
+              platformsDisabled={isPlatformPending}
               scheduleDate={scheduleDate}
               scheduleTime={scheduleTime}
               onScheduleDateChange={setScheduleDate}
@@ -409,6 +400,7 @@ export function CampaignReviewPublishPage({
         <ReviewPublishFooterActions
           timingOption={timingOption}
           isPending={isPending}
+          isPlatformPending={isPlatformPending}
           onSaveDraft={runSaveDraft}
           onScheduleForLater={runScheduleForLater}
           onPublishNow={runPublishNow}

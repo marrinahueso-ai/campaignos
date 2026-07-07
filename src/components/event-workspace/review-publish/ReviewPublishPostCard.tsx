@@ -50,6 +50,7 @@ export function ReviewPublishPostCard({ post }: ReviewPublishPostCardProps) {
             type="button"
             onClick={() => post.artworkUrl && setPreviewOpen(true)}
             disabled={!post.artworkUrl}
+            aria-label={post.artworkUrl ? previewLabel : `${previewLabel} unavailable`}
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-cos-success-text transition-colors hover:text-cos-success disabled:cursor-not-allowed disabled:opacity-50"
           >
             {previewLabel}
