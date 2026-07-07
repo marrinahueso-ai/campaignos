@@ -18,10 +18,12 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
 import { RalliAiAssistantWidget } from "@/components/layout/RalliAiAssistantWidget";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
+const LAST_EVENT_STORAGE_KEY = "campaignos-last-event-id";
+const CREATIVE_STUDIO_HASH = "plan";
 
 const CREATIVE_STUDIO_HASHES = new Set([
   "social-media",
@@ -52,12 +54,42 @@ function extractEventId(pathname: string): string | null {
   return match[1];
 }
 
-function resolveCreativeStudioHref(pathname: string): string {
+function resolveCreativeStudioHref(
+  pathname: string,
+  lastEventId: string | null,
+): string {
   const eventId = extractEventId(pathname);
   if (eventId) {
-    return `/events/${eventId}#social-media`;
+    return `/events/${eventId}#${CREATIVE_STUDIO_HASH}`;
+  }
+  if (lastEventId) {
+    return `/events/${lastEventId}#${CREATIVE_STUDIO_HASH}`;
   }
   return "/events";
+}
+
+function navigateToCreativeStudioHash(hash: string) {
+  const normalized = hash.replace("#", "");
+  if (window.location.hash.replace("#", "") === normalized) {
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    return;
+  }
+  window.location.hash = normalized;
+}
+
+function handleCreativeStudioClick(
+  event: MouseEvent<HTMLAnchorElement>,
+  linkHref: string,
+  pathname: string,
+) {
+  const [pathPart, hashPart = CREATIVE_STUDIO_HASH] = linkHref.split("#");
+  const currentEventId = extractEventId(pathname);
+  const targetEventId = extractEventId(pathPart);
+
+  if (currentEventId && targetEventId && currentEventId === targetEventId) {
+    event.preventDefault();
+    navigateToCreativeStudioHash(hashPart);
+  }
 }
 
 function isCreativeStudioActive(pathname: string, hash: string): boolean {
@@ -95,7 +127,7 @@ const navItems: {
   href: string;
   icon: typeof LayoutDashboard;
   badge?: string;
-  resolveHref?: (pathname: string) => string;
+  resolveHref?: (pathname: string, lastEventId: string | null) => string;
   isActive?: (pathname: string, hash: string) => boolean;
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -192,12 +224,24 @@ export function Sidebar({
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
   const [locationHash, setLocationHash] = useState("");
+  const [lastEventId, setLastEventId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "true") setExpanded(true);
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    const eventId = extractEventId(pathname);
+    if (eventId) {
+      localStorage.setItem(LAST_EVENT_STORAGE_KEY, eventId);
+      setLastEventId(eventId);
+      return;
+    }
+
+    setLastEventId(localStorage.getItem(LAST_EVENT_STORAGE_KEY));
+  }, [pathname]);
 
   useEffect(() => {
     const syncHash = () => setLocationHash(window.location.hash);
@@ -264,20 +308,26 @@ export function Sidebar({
 
       <nav className={cn("flex-1 space-y-0.5", showLabels ? "px-4 py-6" : "px-2 py-4")}>
         {navItems.map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
-          const linkHref = resolveHref ? resolveHref(pathname) : href;
+          const linkHref = resolveHref ? resolveHref(pathname, lastEventId) : href;
           const isActive = isActiveFn
             ? isActiveFn(pathname, locationHash)
             : pathname === href ||
               (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/inbox";
+          const isCreativeStudio = label === "Creative Studio";
 
           return (
             <Link
               key={label}
               href={linkHref}
               title={showLabels ? undefined : label}
-              onClick={onNavigate}
+              onClick={(event) => {
+                if (isCreativeStudio) {
+                  handleCreativeStudioClick(event, linkHref, pathname);
+                }
+                onNavigate?.();
+              }}
               className={cn(
                 "group relative flex items-center text-sm transition-colors",
                 showLabels ? "gap-3 px-3 py-2.5" : "justify-center p-2.5",
