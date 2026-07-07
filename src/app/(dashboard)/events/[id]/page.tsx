@@ -8,7 +8,8 @@ import {
 } from "@/lib/event-workspace/event-details-notice";
 import { buildCampaignProgress } from "@/lib/campaign-progress/build";
 import { shouldAssignPlaybook } from "@/lib/events/communication-strategy";
-import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { getPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-queries";
+import { buildPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-utils";
 import { initializeEventWorkspace } from "@/lib/event-workspace/mutations";
 import { getEventNextStep } from "@/lib/event-workspace/get-next-helpful-action";
 import { buildFallbackWorkspaceData } from "@/lib/event-workspace/mock-data";
@@ -25,6 +26,10 @@ import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
 import { buildMetaSocialCaptionMilestones } from "@/lib/meta-captions/generation";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import {
+  getActiveSchoolYear,
+  getPlanningHubSwitcherDateWindow,
+} from "@/lib/school-years/queries";
 import {
   getEventOrganizationDefaults,
   getOrganizationWorkspaceData,
@@ -90,7 +95,14 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
       getInboxUnreadCountForCurrentOrg(),
     ]);
 
-  const campaignEvents = await getCampaignPageEvents(organization?.id ?? null);
+  const activeSchoolYear = organization?.id
+    ? await getActiveSchoolYear(organization.id)
+    : null;
+  const planningHubSwitcherEvents = buildPlanningHubSwitcherEvents(
+    await getPlanningHubSwitcherEvents(organization?.id ?? null),
+    event,
+    { dateWindow: getPlanningHubSwitcherDateWindow(activeSchoolYear) },
+  );
 
   let resolvedWorkspace = workspace ?? buildFallbackWorkspaceData(event);
 
@@ -177,7 +189,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     defaultCommitteePerson,
     greetingName,
     timezone: organization?.timezone ?? undefined,
-    campaignEvents,
+    campaignEvents: planningHubSwitcherEvents,
     notificationCount,
     userEmail: authUser?.email ?? null,
   };

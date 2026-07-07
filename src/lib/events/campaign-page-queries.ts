@@ -3,16 +3,17 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventRows } from "@/lib/events/mappers";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
+import { resolvePlanningHubSwitcherDateWindow } from "@/lib/events/campaign-page-utils";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
 
-/** Events on the Campaigns page — full campaigns and reminder-only social plans. */
-export async function getCampaignPageEvents(
-  organizationId?: string | null,
-): Promise<Event[]> {
+async function fetchScopedCampaignEvents(input: {
+  organizationId?: string | null;
+  dateWindow?: { startDate: string; endDate: string };
+}): Promise<Event[]> {
   const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
     await import("@/lib/events/org-scope");
-  const scopedOrgId = await resolveScopedOrganizationId(organizationId);
+  const scopedOrgId = await resolveScopedOrganizationId(input.organizationId);
   if (!scopedOrgId) {
     return [];
   }
@@ -39,6 +40,12 @@ export async function getCampaignPageEvents(
     query = query.in("school_year_id", schoolYearIds);
   }
 
+  if (input.dateWindow) {
+    query = query
+      .gte("date", input.dateWindow.startDate)
+      .lte("date", input.dateWindow.endDate);
+  }
+
   const { data, error } = await query;
 
   if (error) {
@@ -49,6 +56,29 @@ export async function getCampaignPageEvents(
   return mapEventRows((data ?? []) as EventRow[]).filter((event) =>
     isCampaignPageStrategy(event.communicationStrategy),
   );
+}
+
+/** Events on the Campaigns page — full campaigns and reminder-only social plans. */
+export async function getCampaignPageEvents(
+  organizationId?: string | null,
+): Promise<Event[]> {
+  return fetchScopedCampaignEvents({ organizationId });
+}
+
+/** Planning Hub switcher — active school year plus July–June date window. */
+export async function getPlanningHubSwitcherEvents(
+  organizationId?: string | null,
+): Promise<Event[]> {
+  const { resolveScopedOrganizationId } = await import("@/lib/events/org-scope");
+  const scopedOrgId = await resolveScopedOrganizationId(organizationId);
+  if (!scopedOrgId) {
+    return [];
+  }
+
+  const activeSchoolYear = await getActiveSchoolYear(scopedOrgId);
+  const dateWindow = resolvePlanningHubSwitcherDateWindow(activeSchoolYear?.label);
+
+  return fetchScopedCampaignEvents({ organizationId, dateWindow });
 }
 
 /** Event ids with at least one Meta slot scheduled or approved for posting. */

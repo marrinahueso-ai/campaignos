@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
+import {
+  resolvePlanningHubSwitcherDateWindow,
+  type PlanningHubSwitcherDateWindow,
+} from "@/lib/events/campaign-page-utils";
 import { mapSchoolYearRow } from "@/lib/school-years/mappers";
 import type { SchoolYear, SchoolYearRow } from "@/lib/school-years/types";
 
@@ -50,4 +54,10 @@ export async function getActiveSchoolYear(
   }
 
   return mapSchoolYearRow(data as SchoolYearRow);
+}
+
+export function getPlanningHubSwitcherDateWindow(
+  schoolYear: Pick<SchoolYear, "label"> | null | undefined,
+): PlanningHubSwitcherDateWindow {
+  return resolvePlanningHubSwitcherDateWindow(schoolYear?.label);
 }

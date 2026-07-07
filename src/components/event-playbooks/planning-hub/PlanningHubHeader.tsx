@@ -16,7 +16,6 @@ import {
   PH,
   PlanningHubCard,
 } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
-import { buildPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-utils";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -95,8 +94,6 @@ export function PlanningHubHeader({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const eventsForDropdown = buildPlanningHubSwitcherEvents(campaignEvents, event);
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2.5">
@@ -120,7 +117,7 @@ export function PlanningHubHeader({
               role="listbox"
               className="absolute left-0 top-[calc(100%+0.35rem)] z-30 max-h-64 w-72 overflow-y-auto rounded-[12px] border border-cos-border bg-cos-card py-1 shadow-lg"
             >
-              {eventsForDropdown.map((entry) => (
+              {campaignEvents.map((entry) => (
                 <li key={entry.id}>
                   <button
                     type="button"
