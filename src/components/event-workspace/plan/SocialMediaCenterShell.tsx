@@ -77,7 +77,7 @@ function SocialMediaCenterStepper({
 
   return (
     <nav
-      className="flex items-center gap-0 overflow-x-auto bg-cos-card py-3"
+      className="flex w-full items-center overflow-x-auto bg-cos-card py-3 lg:overflow-visible"
       aria-label="Campaign progress"
     >
       {STEPPER_STEPS.map((step, index) => {
@@ -87,10 +87,10 @@ function SocialMediaCenterStepper({
         const label = CAMPAIGN_WORKFLOW_STEP_LABELS[step];
 
         return (
-          <div key={step} className="flex shrink-0 items-center">
+          <div key={step} className="flex min-w-0 flex-1 items-center justify-center">
             {index > 0 && (
               <ChevronRight
-                className="mx-1.5 h-3.5 w-3.5 shrink-0 text-cos-border"
+                className="mx-1 h-3.5 w-3.5 shrink-0 text-cos-border lg:mx-2"
                 aria-hidden
               />
             )}
@@ -162,11 +162,11 @@ function CampaignSummaryCard({
   return (
     <div
       className={cn(
-        "flex w-full shrink-0 bg-cos-card shadow-sm sm:max-w-sm lg:w-72 lg:max-w-full",
+        "flex w-full min-w-0 bg-cos-card shadow-sm",
         className,
       )}
     >
-      <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
+      <div className="relative w-[42%] shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
             src={artwork.imageUrl}
@@ -176,15 +176,15 @@ function CampaignSummaryCard({
             unoptimized
           />
         ) : (
-          <div className="flex h-full min-h-[7.5rem] w-full items-center justify-center bg-cos-warning text-sm font-medium text-cos-warning-text">
+          <div className="flex h-full min-h-[9rem] w-full items-center justify-center bg-cos-warning text-base font-medium text-cos-warning-text">
             {event.title.slice(0, 2).toUpperCase()}
           </div>
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-4">
+      <div className="flex min-w-0 flex-1 flex-col justify-between p-4 lg:p-5">
         <div>
-          <p className="font-display line-clamp-2 text-lg leading-snug text-cos-text">
+          <p className="font-display line-clamp-2 text-xl leading-snug text-cos-text">
             {event.title}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -253,7 +253,7 @@ export function SocialMediaCenterShell({
             </p>
           </div>
 
-          <div className="flex min-w-0 items-center justify-start lg:justify-end">
+          <div className="flex min-w-0 items-stretch">
             <CampaignSummaryCard
               event={event}
               artwork={artwork}
