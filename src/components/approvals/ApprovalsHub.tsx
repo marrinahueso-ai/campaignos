@@ -29,6 +29,15 @@ interface ApprovalsHubProps {
   allPending: ApprovalQueueItem[];
   changesRequested: ApprovalQueueItem[];
   recentlyApproved: ApprovalQueueItem[];
+  eventIdFilter?: string | null;
+}
+
+function filterByEvent(items: ApprovalQueueItem[], eventId: string | null | undefined) {
+  if (!eventId) {
+    return items;
+  }
+
+  return items.filter((item) => item.eventId === eventId);
 }
 
 function ChangeRequestNotes({ notes }: { notes: string }) {
@@ -363,10 +372,15 @@ export function ApprovalsHub({
   allPending,
   changesRequested,
   recentlyApproved,
+  eventIdFilter = null,
 }: ApprovalsHubProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const otherPending = allPending.filter((item) => !item.assignedToMe);
+  const scopedAssignedToMe = filterByEvent(assignedToMe, eventIdFilter);
+  const scopedAllPending = filterByEvent(allPending, eventIdFilter);
+  const scopedChangesRequested = filterByEvent(changesRequested, eventIdFilter);
+  const scopedRecentlyApproved = filterByEvent(recentlyApproved, eventIdFilter);
+  const otherPending = scopedAllPending.filter((item) => !item.assignedToMe);
 
   function handleToggleExpand(id: string) {
     setExpandedId((current) => (current === id ? null : id));
@@ -407,7 +421,7 @@ export function ApprovalsHub({
             </CardDescription>
           </CardHeader>
           <ApprovalQueueList
-            items={assignedToMe}
+            items={scopedAssignedToMe}
             showActions
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
@@ -442,7 +456,7 @@ export function ApprovalsHub({
             </CardDescription>
           </CardHeader>
           <ApprovalQueueList
-            items={changesRequested}
+            items={scopedChangesRequested}
             showCommentForm
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
@@ -458,7 +472,7 @@ export function ApprovalsHub({
             </CardDescription>
           </CardHeader>
           <ApprovalQueueList
-            items={recentlyApproved}
+            items={scopedRecentlyApproved}
             expandedId={expandedId}
             onToggleExpand={handleToggleExpand}
             onActionError={setActionError}

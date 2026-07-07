@@ -97,6 +97,7 @@ function mapQueueRow(
     status: row.status,
     communicationStatus: row.communication_items.status,
     requestedAt: row.requested_at,
+    resolvedAt: row.resolved_at,
     assigneeDisplayName: resolveAssigneeDisplayName(row),
     assignedToMe: isAssignedToActor(row, actor),
     submittedByMe: Boolean(
@@ -395,6 +396,20 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
   recentlyApproved: ApprovalQueueItem[];
   actor: ApprovalActor | null;
 }> {
+  const overview = await getApprovalQueueOverviewForCurrentUser();
+  return {
+    ...overview,
+    recentlyApproved: overview.recentlyApproved.slice(0, 10),
+  };
+}
+
+export async function getApprovalQueueOverviewForCurrentUser(): Promise<{
+  assignedToMe: ApprovalQueueItem[];
+  allPending: ApprovalQueueItem[];
+  changesRequested: ApprovalQueueItem[];
+  recentlyApproved: ApprovalQueueItem[];
+  actor: ApprovalActor | null;
+}> {
   const { actor, rows, items } = await resolveApprovalQueueBase();
   const enriched = await enrichApprovalQueuePreviews(rows, items);
 
@@ -411,9 +426,7 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
     changesRequested: enriched.filter(
       (item) => item.communicationStatus === "changes_requested",
     ),
-    recentlyApproved: enriched
-      .filter((item) => item.status === "approved")
-      .slice(0, 10),
+    recentlyApproved: enriched.filter((item) => item.status === "approved"),
     actor,
   };
 }

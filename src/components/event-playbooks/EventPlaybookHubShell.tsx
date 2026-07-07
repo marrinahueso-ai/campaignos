@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import {
   EventPlaybookTabs,
   type CampaignWorkflowStep,
@@ -20,9 +20,10 @@ import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-art
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
-import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
+import { formatEventDate } from "@/lib/utils/dates";
 import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { EventPlanningOverviewData } from "@/types/planning-overview";
 
 interface EventPlaybookHubShellProps {
   event: Event;
@@ -40,6 +41,7 @@ interface EventPlaybookHubShellProps {
   initialCampaignStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
   defaultTab?: EventPlaybookTab;
+  planningOverview?: EventPlanningOverviewData | null;
 }
 
 export function EventPlaybookHubShell({
@@ -58,8 +60,8 @@ export function EventPlaybookHubShell({
   initialCampaignStep = "plan",
   onCampaignStepChange,
   defaultTab = "overview",
+  planningOverview = null,
 }: EventPlaybookHubShellProps) {
-  const formattedTime = formatEventTime(event.time);
   const showArtwork = hasDisplayableArtwork(artwork);
   const lessonCount = hubData.notes.filter((n) => n.noteType === "lesson").length;
   const planningNoteCount = hubData.notes.filter((n) => n.noteType === "note").length;
@@ -91,14 +93,7 @@ export function EventPlaybookHubShell({
               <span className="inline-flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                 {formatEventDate(event.date)}
-                {formattedTime ? ` · ${formattedTime}` : ""}
               </span>
-              {event.location && (
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {event.location}
-                </span>
-              )}
               <CommunicationStrategyBadge strategy={event.communicationStrategy} />
             </div>
           </div>
@@ -133,6 +128,7 @@ export function EventPlaybookHubShell({
             pastEvents={pastEvents}
             hasCampaign={hasCampaign}
             tablesAvailable={tablesAvailable}
+            planningOverview={planningOverview}
           />
         }
         tasks={

@@ -9,6 +9,8 @@ import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { TodayWeekEntry, TodayWhatsNext } from "@/types/today";
 import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { EventPlanningOverviewData } from "@/types/planning-overview";
+import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import {
   groupEventsByMonth,
@@ -205,6 +207,157 @@ export const previewPlanningHubData: EventPlaybookHubData = {
       action: "Volunteer signup link added",
       actorName: PREVIEW_CHAIR_REBECCA,
       createdAt: "2026-07-05T09:30:00Z",
+    },
+  ],
+};
+
+function previewApprovalItem(
+  overrides: Partial<ApprovalQueueItem> & Pick<ApprovalQueueItem, "id" | "channel">,
+): ApprovalQueueItem {
+  return {
+    eventId: previewPlanningHubEvent.id,
+    eventTitle: previewPlanningHubEvent.title,
+    communicationItemId: overrides.id,
+    status: "pending",
+    communicationStatus: "pending_approval",
+    requestedAt: "2026-07-05T17:46:00.000Z",
+    resolvedAt: null,
+    assigneeDisplayName: PREVIEW_CHAIR_REBECCA,
+    assignedToMe: false,
+    submittedByMe: false,
+    notes: null,
+    preview: {
+      milestoneTitle: "Back to School welcome post",
+      scheduledFor: "2026-08-01T14:00:00.000Z",
+      captionText: "Welcome back, families! Join us for classroom visits and supply drop-off.",
+      storyCaptionSnippet: null,
+      artworkThumbnailUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
+    },
+    ...overrides,
+  };
+}
+
+export const previewPlanningOverview: EventPlanningOverviewData = {
+  assignedToMeCount: 2,
+  otherPendingCount: 3,
+  approvedThisWeekCount: 7,
+  scheduledPostsCount: 5,
+  assignedToMe: [
+    previewApprovalItem({
+      id: "preview-approval-1",
+      channel: "instagram",
+      assignedToMe: true,
+      preview: {
+        milestoneTitle: "Instagram save-the-date reminder",
+        scheduledFor: "2026-08-01T14:00:00.000Z",
+        captionText: "Mark your calendars for Back to School Fair!",
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
+      },
+    }),
+    previewApprovalItem({
+      id: "preview-approval-2",
+      channel: "facebook",
+      assignedToMe: true,
+      preview: {
+        milestoneTitle: "Facebook welcome post",
+        scheduledFor: "2026-08-05T14:00:00.000Z",
+        captionText: "We cannot wait to welcome everyone back!",
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
+      },
+    }),
+  ],
+  otherPending: [
+    previewApprovalItem({ id: "preview-pending-1", channel: "email" }),
+    previewApprovalItem({ id: "preview-pending-2", channel: "newsletter" }),
+    previewApprovalItem({ id: "preview-pending-3", channel: "flyer" }),
+  ],
+  changesRequested: [
+    previewApprovalItem({
+      id: "preview-change-1",
+      channel: "instagram",
+      communicationStatus: "changes_requested",
+      status: "rejected",
+      requestedAt: "2026-07-05T17:46:00.000Z",
+      preview: {
+        milestoneTitle: "Last call reminder for your favorite volunteer event.",
+        scheduledFor: null,
+        captionText: null,
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: null,
+      },
+    }),
+    previewApprovalItem({
+      id: "preview-change-2",
+      channel: "facebook",
+      communicationStatus: "changes_requested",
+      status: "rejected",
+      requestedAt: "2026-07-04T10:15:00.000Z",
+      preview: {
+        milestoneTitle: "Volunteer sign-up closing soon",
+        scheduledFor: null,
+        captionText: null,
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: null,
+      },
+    }),
+    previewApprovalItem({
+      id: "preview-change-3",
+      channel: "website_announcement",
+      communicationStatus: "changes_requested",
+      status: "rejected",
+      requestedAt: "2026-07-03T09:00:00.000Z",
+      preview: {
+        milestoneTitle: "Website announcement draft",
+        scheduledFor: null,
+        captionText: null,
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: null,
+      },
+    }),
+  ],
+  recentlyApproved: [
+    previewApprovalItem({
+      id: "preview-approved-1",
+      channel: "instagram",
+      status: "approved",
+      communicationStatus: "approved",
+      requestedAt: "2026-07-01T12:00:00.000Z",
+      resolvedAt: "2026-07-06T14:27:00.000Z",
+      preview: {
+        milestoneTitle: "Save the date — Back to School Fair",
+        scheduledFor: "2026-07-18T14:00:00.000Z",
+        captionText: null,
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: PREVIEW_BACK_TO_SCHOOL_ARTWORK,
+      },
+    }),
+    previewApprovalItem({
+      id: "preview-approved-2",
+      channel: "facebook",
+      status: "approved",
+      communicationStatus: "approved",
+      requestedAt: "2026-07-01T12:00:00.000Z",
+      resolvedAt: "2026-07-06T13:00:00.000Z",
+      preview: {
+        milestoneTitle: "Welcome table volunteer shifts",
+        scheduledFor: null,
+        captionText: null,
+        storyCaptionSnippet: null,
+        artworkThumbnailUrl: null,
+      },
+    }),
+  ],
+  timeline: [
+    {
+      id: "preview-timeline-1",
+      eventId: previewPlanningHubEvent.id,
+      activityType: "published",
+      title: "Published",
+      description: "Approved communications marked ready for distribution.",
+      occurredAt: "2026-09-11T12:00:00.000Z",
+      createdAt: "2026-09-11T12:00:00.000Z",
     },
   ],
 };

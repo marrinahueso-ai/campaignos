@@ -26,6 +26,7 @@ import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { EventPlanningOverviewData } from "@/types/planning-overview";
 
 interface CampaignWorkspaceBundle {
   organizationName: string | null;
@@ -66,6 +67,7 @@ interface EventPlanningHubProps {
   hasCampaign: boolean;
   campaignWorkspace?: CampaignWorkspaceBundle;
   calendarContext?: CalendarContextBundle;
+  planningOverview?: EventPlanningOverviewData | null;
 }
 
 export function EventPlanningHub({
@@ -81,6 +83,7 @@ export function EventPlanningHub({
   hasCampaign,
   campaignWorkspace,
   calendarContext,
+  planningOverview = null,
 }: EventPlanningHubProps) {
   const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>("plan");
 
@@ -149,6 +152,7 @@ export function EventPlanningHub({
       calendarSettingsExtras={calendarSettingsExtras}
       initialCampaignStep={campaignStep}
       onCampaignStepChange={setCampaignStep}
+      planningOverview={planningOverview}
     />
   );
 }

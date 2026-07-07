@@ -38,6 +38,7 @@ import {
   getPastEventsForType,
 } from "@/lib/event-playbooks/queries";
 import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
+import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -217,6 +218,13 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
       (entry) => entry.responsibilityType === "approvals",
     )?.defaultRoleId ?? null;
 
+  const planningOverview = await getEventPlanningOverviewData({
+    eventId: event.id,
+    metaPublishBundles,
+    publicationSchedule: resolvedWorkspace.publicationSchedule,
+    timeline: resolvedWorkspace.timeline,
+  });
+
   return (
     <div className="studio-page pb-12">
       <EventPlanningHub
@@ -246,6 +254,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           defaultApprovalRoleId,
           eventDetailsChanged,
         }}
+        planningOverview={planningOverview}
       />
     </div>
   );

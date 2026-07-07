@@ -24,6 +24,7 @@ import {
   previewPlanningHubData,
   previewPlanningHubEvent,
   previewPlanningHubOwnership,
+  previewPlanningOverview,
 } from "@/lib/marketing/feature-preview-fixtures";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import { useMemo, useState } from "react";
@@ -50,6 +51,7 @@ export function FeaturePreviewRecordCampaignsFlow() {
           hasCampaign
           socialMedia={null}
           defaultTab="overview"
+          planningOverview={previewPlanningOverview}
         />
       </div>
     );

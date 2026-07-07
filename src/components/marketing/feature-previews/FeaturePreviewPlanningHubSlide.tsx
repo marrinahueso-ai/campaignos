@@ -6,6 +6,7 @@ import {
   previewPlanningHubData,
   previewPlanningHubEvent,
   previewPlanningHubOwnership,
+  previewPlanningOverview,
 } from "@/lib/marketing/feature-preview-fixtures";
 
 export function FeaturePreviewPlanningHubSlide({
@@ -29,6 +30,7 @@ export function FeaturePreviewPlanningHubSlide({
         hasCampaign
         socialMedia={null}
         defaultTab="overview"
+        planningOverview={previewPlanningOverview}
       />
     </div>
   );

@@ -228,6 +228,7 @@ export interface ApprovalQueueItem {
   status: ApprovalStatus;
   communicationStatus: CommunicationStatus;
   requestedAt: string;
+  resolvedAt: string | null;
   assigneeDisplayName: string;
   assignedToMe: boolean;
   submittedByMe: boolean;
