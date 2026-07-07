@@ -349,6 +349,35 @@ export function ArtworkV2Shell({
     return `/api/canva/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
   }
 
+  const isMilestoneArtworkComplete = useCallback(
+    (relativeDay: number): boolean => {
+      const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
+      const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
+      if (!feedItem) {
+        return false;
+      }
+
+      const feedApproved = isApprovedArtworkAsset(
+        resolveWorkflowAsset(feedItem, null, assets),
+      );
+      const storyApproved = storyItem
+        ? isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)
+        : true;
+
+      return feedApproved && storyApproved;
+    },
+    [phaseItems, assets],
+  );
+
+  function tryNavigateToCaptionsForMilestone(relativeDay: number | null | undefined): boolean {
+    if (variant !== "campaign" || !onNavigateToCaptions || relativeDay == null) {
+      return false;
+    }
+
+    onNavigateToCaptions(relativeDay);
+    return true;
+  }
+
   const buildMilestoneFormats = useCallback(
     (
       relativeDay: number,
@@ -399,26 +428,21 @@ export function ArtworkV2Shell({
     setIsGeneratingStory(false);
 
     if (isPhaseItem(item)) {
-      const feedItem = findMilestoneFeedItem(phaseItems, item.relativeDay);
-      const storyItem = findMilestoneStoryItem(phaseItems, item.relativeDay);
-      if (feedItem && storyItem) {
-        const feedApproved = isApprovedArtworkAsset(
-          resolveWorkflowAsset(feedItem, null, assets),
-        );
-        const storyApproved = isStoryMilestoneDistinctlyApproved(
-          feedItem,
-          storyItem,
-          assets,
-        );
-        if (feedApproved && storyApproved) {
-          openMilestoneApproved(item.relativeDay);
-          return;
-        }
+      if (isMilestoneArtworkComplete(item.relativeDay)) {
+        openCompletedMilestoneForEditing(item.relativeDay);
+        return;
       }
     }
 
     const approvedDownload = resolveApprovedDownload(item, assets);
     if (approvedDownload) {
+      if (
+        isPhaseItem(item) &&
+        tryNavigateToCaptionsForMilestone(item.relativeDay)
+      ) {
+        return;
+      }
+
       setApprovedArtwork(approvedDownload);
       setStep("approved");
       return;
@@ -480,7 +504,7 @@ export function ArtworkV2Shell({
     router.refresh();
 
     if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
-      openMilestoneApproved(
+      completeMilestoneArtwork(
         selectedItem.relativeDay,
         imageUrl
           ? {
@@ -500,6 +524,13 @@ export function ArtworkV2Shell({
         await continueStoryWorkflowAfterFeedApproval(selectedItem.relativeDay);
         return;
       }
+    }
+
+    if (
+      isPhaseItem(selectedItem) &&
+      tryNavigateToCaptionsForMilestone(selectedItem.relativeDay)
+    ) {
+      return;
     }
 
     setStep("approved");
@@ -562,7 +593,7 @@ export function ArtworkV2Shell({
     });
   }
 
-  function openMilestoneApproved(
+  function showMilestoneApprovedScreen(
     relativeDay: number,
     overrides?: MilestoneFormatOverrides,
   ) {
@@ -588,6 +619,31 @@ export function ArtworkV2Shell({
           : null),
     );
     setStep("approved");
+  }
+
+  function completeMilestoneArtwork(
+    relativeDay: number,
+    overrides?: MilestoneFormatOverrides,
+  ) {
+    if (tryNavigateToCaptionsForMilestone(relativeDay)) {
+      return;
+    }
+
+    showMilestoneApprovedScreen(relativeDay, overrides);
+  }
+
+  function openCompletedMilestoneForEditing(relativeDay: number) {
+    const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
+    if (!feedItem) return;
+
+    if (variant === "campaign") {
+      setSelectedItem(feedItem);
+      syncCampaignFormatFromItem(feedItem, setCampaignFormat);
+      void openReviewForItem(feedItem);
+      return;
+    }
+
+    showMilestoneApprovedScreen(relativeDay);
   }
 
   useEffect(() => {
@@ -625,7 +681,7 @@ export function ArtworkV2Shell({
     const milestoneStatus = resolveMilestoneArtworkStatus(relativeDay, phaseItems, assets);
 
     if (feedApproved && storyApproved) {
-      openMilestoneApproved(relativeDay);
+      openCompletedMilestoneForEditing(relativeDay);
       return;
     }
 
@@ -688,12 +744,16 @@ export function ArtworkV2Shell({
     const feedItem = findMilestoneFeedItem(phaseItems, relativeDay);
     const storyItem = findMilestoneStoryItem(phaseItems, relativeDay);
     if (!storyItem || !feedItem) {
+      if (tryNavigateToCaptionsForMilestone(relativeDay)) {
+        return;
+      }
+
       setStep("approved");
       return;
     }
 
     if (isStoryMilestoneDistinctlyApproved(feedItem, storyItem, assets)) {
-      openMilestoneApproved(relativeDay);
+      completeMilestoneArtwork(relativeDay);
       return;
     }
 
@@ -864,7 +924,7 @@ export function ArtworkV2Shell({
       }
 
       if (isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story") {
-        openMilestoneApproved(
+        completeMilestoneArtwork(
           selectedItem.relativeDay,
           imageUrl
             ? {
@@ -875,6 +935,13 @@ export function ArtworkV2Shell({
               }
             : undefined,
         );
+        return;
+      }
+
+      if (
+        isPhaseItem(selectedItem) &&
+        tryNavigateToCaptionsForMilestone(selectedItem.relativeDay)
+      ) {
         return;
       }
 
@@ -1024,7 +1091,7 @@ export function ArtworkV2Shell({
       }
 
       if (isPhaseItem(approvingItem) && approvingItem.metaPlacement === "story") {
-        openMilestoneApproved(
+        completeMilestoneArtwork(
           approvingItem.relativeDay,
           imageUrl
             ? {
@@ -1035,6 +1102,13 @@ export function ArtworkV2Shell({
               }
             : undefined,
         );
+        return;
+      }
+
+      if (
+        isPhaseItem(approvingItem) &&
+        tryNavigateToCaptionsForMilestone(approvingItem.relativeDay)
+      ) {
         return;
       }
 
@@ -1280,7 +1354,14 @@ export function ArtworkV2Shell({
 
       const firstFeed = phaseItems.find((item) => item.metaPlacement === "feed");
       if (firstFeed) {
-        openMilestone(firstFeed.relativeDay);
+        if (
+          variant === "campaign" &&
+          isMilestoneArtworkComplete(firstFeed.relativeDay)
+        ) {
+          onNavigateToCaptions?.(firstFeed.relativeDay);
+        } else {
+          openMilestone(firstFeed.relativeDay);
+        }
       }
 
       setCampaignInitializing(false);
@@ -1464,7 +1545,7 @@ export function ArtworkV2Shell({
     );
   }
 
-  if (step === "approved" && selectedItem) {
+  if (step === "approved" && selectedItem && variant !== "campaign") {
     return (
       <ArtworkV2ApprovedScreen
         itemLabel={selectedItem.label}
