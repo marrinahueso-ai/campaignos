@@ -19,7 +19,7 @@ import {
   saveMetaSocialCaptionAction,
 } from "@/lib/meta-captions/actions";
 import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
-import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
+import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { CalendarClock } from "lucide-react";
@@ -49,18 +49,6 @@ function buildOptionsFromCaption(content: string | null | undefined): CaptionOpt
   }
 
   return [{ id: createOptionId(), text: content.trim() }];
-}
-
-function resolveScheduledFor(bundle: MetaPublishBundle | undefined): string | null {
-  if (!bundle) {
-    return null;
-  }
-
-  if (bundle.scheduledFor) {
-    return bundle.scheduledFor;
-  }
-
-  return planDueDateToScheduledTime(bundle.dueDate);
 }
 
 function resolveCaptionRelativeDay(
@@ -348,7 +336,7 @@ export function CampaignCaptionsPage({
           }))}
           selectedRelativeDay={selectedDay}
           onSelectMilestone={handleSelectMilestone}
-          scheduledFor={resolveScheduledFor(selectedBundle)}
+          scheduledFor={resolveMetaPublishBundleScheduledFor(selectedBundle)}
         />
 
         <div className="p-5 lg:p-6">

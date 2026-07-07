@@ -67,6 +67,7 @@ import {
   findMetaPublishBundleForDay,
   resolveMilestoneWorkflowBadgeStatus,
 } from "@/lib/meta-publishing/milestone-workflow-badge";
+import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { Event } from "@/types";
@@ -83,8 +84,28 @@ interface ArtworkV2ShellProps {
   assets: EventAsset[];
   metaPublishBundles?: MetaPublishBundle[];
   onNavigateToCaptions?: (relativeDay: number) => void;
+  initialRelativeDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   /** Campaign workflow layout matching captions / review-publish redesign. */
   variant?: "legacy" | "campaign";
+}
+
+function resolveArtworkRelativeDay(
+  milestones: { relativeDay: number }[],
+  preferredDay: number | null | undefined,
+): number | null {
+  if (milestones.length === 0) {
+    return null;
+  }
+
+  if (
+    preferredDay != null &&
+    milestones.some((milestone) => milestone.relativeDay === preferredDay)
+  ) {
+    return preferredDay;
+  }
+
+  return milestones[0]?.relativeDay ?? null;
 }
 
 function revokeReferencePreviews(references: ArtworkV2Reference[]): void {
@@ -193,6 +214,8 @@ export function ArtworkV2Shell({
   assets,
   metaPublishBundles = [],
   onNavigateToCaptions,
+  initialRelativeDay = null,
+  onFocusedMilestoneChange,
   variant = "legacy",
 }: ArtworkV2ShellProps) {
   const router = useRouter();
@@ -210,6 +233,17 @@ export function ArtworkV2Shell({
   const phaseItems = useMemo(
     () => workflowItems.filter(isPhaseItem),
     [workflowItems],
+  );
+
+  const milestoneOptions = useMemo(
+    () =>
+      phaseItems
+        .filter((item) => item.metaPlacement === "feed")
+        .map((item) => ({
+          relativeDay: item.relativeDay,
+          title: item.label,
+        })),
+    [phaseItems],
   );
 
   const approvedArtworkAssets = useMemo(
@@ -239,6 +273,24 @@ export function ArtworkV2Shell({
 
   const [step, setStep] = useState<ArtworkV2Step>("pick");
   const [selectedItem, setSelectedItem] = useState<ArtworkWorkflowItem | null>(null);
+
+  const selectedRelativeDay = useMemo(() => {
+    if (selectedItem && isPhaseItem(selectedItem)) {
+      return selectedItem.relativeDay;
+    }
+
+    return resolveArtworkRelativeDay(milestoneOptions, initialRelativeDay);
+  }, [selectedItem, milestoneOptions, initialRelativeDay]);
+
+  const selectedScheduledFor = useMemo(() => {
+    if (selectedRelativeDay == null) {
+      return null;
+    }
+
+    const bundle = findMetaPublishBundleForDay(metaPublishBundles, selectedRelativeDay);
+    return resolveMetaPublishBundleScheduledFor(bundle);
+  }, [metaPublishBundles, selectedRelativeDay]);
+
   const [prompt, setPrompt] = useState("");
   const [references, setReferences] = useState<ArtworkV2Reference[]>([]);
   const [approvedArtwork, setApprovedArtwork] = useState<{
@@ -1156,8 +1208,40 @@ export function ArtworkV2Shell({
     }
   }
 
+  function handleSelectMilestone(relativeDay: number) {
+    if (relativeDay === selectedRelativeDay) {
+      onFocusedMilestoneChange?.(relativeDay);
+      return;
+    }
+
+    onFocusedMilestoneChange?.(relativeDay);
+    openMilestone(relativeDay);
+  }
+
   const autoOpenAttemptedRef = useRef(false);
   const [campaignInitializing, setCampaignInitializing] = useState(variant === "campaign");
+
+  useEffect(() => {
+    if (variant !== "campaign" || !isPhaseWorkflow || initialRelativeDay == null) {
+      return;
+    }
+
+    if (!milestoneOptions.some((milestone) => milestone.relativeDay === initialRelativeDay)) {
+      return;
+    }
+
+    if (selectedRelativeDay === initialRelativeDay) {
+      return;
+    }
+
+    openMilestone(initialRelativeDay);
+  }, [
+    variant,
+    isPhaseWorkflow,
+    initialRelativeDay,
+    milestoneOptions,
+    selectedRelativeDay,
+  ]);
 
   useEffect(() => {
     if (variant !== "campaign") {
@@ -1173,6 +1257,13 @@ export function ArtworkV2Shell({
     autoOpenAttemptedRef.current = true;
 
     if (isPhaseWorkflow) {
+      const preferredDay = resolveArtworkRelativeDay(milestoneOptions, initialRelativeDay);
+      if (preferredDay != null) {
+        openMilestone(preferredDay);
+        setCampaignInitializing(false);
+        return;
+      }
+
       const firstPending = phaseItems.find((item) => {
         if (item.metaPlacement !== "feed") {
           return false;
@@ -1230,6 +1321,10 @@ export function ArtworkV2Shell({
     return (
       <ArtworkCampaignWorkspace
         item={selectedItem}
+        milestones={milestoneOptions}
+        selectedRelativeDay={selectedRelativeDay}
+        scheduledFor={selectedScheduledFor}
+        onSelectMilestone={isPhaseWorkflow ? handleSelectMilestone : undefined}
         prompt={prompt}
         format={
           campaignFormat ||

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MilestoneScheduleBar } from "@/components/event-workspace/MilestoneScheduleBar";
 import { ArtworkCustomizeToolbar, type ArtworkCustomizeAction } from "@/components/event-workspace/artwork/ArtworkCustomizeToolbar";
 import { ArtworkGeneratedOptionsGrid } from "@/components/event-workspace/artwork/ArtworkGeneratedOptionsGrid";
 import { ArtworkPageHeader } from "@/components/event-workspace/artwork/ArtworkPageHeader";
@@ -22,8 +23,17 @@ const CUSTOMIZE_PROMPTS: Record<ArtworkCustomizeAction, string> = {
   "add-logo": "Add or reposition the school or PTO logo.",
 };
 
+interface ArtworkMilestoneOption {
+  relativeDay: number;
+  title: string;
+}
+
 interface ArtworkCampaignWorkspaceProps {
   item: ArtworkWorkflowItem;
+  milestones?: ArtworkMilestoneOption[];
+  selectedRelativeDay?: number | null;
+  scheduledFor?: string | null;
+  onSelectMilestone?: (relativeDay: number) => void;
   prompt: string;
   format: string;
   references: ArtworkV2Reference[];
@@ -50,6 +60,10 @@ interface ArtworkCampaignWorkspaceProps {
 
 export function ArtworkCampaignWorkspace({
   item,
+  milestones = [],
+  selectedRelativeDay = null,
+  scheduledFor = null,
+  onSelectMilestone,
   prompt,
   format,
   references,
@@ -98,9 +112,24 @@ export function ArtworkCampaignWorkspace({
     onGenerate(generationMode);
   }
 
+  const showMilestoneBar =
+    milestones.length > 0 &&
+    selectedRelativeDay != null &&
+    typeof onSelectMilestone === "function";
+
   return (
     <>
       <ArtworkPageHeader />
+
+      {showMilestoneBar && (
+        <MilestoneScheduleBar
+          milestones={milestones}
+          selectedRelativeDay={selectedRelativeDay}
+          onSelectMilestone={onSelectMilestone}
+          scheduledFor={scheduledFor}
+          className="-mx-5 mb-5 lg:-mx-6 lg:mb-6"
+        />
+      )}
 
       {generationWarning && (
         <p className="mb-4 text-sm text-amber-700" role="status">

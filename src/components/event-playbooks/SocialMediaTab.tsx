@@ -154,6 +154,7 @@ export function SocialMediaTab({
       return;
     }
     if (step === "artwork") {
+      setFocusedRelativeDay(relativeDay);
       navigateToWorkflowStep("artwork");
       return;
     }
@@ -195,6 +196,8 @@ export function SocialMediaTab({
             communicationSteps={playbookData.steps}
             assets={assets}
             metaPublishBundles={metaPublishBundles}
+            initialRelativeDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onNavigateToCaptions={handleNavigateToCaptions}
             onWorkflowStepSelect={navigateToWorkflowStep}
           />

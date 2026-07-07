@@ -18,6 +18,8 @@ interface CampaignArtworkPageProps {
   communicationSteps: EventCommunicationStep[];
   assets: EventAsset[];
   metaPublishBundles?: MetaPublishBundle[];
+  initialRelativeDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
 }
@@ -31,6 +33,8 @@ export function CampaignArtworkPage({
   communicationSteps,
   assets,
   metaPublishBundles = [],
+  initialRelativeDay = null,
+  onFocusedMilestoneChange,
   onNavigateToCaptions,
   onWorkflowStepSelect,
 }: CampaignArtworkPageProps) {
@@ -53,6 +57,8 @@ export function CampaignArtworkPage({
           communicationSteps={communicationSteps}
           assets={assets}
           metaPublishBundles={metaPublishBundles}
+          initialRelativeDay={initialRelativeDay}
+          onFocusedMilestoneChange={onFocusedMilestoneChange}
           onNavigateToCaptions={onNavigateToCaptions}
         />
       </div>

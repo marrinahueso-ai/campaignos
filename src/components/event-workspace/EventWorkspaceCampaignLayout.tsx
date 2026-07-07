@@ -123,6 +123,7 @@ export function EventWorkspaceCampaignLayout({
       return;
     }
     if (step === "artwork") {
+      setFocusedRelativeDay(relativeDay);
       window.location.hash = "artwork";
       window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
       return;
@@ -173,6 +174,8 @@ export function EventWorkspaceCampaignLayout({
             communicationSteps={playbookData.steps}
             assets={assets}
             metaPublishBundles={metaPublishBundles}
+            initialRelativeDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onNavigateToCaptions={handleNavigateToCaptions}
             onWorkflowStepSelect={(step) => {
               window.location.hash = step;
