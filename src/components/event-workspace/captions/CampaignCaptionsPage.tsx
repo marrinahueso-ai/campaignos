@@ -99,8 +99,9 @@ export function CampaignCaptionsPage({
   backHref,
 }: CampaignCaptionsPageProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [isSavingOption, startSaveTransition] = useTransition();
+  const [usingOptionId, setUsingOptionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedDay, setSelectedDay] = useState<number>(() =>
@@ -275,7 +276,11 @@ export function CampaignCaptionsPage({
     }
 
     setError(null);
-    startTransition(async () => {
+    setOptionsForDay(selectedDay, currentOptions);
+    setSelectedOptionByDay((current) => ({ ...current, [selectedDay]: optionId }));
+    setUsingOptionId(optionId);
+
+    startSaveTransition(async () => {
       try {
         const result = await saveMetaSocialCaptionAction(
           eventId,
@@ -287,10 +292,11 @@ export function CampaignCaptionsPage({
           setError(result.error ?? "Unable to save caption.");
           return;
         }
-        setSelectedOptionByDay((current) => ({ ...current, [selectedDay]: optionId }));
         router.refresh();
       } catch {
         setError("Unable to save caption. Refresh the page and try again.");
+      } finally {
+        setUsingOptionId(null);
       }
     });
   }
@@ -357,6 +363,8 @@ export function CampaignCaptionsPage({
               onGenerateMore={handleGenerateMore}
               isRegenerating={isRegenerating}
               isGeneratingMore={isGeneratingMore}
+              isSavingOption={isSavingOption}
+              usingOptionId={usingOptionId}
               aiAvailable={aiStatus.available}
               aiUnavailableReason={aiStatus.reason}
             />

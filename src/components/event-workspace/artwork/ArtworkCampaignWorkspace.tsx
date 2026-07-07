@@ -137,8 +137,6 @@ export function ArtworkCampaignWorkspace({
           onReferencesChange={onReferencesChange}
           setupLogos={setupLogos}
           onGenerate={onGenerate}
-          onApproveSelected={onApproveSelected}
-          hasSelection={hasSelection && hasGeneratedVersions}
           isGenerating={isGenerating}
           isReviewBusy={isReviewBusy}
           inputsDisabled={isGenerating || isReviewBusy}
@@ -152,7 +150,9 @@ export function ArtworkCampaignWorkspace({
           onSelectVersion={onSelectVersion}
           onPreviewVersion={(version) => setLightboxVersion(version)}
           onGenerateMore={hasGeneratedVersions ? onGenerateMore : undefined}
+          onApproveSelected={hasSelection && hasGeneratedVersions ? onApproveSelected : undefined}
           isGeneratingMore={isGenerating || isReviewBusy}
+          isReviewBusy={isReviewBusy}
           disabled={isReviewBusy || !hasGeneratedVersions}
         />
       </div>

@@ -30,6 +30,8 @@ interface CaptionsOptionsPanelProps {
   onGenerateMore: () => void;
   isRegenerating?: boolean;
   isGeneratingMore?: boolean;
+  isSavingOption?: boolean;
+  usingOptionId?: string | null;
   aiAvailable?: boolean;
   aiUnavailableReason?: string | null;
 }
@@ -44,6 +46,8 @@ export function CaptionsOptionsPanel({
   onGenerateMore,
   isRegenerating = false,
   isGeneratingMore = false,
+  isSavingOption = false,
+  usingOptionId = null,
   aiAvailable = true,
   aiUnavailableReason = null,
 }: CaptionsOptionsPanelProps) {
@@ -210,9 +214,10 @@ export function CaptionsOptionsPanel({
                             type="button"
                             size="sm"
                             className="h-8 px-3"
+                            disabled={isSavingOption}
                             onClick={() => onUseOption(option.id)}
                           >
-                            Use
+                            {usingOptionId === option.id && isSavingOption ? "Using…" : "Use"}
                           </Button>
                           <button
                             type="button"

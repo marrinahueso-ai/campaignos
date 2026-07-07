@@ -12,7 +12,6 @@ import {
 } from "@/lib/artwork-v2/setup-logos";
 import type { ArtworkV2Reference } from "@/lib/artwork-v2/types";
 import { ARTWORK_FORMAT_OPTIONS } from "@/lib/artwork-v2/format-selection";
-import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils/cn";
 
@@ -40,8 +39,6 @@ interface ArtworkPromptPanelProps {
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
   setupLogos?: SetupLogoOption[];
   onGenerate: (mode: ArtworkGenerationMode) => void;
-  onApproveSelected?: () => void;
-  hasSelection?: boolean;
   isGenerating?: boolean;
   isReviewBusy?: boolean;
   inputsDisabled?: boolean;
@@ -66,8 +63,6 @@ export function ArtworkPromptPanel({
   onReferencesChange,
   setupLogos = [],
   onGenerate,
-  onApproveSelected,
-  hasSelection = false,
   isGenerating = false,
   isReviewBusy = false,
   inputsDisabled = false,
@@ -147,39 +142,14 @@ export function ArtworkPromptPanel({
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Textarea
-          id="artwork-campaign-prompt"
-          value={prompt}
-          onChange={(event) => onPromptChange(event.target.value)}
-          rows={3}
-          placeholder="Describe the artwork you want — style, colors, text, mood…"
-          disabled={inputsDisabled}
-          className="min-h-[88px] resize-y border-cos-border bg-cos-bg/40 pr-4 pb-12 text-sm leading-relaxed"
-        />
-        <div className="absolute right-2 bottom-2 flex items-center gap-2">
-          {hasSelection && onApproveSelected && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={isReviewBusy || inputsDisabled}
-              onClick={onApproveSelected}
-              className="h-8 px-3 text-xs"
-            >
-              {isReviewBusy ? "Saving…" : "Approve selected"}
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <ArtworkGenerationModeButtons
-        value={generationMode}
-        onChange={onGenerationModeChange}
-        onGenerate={onGenerate}
-        isGenerating={isGenerating}
-        isReviewBusy={isReviewBusy}
-        hasPrompt={hasPrompt}
+      <Textarea
+        id="artwork-campaign-prompt"
+        value={prompt}
+        onChange={(event) => onPromptChange(event.target.value)}
+        rows={3}
+        placeholder="Describe the artwork you want — style, colors, text, mood…"
+        disabled={inputsDisabled}
+        className="min-h-[88px] resize-y border-cos-border bg-cos-bg/40 text-sm leading-relaxed"
       />
 
       <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
@@ -250,6 +220,16 @@ export function ArtworkPromptPanel({
             </button>
           </div>
         ))}
+
+        <ArtworkGenerationModeButtons
+          value={generationMode}
+          onChange={onGenerationModeChange}
+          onGenerate={onGenerate}
+          isGenerating={isGenerating}
+          isReviewBusy={isReviewBusy}
+          hasPrompt={hasPrompt}
+          className="ml-auto shrink-0"
+        />
       </div>
 
       <input

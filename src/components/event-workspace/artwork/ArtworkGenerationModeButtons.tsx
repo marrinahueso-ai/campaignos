@@ -16,6 +16,7 @@ interface ArtworkGenerationModeButtonsProps {
   isGenerating?: boolean;
   isReviewBusy?: boolean;
   hasPrompt?: boolean;
+  className?: string;
 }
 
 function modeTooltip(mode: ArtworkGenerationMode): string {
@@ -31,6 +32,7 @@ export function ArtworkGenerationModeButtons({
   isGenerating = false,
   isReviewBusy = false,
   hasPrompt = false,
+  className,
 }: ArtworkGenerationModeButtonsProps) {
   function handleModeClick(mode: ArtworkGenerationMode) {
     onChange(mode);
@@ -41,7 +43,7 @@ export function ArtworkGenerationModeButtons({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={cn("flex shrink-0 items-center gap-2", className)}>
       {MODES.map((mode) => {
         const copy = ARTWORK_GENERATION_MODE_COPY[mode];
         const selected = value === mode;
@@ -56,7 +58,7 @@ export function ArtworkGenerationModeButtons({
             onClick={() => handleModeClick(mode)}
             aria-pressed={selected}
             className={cn(
-              "group relative inline-flex h-9 items-center gap-1.5 px-3 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+              "group relative inline-flex h-8 shrink-0 items-center gap-1.5 px-3 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
               selected && isPrimary
                 ? "border border-cos-dark bg-cos-dark text-[#f6f2eb] hover:bg-cos-text"
                 : selected

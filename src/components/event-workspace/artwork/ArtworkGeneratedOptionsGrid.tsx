@@ -2,6 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { GeneratedArtworkFrame } from "@/components/artwork/GeneratedArtworkFrame";
+import { Button } from "@/components/ui/Button";
 import type { ArtworkV2ReviewVersion } from "@/lib/artwork-v2/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -15,7 +16,9 @@ interface ArtworkGeneratedOptionsGridProps {
   onSelectVersion: (versionId: string) => void;
   onPreviewVersion?: (version: ArtworkV2ReviewVersion) => void;
   onGenerateMore?: () => void;
+  onApproveSelected?: () => void;
   isGeneratingMore?: boolean;
+  isReviewBusy?: boolean;
   disabled?: boolean;
 }
 
@@ -31,7 +34,9 @@ export function ArtworkGeneratedOptionsGrid({
   onSelectVersion,
   onPreviewVersion,
   onGenerateMore,
+  onApproveSelected,
   isGeneratingMore = false,
+  isReviewBusy = false,
   disabled = false,
 }: ArtworkGeneratedOptionsGridProps) {
   const slots = Array.from({ length: GRID_SLOTS }, (_, index) => versions[index] ?? null);
@@ -97,21 +102,37 @@ export function ArtworkGeneratedOptionsGrid({
         })}
       </div>
 
-      {onGenerateMore && (
-        <div className="flex items-center justify-end gap-3">
-          <span className="text-xs text-cos-muted">Don&apos;t love these?</span>
-          <button
-            type="button"
-            disabled={disabled || isGeneratingMore}
-            onClick={onGenerateMore}
-            className="inline-flex h-9 items-center gap-1.5 border border-cos-border bg-cos-card px-4 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:pointer-events-none disabled:opacity-50"
-          >
-            <RefreshCw
-              className={cn("h-3.5 w-3.5", isGeneratingMore && "animate-spin")}
-              aria-hidden
-            />
-            {isGeneratingMore ? "Generating…" : "Generate more"}
-          </button>
+      {(onGenerateMore || onApproveSelected) && (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {onGenerateMore && (
+            <>
+              <span className="text-xs text-cos-muted">Don&apos;t love these?</span>
+              <button
+                type="button"
+                disabled={disabled || isGeneratingMore}
+                onClick={onGenerateMore}
+                className="inline-flex h-9 items-center gap-1.5 border border-cos-border bg-cos-card px-4 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:pointer-events-none disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={cn("h-3.5 w-3.5", isGeneratingMore && "animate-spin")}
+                  aria-hidden
+                />
+                {isGeneratingMore ? "Generating…" : "Generate more"}
+              </button>
+            </>
+          )}
+          {onApproveSelected && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={disabled || isReviewBusy}
+              onClick={onApproveSelected}
+              className="h-9 px-4"
+            >
+              {isReviewBusy ? "Saving…" : "Approve selected"}
+            </Button>
+          )}
         </div>
       )}
     </section>
