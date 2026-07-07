@@ -9,6 +9,7 @@ import { MilestonePlanningRow } from "@/components/event-workspace/plan/Mileston
 import { MilestonePlanningSmartBanner } from "@/components/event-workspace/plan/MilestonePlanningSmartBanner";
 import {
   applySuggestedTimes,
+  buildMilestoneStepProgressMap,
   createDefaultMilestone,
   enrichMilestoneItemsWithBundles,
   milestoneItemsFromSteps,
@@ -67,6 +68,10 @@ export function MilestonePlanningSection({
     [baseItems, metaPublishBundles],
   );
   const [items, setItems] = useState<MilestonePlanningItem[]>(initialItems);
+  const stepProgressByDay = useMemo(
+    () => buildMilestoneStepProgressMap(items, metaPublishBundles, assignedSteps),
+    [items, metaPublishBundles, assignedSteps],
+  );
   const [expandedRelativeDay, setExpandedRelativeDay] = useState<number | null>(
     initialItems[0]?.relativeDay ?? null,
   );
@@ -255,6 +260,14 @@ export function MilestonePlanningSection({
               <div key={milestone.relativeDay}>
                 <MilestonePlanningRow
                   milestone={draft ?? milestone}
+                  stepProgress={
+                    stepProgressByDay.get(milestone.relativeDay) ?? {
+                      artwork: false,
+                      captions: false,
+                      email: false,
+                      newsletter: false,
+                    }
+                  }
                   index={index}
                   isExpanded={isExpanded}
                   isDragging={dragIndex === index}

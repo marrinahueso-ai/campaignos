@@ -12,10 +12,12 @@ import {
   FacebookPlatformIcon,
   InstagramPlatformIcon,
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
+import { MilestoneStepProgressIcons } from "@/components/event-workspace/plan/MilestoneStepProgressIcons";
 import {
   formatMilestoneTiming,
   resolveSelectedPlatforms,
   type MilestonePlanningItem,
+  type MilestoneStepProgress,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
 import { cn } from "@/lib/utils/cn";
 
@@ -28,6 +30,7 @@ const CATEGORY_STYLES = [
 
 interface MilestonePlanningRowProps {
   milestone: MilestonePlanningItem;
+  stepProgress: MilestoneStepProgress;
   index: number;
   isExpanded: boolean;
   isDragging: boolean;
@@ -63,6 +66,7 @@ function PlatformCell({ milestone }: { milestone: MilestonePlanningItem }) {
 
 export function MilestonePlanningRow({
   milestone,
+  stepProgress,
   index,
   isExpanded,
   isDragging,
@@ -123,6 +127,7 @@ export function MilestonePlanningRow({
         >
           <CategoryIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
         </span>
+        <MilestoneStepProgressIcons progress={stepProgress} />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-cos-text">{milestone.title}</p>
           {milestone.description && (

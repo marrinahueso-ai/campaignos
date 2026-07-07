@@ -5,6 +5,7 @@ import {
   resolveBestHourForDate,
 } from "@/lib/posting-analytics/suggest-posting-times";
 import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
+import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
 import type { CommunicationChannel } from "@/types/event-workspace";
@@ -44,6 +45,13 @@ export interface MilestonePlanningItem {
   scheduleTime: string;
   status: MilestonePlanningStatus;
   contentPlatforms: MilestoneContentPlatforms;
+}
+
+export interface MilestoneStepProgress {
+  artwork: boolean;
+  captions: boolean;
+  email: boolean;
+  newsletter: boolean;
 }
 
 const META_CHANNELS = new Set<CommunicationChannel>(["facebook", "instagram"]);
@@ -126,6 +134,56 @@ export function resolvePrimaryPlatform(
   milestone: MilestonePlanningItem,
 ): "facebook" | "instagram" | null {
   return resolveSelectedPlatforms(milestone)[0] ?? null;
+}
+
+function isChannelStepComplete(
+  steps: EventCommunicationStep[],
+  relativeDay: number,
+  channel: CommunicationChannel,
+): boolean {
+  const step = steps.find(
+    (candidate) =>
+      candidate.relativeDay === relativeDay &&
+      candidate.channel === channel &&
+      candidate.status !== "skipped",
+  );
+
+  return step?.status === "completed";
+}
+
+export function resolveMilestoneStepProgress(
+  relativeDay: number,
+  bundles: MetaPublishBundle[],
+  assignedSteps: EventCommunicationStep[],
+): MilestoneStepProgress {
+  const bundle = findMetaPublishBundleForDay(bundles, relativeDay);
+  const artworkComplete = Boolean(bundle && bundle.missingArtwork.length === 0);
+  const captionsComplete = Boolean(
+    bundle?.isMetaPost &&
+      artworkComplete &&
+      bundle.status !== "needs_caption" &&
+      bundle.status !== "skipped",
+  );
+
+  return {
+    artwork: artworkComplete,
+    captions: captionsComplete,
+    email: isChannelStepComplete(assignedSteps, relativeDay, "email"),
+    newsletter: isChannelStepComplete(assignedSteps, relativeDay, "newsletter"),
+  };
+}
+
+export function buildMilestoneStepProgressMap(
+  items: MilestonePlanningItem[],
+  bundles: MetaPublishBundle[],
+  assignedSteps: EventCommunicationStep[],
+): Map<number, MilestoneStepProgress> {
+  return new Map(
+    items.map((item) => [
+      item.relativeDay,
+      resolveMilestoneStepProgress(item.relativeDay, bundles, assignedSteps),
+    ]),
+  );
 }
 
 export function enrichMilestoneItemsWithBundles(
