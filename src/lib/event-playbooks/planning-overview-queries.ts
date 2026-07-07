@@ -13,10 +13,10 @@ const SCHEDULED_BUNDLE_STATUSES = new Set<MetaPublishBundle["status"]>([
   "approved",
 ]);
 
-function filterByEvent(
-  items: ApprovalQueueItem[],
+function filterByEvent<T extends { eventId: string }>(
+  items: T[],
   eventId: string,
-): ApprovalQueueItem[] {
+): T[] {
   return items.filter((item) => item.eventId === eventId);
 }
 
@@ -63,7 +63,7 @@ export async function getEventPlanningOverviewData(input: {
     otherPendingCount: otherPending.length,
     approvedThisWeekCount: countApprovedThisWeek(recentlyApproved),
     scheduledCount: countScheduledMetaBundles(input.metaPublishBundles),
-    timeline: [...input.timeline].sort(
+    timeline: filterByEvent(input.timeline, input.eventId).sort(
       (left, right) =>
         new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
     ),
