@@ -241,7 +241,7 @@ export const previewPlanningOverview: EventPlanningOverviewData = {
   assignedToMeCount: 2,
   otherPendingCount: 3,
   approvedThisWeekCount: 7,
-  scheduledPostsCount: 5,
+  scheduledCount: 5,
   assignedToMe: [
     previewApprovalItem({
       id: "preview-approval-1",

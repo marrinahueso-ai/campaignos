@@ -176,7 +176,7 @@ export function PublishedScheduledMilestones({
   }
 
   return (
-    <Card padding="none" className="overflow-hidden">
+    <Card id="scheduled-milestones" padding="none" className="overflow-hidden scroll-mt-24">
       <CardHeader className="border-b border-cos-border px-6 py-5">
         <CardTitle>Scheduled milestones</CardTitle>
         <CardDescription>

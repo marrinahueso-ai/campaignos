@@ -109,7 +109,7 @@ function mapQueueRow(
   };
 }
 
-async function fetchApprovalQueueRows(): Promise<ApprovalQueueRow[]> {
+async function fetchApprovalQueueRows(eventId?: string): Promise<ApprovalQueueRow[]> {
   const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
     await import("@/lib/events/org-scope");
   const scopedOrgId = await resolveScopedOrganizationId(undefined);
@@ -138,7 +138,11 @@ async function fetchApprovalQueueRows(): Promise<ApprovalQueueRow[]> {
     return [];
   }
 
-  const { data, error } = await supabase
+  if (eventId && !eventIds.includes(eventId)) {
+    return [];
+  }
+
+  let approvalQuery = supabase
     .from("approval_requests")
     .select(
       `
@@ -155,8 +159,13 @@ async function fetchApprovalQueueRows(): Promise<ApprovalQueueRow[]> {
       )
     `,
     )
-    .in("event_id", eventIds)
     .order("requested_at", { ascending: false });
+
+  approvalQuery = eventId
+    ? approvalQuery.eq("event_id", eventId)
+    : approvalQuery.in("event_id", eventIds);
+
+  const { data, error } = await approvalQuery;
 
   if (error?.code === "42P01") {
     return [];
@@ -311,14 +320,14 @@ async function enrichApprovalQueuePreviews(
   });
 }
 
-async function resolveApprovalQueueBase(): Promise<{
+async function resolveApprovalQueueBase(eventId?: string): Promise<{
   actor: ApprovalActor | null;
   rows: ApprovalQueueRow[];
   items: ApprovalQueueItem[];
 }> {
   const [membership, rows] = await Promise.all([
     getActiveMembership(),
-    fetchApprovalQueueRows(),
+    fetchApprovalQueueRows(eventId),
   ]);
 
   const actor: ApprovalActor | null = membership
@@ -341,7 +350,7 @@ async function resolveApprovalQueueBase(): Promise<{
   }
 
   const refreshedRows = dedupePendingApprovalQueueRows(
-    actor ? await fetchApprovalQueueRows() : rows,
+    actor ? await fetchApprovalQueueRows(eventId) : rows,
   );
   const items = refreshedRows
     .map((row) => mapQueueRow(row, actor))
@@ -403,14 +412,16 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
   };
 }
 
-export async function getApprovalQueueOverviewForCurrentUser(): Promise<{
+export async function getApprovalQueueOverviewForCurrentUser(
+  eventId?: string,
+): Promise<{
   assignedToMe: ApprovalQueueItem[];
   allPending: ApprovalQueueItem[];
   changesRequested: ApprovalQueueItem[];
   recentlyApproved: ApprovalQueueItem[];
   actor: ApprovalActor | null;
 }> {
-  const { actor, rows, items } = await resolveApprovalQueueBase();
+  const { actor, rows, items } = await resolveApprovalQueueBase(eventId);
   const enriched = await enrichApprovalQueuePreviews(rows, items);
 
   const pending = enriched.filter(

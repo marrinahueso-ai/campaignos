@@ -4,10 +4,14 @@ import type { EventPlanningOverviewData } from "@/types/planning-overview";
 import type {
   ActivityLogEntry,
   ApprovalQueueItem,
-  PublicationScheduleItem,
 } from "@/types/event-workspace";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+const SCHEDULED_BUNDLE_STATUSES = new Set<MetaPublishBundle["status"]>([
+  "scheduled",
+  "approved",
+]);
 
 function filterByEvent(
   items: ApprovalQueueItem[],
@@ -28,31 +32,21 @@ function countApprovedThisWeek(items: ApprovalQueueItem[]): number {
   }).length;
 }
 
-function countScheduledPosts(
-  bundles: MetaPublishBundle[],
-  publicationSchedule: PublicationScheduleItem[],
-): number {
-  const scheduledBundles = bundles.filter(
+export function countScheduledMetaBundles(bundles: MetaPublishBundle[]): number {
+  return bundles.filter(
     (bundle) =>
-      bundle.status === "scheduled" ||
-      (Boolean(bundle.scheduledFor) &&
-        !["published", "skipped", "failed", "cancelled"].includes(bundle.status)),
+      bundle.isMetaPost &&
+      bundle.status !== "skipped" &&
+      SCHEDULED_BUNDLE_STATUSES.has(bundle.status),
   ).length;
-
-  const scheduledEntries = publicationSchedule.filter(
-    (entry) => entry.status === "scheduled",
-  ).length;
-
-  return Math.max(scheduledBundles, scheduledEntries);
 }
 
 export async function getEventPlanningOverviewData(input: {
   eventId: string;
   metaPublishBundles: MetaPublishBundle[];
-  publicationSchedule: PublicationScheduleItem[];
   timeline: ActivityLogEntry[];
 }): Promise<EventPlanningOverviewData> {
-  const queue = await getApprovalQueueOverviewForCurrentUser();
+  const queue = await getApprovalQueueOverviewForCurrentUser(input.eventId);
 
   const assignedToMe = filterByEvent(queue.assignedToMe, input.eventId);
   const allPending = filterByEvent(queue.allPending, input.eventId);
@@ -68,10 +62,7 @@ export async function getEventPlanningOverviewData(input: {
     assignedToMeCount: assignedToMe.length,
     otherPendingCount: otherPending.length,
     approvedThisWeekCount: countApprovedThisWeek(recentlyApproved),
-    scheduledPostsCount: countScheduledPosts(
-      input.metaPublishBundles,
-      input.publicationSchedule,
-    ),
+    scheduledCount: countScheduledMetaBundles(input.metaPublishBundles),
     timeline: [...input.timeline].sort(
       (left, right) =>
         new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),

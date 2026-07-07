@@ -235,7 +235,7 @@ export function PlanningOverviewPanel({
   eventId,
   overview,
 }: PlanningOverviewPanelProps) {
-  const calendarHref = "/calendar";
+  const scheduledHref = `/events/${eventId}#scheduled-milestones`;
 
   return (
     <div className="space-y-8">
@@ -275,11 +275,11 @@ export function PlanningOverviewPanel({
           accent="bg-cos-status-todo-bg"
           icon={Send}
           iconClassName="text-cos-status-todo"
-          count={overview.scheduledPostsCount}
-          label="Posts"
-          actionLabel="View calendar →"
-          href={calendarHref}
-          actionClassName="border border-cos-status-todo/20 bg-cos-status-todo-bg text-cos-status-todo-text hover:bg-cos-status-todo-bg/80"
+          count={overview.scheduledCount}
+          label="Scheduled"
+          actionLabel="View scheduled →"
+          href={scheduledHref}
+          actionClassName="border border-cos-border bg-cos-card text-cos-text hover:bg-cos-bg-alt"
         />
       </div>
 

@@ -8,6 +8,6 @@ export interface EventPlanningOverviewData {
   assignedToMeCount: number;
   otherPendingCount: number;
   approvedThisWeekCount: number;
-  scheduledPostsCount: number;
+  scheduledCount: number;
   timeline: ActivityLogEntry[];
 }

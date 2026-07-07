@@ -221,7 +221,6 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
   const planningOverview = await getEventPlanningOverviewData({
     eventId: event.id,
     metaPublishBundles,
-    publicationSchedule: resolvedWorkspace.publicationSchedule,
     timeline: resolvedWorkspace.timeline,
   });
 
