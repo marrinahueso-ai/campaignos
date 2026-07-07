@@ -8,6 +8,7 @@ export async function generateInboxAiDraft(input: {
   organizationId: string;
   thread: InboxThread;
   inboundMessage: InboxMessage;
+  forceRegenerate?: boolean;
 }): Promise<{
   success: boolean;
   draftBody: string | null;

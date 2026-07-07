@@ -48,7 +48,15 @@ export async function getCustomInboxAiSources(
     return [];
   }
 
-  if (error || !data) {
+  if (error) {
+    console.error(
+      `Failed to load inbox AI sources for org ${organizationId}:`,
+      error.message,
+    );
+    return [];
+  }
+
+  if (!data) {
     return [];
   }
 
@@ -97,4 +105,12 @@ export async function getInboxAiSourcesSettings(
       description: source.description ?? "",
     })),
   };
+}
+
+/** Loads org inbox AI sources in the same shape used by draft generation. */
+export async function loadOrderedInboxAiSourcesForOrganization(
+  organizationId: string,
+): Promise<OrderedInboxAiSource[]> {
+  const customSources = await getCustomInboxAiSources(organizationId);
+  return buildOrderedInboxAiSources({ customSources });
 }

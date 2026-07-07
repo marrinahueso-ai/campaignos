@@ -80,29 +80,38 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     setDraftRequested(false);
   }, [replyTarget?.id, initialBody]);
 
-  const requestDraft = useCallback(() => {
-    if (!replyTarget) {
-      return;
-    }
-
-    startTransition(async () => {
-      setActionError(null);
-      const result = await generateInboxAiDraftAction({
-        threadId: thread.id,
-        messageId: replyTarget.id,
-      });
-
-      if (!result.success) {
-        setActionError(result.error ?? "Could not generate draft.");
+  const requestDraft = useCallback(
+    (options?: { forceRegenerate?: boolean }) => {
+      if (!replyTarget) {
         return;
       }
 
-      if (result.draftBody) {
-        setDraftBody(result.draftBody);
-      }
-      router.refresh();
-    });
-  }, [replyTarget, router, thread.id]);
+      startTransition(async () => {
+        setActionError(null);
+        if (options?.forceRegenerate) {
+          setDraftBody("");
+          setIsEditing(false);
+        }
+
+        const result = await generateInboxAiDraftAction({
+          threadId: thread.id,
+          messageId: replyTarget.id,
+          forceRegenerate: options?.forceRegenerate,
+        });
+
+        if (!result.success) {
+          setActionError(result.error ?? "Could not generate draft.");
+          return;
+        }
+
+        if (result.draftBody) {
+          setDraftBody(result.draftBody);
+        }
+        router.refresh();
+      });
+    },
+    [replyTarget, router, thread.id],
+  );
 
   useEffect(() => {
     if (
@@ -266,7 +275,7 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
         <button
           type="button"
           disabled={isPending}
-          onClick={() => requestDraft()}
+          onClick={() => requestDraft({ forceRegenerate: true })}
           className="inline-flex h-9 items-center justify-center rounded-full border border-[#d8d8d6] bg-white px-5 text-sm font-medium text-[#1a1a1a] transition-colors hover:border-[#b8b8b6] disabled:opacity-50"
         >
           Ask AI

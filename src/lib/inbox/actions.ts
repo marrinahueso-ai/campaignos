@@ -193,6 +193,7 @@ async function requireInboxPermission(): Promise<
 export async function generateInboxAiDraftAction(input: {
   threadId: string;
   messageId?: string | null;
+  forceRegenerate?: boolean;
 }): Promise<InboxReplyActionResult> {
   const access = await requireInboxPermission();
   if (!access.ok) {
@@ -233,6 +234,7 @@ export async function generateInboxAiDraftAction(input: {
     organizationId: access.organizationId,
     thread,
     inboundMessage: replyMessage,
+    forceRegenerate: input.forceRegenerate,
   });
 
   revalidatePath("/inbox");

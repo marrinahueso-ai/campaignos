@@ -19,8 +19,8 @@ import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
 import {
-  buildOrderedInboxAiSources,
-  getCustomInboxAiSources,
+  loadOrderedInboxAiSourcesForOrganization,
+  type OrderedInboxAiSource,
 } from "@/lib/organizations/inbox-ai-sources/queries";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
@@ -55,9 +55,32 @@ function formatVoiceBlock(input: {
   return lines.length > 0 ? lines.join("\n") : "- (No voice profile on file)";
 }
 
-function formatSourceContext(sourceUsed: InboxAiSourceUsed): string {
+function formatConfiguredSourcesCatalog(sources: OrderedInboxAiSource[]): string {
+  if (sources.length === 0) {
+    return "No inbox AI sources configured for this organization.";
+  }
+
+  return sources
+    .map((source, index) => {
+      const description = source.description?.trim() || "(no description)";
+      return `${index + 1}. ${source.label}
+   Description: ${description}
+   URL: ${source.url}`;
+    })
+    .join("\n");
+}
+
+function formatSourceContext(
+  sourceUsed: InboxAiSourceUsed,
+  configuredSources: OrderedInboxAiSource[],
+): string {
+  const catalog = formatConfiguredSourcesCatalog(configuredSources);
+
   if (sourceUsed.answerFrom) {
-    return `Matched source: ${sourceUsed.answerFrom.label}
+    return `Configured inbox AI sources:
+${catalog}
+
+Matched source: ${sourceUsed.answerFrom.label}
 Source URL: ${sourceUsed.answerFrom.url}
 Source details (use ONLY this for factual claims — do NOT invent steps or account details):
 ${sourceUsed.answerFrom.excerpt}
@@ -65,8 +88,11 @@ ${sourceUsed.answerFrom.excerpt}
 Weave the source link in naturally ONLY when the parent is asking for that information (e.g. "SACC is our after-school program — here's the page with all the details: ${sourceUsed.answerFrom.url}").`;
   }
 
-  return `Matched source: none — no configured source matched this question.
-Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies. Do NOT include links.`;
+  return `Configured inbox AI sources:
+${catalog}
+
+Matched source: none — no configured source matched this question.
+Draft a brief, casual reply saying you're checking on it and will follow up soon. Do NOT invent dates, times, locations, prices, deadlines, or policies. Do NOT include links unless one of the configured sources clearly applies.`;
 }
 
 const INBOX_GROUNDING_RULES = [
@@ -109,6 +135,7 @@ function buildVerifiedAnswerUserPrompt(input: {
   inboundMessage: InboxMessage;
   voiceBlock: string;
   sourceBlock: string;
+  configuredSourcesCatalog: string;
 }): string {
   const channelLabel = INBOX_CHANNEL_LABELS[input.thread.channelType];
   const conversationLines = [
@@ -122,6 +149,9 @@ ${input.thread.subject ? `Context: ${input.thread.subject}` : ""}
 
 Recent message to reply to:
 ${conversationLines.join("\n")}
+
+ORGANIZATION INBOX AI SOURCES (from settings — name, description, URL):
+${input.configuredSourcesCatalog}
 
 SOURCE CHECK RESULTS (authoritative — use ONLY this for facts):
 ${input.sourceBlock}
@@ -163,111 +193,33 @@ async function saveInboxDraft(input: {
   return { success: true, error: null };
 }
 
-export async function generateInboxReplyWithSources(input: {
+async function generateSourceAwareDraft(input: {
   organizationId: string;
   thread: InboxThread;
   inboundMessage: InboxMessage;
+  orderedSources: OrderedInboxAiSource[];
+  organization: Awaited<ReturnType<typeof getOrganizationById>>;
 }): Promise<{
   success: boolean;
   draftBody: string | null;
   aiSourceUsed: InboxAiSourceUsed | null;
   error: string | null;
 }> {
-  if (!isAiConfigured()) {
-    return {
-      success: false,
-      draftBody: null,
-      aiSourceUsed: null,
-      error: "AI drafting is not configured.",
-    };
-  }
-
-  const [organization, customSources] = await Promise.all([
-    getOrganizationById(input.organizationId),
-    getCustomInboxAiSources(input.organizationId),
-  ]);
-
-  const orderedSources = buildOrderedInboxAiSources({ customSources });
-
-  if (!messageNeedsSourceAnswer(input.inboundMessage.body)) {
-    const draftBody = buildAcknowledgementDraft({
-      messageBody: input.inboundMessage.body,
-      senderName: input.inboundMessage.senderName,
-      channelType: input.thread.channelType,
-    });
-    const sourceUsed: InboxAiSourceUsed = {
-      sourcesChecked: orderedSources.map((source) => ({
-        label: source.label.trim() || source.label,
-        url: source.url,
-        sourceType: source.sourceType,
-        checked: false,
-        answerFound: false,
-      })),
-      answerFrom: null,
-      noAnswerFound: true,
-    };
-
-    const saved = await saveInboxDraft({
-      organizationId: input.organizationId,
-      messageId: input.inboundMessage.id,
-      draftBody,
-      sourceUsed,
-    });
-
-    if (!saved.success) {
-      return {
-        success: false,
-        draftBody: null,
-        aiSourceUsed: sourceUsed,
-        error: saved.error,
-      };
-    }
-
-    return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
-  }
-
   const sourceUsed = await checkOrganizationSources({
     question: input.inboundMessage.body,
-    sources: orderedSources,
+    sources: input.orderedSources,
   });
 
-  if (sourceUsed.noAnswerFound) {
-    const profile = organization
-      ? await getAiProfileByOrganizationId(organization.id)
-      : null;
-    const orgFacts = buildOrganizationGroundingFacts({ organization, profile });
-
-    const draftBody = buildFollowUpDraft({
-      senderName: input.inboundMessage.senderName,
-      organizationName: orgFacts.name,
-      channelType: input.thread.channelType,
-    });
-
-    const saved = await saveInboxDraft({
-      organizationId: input.organizationId,
-      messageId: input.inboundMessage.id,
-      draftBody,
-      sourceUsed,
-    });
-
-    if (!saved.success) {
-      return {
-        success: false,
-        draftBody: null,
-        aiSourceUsed: sourceUsed,
-        error: saved.error,
-      };
-    }
-
-    return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
-  }
-
-  const profile = organization
-    ? await getAiProfileByOrganizationId(organization.id)
+  const profile = input.organization
+    ? await getAiProfileByOrganizationId(input.organization.id)
     : null;
-  const orgFacts = buildOrganizationGroundingFacts({ organization, profile });
+  const orgFacts = buildOrganizationGroundingFacts({
+    organization: input.organization,
+    profile,
+  });
   const voiceBlock = formatVoiceBlock({ organization: orgFacts });
-  const sourceBlock = formatSourceContext(sourceUsed);
+  const configuredSourcesCatalog = formatConfiguredSourcesCatalog(input.orderedSources);
+  const sourceBlock = formatSourceContext(sourceUsed, input.orderedSources);
 
   const generation = await generateText({
     systemPrompt: buildVerifiedAnswerSystemPrompt(),
@@ -276,6 +228,7 @@ export async function generateInboxReplyWithSources(input: {
       inboundMessage: input.inboundMessage,
       voiceBlock,
       sourceBlock,
+      configuredSourcesCatalog,
     }),
     model: resolveFastDraftModel(),
     maxTokens: 300,
@@ -283,6 +236,32 @@ export async function generateInboxReplyWithSources(input: {
   });
 
   if (!generation.success || !generation.text?.trim()) {
+    if (sourceUsed.noAnswerFound) {
+      const draftBody = buildFollowUpDraft({
+        senderName: input.inboundMessage.senderName,
+        organizationName: orgFacts.name,
+        channelType: input.thread.channelType,
+      });
+
+      const saved = await saveInboxDraft({
+        organizationId: input.organizationId,
+        messageId: input.inboundMessage.id,
+        draftBody,
+        sourceUsed,
+      });
+
+      if (!saved.success) {
+        return {
+          success: false,
+          draftBody: null,
+          aiSourceUsed: sourceUsed,
+          error: saved.error,
+        };
+      }
+
+      return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
+    }
+
     return {
       success: false,
       draftBody: null,
@@ -309,4 +288,77 @@ export async function generateInboxReplyWithSources(input: {
   }
 
   return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
+}
+
+export async function generateInboxReplyWithSources(input: {
+  organizationId: string;
+  thread: InboxThread;
+  inboundMessage: InboxMessage;
+  forceRegenerate?: boolean;
+}): Promise<{
+  success: boolean;
+  draftBody: string | null;
+  aiSourceUsed: InboxAiSourceUsed | null;
+  error: string | null;
+}> {
+  if (!isAiConfigured()) {
+    return {
+      success: false,
+      draftBody: null,
+      aiSourceUsed: null,
+      error: "AI drafting is not configured.",
+    };
+  }
+
+  const [organization, orderedSources] = await Promise.all([
+    getOrganizationById(input.organizationId),
+    loadOrderedInboxAiSourcesForOrganization(input.organizationId),
+  ]);
+
+  const needsSourceAnswer = messageNeedsSourceAnswer(input.inboundMessage.body);
+
+  if (!needsSourceAnswer) {
+    const draftBody = buildAcknowledgementDraft({
+      messageBody: input.inboundMessage.body,
+      senderName: input.inboundMessage.senderName,
+      channelType: input.thread.channelType,
+    });
+    const sourceUsed: InboxAiSourceUsed = {
+      sourcesChecked: orderedSources.map((source) => ({
+        label: source.label.trim() || source.label,
+        url: source.url,
+        sourceType: source.sourceType,
+        checked: false,
+        answerFound: false,
+      })),
+      answerFrom: null,
+      noAnswerFound: orderedSources.length === 0,
+    };
+
+    const saved = await saveInboxDraft({
+      organizationId: input.organizationId,
+      messageId: input.inboundMessage.id,
+      draftBody,
+      sourceUsed,
+    });
+
+    if (!saved.success) {
+      return {
+        success: false,
+        draftBody: null,
+        aiSourceUsed: sourceUsed,
+        error: saved.error,
+      };
+    }
+
+    return { success: true, draftBody, aiSourceUsed: sourceUsed, error: null };
+  }
+
+  return generateSourceAwareDraft({
+    organizationId: input.organizationId,
+    thread: input.thread,
+    inboundMessage: input.inboundMessage,
+    orderedSources,
+    organization,
+  });
 }
