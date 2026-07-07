@@ -49,6 +49,8 @@ interface SocialMediaCenterShellProps {
   metaPublishBundles?: MetaPublishBundle[];
   tasks?: EventPlaybookTask[];
   onCreateMilestone?: () => void;
+  /** Defaults to the event workspace page. Use `#overview` from Planning Hub. */
+  backHref?: string;
   children: React.ReactNode;
 }
 
@@ -289,8 +291,11 @@ export function SocialMediaCenterShell({
   metaPublishBundles = [],
   tasks = [],
   onCreateMilestone,
+  backHref,
   children,
 }: SocialMediaCenterShellProps) {
+  const resolvedBackHref = backHref ?? `/events/${event.id}`;
+
   return (
     <div
       className="overflow-hidden"
@@ -298,7 +303,7 @@ export function SocialMediaCenterShell({
     >
       <div className="px-4 pt-5 sm:px-6 lg:px-8">
         <Link
-          href={`/events/${event.id}`}
+          href={resolvedBackHref}
           className="inline-flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80"
           style={{ color: "#7A7268" }}
         >

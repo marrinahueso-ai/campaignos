@@ -140,6 +140,7 @@ export function EventPlanningHub({
         planningOverview={planningOverview}
         artwork={campaignWorkspace.artwork}
         tasks={hubData.tasks}
+        backHref="#overview"
       />
     ) : null;
 

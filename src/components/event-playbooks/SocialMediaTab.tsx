@@ -81,6 +81,7 @@ interface SocialMediaTabProps {
   planningOverview?: EventPlanningOverviewData | null;
   artwork?: HeroArtworkSelection | null;
   tasks?: EventPlaybookTask[];
+  backHref?: string;
 }
 
 export function SocialMediaTab({
@@ -107,6 +108,7 @@ export function SocialMediaTab({
   planningOverview = null,
   artwork = null,
   tasks = [],
+  backHref,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
     if (typeof window === "undefined") {
@@ -214,6 +216,7 @@ export function SocialMediaTab({
             communicationStrategy={event.communicationStrategy}
             metaPublishBundles={metaPublishBundles}
             tasks={tasks}
+            backHref={backHref}
           />
         }
         artwork={

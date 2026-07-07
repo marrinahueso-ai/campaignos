@@ -168,10 +168,12 @@ export function EventPlaybookTabs({
   };
 
   const showPlanningDashboard = activeTab === "overview";
+  const showSocialMediaCenter = activeTab === "social-media" && hasCampaign;
+  const isFullBleedView = showPlanningDashboard || showSocialMediaCenter;
 
   return (
-    <div className={cn(!showPlanningDashboard && "border border-cos-border bg-cos-card shadow-sm")}>
-      {!showPlanningDashboard && (
+    <div className={cn(!isFullBleedView && "border border-cos-border bg-cos-card shadow-sm")}>
+      {!isFullBleedView && (
         <div
           className="sticky-dashboard-subnav border-b border-cos-border px-4 pt-4 lg:px-6"
           role="navigation"
@@ -219,7 +221,7 @@ export function EventPlaybookTabs({
         </div>
       )}
 
-      <div className={cn(showPlanningDashboard ? undefined : "bg-cos-bg p-6 lg:p-8")}>
+      <div className={cn(isFullBleedView ? undefined : "bg-cos-bg p-6 lg:p-8")}>
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse bg-cos-bg/60" />
         ) : (

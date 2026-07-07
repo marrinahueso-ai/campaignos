@@ -79,7 +79,7 @@ export function PlanningHubSocialCenter({
         icon={MessageSquare}
         title="Social Media Center"
         action={
-          <PlanningHubActionLink onClick={() => onNavigateTab("social-media", "publish")}>
+          <PlanningHubActionLink onClick={() => onNavigateTab("social-media", "plan")}>
             View all posts →
           </PlanningHubActionLink>
         }
