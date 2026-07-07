@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Calendar, Check, ChevronRight, Sparkles, User } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  ChevronRight,
+  ImageIcon,
+  Sparkles,
+  User,
+} from "lucide-react";
 import {
   CAMPAIGN_WORKFLOW_STEP_LABELS,
   resolveCompletedWorkflowSteps,
@@ -143,6 +151,39 @@ function SocialMediaCenterStepper({
   );
 }
 
+function CampaignSummaryArtwork({
+  event,
+  artwork,
+}: {
+  event: Event;
+  artwork?: HeroArtworkSelection | null;
+}) {
+  const showArtwork = hasDisplayableArtwork(artwork ?? null);
+
+  return (
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[#f7f6f3] ring-1 ring-cos-border/60">
+      {showArtwork && artwork?.imageUrl ? (
+        <Image
+          src={artwork.imageUrl}
+          alt={artwork.label ?? event.title}
+          fill
+          className="object-cover object-center"
+          unoptimized
+        />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-1.5 border-2 border-dashed border-cos-border/80 bg-cos-bg/40 px-2 text-center"
+          role="img"
+          aria-label="Artwork pending"
+        >
+          <ImageIcon className="h-5 w-5 text-cos-muted" aria-hidden />
+          <span className="text-[10px] font-medium text-cos-muted">Artwork pending</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CampaignSummaryCard({
   event,
   artwork,
@@ -156,33 +197,20 @@ function CampaignSummaryCard({
   communicationStrategy?: CommunicationStrategy;
   className?: string;
 }) {
-  const showArtwork = hasDisplayableArtwork(artwork ?? null);
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 bg-cos-card shadow-sm",
+        "flex w-full min-w-0 overflow-hidden rounded-2xl bg-cos-card shadow-sm",
         className,
       )}
     >
-      <div className="relative w-[42%] shrink-0 self-stretch overflow-hidden">
-        {showArtwork && artwork?.imageUrl ? (
-          <Image
-            src={artwork.imageUrl}
-            alt={artwork.label ?? event.title}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full min-h-[9rem] w-full items-center justify-center bg-cos-warning text-base font-medium text-cos-warning-text">
-            {event.title.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+      <div className="flex w-[42%] shrink-0 items-center justify-center p-3 lg:p-4">
+        <CampaignSummaryArtwork event={event} artwork={artwork} />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between p-4 lg:p-5">
+      <div className="flex min-w-0 flex-1 flex-col justify-between py-4 pr-4 lg:py-5 lg:pr-5">
         <div>
           <p className="font-display line-clamp-2 text-xl leading-snug text-cos-text">
             {event.title}
