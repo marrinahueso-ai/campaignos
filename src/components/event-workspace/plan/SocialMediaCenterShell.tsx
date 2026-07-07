@@ -160,7 +160,12 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className={cn("flex shrink-0 bg-cos-card shadow-sm", className)}>
+    <div
+      className={cn(
+        "flex w-full shrink-0 bg-cos-card shadow-sm sm:max-w-sm lg:w-72 lg:max-w-full",
+        className,
+      )}
+    >
       <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
@@ -248,13 +253,12 @@ export function SocialMediaCenterShell({
             </p>
           </div>
 
-          <div className="flex min-w-0 items-center justify-end">
+          <div className="flex min-w-0 items-center justify-start lg:justify-end">
             <CampaignSummaryCard
               event={event}
               artwork={artwork}
               ownership={ownership}
               communicationStrategy={communicationStrategy}
-              className="w-full max-w-sm"
             />
           </div>
         </div>
