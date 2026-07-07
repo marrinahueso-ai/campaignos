@@ -4,7 +4,7 @@ import { CaptionsProgressStepper } from "@/components/event-workspace/captions/C
 import { ArtworkV2Shell } from "@/components/artwork-v2/ArtworkV2Shell";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { Event } from "@/types";
+import type { BrandAssets, Event } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStep, EventType } from "@/types/playbooks";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
@@ -22,6 +22,7 @@ interface CampaignArtworkPageProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
+  brandAssets?: BrandAssets | null;
 }
 
 export function CampaignArtworkPage({
@@ -37,6 +38,7 @@ export function CampaignArtworkPage({
   onFocusedMilestoneChange,
   onNavigateToCaptions,
   onWorkflowStepSelect,
+  brandAssets = null,
 }: CampaignArtworkPageProps) {
   return (
     <div className="overflow-hidden border border-cos-border bg-cos-card">
@@ -59,6 +61,7 @@ export function CampaignArtworkPage({
           initialRelativeDay={initialRelativeDay}
           onFocusedMilestoneChange={onFocusedMilestoneChange}
           onNavigateToCaptions={onNavigateToCaptions}
+          brandAssets={brandAssets}
         />
       </div>
     </div>

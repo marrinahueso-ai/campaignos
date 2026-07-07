@@ -25,7 +25,7 @@ import { getAssetVersionsForEvent } from "@/lib/creative-assets/queries";
 import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
 import { buildMetaSocialCaptionMilestones } from "@/lib/meta-captions/generation";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
 import {
   getActiveSchoolYear,
   getPlanningHubSwitcherDateWindow,
@@ -239,6 +239,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     assetVersionsMap,
     availablePlaybooks,
     postingHeatmap,
+    schoolProfile,
   ] = await Promise.all([
     getEventPlaybookData(event.id),
     getStepDraftsForEvent(event.id),
@@ -247,6 +248,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     getAssetVersionsForEvent(event.id),
     getPlaybooksForOrganization(organization?.id ?? null),
     getOrgPostingHeatmap(),
+    organization ? getSchoolProfile() : Promise.resolve(null),
   ]);
 
   const resolvedPlaybook = playbookData ?? buildFallbackPlaybookData(event);
@@ -324,6 +326,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           defaultApprovalRoleId,
           eventDetailsChanged,
           postingHeatmap,
+          brandAssets: schoolProfile?.brandAssets ?? null,
         }}
         planningOverview={planningOverview}
       />

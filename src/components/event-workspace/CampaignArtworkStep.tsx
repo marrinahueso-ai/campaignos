@@ -3,7 +3,7 @@
 import { CampaignArtworkPage } from "@/components/event-workspace/artwork/CampaignArtworkPage";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { Event } from "@/types";
+import type { BrandAssets, Event } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStep, EventType } from "@/types/playbooks";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
@@ -21,6 +21,7 @@ interface CampaignArtworkStepProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
+  brandAssets?: BrandAssets | null;
 }
 
 export function CampaignArtworkStep({
@@ -36,6 +37,7 @@ export function CampaignArtworkStep({
   onFocusedMilestoneChange,
   onNavigateToCaptions,
   onWorkflowStepSelect,
+  brandAssets = null,
 }: CampaignArtworkStepProps) {
   return (
     <CampaignArtworkPage
@@ -51,6 +53,7 @@ export function CampaignArtworkStep({
       onFocusedMilestoneChange={onFocusedMilestoneChange}
       onNavigateToCaptions={onNavigateToCaptions}
       onWorkflowStepSelect={onWorkflowStepSelect}
+      brandAssets={brandAssets}
     />
   );
 }

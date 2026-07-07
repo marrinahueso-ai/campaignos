@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MilestoneScheduleBar } from "@/components/event-workspace/MilestoneScheduleBar";
-import { ArtworkCustomizeToolbar, type ArtworkCustomizeAction } from "@/components/event-workspace/artwork/ArtworkCustomizeToolbar";
 import { ArtworkGeneratedOptionsGrid } from "@/components/event-workspace/artwork/ArtworkGeneratedOptionsGrid";
 import { ArtworkPageHeader } from "@/components/event-workspace/artwork/ArtworkPageHeader";
 import { ArtworkPromptPanel } from "@/components/event-workspace/artwork/ArtworkPromptPanel";
@@ -12,16 +11,10 @@ import {
   metaPlacementToDefaultFormatLabel,
   resolveArtworkPreviewAspectRatio,
 } from "@/lib/artwork-v2/format-selection";
+import { buildSetupLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import type { ArtworkV2Reference, ArtworkV2ReviewVersion } from "@/lib/artwork-v2/types";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
-
-const CUSTOMIZE_PROMPTS: Record<ArtworkCustomizeAction, string> = {
-  "edit-text": "Update the text — wording, hierarchy, and placement.",
-  "change-colors": "Adjust the color palette — warmer, brighter, or more on-brand.",
-  "swap-elements": "Swap or rearrange visual elements — icons, illustrations, layout.",
-  resize: "Resize or reframe the layout for better balance.",
-  "add-logo": "Add or reposition the school or PTO logo.",
-};
+import type { BrandAssets } from "@/types";
 
 interface ArtworkMilestoneOption {
   relativeDay: number;
@@ -40,6 +33,7 @@ interface ArtworkCampaignWorkspaceProps {
   versions: ArtworkV2ReviewVersion[];
   generationMode: ArtworkGenerationMode;
   selectedVersionId: string | null;
+  brandAssets?: BrandAssets | null;
   isGenerating?: boolean;
   isReviewBusy?: boolean;
   isApprovingInspiration?: boolean;
@@ -55,7 +49,6 @@ interface ArtworkCampaignWorkspaceProps {
   onSelectVersion: (versionId: string) => void;
   onApproveSelected: () => void;
   onGenerateMore: () => void;
-  onCustomizeAction: (action: ArtworkCustomizeAction) => void;
 }
 
 export function ArtworkCampaignWorkspace({
@@ -70,6 +63,7 @@ export function ArtworkCampaignWorkspace({
   versions,
   generationMode,
   selectedVersionId,
+  brandAssets = null,
   isGenerating = false,
   isReviewBusy = false,
   error = null,
@@ -83,34 +77,18 @@ export function ArtworkCampaignWorkspace({
   onSelectVersion,
   onApproveSelected,
   onGenerateMore,
-  onCustomizeAction,
 }: ArtworkCampaignWorkspaceProps) {
   const [brandStyle, setBrandStyle] = useState("Hey Ralli (Primary)");
   const [colorVibe, setColorVibe] = useState("Colorful & Playful");
   const [lightboxVersion, setLightboxVersion] = useState<ArtworkV2ReviewVersion | null>(null);
+
+  const setupLogos = useMemo(() => buildSetupLogoOptions(brandAssets), [brandAssets]);
 
   const hasSelection = selectedVersionId != null;
   const hasGeneratedVersions = versions.length > 0;
   const previewAspectRatio = resolveArtworkPreviewAspectRatio(
     item.metaPlacement === "story" ? "story" : "feed",
   );
-
-  function handleCustomizeAction(action: ArtworkCustomizeAction) {
-    onCustomizeAction(action);
-    const editHint = CUSTOMIZE_PROMPTS[action];
-    if (!prompt.trim()) {
-      onPromptChange(editHint);
-      return;
-    }
-
-    if (!prompt.includes(editHint)) {
-      onPromptChange(`${prompt.trim()}\n\n${editHint}`);
-    }
-  }
-
-  function handleGenerateClick() {
-    onGenerate(generationMode);
-  }
 
   const showMilestoneBar =
     milestones.length > 0 &&
@@ -157,13 +135,13 @@ export function ArtworkCampaignWorkspace({
           onGenerationModeChange={onGenerationModeChange}
           references={references}
           onReferencesChange={onReferencesChange}
-          onGenerate={handleGenerateClick}
+          setupLogos={setupLogos}
+          onGenerate={onGenerate}
           onApproveSelected={onApproveSelected}
           hasSelection={hasSelection && hasGeneratedVersions}
           isGenerating={isGenerating}
           isReviewBusy={isReviewBusy}
-          generateDisabled={!prompt.trim()}
-          disabled={isGenerating || isReviewBusy}
+          inputsDisabled={isGenerating || isReviewBusy}
         />
 
         <ArtworkGeneratedOptionsGrid
@@ -176,11 +154,6 @@ export function ArtworkCampaignWorkspace({
           onGenerateMore={hasGeneratedVersions ? onGenerateMore : undefined}
           isGeneratingMore={isGenerating || isReviewBusy}
           disabled={isReviewBusy || !hasGeneratedVersions}
-        />
-
-        <ArtworkCustomizeToolbar
-          onAction={handleCustomizeAction}
-          disabled={!hasSelection || isReviewBusy || !hasGeneratedVersions}
         />
       </div>
 

@@ -6,7 +6,6 @@ import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
 import {
   ArtworkCampaignWorkspace,
 } from "@/components/event-workspace/artwork/ArtworkCampaignWorkspace";
-import type { ArtworkCustomizeAction } from "@/components/event-workspace/artwork/ArtworkCustomizeToolbar";
 import { ArtworkV2ApprovedScreen } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import {
   ArtworkV2BatchGenerateScreen,
@@ -70,7 +69,7 @@ import {
 import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { Event } from "@/types";
+import type { BrandAssets, Event } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStep, EventType } from "@/types/playbooks";
 
@@ -88,6 +87,7 @@ interface ArtworkV2ShellProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   /** Campaign workflow layout matching captions / review-publish redesign. */
   variant?: "legacy" | "campaign";
+  brandAssets?: BrandAssets | null;
 }
 
 function resolveArtworkRelativeDay(
@@ -217,6 +217,7 @@ export function ArtworkV2Shell({
   initialRelativeDay = null,
   onFocusedMilestoneChange,
   variant = "legacy",
+  brandAssets = null,
 }: ArtworkV2ShellProps) {
   const router = useRouter();
   const workflowItems = useMemo(
@@ -1400,10 +1401,6 @@ export function ArtworkV2Shell({
     handleRegenerate(lastGenerationMode);
   }
 
-  function handleCampaignCustomizeAction(_action: ArtworkCustomizeAction) {
-    // Prompt prefill is handled in ArtworkCampaignWorkspace.
-  }
-
   if (
     variant === "campaign" &&
     step === "pick" &&
@@ -1435,6 +1432,7 @@ export function ArtworkV2Shell({
         versions={reviewVersions}
         generationMode={generationMode}
         selectedVersionId={selectedVersionId}
+        brandAssets={brandAssets}
         isGenerating={isGenerating}
         isReviewBusy={isReviewBusy}
         isApprovingInspiration={isReviewBusy}
@@ -1450,7 +1448,6 @@ export function ArtworkV2Shell({
         onSelectVersion={setSelectedVersionId}
         onApproveSelected={handleCampaignApproveSelected}
         onGenerateMore={handleCampaignGenerateMore}
-        onCustomizeAction={handleCampaignCustomizeAction}
       />
     );
   }

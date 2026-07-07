@@ -20,7 +20,7 @@ import type {
   StepCommunicationDraft,
   EventAssetVersion,
 } from "@/types/event-workspace";
-import type { Event } from "@/types";
+import type { BrandAssets, Event } from "@/types";
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { CommunicationPlaybook, EventPlaybookData } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
@@ -51,6 +51,7 @@ interface CampaignWorkspaceBundle {
   defaultApprovalRoleId: string | null;
   eventDetailsChanged?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
+  brandAssets?: BrandAssets | null;
 }
 
 interface CalendarContextBundle {
@@ -144,6 +145,7 @@ export function EventPlanningHub({
         tasks={hubData.tasks}
         backHref="#overview"
         postingHeatmap={campaignWorkspace.postingHeatmap ?? null}
+        brandAssets={campaignWorkspace.brandAssets ?? null}
       />
     ) : null;
 

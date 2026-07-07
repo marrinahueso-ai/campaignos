@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef } from "react";
-import { ChevronDown, Sparkles, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { ChevronDown, CircleUser, Upload, X } from "lucide-react";
+import { ArtworkGenerationModeButtons } from "@/components/event-workspace/artwork/ArtworkGenerationModeButtons";
+import { ArtworkLogoPickerModal } from "@/components/event-workspace/artwork/ArtworkLogoPickerModal";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
 import {
-  ARTWORK_GENERATION_MODE_COPY,
-  type ArtworkGenerationMode,
-} from "@/lib/artwork-v2/generation-mode";
+  buildLogoPromptHint,
+  type SetupLogoOption,
+} from "@/lib/artwork-v2/setup-logos";
 import type { ArtworkV2Reference } from "@/lib/artwork-v2/types";
 import { ARTWORK_FORMAT_OPTIONS } from "@/lib/artwork-v2/format-selection";
 import { Button } from "@/components/ui/Button";
@@ -22,8 +25,6 @@ const COLOR_VIBE_OPTIONS = [
   "School spirit",
 ] as const;
 
-const MODES: ArtworkGenerationMode[] = ["quick", "refined"];
-
 interface ArtworkPromptPanelProps {
   prompt: string;
   onPromptChange: (value: string) => void;
@@ -37,23 +38,17 @@ interface ArtworkPromptPanelProps {
   onGenerationModeChange: (mode: ArtworkGenerationMode) => void;
   references: ArtworkV2Reference[];
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
-  onGenerate: () => void;
+  setupLogos?: SetupLogoOption[];
+  onGenerate: (mode: ArtworkGenerationMode) => void;
   onApproveSelected?: () => void;
   hasSelection?: boolean;
   isGenerating?: boolean;
   isReviewBusy?: boolean;
-  generateDisabled?: boolean;
-  disabled?: boolean;
+  inputsDisabled?: boolean;
 }
 
 function createReferenceId(): string {
   return crypto.randomUUID();
-}
-
-function modeTooltip(mode: ArtworkGenerationMode): string {
-  const copy = ARTWORK_GENERATION_MODE_COPY[mode];
-  const optionCount = mode === "quick" ? "1 option" : "2 options";
-  return `${copy.timing} · ${optionCount} — ${copy.detail}`;
 }
 
 export function ArtworkPromptPanel({
@@ -69,16 +64,18 @@ export function ArtworkPromptPanel({
   onGenerationModeChange,
   references,
   onReferencesChange,
+  setupLogos = [],
   onGenerate,
   onApproveSelected,
   hasSelection = false,
   isGenerating = false,
   isReviewBusy = false,
-  generateDisabled = false,
-  disabled = false,
+  inputsDisabled = false,
 }: ArtworkPromptPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPickerOpen, setLogoPickerOpen] = useState(false);
   const atMaxReferences = references.length >= ARTWORK_V2_MAX_INSPIRATION_IMAGES;
+  const hasPrompt = prompt.trim().length > 0;
 
   function revokeBlobPreview(reference: ArtworkV2Reference): void {
     if (reference.previewUrl?.startsWith("blob:")) {
@@ -113,8 +110,43 @@ export function ArtworkPromptPanel({
     onReferencesChange(references.filter((reference) => reference.id !== referenceId));
   }
 
+  function handleAddLogoClick() {
+    if (setupLogos.length === 0) {
+      const hint = "Include the school or PTO logo in the design.";
+      if (!prompt.trim()) {
+        onPromptChange(hint);
+        return;
+      }
+      if (!prompt.includes(hint)) {
+        onPromptChange(`${prompt.trim()}\n\n${hint}`);
+      }
+      return;
+    }
+
+    if (setupLogos.length === 1) {
+      applyLogoSelection(setupLogos[0]!);
+      return;
+    }
+
+    setLogoPickerOpen(true);
+  }
+
+  function applyLogoSelection(logo: SetupLogoOption) {
+    setLogoPickerOpen(false);
+    const hint = buildLogoPromptHint(logo.label);
+
+    if (!prompt.trim()) {
+      onPromptChange(hint);
+      return;
+    }
+
+    if (!prompt.includes(hint)) {
+      onPromptChange(`${prompt.trim()}\n\n${hint}`);
+    }
+  }
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="relative">
         <Textarea
           id="artwork-campaign-prompt"
@@ -122,7 +154,7 @@ export function ArtworkPromptPanel({
           onChange={(event) => onPromptChange(event.target.value)}
           rows={3}
           placeholder="Describe the artwork you want — style, colors, text, mood…"
-          disabled={disabled}
+          disabled={inputsDisabled}
           className="min-h-[88px] resize-y border-cos-border bg-cos-bg/40 pr-4 pb-12 text-sm leading-relaxed"
         />
         <div className="absolute right-2 bottom-2 flex items-center gap-2">
@@ -131,32 +163,24 @@ export function ArtworkPromptPanel({
               type="button"
               size="sm"
               variant="secondary"
-              disabled={isReviewBusy || disabled}
+              disabled={isReviewBusy || inputsDisabled}
               onClick={onApproveSelected}
               className="h-8 px-3 text-xs"
             >
               {isReviewBusy ? "Saving…" : "Approve selected"}
             </Button>
           )}
-          <button
-            type="button"
-            disabled={
-              generateDisabled || isGenerating || isReviewBusy || !prompt.trim() || disabled
-            }
-            onClick={onGenerate}
-            className={cn(
-              "inline-flex h-8 items-center gap-1.5 bg-cos-dark px-3 text-xs font-medium text-[#f6f2eb] transition-colors hover:bg-cos-text disabled:pointer-events-none disabled:opacity-50",
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            {isGenerating || isReviewBusy
-              ? "Generating…"
-              : hasSelection
-                ? "Generate with my edits"
-                : "Generate"}
-          </button>
         </div>
       </div>
+
+      <ArtworkGenerationModeButtons
+        value={generationMode}
+        onChange={onGenerationModeChange}
+        onGenerate={onGenerate}
+        isGenerating={isGenerating}
+        isReviewBusy={isReviewBusy}
+        hasPrompt={hasPrompt}
+      />
 
       <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
         <ArtworkPromptSelect
@@ -164,27 +188,39 @@ export function ArtworkPromptPanel({
           value={format}
           options={ARTWORK_FORMAT_OPTIONS}
           onChange={onFormatChange}
-          disabled={disabled}
+          disabled={inputsDisabled}
         />
         <ArtworkPromptSelect
           label="Brand style"
           value={brandStyle}
           options={BRAND_STYLE_OPTIONS}
           onChange={onBrandStyleChange}
-          disabled={disabled}
+          disabled={inputsDisabled}
         />
         <ArtworkPromptSelect
           label="Color vibe"
           value={colorVibe}
           options={COLOR_VIBE_OPTIONS}
           onChange={onColorVibeChange}
-          disabled={disabled}
+          disabled={inputsDisabled}
         />
+
+        <button
+          type="button"
+          disabled={inputsDisabled}
+          onClick={handleAddLogoClick}
+          className={cn(
+            "inline-flex h-8 shrink-0 items-center gap-1.5 border border-cos-border bg-cos-card px-2.5 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:pointer-events-none disabled:opacity-50",
+          )}
+        >
+          <CircleUser className="h-3.5 w-3.5" aria-hidden />
+          Add logo
+        </button>
 
         {!atMaxReferences && (
           <button
             type="button"
-            disabled={disabled}
+            disabled={inputsDisabled}
             onClick={() => fileInputRef.current?.click()}
             className={cn(
               "inline-flex h-8 shrink-0 items-center gap-1.5 border border-cos-border bg-cos-card px-2.5 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:pointer-events-none disabled:opacity-50",
@@ -214,37 +250,6 @@ export function ArtworkPromptPanel({
             </button>
           </div>
         ))}
-
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          {MODES.map((mode) => {
-            const copy = ARTWORK_GENERATION_MODE_COPY[mode];
-            const selected = generationMode === mode;
-
-            return (
-              <button
-                key={mode}
-                type="button"
-                disabled={disabled}
-                onClick={() => onGenerationModeChange(mode)}
-                aria-pressed={selected}
-                className={cn(
-                  "group relative inline-flex h-8 items-center px-2.5 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
-                  selected
-                    ? "border border-cos-dark bg-cos-bg text-cos-text"
-                    : "border border-cos-border bg-cos-card text-cos-muted hover:border-cos-dark/30 hover:bg-cos-bg/60 hover:text-cos-text",
-                )}
-              >
-                {copy.title}
-                <span
-                  className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-52 -translate-x-1/2 border border-cos-border bg-cos-card px-2 py-1.5 text-left text-[11px] leading-snug font-normal text-cos-text shadow-sm group-hover:block"
-                  role="tooltip"
-                >
-                  {modeTooltip(mode)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       <input
@@ -255,6 +260,14 @@ export function ArtworkPromptPanel({
         className="hidden"
         onChange={handleUploadChange}
       />
+
+      {logoPickerOpen && setupLogos.length > 1 && (
+        <ArtworkLogoPickerModal
+          logos={setupLogos}
+          onSelect={applyLogoSelection}
+          onClose={() => setLogoPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

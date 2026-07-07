@@ -16,7 +16,7 @@ import type {
   EventAsset,
   StepCommunicationDraft,
 } from "@/types/event-workspace";
-import type { Event } from "@/types";
+import type { BrandAssets, Event } from "@/types";
 import type { CommunicationPlaybook } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
@@ -84,6 +84,7 @@ interface SocialMediaTabProps {
   tasks?: EventPlaybookTask[];
   backHref?: string;
   postingHeatmap?: PostingHeatmapData | null;
+  brandAssets?: BrandAssets | null;
 }
 
 export function SocialMediaTab({
@@ -112,6 +113,7 @@ export function SocialMediaTab({
   tasks = [],
   backHref,
   postingHeatmap = null,
+  brandAssets = null,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
     if (typeof window === "undefined") {
@@ -237,6 +239,7 @@ export function SocialMediaTab({
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onNavigateToCaptions={handleNavigateToCaptions}
             onWorkflowStepSelect={navigateToWorkflowStep}
+            brandAssets={brandAssets}
           />
         }
         schedule={
