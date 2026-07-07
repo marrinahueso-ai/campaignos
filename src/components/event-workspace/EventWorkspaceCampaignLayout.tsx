@@ -172,6 +172,8 @@ export function EventWorkspaceCampaignLayout({
             defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
             metaPublishBundles={metaPublishBundles}
+            assets={assets}
+            eventType={event.eventType}
             artwork={artwork}
             ownership={ownership}
             communicationStrategy={communicationStrategy}

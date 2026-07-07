@@ -222,6 +222,8 @@ export function SocialMediaTab({
             ownership={ownership}
             communicationStrategy={event.communicationStrategy}
             metaPublishBundles={metaPublishBundles}
+            assets={assets}
+            eventType={event.eventType}
             tasks={tasks}
             backHref={backHref}
             postingHeatmap={postingHeatmap}

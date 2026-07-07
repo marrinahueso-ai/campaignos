@@ -1,9 +1,45 @@
+import {
+  isFeedSurfaceEnabled,
+  isStoryAutoPublishEnabled,
+} from "@/lib/artwork-v2/campaign-phases";
 import { isManualStoryOnlyBundle } from "@/lib/meta-publishing/publish-mode";
+import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import { CHANNEL_LABELS } from "@/lib/playbooks/constants";
 import type {
   MetaPublishBundle,
   MetaPublishBundleStatus,
 } from "@/lib/meta-publishing/types";
+
+export function findMetaPublishBundleForMilestoneDay(
+  bundles: MetaPublishBundle[],
+  relativeDay: number,
+): MetaPublishBundle | undefined {
+  return (
+    bundles.find(
+      (candidate) =>
+        candidate.isMetaPost &&
+        candidate.relativeDay === relativeDay &&
+        candidate.status !== "skipped",
+    ) ?? findMetaPublishBundleForDay(bundles, relativeDay)
+  );
+}
+
+/** Surface-aware artwork readiness — matches publish targets, not raw missingArtwork. */
+export function isBundleArtworkComplete(bundle: MetaPublishBundle | undefined): boolean {
+  if (!bundle) {
+    return false;
+  }
+
+  const needsFeed = isFeedSurfaceEnabled(bundle.metaPublishSurfaces);
+  const needsStory = isStoryAutoPublishEnabled(
+    bundle.metaPublishSurfaces,
+    bundle.storyManualPublish,
+  );
+  const hasFeed = Boolean(bundle.feedArtworkUrl);
+  const hasStory = Boolean(bundle.storyArtworkUrl);
+
+  return (!needsFeed || hasFeed) && (!needsStory || hasStory);
+}
 
 export function channelLabelForBundle(bundle: MetaPublishBundle): string {
   if (!bundle.channel) {

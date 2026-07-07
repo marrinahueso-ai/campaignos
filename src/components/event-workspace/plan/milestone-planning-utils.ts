@@ -1,17 +1,24 @@
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import { metaWorkflowMilestonesFromCommunicationSteps } from "@/lib/campaign-plan/plan-milestone-client";
+import { getArtworkPhaseItems } from "@/lib/artwork-v2/campaign-phases";
+import { resolveMilestoneArtworkStatus } from "@/lib/artwork-v2/batch-generate";
 import {
   formatScheduleTimeFromHour,
   resolveBestHourForDate,
 } from "@/lib/posting-analytics/suggest-posting-times";
 import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
-import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
+import {
+  findMetaPublishBundleForMilestoneDay,
+  isBundleArtworkComplete,
+} from "@/lib/meta-publishing/bundle-display";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
-import type { CommunicationChannel } from "@/types/event-workspace";
+import type { CommunicationChannel, EventAsset } from "@/types/event-workspace";
+import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type {
   EventCommunicationStep,
   MetaPublishSurfaces,
+  EventType,
   PlaybookStepInput,
 } from "@/types/playbooks";
 
@@ -151,13 +158,45 @@ function isChannelStepComplete(
   return step?.status === "completed";
 }
 
+export interface MilestoneStepProgressContext {
+  assets?: EventAsset[];
+  eventType?: EventType | null;
+  communicationStrategy?: CommunicationStrategy;
+}
+
+function resolveArtworkCompleteFromAssets(
+  relativeDay: number,
+  assignedSteps: EventCommunicationStep[],
+  context?: MilestoneStepProgressContext,
+): boolean {
+  if (!context?.assets?.length) {
+    return false;
+  }
+
+  const phaseItems = getArtworkPhaseItems({
+    eventType: context.eventType ?? null,
+    communicationStrategy: context.communicationStrategy ?? "full_campaign",
+    communicationSteps: assignedSteps,
+  });
+
+  return (
+    resolveMilestoneArtworkStatus(relativeDay, phaseItems, context.assets) === "complete"
+  );
+}
+
 export function resolveMilestoneStepProgress(
   relativeDay: number,
   bundles: MetaPublishBundle[],
   assignedSteps: EventCommunicationStep[],
+  context?: MilestoneStepProgressContext,
 ): MilestoneStepProgress {
-  const bundle = findMetaPublishBundleForDay(bundles, relativeDay);
-  const artworkComplete = Boolean(bundle && bundle.missingArtwork.length === 0);
+  const bundle = findMetaPublishBundleForMilestoneDay(bundles, relativeDay);
+  let artworkComplete = isBundleArtworkComplete(bundle);
+
+  if (!artworkComplete) {
+    artworkComplete = resolveArtworkCompleteFromAssets(relativeDay, assignedSteps, context);
+  }
+
   const captionsComplete = Boolean(
     bundle?.isMetaPost &&
       artworkComplete &&
@@ -177,11 +216,12 @@ export function buildMilestoneStepProgressMap(
   items: MilestonePlanningItem[],
   bundles: MetaPublishBundle[],
   assignedSteps: EventCommunicationStep[],
+  context?: MilestoneStepProgressContext,
 ): Map<number, MilestoneStepProgress> {
   return new Map(
     items.map((item) => [
       item.relativeDay,
-      resolveMilestoneStepProgress(item.relativeDay, bundles, assignedSteps),
+      resolveMilestoneStepProgress(item.relativeDay, bundles, assignedSteps, context),
     ]),
   );
 }

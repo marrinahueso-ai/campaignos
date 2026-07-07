@@ -11,8 +11,9 @@ import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { EventPlaybookTask } from "@/types/event-playbooks";
 import type { Event } from "@/types";
-import type { CommunicationPlaybook, EventCommunicationStep } from "@/types/playbooks";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
+import type { EventAsset } from "@/types/event-workspace";
+import type { CommunicationPlaybook, EventCommunicationStep, EventType } from "@/types/playbooks";
 
 interface CampaignPlanPageProps {
   event: Event;
@@ -30,6 +31,8 @@ interface CampaignPlanPageProps {
   ownership?: EventRosterOwnership | null;
   communicationStrategy?: CommunicationStrategy;
   metaPublishBundles?: MetaPublishBundle[];
+  assets?: EventAsset[];
+  eventType?: EventType | null;
   tasks?: EventPlaybookTask[];
   backHref?: string;
   campaignEvents?: Event[];
@@ -51,6 +54,8 @@ export function CampaignPlanPage({
   ownership = null,
   communicationStrategy,
   metaPublishBundles = [],
+  assets = [],
+  eventType = null,
   tasks = [],
   backHref,
   campaignEvents = [],
@@ -81,6 +86,9 @@ export function CampaignPlanPage({
         eventDate={eventDate}
         assignedSteps={assignedSteps}
         metaPublishBundles={metaPublishBundles}
+        assets={assets}
+        eventType={eventType ?? event.eventType}
+        communicationStrategy={communicationStrategy ?? event.communicationStrategy}
         postingHeatmap={postingHeatmap}
         playbookId={playbookId}
         availablePlaybooks={availablePlaybooks}

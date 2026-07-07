@@ -23,7 +23,9 @@ import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { Event } from "@/types";
-import type { CommunicationPlaybook, EventCommunicationStep } from "@/types/playbooks";
+import type { CommunicationStrategy } from "@/types/communication-strategy";
+import type { EventAsset } from "@/types/event-workspace";
+import type { CommunicationPlaybook, EventCommunicationStep, EventType } from "@/types/playbooks";
 
 interface MilestonePlanningSectionProps {
   event: Event;
@@ -31,6 +33,9 @@ interface MilestonePlanningSectionProps {
   eventDate: string;
   assignedSteps: EventCommunicationStep[];
   metaPublishBundles?: MetaPublishBundle[];
+  assets?: EventAsset[];
+  eventType?: EventType | null;
+  communicationStrategy?: CommunicationStrategy;
   postingHeatmap?: PostingHeatmapData | null;
   playbookId: string;
   availablePlaybooks: CommunicationPlaybook[];
@@ -47,6 +52,9 @@ export function MilestonePlanningSection({
   eventDate,
   assignedSteps,
   metaPublishBundles = [],
+  assets = [],
+  eventType = null,
+  communicationStrategy = "full_campaign",
   postingHeatmap = null,
   playbookId,
   availablePlaybooks,
@@ -69,8 +77,13 @@ export function MilestonePlanningSection({
   );
   const [items, setItems] = useState<MilestonePlanningItem[]>(initialItems);
   const stepProgressByDay = useMemo(
-    () => buildMilestoneStepProgressMap(items, metaPublishBundles, assignedSteps),
-    [items, metaPublishBundles, assignedSteps],
+    () =>
+      buildMilestoneStepProgressMap(items, metaPublishBundles, assignedSteps, {
+        assets,
+        eventType,
+        communicationStrategy,
+      }),
+    [items, metaPublishBundles, assignedSteps, assets, eventType, communicationStrategy],
   );
   const [expandedRelativeDay, setExpandedRelativeDay] = useState<number | null>(
     initialItems[0]?.relativeDay ?? null,

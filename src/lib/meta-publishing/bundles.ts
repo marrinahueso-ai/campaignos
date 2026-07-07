@@ -18,6 +18,7 @@ import {
   groupArtworkPhasesByMilestone,
   isApprovedArtworkAsset,
   isFeedSurfaceEnabled,
+  isStoryAutoPublishEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
 import {
@@ -237,7 +238,10 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     if (isFeedSurfaceEnabled(metaPublishSurfaces) && !hasFeedArtwork) {
       missingArtwork.push("Feed (1:1)");
     }
-    if (isStorySurfaceEnabled(metaPublishSurfaces) && !hasStoryArtwork) {
+    if (
+      isStoryAutoPublishEnabled(metaPublishSurfaces, storyManualPublish) &&
+      !hasStoryArtwork
+    ) {
       missingArtwork.push("Story");
     }
 
