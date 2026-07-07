@@ -27,7 +27,7 @@ export default async function PostingScheduleSettingsPage() {
         <EmptyState
           icon={CalendarClock}
           title="Set up your school first"
-          description="Complete School Setup so CampaignOS knows which organization timezone and posting windows to use."
+          description="Complete School Setup so Hey Ralli knows which organization timezone and posting windows to use."
           action={{ label: "Go to School Setup", href: "/settings/school-setup" }}
           className="cos-card py-16"
         />

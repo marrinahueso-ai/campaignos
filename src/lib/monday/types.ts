@@ -1,4 +1,4 @@
-/** Monday.com GraphQL API — domain types used by CampaignOS sync layer. */
+/** Monday.com GraphQL API — domain types used by Hey Ralli sync layer. */
 
 export type MondayColumnType =
   | "status"
@@ -23,7 +23,7 @@ export interface MondayBoardGroup {
   title: string;
 }
 
-/** Maps CampaignOS event playbook fields → Monday column roles. */
+/** Maps Hey Ralli event playbook fields → Monday column roles. */
 export interface MondayBoardColumnMap {
   statusColumnId: string;
   dueDateColumnId: string | null;

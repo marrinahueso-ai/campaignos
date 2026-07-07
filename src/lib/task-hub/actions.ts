@@ -14,6 +14,7 @@ import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { pushTaskCreateToMonday, pushTaskUpdateToMonday } from "@/lib/monday/sync";
 import { deriveInitials } from "@/lib/task-hub/org-members";
 import { assertTaskHubEventAccess } from "@/lib/task-hub/permissions";
+import { resolveSiteUrlFromHeaders } from "@/lib/site/url";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 
 function revalidateTaskHubPaths(eventIds: string[]) {
@@ -27,12 +28,10 @@ function revalidateTaskHubPaths(eventIds: string[]) {
 
 async function resolveOrigin(): Promise<string> {
   const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol = headerStore.get("x-forwarded-proto") ?? "https";
-  if (host) {
-    return `${protocol}://${host}`;
-  }
-  return "http://localhost:3000";
+  return resolveSiteUrlFromHeaders(
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host"),
+    headerStore.get("x-forwarded-proto"),
+  );
 }
 
 async function syncTaskToMonday(

@@ -4,7 +4,7 @@ import { UnifiedCalendarShell } from "@/components/unified-calendar/UnifiedCalen
 import { getPlanningCalendarData } from "@/lib/communications-calendar/planning-queries";
 
 export const metadata = {
-  title: "Calendar | CampaignOS",
+  title: "Calendar | Hey Ralli",
   description: "Your school year in one place — events, posts, deadlines, and what needs attention.",
 };
 

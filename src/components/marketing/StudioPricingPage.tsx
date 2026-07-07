@@ -190,7 +190,7 @@ export function StudioPricingPage({
           All plans include secure sign-in, your school&apos;s campaign workspace, and
           updates as we ship new features. Pricing shown is per organization, billed
           monthly. Questions?{" "}
-          <a href="mailto:hello@campaignos.app" className="text-cos-text underline-offset-2 hover:underline">
+          <a href="mailto:hello@heyralli.com" className="text-cos-text underline-offset-2 hover:underline">
             Reach out anytime
           </a>
           .

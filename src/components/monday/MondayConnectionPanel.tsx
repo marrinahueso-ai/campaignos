@@ -83,7 +83,7 @@ export function MondayConnectionPanel({
           <li>
             Add this exact redirect URL in Developer Center → OAuth (must match character-for-character):{" "}
             <code className="break-all rounded bg-cos-bg px-1">
-              {oauthCallbackUrl ?? "https://your-domain/api/monday/oauth/callback"}
+              {oauthCallbackUrl ?? "https://heyralli.com/api/monday/oauth/callback"}
             </code>
           </li>
           <li>

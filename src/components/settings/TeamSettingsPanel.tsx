@@ -141,7 +141,7 @@ export function TeamSettingsPanel({
     }
 
     const text = [
-      `CampaignOS sign-in: ${siteOrigin}/login`,
+      `Hey Ralli sign-in: ${siteOrigin}/login`,
       `Email: ${provisionedEmail}`,
       `Password: ${provisionedPassword}`,
     ].join("\n");

@@ -22,7 +22,7 @@ import type {
   DraftCommunicationResult,
 } from "@/lib/ai/types";
 
-const CREATED_BY = "CampaignOS Assistant";
+const CREATED_BY = "Hey Ralli Assistant";
 
 async function saveCommunicationVersion(
   communicationItemId: string,

@@ -68,7 +68,7 @@ export function CommitteeDefaultsSection({
         <CardTitle>Committee Ownership</CardTitle>
         {showIntro && (
           <CardDescription>
-            When CampaignOS sees an event on your calendar, it already knows
+            When Hey Ralli sees an event on your calendar, it already knows
             who usually runs it and how much communication it needs.
           </CardDescription>
         )}

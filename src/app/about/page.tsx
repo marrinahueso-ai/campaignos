@@ -5,7 +5,7 @@ import { StudioAboutPage } from "@/components/marketing/StudioAboutPage";
 export const metadata = {
   title: "About",
   description:
-    "How CampaignOS was created to help busy PTO volunteers manage school communications in one place.",
+    "How Hey Ralli was created to help busy PTO volunteers manage school communications in one place.",
 };
 
 export default async function AboutPage() {

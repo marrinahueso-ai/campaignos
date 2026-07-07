@@ -58,7 +58,7 @@ export function DraftPreviewPanel({ eventId, draft, userRole }: DraftPreviewPane
             Draft Preview
           </p>
           <p className="mt-1 text-xs text-cos-muted">
-            Drafted by CampaignOS Assistant · Version {draft.versionNumber}
+            Drafted by Hey Ralli Assistant · Version {draft.versionNumber}
           </p>
         </div>
         <CommunicationStatusBadge status={draft.status} />

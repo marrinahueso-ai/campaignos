@@ -1,5 +1,5 @@
 const FETCH_TIMEOUT_MS = 15_000;
-const USER_AGENT = "CampaignOS/1.0 (calendar subscribe sync)";
+const USER_AGENT = "Hey Ralli/1.0 (calendar subscribe sync)";
 
 export function normalizeSubscribeFeedUrl(url: string): string {
   const trimmed = url.trim();

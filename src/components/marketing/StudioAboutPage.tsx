@@ -20,7 +20,7 @@ const milestones = [
   {
     icon: Heart,
     title: "Built for volunteers, not agencies",
-    body: "CampaignOS started with a simple belief: PTO leaders are not full-time marketers. You're moms, dads, and neighbors giving your time between carpools, work, and everything else on your plate.",
+    body: "Hey Ralli started with a simple belief: PTO leaders are not full-time marketers. You're moms, dads, and neighbors giving your time between carpools, work, and everything else on your plate.",
   },
   {
     icon: Layers,
@@ -41,7 +41,7 @@ export function StudioAboutPage({
         <StudioMarketingPageHeader
           eyebrow="Our story"
           title="Born from late nights and good intentions."
-          description="CampaignOS exists because school communication shouldn't require a marketing degree — or a second job."
+          description="Hey Ralli exists because school communication shouldn't require a marketing degree — or a second job."
         />
 
         <section className="mt-16 grid overflow-hidden border border-cos-border lg:grid-cols-2">
@@ -53,7 +53,7 @@ export function StudioAboutPage({
             <p className="mt-4 text-sm leading-relaxed text-cos-muted sm:text-base">
               We&apos;re a family that said yes to helping at school — and quickly
               learned how heavy social media work can be on top of everything else.
-              CampaignOS is the tool we wished existed: one calm place to plan,
+              Hey Ralli is the tool we wished existed: one calm place to plan,
               create, and publish so you can get back to what matters most.
             </p>
           </div>
@@ -61,7 +61,7 @@ export function StudioAboutPage({
           <div className="relative order-1 min-h-[300px] sm:min-h-[360px] lg:order-2 lg:min-h-[440px]">
             <Image
               src="/images/about-family.png"
-              alt="The family behind CampaignOS"
+              alt="The family behind Hey Ralli"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover object-[center_30%]"
@@ -95,7 +95,7 @@ export function StudioAboutPage({
               confidence, and publish without juggling five different apps?
             </p>
             <p className="text-cos-text">
-              That question became CampaignOS — a design-forward workspace built
+              That question became Hey Ralli — a design-forward workspace built
               for school teams who care deeply, move fast, and deserve tools that
               respect how limited their time really is.
             </p>

@@ -249,7 +249,7 @@ export function StudioHomePage({
                       {!foundingCodeRetry && (
                         <>
                           <a
-                            href="mailto:hello@campaignos.app"
+                            href="mailto:hello@heyralli.com"
                             className="text-cos-accent underline-offset-2 hover:underline"
                           >
                             Contact us
@@ -303,7 +303,7 @@ export function StudioHomePage({
                 {authError === "org_required" && (
                   <p className="mb-4 text-sm text-red-300">
                     Finish creating your school workspace with a founding access
-                    code before using CampaignOS.
+                    code before using Hey Ralli.
                   </p>
                 )}
 

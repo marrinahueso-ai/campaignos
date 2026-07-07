@@ -76,7 +76,7 @@ export function EventWorkspaceCalendarLayout({
         <WorkspaceSection
           id="memory"
           title="Memory"
-          description="Everything CampaignOS remembers about this event."
+          description="Everything Hey Ralli remembers about this event."
         >
           <EventMemorySection memory={eventMemory} />
         </WorkspaceSection>

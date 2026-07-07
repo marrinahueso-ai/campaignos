@@ -15,10 +15,13 @@ import {
   getMetaRedirectUri,
   isMetaIntegrationConfigured,
 } from "@/lib/meta-publishing/config.server";
+import { resolveSiteOrigin } from "@/lib/site/url";
 
 export async function GET(request: NextRequest) {
+  const siteOrigin = resolveSiteOrigin(request.nextUrl.origin);
+
   if (!isMetaIntegrationConfigured()) {
-    const settingsUrl = new URL("/settings/meta", request.nextUrl.origin);
+    const settingsUrl = new URL("/settings/meta", siteOrigin);
     settingsUrl.searchParams.set("error", "not_configured");
     return NextResponse.redirect(settingsUrl);
   }
@@ -32,7 +35,7 @@ export async function GET(request: NextRequest) {
   const authType = request.nextUrl.searchParams.get("auth_type")?.trim() ?? "";
 
   const state = createMetaOAuthState({ pageId: pageId || undefined });
-  const redirectUri = getMetaRedirectUri(request.nextUrl.origin);
+  const redirectUri = getMetaRedirectUri(siteOrigin);
   const configId = getMetaOAuthConfigId();
 
   const authorizeUrl = new URL(META_OAUTH_AUTHORIZE_URL);
@@ -54,7 +57,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(authorizeUrl);
-  const cookieOptions = getMetaOAuthCookieOptions(request.nextUrl.origin);
+  const cookieOptions = getMetaOAuthCookieOptions(siteOrigin);
 
   response.cookies.set(META_OAUTH_STATE_COOKIE, state, cookieOptions);
   response.cookies.set(META_OAUTH_RETURN_COOKIE, safeReturnTo, cookieOptions);

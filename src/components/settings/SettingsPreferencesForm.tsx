@@ -92,7 +92,7 @@ export function SettingsPreferencesForm() {
         <CardHeader>
           <CardTitle>AI Brain</CardTitle>
           <CardDescription>
-            Teach CampaignOS your organization voice, channel tone, and communication
+            Teach Hey Ralli your organization voice, channel tone, and communication
             preferences before AI generation.
           </CardDescription>
         </CardHeader>

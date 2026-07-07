@@ -46,7 +46,7 @@ export function ResponsibilityMatrixSection({
         <CardTitle>Responsibility Matrix</CardTitle>
         {showIntro && (
           <CardDescription>
-            Who usually handles each channel and function. CampaignOS will
+            Who usually handles each channel and function. Hey Ralli will
             suggest these when building timelines.
           </CardDescription>
         )}

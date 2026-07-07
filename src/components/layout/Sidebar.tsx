@@ -13,6 +13,7 @@ import {
   Send,
 } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -134,28 +135,16 @@ export function Sidebar({
       <div
         className={cn(
           "flex h-[4.25rem] items-center border-b border-cos-border",
-          showLabels ? "justify-between px-5" : "justify-center px-2",
+          showLabels ? "justify-between gap-2 px-3" : "justify-center px-2",
         )}
       >
-        <Link
+        <BrandLogo
           href="/"
-          className={cn("flex items-center gap-3", !showLabels && "justify-center")}
+          variant={showLabels ? "full" : "mark"}
+          size={showLabels ? "sidebar" : "md"}
+          className={cn(showLabels ? "min-w-0 shrink" : "justify-center")}
           onClick={onNavigate}
-        >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-cos-border bg-cos-bg">
-            <Megaphone className="h-4 w-4 text-cos-accent" strokeWidth={1.5} />
-          </div>
-          {showLabels && (
-            <div className="min-w-0">
-              <p className="font-display truncate text-lg leading-none text-cos-text">
-                CampaignOS
-              </p>
-              <p className="mt-1 truncate text-[10px] tracking-[0.16em] text-cos-muted uppercase">
-                Studio
-              </p>
-            </div>
-          )}
-        </Link>
+        />
         {showToggle && showLabels && (
           <button
             type="button"
@@ -261,7 +250,7 @@ export function Sidebar({
 
       {showLabels && (
         <div className="border-t border-cos-border p-5">
-          <p className="font-display text-base text-cos-text">Your communications studio</p>
+          <p className="font-display text-base text-cos-text">ORGANIZE. CREATE. CONNECT.</p>
           <p className="mt-2 text-xs leading-relaxed text-cos-muted">
             Drafts, deadlines, and publishing — organized around your campaign lifecycle.
           </p>

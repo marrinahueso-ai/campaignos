@@ -20,7 +20,7 @@ export class MondayApiError extends Error {
 
 /**
  * Server-side Monday.com GraphQL client.
- * All CampaignOS UI reads/writes should go through this — never call Monday from the browser.
+ * All Hey Ralli UI reads/writes should go through this — never call Monday from the browser.
  */
 const MONDAY_FETCH_TIMEOUT_MS = 15_000;
 

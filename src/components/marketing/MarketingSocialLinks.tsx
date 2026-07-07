@@ -31,7 +31,7 @@ export function MarketingSocialLinks({ className }: MarketingSocialLinksProps) {
         href={FACEBOOK_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="CampaignOS on Facebook"
+        aria-label="Hey Ralli on Facebook"
         className={linkClassName}
       >
         <FacebookIcon className="h-4 w-4" />
@@ -40,7 +40,7 @@ export function MarketingSocialLinks({ className }: MarketingSocialLinksProps) {
         href={INSTAGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="CampaignOS on Instagram"
+        aria-label="Hey Ralli on Instagram"
         className={linkClassName}
       >
         <InstagramIcon className="h-4 w-4" />

@@ -1,7 +1,7 @@
 import type { LessonsLearnedState } from "@/lib/memory/types";
 
 const PLACEHOLDER_MESSAGE =
-  "CampaignOS will remember notes for next year's event.";
+  "Hey Ralli will remember notes for next year's event.";
 
 /**
  * Placeholder until editable lessons are persisted.

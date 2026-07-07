@@ -29,7 +29,7 @@ export function ArtworkTextPlanPanel({ textPlan, compact = false }: ArtworkTextP
       <div className="space-y-1">
         <h4 className="text-sm font-semibold text-cos-text">Artwork Text Plan</h4>
         <p className="text-xs text-cos-muted">
-          Verified event copy — add these as editable overlays in CampaignOS or Canva. Not
+          Verified event copy — add these as editable overlays in Hey Ralli or Canva. Not
           rendered into the generated image.
         </p>
       </div>

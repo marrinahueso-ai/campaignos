@@ -83,7 +83,7 @@ export function AiBrainProfileForm({ profile }: AiBrainProfileFormProps) {
         <CardHeader>
           <CardTitle>Communication Preferences</CardTitle>
           <CardDescription>
-            General rules CampaignOS should follow when drafting communications.
+            General rules Hey Ralli should follow when drafting communications.
           </CardDescription>
         </CardHeader>
         <div className="space-y-4">
@@ -142,7 +142,7 @@ export function AiBrainProfileForm({ profile }: AiBrainProfileFormProps) {
         <CardHeader>
           <CardTitle>Channel Tone</CardTitle>
           <CardDescription>
-            How each channel should feel when CampaignOS writes for your school.
+            How each channel should feel when Hey Ralli writes for your school.
           </CardDescription>
         </CardHeader>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
         <EmptyState
           icon={GraduationCap}
           title="Set up your school"
-          description="Add your school name, brand colors, and calendar so CampaignOS can plan campaigns with you."
+          description="Add your school name, brand colors, and calendar so Hey Ralli can plan campaigns with you."
           action={{
             label: "Set up your school — takes about 5 minutes",
             href: "/settings/school-setup",

@@ -1,4 +1,4 @@
-/** CampaignOS calm design tokens — mirrors CSS variables in globals.css */
+/** Hey Ralli calm design tokens — mirrors CSS variables in globals.css */
 export const COS_TOKENS = {
   bg: "#FCFCFA",
   card: "#FFFFFF",

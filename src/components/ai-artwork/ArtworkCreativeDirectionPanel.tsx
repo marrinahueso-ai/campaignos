@@ -136,7 +136,7 @@ export function ArtworkCreativeDirectionPanel({
       <div>
         <h3 className="text-sm font-semibold text-cos-text">Creative Direction</h3>
         <p className="mt-1 text-xs text-cos-muted">
-          CampaignOS directs the artwork automatically — pick a design style, then generate.
+          Hey Ralli directs the artwork automatically — pick a design style, then generate.
         </p>
       </div>
 
@@ -285,7 +285,7 @@ export function ArtworkCreativeDirectionPanel({
                 rows={6}
                 disabled={!canEdit}
                 className="mt-1 font-mono text-xs"
-                placeholder="Leave blank to let CampaignOS write art direction automatically."
+                placeholder="Leave blank to let Hey Ralli write art direction automatically."
               />
             </div>
             <div>

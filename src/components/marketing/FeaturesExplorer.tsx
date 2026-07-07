@@ -29,7 +29,7 @@ const FEATURES: FeatureDefinition[] = [
     icon: LayoutDashboard,
     title: "A dashboard that feels like a friend",
     summary:
-      "Open CampaignOS and know exactly what deserves your attention — without a wall of tasks.",
+      "Open Hey Ralli and know exactly what deserves your attention — without a wall of tasks.",
     details: [
       "Next Up highlights the one thing to focus on right now",
       "Quick snapshots for approvals and recently published posts",

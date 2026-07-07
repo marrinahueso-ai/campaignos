@@ -10,6 +10,7 @@ import {
   Palette,
   Send,
 } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { PREVIEW_SCHOOL_NAME } from "@/lib/marketing/feature-preview-fixtures";
 import { cn } from "@/lib/utils/cn";
 import type { FeaturePreviewSlug } from "@/lib/marketing/feature-preview-fixtures";
@@ -56,10 +57,7 @@ export function FeaturePreviewChrome({
         )}
       >
         <div className={cn("border-b border-cos-border", carousel ? "px-3 py-3" : "px-4 py-4")}>
-          <p className={cn("font-display text-cos-text", carousel ? "text-base" : "text-lg")}>
-            CampaignOS
-          </p>
-          <p className="text-[10px] tracking-[0.18em] text-cos-muted uppercase">Studio</p>
+          <BrandLogo href={null} variant="full" size="sm" />
         </div>
         <nav className="flex-1 space-y-0.5 p-2">
           <PreviewNavItem label="Home" icon={Home} active={false} />
@@ -91,7 +89,7 @@ export function FeaturePreviewChrome({
               carousel ? "text-lg sm:text-xl" : "text-xl sm:text-2xl",
             )}
           >
-            PTO Campaign Studio
+            Hey Ralli
           </p>
         </header>
         <div

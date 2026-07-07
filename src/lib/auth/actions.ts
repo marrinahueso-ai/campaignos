@@ -381,7 +381,7 @@ export async function inviteTeamMemberAction(
     error: null,
     success: true,
     inviteUrl,
-    message: `Added ${email} to your team. Share the invite link below — CampaignOS does not email invites automatically yet.`,
+    message: `Added ${email} to your team. Share the invite link below — Hey Ralli does not email invites automatically yet.`,
   };
 }
 

@@ -11,9 +11,10 @@ import {
   saveCanvaConnectionFromTokenResponse,
 } from "@/lib/canva/connection";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { resolveSiteOrigin } from "@/lib/site/url";
 
 export async function GET(request: NextRequest) {
-  const origin = request.nextUrl.origin;
+  const origin = resolveSiteOrigin(request.nextUrl.origin);
   const fallbackReturn = "/settings/canva";
 
   if (!isCanvaIntegrationConfigured()) {

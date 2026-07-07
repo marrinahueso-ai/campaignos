@@ -10,10 +10,13 @@ import {
   isCanvaIntegrationConfigured,
 } from "@/lib/canva/config";
 import { createCanvaCodeChallenge, createCanvaCodeVerifier, createCanvaOAuthState } from "@/lib/canva/pkce";
+import { resolveSiteOrigin } from "@/lib/site/url";
 
 export async function GET(request: NextRequest) {
+  const siteOrigin = resolveSiteOrigin(request.nextUrl.origin);
+
   if (!isCanvaIntegrationConfigured()) {
-    const settingsUrl = new URL("/settings/canva", request.nextUrl.origin);
+    const settingsUrl = new URL("/settings/canva", siteOrigin);
     settingsUrl.searchParams.set("error", "not_configured");
     return NextResponse.redirect(settingsUrl);
   }
@@ -24,7 +27,7 @@ export async function GET(request: NextRequest) {
   const codeVerifier = createCanvaCodeVerifier();
   const codeChallenge = createCanvaCodeChallenge(codeVerifier);
   const state = createCanvaOAuthState();
-  const redirectUri = getCanvaRedirectUri(request.nextUrl.origin);
+  const redirectUri = getCanvaRedirectUri(siteOrigin);
 
   const authorizeUrl = new URL(CANVA_AUTHORIZE_URL);
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);

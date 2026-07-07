@@ -22,7 +22,7 @@ export default async function InboxAiSourcesSettingsPage() {
         <StudioPageHeader
           backHref="/settings"
           title="Inbox AI Sources"
-          description="Tell CampaignOS which school pages and tools to use when drafting inbox replies."
+          description="Tell Hey Ralli which school pages and tools to use when drafting inbox replies."
           eyebrow="Configure"
         />
 
@@ -45,7 +45,7 @@ export default async function InboxAiSourcesSettingsPage() {
       <StudioPageHeader
         backHref="/settings"
         title="Inbox AI Sources"
-        description="Add sources with names, descriptions, and links so CampaignOS can match inbox questions to the right page."
+        description="Add sources with names, descriptions, and links so Hey Ralli can match inbox questions to the right page."
         eyebrow="Configure"
       />
 

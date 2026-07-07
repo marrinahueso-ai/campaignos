@@ -20,6 +20,8 @@ const PUBLIC_PATHS = [
   "/login",
   "/auth/callback",
   "/auth/signout",
+  "/robots.txt",
+  "/sitemap.xml",
   "/api/cron",
   "/api/monday/oauth/callback",
   "/api/canva/oauth/callback",

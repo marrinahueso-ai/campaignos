@@ -24,7 +24,7 @@ export default async function AiBrainSettingsPage() {
         <StudioPageHeader
           backHref="/settings"
           title="AI Brain"
-          description="Teach CampaignOS how your school communicates before connecting AI."
+          description="Teach Hey Ralli how your school communicates before connecting AI."
           eyebrow="Configure"
         />
 
@@ -49,7 +49,7 @@ export default async function AiBrainSettingsPage() {
       <StudioPageHeader
         backHref="/settings"
         title="AI Brain"
-        description={`Configure how ${organization.name} communicates. CampaignOS uses this profile when generating drafts.`}
+        description={`Configure how ${organization.name} communicates. Hey Ralli uses this profile when generating drafts.`}
         eyebrow="Configure"
       />
 

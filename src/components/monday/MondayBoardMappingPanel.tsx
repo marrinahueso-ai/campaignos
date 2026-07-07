@@ -447,7 +447,7 @@ export function MondayBoardMappingPanel({
             }
           />
           <ColumnSelect
-            label="CampaignOS task ID"
+            label="Hey Ralli task ID"
             value={columnMap.campaignOsTaskIdColumnId}
             columns={columnsByType(columns, "text")}
             onChange={(value) =>

@@ -87,7 +87,7 @@ export function ArtworkHumanDirectedPanel({
             What should this artwork look like?
           </label>
           <p className="mt-1 text-xs text-cos-muted">
-            Describe the look and feel. You are the creative director — CampaignOS generates from
+            Describe the look and feel. You are the creative director — Hey Ralli generates from
             your direction.
           </p>
         </div>
@@ -141,7 +141,7 @@ export function ArtworkHumanDirectedPanel({
         {selectedInspiration && (
           <div className="space-y-3 rounded-xl border border-cos-border bg-cos-bg/40 p-4">
             <p className="text-sm font-medium text-cos-text">
-              This is inspiration only — CampaignOS will create something new.
+              This is inspiration only — Hey Ralli will create something new.
             </p>
             <div className="flex gap-3">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f7f6f3]">

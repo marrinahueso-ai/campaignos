@@ -180,14 +180,11 @@ export function getMondayClientSecret(): string {
   return secret;
 }
 
+import { resolveSiteOrigin } from "@/lib/site/url";
+
 /** Canonical site origin for OAuth redirect_uri — must match Monday Developer Center exactly. */
 export function resolveMondayOAuthOrigin(requestOrigin: string): string {
-  const configured =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    requestOrigin.trim() ||
-    "http://localhost:3000";
-  return configured.replace(/\/$/, "");
+  return resolveSiteOrigin(requestOrigin);
 }
 
 function normalizeMondayRedirectUri(uri: string): string {
@@ -239,14 +236,14 @@ export const MONDAY_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   missing_code:
     "Monday did not return an authorization code. Confirm the redirect URL in the Monday Developer Center matches exactly.",
   invalid_state: "OAuth session expired or was invalid. Click Connect Monday and try again.",
-  no_organization: "Sign in to CampaignOS before connecting Monday.",
+  no_organization: "Sign in to Hey Ralli before connecting Monday.",
   token_exchange_failed:
     "Could not exchange the Monday authorization code for a token. Check client secret and redirect URL.",
   invalid_client:
     "Monday rejected the client ID or client secret. In Developer Center → Basic Information copy Client ID and Client Secret (not Signing Secret). Set both in Vercel Production (not Preview-only), without quotes, then redeploy.",
   invalid_grant:
     "Monday rejected the authorization code. The code may have expired, already been used, or the redirect URL did not match the authorize request.",
-  save_failed: "Monday authorized successfully but CampaignOS could not save the connection.",
+  save_failed: "Monday authorized successfully but Hey Ralli could not save the connection.",
   access_denied: "Monday access was denied.",
   invalid_scope: "Requested OAuth scopes do not match your Monday app configuration.",
   invalid_request:

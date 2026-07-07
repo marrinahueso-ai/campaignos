@@ -26,7 +26,7 @@ export function EventBriefDescriptionSection({
   disabled = false,
   required = false,
   textareaId = "event-description",
-  hint = "Add rough notes. CampaignOS can turn them into a clear event brief for future drafts.",
+  hint = "Add rough notes. Hey Ralli can turn them into a clear event brief for future drafts.",
 }: EventBriefDescriptionSectionProps) {
   const [isGeneratingBrief, startBriefTransition] = useTransition();
   const [briefError, setBriefError] = useState<string | null>(null);

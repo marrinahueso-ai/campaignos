@@ -184,7 +184,7 @@ function resolveImageGenerationAction(
 
 /**
  * ChatGPT-style image creation: GPT-5.5 Responses API with the native image_generation tool.
- * CampaignOS passes only user-supplied text and images — no creative prompt engineering.
+ * Hey Ralli passes only user-supplied text and images — no creative prompt engineering.
  */
 export async function generateArtworkV2ImageNative(
   request: ArtworkV2OrchestrationRequest,

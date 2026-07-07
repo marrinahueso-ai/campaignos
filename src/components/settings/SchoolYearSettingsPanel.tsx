@@ -180,7 +180,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
       <CardHeader>
         <CardTitle>School year & calendar</CardTitle>
         <CardDescription>
-          Close the prior year, start the next, and upload a fresh calendar. CampaignOS
+          Close the prior year, start the next, and upload a fresh calendar. Hey Ralli
           remembers how you categorized events last time.
         </CardDescription>
       </CardHeader>

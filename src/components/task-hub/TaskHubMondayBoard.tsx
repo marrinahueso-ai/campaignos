@@ -460,7 +460,7 @@ export function TaskHubMondayBoard({
                                     <Link
                                       href={item.eventHref}
                                       className="shrink-0 text-cos-accent hover:text-cos-text"
-                                      title="Open in CampaignOS"
+                                      title="Open in Hey Ralli"
                                     >
                                       ↗
                                     </Link>
@@ -609,7 +609,7 @@ export function TaskHubMondayBoard({
                                 />
                               </label>
                               <label className="space-y-1 text-xs">
-                                <span className="text-cos-muted">Link to CampaignOS event</span>
+                                <span className="text-cos-muted">Link to Hey Ralli event</span>
                                 <select
                                   value={newEventLinkId}
                                   onChange={(event) => setNewEventLinkId(event.target.value)}

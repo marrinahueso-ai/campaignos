@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
+import { DEFAULT_SITE_URL, getSiteMetadataBase } from "@/lib/site/url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,12 +20,25 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  metadataBase: getSiteMetadataBase(),
   title: {
-    default: "CampaignOS",
-    template: "%s | CampaignOS",
+    default: "Hey Ralli",
+    template: "%s | Hey Ralli",
   },
   description:
-    "AI-powered social media campaign management for PTO organizations.",
+    "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: DEFAULT_SITE_URL,
+    siteName: "Hey Ralli",
+    title: "Hey Ralli",
+    description:
+      "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({

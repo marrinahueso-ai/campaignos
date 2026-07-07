@@ -63,7 +63,7 @@ export default async function CanvaSettingsPage({ searchParams }: CanvaSettingsP
         <CardHeader>
           <CardTitle>{connected ? "Connected" : "Connect Canva"}</CardTitle>
           <CardDescription>
-            Uses Canva Connect to list your designs and export PNGs into CampaignOS artwork
+            Uses Canva Connect to list your designs and export PNGs into Hey Ralli artwork
             milestones.
           </CardDescription>
         </CardHeader>

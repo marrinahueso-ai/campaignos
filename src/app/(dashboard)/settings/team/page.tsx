@@ -52,7 +52,7 @@ export default async function TeamSettingsPage() {
       <StudioPageHeader
         backHref="/settings"
         title="Team"
-        description="Invite VPs and committee chairs to CampaignOS. Each person signs in with their email and gets the access level you assign."
+        description="Invite VPs and committee chairs to Hey Ralli. Each person signs in with their email and gets the access level you assign."
         eyebrow="Configure"
       />
 

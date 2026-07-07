@@ -120,7 +120,7 @@ export function SchoolSetupTeamStep({ roles }: SchoolSetupTeamStepProps) {
         <p className="font-display text-xl text-cos-text">Invite your board</p>
         <p className="mt-1 text-sm leading-relaxed text-cos-muted">
           Add VPs and committee chairs now, or skip and invite later from
-          Settings → Team. CampaignOS does not email invites automatically —
+          Settings → Team. Hey Ralli does not email invites automatically —
           you share the link after setup.
         </p>
       </div>

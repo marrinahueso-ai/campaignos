@@ -62,7 +62,7 @@ export function TrainingLibrarySection({ documents }: TrainingLibrarySectionProp
             Add Training Material
           </CardTitle>
           <CardDescription>
-            Upload past communications so CampaignOS can learn your voice later.
+            Upload past communications so Hey Ralli can learn your voice later.
             Metadata is saved now — AI analysis comes in a future release.
           </CardDescription>
         </CardHeader>

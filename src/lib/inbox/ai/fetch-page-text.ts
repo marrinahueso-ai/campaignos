@@ -3,7 +3,7 @@ import "server-only";
 import { isLikelyAuthWall } from "@/lib/inbox/ai/draft-templates";
 
 const FETCH_TIMEOUT_MS = 12_000;
-const USER_AGENT = "CampaignOS-InboxAI/1.0 (+https://campaignos.app)";
+const USER_AGENT = "HeyRalli-InboxAI/1.0 (+https://heyralli.com)";
 
 export async function fetchPublicPageText(
   url: string,

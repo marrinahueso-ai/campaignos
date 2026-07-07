@@ -96,7 +96,7 @@ export function PostingPreferencesPanel({ initialInput }: PostingPreferencesPane
             Set custom best times to post
           </span>
           <span className="mt-1 block text-sm text-cos-muted">
-            When off, CampaignOS suggests weekday evenings (5–8pm) for PTO audiences.
+            When off, Hey Ralli suggests weekday evenings (5–8pm) for PTO audiences.
           </span>
         </span>
       </label>

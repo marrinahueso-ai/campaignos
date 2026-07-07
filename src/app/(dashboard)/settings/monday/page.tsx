@@ -11,6 +11,7 @@ import {
   formatMondayOAuthError,
   getMondayOAuthCallbackUrl,
 } from "@/lib/monday/config";
+import { resolveSiteOrigin } from "@/lib/site/url";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -34,14 +35,10 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
 
 function safeOAuthCallbackUrl(): string {
   try {
-    return getMondayOAuthCallbackUrl(
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-        process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-        "http://localhost:3000",
-    );
+    return getMondayOAuthCallbackUrl(resolveSiteOrigin());
   } catch (error) {
     console.error("Monday OAuth callback URL resolution failed:", error);
-    return "https://your-domain/api/monday/oauth/callback";
+    return "https://heyralli.com/api/monday/oauth/callback";
   }
 }
 
@@ -62,7 +59,7 @@ export default async function MondaySettingsPage({ searchParams }: MondaySetting
         <StudioPageHeader
           backHref="/settings"
           title="Monday"
-          description="Monday integration is paused while Task Hub runs on CampaignOS-native tasks."
+          description="Monday integration is paused while Task Hub runs on Hey Ralli-native tasks."
           eyebrow="Configure"
         />
         <Card>

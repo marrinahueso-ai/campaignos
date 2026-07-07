@@ -253,7 +253,7 @@ export function OrganizationRolesSection({
         {showIntro && (
           <CardDescription>
             Your board and VP contact cards — update names, emails, and phone
-            numbers each school year. CampaignOS uses these for channel ownership
+            numbers each school year. Hey Ralli uses these for channel ownership
             and committee defaults.
           </CardDescription>
         )}

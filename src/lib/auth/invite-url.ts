@@ -1,3 +1,5 @@
+import { resolveSiteOrigin } from "@/lib/site/url";
+
 export function buildInviteLoginUrl(
   inviteToken: string,
   siteOrigin: string,
@@ -7,12 +9,9 @@ export function buildInviteLoginUrl(
   return url.toString();
 }
 
+/** @deprecated Use resolveSiteOrigin from @/lib/site/url — kept for existing imports. */
 export function resolveAuthSiteOrigin(
   requestOrigin: string | null,
 ): string {
-  return (
-    requestOrigin?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "http://localhost:3000"
-  );
+  return resolveSiteOrigin(requestOrigin);
 }

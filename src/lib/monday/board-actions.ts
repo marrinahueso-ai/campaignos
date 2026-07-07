@@ -21,6 +21,7 @@ import { canManageMondayIntegration } from "@/lib/monday/permissions";
 import type { MondayBoardColumnMap } from "@/lib/monday/types";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canEditTaskHub, resolveTaskHubViewScope } from "@/lib/task-hub/access";
+import { resolveSiteUrlFromHeaders } from "@/lib/site/url";
 
 export type MondayBoardActionResult = {
   success: boolean;
@@ -72,12 +73,10 @@ async function requireMondayWriteAccess(): Promise<
 
 async function resolveOrigin(): Promise<string> {
   const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const protocol = headerStore.get("x-forwarded-proto") ?? "https";
-  if (host) {
-    return `${protocol}://${host}`;
-  }
-  return "http://localhost:3000";
+  return resolveSiteUrlFromHeaders(
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host"),
+    headerStore.get("x-forwarded-proto"),
+  );
 }
 
 export async function updateMondayBoardItemColumnAction(input: {

@@ -14,6 +14,7 @@ import {
   setMondaySyncEnabled,
 } from "@/lib/monday/connection";
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
+import { resolveSiteOrigin } from "@/lib/site/url";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import {
   getMondayBoardDetails,
@@ -414,7 +415,7 @@ export async function backfillMondayTasksAction(): Promise<
     const eventIds = events.map((event) => event.id);
     const taskRows = await getEventPlaybookTasksForEvents(eventIds);
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    const origin = resolveSiteOrigin();
     const result = await backfillOpenTasksToMonday({
       organizationId: organization.id,
       origin,

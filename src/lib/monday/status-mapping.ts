@@ -1,6 +1,6 @@
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 
-/** CampaignOS status → default Monday status label (user can customize labels on their board). */
+/** Hey Ralli status → default Monday status label (user can customize labels on their board). */
 const STATUS_TO_MONDAY_LABEL: Record<EventPlaybookTaskStatus, string> = {
   todo: "To Do",
   in_progress: "Working on it",

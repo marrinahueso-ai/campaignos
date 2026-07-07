@@ -63,14 +63,7 @@ export function DashboardHeader({
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
-          <Link
-            href="/dashboard"
-            className="font-display truncate text-xl text-cos-text transition-colors hover:text-cos-muted sm:text-2xl"
-          >
-            PTO Campaign Studio
-          </Link>
-        </div>
+        <div className="min-w-0 flex-1" aria-hidden="true" />
 
         <div className="flex items-center gap-2 sm:gap-3">
           <UtilityIconLink

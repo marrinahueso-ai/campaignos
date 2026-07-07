@@ -79,7 +79,7 @@ export function ArtworkCreativeBriefPanel({
       <div>
         <h3 className="text-sm font-semibold text-cos-text">Creative Brief</h3>
         <p className="mt-1 text-xs text-cos-muted">
-          CampaignOS directs the artwork. Pick a platform and optional inspiration — then generate.
+          Hey Ralli directs the artwork. Pick a platform and optional inspiration — then generate.
         </p>
       </div>
 
@@ -199,7 +199,7 @@ export function ArtworkCreativeBriefPanel({
                 rows={6}
                 disabled={!canEdit}
                 className="mt-1 font-mono text-xs"
-                placeholder="Leave blank to let CampaignOS write the creative brief automatically."
+                placeholder="Leave blank to let Hey Ralli write the creative brief automatically."
               />
             </div>
             <div>

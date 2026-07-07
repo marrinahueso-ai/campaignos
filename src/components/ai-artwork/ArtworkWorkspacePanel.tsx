@@ -294,7 +294,7 @@ export function ArtworkWorkspacePanel({
             <h3 className="text-sm font-semibold text-cos-text">Previews</h3>
             {needsTextOverlay && activeTextPlan && concepts.some((c) => c.status === "pending") && (
               <p className="text-xs text-cos-muted">
-                Recommended overlay copy is shown below beside each concept — add in CampaignOS or
+                Recommended overlay copy is shown below beside each concept — add in Hey Ralli or
                 Canva after approving artwork.
               </p>
             )}

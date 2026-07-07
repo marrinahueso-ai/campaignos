@@ -25,9 +25,10 @@ import { missingFacebookCommentReplyScopes } from "@/lib/inbox/scopes";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
 import { pickBestPageFromTokenResult } from "@/lib/meta-publishing/connection-token-select";
+import { resolveSiteOrigin } from "@/lib/site/url";
 
 export async function GET(request: NextRequest) {
-  const origin = request.nextUrl.origin;
+  const origin = resolveSiteOrigin(request.nextUrl.origin);
   const fallbackReturn = "/settings/meta";
 
   if (!isMetaIntegrationConfigured()) {

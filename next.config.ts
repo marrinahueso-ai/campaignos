@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: MAX_EVENT_ASSET_BYTES,
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "campaignos-six.vercel.app" }],
+        destination: "https://heyralli.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

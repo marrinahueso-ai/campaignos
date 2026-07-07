@@ -54,7 +54,7 @@ export type ArtworkV2GenerationResult = {
   success: boolean;
   error: string | null;
   warning?: string | null;
-  /** Original user-typed prompt — never rewritten by CampaignOS. */
+  /** Original user-typed prompt — never rewritten by Hey Ralli. */
   userPrompt?: string;
   /** GPT-5.5 orchestrated prompt sent to gpt-image-1. */
   orchestratedPrompt?: string;

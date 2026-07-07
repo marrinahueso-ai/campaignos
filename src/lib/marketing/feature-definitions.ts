@@ -40,7 +40,7 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
     navLabel: "Today",
     title: "Start your day on Today",
     summary:
-      "Open CampaignOS and know exactly what deserves your attention — Next Up, pulse snapshots, and your week at a glance.",
+      "Open Hey Ralli and know exactly what deserves your attention — Next Up, pulse snapshots, and your week at a glance.",
     highlights: ["Next Up", "Pulse snapshots", "Week at a glance"],
     details: [
       "Next Up highlights the one thing to focus on right now",

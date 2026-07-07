@@ -114,14 +114,14 @@ export function SchoolSetupWizard({
     () =>
       ({
         1: {
-          title: "Welcome to CampaignOS",
+          title: "Welcome to Hey Ralli",
           description:
             "Set up your school profile once, and every PTO communication will stay on brand all year long.",
         },
         2: {
           title: "Tell us about your school",
           description:
-            "School name and timezone are required. Everything else helps CampaignOS sound like your community.",
+            "School name and timezone are required. Everything else helps Hey Ralli sound like your community.",
         },
         3: {
           title: "Build your brand kit",
@@ -148,7 +148,7 @@ export function SchoolSetupWizard({
           description: "Your school profile is ready. Let's head to your dashboard.",
         },
       })[step as 1 | 2 | 3 | 4 | 5 | 6 | 7] ?? {
-        title: "Welcome to CampaignOS",
+        title: "Welcome to Hey Ralli",
         description:
           "Set up your school profile once, and every PTO communication will stay on brand all year long.",
       },

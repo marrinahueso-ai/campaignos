@@ -212,7 +212,7 @@ export async function getLatestAiDraftForItem(
   if (!data?.length) return null;
 
   const aiVersion = data.find(
-    (row) => row.created_by === "CampaignOS Assistant",
+    (row) => row.created_by === "Hey Ralli Assistant",
   );
   return (aiVersion?.content as string) ?? (data[0]?.content as string) ?? null;
 }

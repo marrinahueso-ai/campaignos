@@ -182,7 +182,7 @@ export function MetaConnectionPanel({
           <div>
             <h3 className="text-sm font-semibold text-cos-text">Connect with Page ID (fallback)</h3>
             <p className="mt-1 text-sm text-cos-muted">
-              Use this when Facebook OAuth succeeds but CampaignOS cannot list your Page — common
+              Use this when Facebook OAuth succeeds but Hey Ralli cannot list your Page — common
               for Pages in Meta Business Suite. Paste a user token from Graph API Explorer and your
               Page ID.
             </p>
@@ -400,12 +400,12 @@ export function MetaConnectionPanel({
                 Connect with Facebook
               </Button>
               <p className="text-sm text-cos-muted">
-                Sign in with Facebook once. CampaignOS handles Page access for publishing and inbox
+                Sign in with Facebook once. Hey Ralli handles Page access for publishing and inbox
                 — no separate authorization step.
               </p>
               {oauthError === "no_pages" ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  Facebook connected your account but CampaignOS could not resolve a Page token.
+                  Facebook connected your account but Hey Ralli could not resolve a Page token.
                   Set <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on
                   your server to your numeric Page ID, confirm your Login for Business configuration
                   includes <code className="rounded bg-white/80 px-1">business_management</code> and{" "}
@@ -419,7 +419,7 @@ export function MetaConnectionPanel({
                 </summary>
                 <div className="mt-3 space-y-3 text-cos-muted">
                   <p>
-                    CampaignOS requests publish and inbox scopes in one connect:{" "}
+                    Hey Ralli requests publish and inbox scopes in one connect:{" "}
                     {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
                       <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
                         {scope}

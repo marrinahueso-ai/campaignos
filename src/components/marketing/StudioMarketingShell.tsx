@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { MarketingSocialLinks } from "@/components/marketing/MarketingSocialLinks";
 import { cn } from "@/lib/utils/cn";
 
@@ -26,12 +27,7 @@ export function StudioMarketingShell({
     <div className="flex min-h-screen flex-col bg-cos-bg">
       <header className="sticky top-0 z-20 border-b border-cos-border/80 bg-cos-card/70 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
-          <Link href="/" className="flex shrink-0 items-baseline gap-2">
-            <span className="font-display text-2xl text-cos-text">CampaignOS</span>
-            <span className="hidden text-xs tracking-[0.2em] text-cos-muted uppercase sm:inline">
-              Studio
-            </span>
-          </Link>
+          <BrandLogo href="/" variant="full" size="nav" />
 
           <nav className="hidden items-center gap-6 md:flex">
             {NAV_LINKS.map((link) => (
@@ -76,7 +72,7 @@ export function StudioMarketingShell({
       <footer className="border-t border-cos-border bg-cos-bg px-6 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-xs tracking-wide text-cos-muted">
-            CampaignOS · Communications for school communities
+            Hey Ralli · ORGANIZE. CREATE. CONNECT.
           </p>
           <div className="flex gap-6">
             {NAV_LINKS.map((link) => (

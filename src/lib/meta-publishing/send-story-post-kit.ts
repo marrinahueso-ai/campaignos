@@ -21,6 +21,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { EventRow } from "@/types";
 import type { EventAssetRow } from "@/types/event-workspace";
+import { resolveSiteOrigin } from "@/lib/site/url";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 export interface SendStoryPostKitResult {
@@ -31,10 +32,7 @@ export interface SendStoryPostKitResult {
 }
 
 function resolveSiteBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://heyralli.com"
-  );
+  return resolveSiteOrigin();
 }
 
 function formatScheduledLabel(iso: string, timezone: string): string {

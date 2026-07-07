@@ -25,7 +25,7 @@ export interface SendEmailResult {
 function resolveFromAddress(): string {
   return (
     process.env.RESEND_FROM_EMAIL?.trim() ||
-    "CampaignOS <onboarding@resend.dev>"
+    "Hey Ralli <onboarding@resend.dev>"
   );
 }
 
