@@ -94,7 +94,7 @@ export function MilestonePlanningRow({
       onDragOver={(event) => event.preventDefault()}
       onDragEnd={onDragEnd}
       className={cn(
-        "grid cursor-pointer items-center gap-3 border-b border-cos-border px-4 py-3.5 transition-colors sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]",
+        "grid cursor-pointer items-center gap-2 border-b border-cos-border px-4 py-3.5 transition-colors sm:grid-cols-[auto_minmax(0,2.25fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_auto_auto]",
         isDragging && "opacity-40",
         isDragOver && "bg-cos-bg",
         isExpanded && "bg-cos-bg",
@@ -120,16 +120,16 @@ export function MilestonePlanningRow({
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
 
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-2">
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
           style={{ backgroundColor: category.bg, color: category.color }}
         >
           <CategoryIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
         </span>
-        <MilestoneStepProgressIcons progress={stepProgress} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-cos-text">{milestone.title}</p>
+        <MilestoneStepProgressIcons progress={stepProgress} className="gap-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-1 text-sm font-medium text-cos-text">{milestone.title}</p>
           {milestone.description && (
             <p className="truncate text-xs text-cos-muted">{milestone.description}</p>
           )}

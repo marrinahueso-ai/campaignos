@@ -238,7 +238,7 @@ export function MilestonePlanningSection({
       />
 
       <div>
-        <div className="hidden border-b border-cos-border px-4 py-2.5 text-[0.6875rem] font-medium tracking-[0.12em] text-cos-muted uppercase sm:grid sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]">
+        <div className="hidden border-b border-cos-border px-4 py-2.5 text-[0.6875rem] font-medium tracking-[0.12em] text-cos-muted uppercase sm:grid sm:grid-cols-[auto_minmax(0,2.25fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_auto_auto]">
           <span aria-hidden className="w-4" />
           <span>Milestone</span>
           <span>Platform</span>

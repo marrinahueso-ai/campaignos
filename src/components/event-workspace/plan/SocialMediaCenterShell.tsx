@@ -37,9 +37,9 @@ const STEPPER_STEPS: CampaignWorkflowStep[] = [
   "published",
 ];
 
-/** Shared main/sidebar column ratio — matches planning hub mockup (~65% / ~35%). */
+/** Shared main/sidebar column ratio — favors milestone table width over sidebar widgets. */
 const STUDIO_GRID_CLASS =
-  "lg:grid-cols-[minmax(0,65fr)_minmax(0,35fr)] lg:gap-x-6";
+  "lg:grid-cols-[minmax(0,75fr)_minmax(0,25fr)] lg:gap-x-5";
 
 interface SocialMediaCenterShellProps {
   event: Event;

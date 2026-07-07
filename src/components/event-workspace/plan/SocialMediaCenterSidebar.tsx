@@ -24,7 +24,7 @@ interface SocialMediaCenterSidebarProps {
 }
 
 function MilestoneProgressDonut({ percent }: { percent: number }) {
-  const size = 88;
+  const size = 76;
   const strokeWidth = 7;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -82,7 +82,7 @@ function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-cos-border bg-cos-card p-3.5">
+    <div className="border border-cos-border bg-cos-card p-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-display text-base text-cos-text">{title}</h3>
         {action}
@@ -130,7 +130,7 @@ export function SocialMediaCenterSidebar({
   const upcomingBundles = filterSocialBundles(metaPublishBundles, "upcoming").slice(0, 3);
 
   return (
-    <aside className="flex flex-col gap-4">
+    <aside className="flex w-full min-w-0 flex-col gap-3 lg:max-w-[17.5rem] lg:justify-self-end">
       <SidebarCard title="Milestone Progress">
         <div className="mt-4 flex items-center gap-4">
           <MilestoneProgressDonut percent={progressPercent} />
