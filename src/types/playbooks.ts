@@ -173,6 +173,10 @@ export interface PlaybookStepInput {
   isRequired: boolean;
   defaultStatus: PlaybookStepDefaultStatus;
   metaPublishSurfaces?: MetaPublishSurfaces;
+  /** Optional calendar date override (YYYY-MM-DD) from milestone planning. */
+  dueDate?: string;
+  /** Optional local schedule time (HH:mm) paired with dueDate for meta slots. */
+  scheduleTime?: string;
 }
 
 export interface CommunicationHealthSummary {

@@ -258,9 +258,6 @@ export function MilestonePlanningEditor({
               }
             />
           </div>
-          <button type="button" className="text-xs font-medium text-cos-status-todo-text">
-            + Add another platform
-          </button>
         </div>
 
         <div className="space-y-4">

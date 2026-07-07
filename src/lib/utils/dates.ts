@@ -116,3 +116,38 @@ export function formatLocalDate(
 export function getDayOfWeek(date: string): number {
   return parseLocalDate(date).getDay();
 }
+
+/** Combine a local date (YYYY-MM-DD) and 24-hour time (HH:mm) into an ISO timestamp. */
+export function combineLocalDateAndTimeToIso(
+  dateOnly: string,
+  time24Hour: string,
+): string | null {
+  const normalizedDate = normalizeDateOnly(dateOnly);
+  const [hoursText, minutesText] = time24Hour.split(":");
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+
+  if (
+    !normalizedDate ||
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const date = parseLocalDate(normalizedDate);
+  date.setHours(hours, minutes, 0, 0);
+  return date.toISOString();
+}
+
+/** Read a local 24-hour time (HH:mm) from an ISO timestamp. */
+export function readLocalTimeFromIso(isoDate: string): string {
+  const date = new Date(isoDate);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}

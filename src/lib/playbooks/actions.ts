@@ -15,6 +15,7 @@ import {
   updatePlaybook,
 } from "@/lib/playbooks/mutations";
 import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestones";
+import { applyMilestoneScheduleTimesFromSteps } from "@/lib/meta-publishing/sync-slots";
 import { getEventById } from "@/lib/events/queries";
 import { getPlaybookWithSteps } from "@/lib/playbooks/queries";
 import type {
@@ -251,6 +252,7 @@ export async function updateEventCommunicationTimelineAction(
   }
 
   await resyncCampaignPlanDownstream(eventId);
+  await applyMilestoneScheduleTimesFromSteps(eventId, steps);
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/calendar");

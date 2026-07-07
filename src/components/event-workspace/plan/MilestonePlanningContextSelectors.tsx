@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   formatVpRoleLabel,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import { buildEventDetailsFormState } from "@/lib/event-workspace/event-form-utils";
 import { updateEventDetailsAction } from "@/lib/event-workspace/actions";
+import { updateEventCampaignSettingsAction } from "@/lib/events/actions";
 import { assignPlaybookToEventAction } from "@/lib/playbooks/actions";
 import { cn } from "@/lib/utils/cn";
 import type { Event } from "@/types";
@@ -107,10 +108,44 @@ export function MilestonePlanningContextSelectors({
     defaultCommitteePerson,
   );
 
+  useEffect(() => {
+    setSelectedVpRoleId(defaultVpRoleId);
+  }, [defaultVpRoleId]);
+
+  useEffect(() => {
+    setSelectedPlaybookId(playbookId);
+  }, [playbookId]);
+
+  useEffect(() => {
+    setSelectedCommitteePerson(defaultCommitteePerson);
+  }, [defaultCommitteePerson]);
+
   const committeeOptions = withCommitteePersonOption(
     committeePersonOptions,
     selectedCommitteePerson,
   );
+
+  function handleVpRoleChange(nextVpRoleId: string) {
+    if (nextVpRoleId === selectedVpRoleId) {
+      return;
+    }
+
+    setError(null);
+    setSelectedVpRoleId(nextVpRoleId);
+    startTransition(async () => {
+      const result = await updateEventCampaignSettingsAction(event.id, {
+        approvalOrganizationRoleId: nextVpRoleId || null,
+      });
+
+      if (!result.success) {
+        setSelectedVpRoleId(defaultVpRoleId);
+        setError(result.error ?? "Unable to save VP role.");
+        return;
+      }
+
+      router.refresh();
+    });
+  }
 
   function handlePlaybookChange(nextPlaybookId: string) {
     if (nextPlaybookId === selectedPlaybookId) {
@@ -159,8 +194,8 @@ export function MilestonePlanningContextSelectors({
       id={`${idPrefix}-vp`}
       label="VP"
       value={selectedVpRoleId}
-      onChange={setSelectedVpRoleId}
-      disabled={vpRoles.length === 0}
+      onChange={handleVpRoleChange}
+      disabled={isPending || vpRoles.length === 0}
       fullWidth={layout === "stacked"}
       variant={layout === "inline" ? "inline" : "default"}
     >

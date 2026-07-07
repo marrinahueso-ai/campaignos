@@ -200,7 +200,8 @@ export function SocialMediaCenterSidebar({
         <button
           type="button"
           onClick={onCreateMilestone}
-          className="mt-4 flex w-full items-center justify-center gap-1.5 border border-cos-border bg-cos-card py-2.5 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg"
+          disabled={!onCreateMilestone}
+          className="mt-4 flex w-full items-center justify-center gap-1.5 border border-cos-border bg-cos-card py-2.5 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           Create new milestone

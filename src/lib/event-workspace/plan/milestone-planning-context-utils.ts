@@ -27,7 +27,13 @@ export function buildVpRoleOptions(
 export function resolveDefaultVpRoleId(
   ownership: EventRosterOwnership,
   vpRoles: MilestonePlanningVpRoleOption[],
+  savedVpRoleId?: string | null,
 ): string {
+  const trimmedSaved = savedVpRoleId?.trim();
+  if (trimmedSaved && vpRoles.some((role) => role.id === trimmedSaved)) {
+    return trimmedSaved;
+  }
+
   if (ownership.vpRoleName) {
     const match = vpRoles.find(
       (role) => role.name.toLowerCase() === ownership.vpRoleName!.toLowerCase(),

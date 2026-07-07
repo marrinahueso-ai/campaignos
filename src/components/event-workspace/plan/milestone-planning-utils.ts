@@ -12,7 +12,7 @@ import {
   isBundleArtworkComplete,
 } from "@/lib/meta-publishing/bundle-display";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
-import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
+import { formatDateTime, parseLocalDate, readLocalTimeFromIso, toLocalDateString } from "@/lib/utils/dates";
 import type { CommunicationChannel, EventAsset } from "@/types/event-workspace";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type {
@@ -242,6 +242,11 @@ export function enrichMilestoneItemsWithBundles(
       return item;
     }
 
+    const scheduleTime =
+      bundle.scheduledFor && bundle.isMetaPost
+        ? readLocalTimeFromIso(bundle.scheduledFor)
+        : item.scheduleTime;
+
     const isScheduled =
       bundle.status === "scheduled" ||
       bundle.status === "approved" ||
@@ -249,6 +254,7 @@ export function enrichMilestoneItemsWithBundles(
 
     return {
       ...item,
+      scheduleTime,
       status: isScheduled ? "scheduled" : item.dueDate ? item.status : "not_started",
     };
   });
@@ -386,6 +392,19 @@ export function milestoneItemsToPlaybookSteps(
       item.title,
       "facebook",
       facebookSurfaces,
+    );
+
+    const dueDate = item.dueDate ? item.dueDate.slice(0, 10) : undefined;
+    const schedulePatch = {
+      ...(dueDate ? { dueDate } : {}),
+      ...(item.scheduleTime ? { scheduleTime: item.scheduleTime } : {}),
+    };
+
+    metaSteps = metaSteps.map((step) =>
+      step.relativeDay === item.relativeDay &&
+      (step.channel === "instagram" || step.channel === "facebook")
+        ? { ...step, ...schedulePatch }
+        : step,
     );
   }
 

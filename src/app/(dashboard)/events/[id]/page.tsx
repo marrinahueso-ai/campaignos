@@ -289,7 +289,11 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     )?.defaultRoleId ?? null;
 
   const vpRoles = buildVpRoleOptions(orgWorkspace?.roles ?? []);
-  const defaultVpRoleId = resolveDefaultVpRoleId(resolvedOwnership, vpRoles);
+  const defaultVpRoleId = resolveDefaultVpRoleId(
+    resolvedOwnership,
+    vpRoles,
+    event.approvalOrganizationRoleId,
+  );
 
   const planningOverview = await getEventPlanningOverviewData({
     eventId: event.id,

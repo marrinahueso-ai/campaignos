@@ -30,7 +30,8 @@ export function MilestonePlanningSmartBanner({
       <button
         type="button"
         onClick={onApplySuggestedTimes}
-        className="inline-flex h-9 shrink-0 items-center justify-center border border-cos-status-todo-text bg-cos-card px-4 text-xs font-medium text-cos-status-todo-text transition-colors hover:bg-cos-bg"
+        disabled={!onApplySuggestedTimes}
+        className="inline-flex h-9 shrink-0 items-center justify-center border border-cos-status-todo-text bg-cos-card px-4 text-xs font-medium text-cos-status-todo-text transition-colors hover:bg-cos-bg disabled:cursor-not-allowed disabled:opacity-50"
       >
         Apply all suggested times
       </button>

@@ -159,7 +159,11 @@ export function MilestonePlanningRow({
         type="button"
         className="hidden p-1 text-cos-muted hover:text-cos-text sm:inline-flex"
         aria-label={`More actions for ${milestone.title}`}
-        onClick={(event) => event.stopPropagation()}
+        aria-expanded={isExpanded}
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleExpand();
+        }}
       >
         <MoreHorizontal className="h-4 w-4" aria-hidden />
       </button>

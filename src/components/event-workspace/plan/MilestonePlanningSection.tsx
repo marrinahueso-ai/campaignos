@@ -88,6 +88,7 @@ export function MilestonePlanningSection({
   const [expandedRelativeDay, setExpandedRelativeDay] = useState<number | null>(
     initialItems[0]?.relativeDay ?? null,
   );
+  const [editingRelativeDay, setEditingRelativeDay] = useState<number | null>(null);
   const [editorDraft, setEditorDraft] = useState<MilestonePlanningItem | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -97,6 +98,7 @@ export function MilestonePlanningSection({
   useEffect(() => {
     setItems(initialItems);
     setExpandedRelativeDay(initialItems[0]?.relativeDay ?? null);
+    setEditingRelativeDay(null);
     setEditorDraft(null);
   }, [initialItems]);
 
@@ -124,37 +126,56 @@ export function MilestonePlanningSection({
       return;
     }
     setExpandedRelativeDay(relativeDay);
+    setEditingRelativeDay(relativeDay);
     setEditorDraft({ ...milestone });
   }
 
   function closeEditor() {
     setEditorDraft(null);
+    setEditingRelativeDay(null);
   }
 
   function saveEditorChanges() {
-    if (!editorDraft) {
+    if (!editorDraft || editingRelativeDay == null) {
       return;
     }
-    setItems((current) =>
-      current.map((item) =>
-        item.relativeDay === editorDraft.relativeDay ? editorDraft : item,
-      ),
+
+    const conflicting = items.some(
+      (item) =>
+        item.relativeDay === editorDraft.relativeDay &&
+        item.relativeDay !== editingRelativeDay,
     );
+    if (conflicting) {
+      setError("That date is already used by another milestone. Choose a different date.");
+      return;
+    }
+
+    const nextItems = items.map((item) =>
+      item.relativeDay === editingRelativeDay ? editorDraft : item,
+    );
+    setItems(nextItems);
+    itemsRef.current = nextItems;
+    setExpandedRelativeDay(editorDraft.relativeDay);
     setEditorDraft(null);
-    persistPlan();
+    setEditingRelativeDay(null);
+    persistPlan(nextItems);
   }
 
   function deleteMilestone(relativeDay: number) {
-    setItems((current) => current.filter((item) => item.relativeDay !== relativeDay));
+    const nextItems = items.filter((item) => item.relativeDay !== relativeDay);
+    setItems(nextItems);
+    itemsRef.current = nextItems;
     setExpandedRelativeDay(null);
     setEditorDraft(null);
-    persistPlan();
+    setEditingRelativeDay(null);
+    persistPlan(nextItems);
   }
 
   const handleAddMilestone = useCallback(() => {
     setItems((current) => {
       const next = createDefaultMilestone(current, eventDate);
       setExpandedRelativeDay(next.relativeDay);
+      setEditingRelativeDay(next.relativeDay);
       setEditorDraft({ ...next });
       return [...current, next].sort((a, b) => a.relativeDay - b.relativeDay);
     });
@@ -305,13 +326,14 @@ export function MilestonePlanningSection({
                         if (!current) {
                           return current;
                         }
+                        const nextDraft = { ...current, ...patch };
                         if (patch.relativeDay != null) {
                           setExpandedRelativeDay(patch.relativeDay);
                         }
-                        return { ...current, ...patch };
+                        return nextDraft;
                       });
                     }}
-                    onDelete={() => deleteMilestone(milestone.relativeDay)}
+                    onDelete={() => deleteMilestone(editingRelativeDay ?? milestone.relativeDay)}
                     onCancel={closeEditor}
                     onSave={saveEditorChanges}
                   />

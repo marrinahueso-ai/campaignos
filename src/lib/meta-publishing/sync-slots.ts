@@ -18,9 +18,10 @@ import { buildCommunicationItemsByStepId, ensureStepCommunicationItemsForEvent }
 import { getEventById } from "@/lib/events/queries";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
 import { createClient } from "@/lib/supabase/server";
+import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
 import type { MetaPublicationSlotRow } from "@/lib/meta-publishing/types";
 import type { CommunicationItemRow } from "@/types/event-workspace";
-import type { EventCommunicationStepRow } from "@/types/playbooks";
+import type { EventCommunicationStepRow, PlaybookStepInput } from "@/types/playbooks";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 function isMissingMetaSlotsTable(error: { code?: string; message?: string } | null): boolean {
@@ -50,6 +51,78 @@ function isTargetEnabled(
 
 function defaultScheduledTime(dueDate: string | null): string | null {
   return planDueDateToScheduledTime(dueDate);
+}
+
+function resolveScheduledTimeFromStep(step: PlaybookStepInput): string | null {
+  const dueDate = step.dueDate?.slice(0, 10);
+  if (dueDate && step.scheduleTime) {
+    return combineLocalDateAndTimeToIso(dueDate, step.scheduleTime);
+  }
+
+  if (dueDate) {
+    return planDueDateToScheduledTime(dueDate);
+  }
+
+  return null;
+}
+
+/** Apply milestone planning schedule times to draft/upcoming meta publication slots. */
+export async function applyMilestoneScheduleTimesFromSteps(
+  eventId: string,
+  steps: PlaybookStepInput[],
+): Promise<void> {
+  const scheduleByDay = new Map<number, string>();
+
+  for (const step of steps) {
+    if (step.channel !== "facebook" && step.channel !== "instagram") {
+      continue;
+    }
+
+    const scheduledFor = resolveScheduledTimeFromStep(step);
+    if (!scheduledFor) {
+      continue;
+    }
+
+    scheduleByDay.set(step.relativeDay, scheduledFor);
+  }
+
+  if (scheduleByDay.size === 0) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  for (const [relativeDay, scheduledFor] of scheduleByDay) {
+    const { data: slots, error } = await supabase
+      .from("meta_publication_slots")
+      .select("id, status")
+      .eq("event_id", eventId)
+      .eq("relative_day", relativeDay);
+
+    if (error) {
+      if (isMissingMetaSlotsTable(error)) {
+        return;
+      }
+      console.error("Failed to load meta publication slots for schedule sync:", error.message);
+      continue;
+    }
+
+    for (const slot of slots ?? []) {
+      if (slot.status === "published" || slot.status === "cancelled") {
+        continue;
+      }
+
+      if (["approved", "posting", "scheduled"].includes(slot.status as string)) {
+        continue;
+      }
+
+      await supabase
+        .from("meta_publication_slots")
+        .update({ scheduled_for: scheduledFor, updated_at: now })
+        .eq("id", slot.id);
+    }
+  }
 }
 
 export async function ensureMetaPublicationSlots(eventId: string): Promise<void> {

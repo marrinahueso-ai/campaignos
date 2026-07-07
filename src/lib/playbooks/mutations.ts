@@ -359,7 +359,7 @@ export async function replaceEventCommunicationTimeline(
     playbook_step_id: null,
     sort_order: index,
     relative_day: step.relativeDay,
-    due_date: computeDueDate(event.date, step.relativeDay),
+    due_date: step.dueDate ?? computeDueDate(event.date, step.relativeDay),
     title: step.title,
     channel: step.channel,
     is_required: step.isRequired,
