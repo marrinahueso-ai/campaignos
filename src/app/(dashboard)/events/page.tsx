@@ -1,8 +1,6 @@
-import { Plus } from "lucide-react";
-import { CampaignEventsList } from "@/components/events/CampaignEventsList";
+import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageContent";
 import { Button } from "@/components/ui/Button";
 import { getCampaignPageEvents, getMetaScheduledEventIds } from "@/lib/events/campaign-page-queries";
-import { groupEventsByMonth, sortCampaignMonthGroups } from "@/lib/events/campaign-page-utils";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
@@ -18,8 +16,6 @@ export default async function EventsPage() {
   const organization = await getCurrentOrganization();
   const events = await getCampaignPageEvents(organization?.id ?? null);
   const eventIds = events.map((event) => event.id);
-  const groups = groupEventsByMonth(events);
-  const monthGroups = sortCampaignMonthGroups(groups, today);
 
   const [artworkByEventId, metaScheduledEventIds] = await Promise.all([
     getEventArtworkMap(eventIds),
@@ -32,25 +28,22 @@ export default async function EventsPage() {
   const ownershipByEventId = buildEventRosterOwnershipMap(events, workspace);
 
   return (
-    <div className="studio-page space-y-10">
-      <header className="flex flex-col gap-4 border-b border-cos-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div className="studio-page space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="studio-eyebrow">Workspace</p>
-          <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Campaigns</h1>
+          <h1 className="font-display text-4xl text-cos-text sm:text-5xl">Campaigns</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted sm:text-base">
-            Full campaigns and reminder-only plans grouped by month — these are the
-            events that get social posts and communications. Pure calendar dates stay
-            on the Calendar only.
+            Plan, organize, and launch campaigns that engage your community.
           </p>
         </div>
-        <Button href="/events/create" className="shrink-0">
-          <Plus className="h-4 w-4" />
-          Create campaign
+        <Button href="/events/create" className="shrink-0 rounded-lg">
+          + New campaign
         </Button>
       </header>
 
-      <CampaignEventsList
-        monthGroups={monthGroups}
+      <CampaignsPageContent
+        events={events}
+        today={today}
         artworkByEventId={artworkByEventId}
         ownershipByEventId={ownershipByEventId}
         metaScheduledEventIds={metaScheduledEventIds}
