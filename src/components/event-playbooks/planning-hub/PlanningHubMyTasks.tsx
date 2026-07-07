@@ -11,7 +11,6 @@ import {
 import { updateEventPlaybookTaskStatusAction } from "@/lib/event-playbooks/actions";
 import { nextTaskStatus } from "@/lib/event-playbooks/task-status";
 import {
-  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -26,18 +25,18 @@ const GROUP_META: Record<
 > = {
   overdue: {
     label: "Overdue",
-    countClass: PH.overdue,
-    dueClass: PH.overdue,
+    countClass: "text-cos-error",
+    dueClass: "text-cos-error",
   },
   today: {
     label: "Today",
-    countClass: PH.today,
-    dueClass: PH.today,
+    countClass: "text-cos-accent",
+    dueClass: "text-cos-accent",
   },
   upcoming: {
     label: "Upcoming",
-    countClass: PH.upcoming,
-    dueClass: PH.upcoming,
+    countClass: "text-cos-success",
+    dueClass: "text-cos-success",
   },
 };
 
@@ -96,15 +95,15 @@ export function PlanningHubMyTasks({
           return (
             <div key={group}>
               <p
-                className="text-[10px] font-bold tracking-[0.12em] uppercase"
-                style={{ color: meta.countClass }}
+                className={cn(
+                  "text-[10px] font-bold tracking-[0.12em] uppercase",
+                  meta.countClass,
+                )}
               >
                 {meta.label} ({items.length})
               </p>
               {items.length === 0 ? (
-                <p className="mt-1 text-xs" style={{ color: PH.textMuted }}>
-                  None
-                </p>
+                <p className="mt-1 text-xs text-cos-dark-muted">None</p>
               ) : (
                 <ul className="mt-1.5 space-y-1.5">
                   {items.slice(0, group === "upcoming" ? 3 : 2).map((task) => (
@@ -113,33 +112,25 @@ export function PlanningHubMyTasks({
                         type="button"
                         disabled={!tablesAvailable || pending}
                         onClick={() => toggleTask(task)}
-                        className="flex w-full items-start gap-2.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-[#FAF7F2] disabled:opacity-50"
+                        className="flex w-full items-start gap-2.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-cos-bg disabled:opacity-50"
                       >
                         {task.status === "done" ? (
                           <CheckSquare
-                            className="mt-0.5 h-4 w-4 shrink-0"
-                            style={{ color: PH.upcoming }}
+                            className="mt-0.5 h-4 w-4 shrink-0 text-cos-success"
                             strokeWidth={1.5}
                           />
                         ) : (
                           <Circle
-                            className="mt-0.5 h-4 w-4 shrink-0"
-                            style={{ color: PH.iconMuted }}
+                            className="mt-0.5 h-4 w-4 shrink-0 text-cos-dark-muted"
                             strokeWidth={1.5}
                           />
                         )}
                         <span className="min-w-0 flex-1">
-                          <span
-                            className="block text-sm font-medium"
-                            style={{ color: PH.textPrimary }}
-                          >
+                          <span className="block text-sm font-medium text-cos-text">
                             {task.title}
                           </span>
                           {task.dueDate && (
-                            <span
-                              className={cn("text-xs font-medium")}
-                              style={{ color: meta.dueClass }}
-                            >
+                            <span className={cn("text-xs font-medium", meta.dueClass)}>
                               {formatTaskDueLabel(task.dueDate, group)}
                             </span>
                           )}

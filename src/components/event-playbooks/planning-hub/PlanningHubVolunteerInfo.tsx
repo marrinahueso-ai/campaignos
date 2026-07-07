@@ -29,22 +29,13 @@ function StatBlock({
   color: string;
 }) {
   return (
-    <li
-      className="flex items-center gap-3 rounded-[10px] border px-3 py-3"
-      style={{ borderColor: PH.cardBorder, backgroundColor: PH.pageBg }}
-    >
+    <li className="flex items-center gap-3 rounded-[10px] border border-cos-border bg-cos-bg px-3 py-3">
       <PlanningHubIconSquare icon={Icon} bg={bg} color={color} className="h-10 w-10 rounded-[10px]" />
       <div>
-        <p
-          className="text-[10px] font-semibold tracking-[0.12em] uppercase"
-          style={{ color: PH.textMuted }}
-        >
+        <p className="text-[10px] font-semibold tracking-[0.12em] text-cos-dark-muted uppercase">
           {label}
         </p>
-        <p
-          className="font-display text-2xl leading-tight"
-          style={{ color: PH.textPrimary }}
-        >
+        <p className="font-display text-2xl leading-tight text-cos-text">
           {value}
         </p>
       </div>
@@ -76,11 +67,8 @@ export function PlanningHubVolunteerInfo({
       />
 
       {!hasVolunteerPlan ? (
-        <div
-          className="mt-4 flex-1 rounded-[10px] border border-dashed px-4 py-8 text-center"
-          style={{ borderColor: PH.cardBorder }}
-        >
-          <p className="text-sm" style={{ color: PH.textSecondary }}>
+        <div className="mt-4 flex-1 rounded-[10px] border border-dashed border-cos-border px-4 py-8 text-center">
+          <p className="text-sm text-cos-muted">
             Add a volunteer signup link or volunteer needs in Settings to track help
             for this event.
           </p>
@@ -98,22 +86,22 @@ export function PlanningHubVolunteerInfo({
               icon={Users}
               label="Total volunteers"
               value={formatStat(stats.total)}
-              bg="#E4EDF8"
-              color="#5B8FC7"
+              bg={PH.iconTints.blue.bg}
+              color={PH.iconTints.blue.color}
             />
             <StatBlock
               icon={UserCheck}
               label="Checked in"
               value={formatStat(stats.checkedIn)}
-              bg="#E4F2E8"
-              color="#5A9E6F"
+              bg={PH.iconTints.green.bg}
+              color={PH.iconTints.green.color}
             />
             <StatBlock
               icon={UserPlus}
               label="Still needed"
               value={formatStat(stats.stillNeeded)}
-              bg="#FCE8E4"
-              color="#E87461"
+              bg={PH.iconTints.coral.bg}
+              color={PH.iconTints.coral.color}
             />
           </ul>
 

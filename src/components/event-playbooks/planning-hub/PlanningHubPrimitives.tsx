@@ -1,32 +1,14 @@
 import { cn } from "@/lib/utils/cn";
 
-/** Mockup-exact Planning Hub design tokens */
+/** Icon tint and status accent colors — surfaces use cos-* Tailwind classes */
 export const PH = {
-  pageBg: "#FAF7F2",
-  cardBg: "#FFFFFF",
-  cardBorder: "#E8E4DF",
-  textPrimary: "#2A2622",
-  textSecondary: "#7A7268",
-  textMuted: "#A89F94",
-  iconMuted: "#C4BAB0",
-  orange: "#E8512C",
-  orangeHover: "#C94524",
-  peachBadge: "#F5DDD0",
-  peachBadgeText: "#8B5A42",
-  beigeButton: "#F6F2EB",
-  beigeButtonHover: "#EBE4D9",
-  greenScheduled: "#E4F2E8",
-  greenScheduledText: "#3D7A4A",
-  greenDot: "#5A9E6F",
-  purpleNew: "#ECE4F5",
-  purpleNewText: "#6B4FA8",
-  purpleAccent: "#8B6FBF",
-  purpleCardBg: "#FAF7FC",
-  progressRing: "#B8956F",
-  progressTrack: "#E8E4DF",
-  overdue: "#B86B55",
-  today: "#5B8FC7",
-  upcoming: "#5A9E6F",
+  iconTints: {
+    coral: { bg: "#fce8e4", color: "#e87461" },
+    green: { bg: "#eef2ec", color: "#5f735f" },
+    blue: { bg: "#e4eef8", color: "#4a7fb5" },
+    orange: { bg: "#f8ece0", color: "#c87d3a" },
+    purple: { bg: "#ece4f5", color: "#8b6fbf" },
+  },
 } as const;
 
 export function PlanningHubPage({
@@ -37,10 +19,7 @@ export function PlanningHubPage({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn("space-y-5 rounded-[12px] p-1 sm:p-0", className)}
-      style={{ backgroundColor: PH.pageBg }}
-    >
+    <div className={cn("space-y-5 rounded-[12px] bg-cos-bg p-1 sm:p-0", className)}>
       {children}
     </div>
   );
@@ -55,8 +34,10 @@ export function PlanningHubCard({
 }) {
   return (
     <div
-      className={cn("rounded-[12px] border bg-white shadow-[0_1px_2px_rgba(42,38,34,0.04)]", className)}
-      style={{ borderColor: PH.cardBorder, backgroundColor: PH.cardBg }}
+      className={cn(
+        "rounded-[12px] border border-cos-border bg-cos-card shadow-[0_1px_2px_rgba(42,38,34,0.04)]",
+        className,
+      )}
     >
       {children}
     </div>
@@ -76,11 +57,9 @@ export function PlanningHubSectionTitle({
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-2">
         {Icon && (
-          <Icon className="h-4 w-4 text-[#A89F94]" strokeWidth={1.5} />
+          <Icon className="h-4 w-4 text-cos-dark-muted" strokeWidth={1.5} />
         )}
-        <h3 className="text-sm font-semibold" style={{ color: PH.textPrimary }}>
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold text-cos-text">{title}</h3>
       </div>
       {action}
     </div>
@@ -92,55 +71,32 @@ export function PlanningHubActionLink({
   onClick,
   children,
   className,
-  variant = "orange",
+  variant = "accent",
 }: {
   href?: string;
   onClick?: () => void;
   children: React.ReactNode;
   className?: string;
-  variant?: "orange" | "purple";
+  variant?: "accent" | "muted";
 }) {
-  const color = variant === "purple" ? PH.purpleNewText : PH.orange;
-  const hoverColor = variant === "purple" ? "#553D8A" : PH.orangeHover;
-
   const classes = cn(
     "inline-flex items-center gap-1 text-xs font-semibold transition-colors",
+    variant === "muted"
+      ? "text-cos-muted hover:text-cos-text"
+      : "text-cos-accent hover:text-cos-text",
     className,
   );
 
-  const style = { color } as React.CSSProperties;
-
   if (href) {
     return (
-      <a
-        href={href}
-        className={classes}
-        style={style}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = hoverColor;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = color;
-        }}
-      >
+      <a href={href} className={classes}>
         {children}
       </a>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={classes}
-      style={style}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = hoverColor;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = color;
-      }}
-    >
+    <button type="button" onClick={onClick} className={classes}>
       {children}
     </button>
   );
@@ -155,13 +111,10 @@ export function PlanningHubKpiLabel({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <p
-        className="text-[10px] font-semibold tracking-[0.14em] uppercase"
-        style={{ color: PH.textMuted }}
-      >
+      <p className="text-[10px] font-semibold tracking-[0.14em] text-cos-dark-muted uppercase">
         {label}
       </p>
-      <Icon className="h-4 w-4 text-[#C4BAB0]" strokeWidth={1.5} />
+      <Icon className="h-4 w-4 text-cos-dark-muted" strokeWidth={1.5} />
     </div>
   );
 }

@@ -22,8 +22,8 @@ const QUICK_ACTIONS = [
     title: "Create Post",
     subtext: "Social Media",
     icon: MessageSquare,
-    iconBg: "#FCE8E4",
-    iconColor: "#E87461",
+    iconBg: PH.iconTints.coral.bg,
+    iconColor: PH.iconTints.coral.color,
     tab: "social-media" as EventPlaybookTab,
     step: "plan" as CampaignWorkflowStep,
   },
@@ -32,8 +32,8 @@ const QUICK_ACTIONS = [
     title: "Add Task",
     subtext: "To-do list",
     icon: CheckSquare,
-    iconBg: "#E4F2E8",
-    iconColor: "#5A9E6F",
+    iconBg: PH.iconTints.green.bg,
+    iconColor: PH.iconTints.green.color,
     tab: "tasks" as EventPlaybookTab,
   },
   {
@@ -41,8 +41,8 @@ const QUICK_ACTIONS = [
     title: "Upload File",
     subtext: "Docs & Media",
     icon: Upload,
-    iconBg: "#E4EDF8",
-    iconColor: "#5B8FC7",
+    iconBg: PH.iconTints.blue.bg,
+    iconColor: PH.iconTints.blue.color,
     tab: "files" as EventPlaybookTab,
   },
   {
@@ -50,8 +50,8 @@ const QUICK_ACTIONS = [
     title: "Invite Volunteer",
     subtext: "Get help",
     icon: UserPlus,
-    iconBg: "#F8ECE0",
-    iconColor: "#E8944A",
+    iconBg: PH.iconTints.orange.bg,
+    iconColor: PH.iconTints.orange.color,
     tab: "settings" as EventPlaybookTab,
   },
   {
@@ -59,8 +59,8 @@ const QUICK_ACTIONS = [
     title: "View Calendar",
     subtext: "See what's next",
     icon: CalendarDays,
-    iconBg: "#ECE4F5",
-    iconColor: "#8B6FBF",
+    iconBg: PH.iconTints.purple.bg,
+    iconColor: PH.iconTints.purple.color,
     href: "/calendar",
   },
 ] as const;
@@ -82,13 +82,10 @@ export function PlanningHubHeader({
   return (
     <div className="space-y-5">
       <div>
-        <h1
-          className="font-display text-[2rem] leading-tight sm:text-[2.25rem]"
-          style={{ color: PH.textPrimary }}
-        >
+        <h1 className="font-display text-[2rem] leading-tight text-cos-text sm:text-[2.25rem]">
           {greeting}, {name}! 👋
         </h1>
-        <p className="mt-1.5 text-[15px]" style={{ color: PH.textSecondary }}>
+        <p className="mt-1.5 text-[15px] text-cos-muted">
           Let&apos;s bring your campaign to life today.
         </p>
       </div>
@@ -109,15 +106,10 @@ export function PlanningHubHeader({
                 />
               </span>
               <span className="min-w-0 text-left">
-                <span
-                  className="block text-sm font-semibold"
-                  style={{ color: PH.textPrimary }}
-                >
+                <span className="block text-sm font-semibold text-cos-text">
                   {action.title}
                 </span>
-                <span className="block text-xs" style={{ color: PH.textMuted }}>
-                  {action.subtext}
-                </span>
+                <span className="block text-xs text-cos-dark-muted">{action.subtext}</span>
               </span>
             </>
           );
@@ -128,7 +120,7 @@ export function PlanningHubHeader({
                 <a
                   href={action.href}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[#FAF7F2]",
+                    "flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-cos-bg",
                   )}
                 >
                   {content}
@@ -149,7 +141,7 @@ export function PlanningHubHeader({
                     );
                   }
                 }}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#FAF7F2]"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-cos-bg"
               >
                 {content}
               </button>

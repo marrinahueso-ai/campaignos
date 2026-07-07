@@ -12,7 +12,6 @@ import {
   OverviewInlineText,
 } from "@/components/event-playbooks/OverviewInlineFields";
 import {
-  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubKpiLabel,
@@ -58,7 +57,7 @@ function CompactProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={PH.progressTrack}
+          stroke="var(--cos-border)"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -66,17 +65,14 @@ function CompactProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={PH.progressRing}
+          stroke="var(--cos-accent)"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
         />
       </svg>
-      <span
-        className="absolute text-sm font-semibold"
-        style={{ color: PH.textPrimary }}
-      >
+      <span className="absolute text-sm font-semibold text-cos-text">
         {percent}%
       </span>
     </div>
@@ -154,13 +150,10 @@ export function PlanningHubKpiRow({
 
       <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
-        <p
-          className="mt-3 font-display text-[2rem] leading-none"
-          style={{ color: PH.textPrimary }}
-        >
+        <p className="mt-3 font-display text-[2rem] leading-none text-cos-text">
           {countdown.isPast ? "0" : countdown.daysRemaining}
         </p>
-        <p className="mt-2 flex-1 text-xs" style={{ color: PH.textSecondary }}>
+        <p className="mt-2 flex-1 text-xs text-cos-muted">
           {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
         </p>
       </PlanningHubCard>
@@ -206,10 +199,7 @@ export function PlanningHubKpiRow({
         <div className="mt-3 flex flex-1 items-center gap-3">
           <CompactProgressRing percent={taskProgressPercent} />
           <div className="min-w-0">
-            <p
-              className="font-display text-lg leading-tight"
-              style={{ color: PH.textPrimary }}
-            >
+            <p className="font-display text-lg leading-tight text-cos-text">
               {doneTaskCount} of {totalTaskCount} tasks
             </p>
             <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-1">

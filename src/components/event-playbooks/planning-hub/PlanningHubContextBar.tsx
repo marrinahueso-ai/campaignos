@@ -9,7 +9,6 @@ import {
   HelpCircle,
   Settings,
 } from "lucide-react";
-import { PH } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -62,15 +61,13 @@ export function PlanningHubContextBar({
           <button
             type="button"
             onClick={() => setCampaignOpen((open) => !open)}
-            className="font-display inline-flex max-w-[16rem] items-center gap-1.5 truncate text-base font-bold sm:max-w-xs"
-            style={{ color: PH.textPrimary }}
+            className="font-display inline-flex max-w-[16rem] items-center gap-1.5 truncate text-base font-bold text-cos-text sm:max-w-xs"
             aria-expanded={campaignOpen}
             aria-haspopup="listbox"
           >
             <span className="truncate">{event.title}</span>
             <ChevronDown
-              className="h-4 w-4 shrink-0"
-              style={{ color: PH.textMuted }}
+              className="h-4 w-4 shrink-0 text-cos-dark-muted"
               strokeWidth={1.5}
             />
           </button>
@@ -78,8 +75,7 @@ export function PlanningHubContextBar({
           {campaignOpen && (
             <ul
               role="listbox"
-              className="absolute left-0 top-[calc(100%+0.35rem)] z-30 max-h-64 w-72 overflow-y-auto rounded-[12px] border bg-white py-1 shadow-lg"
-              style={{ borderColor: PH.cardBorder }}
+              className="absolute left-0 top-[calc(100%+0.35rem)] z-30 max-h-64 w-72 overflow-y-auto rounded-[12px] border border-cos-border bg-cos-card py-1 shadow-lg"
             >
               {eventsForDropdown.map((entry) => (
                 <li key={entry.id}>
@@ -88,8 +84,8 @@ export function PlanningHubContextBar({
                     role="option"
                     aria-selected={entry.id === event.id}
                     className={cn(
-                      "block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-[#FAF7F2]",
-                      entry.id === event.id && "bg-[#FAF7F2] font-medium",
+                      "block w-full px-3 py-2 text-left text-sm text-cos-text transition-colors hover:bg-cos-bg",
+                      entry.id === event.id && "bg-cos-bg font-medium",
                     )}
                     onClick={() => {
                       setCampaignOpen(false);
@@ -106,10 +102,7 @@ export function PlanningHubContextBar({
           )}
         </div>
 
-        <span
-          className="inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide"
-          style={{ backgroundColor: PH.peachBadge, color: PH.peachBadgeText }}
-        >
+        <span className="inline-flex shrink-0 items-center rounded-full bg-cos-warning px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-cos-warning-text">
           Planning Hub
         </span>
       </div>
@@ -118,15 +111,11 @@ export function PlanningHubContextBar({
         <Link
           href="/approvals"
           aria-label="Notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/80"
-          style={{ color: PH.textSecondary }}
+          className="relative flex h-9 w-9 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg-alt hover:text-cos-text"
         >
           <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
           {notificationCount > 0 && (
-            <span
-              className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-              style={{ backgroundColor: PH.orange }}
-            >
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-cos-error px-1 text-[10px] font-bold text-white">
               {notificationCount > 99 ? "99+" : notificationCount}
             </span>
           )}
@@ -135,8 +124,7 @@ export function PlanningHubContextBar({
         <Link
           href="/about"
           aria-label="Help"
-          className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/80"
-          style={{ color: PH.textSecondary }}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg-alt hover:text-cos-text"
         >
           <HelpCircle className="h-[18px] w-[18px]" strokeWidth={1.5} />
         </Link>
@@ -144,8 +132,7 @@ export function PlanningHubContextBar({
         <Link
           href="/settings"
           aria-label="Settings"
-          className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/80"
-          style={{ color: PH.textSecondary }}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg-alt hover:text-cos-text"
         >
           <Settings className="h-[18px] w-[18px]" strokeWidth={1.5} />
         </Link>
@@ -154,35 +141,26 @@ export function PlanningHubContextBar({
           <button
             type="button"
             onClick={() => setUserOpen((open) => !open)}
-            className="font-display inline-flex max-w-[10rem] items-center gap-1 truncate text-sm font-bold"
-            style={{ color: PH.textPrimary }}
+            className="font-display inline-flex max-w-[10rem] items-center gap-1 truncate text-sm font-bold text-cos-text"
             aria-expanded={userOpen}
           >
             <span className="truncate">{displayName}</span>
             <ChevronDown
-              className="h-3.5 w-3.5 shrink-0"
-              style={{ color: PH.textMuted }}
+              className="h-3.5 w-3.5 shrink-0 text-cos-dark-muted"
               strokeWidth={1.5}
             />
           </button>
 
           {userOpen && (
-            <div
-              className="absolute right-0 top-[calc(100%+0.35rem)] z-30 w-48 rounded-[12px] border bg-white py-1 shadow-lg"
-              style={{ borderColor: PH.cardBorder }}
-            >
+            <div className="absolute right-0 top-[calc(100%+0.35rem)] z-30 w-48 rounded-[12px] border border-cos-border bg-cos-card py-1 shadow-lg">
               {userEmail && (
-                <p
-                  className="border-b px-3 py-2 text-xs"
-                  style={{ borderColor: PH.cardBorder, color: PH.textSecondary }}
-                >
+                <p className="border-b border-cos-border px-3 py-2 text-xs text-cos-muted">
                   {userEmail}
                 </p>
               )}
               <Link
                 href="/settings"
-                className="block px-3 py-2 text-sm hover:bg-[#FAF7F2]"
-                style={{ color: PH.textPrimary }}
+                className="block px-3 py-2 text-sm text-cos-text hover:bg-cos-bg"
                 onClick={() => setUserOpen(false)}
               >
                 Account settings
@@ -190,8 +168,7 @@ export function PlanningHubContextBar({
               <form action="/auth/signout" method="POST">
                 <button
                   type="submit"
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-[#FAF7F2]"
-                  style={{ color: PH.textPrimary }}
+                  className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
                 >
                   Sign out
                 </button>

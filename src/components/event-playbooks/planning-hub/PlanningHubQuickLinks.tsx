@@ -34,11 +34,11 @@ const ICON_STYLES: Record<
   PlanningQuickLinkKey,
   { bg: string; color: string }
 > = {
-  volunteer_signup: { bg: "#E4EDF8", color: "#5B8FC7" },
-  marketing_materials: { bg: "#E4F2E8", color: "#5A9E6F" },
-  vendor_list: { bg: "#F8ECE0", color: "#E8944A" },
-  communication_plan: { bg: "#ECE4F5", color: "#8B6FBF" },
-  event_budget: { bg: "#FCE8E4", color: "#E87461" },
+  volunteer_signup: PH.iconTints.blue,
+  marketing_materials: PH.iconTints.green,
+  vendor_list: PH.iconTints.orange,
+  communication_plan: PH.iconTints.purple,
+  event_budget: PH.iconTints.coral,
 };
 
 interface PlanningHubQuickLinksProps {
@@ -74,7 +74,7 @@ export function PlanningHubQuickLinks({
     <PlanningHubCard className="flex h-full flex-col p-5">
       <PlanningHubSectionTitle icon={Paperclip} title="Quick Links" />
 
-      <ul className="mt-4 flex-1 divide-y" style={{ borderColor: PH.cardBorder }}>
+      <ul className="mt-4 flex-1 divide-y divide-cos-border">
         {MOCKUP_QUICK_LINKS.map(({ key, label, icon: Icon }) => {
           const entry = links[key];
           const href = resolveHref(key, entry.url);
@@ -89,7 +89,7 @@ export function PlanningHubQuickLinks({
                   bg={iconStyle.bg}
                   color={iconStyle.color}
                 />
-                <span className="text-sm font-medium" style={{ color: PH.textPrimary }}>
+                <span className="text-sm font-medium text-cos-text">
                   {label}
                 </span>
               </span>

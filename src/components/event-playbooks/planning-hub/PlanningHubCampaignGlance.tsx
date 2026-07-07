@@ -9,7 +9,6 @@ import {
   OverviewInlineText,
 } from "@/components/event-playbooks/OverviewInlineFields";
 import {
-  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -66,10 +65,7 @@ function GlanceField({
 }) {
   return (
     <div>
-      <dt
-        className="text-[10px] font-semibold tracking-[0.12em] uppercase"
-        style={{ color: PH.textMuted }}
-      >
+      <dt className="text-[10px] font-semibold tracking-[0.12em] text-cos-dark-muted uppercase">
         {label}
       </dt>
       <dd className="mt-0.5">{children}</dd>
@@ -215,10 +211,7 @@ export function PlanningHubCampaignGlance({
 
         {showArtwork && artwork?.imageUrl && (
           <div className="flex shrink-0 flex-col items-center sm:w-[7.5rem]">
-            <div
-              className="relative aspect-square w-full max-w-[7.5rem] overflow-hidden rounded-[10px] border"
-              style={{ borderColor: PH.cardBorder }}
-            >
+            <div className="relative aspect-square w-full max-w-[7.5rem] overflow-hidden rounded-[10px] border border-cos-border">
               <Image
                 src={artwork.imageUrl}
                 alt={artwork.label ?? "Event artwork"}
@@ -227,14 +220,8 @@ export function PlanningHubCampaignGlance({
                 unoptimized
               />
             </div>
-            <p
-              className="mt-2 flex items-center gap-1.5 text-xs font-medium"
-              style={{ color: PH.greenScheduledText }}
-            >
-              <span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: PH.greenDot }}
-              />
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-cos-success-text">
+              <span className="h-1.5 w-1.5 rounded-full bg-cos-success" />
               {artwork.caption ?? "Artwork ready"}
             </p>
           </div>

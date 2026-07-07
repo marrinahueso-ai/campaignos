@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Heart, Sparkles } from "lucide-react";
 import { generateEventPlaybookInsightsAction } from "@/lib/event-playbooks/actions";
 import {
-  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -73,43 +72,30 @@ export function PlanningHubAiInsights({
         icon={Sparkles}
         title="AI Insights"
         action={
-          <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase"
-            style={{ backgroundColor: PH.purpleNew, color: PH.purpleNewText }}
-          >
+          <span className="rounded-full bg-cos-accent-soft px-2 py-0.5 text-[10px] font-bold tracking-wide text-cos-warning-text uppercase">
             New
           </span>
         }
       />
 
-      <p className="mt-3 text-sm" style={{ color: PH.textSecondary }}>
+      <p className="mt-3 text-sm text-cos-muted">
         Here&apos;s what Ralli AI suggests for your campaign:
       </p>
 
-      <div
-        className="mt-3 flex flex-1 items-stretch gap-3 rounded-[10px] border p-3"
-        style={{ borderColor: PH.purpleNew, backgroundColor: PH.purpleCardBg }}
-      >
-        <p className="min-w-0 flex-1 text-sm leading-relaxed" style={{ color: PH.textPrimary }}>
+      <div className="mt-3 flex flex-1 items-stretch gap-3 rounded-[10px] border border-cos-border bg-cos-accent-soft/40 p-3">
+        <p className="min-w-0 flex-1 text-sm leading-relaxed text-cos-text">
           <span className="font-semibold">Engagement opportunity</span>
           {" — "}
           {featuredInsight}
         </p>
         <div className="flex w-16 shrink-0 items-center justify-center">
-          <div
-            className="relative flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ backgroundColor: PH.purpleNew }}
-          >
-            <Heart className="h-6 w-6" style={{ color: PH.purpleAccent }} strokeWidth={1.5} />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-cos-accent-soft">
+            <Heart className="h-6 w-6 text-cos-accent" strokeWidth={1.5} />
           </div>
         </div>
       </div>
 
-      <PlanningHubActionLink
-        onClick={loadInsights}
-        variant="purple"
-        className="mt-4"
-      >
+      <PlanningHubActionLink onClick={loadInsights} className="mt-4">
         {pending ? "Loading ideas…" : "View ideas →"}
       </PlanningHubActionLink>
     </PlanningHubCard>

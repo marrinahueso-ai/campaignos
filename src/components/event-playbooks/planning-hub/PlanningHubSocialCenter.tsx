@@ -13,7 +13,6 @@ import {
   type SocialPostFilter,
 } from "@/lib/event-playbooks/planning-hub-utils";
 import {
-  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -54,7 +53,7 @@ export function PlanningHubSocialCenter({
     return (
       <PlanningHubCard className="flex h-full flex-col p-5">
         <PlanningHubSectionTitle icon={MessageSquare} title="Social Media Center" />
-        <p className="mt-4 text-sm" style={{ color: PH.textSecondary }}>
+        <p className="mt-4 text-sm text-cos-muted">
           Social media planning is available for full campaigns.
         </p>
       </PlanningHubCard>
@@ -73,10 +72,7 @@ export function PlanningHubSocialCenter({
         }
       />
 
-      <div
-        className="mt-4 flex gap-4 border-b"
-        style={{ borderColor: PH.cardBorder }}
-      >
+      <div className="mt-4 flex gap-4 border-b border-cos-border">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -92,12 +88,10 @@ export function PlanningHubSocialCenter({
               }}
               className={cn(
                 "-mb-px pb-2 text-xs font-medium transition-colors",
-                isActive ? "border-b-2 font-semibold" : "hover:opacity-80",
+                isActive
+                  ? "border-b-2 border-cos-text font-semibold text-cos-text"
+                  : "text-cos-muted hover:text-cos-text",
               )}
-              style={{
-                color: isActive ? PH.textPrimary : PH.textSecondary,
-                borderColor: isActive ? PH.textPrimary : "transparent",
-              }}
             >
               {tab.label}
             </button>
@@ -107,10 +101,7 @@ export function PlanningHubSocialCenter({
 
       <ul className="mt-3 flex-1 space-y-2">
         {posts.length === 0 ? (
-          <li
-            className="rounded-[10px] border border-dashed px-3 py-6 text-center text-sm"
-            style={{ borderColor: PH.cardBorder, color: PH.textSecondary }}
-          >
+          <li className="rounded-[10px] border border-dashed border-cos-border px-3 py-6 text-center text-sm text-cos-muted">
             No {activeTab} posts yet.
           </li>
         ) : (
@@ -121,18 +112,11 @@ export function PlanningHubSocialCenter({
             return (
               <li
                 key={`${bundle.relativeDay}-${bundle.title}-${index}`}
-                className="flex items-center gap-3 rounded-[10px] border px-3 py-2.5"
-                style={{ borderColor: PH.cardBorder, backgroundColor: PH.pageBg }}
+                className="flex items-center gap-3 rounded-[10px] border border-cos-border bg-cos-bg px-3 py-2.5"
               >
-                <div
-                  className="flex w-11 shrink-0 flex-col items-center leading-none"
-                  style={{ color: PH.textMuted }}
-                >
+                <div className="flex w-11 shrink-0 flex-col items-center leading-none text-cos-dark-muted">
                   <span className="text-[9px] font-bold tracking-wide">{dateColumn.month}</span>
-                  <span
-                    className="text-lg font-bold"
-                    style={{ color: PH.textPrimary }}
-                  >
+                  <span className="text-lg font-bold text-cos-text">
                     {dateColumn.day}
                   </span>
                   <span className="text-[9px] font-semibold tracking-wide">
@@ -140,10 +124,7 @@ export function PlanningHubSocialCenter({
                   </span>
                 </div>
 
-                <div
-                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[8px] border"
-                  style={{ borderColor: PH.cardBorder, backgroundColor: PH.beigeButton }}
-                >
+                <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[8px] border border-cos-border bg-cos-bg-alt">
                   {thumbnail ? (
                     <Image
                       src={thumbnail}
@@ -154,31 +135,22 @@ export function PlanningHubSocialCenter({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <MessageSquare className="h-4 w-4" style={{ color: PH.iconMuted }} strokeWidth={1.5} />
+                      <MessageSquare className="h-4 w-4 text-cos-dark-muted" strokeWidth={1.5} />
                     </div>
                   )}
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p
-                    className="truncate text-sm font-semibold"
-                    style={{ color: PH.textPrimary }}
-                  >
+                  <p className="truncate text-sm font-semibold text-cos-text">
                     {bundle.title}
                   </p>
-                  <p className="truncate text-xs" style={{ color: PH.textMuted }}>
+                  <p className="truncate text-xs text-cos-dark-muted">
                     {socialPostPlatformLabel(bundle)} · {formatSocialPostTime(bundle)}
                   </p>
                 </div>
 
                 {isScheduledSocialPost(bundle) && (
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    style={{
-                      backgroundColor: PH.greenScheduled,
-                      color: PH.greenScheduledText,
-                    }}
-                  >
+                  <span className="shrink-0 rounded-full bg-cos-success-bg px-2 py-0.5 text-[10px] font-semibold text-cos-success-text">
                     Scheduled
                   </span>
                 )}
@@ -191,18 +163,7 @@ export function PlanningHubSocialCenter({
       <button
         type="button"
         onClick={() => onNavigateTab("social-media", "plan")}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[10px] border px-4 py-2.5 text-sm font-semibold transition-colors"
-        style={{
-          borderColor: PH.cardBorder,
-          backgroundColor: PH.beigeButton,
-          color: PH.textPrimary,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = PH.beigeButtonHover;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = PH.beigeButton;
-        }}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[10px] border border-cos-border bg-cos-bg-alt px-4 py-2.5 text-sm font-semibold text-cos-text transition-colors hover:bg-cos-bg"
       >
         <Plus className="h-4 w-4" strokeWidth={1.75} />
         Create New Post
