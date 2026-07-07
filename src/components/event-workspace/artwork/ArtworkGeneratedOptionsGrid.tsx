@@ -40,7 +40,7 @@ export function ArtworkGeneratedOptionsGrid({
             return (
               <div
                 key={`empty-${index}`}
-                className="aspect-square border border-dashed border-cos-border bg-cos-bg/30"
+                className="aspect-square rounded-sm border-2 border-dashed border-cos-border/80 bg-cos-bg/40"
                 aria-hidden
               />
             );

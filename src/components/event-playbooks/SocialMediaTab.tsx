@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CampaignWorkspaceTabs } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import { CampaignWorkspaceTabs, stepFromHash } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { CampaignCommunicationPlanStep } from "@/components/event-workspace/CampaignCommunicationPlanStep";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
@@ -103,6 +103,20 @@ export function SocialMediaTab({
   useEffect(() => {
     setActiveStep(initialStep);
   }, [initialStep]);
+
+  useEffect(() => {
+    function syncWorkflowStepFromHash() {
+      const fromHash = stepFromHash(window.location.hash);
+      if (fromHash) {
+        setActiveStep(fromHash);
+        onCampaignStepChange?.(fromHash);
+      }
+    }
+
+    syncWorkflowStepFromHash();
+    window.addEventListener("hashchange", syncWorkflowStepFromHash);
+    return () => window.removeEventListener("hashchange", syncWorkflowStepFromHash);
+  }, [onCampaignStepChange]);
 
   function navigateToWorkflowStep(step: CampaignWorkflowStep) {
     setActiveStep(step);

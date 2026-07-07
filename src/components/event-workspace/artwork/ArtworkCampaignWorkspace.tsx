@@ -36,7 +36,6 @@ interface ArtworkCampaignWorkspaceProps {
   error?: string | null;
   reviewError?: string | null;
   generationWarning?: string | null;
-  showReview?: boolean;
   onPromptChange: (value: string) => void;
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
   onGenerationModeChange: (mode: ArtworkGenerationMode) => void;
@@ -64,7 +63,6 @@ export function ArtworkCampaignWorkspace({
   error = null,
   reviewError = null,
   generationWarning = null,
-  showReview = false,
   onPromptChange,
   onReferencesChange,
   onGenerationModeChange,
@@ -86,7 +84,7 @@ export function ArtworkCampaignWorkspace({
 
   const hasSelection = selectedVersionId != null;
   const hasComments = adjustmentComments.trim().length > 0;
-  const showGeneratedOptions = showReview && versions.length > 0;
+  const hasGeneratedVersions = versions.length > 0;
 
   function handleCustomizeAction(action: ArtworkCustomizeAction) {
     onCustomizeAction(action);
@@ -143,60 +141,56 @@ export function ArtworkCampaignWorkspace({
           disabled={isGenerating || isReviewBusy}
         />
 
-        {showGeneratedOptions && (
-          <>
-            <ArtworkGeneratedOptionsGrid
-              versions={versions}
-              itemLabel={item.label}
-              selectedVersionId={selectedVersionId}
-              onSelectVersion={onSelectVersion}
-              onPreviewVersion={(version) => setLightboxVersion(version)}
-              onGenerateMore={onGenerateMore}
-              isGeneratingMore={isGenerating || isReviewBusy}
+        <ArtworkGeneratedOptionsGrid
+          versions={versions}
+          itemLabel={item.label}
+          selectedVersionId={selectedVersionId}
+          onSelectVersion={onSelectVersion}
+          onPreviewVersion={(version) => setLightboxVersion(version)}
+          onGenerateMore={hasGeneratedVersions ? onGenerateMore : undefined}
+          isGeneratingMore={isGenerating || isReviewBusy}
+          disabled={isReviewBusy || !hasGeneratedVersions}
+        />
+
+        <ArtworkCustomizeToolbar
+          onAction={handleCustomizeAction}
+          disabled={!hasSelection || isReviewBusy || !hasGeneratedVersions}
+        />
+
+        {hasSelection && hasGeneratedVersions && (
+          <div className="space-y-3 border border-cos-border bg-cos-bg/30 p-4">
+            <label htmlFor="artwork-campaign-adjust" className="cos-section-title">
+              Your edits
+            </label>
+            <Textarea
+              id="artwork-campaign-adjust"
+              value={adjustmentComments}
+              onChange={(event) => onAdjustmentCommentsChange(event.target.value)}
+              rows={3}
+              placeholder="Describe what you'd like different — colors, layout, text, spacing…"
               disabled={isReviewBusy}
+              className="min-h-[88px] text-sm"
             />
-
-            <ArtworkCustomizeToolbar
-              onAction={handleCustomizeAction}
-              disabled={!hasSelection || isReviewBusy}
-            />
-
-            {hasSelection && (
-              <div className="space-y-3 border border-cos-border bg-cos-bg/30 p-4">
-                <label htmlFor="artwork-campaign-adjust" className="cos-section-title">
-                  Your edits
-                </label>
-                <Textarea
-                  id="artwork-campaign-adjust"
-                  value={adjustmentComments}
-                  onChange={(event) => onAdjustmentCommentsChange(event.target.value)}
-                  rows={3}
-                  placeholder="Describe what you'd like different — colors, layout, text, spacing…"
-                  disabled={isReviewBusy}
-                  className="min-h-[88px] text-sm"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={isReviewBusy || !hasComments}
-                    onClick={onGenerateWithEdits}
-                  >
-                    {isReviewBusy ? "Generating…" : "Generate with my edits"}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={isReviewBusy}
-                    onClick={onApproveSelected}
-                  >
-                    {isReviewBusy ? "Saving…" : "Approve selected"}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={isReviewBusy || !hasComments}
+                onClick={onGenerateWithEdits}
+              >
+                {isReviewBusy ? "Generating…" : "Generate with my edits"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={isReviewBusy}
+                onClick={onApproveSelected}
+              >
+                {isReviewBusy ? "Saving…" : "Approve selected"}
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 

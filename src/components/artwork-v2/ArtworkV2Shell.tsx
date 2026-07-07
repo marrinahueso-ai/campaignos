@@ -1173,7 +1173,6 @@ export function ArtworkV2Shell({
         error={generationError}
         reviewError={reviewError}
         generationWarning={generationWarning}
-        showReview={step === "review"}
         onPromptChange={setPrompt}
         onReferencesChange={setReferences}
         onGenerationModeChange={setGenerationMode}

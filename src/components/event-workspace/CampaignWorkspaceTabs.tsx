@@ -25,6 +25,13 @@ export const CAMPAIGN_WORKFLOW_STEP_LABELS = Object.fromEntries(
   WORKFLOW_STEPS.map((step) => [step.id, step.label]),
 ) as Record<CampaignWorkflowStep, string>;
 
+/** Steps that render CaptionsProgressStepper — hide the legacy tab bar. */
+export const CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS: CampaignWorkflowStep[] = [
+  "artwork",
+  "schedule",
+  "publish",
+];
+
 const LEGACY_HASH_TO_STEP: Record<string, CampaignWorkflowStep> = {
   plan: "plan",
   "communication-plan": "plan",
@@ -86,7 +93,7 @@ export function CampaignWorkspaceTabs({
   activeStep: controlledStep,
   onStepChange,
   manageHash = true,
-  fullBleedSteps = ["schedule"],
+  fullBleedSteps = CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS,
   id = "campaign-workflow-tabs",
 }: CampaignWorkspaceTabsProps) {
   const [internalStep, setInternalStep] = useState<CampaignWorkflowStep>(defaultStep);
@@ -143,7 +150,9 @@ export function CampaignWorkspaceTabs({
     published,
   };
 
-  const isFullBleed = fullBleedSteps.includes(activeStep);
+  const isFullBleed =
+    fullBleedSteps.includes(activeStep) ||
+    CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS.includes(activeStep);
 
   return (
     <div
