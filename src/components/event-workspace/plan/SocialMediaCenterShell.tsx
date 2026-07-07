@@ -17,6 +17,7 @@ import {
   type CampaignWorkflowStep,
 } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { SocialMediaCenterSidebar } from "@/components/event-workspace/plan/SocialMediaCenterSidebar";
+import { CreativeStudioEventSearch } from "@/components/event-workspace/plan/CreativeStudioEventSearch";
 import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { formatEventDate } from "@/lib/utils/dates";
@@ -52,6 +53,7 @@ interface SocialMediaCenterShellProps {
   onCreateMilestone?: () => void;
   /** Defaults to the event workspace page. Use `#overview` from Planning Hub. */
   backHref?: string;
+  campaignEvents?: Event[];
   children: React.ReactNode;
 }
 
@@ -256,6 +258,7 @@ export function SocialMediaCenterShell({
   tasks = [],
   onCreateMilestone,
   backHref,
+  campaignEvents = [],
   children,
 }: SocialMediaCenterShellProps) {
   const resolvedBackHref = backHref ?? `/events/${event.id}`;
@@ -276,6 +279,11 @@ export function SocialMediaCenterShell({
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Creative Studio
             </h1>
+            {campaignEvents.length > 0 ? (
+              <div className="mt-2 w-full min-w-0">
+                <CreativeStudioEventSearch event={event} campaignEvents={campaignEvents} />
+              </div>
+            ) : null}
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
               Plan, create, and schedule content that connects and inspires.
             </p>

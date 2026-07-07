@@ -86,6 +86,7 @@ interface SocialMediaTabProps {
   backHref?: string;
   postingHeatmap?: PostingHeatmapData | null;
   brandAssets?: BrandAssets | null;
+  campaignEvents?: Event[];
 }
 
 export function SocialMediaTab({
@@ -115,6 +116,7 @@ export function SocialMediaTab({
   backHref,
   postingHeatmap = null,
   brandAssets = null,
+  campaignEvents = [],
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
     if (typeof window === "undefined") {
@@ -223,6 +225,7 @@ export function SocialMediaTab({
             tasks={tasks}
             backHref={backHref}
             postingHeatmap={postingHeatmap}
+            campaignEvents={campaignEvents}
           />
         }
         artwork={

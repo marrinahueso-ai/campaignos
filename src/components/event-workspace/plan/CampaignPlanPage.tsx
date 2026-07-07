@@ -32,6 +32,7 @@ interface CampaignPlanPageProps {
   metaPublishBundles?: MetaPublishBundle[];
   tasks?: EventPlaybookTask[];
   backHref?: string;
+  campaignEvents?: Event[];
 }
 
 export function CampaignPlanPage({
@@ -52,6 +53,7 @@ export function CampaignPlanPage({
   metaPublishBundles = [],
   tasks = [],
   backHref,
+  campaignEvents = [],
 }: CampaignPlanPageProps) {
   const addMilestoneRef = useRef<(() => void) | null>(null);
 
@@ -71,6 +73,7 @@ export function CampaignPlanPage({
       tasks={tasks}
       onCreateMilestone={() => addMilestoneRef.current?.()}
       backHref={backHref}
+      campaignEvents={campaignEvents}
     >
       <MilestonePlanningSection
         event={event}

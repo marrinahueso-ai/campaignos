@@ -144,6 +144,7 @@ export function EventPlanningHub({
         artwork={campaignWorkspace.artwork}
         tasks={hubData.tasks}
         backHref="#overview"
+        campaignEvents={campaignEvents}
         postingHeatmap={campaignWorkspace.postingHeatmap ?? null}
         brandAssets={campaignWorkspace.brandAssets ?? null}
       />

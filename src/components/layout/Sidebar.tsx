@@ -21,7 +21,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type MouseEvent } from "react";
 import {
   getLocationHash,
-  setLocationHash as applyLocationHash,
   subscribeToLocationHash,
 } from "@/lib/navigation/location-hash";
 import { cn } from "@/lib/utils/cn";
@@ -76,13 +75,11 @@ function resolveCreativeStudioHref(
 function handleCreativeStudioClick(
   event: MouseEvent<HTMLAnchorElement>,
   linkHref: string,
-  pathname: string,
 ) {
   event.preventDefault();
 
   const [pathPart, hashPart = CREATIVE_STUDIO_HASH] = linkHref.split("#");
   const hash = hashPart.replace(/^#/, "");
-  const currentEventId = extractEventId(pathname);
   const targetEventId = extractEventId(pathPart);
 
   if (pathPart === "/events" && !targetEventId) {
@@ -90,12 +87,7 @@ function handleCreativeStudioClick(
     return;
   }
 
-  if (currentEventId && targetEventId && currentEventId === targetEventId) {
-    applyLocationHash(hash);
-    return;
-  }
-
-  // App Router client navigation can drop hash fragments on dynamic routes.
+  // Full navigation keeps the hash on App Router dynamic routes and resets tab state.
   window.location.assign(`${pathPart}#${hash}`);
 }
 
@@ -335,7 +327,7 @@ export function Sidebar({
               title={showLabels ? undefined : label}
               onClick={(event) => {
                 if (isCreativeStudio) {
-                  handleCreativeStudioClick(event, linkHref, pathname);
+                  handleCreativeStudioClick(event, linkHref);
                 }
                 onNavigate?.();
               }}

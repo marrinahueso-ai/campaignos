@@ -33,7 +33,6 @@ const ALL_TABS: { id: EventPlaybookTab; label: string }[] = [
 const LEGACY_CAMPAIGN_HASHES = new Set([
   "plan",
   "communication-plan",
-  "overview",
   "artwork",
   "creative",
   "schedule",
@@ -73,6 +72,29 @@ function parseLocationHash(): {
   return { tab: "overview", campaignStep: null };
 }
 
+function resolveInitialPlaybookState(
+  visibleTabs: { id: EventPlaybookTab; label: string }[],
+  defaultTab: EventPlaybookTab,
+  initialCampaignStep: CampaignWorkflowStep,
+): {
+  tab: EventPlaybookTab;
+  campaignStep: CampaignWorkflowStep;
+} {
+  if (typeof window === "undefined") {
+    return { tab: defaultTab, campaignStep: initialCampaignStep };
+  }
+
+  const parsed = parseLocationHash();
+  const tab = visibleTabs.some((entry) => entry.id === parsed.tab)
+    ? parsed.tab
+    : defaultTab;
+
+  return {
+    tab,
+    campaignStep: parsed.campaignStep ?? initialCampaignStep,
+  };
+}
+
 interface EventPlaybookTabsProps {
   overview: (navigateToTab: (
     tab: EventPlaybookTab,
@@ -108,10 +130,15 @@ export function EventPlaybookTabs({
     ? ALL_TABS
     : ALL_TABS.filter((tab) => tab.id !== "social-media");
 
-  const [activeTab, setActiveTab] = useState<EventPlaybookTab>(defaultTab);
-  const [campaignStep, setCampaignStep] =
-    useState<CampaignWorkflowStep>(initialCampaignStep);
-  const [initialized, setInitialized] = useState(false);
+  const [activeTab, setActiveTab] = useState<EventPlaybookTab>(() =>
+    resolveInitialPlaybookState(visibleTabs, defaultTab, initialCampaignStep).tab,
+  );
+  const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>(() =>
+    resolveInitialPlaybookState(visibleTabs, defaultTab, initialCampaignStep).campaignStep,
+  );
+  const [initialized, setInitialized] = useState(
+    () => typeof window !== "undefined",
+  );
 
   const navigateToTab = useCallback(
     (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => {
