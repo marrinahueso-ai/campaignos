@@ -3,6 +3,7 @@
 import { Check, ChevronRight, GripVertical } from "lucide-react";
 import {
   CAMPAIGN_WORKFLOW_STEP_LABELS,
+  resolveCompletedWorkflowSteps,
   type CampaignWorkflowStep,
 } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { cn } from "@/lib/utils/cn";
@@ -23,9 +24,10 @@ interface CaptionsProgressStepperProps {
 
 export function CaptionsProgressStepper({
   activeStep = "schedule",
-  completedSteps = ["plan", "artwork"],
+  completedSteps,
   onStepSelect,
 }: CaptionsProgressStepperProps) {
+  const resolvedCompletedSteps = completedSteps ?? resolveCompletedWorkflowSteps(activeStep);
   return (
     <nav
       className="flex items-center gap-0 overflow-x-auto border-b border-cos-border bg-cos-card px-4 py-3 sm:px-5"
@@ -33,7 +35,7 @@ export function CaptionsProgressStepper({
     >
       {STEPPER_STEPS.map((step, index) => {
         const isActive = step === activeStep;
-        const isComplete = completedSteps.includes(step) && !isActive;
+        const isComplete = resolvedCompletedSteps.includes(step) && !isActive;
         const stepNumber = index + 1;
         const label = CAMPAIGN_WORKFLOW_STEP_LABELS[step];
 

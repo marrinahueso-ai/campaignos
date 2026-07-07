@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CampaignWorkspaceTabs, stepFromHash } from "@/components/event-workspace/CampaignWorkspaceTabs";
-import { CampaignCommunicationPlanStep } from "@/components/event-workspace/CampaignCommunicationPlanStep";
+import { CampaignPlanPage } from "@/components/event-workspace/plan/CampaignPlanPage";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
 import { CampaignReviewPublishStep } from "@/components/event-workspace/CampaignReviewPublishStep";
@@ -173,9 +173,9 @@ export function SocialMediaTab({
       onStepChange={navigateToWorkflowStep}
       defaultStep={initialStep}
       manageHash={false}
-      fullBleedSteps={["artwork", "schedule", "publish"]}
+      fullBleedSteps={["plan", "artwork", "schedule", "publish", "published"]}
       plan={
-          <CampaignCommunicationPlanStep
+          <CampaignPlanPage
             eventId={eventId}
             communicationStrategy={communicationStrategy}
             eventType={event.eventType}
@@ -184,6 +184,7 @@ export function SocialMediaTab({
             approvalRoles={approvalRoles}
             ownership={ownership}
             assignedSteps={playbookData.steps}
+            onWorkflowStepSelect={navigateToWorkflowStep}
           />
         }
         artwork={
@@ -231,8 +232,9 @@ export function SocialMediaTab({
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             planningOverview={planningOverview}
+            onWorkflowStepSelect={navigateToWorkflowStep}
           />
-      }
+        }
     />
   );
 }

@@ -1,5 +1,9 @@
+"use client";
+
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
+import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
 import { PlanningOverviewPanel } from "@/components/event-playbooks/PlanningOverviewPanel";
+import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { MilestoneCaptionPreview } from "@/components/event-workspace/MilestoneCaptionPreview";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -30,6 +34,7 @@ interface CampaignPublishedStepProps {
   eventId: string;
   metaPublishBundles: MetaPublishBundle[];
   planningOverview?: EventPlanningOverviewData | null;
+  onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
 }
 
 const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = ["scheduled", "approved"];
@@ -198,6 +203,7 @@ export function CampaignPublishedStep({
   eventId,
   metaPublishBundles,
   planningOverview = null,
+  onWorkflowStepSelect,
 }: CampaignPublishedStepProps) {
   const metaBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
@@ -212,22 +218,29 @@ export function CampaignPublishedStep({
   );
 
   return (
-    <div className="space-y-6">
-      {planningOverview ? (
-        <PlanningOverviewPanel eventId={eventId} overview={planningOverview} />
-      ) : null}
-
-      <PublishedScheduledMilestones eventId={eventId} bundles={scheduledBundles} />
-
-      <MilestoneSection
-        title="Published milestones"
-        description="Meta feed and story posts that have gone live for this event."
-        bundles={publishedBundles}
-        section="published"
-        emptyIcon={CheckCircle2}
-        emptyTitle="Nothing published yet"
-        emptyDescription="When communications are marked published, they will appear here with their publish date and time."
+    <div className="overflow-hidden border border-cos-border bg-cos-card">
+      <CaptionsProgressStepper
+        activeStep="published"
+        onStepSelect={onWorkflowStepSelect}
       />
+
+      <div className="space-y-6 p-5 lg:p-6">
+        {planningOverview ? (
+          <PlanningOverviewPanel eventId={eventId} overview={planningOverview} />
+        ) : null}
+
+        <PublishedScheduledMilestones eventId={eventId} bundles={scheduledBundles} />
+
+        <MilestoneSection
+          title="Published milestones"
+          description="Meta feed and story posts that have gone live for this event."
+          bundles={publishedBundles}
+          section="published"
+          emptyIcon={CheckCircle2}
+          emptyTitle="Nothing published yet"
+          emptyDescription="When communications are marked published, they will appear here with their publish date and time."
+        />
+      </div>
     </div>
   );
 }

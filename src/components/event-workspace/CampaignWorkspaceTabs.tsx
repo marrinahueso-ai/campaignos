@@ -25,12 +25,24 @@ export const CAMPAIGN_WORKFLOW_STEP_LABELS = Object.fromEntries(
   WORKFLOW_STEPS.map((step) => [step.id, step.label]),
 ) as Record<CampaignWorkflowStep, string>;
 
+export const CAMPAIGN_WORKFLOW_STEP_ORDER: CampaignWorkflowStep[] = WORKFLOW_STEPS.map(
+  (step) => step.id,
+);
+
 /** Steps that render CaptionsProgressStepper — hide the legacy tab bar. */
-export const CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS: CampaignWorkflowStep[] = [
-  "artwork",
-  "schedule",
-  "publish",
-];
+export const CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS: CampaignWorkflowStep[] =
+  CAMPAIGN_WORKFLOW_STEP_ORDER;
+
+export function resolveCompletedWorkflowSteps(
+  activeStep: CampaignWorkflowStep,
+): CampaignWorkflowStep[] {
+  const activeIndex = CAMPAIGN_WORKFLOW_STEP_ORDER.indexOf(activeStep);
+  if (activeIndex <= 0) {
+    return [];
+  }
+
+  return CAMPAIGN_WORKFLOW_STEP_ORDER.slice(0, activeIndex);
+}
 
 const LEGACY_HASH_TO_STEP: Record<string, CampaignWorkflowStep> = {
   plan: "plan",
@@ -132,16 +144,6 @@ export function CampaignWorkspaceTabs({
     setInternalStep(defaultStep);
   }, [controlledStep, defaultStep, manageHash]);
 
-  function selectStep(step: CampaignWorkflowStep) {
-    if (controlledStep === undefined) {
-      setInternalStep(step);
-    }
-    onStepChange?.(step);
-    if (manageHash) {
-      window.history.replaceState(null, "", `#${step}`);
-    }
-  }
-
   const panels: Record<CampaignWorkflowStep, React.ReactNode> = {
     plan,
     artwork,
@@ -150,58 +152,13 @@ export function CampaignWorkspaceTabs({
     published,
   };
 
-  const isFullBleed =
-    fullBleedSteps.includes(activeStep) ||
-    CAMPAIGN_WORKFLOW_PROGRESS_STEPPER_STEPS.includes(activeStep);
+  const isFullBleed = fullBleedSteps.includes(activeStep);
 
   return (
     <div
       id={id}
-      className={cn(
-        "scroll-mt-8",
-        isFullBleed ? "bg-transparent" : "border border-cos-border bg-cos-card",
-      )}
+      className={cn("scroll-mt-8", isFullBleed ? "bg-transparent" : "border border-cos-border bg-cos-card")}
     >
-      {!isFullBleed && (
-        <div
-          className={cn(
-            "sticky-campaign-workflow-nav border-b border-cos-border px-4 pt-5 lg:px-6",
-            !manageHash && "sticky-campaign-workflow-nav--in-playbook",
-          )}
-          role="navigation"
-          aria-label="Campaign workflow"
-        >
-          <p className="studio-eyebrow mb-4 px-1">Campaign workflow</p>
-          <div className="flex gap-0 overflow-x-auto" role="tablist">
-            {WORKFLOW_STEPS.map((step, index) => {
-              const stepIsActive = activeStep === step.id;
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={stepIsActive}
-                  aria-controls={`campaign-step-${step.id}`}
-                  id={`campaign-step-trigger-${step.id}`}
-                  onClick={() => selectStep(step.id)}
-                  className={cn(
-                    "shrink-0 border-b-2 px-3 py-3 text-left transition-colors sm:px-5",
-                    stepIsActive
-                      ? "border-cos-dark bg-cos-bg text-cos-text"
-                      : "border-transparent text-cos-muted hover:bg-cos-bg/60 hover:text-cos-text",
-                  )}
-                >
-                  <span className="block text-[10px] tracking-[0.14em] text-cos-muted uppercase">
-                    Step {index + 1}
-                  </span>
-                  <span className="font-display mt-0.5 block text-base">{step.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div className={isFullBleed ? undefined : "p-6 lg:p-8"}>
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse rounded-2xl bg-cos-bg/60" />

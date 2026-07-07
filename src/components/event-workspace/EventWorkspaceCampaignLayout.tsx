@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CampaignWorkspaceTabs } from "@/components/event-workspace/CampaignWorkspaceTabs";
-import { CampaignCommunicationPlanStep } from "@/components/event-workspace/CampaignCommunicationPlanStep";
+import { CampaignPlanPage } from "@/components/event-workspace/plan/CampaignPlanPage";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
 import { CampaignReviewPublishStep } from "@/components/event-workspace/CampaignReviewPublishStep";
@@ -148,9 +148,9 @@ export function EventWorkspaceCampaignLayout({
 
       <CampaignWorkspaceTabs
         defaultStep="plan"
-        fullBleedSteps={["artwork", "schedule", "publish"]}
+        fullBleedSteps={["plan", "artwork", "schedule", "publish", "published"]}
         plan={
-          <CampaignCommunicationPlanStep
+          <CampaignPlanPage
             eventId={eventId}
             communicationStrategy={communicationStrategy}
             eventType={event.eventType}
@@ -159,6 +159,10 @@ export function EventWorkspaceCampaignLayout({
             approvalRoles={approvalRoles}
             ownership={ownership}
             assignedSteps={playbookData.steps}
+            onWorkflowStepSelect={(step) => {
+              window.location.hash = step;
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
           />
         }
         artwork={
@@ -217,6 +221,10 @@ export function EventWorkspaceCampaignLayout({
           <CampaignPublishedStep
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
+            onWorkflowStepSelect={(step) => {
+              window.location.hash = step;
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
           />
         }
       />

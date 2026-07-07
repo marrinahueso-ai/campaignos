@@ -322,7 +322,6 @@ export function CampaignReviewPublishPage({
         <div className="overflow-hidden border border-cos-border bg-cos-card">
           <CaptionsProgressStepper
             activeStep="publish"
-            completedSteps={["plan", "artwork", "schedule"]}
             onStepSelect={onWorkflowStepSelect}
           />
           <div className="p-5 lg:p-6">
@@ -347,7 +346,6 @@ export function CampaignReviewPublishPage({
       <div className="overflow-hidden border border-cos-border bg-cos-card">
         <CaptionsProgressStepper
           activeStep="publish"
-          completedSteps={["plan", "artwork", "schedule"]}
           onStepSelect={onWorkflowStepSelect}
         />
 

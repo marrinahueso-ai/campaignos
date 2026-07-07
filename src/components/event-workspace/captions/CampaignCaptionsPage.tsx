@@ -325,7 +325,6 @@ export function CampaignCaptionsPage({
       <div className="overflow-hidden border border-cos-border bg-cos-card">
         <CaptionsProgressStepper
           activeStep="schedule"
-          completedSteps={["plan", "artwork"]}
           onStepSelect={onWorkflowStepSelect}
         />
 
