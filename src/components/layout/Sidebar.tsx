@@ -11,6 +11,7 @@ import {
   ListChecks,
   Megaphone,
   Send,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -22,14 +23,95 @@ import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
 
+const CREATIVE_STUDIO_HASHES = new Set([
+  "social-media",
+  "plan",
+  "communication-plan",
+  "artwork",
+  "creative",
+  "schedule",
+  "captions",
+  "timeline",
+  "publish",
+  "published",
+  "approval",
+  "approvals",
+  "publishing",
+  "drafts-messages",
+  "event-assets",
+  "memory",
+  "activity",
+  "notes-memory",
+]);
+
+function extractEventId(pathname: string): string | null {
+  const match = pathname.match(/^\/events\/([^/]+)$/);
+  if (!match || match[1] === "create") {
+    return null;
+  }
+  return match[1];
+}
+
+function resolveCreativeStudioHref(pathname: string): string {
+  const eventId = extractEventId(pathname);
+  if (eventId) {
+    return `/events/${eventId}#social-media`;
+  }
+  return "/events";
+}
+
+function isCreativeStudioActive(pathname: string, hash: string): boolean {
+  const eventId = extractEventId(pathname);
+  if (!eventId) {
+    return false;
+  }
+
+  const raw = hash.replace("#", "");
+  if (!raw) {
+    return false;
+  }
+
+  return CREATIVE_STUDIO_HASHES.has(raw);
+}
+
+function isCampaignsActive(pathname: string, hash: string): boolean {
+  if (pathname === "/events" || pathname.startsWith("/events?")) {
+    return true;
+  }
+  if (pathname === "/events/create") {
+    return true;
+  }
+
+  const eventId = extractEventId(pathname);
+  if (eventId) {
+    return !isCreativeStudioActive(pathname, hash);
+  }
+
+  return pathname.startsWith("/events");
+}
+
 const navItems: {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
   badge?: string;
+  resolveHref?: (pathname: string) => string;
+  isActive?: (pathname: string, hash: string) => boolean;
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Campaigns", href: "/events", icon: Megaphone },
+  {
+    label: "Campaigns",
+    href: "/events",
+    icon: Megaphone,
+    isActive: isCampaignsActive,
+  },
+  {
+    label: "Creative Studio",
+    href: "/events",
+    icon: Sparkles,
+    resolveHref: resolveCreativeStudioHref,
+    isActive: isCreativeStudioActive,
+  },
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Publishing", href: "/publishing", icon: Send },
@@ -109,12 +191,20 @@ export function Sidebar({
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
+  const [locationHash, setLocationHash] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "true") setExpanded(true);
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    const syncHash = () => setLocationHash(window.location.hash);
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, [pathname]);
 
   function toggleExpanded() {
     setExpanded((prev) => {
@@ -173,17 +263,19 @@ export function Sidebar({
       )}
 
       <nav className={cn("flex-1 space-y-0.5", showLabels ? "px-4 py-6" : "px-2 py-4")}>
-        {navItems.map(({ label, href, icon: Icon, badge }) => {
-          const isActive =
-            pathname === href ||
-            (href !== "/dashboard" && pathname.startsWith(href));
+        {navItems.map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
+          const linkHref = resolveHref ? resolveHref(pathname) : href;
+          const isActive = isActiveFn
+            ? isActiveFn(pathname, locationHash)
+            : pathname === href ||
+              (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/inbox";
 
           return (
             <Link
-              key={href}
-              href={href}
+              key={label}
+              href={linkHref}
               title={showLabels ? undefined : label}
               onClick={onNavigate}
               className={cn(
