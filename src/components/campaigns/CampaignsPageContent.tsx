@@ -78,14 +78,14 @@ export function CampaignsPageContent({
           title="No active campaigns"
           description="Calendar-only dates live on the Calendar. Reminder-only and full campaigns appear here once you import them with a social plan or start a campaign from an event page."
           action={{ label: "Open calendar", href: "/calendar" }}
-          className="rounded-xl border border-cos-border bg-white py-16"
+          className="border border-cos-border bg-cos-card py-16"
         />
       ) : !hasFilteredResults ? (
         <EmptyState
           icon={CalendarDays}
           title="No campaigns match your filters"
           description="Try adjusting your search or filter selections to see more campaigns."
-          className="rounded-xl border border-cos-border bg-white py-16"
+          className="border border-cos-border bg-cos-card py-16"
         />
       ) : viewMode === "month" ? (
         <CampaignEventsList
@@ -93,10 +93,9 @@ export function CampaignsPageContent({
           artworkByEventId={artworkByEventId}
           ownershipByEventId={ownershipByEventId}
           metaScheduledEventIds={metaScheduledEventIds}
-          today={today}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-cos-border bg-white">
+        <div className="overflow-hidden border border-cos-border bg-cos-card">
           <CampaignsListView
             events={filteredEvents}
             artworkByEventId={artworkByEventId}
