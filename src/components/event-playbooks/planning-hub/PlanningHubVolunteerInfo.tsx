@@ -1,24 +1,55 @@
-import { Users } from "lucide-react";
+import { UserCheck, UserPlus, Users } from "lucide-react";
 import {
+  PH,
   PlanningHubActionLink,
   PlanningHubCard,
+  PlanningHubIconSquare,
   PlanningHubSectionTitle,
 } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
+import { parseVolunteerStats } from "@/lib/event-playbooks/planning-hub-utils";
 import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
 import type { Event } from "@/types";
-
-function parseStillNeeded(event: Event): number | null {
-  const needsText = event.volunteerNeeds?.trim();
-  if (!needsText) {
-    return null;
-  }
-  const numberMatch = needsText.match(/(\d+)/);
-  return numberMatch ? Number(numberMatch[1]) : null;
-}
 
 interface PlanningHubVolunteerInfoProps {
   event: Event;
   onNavigateTab: (tab: EventPlaybookTab) => void;
+}
+
+function StatBlock({
+  icon: Icon,
+  label,
+  value,
+  bg,
+  color,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  value: string;
+  bg: string;
+  color: string;
+}) {
+  return (
+    <li
+      className="flex items-center gap-3 rounded-[10px] border px-3 py-3"
+      style={{ borderColor: PH.cardBorder, backgroundColor: PH.pageBg }}
+    >
+      <PlanningHubIconSquare icon={Icon} bg={bg} color={color} className="h-10 w-10 rounded-[10px]" />
+      <div>
+        <p
+          className="text-[10px] font-semibold tracking-[0.12em] uppercase"
+          style={{ color: PH.textMuted }}
+        >
+          {label}
+        </p>
+        <p
+          className="font-display text-2xl leading-tight"
+          style={{ color: PH.textPrimary }}
+        >
+          {value}
+        </p>
+      </div>
+    </li>
+  );
 }
 
 export function PlanningHubVolunteerInfo({
@@ -26,8 +57,11 @@ export function PlanningHubVolunteerInfo({
   onNavigateTab,
 }: PlanningHubVolunteerInfoProps) {
   const signupUrl = event.planningQuickLinks?.volunteer_signup?.url?.trim();
-  const stillNeeded = parseStillNeeded(event);
+  const stats = parseVolunteerStats(event);
   const hasVolunteerPlan = Boolean(signupUrl || event.volunteerNeeds?.trim());
+
+  const formatStat = (value: number | null) =>
+    value !== null ? String(value) : "—";
 
   return (
     <PlanningHubCard className="flex h-full flex-col p-5">
@@ -42,8 +76,11 @@ export function PlanningHubVolunteerInfo({
       />
 
       {!hasVolunteerPlan ? (
-        <div className="mt-4 flex-1 rounded-lg border border-dashed border-[#e8e0d4] px-4 py-8 text-center">
-          <p className="text-sm text-[#7a7268]">
+        <div
+          className="mt-4 flex-1 rounded-[10px] border border-dashed px-4 py-8 text-center"
+          style={{ borderColor: PH.cardBorder }}
+        >
+          <p className="text-sm" style={{ color: PH.textSecondary }}>
             Add a volunteer signup link or volunteer needs in Settings to track help
             for this event.
           </p>
@@ -55,45 +92,37 @@ export function PlanningHubVolunteerInfo({
           </PlanningHubActionLink>
         </div>
       ) : (
-        <ul className="mt-4 flex-1 space-y-3">
-          <li className="flex items-center gap-3 rounded-lg border border-[#f0ebe3] bg-[#faf7f2] px-3 py-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e4edf8]">
-              <Users className="h-4 w-4 text-[#5b8fc7]" strokeWidth={1.5} />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold tracking-[0.12em] text-[#a89f94] uppercase">
-                Volunteer signup
-              </p>
-              <p className="text-sm font-medium text-[#2a2622]">
-                {signupUrl ? "Link on file" : "Needs listed in event plan"}
-              </p>
-              <p className="text-xs text-[#7a7268]">
-                {signupUrl ? "From SignUpGenius or your signup tool" : event.volunteerNeeds}
-              </p>
-            </div>
-          </li>
-
-          {stillNeeded !== null && (
-            <li className="flex items-center gap-3 rounded-lg border border-[#f0ebe3] bg-[#faf7f2] px-3 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fce8e4]">
-                <Users className="h-4 w-4 text-[#e87461]" strokeWidth={1.5} />
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold tracking-[0.12em] text-[#a89f94] uppercase">
-                  Still needed
-                </p>
-                <p className="font-display text-xl text-[#2a2622]">{stillNeeded}</p>
-                <p className="text-xs text-[#7a7268]">From volunteer needs on file</p>
-              </div>
-            </li>
-          )}
+        <>
+          <ul className="mt-4 flex-1 space-y-3">
+            <StatBlock
+              icon={Users}
+              label="Total volunteers"
+              value={formatStat(stats.total)}
+              bg="#E4EDF8"
+              color="#5B8FC7"
+            />
+            <StatBlock
+              icon={UserCheck}
+              label="Checked in"
+              value={formatStat(stats.checkedIn)}
+              bg="#E4F2E8"
+              color="#5A9E6F"
+            />
+            <StatBlock
+              icon={UserPlus}
+              label="Still needed"
+              value={formatStat(stats.stillNeeded)}
+              bg="#FCE8E4"
+              color="#E87461"
+            />
+          </ul>
 
           {signupUrl && (
-            <li>
-              <PlanningHubActionLink href={signupUrl}>Open signup sheet →</PlanningHubActionLink>
-            </li>
+            <PlanningHubActionLink href={signupUrl} className="mt-4">
+              Open signup sheet →
+            </PlanningHubActionLink>
           )}
-        </ul>
+        </>
       )}
     </PlanningHubCard>
   );

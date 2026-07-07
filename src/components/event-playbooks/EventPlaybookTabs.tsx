@@ -170,13 +170,7 @@ export function EventPlaybookTabs({
   const showPlanningDashboard = activeTab === "overview";
 
   return (
-    <div
-      className={cn(
-        showPlanningDashboard
-          ? undefined
-          : "border border-cos-border bg-cos-card shadow-sm",
-      )}
-    >
+    <div className={cn(!showPlanningDashboard && "border border-cos-border bg-cos-card shadow-sm")}>
       {!showPlanningDashboard && (
         <div
           className="sticky-dashboard-subnav border-b border-cos-border px-4 pt-4 lg:px-6"

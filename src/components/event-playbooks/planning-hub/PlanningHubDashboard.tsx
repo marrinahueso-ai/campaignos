@@ -9,6 +9,7 @@ import { PlanningHubMyTasks } from "@/components/event-playbooks/planning-hub/Pl
 import { PlanningHubQuickLinks } from "@/components/event-playbooks/planning-hub/PlanningHubQuickLinks";
 import { PlanningHubSocialCenter } from "@/components/event-playbooks/planning-hub/PlanningHubSocialCenter";
 import { PlanningHubVolunteerInfo } from "@/components/event-playbooks/planning-hub/PlanningHubVolunteerInfo";
+import { PlanningHubPage } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
 import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
@@ -63,11 +64,12 @@ export function PlanningHubDashboard({
   const planningNoteCount = hubData.notes.filter((note) => note.noteType === "note").length;
 
   return (
-    <div className="space-y-5">
+    <PlanningHubPage>
       <PlanningHubContextBar
         event={event}
         campaignEvents={campaignEvents}
         notificationCount={notificationCount}
+        greetingName={greetingName}
         userEmail={userEmail}
       />
 
@@ -85,25 +87,31 @@ export function PlanningHubDashboard({
         onNavigateTab={onNavigateTab}
       />
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <PlanningHubCampaignGlance
-          event={event}
-          ownership={ownership}
-          artwork={artwork}
-          committeePersonOptions={committeePersonOptions}
-          defaultCommitteePerson={defaultCommitteePerson}
-          onNavigateTab={onNavigateTab}
-        />
-        <PlanningHubQuickLinks
-          event={event}
-          hasCampaign={hasCampaign}
-          onNavigateTab={onNavigateTab}
-        />
-        <PlanningHubSocialCenter
-          bundles={metaPublishBundles}
-          hasCampaign={hasCampaign}
-          onNavigateTab={onNavigateTab}
-        />
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-5">
+          <PlanningHubCampaignGlance
+            event={event}
+            ownership={ownership}
+            artwork={artwork}
+            committeePersonOptions={committeePersonOptions}
+            defaultCommitteePerson={defaultCommitteePerson}
+            onNavigateTab={onNavigateTab}
+          />
+        </div>
+        <div className="xl:col-span-3">
+          <PlanningHubQuickLinks
+            event={event}
+            hasCampaign={hasCampaign}
+            onNavigateTab={onNavigateTab}
+          />
+        </div>
+        <div className="xl:col-span-4">
+          <PlanningHubSocialCenter
+            bundles={metaPublishBundles}
+            hasCampaign={hasCampaign}
+            onNavigateTab={onNavigateTab}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -124,6 +132,6 @@ export function PlanningHubDashboard({
           onNavigateTab={onNavigateTab}
         />
       </div>
-    </div>
+    </PlanningHubPage>
   );
 }

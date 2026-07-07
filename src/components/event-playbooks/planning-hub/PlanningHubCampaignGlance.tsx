@@ -9,6 +9,7 @@ import {
   OverviewInlineText,
 } from "@/components/event-playbooks/OverviewInlineFields";
 import {
+  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -54,6 +55,26 @@ function formatChairDisplay(
     return ownership.chairNames.join(", ");
   }
   return "Unassigned";
+}
+
+function GlanceField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <dt
+        className="text-[10px] font-semibold tracking-[0.12em] uppercase"
+        style={{ color: PH.textMuted }}
+      >
+        {label}
+      </dt>
+      <dd className="mt-0.5">{children}</dd>
+    </div>
+  );
 }
 
 export function PlanningHubCampaignGlance({
@@ -112,100 +133,92 @@ export function PlanningHubCampaignGlance({
     }
   }
 
-  const fields = [
-    {
-      label: "Goal",
-      content: (
-        <OverviewInlineText
-          value={overview.goal}
-          placeholder="Not set"
-          valueClassName="text-sm font-medium text-[#2a2622]"
-          onSave={async (goal) => saveField({ goal })}
-        />
-      ),
-    },
-    {
-      label: "Audience",
-      content: (
-        <OverviewInlineText
-          value={overview.audience}
-          placeholder="Not set"
-          valueClassName="text-sm font-medium text-[#2a2622]"
-          onSave={async (audience) => saveField({ audience })}
-        />
-      ),
-    },
-    {
-      label: "Location",
-      content: (
-        <OverviewInlineText
-          value={overview.location}
-          placeholder="Not set"
-          valueClassName="text-sm font-medium text-[#2a2622]"
-          onSave={async (location) => saveField({ location })}
-        />
-      ),
-    },
-    {
-      label: "Event Type",
-      content: (
-        <OverviewInlineSelect
-          value={overview.eventType}
-          options={EVENT_TYPES.map(({ value, label }) => ({ value, label }))}
-          placeholder={EVENT_TYPE_LABELS[DEFAULT_EVENT_TYPE]}
-          valueClassName="text-sm font-medium text-[#2a2622]"
-          onSave={async (eventType) =>
-            saveField({ eventType: eventType as EventType })
-          }
-        />
-      ),
-    },
-    {
-      label: "Chair",
-      content:
-        chairOptions.length > 0 ? (
-          <OverviewInlineSelect
-            value={chairValue}
-            options={[{ value: "", label: "Unassigned" }, ...chairOptions]}
-            placeholder="Unassigned"
-            valueClassName="text-sm font-medium text-[#2a2622]"
-            onSave={async (eventOwner) => {
-              await saveEventDetails({ eventOwner: eventOwner || null });
-            }}
-          />
-        ) : (
-          <OverviewInlineText
-            value={event.eventOwner ?? ""}
-            displayValue={chairDisplay}
-            placeholder="Unassigned"
-            valueClassName="text-sm font-medium text-[#2a2622]"
-            onSave={async (eventOwner) => {
-              await saveEventDetails({ eventOwner: eventOwner || null });
-            }}
-          />
-        ),
-    },
-  ];
+  const inlineValueClass = "text-sm font-medium";
 
   return (
     <PlanningHubCard className="flex h-full flex-col p-5">
       <PlanningHubSectionTitle icon={Sun} title="Campaign at a Glance" />
 
       <div className="mt-4 flex flex-1 flex-col gap-4 sm:flex-row">
-        <dl className="min-w-0 flex-1 space-y-3">
-          {fields.map(({ label, content }) => (
-            <div key={label}>
-              <dt className="text-[10px] font-semibold tracking-[0.12em] text-[#a89f94] uppercase">
-                {label}
-              </dt>
-              <dd className="mt-0.5">{content}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="min-w-0 flex-1">
+          <dl className="grid grid-cols-2 gap-x-5 gap-y-3">
+            <GlanceField label="Goal">
+              <OverviewInlineText
+                value={overview.goal}
+                placeholder="Not set"
+                valueClassName={inlineValueClass}
+                onSave={async (goal) => saveField({ goal })}
+              />
+            </GlanceField>
+            <GlanceField label="Audience">
+              <OverviewInlineText
+                value={overview.audience}
+                placeholder="Not set"
+                valueClassName={inlineValueClass}
+                onSave={async (audience) => saveField({ audience })}
+              />
+            </GlanceField>
+            <GlanceField label="Location">
+              <OverviewInlineText
+                value={overview.location}
+                placeholder="Not set"
+                valueClassName={inlineValueClass}
+                onSave={async (location) => saveField({ location })}
+              />
+            </GlanceField>
+            <GlanceField label="Event Type">
+              <OverviewInlineSelect
+                value={overview.eventType}
+                options={EVENT_TYPES.map(({ value, label }) => ({ value, label }))}
+                placeholder={EVENT_TYPE_LABELS[DEFAULT_EVENT_TYPE]}
+                valueClassName={inlineValueClass}
+                onSave={async (eventType) =>
+                  saveField({ eventType: eventType as EventType })
+                }
+              />
+            </GlanceField>
+          </dl>
+
+          <div className="mt-4">
+            <GlanceField label="Chair">
+              {chairOptions.length > 0 ? (
+                <OverviewInlineSelect
+                  value={chairValue}
+                  options={[{ value: "", label: "Unassigned" }, ...chairOptions]}
+                  placeholder="Unassigned"
+                  valueClassName={inlineValueClass}
+                  onSave={async (eventOwner) => {
+                    await saveEventDetails({ eventOwner: eventOwner || null });
+                  }}
+                />
+              ) : (
+                <OverviewInlineText
+                  value={event.eventOwner ?? ""}
+                  displayValue={chairDisplay}
+                  placeholder="Unassigned"
+                  valueClassName={inlineValueClass}
+                  onSave={async (eventOwner) => {
+                    await saveEventDetails({ eventOwner: eventOwner || null });
+                  }}
+                />
+              )}
+            </GlanceField>
+          </div>
+
+          <PlanningHubActionLink
+            onClick={() => onNavigateTab("settings")}
+            className="mt-4"
+          >
+            Assign lead →
+          </PlanningHubActionLink>
+        </div>
 
         {showArtwork && artwork?.imageUrl && (
-          <div className="shrink-0 sm:w-28">
-            <div className="relative aspect-square overflow-hidden rounded-lg border border-[#e8e0d4]">
+          <div className="flex shrink-0 flex-col items-center sm:w-[7.5rem]">
+            <div
+              className="relative aspect-square w-full max-w-[7.5rem] overflow-hidden rounded-[10px] border"
+              style={{ borderColor: PH.cardBorder }}
+            >
               <Image
                 src={artwork.imageUrl}
                 alt={artwork.label ?? "Event artwork"}
@@ -214,20 +227,19 @@ export function PlanningHubCampaignGlance({
                 unoptimized
               />
             </div>
-            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#3d7a4a]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#5a9e6f]" />
+            <p
+              className="mt-2 flex items-center gap-1.5 text-xs font-medium"
+              style={{ color: PH.greenScheduledText }}
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: PH.greenDot }}
+              />
               {artwork.caption ?? "Artwork ready"}
             </p>
           </div>
         )}
       </div>
-
-      <PlanningHubActionLink
-        onClick={() => onNavigateTab("settings")}
-        className="mt-4"
-      >
-        Assign lead →
-      </PlanningHubActionLink>
     </PlanningHubCard>
   );
 }

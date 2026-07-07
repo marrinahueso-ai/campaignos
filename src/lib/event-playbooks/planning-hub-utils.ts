@@ -195,3 +195,52 @@ export function socialPostThumbnail(bundle: MetaPublishBundle): string | null {
 export function isScheduledSocialPost(bundle: MetaPublishBundle): boolean {
   return bundle.status === "scheduled" || bundle.status === "approved";
 }
+
+export function formatSocialPostDateColumn(bundle: MetaPublishBundle): {
+  month: string;
+  day: string;
+  weekday: string;
+} {
+  const iso = bundle.scheduledFor;
+  const date = iso ? new Date(iso) : bundle.dueDate ? parseLocalDate(bundle.dueDate) : new Date();
+
+  return {
+    month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: date.toLocaleDateString("en-US", { day: "2-digit" }),
+    weekday: date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase(),
+  };
+}
+
+export function formatSocialPostTime(bundle: MetaPublishBundle): string {
+  if (!bundle.scheduledFor) {
+    return bundle.dueDate ? "All day" : "Not scheduled";
+  }
+
+  return new Date(bundle.scheduledFor).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function parseVolunteerStats(event: Event): {
+  total: number | null;
+  checkedIn: number | null;
+  stillNeeded: number | null;
+} {
+  const needsText = event.volunteerNeeds?.trim() ?? "";
+  const stillMatch = needsText.match(/(?:still\s+need(?:ed)?|need)\s*(\d+)/i);
+  const stillNeeded = stillMatch ? Number(stillMatch[1]) : null;
+
+  const totalMatch =
+    needsText.match(/(\d+)\s*volunteers?/i) ??
+    needsText.match(/of\s*(\d+)/i) ??
+    needsText.match(/^(\d+)\b/);
+  const total = totalMatch ? Number(totalMatch[1]) : null;
+
+  const checkedIn =
+    total !== null && stillNeeded !== null && total >= stillNeeded
+      ? total - stillNeeded
+      : null;
+
+  return { total, checkedIn, stillNeeded };
+}

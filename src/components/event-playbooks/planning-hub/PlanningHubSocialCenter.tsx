@@ -5,13 +5,15 @@ import Image from "next/image";
 import { MessageSquare, Plus } from "lucide-react";
 import {
   filterSocialBundles,
-  formatSocialPostSchedule,
+  formatSocialPostDateColumn,
+  formatSocialPostTime,
   isScheduledSocialPost,
   socialPostPlatformLabel,
   socialPostThumbnail,
   type SocialPostFilter,
 } from "@/lib/event-playbooks/planning-hub-utils";
 import {
+  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubSectionTitle,
@@ -52,7 +54,7 @@ export function PlanningHubSocialCenter({
     return (
       <PlanningHubCard className="flex h-full flex-col p-5">
         <PlanningHubSectionTitle icon={MessageSquare} title="Social Media Center" />
-        <p className="mt-4 text-sm text-[#7a7268]">
+        <p className="mt-4 text-sm" style={{ color: PH.textSecondary }}>
           Social media planning is available for full campaigns.
         </p>
       </PlanningHubCard>
@@ -71,44 +73,77 @@ export function PlanningHubSocialCenter({
         }
       />
 
-      <div className="mt-4 flex gap-1 rounded-lg bg-[#f6f2eb] p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => {
-              if (tab.id === "calendar") {
-                window.location.href = "/calendar";
-                return;
-              }
-              setActiveTab(tab.id);
-            }}
-            className={cn(
-              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-              activeTab === tab.id
-                ? "bg-[#fffcf7] text-[#2a2622] shadow-sm"
-                : "text-[#7a7268] hover:text-[#2a2622]",
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div
+        className="mt-4 flex gap-4 border-b"
+        style={{ borderColor: PH.cardBorder }}
+      >
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                if (tab.id === "calendar") {
+                  window.location.href = "/calendar";
+                  return;
+                }
+                setActiveTab(tab.id);
+              }}
+              className={cn(
+                "-mb-px pb-2 text-xs font-medium transition-colors",
+                isActive ? "border-b-2 font-semibold" : "hover:opacity-80",
+              )}
+              style={{
+                color: isActive ? PH.textPrimary : PH.textSecondary,
+                borderColor: isActive ? PH.textPrimary : "transparent",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <ul className="mt-3 flex-1 space-y-2">
         {posts.length === 0 ? (
-          <li className="rounded-lg border border-dashed border-[#e8e0d4] px-3 py-6 text-center text-sm text-[#7a7268]">
+          <li
+            className="rounded-[10px] border border-dashed px-3 py-6 text-center text-sm"
+            style={{ borderColor: PH.cardBorder, color: PH.textSecondary }}
+          >
             No {activeTab} posts yet.
           </li>
         ) : (
           posts.slice(0, 3).map((bundle, index) => {
             const thumbnail = socialPostThumbnail(bundle);
+            const dateColumn = formatSocialPostDateColumn(bundle);
+
             return (
               <li
                 key={`${bundle.relativeDay}-${bundle.title}-${index}`}
-                className="flex items-center gap-3 rounded-lg border border-[#f0ebe3] bg-[#faf7f2] px-3 py-2.5"
+                className="flex items-center gap-3 rounded-[10px] border px-3 py-2.5"
+                style={{ borderColor: PH.cardBorder, backgroundColor: PH.pageBg }}
               >
-                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-[#e8e0d4] bg-[#f6f2eb]">
+                <div
+                  className="flex w-11 shrink-0 flex-col items-center leading-none"
+                  style={{ color: PH.textMuted }}
+                >
+                  <span className="text-[9px] font-bold tracking-wide">{dateColumn.month}</span>
+                  <span
+                    className="text-lg font-bold"
+                    style={{ color: PH.textPrimary }}
+                  >
+                    {dateColumn.day}
+                  </span>
+                  <span className="text-[9px] font-semibold tracking-wide">
+                    {dateColumn.weekday}
+                  </span>
+                </div>
+
+                <div
+                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-[8px] border"
+                  style={{ borderColor: PH.cardBorder, backgroundColor: PH.beigeButton }}
+                >
                   {thumbnail ? (
                     <Image
                       src={thumbnail}
@@ -118,21 +153,32 @@ export function PlanningHubSocialCenter({
                       unoptimized
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[#c4bab0]">
-                      <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
+                    <div className="flex h-full w-full items-center justify-center">
+                      <MessageSquare className="h-4 w-4" style={{ color: PH.iconMuted }} strokeWidth={1.5} />
                     </div>
                   )}
                 </div>
+
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-[#2a2622]">
-                    {socialPostPlatformLabel(bundle)}
+                  <p
+                    className="truncate text-sm font-semibold"
+                    style={{ color: PH.textPrimary }}
+                  >
+                    {bundle.title}
                   </p>
-                  <p className="text-xs text-[#a89f94]">
-                    {formatSocialPostSchedule(bundle)}
+                  <p className="truncate text-xs" style={{ color: PH.textMuted }}>
+                    {socialPostPlatformLabel(bundle)} · {formatSocialPostTime(bundle)}
                   </p>
                 </div>
+
                 {isScheduledSocialPost(bundle) && (
-                  <span className="shrink-0 rounded-full bg-[#e4f2e8] px-2 py-0.5 text-[10px] font-semibold text-[#3d7a4a]">
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    style={{
+                      backgroundColor: PH.greenScheduled,
+                      color: PH.greenScheduledText,
+                    }}
+                  >
                     Scheduled
                   </span>
                 )}
@@ -145,7 +191,18 @@ export function PlanningHubSocialCenter({
       <button
         type="button"
         onClick={() => onNavigateTab("social-media", "plan")}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-[#e8e0d4] bg-[#f6f2eb] px-4 py-2.5 text-sm font-semibold text-[#2a2622] transition-colors hover:bg-[#ebe4d9]"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[10px] border px-4 py-2.5 text-sm font-semibold transition-colors"
+        style={{
+          borderColor: PH.cardBorder,
+          backgroundColor: PH.beigeButton,
+          color: PH.textPrimary,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = PH.beigeButtonHover;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = PH.beigeButton;
+        }}
       >
         <Plus className="h-4 w-4" strokeWidth={1.75} />
         Create New Post

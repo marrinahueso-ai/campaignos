@@ -1,24 +1,45 @@
 import Link from "next/link";
-import { Paperclip } from "lucide-react";
+import {
+  Calendar,
+  ClipboardList,
+  MessageSquare,
+  MessagesSquare,
+  Paperclip,
+  Users,
+} from "lucide-react";
 import {
   mergePlanningQuickLinks,
-  PLANNING_QUICK_LINK_DEFINITIONS,
+  type PlanningQuickLinkDefinition,
+  type PlanningQuickLinkKey,
 } from "@/lib/event-playbooks/planning-constants";
 import {
+  PH,
   PlanningHubActionLink,
   PlanningHubCard,
+  PlanningHubIconSquare,
   PlanningHubSectionTitle,
 } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
 import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
 import type { Event } from "@/types";
 
-const ICON_COLORS = [
-  "text-[#5b8fc7]",
-  "text-[#5a9e6f]",
-  "text-[#e8944a]",
-  "text-[#8b6fbf]",
-  "text-[#e87461]",
+const MOCKUP_QUICK_LINKS: PlanningQuickLinkDefinition[] = [
+  { key: "volunteer_signup", label: "Volunteer Signup", icon: Users },
+  { key: "marketing_materials", label: "Marketing Materials", icon: MessageSquare },
+  { key: "vendor_list", label: "Vendor List", icon: Calendar },
+  { key: "communication_plan", label: "Communication Plan", icon: MessagesSquare },
+  { key: "event_budget", label: "Event Budget", icon: ClipboardList },
 ];
+
+const ICON_STYLES: Record<
+  PlanningQuickLinkKey,
+  { bg: string; color: string }
+> = {
+  volunteer_signup: { bg: "#E4EDF8", color: "#5B8FC7" },
+  marketing_materials: { bg: "#E4F2E8", color: "#5A9E6F" },
+  vendor_list: { bg: "#F8ECE0", color: "#E8944A" },
+  communication_plan: { bg: "#ECE4F5", color: "#8B6FBF" },
+  event_budget: { bg: "#FCE8E4", color: "#E87461" },
+};
 
 interface PlanningHubQuickLinksProps {
   event: Event;
@@ -33,7 +54,7 @@ export function PlanningHubQuickLinks({
 }: PlanningHubQuickLinksProps) {
   const links = mergePlanningQuickLinks(event.planningQuickLinks);
 
-  function resolveHref(key: string, url: string): string {
+  function resolveHref(key: PlanningQuickLinkKey, url: string): string {
     if (url.trim()) {
       return url;
     }
@@ -53,18 +74,24 @@ export function PlanningHubQuickLinks({
     <PlanningHubCard className="flex h-full flex-col p-5">
       <PlanningHubSectionTitle icon={Paperclip} title="Quick Links" />
 
-      <ul className="mt-4 flex-1 space-y-1">
-        {PLANNING_QUICK_LINK_DEFINITIONS.map(({ key, label, icon: Icon }, index) => {
+      <ul className="mt-4 flex-1 divide-y" style={{ borderColor: PH.cardBorder }}>
+        {MOCKUP_QUICK_LINKS.map(({ key, label, icon: Icon }) => {
           const entry = links[key];
           const href = resolveHref(key, entry.url);
           const isExternal = Boolean(entry.url.trim());
-          const iconColor = ICON_COLORS[index % ICON_COLORS.length];
+          const iconStyle = ICON_STYLES[key];
 
           const row = (
-            <div className="flex items-center justify-between gap-3 rounded-lg px-1 py-2.5 transition-colors hover:bg-[#faf7f2]">
+            <div className="flex items-center justify-between gap-3 py-3">
               <span className="flex min-w-0 items-center gap-2.5">
-                <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} strokeWidth={1.5} />
-                <span className="text-sm font-medium text-[#2a2622]">{label}</span>
+                <PlanningHubIconSquare
+                  icon={Icon}
+                  bg={iconStyle.bg}
+                  color={iconStyle.color}
+                />
+                <span className="text-sm font-medium" style={{ color: PH.textPrimary }}>
+                  {label}
+                </span>
               </span>
               <PlanningHubActionLink
                 href={isExternal ? href : undefined}

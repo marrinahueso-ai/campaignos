@@ -10,7 +10,10 @@ import {
 import { getTimeOfDayGreeting } from "@/lib/weather/greeting";
 import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
-import { PlanningHubCard } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
+import {
+  PH,
+  PlanningHubCard,
+} from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
 import { cn } from "@/lib/utils/cn";
 
 const QUICK_ACTIONS = [
@@ -19,8 +22,8 @@ const QUICK_ACTIONS = [
     title: "Create Post",
     subtext: "Social Media",
     icon: MessageSquare,
-    iconBg: "bg-[#fce8e4]",
-    iconColor: "text-[#e87461]",
+    iconBg: "#FCE8E4",
+    iconColor: "#E87461",
     tab: "social-media" as EventPlaybookTab,
     step: "plan" as CampaignWorkflowStep,
   },
@@ -29,8 +32,8 @@ const QUICK_ACTIONS = [
     title: "Add Task",
     subtext: "To-do list",
     icon: CheckSquare,
-    iconBg: "bg-[#e4f2e8]",
-    iconColor: "text-[#5a9e6f]",
+    iconBg: "#E4F2E8",
+    iconColor: "#5A9E6F",
     tab: "tasks" as EventPlaybookTab,
   },
   {
@@ -38,8 +41,8 @@ const QUICK_ACTIONS = [
     title: "Upload File",
     subtext: "Docs & Media",
     icon: Upload,
-    iconBg: "bg-[#e4edf8]",
-    iconColor: "text-[#5b8fc7]",
+    iconBg: "#E4EDF8",
+    iconColor: "#5B8FC7",
     tab: "files" as EventPlaybookTab,
   },
   {
@@ -47,8 +50,8 @@ const QUICK_ACTIONS = [
     title: "Invite Volunteer",
     subtext: "Get help",
     icon: UserPlus,
-    iconBg: "bg-[#f8ece0]",
-    iconColor: "text-[#e8944a]",
+    iconBg: "#F8ECE0",
+    iconColor: "#E8944A",
     tab: "settings" as EventPlaybookTab,
   },
   {
@@ -56,8 +59,8 @@ const QUICK_ACTIONS = [
     title: "View Calendar",
     subtext: "See what's next",
     icon: CalendarDays,
-    iconBg: "bg-[#ece4f5]",
-    iconColor: "text-[#8b6fbf]",
+    iconBg: "#ECE4F5",
+    iconColor: "#8B6FBF",
     href: "/calendar",
   },
 ] as const;
@@ -79,10 +82,13 @@ export function PlanningHubHeader({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl leading-tight text-[#2a2622] sm:text-4xl">
+        <h1
+          className="font-display text-[2rem] leading-tight sm:text-[2.25rem]"
+          style={{ color: PH.textPrimary }}
+        >
           {greeting}, {name}! 👋
         </h1>
-        <p className="mt-1.5 text-base text-[#7a7268]">
+        <p className="mt-1.5 text-[15px]" style={{ color: PH.textSecondary }}>
           Let&apos;s bring your campaign to life today.
         </p>
       </div>
@@ -93,18 +99,25 @@ export function PlanningHubHeader({
           const content = (
             <>
               <span
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                  action.iconBg,
-                )}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
+                style={{ backgroundColor: action.iconBg }}
               >
-                <Icon className={cn("h-4 w-4", action.iconColor)} strokeWidth={1.75} />
+                <Icon
+                  className="h-[18px] w-[18px]"
+                  style={{ color: action.iconColor }}
+                  strokeWidth={1.75}
+                />
               </span>
               <span className="min-w-0 text-left">
-                <span className="block text-sm font-semibold text-[#2a2622]">
+                <span
+                  className="block text-sm font-semibold"
+                  style={{ color: PH.textPrimary }}
+                >
                   {action.title}
                 </span>
-                <span className="block text-xs text-[#a89f94]">{action.subtext}</span>
+                <span className="block text-xs" style={{ color: PH.textMuted }}>
+                  {action.subtext}
+                </span>
               </span>
             </>
           );
@@ -114,7 +127,9 @@ export function PlanningHubHeader({
               <PlanningHubCard key={action.id} className="p-0">
                 <a
                   href={action.href}
-                  className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[#faf7f2]"
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[#FAF7F2]",
+                  )}
                 >
                   {content}
                 </a>
@@ -134,7 +149,7 @@ export function PlanningHubHeader({
                     );
                   }
                 }}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#faf7f2]"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#FAF7F2]"
               >
                 {content}
               </button>

@@ -12,6 +12,7 @@ import {
   OverviewInlineText,
 } from "@/components/event-playbooks/OverviewInlineFields";
 import {
+  PH,
   PlanningHubActionLink,
   PlanningHubCard,
   PlanningHubKpiLabel,
@@ -38,7 +39,7 @@ interface PlanningHubKpiRowProps {
 
 function CompactProgressRing({
   percent,
-  size = 52,
+  size = 56,
   strokeWidth = 5,
 }: {
   percent: number;
@@ -57,7 +58,7 @@ function CompactProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e8e0d4"
+          stroke={PH.progressTrack}
           strokeWidth={strokeWidth}
         />
         <circle
@@ -65,14 +66,19 @@ function CompactProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#b8956f"
+          stroke={PH.progressRing}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
         />
       </svg>
-      <span className="absolute text-sm font-semibold text-[#2a2622]">{percent}%</span>
+      <span
+        className="absolute text-sm font-semibold"
+        style={{ color: PH.textPrimary }}
+      >
+        {percent}%
+      </span>
     </div>
   );
 }
@@ -127,89 +133,86 @@ export function PlanningHubKpiRow({
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <PlanningHubCard className="p-4">
+      <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={CalendarDays} label="Event date" />
-        <div className="mt-2">
+        <div className="mt-3 flex-1">
           <OverviewInlineText
             value={event.date}
             displayValue={formatEventDate(event.date)}
             placeholder="Set date"
             inputType="date"
-            valueClassName="font-display text-lg text-[#2a2622]"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (date) => {
               await saveEventDetails({ date });
             }}
           />
         </div>
-        <PlanningHubActionLink
-          href={calendarUrl}
-          className="mt-2"
-        >
+        <PlanningHubActionLink href={calendarUrl} className="mt-3">
           Add to calendar →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="p-4">
+      <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
-        <p className="mt-2 font-display text-2xl text-[#2a2622]">
+        <p
+          className="mt-3 font-display text-[2rem] leading-none"
+          style={{ color: PH.textPrimary }}
+        >
           {countdown.isPast ? "0" : countdown.daysRemaining}
         </p>
-        <p className="mt-1 text-xs text-[#7a7268]">
+        <p className="mt-2 flex-1 text-xs" style={{ color: PH.textSecondary }}>
           {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
         </p>
       </PlanningHubCard>
 
-      <PlanningHubCard className="p-4">
+      <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={Users} label="Expected attendance" />
-        <div className="mt-2">
+        <div className="mt-3 flex-1">
           <OverviewInlineText
             value={event.expectedAttendance ?? ""}
             displayValue={attendanceEstimate}
             placeholder="TBD"
-            valueClassName="font-display text-lg text-[#2a2622]"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (expectedAttendance) => {
               await savePlanningField({ expectedAttendance });
             }}
           />
         </div>
-        <PlanningHubActionLink
-          onClick={() => onNavigateTab("overview")}
-          className="mt-2"
-        >
+        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-3">
           Update estimate →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="p-4">
+      <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={DollarSign} label="Budget" />
-        <div className="mt-2">
+        <div className="mt-3 flex-1">
           <OverviewInlineText
             value={event.budget ?? ""}
             displayValue={budgetDisplay}
             placeholder="Not set"
-            valueClassName="font-display text-lg text-[#2a2622]"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (budget) => {
               await savePlanningField({ budget });
             }}
           />
         </div>
-        <PlanningHubActionLink
-          onClick={() => onNavigateTab("settings")}
-          className="mt-2"
-        >
+        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-3">
           Set budget →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
-      <PlanningHubCard className="p-4">
+      <PlanningHubCard className="flex flex-col p-4">
         <PlanningHubKpiLabel icon={CheckSquareIcon} label="Task progress" />
-        <div className="mt-2 flex items-center gap-3">
+        <div className="mt-3 flex flex-1 items-center gap-3">
           <CompactProgressRing percent={taskProgressPercent} />
-          <div>
-            <p className="text-sm font-medium text-[#2a2622]">
+          <div className="min-w-0">
+            <p
+              className="font-display text-lg leading-tight"
+              style={{ color: PH.textPrimary }}
+            >
               {doneTaskCount} of {totalTaskCount} tasks
             </p>
-            <PlanningHubActionLink onClick={() => onNavigateTab("tasks")}>
+            <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-1">
               View tasks →
             </PlanningHubActionLink>
           </div>
