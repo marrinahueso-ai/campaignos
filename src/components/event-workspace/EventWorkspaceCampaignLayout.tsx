@@ -17,7 +17,6 @@ import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-art
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type {
   EventAsset,
-  ActivityLogEntry,
   StepCommunicationDraft,
 } from "@/types/event-workspace";
 import type { Event } from "@/types";
@@ -50,7 +49,6 @@ interface EventWorkspaceCampaignLayoutProps {
   assets: EventAsset[];
   assetVersions: Record<string, EventAssetVersion[]>;
   metaPublishBundles: MetaPublishBundle[];
-  timeline: ActivityLogEntry[];
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
   ownership: EventRosterOwnership;
@@ -72,7 +70,6 @@ export function EventWorkspaceCampaignLayout({
   metaSocialCaptionMilestones,
   assets,
   metaPublishBundles,
-  timeline,
   aiStatus,
   userRole,
   ownership,
@@ -220,7 +217,6 @@ export function EventWorkspaceCampaignLayout({
           <CampaignPublishedStep
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
-            timeline={timeline}
           />
         }
       />

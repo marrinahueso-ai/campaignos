@@ -14,7 +14,6 @@ import type { EventAssetVersion } from "@/types/event-workspace";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type {
   EventAsset,
-  ActivityLogEntry,
   StepCommunicationDraft,
 } from "@/types/event-workspace";
 import type { Event } from "@/types";
@@ -25,6 +24,7 @@ import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCo
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
 import type { EventCommunicationStep } from "@/types/playbooks";
+import type { EventPlanningOverviewData } from "@/types/planning-overview";
 
 function resolveCaptionExpandedDay(
   relativeDay: number,
@@ -63,7 +63,6 @@ interface SocialMediaTabProps {
   assets: EventAsset[];
   assetVersions: Record<string, EventAssetVersion[]>;
   metaPublishBundles: MetaPublishBundle[];
-  timeline: ActivityLogEntry[];
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
   ownership: EventRosterOwnership;
@@ -71,6 +70,7 @@ interface SocialMediaTabProps {
   defaultApprovalRoleId: string | null;
   initialStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
+  planningOverview?: EventPlanningOverviewData | null;
 }
 
 export function SocialMediaTab({
@@ -82,7 +82,6 @@ export function SocialMediaTab({
   metaSocialCaptionMilestones,
   assets,
   metaPublishBundles,
-  timeline,
   aiStatus,
   userRole,
   ownership,
@@ -90,6 +89,7 @@ export function SocialMediaTab({
   defaultApprovalRoleId,
   initialStep = "plan",
   onCampaignStepChange,
+  planningOverview = null,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(initialStep);
   const [focusedRelativeDay, setFocusedRelativeDay] = useState<number | null>(null);
@@ -230,7 +230,7 @@ export function SocialMediaTab({
           <CampaignPublishedStep
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
-            timeline={timeline}
+            planningOverview={planningOverview}
           />
       }
     />

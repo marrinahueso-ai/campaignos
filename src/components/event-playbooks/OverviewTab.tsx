@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarDays, MapPin, Users } from "lucide-react";
-import { PlanningOverviewPanel } from "@/components/event-playbooks/PlanningOverviewPanel";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import { OverviewChecklist } from "@/components/event-playbooks/OverviewChecklist";
 import { OverviewEventDetailsGrid } from "@/components/event-playbooks/OverviewEventDetailsGrid";
@@ -10,7 +9,6 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import { COMMUNICATION_STRATEGY_LABELS } from "@/lib/events/communication-strategy";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
-import type { EventPlanningOverviewData } from "@/types/planning-overview";
 import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
 
@@ -22,7 +20,6 @@ interface OverviewTabProps {
   hasCampaign?: boolean;
   tablesAvailable?: boolean;
   eventId: string;
-  planningOverview?: EventPlanningOverviewData | null;
 }
 
 function formatChair(ownership: EventRosterOwnership | null): string {
@@ -40,12 +37,7 @@ export function OverviewTab({
   hasCampaign = true,
   tablesAvailable = true,
   eventId,
-  planningOverview = null,
 }: OverviewTabProps) {
-  if (hasCampaign && planningOverview) {
-    return <PlanningOverviewPanel eventId={eventId} overview={planningOverview} />;
-  }
-
   const formattedTime = formatEventTime(event.time);
   const attendanceEstimate =
     event.expectedAttendance?.trim() || event.audience?.trim() || "TBD";

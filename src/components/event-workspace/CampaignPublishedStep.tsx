@@ -1,8 +1,8 @@
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
+import { PlanningOverviewPanel } from "@/components/event-playbooks/PlanningOverviewPanel";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { MilestoneCaptionPreview } from "@/components/event-workspace/MilestoneCaptionPreview";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { TimelineSection } from "@/components/event-workspace/TimelineSection";
 import { PublishedScheduledMilestones } from "@/components/event-workspace/PublishedScheduledMilestones";
 import {
   Card,
@@ -22,14 +22,14 @@ import {
 } from "@/lib/meta-publishing/milestone-workflow-badge";
 import { formatDateTime } from "@/lib/utils/dates";
 import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
-import type { ActivityLogEntry } from "@/types/event-workspace";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
+import type { EventPlanningOverviewData } from "@/types/planning-overview";
 import { cn } from "@/lib/utils/cn";
 
 interface CampaignPublishedStepProps {
   eventId: string;
   metaPublishBundles: MetaPublishBundle[];
-  timeline: ActivityLogEntry[];
+  planningOverview?: EventPlanningOverviewData | null;
 }
 
 const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = ["scheduled", "approved"];
@@ -197,7 +197,7 @@ function MilestoneSection({
 export function CampaignPublishedStep({
   eventId,
   metaPublishBundles,
-  timeline,
+  planningOverview = null,
 }: CampaignPublishedStepProps) {
   const metaBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
@@ -211,10 +211,12 @@ export function CampaignPublishedStep({
     metaBundles.filter((bundle) => bundle.status === "published"),
   );
 
-  const publishActivity = timeline.filter((entry) => entry.activityType === "published");
-
   return (
     <div className="space-y-6">
+      {planningOverview ? (
+        <PlanningOverviewPanel eventId={eventId} overview={planningOverview} />
+      ) : null}
+
       <PublishedScheduledMilestones eventId={eventId} bundles={scheduledBundles} />
 
       <MilestoneSection
@@ -226,13 +228,6 @@ export function CampaignPublishedStep({
         emptyTitle="Nothing published yet"
         emptyDescription="When communications are marked published, they will appear here with their publish date and time."
       />
-
-      {publishActivity.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold text-cos-text">Activity history</h3>
-          <TimelineSection timeline={publishActivity} />
-        </section>
-      )}
     </div>
   );
 }

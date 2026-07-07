@@ -23,8 +23,6 @@ import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-
 import { formatEventDate } from "@/lib/utils/dates";
 import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
-import type { EventPlanningOverviewData } from "@/types/planning-overview";
-
 interface EventPlaybookHubShellProps {
   event: Event;
   artwork: HeroArtworkSelection | null;
@@ -41,7 +39,6 @@ interface EventPlaybookHubShellProps {
   initialCampaignStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
   defaultTab?: EventPlaybookTab;
-  planningOverview?: EventPlanningOverviewData | null;
 }
 
 export function EventPlaybookHubShell({
@@ -60,7 +57,6 @@ export function EventPlaybookHubShell({
   initialCampaignStep = "plan",
   onCampaignStepChange,
   defaultTab = "overview",
-  planningOverview = null,
 }: EventPlaybookHubShellProps) {
   const showArtwork = hasDisplayableArtwork(artwork);
   const lessonCount = hubData.notes.filter((n) => n.noteType === "lesson").length;
@@ -128,7 +124,6 @@ export function EventPlaybookHubShell({
             pastEvents={pastEvents}
             hasCampaign={hasCampaign}
             tablesAvailable={tablesAvailable}
-            planningOverview={planningOverview}
           />
         }
         tasks={

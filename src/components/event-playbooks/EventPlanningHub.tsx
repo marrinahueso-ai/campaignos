@@ -100,7 +100,6 @@ export function EventPlanningHub({
         assets={campaignWorkspace.assets}
         assetVersions={campaignWorkspace.assetVersions}
         metaPublishBundles={campaignWorkspace.metaPublishBundles}
-        timeline={campaignWorkspace.timeline}
         aiStatus={aiStatus}
         userRole={userRole}
         ownership={ownership ?? {
@@ -115,6 +114,7 @@ export function EventPlanningHub({
         defaultApprovalRoleId={campaignWorkspace.defaultApprovalRoleId}
         initialStep={campaignStep}
         onCampaignStepChange={setCampaignStep}
+        planningOverview={planningOverview}
       />
     ) : null;
 
@@ -152,7 +152,6 @@ export function EventPlanningHub({
       calendarSettingsExtras={calendarSettingsExtras}
       initialCampaignStep={campaignStep}
       onCampaignStepChange={setCampaignStep}
-      planningOverview={planningOverview}
     />
   );
 }
