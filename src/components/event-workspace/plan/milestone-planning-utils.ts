@@ -1,5 +1,5 @@
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
-import { metaWorkflowMilestonesFromCommunicationSteps } from "@/lib/campaign-plan/resolve-plan-milestones";
+import { metaWorkflowMilestonesFromCommunicationSteps } from "@/lib/campaign-plan/plan-milestone-client";
 import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type {
