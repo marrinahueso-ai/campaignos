@@ -160,7 +160,7 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className={cn("flex h-full w-full shrink-0 bg-cos-card shadow-sm", className)}>
+    <div className={cn("flex shrink-0 bg-cos-card shadow-sm", className)}>
       <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
@@ -238,8 +238,8 @@ export function SocialMediaCenterShell({
           Back to campaign
         </Link>
 
-        <div className={cn("mt-4 grid gap-4 lg:items-end", STUDIO_GRID_CLASS)}>
-          <div className="flex min-w-0 flex-col justify-center lg:pb-1">
+        <div className={cn("mt-4 grid gap-4 lg:items-stretch", STUDIO_GRID_CLASS)}>
+          <div className="flex min-w-0 flex-col items-start justify-center">
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Creative Studio
             </h1>
@@ -248,13 +248,15 @@ export function SocialMediaCenterShell({
             </p>
           </div>
 
-          <CampaignSummaryCard
-            event={event}
-            artwork={artwork}
-            ownership={ownership}
-            communicationStrategy={communicationStrategy}
-            className="lg:mb-1"
-          />
+          <div className="flex min-w-0 items-center justify-end">
+            <CampaignSummaryCard
+              event={event}
+              artwork={artwork}
+              ownership={ownership}
+              communicationStrategy={communicationStrategy}
+              className="w-full max-w-sm"
+            />
+          </div>
         </div>
 
         <div className="mt-4 border-y border-cos-border">
