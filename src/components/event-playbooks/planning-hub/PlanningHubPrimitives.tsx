@@ -27,9 +27,11 @@ export function PlanningHubPage({
 
 export function PlanningHubCard({
   className,
+  style,
   children,
 }: {
   className?: string;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   return (
@@ -38,6 +40,7 @@ export function PlanningHubCard({
         "rounded-[12px] border border-cos-border bg-cos-card shadow-[0_1px_2px_rgba(42,38,34,0.04)]",
         className,
       )}
+      style={style}
     >
       {children}
     </div>

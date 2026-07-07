@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
+import { RalliAiAssistantWidget } from "@/components/layout/RalliAiAssistantWidget";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -249,7 +250,13 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className={cn(showLabels ? "px-4 pb-4" : "flex justify-center px-2 pb-4")}>
+      <div
+        className={cn(
+          "space-y-3",
+          showLabels ? "px-4 pb-4" : "flex flex-col items-center gap-3 px-2 pb-4",
+        )}
+      >
+        {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
         {showLabels ? <AiCreditsWidget /> : <AiCreditsWidget compact />}
       </div>
 

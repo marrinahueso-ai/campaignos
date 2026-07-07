@@ -22,6 +22,11 @@ import type { CampaignWorkflowStep } from "@/components/event-workspace/Campaign
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { cn } from "@/lib/utils/cn";
 
+const SOCIAL_CENTER_BORDER = "#006B5D";
+
+const socialCenterCardClass =
+  "flex h-full flex-col border-2 p-5 shadow-[0_1px_2px_rgba(42,38,34,0.04)]";
+
 const TABS: { id: SocialPostFilter | "calendar"; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
   { id: "recent", label: "Recent" },
@@ -51,17 +56,25 @@ export function PlanningHubSocialCenter({
 
   if (!hasCampaign) {
     return (
-      <PlanningHubCard className="flex h-full flex-col p-5">
+      <PlanningHubCard
+        className={socialCenterCardClass}
+        style={{ borderColor: SOCIAL_CENTER_BORDER }}
+      >
         <PlanningHubSectionTitle icon={MessageSquare} title="Social Media Center" />
-        <p className="mt-4 text-sm text-cos-muted">
-          Social media planning is available for full campaigns.
-        </p>
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
+          <p className="text-sm text-cos-muted">
+            Social media planning is available for full campaigns.
+          </p>
+        </div>
       </PlanningHubCard>
     );
   }
 
   return (
-    <PlanningHubCard className="flex h-full flex-col p-5">
+    <PlanningHubCard
+      className={socialCenterCardClass}
+      style={{ borderColor: SOCIAL_CENTER_BORDER }}
+    >
       <PlanningHubSectionTitle
         icon={MessageSquare}
         title="Social Media Center"
@@ -99,10 +112,12 @@ export function PlanningHubSocialCenter({
         })}
       </div>
 
-      <ul className="mt-3 flex-1 space-y-2">
+      <ul className="mt-3 flex flex-1 flex-col justify-center space-y-2">
         {posts.length === 0 ? (
-          <li className="rounded-[10px] border border-dashed border-cos-border px-3 py-6 text-center text-sm text-cos-muted">
-            No {activeTab} posts yet.
+          <li className="flex flex-1 items-center justify-center">
+            <p className="w-full rounded-[10px] border border-dashed border-cos-border px-3 py-8 text-center text-sm text-cos-muted">
+              No {activeTab} posts yet.
+            </p>
           </li>
         ) : (
           posts.slice(0, 3).map((bundle, index) => {

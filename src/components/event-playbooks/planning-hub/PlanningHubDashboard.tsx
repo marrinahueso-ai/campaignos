@@ -114,6 +114,7 @@ export function PlanningHubDashboard({
         <PlanningHubMyTasks
           eventId={event.id}
           tasks={hubData.tasks}
+          taskGroups={hubData.taskGroups}
           tablesAvailable={tablesAvailable}
           onNavigateTab={onNavigateTab}
         />
