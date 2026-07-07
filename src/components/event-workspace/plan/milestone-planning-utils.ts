@@ -1,5 +1,10 @@
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import { metaWorkflowMilestonesFromCommunicationSteps } from "@/lib/campaign-plan/plan-milestone-client";
+import {
+  formatScheduleTimeFromHour,
+  resolveBestHourForDate,
+} from "@/lib/posting-analytics/suggest-posting-times";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
 import type { CommunicationChannel } from "@/types/event-workspace";
@@ -340,15 +345,56 @@ export function createDefaultMilestone(
   };
 }
 
-export function applySuggestedTimes(items: MilestonePlanningItem[]): MilestonePlanningItem[] {
-  return items.map((item) => ({
-    ...item,
-    scheduleTime: "10:00",
-    status: item.dueDate ? "scheduled" : item.status,
-  }));
+function dueDateForRelativeDay(eventDate: string, relativeDay: number): string {
+  const shifted = parseLocalDate(eventDate);
+  shifted.setDate(shifted.getDate() + relativeDay);
+  return toLocalDateString(shifted);
 }
 
-export function suggestTimeline(items: MilestonePlanningItem[], eventDate: string): MilestonePlanningItem[] {
+export function reorderMilestonesPreservingDays(
+  items: MilestonePlanningItem[],
+  fromIndex: number,
+  toIndex: number,
+  eventDate: string,
+): MilestonePlanningItem[] {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) {
+    return items;
+  }
+
+  const relativeDaySlots = items.map((item) => item.relativeDay);
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+
+  return next.map((item, index) => {
+    const relativeDay = relativeDaySlots[index] ?? item.relativeDay;
+    return {
+      ...item,
+      relativeDay,
+      dueDate: dueDateForRelativeDay(eventDate, relativeDay),
+    };
+  });
+}
+
+export function applySuggestedTimes(
+  items: MilestonePlanningItem[],
+  heatmap?: PostingHeatmapData | null,
+): MilestonePlanningItem[] {
+  return items.map((item) => {
+    const hour = resolveBestHourForDate(heatmap, item.dueDate);
+    return {
+      ...item,
+      scheduleTime: formatScheduleTimeFromHour(hour),
+      status: item.dueDate ? "scheduled" : item.status,
+    };
+  });
+}
+
+export function suggestTimeline(
+  items: MilestonePlanningItem[],
+  eventDate: string,
+  heatmap?: PostingHeatmapData | null,
+): MilestonePlanningItem[] {
   if (items.length === 0) {
     return [
       {
@@ -363,7 +409,9 @@ export function suggestTimeline(items: MilestonePlanningItem[], eventDate: strin
             return date;
           })(),
         ),
-        scheduleTime: "10:00",
+        scheduleTime: formatScheduleTimeFromHour(
+          resolveBestHourForDate(heatmap, dueDateForRelativeDay(eventDate, -14)),
+        ),
         status: "scheduled",
         contentPlatforms: {
           instagramFeed: true,
@@ -384,7 +432,9 @@ export function suggestTimeline(items: MilestonePlanningItem[], eventDate: strin
             return date;
           })(),
         ),
-        scheduleTime: "10:00",
+        scheduleTime: formatScheduleTimeFromHour(
+          resolveBestHourForDate(heatmap, dueDateForRelativeDay(eventDate, -7)),
+        ),
         status: "scheduled",
         contentPlatforms: {
           instagramFeed: true,
@@ -405,7 +455,9 @@ export function suggestTimeline(items: MilestonePlanningItem[], eventDate: strin
             return date;
           })(),
         ),
-        scheduleTime: "10:00",
+        scheduleTime: formatScheduleTimeFromHour(
+          resolveBestHourForDate(heatmap, dueDateForRelativeDay(eventDate, -1)),
+        ),
         status: "scheduled",
         contentPlatforms: {
           instagramFeed: true,
@@ -420,7 +472,9 @@ export function suggestTimeline(items: MilestonePlanningItem[], eventDate: strin
         description: defaultDescription("Day Of", 0),
         internalNotes: "",
         dueDate: eventDate.slice(0, 10),
-        scheduleTime: "10:00",
+        scheduleTime: formatScheduleTimeFromHour(
+          resolveBestHourForDate(heatmap, eventDate.slice(0, 10)),
+        ),
         status: "scheduled",
         contentPlatforms: {
           instagramFeed: true,
@@ -432,5 +486,5 @@ export function suggestTimeline(items: MilestonePlanningItem[], eventDate: strin
     ];
   }
 
-  return applySuggestedTimes(items);
+  return applySuggestedTimes(items, heatmap);
 }

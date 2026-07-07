@@ -1,14 +1,20 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { buildSmartSuggestionMessage } from "@/lib/posting-analytics/suggest-posting-times";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 
 interface MilestonePlanningSmartBannerProps {
+  postingHeatmap?: PostingHeatmapData | null;
   onApplySuggestedTimes?: () => void;
 }
 
 export function MilestonePlanningSmartBanner({
+  postingHeatmap = null,
   onApplySuggestedTimes,
 }: MilestonePlanningSmartBannerProps) {
+  const suggestionMessage = buildSmartSuggestionMessage(postingHeatmap);
+
   return (
     <div className="flex flex-col gap-3 border-t border-cos-border bg-cos-status-todo-bg px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="flex min-w-0 items-start gap-2.5">
@@ -18,9 +24,7 @@ export function MilestonePlanningSmartBanner({
         />
         <div>
           <p className="text-sm font-medium text-cos-status-todo-text">Smart suggestion</p>
-          <p className="mt-0.5 text-sm text-cos-status-todo-text">
-            Based on similar campaigns, posting between 9–11 AM gets the most engagement.
-          </p>
+          <p className="mt-0.5 text-sm text-cos-status-todo-text">{suggestionMessage}</p>
         </div>
       </div>
       <button

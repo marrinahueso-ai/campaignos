@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   formatVpRoleLabel,
   withCommitteePersonOption,
@@ -31,6 +32,9 @@ interface MilestonePlanningContextSelectorsProps {
 export const milestonePlanningSelectClassName =
   "h-9 w-full appearance-none border border-cos-border bg-cos-card px-3 pr-8 text-xs text-cos-text focus:outline-none focus:ring-2 focus:ring-cos-text/10 disabled:cursor-not-allowed disabled:opacity-50";
 
+export const milestonePlanningInlineSelectClassName =
+  "h-8 w-full min-w-0 appearance-none border-0 bg-transparent px-0 pr-6 text-xs text-cos-text focus:outline-none disabled:cursor-not-allowed disabled:opacity-50";
+
 export const milestonePlanningLabelClassName =
   "mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-cos-muted";
 
@@ -42,6 +46,7 @@ export function MilestonePlanningSelect({
   disabled,
   children,
   fullWidth = false,
+  variant = "default",
 }: {
   id: string;
   label: string;
@@ -50,7 +55,10 @@ export function MilestonePlanningSelect({
   disabled?: boolean;
   children: ReactNode;
   fullWidth?: boolean;
+  variant?: "default" | "inline";
 }) {
+  const isInline = variant === "inline";
+
   return (
     <div className={cn("min-w-0", fullWidth ? "w-full" : "flex-1 sm:max-w-[15rem]")}>
       <label htmlFor={id} className={milestonePlanningLabelClassName}>
@@ -62,10 +70,16 @@ export function MilestonePlanningSelect({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          className={milestonePlanningSelectClassName}
+          className={isInline ? milestonePlanningInlineSelectClassName : milestonePlanningSelectClassName}
         >
           {children}
         </select>
+        {isInline && (
+          <ChevronDown
+            className="pointer-events-none absolute top-1/2 right-0 h-3.5 w-3.5 -translate-y-1/2 text-cos-muted"
+            aria-hidden
+          />
+        )}
       </div>
     </div>
   );
@@ -148,6 +162,7 @@ export function MilestonePlanningContextSelectors({
       onChange={setSelectedVpRoleId}
       disabled={vpRoles.length === 0}
       fullWidth={layout === "stacked"}
+      variant={layout === "inline" ? "inline" : "default"}
     >
       {vpRoles.length === 0 ? (
         <option value="">No VP roles configured</option>
@@ -169,6 +184,7 @@ export function MilestonePlanningContextSelectors({
       onChange={handleCommitteePersonChange}
       disabled={isPending || committeeOptions.length === 0}
       fullWidth={layout === "stacked"}
+      variant={layout === "inline" ? "inline" : "default"}
     >
       {committeeOptions.length === 0 ? (
         <option value="">No committee chairs yet</option>
@@ -190,6 +206,7 @@ export function MilestonePlanningContextSelectors({
       onChange={handlePlaybookChange}
       disabled={isPending || availablePlaybooks.length === 0}
       fullWidth={layout === "stacked"}
+      variant={layout === "inline" ? "inline" : "default"}
     >
       {availablePlaybooks.length === 0 ? (
         <option value={playbookId}>Default playbook</option>
@@ -204,17 +221,17 @@ export function MilestonePlanningContextSelectors({
   );
 
   return (
-    <div className={cn(layout === "inline" ? "mt-4 space-y-2" : "space-y-3", className)}>
+    <div className={cn(layout === "inline" ? "space-y-2" : "space-y-3", className)}>
       <div
         className={cn(
           layout === "stacked"
             ? "flex flex-col gap-3"
-            : "flex flex-row flex-wrap items-end gap-3 sm:gap-4",
+            : "flex flex-row flex-wrap items-end gap-4 sm:gap-6",
         )}
       >
         {vpSelect}
-        {layout === "stacked" ? committeeSelect : playbookSelect}
-        {layout === "stacked" ? playbookSelect : committeeSelect}
+        {committeeSelect}
+        {playbookSelect}
       </div>
 
       {error && (

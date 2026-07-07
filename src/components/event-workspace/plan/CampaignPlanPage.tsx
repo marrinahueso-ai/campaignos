@@ -7,6 +7,7 @@ import type { CampaignWorkflowStep } from "@/components/event-workspace/Campaign
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { EventPlaybookTask } from "@/types/event-playbooks";
 import type { Event } from "@/types";
@@ -23,6 +24,7 @@ interface CampaignPlanPageProps {
   committeePersonOptions: string[];
   defaultCommitteePerson: string;
   assignedSteps: EventCommunicationStep[];
+  postingHeatmap?: PostingHeatmapData | null;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   artwork?: HeroArtworkSelection | null;
   ownership?: EventRosterOwnership | null;
@@ -42,6 +44,7 @@ export function CampaignPlanPage({
   committeePersonOptions,
   defaultCommitteePerson,
   assignedSteps,
+  postingHeatmap = null,
   onWorkflowStepSelect,
   artwork = null,
   ownership = null,
@@ -68,18 +71,20 @@ export function CampaignPlanPage({
       tasks={tasks}
       onCreateMilestone={() => addMilestoneRef.current?.()}
       backHref={backHref}
-      playbookId={playbookId}
-      availablePlaybooks={availablePlaybooks}
-      vpRoles={vpRoles}
-      defaultVpRoleId={defaultVpRoleId}
-      committeePersonOptions={committeePersonOptions}
-      defaultCommitteePerson={defaultCommitteePerson}
     >
       <MilestonePlanningSection
+        event={event}
         eventId={event.id}
         eventDate={eventDate}
         assignedSteps={assignedSteps}
         metaPublishBundles={metaPublishBundles}
+        postingHeatmap={postingHeatmap}
+        playbookId={playbookId}
+        availablePlaybooks={availablePlaybooks}
+        vpRoles={vpRoles}
+        defaultVpRoleId={defaultVpRoleId}
+        committeePersonOptions={committeePersonOptions}
+        defaultCommitteePerson={defaultCommitteePerson}
         onAddMilestoneReady={handleAddMilestoneReady}
       />
     </SocialMediaCenterShell>

@@ -16,10 +16,8 @@ import { cn } from "@/lib/utils/cn";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
-import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventPlaybookTask } from "@/types/event-playbooks";
 import type { Event } from "@/types";
-import type { CommunicationPlaybook } from "@/types/playbooks";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 const STEPPER_STEPS: CampaignWorkflowStep[] = [
@@ -40,12 +38,6 @@ interface SocialMediaCenterShellProps {
   metaPublishBundles?: MetaPublishBundle[];
   tasks?: EventPlaybookTask[];
   onCreateMilestone?: () => void;
-  playbookId?: string;
-  availablePlaybooks?: CommunicationPlaybook[];
-  vpRoles?: MilestonePlanningVpRoleOption[];
-  defaultVpRoleId?: string;
-  committeePersonOptions?: string[];
-  defaultCommitteePerson?: string;
   /** Defaults to the event workspace page. Use `#overview` from Planning Hub. */
   backHref?: string;
   children: React.ReactNode;
@@ -164,7 +156,7 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className={cn("flex h-full w-full shrink-0 bg-cos-card sm:w-[22rem]", className)}>
+    <div className={cn("flex h-full w-full shrink-0 bg-cos-card shadow-sm sm:w-[22rem]", className)}>
       <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
@@ -226,12 +218,6 @@ export function SocialMediaCenterShell({
   metaPublishBundles = [],
   tasks = [],
   onCreateMilestone,
-  playbookId = "",
-  availablePlaybooks = [],
-  vpRoles = [],
-  defaultVpRoleId = "",
-  committeePersonOptions = [],
-  defaultCommitteePerson = "",
   backHref,
   children,
 }: SocialMediaCenterShellProps) {
@@ -248,10 +234,10 @@ export function SocialMediaCenterShell({
           Back to campaign
         </Link>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[auto_auto] lg:items-stretch lg:gap-x-6 lg:gap-y-0">
-          <div className="flex h-full min-h-[9.5rem] min-w-0 flex-col justify-center lg:row-start-1 lg:col-start-1">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end lg:gap-x-6">
+          <div className="flex min-w-0 flex-col justify-center lg:pb-1">
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
-              Social Media Center
+              Creative Studio
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
               Plan, create, and schedule content that connects and inspires.
@@ -263,29 +249,22 @@ export function SocialMediaCenterShell({
             artwork={artwork}
             ownership={ownership}
             communicationStrategy={communicationStrategy}
-            className="lg:row-start-1 lg:col-start-2 lg:self-stretch"
+            className="lg:mb-5"
           />
+        </div>
 
-          <div className="col-span-full -mx-4 sm:-mx-6 lg:row-start-2 lg:-mx-8">
-            <SocialMediaCenterStepper activeStep={activeStep} onStepSelect={onStepSelect} />
-          </div>
+        <div className="-mx-4 mt-1 sm:-mx-6 lg:-mx-8">
+          <SocialMediaCenterStepper activeStep={activeStep} onStepSelect={onStepSelect} />
         </div>
       </div>
 
       <div className="grid gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_17.5rem] lg:gap-6 lg:px-8 lg:py-6">
         <div className="min-w-0">{children}</div>
         <SocialMediaCenterSidebar
-          event={event}
           eventId={event.id}
           tasks={tasks}
           metaPublishBundles={metaPublishBundles}
           onCreateMilestone={onCreateMilestone}
-          playbookId={playbookId}
-          availablePlaybooks={availablePlaybooks}
-          vpRoles={vpRoles}
-          defaultVpRoleId={defaultVpRoleId}
-          committeePersonOptions={committeePersonOptions}
-          defaultCommitteePerson={defaultCommitteePerson}
         />
       </div>
     </div>

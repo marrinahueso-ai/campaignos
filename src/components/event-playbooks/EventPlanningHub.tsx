@@ -24,6 +24,7 @@ import type { Event } from "@/types";
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { CommunicationPlaybook, EventPlaybookData } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
@@ -49,6 +50,7 @@ interface CampaignWorkspaceBundle {
   approvalRoles: ApprovalRoleOption[];
   defaultApprovalRoleId: string | null;
   eventDetailsChanged?: boolean;
+  postingHeatmap?: PostingHeatmapData | null;
 }
 
 interface CalendarContextBundle {
@@ -141,6 +143,7 @@ export function EventPlanningHub({
         artwork={campaignWorkspace.artwork}
         tasks={hubData.tasks}
         backHref="#overview"
+        postingHeatmap={campaignWorkspace.postingHeatmap ?? null}
       />
     ) : null;
 

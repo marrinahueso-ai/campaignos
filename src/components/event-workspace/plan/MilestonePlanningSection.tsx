@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Megaphone, Plus, Sparkles } from "lucide-react";
+import { MilestonePlanningContextSelectors } from "@/components/event-workspace/plan/MilestonePlanningContextSelectors";
 import { MilestonePlanningEditor } from "@/components/event-workspace/plan/MilestonePlanningEditor";
 import { MilestonePlanningRow } from "@/components/event-workspace/plan/MilestonePlanningRow";
 import { MilestonePlanningSmartBanner } from "@/components/event-workspace/plan/MilestonePlanningSmartBanner";
@@ -12,41 +13,46 @@ import {
   enrichMilestoneItemsWithBundles,
   milestoneItemsFromSteps,
   milestoneItemsToPlaybookSteps,
+  reorderMilestonesPreservingDays,
   suggestTimeline,
   type MilestonePlanningItem,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
 import { updateEventCommunicationTimelineAction } from "@/lib/playbooks/actions";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
-import type { EventCommunicationStep } from "@/types/playbooks";
+import type { Event } from "@/types";
+import type { CommunicationPlaybook, EventCommunicationStep } from "@/types/playbooks";
 
 interface MilestonePlanningSectionProps {
+  event: Event;
   eventId: string;
   eventDate: string;
   assignedSteps: EventCommunicationStep[];
   metaPublishBundles?: MetaPublishBundle[];
+  postingHeatmap?: PostingHeatmapData | null;
+  playbookId: string;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   onAddMilestoneReady?: (addMilestone: () => void) => void;
 }
 
-function reorderMilestones(
-  items: MilestonePlanningItem[],
-  fromIndex: number,
-  toIndex: number,
-): MilestonePlanningItem[] {
-  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) {
-    return items;
-  }
-
-  const next = [...items];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
-}
-
 export function MilestonePlanningSection({
+  event,
   eventId,
   eventDate,
   assignedSteps,
   metaPublishBundles = [],
+  postingHeatmap = null,
+  playbookId,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   onAddMilestoneReady,
 }: MilestonePlanningSectionProps) {
   const router = useRouter();
@@ -76,18 +82,23 @@ export function MilestonePlanningSection({
     setEditorDraft(null);
   }, [initialItems]);
 
-  const persistPlan = useCallback(() => {
-    setError(null);
-    startTransition(async () => {
-      const payload = milestoneItemsToPlaybookSteps(itemsRef.current, assignedSteps);
-      const result = await updateEventCommunicationTimelineAction(eventId, payload);
-      if (!result.success) {
-        setError(result.error ?? "Unable to save plan.");
-        return;
-      }
-      router.refresh();
-    });
-  }, [assignedSteps, eventId, router]);
+  const persistPlan = useCallback(
+    (nextItems?: MilestonePlanningItem[]) => {
+      const payloadItems = nextItems ?? itemsRef.current;
+      itemsRef.current = payloadItems;
+      setError(null);
+      startTransition(async () => {
+        const payload = milestoneItemsToPlaybookSteps(payloadItems, assignedSteps);
+        const result = await updateEventCommunicationTimelineAction(eventId, payload);
+        if (!result.success) {
+          setError(result.error ?? "Unable to save plan.");
+          return;
+        }
+        router.refresh();
+      });
+    },
+    [assignedSteps, eventId, router],
+  );
 
   function openEditor(relativeDay: number) {
     const milestone = items.find((item) => item.relativeDay === relativeDay);
@@ -136,22 +147,34 @@ export function MilestonePlanningSection({
   }, [handleAddMilestone, onAddMilestoneReady]);
 
   function handleSuggestTimeline() {
-    const suggested = suggestTimeline(items, eventDate);
+    const suggested = suggestTimeline(items, eventDate, postingHeatmap);
     setItems(suggested);
+    itemsRef.current = suggested;
     setExpandedRelativeDay(suggested[0]?.relativeDay ?? null);
     setEditorDraft(null);
-    persistPlan();
+    persistPlan(suggested);
   }
 
   function handleApplySuggestedTimes() {
-    setItems((current) => applySuggestedTimes(current));
-    persistPlan();
+    const nextItems = applySuggestedTimes(items, postingHeatmap);
+    setItems(nextItems);
+    itemsRef.current = nextItems;
+    persistPlan(nextItems);
   }
 
   function handleDragEnd() {
-    if (dragIndex != null && dragOverIndex != null) {
-      setItems((current) => reorderMilestones(current, dragIndex, dragOverIndex));
-      persistPlan();
+    if (dragIndex != null && dragOverIndex != null && dragIndex !== dragOverIndex) {
+      const nextItems = reorderMilestonesPreservingDays(
+        items,
+        dragIndex,
+        dragOverIndex,
+        eventDate,
+      );
+      setItems(nextItems);
+      itemsRef.current = nextItems;
+      setExpandedRelativeDay(null);
+      setEditorDraft(null);
+      persistPlan(nextItems);
     }
     setDragIndex(null);
     setDragOverIndex(null);
@@ -194,6 +217,20 @@ export function MilestonePlanningSection({
           </button>
         </div>
       </div>
+
+      <MilestonePlanningContextSelectors
+        event={event}
+        playbookId={playbookId}
+        availablePlaybooks={availablePlaybooks}
+        vpRoles={vpRoles}
+        defaultVpRoleId={defaultVpRoleId}
+        committeePersonOptions={committeePersonOptions}
+        defaultCommitteePerson={defaultCommitteePerson}
+        layout="inline"
+        committeeLabel="Committee"
+        idPrefix="milestone-planning"
+        className="border-b border-cos-border px-4 py-3 sm:px-5"
+      />
 
       <div>
         <div className="hidden border-b border-cos-border px-4 py-2.5 text-[0.6875rem] font-medium tracking-[0.12em] text-cos-muted uppercase sm:grid sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]">
@@ -265,7 +302,10 @@ export function MilestonePlanningSection({
         </p>
       )}
 
-      <MilestonePlanningSmartBanner onApplySuggestedTimes={handleApplySuggestedTimes} />
+      <MilestonePlanningSmartBanner
+        postingHeatmap={postingHeatmap}
+        onApplySuggestedTimes={handleApplySuggestedTimes}
+      />
     </div>
   );
 }

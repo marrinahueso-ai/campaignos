@@ -19,6 +19,7 @@ import type {
 import type { Event } from "@/types";
 import type { CommunicationPlaybook } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
@@ -82,6 +83,7 @@ interface SocialMediaTabProps {
   artwork?: HeroArtworkSelection | null;
   tasks?: EventPlaybookTask[];
   backHref?: string;
+  postingHeatmap?: PostingHeatmapData | null;
 }
 
 export function SocialMediaTab({
@@ -109,6 +111,7 @@ export function SocialMediaTab({
   artwork = null,
   tasks = [],
   backHref,
+  postingHeatmap = null,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
     if (typeof window === "undefined") {
@@ -217,6 +220,7 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             tasks={tasks}
             backHref={backHref}
+            postingHeatmap={postingHeatmap}
           />
         }
         artwork={

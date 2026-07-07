@@ -54,6 +54,7 @@ import {
 } from "@/lib/event-playbooks/queries";
 import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
+import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 
 interface EventWorkspacePageProps {
@@ -237,6 +238,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     metaSocialCaptionMilestones,
     assetVersionsMap,
     availablePlaybooks,
+    postingHeatmap,
   ] = await Promise.all([
     getEventPlaybookData(event.id),
     getStepDraftsForEvent(event.id),
@@ -244,6 +246,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     buildMetaSocialCaptionMilestones(event.id),
     getAssetVersionsForEvent(event.id),
     getPlaybooksForOrganization(organization?.id ?? null),
+    getOrgPostingHeatmap(),
   ]);
 
   const resolvedPlaybook = playbookData ?? buildFallbackPlaybookData(event);
@@ -320,6 +323,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           approvalRoles,
           defaultApprovalRoleId,
           eventDetailsChanged,
+          postingHeatmap,
         }}
         planningOverview={planningOverview}
       />
