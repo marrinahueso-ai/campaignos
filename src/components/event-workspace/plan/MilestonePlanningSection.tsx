@@ -254,7 +254,7 @@ export function MilestonePlanningSection({
             return (
               <div key={milestone.relativeDay}>
                 <MilestonePlanningRow
-                  milestone={milestone}
+                  milestone={draft ?? milestone}
                   index={index}
                   isExpanded={isExpanded}
                   isDragging={dragIndex === index}

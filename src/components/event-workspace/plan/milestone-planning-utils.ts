@@ -106,28 +106,26 @@ export function relativeDayFromDate(eventDate: string, selectedDate: string): nu
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
+export function resolveSelectedPlatforms(
+  milestone: MilestonePlanningItem,
+): Array<"facebook" | "instagram"> {
+  const { contentPlatforms } = milestone;
+  const platforms: Array<"facebook" | "instagram"> = [];
+
+  if (contentPlatforms.facebookFeed || contentPlatforms.facebookStory) {
+    platforms.push("facebook");
+  }
+  if (contentPlatforms.instagramFeed || contentPlatforms.instagramStory) {
+    platforms.push("instagram");
+  }
+
+  return platforms;
+}
+
 export function resolvePrimaryPlatform(
   milestone: MilestonePlanningItem,
 ): "facebook" | "instagram" | null {
-  const { contentPlatforms } = milestone;
-  const hasFacebook =
-    contentPlatforms.facebookFeed || contentPlatforms.facebookStory;
-  const hasInstagram =
-    contentPlatforms.instagramFeed || contentPlatforms.instagramStory;
-
-  if (hasFacebook && !hasInstagram) {
-    return "facebook";
-  }
-  if (hasInstagram && !hasFacebook) {
-    return "instagram";
-  }
-  if (hasFacebook) {
-    return "facebook";
-  }
-  if (hasInstagram) {
-    return "instagram";
-  }
-  return null;
+  return resolveSelectedPlatforms(milestone)[0] ?? null;
 }
 
 export function enrichMilestoneItemsWithBundles(

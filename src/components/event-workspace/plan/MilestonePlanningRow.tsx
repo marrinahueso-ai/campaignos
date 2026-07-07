@@ -14,7 +14,7 @@ import {
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import {
   formatMilestoneTiming,
-  resolvePrimaryPlatform,
+  resolveSelectedPlatforms,
   type MilestonePlanningItem,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
 import { cn } from "@/lib/utils/cn";
@@ -39,20 +39,24 @@ interface MilestonePlanningRowProps {
 }
 
 function PlatformCell({ milestone }: { milestone: MilestonePlanningItem }) {
-  const platform = resolvePrimaryPlatform(milestone);
+  const platforms = resolveSelectedPlatforms(milestone);
 
-  if (!platform) {
+  if (platforms.length === 0) {
     return <span className="text-xs text-cos-muted">—</span>;
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-cos-muted">
-      {platform === "facebook" ? (
-        <FacebookPlatformIcon className="h-3.5 w-3.5" />
-      ) : (
-        <InstagramPlatformIcon className="h-3.5 w-3.5" />
-      )}
-      {platform === "facebook" ? "Facebook" : "Instagram"}
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-cos-muted">
+      {platforms.map((platform) => (
+        <span key={platform} className="inline-flex items-center gap-1.5">
+          {platform === "facebook" ? (
+            <FacebookPlatformIcon className="h-3.5 w-3.5" />
+          ) : (
+            <InstagramPlatformIcon className="h-3.5 w-3.5" />
+          )}
+          {platform === "facebook" ? "Facebook" : "Instagram"}
+        </span>
+      ))}
     </span>
   );
 }
