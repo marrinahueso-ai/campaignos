@@ -24,6 +24,7 @@ import type { CommunicationPlaybook, EventPlaybookData } from "@/types/playbooks
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
@@ -44,6 +45,10 @@ interface EventWorkspaceCampaignLayoutProps {
   communicationStrategy: CommunicationStrategy;
   playbookData: EventPlaybookData;
   availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   stepDrafts: StepCommunicationDraft[];
   metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
   assets: EventAsset[];
@@ -67,6 +72,11 @@ export function EventWorkspaceCampaignLayout({
   campaignProgress,
   communicationStrategy,
   playbookData,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   metaSocialCaptionMilestones,
   assets,
   metaPublishBundles,
@@ -151,14 +161,14 @@ export function EventWorkspaceCampaignLayout({
         fullBleedSteps={["plan", "artwork", "schedule", "publish", "published"]}
         plan={
           <CampaignPlanPage
-            eventId={eventId}
+            event={event}
             eventDate={event.date}
-            communicationStrategy={communicationStrategy}
-            eventType={event.eventType}
-            approvalOrganizationRoleId={event.approvalOrganizationRoleId}
-            defaultApprovalRoleId={defaultApprovalRoleId}
-            approvalRoles={approvalRoles}
-            ownership={ownership}
+            playbookId={playbookData.playbook.id}
+            availablePlaybooks={availablePlaybooks}
+            vpRoles={vpRoles}
+            defaultVpRoleId={defaultVpRoleId}
+            committeePersonOptions={committeePersonOptions}
+            defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
             onWorkflowStepSelect={(step) => {
               window.location.hash = step;

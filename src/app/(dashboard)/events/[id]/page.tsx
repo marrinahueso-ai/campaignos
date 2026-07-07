@@ -26,9 +26,16 @@ import {
   getOrganizationWorkspaceData,
 } from "@/lib/organization-workspace/queries";
 import { resolveEventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import {
+  buildCommitteePersonOptions,
+  buildVpRoleOptions,
+  resolveDefaultCommitteePerson,
+  resolveDefaultVpRoleId,
+} from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import { buildFallbackPlaybookData } from "@/lib/playbooks/mock-data";
 import {
   getEventPlaybookData,
+  getPlaybooksForOrganization,
 } from "@/lib/playbooks/queries";
 import {
   areEventPlaybookTablesAvailable,
@@ -164,12 +171,14 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     metaPublishBundles,
     metaSocialCaptionMilestones,
     assetVersionsMap,
+    availablePlaybooks,
   ] = await Promise.all([
     getEventPlaybookData(event.id),
     getStepDraftsForEvent(event.id),
     getMetaPublishBundles(event.id),
     buildMetaSocialCaptionMilestones(event.id),
     getAssetVersionsForEvent(event.id),
+    getPlaybooksForOrganization(organization?.id ?? null),
   ]);
 
   const resolvedPlaybook = playbookData ?? buildFallbackPlaybookData(event);
@@ -218,6 +227,18 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
       (entry) => entry.responsibilityType === "approvals",
     )?.defaultRoleId ?? null;
 
+  const vpRoles = buildVpRoleOptions(orgWorkspace?.roles ?? []);
+  const committeePersonOptions = buildCommitteePersonOptions(
+    resolvedOwnership,
+    orgWorkspace?.committees ?? [],
+  );
+  const defaultVpRoleId = resolveDefaultVpRoleId(resolvedOwnership, vpRoles);
+  const defaultCommitteePerson = resolveDefaultCommitteePerson(
+    event.eventOwner,
+    resolvedOwnership,
+    committeePersonOptions,
+  );
+
   const planningOverview = await getEventPlanningOverviewData({
     eventId: event.id,
     metaPublishBundles,
@@ -243,6 +264,11 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           artwork: heroArtwork,
           campaignProgress,
           playbookData: resolvedPlaybook,
+          availablePlaybooks,
+          vpRoles,
+          defaultVpRoleId,
+          committeePersonOptions,
+          defaultCommitteePerson,
           stepDrafts,
           metaSocialCaptionMilestones,
           assets: resolvedWorkspace.assets,

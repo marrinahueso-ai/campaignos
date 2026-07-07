@@ -2,10 +2,21 @@
 
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { MilestonePlanningContextSelectors } from "@/components/event-workspace/plan/MilestonePlanningContextSelectors";
 import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
+import type { Event } from "@/types";
+import type { CommunicationPlaybook } from "@/types/playbooks";
 
 interface MilestonePlanningPageHeaderProps {
   eventId: string;
+  event: Event;
+  playbookId: string;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   onSavePlan?: () => void;
   isSaving?: boolean;
   saveDisabled?: boolean;
@@ -13,6 +24,13 @@ interface MilestonePlanningPageHeaderProps {
 
 export function MilestonePlanningPageHeader({
   eventId,
+  event,
+  playbookId,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   onSavePlan,
   isSaving = false,
   saveDisabled = false,
@@ -46,6 +64,15 @@ export function MilestonePlanningPageHeader({
             Plan and customize each social media milestone for this campaign. Add, remove, or
             reorder milestones to match your strategy.
           </p>
+          <MilestonePlanningContextSelectors
+            event={event}
+            playbookId={playbookId}
+            availablePlaybooks={availablePlaybooks}
+            vpRoles={vpRoles}
+            defaultVpRoleId={defaultVpRoleId}
+            committeePersonOptions={committeePersonOptions}
+            defaultCommitteePerson={defaultCommitteePerson}
+          />
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">

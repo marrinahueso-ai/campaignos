@@ -6,27 +6,32 @@ import { MilestonePlanningPageHeader } from "@/components/event-workspace/plan/M
 import { MilestonePlanningSection } from "@/components/event-workspace/plan/MilestonePlanningSection";
 import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
-import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
-import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
-import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { EventCommunicationStep, EventType } from "@/types/playbooks";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
+import type { Event } from "@/types";
+import type { CommunicationPlaybook, EventCommunicationStep } from "@/types/playbooks";
 
 interface CampaignPlanPageProps {
-  eventId: string;
+  event: Event;
   eventDate: string;
-  communicationStrategy: CommunicationStrategy;
-  eventType: EventType | null;
-  approvalOrganizationRoleId: string | null;
-  defaultApprovalRoleId: string | null;
-  approvalRoles: ApprovalRoleOption[];
-  ownership: EventRosterOwnership;
+  playbookId: string;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   assignedSteps: EventCommunicationStep[];
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
 }
 
 export function CampaignPlanPage({
-  eventId,
+  event,
   eventDate,
+  playbookId,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   assignedSteps,
   onWorkflowStepSelect,
 }: CampaignPlanPageProps) {
@@ -53,12 +58,19 @@ export function CampaignPlanPage({
 
       <div className="p-5 lg:p-6">
         <MilestonePlanningPageHeader
-          eventId={eventId}
+          eventId={event.id}
+          event={event}
+          playbookId={playbookId}
+          availablePlaybooks={availablePlaybooks}
+          vpRoles={vpRoles}
+          defaultVpRoleId={defaultVpRoleId}
+          committeePersonOptions={committeePersonOptions}
+          defaultCommitteePerson={defaultCommitteePerson}
           onSavePlan={() => savePlanRef.current?.()}
           isSaving={isSaving}
         />
         <MilestonePlanningSection
-          eventId={eventId}
+          eventId={event.id}
           eventDate={eventDate}
           assignedSteps={assignedSteps}
           onSaveReady={handleSaveReady}

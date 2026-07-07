@@ -21,7 +21,8 @@ import type {
   EventAssetVersion,
 } from "@/types/event-workspace";
 import type { Event } from "@/types";
-import type { EventPlaybookData } from "@/types/playbooks";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
+import type { CommunicationPlaybook, EventPlaybookData } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
@@ -34,6 +35,11 @@ interface CampaignWorkspaceBundle {
   artwork: HeroArtworkSelection | null;
   campaignProgress: CampaignProgressSnapshot;
   playbookData: EventPlaybookData;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   stepDrafts: StepCommunicationDraft[];
   metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
   assets: EventAsset[];
@@ -95,6 +101,11 @@ export function EventPlanningHub({
         organizationName={campaignWorkspace.organizationName}
         communicationStrategy={event.communicationStrategy}
         playbookData={campaignWorkspace.playbookData}
+        availablePlaybooks={campaignWorkspace.availablePlaybooks}
+        vpRoles={campaignWorkspace.vpRoles}
+        defaultVpRoleId={campaignWorkspace.defaultVpRoleId}
+        committeePersonOptions={campaignWorkspace.committeePersonOptions}
+        defaultCommitteePerson={campaignWorkspace.defaultCommitteePerson}
         stepDrafts={campaignWorkspace.stepDrafts}
         metaSocialCaptionMilestones={campaignWorkspace.metaSocialCaptionMilestones}
         assets={campaignWorkspace.assets}

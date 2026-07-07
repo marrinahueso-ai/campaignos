@@ -17,13 +17,14 @@ import type {
   StepCommunicationDraft,
 } from "@/types/event-workspace";
 import type { Event } from "@/types";
-import type { EventPlaybookData } from "@/types/playbooks";
+import type { CommunicationPlaybook } from "@/types/playbooks";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
-import type { EventCommunicationStep } from "@/types/playbooks";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
+import type { EventCommunicationStep, EventPlaybookData } from "@/types/playbooks";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
 
 function resolveCaptionExpandedDay(
@@ -58,6 +59,11 @@ interface SocialMediaTabProps {
   organizationName?: string | null;
   communicationStrategy: CommunicationStrategy;
   playbookData: EventPlaybookData;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
   stepDrafts: StepCommunicationDraft[];
   metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
   assets: EventAsset[];
@@ -79,6 +85,11 @@ export function SocialMediaTab({
   organizationName = null,
   communicationStrategy,
   playbookData,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   metaSocialCaptionMilestones,
   assets,
   metaPublishBundles,
@@ -182,14 +193,14 @@ export function SocialMediaTab({
       fullBleedSteps={["plan", "artwork", "schedule", "publish", "published"]}
       plan={
           <CampaignPlanPage
-            eventId={eventId}
+            event={event}
             eventDate={event.date}
-            communicationStrategy={communicationStrategy}
-            eventType={event.eventType}
-            approvalOrganizationRoleId={event.approvalOrganizationRoleId}
-            defaultApprovalRoleId={defaultApprovalRoleId}
-            approvalRoles={approvalRoles}
-            ownership={ownership}
+            playbookId={playbookData.playbook.id}
+            availablePlaybooks={availablePlaybooks}
+            vpRoles={vpRoles}
+            defaultVpRoleId={defaultVpRoleId}
+            committeePersonOptions={committeePersonOptions}
+            defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
             onWorkflowStepSelect={navigateToWorkflowStep}
           />
