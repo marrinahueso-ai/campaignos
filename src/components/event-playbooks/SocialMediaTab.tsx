@@ -182,10 +182,12 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
-            userRole={userRole}
             initialExpandedDay={expandedCaptionDay}
-            approvalRoleLabel={approvalRoleLabel}
-            onNavigateToPublish={handleNavigateToPublish}
+            onWorkflowStepSelect={setActiveStep}
+            onNavigateToArtwork={() => {
+              setActiveStep("artwork");
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
           />
         }
         publish={

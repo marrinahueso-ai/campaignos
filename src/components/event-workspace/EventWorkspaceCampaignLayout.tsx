@@ -178,10 +178,15 @@ export function EventWorkspaceCampaignLayout({
             metaPublishBundles={metaPublishBundles}
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
-            userRole={userRole}
             initialExpandedDay={expandedCaptionDay}
-            approvalRoleLabel={approvalRoleLabel}
-            onNavigateToPublish={handleNavigateToPublish}
+            onWorkflowStepSelect={(step) => {
+              window.location.hash = step;
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
+            onNavigateToArtwork={() => {
+              window.location.hash = "artwork";
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
           />
         }
         publish={

@@ -71,6 +71,8 @@ interface CampaignWorkspaceTabsProps {
   onStepChange?: (step: CampaignWorkflowStep) => void;
   /** When false, workflow step is local state only (embedded in planning hub). */
   manageHash?: boolean;
+  /** Steps that render full-bleed without the default workflow tab bar. */
+  fullBleedSteps?: CampaignWorkflowStep[];
   id?: string;
 }
 
@@ -84,6 +86,7 @@ export function CampaignWorkspaceTabs({
   activeStep: controlledStep,
   onStepChange,
   manageHash = true,
+  fullBleedSteps = ["schedule"],
   id = "campaign-workflow-tabs",
 }: CampaignWorkspaceTabsProps) {
   const [internalStep, setInternalStep] = useState<CampaignWorkflowStep>(defaultStep);
@@ -140,47 +143,57 @@ export function CampaignWorkspaceTabs({
     published,
   };
 
-  return (
-    <div id={id} className="scroll-mt-8 border border-cos-border bg-cos-card">
-      <div
-        className={cn(
-          "sticky-campaign-workflow-nav border-b border-cos-border px-4 pt-5 lg:px-6",
-          !manageHash && "sticky-campaign-workflow-nav--in-playbook",
-        )}
-        role="navigation"
-        aria-label="Campaign workflow"
-      >
-        <p className="studio-eyebrow mb-4 px-1">Campaign workflow</p>
-        <div className="flex gap-0 overflow-x-auto" role="tablist">
-          {WORKFLOW_STEPS.map((step, index) => {
-            const isActive = activeStep === step.id;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`campaign-step-${step.id}`}
-                id={`campaign-step-trigger-${step.id}`}
-                onClick={() => selectStep(step.id)}
-                className={cn(
-                  "shrink-0 border-b-2 px-3 py-3 text-left transition-colors sm:px-5",
-                  isActive
-                    ? "border-cos-dark bg-cos-bg text-cos-text"
-                    : "border-transparent text-cos-muted hover:bg-cos-bg/60 hover:text-cos-text",
-                )}
-              >
-                <span className="block text-[10px] tracking-[0.14em] text-cos-muted uppercase">
-                  Step {index + 1}
-                </span>
-                <span className="font-display mt-0.5 block text-base">{step.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+  const isFullBleed = fullBleedSteps.includes(activeStep);
 
-      <div className="p-6 lg:p-8">
+  return (
+    <div
+      id={id}
+      className={cn(
+        "scroll-mt-8",
+        isFullBleed ? "bg-transparent" : "border border-cos-border bg-cos-card",
+      )}
+    >
+      {!isFullBleed && (
+        <div
+          className={cn(
+            "sticky-campaign-workflow-nav border-b border-cos-border px-4 pt-5 lg:px-6",
+            !manageHash && "sticky-campaign-workflow-nav--in-playbook",
+          )}
+          role="navigation"
+          aria-label="Campaign workflow"
+        >
+          <p className="studio-eyebrow mb-4 px-1">Campaign workflow</p>
+          <div className="flex gap-0 overflow-x-auto" role="tablist">
+            {WORKFLOW_STEPS.map((step, index) => {
+              const stepIsActive = activeStep === step.id;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={stepIsActive}
+                  aria-controls={`campaign-step-${step.id}`}
+                  id={`campaign-step-trigger-${step.id}`}
+                  onClick={() => selectStep(step.id)}
+                  className={cn(
+                    "shrink-0 border-b-2 px-3 py-3 text-left transition-colors sm:px-5",
+                    stepIsActive
+                      ? "border-cos-dark bg-cos-bg text-cos-text"
+                      : "border-transparent text-cos-muted hover:bg-cos-bg/60 hover:text-cos-text",
+                  )}
+                >
+                  <span className="block text-[10px] tracking-[0.14em] text-cos-muted uppercase">
+                    Step {index + 1}
+                  </span>
+                  <span className="font-display mt-0.5 block text-base">{step.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className={isFullBleed ? undefined : "p-6 lg:p-8"}>
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse rounded-2xl bg-cos-bg/60" />
         ) : (
