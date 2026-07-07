@@ -38,7 +38,7 @@ async function updateSlotsForMilestones(input: {
 
   let fromStatuses: string[] | null = null;
   if (input.status === "scheduled") {
-    fromStatuses = ["draft"];
+    fromStatuses = ["draft", "scheduled", "approved", "failed"];
   } else if (input.status === "approved") {
     fromStatuses = ["scheduled"];
   }
@@ -101,7 +101,7 @@ async function scheduleManualStoryOnlyBundle(
     return { success: false, error: "Milestone not found." };
   }
 
-  if (bundle.status !== "ready") {
+  if (!bundleIsSchedulable(bundle)) {
     return { success: false, error: "This milestone is not ready to schedule yet." };
   }
 
@@ -178,7 +178,14 @@ export async function publishMetaBundleNowAction(
     return { success: false, error: "Milestone not found." };
   }
 
-  if (["needs_artwork", "needs_caption", "skipped", "published", "posting"].includes(bundle.status)) {
+  if (["skipped", "published", "posting"].includes(bundle.status)) {
+    return {
+      success: false,
+      error: "This milestone cannot be published right now.",
+    };
+  }
+
+  if (!bundleIsSchedulable(bundle)) {
     return {
       success: false,
       error:
@@ -186,7 +193,7 @@ export async function publishMetaBundleNowAction(
           ? "Approve required artwork before publishing."
           : bundle.status === "needs_caption"
             ? "Approve social captions in Schedule before publishing."
-            : "This milestone cannot be published right now.",
+            : "This milestone is not ready to publish yet.",
     };
   }
 
@@ -623,7 +630,7 @@ export async function scheduleMetaBundleAction(
     return { success: false, error: "Milestone not found." };
   }
 
-  if (bundle.status !== "ready") {
+  if (!bundleIsSchedulable(bundle)) {
     return { success: false, error: "This milestone is not ready to schedule yet." };
   }
 

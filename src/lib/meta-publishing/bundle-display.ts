@@ -58,6 +58,17 @@ const REVIEW_PUBLISH_VISIBLE_STATUSES: MetaPublishBundleStatus[] = [
   "needs_caption",
 ];
 
+const REVIEW_PUBLISH_SCHEDULABLE_STATUSES: MetaPublishBundleStatus[] = [
+  "ready",
+  "scheduled",
+  "approved",
+  "failed",
+];
+
+function bundleHasPublishPath(bundle: MetaPublishBundle): boolean {
+  return bundleHasAutoPublishTargets(bundle) || bundleIsManualStoryOnly(bundle);
+}
+
 export function bundleHasReviewPublishContent(bundle: MetaPublishBundle): boolean {
   if (!bundle.isMetaPost || bundle.status === "skipped") {
     return false;
@@ -83,13 +94,90 @@ export function bundleIsManualStoryOnly(bundle: MetaPublishBundle): boolean {
   );
 }
 
-/** True when this milestone can be scheduled (auto or manual story-only). */
+/** True when this milestone can be scheduled or rescheduled from Review & publish. */
 export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
-  if (!bundle.isMetaPost || bundle.status !== "ready") {
+  if (!bundle.isMetaPost || bundle.status === "skipped") {
     return false;
   }
 
-  return bundleHasAutoPublishTargets(bundle) || bundleIsManualStoryOnly(bundle);
+  if (!bundleHasPublishPath(bundle)) {
+    return false;
+  }
+
+  if (REVIEW_PUBLISH_SCHEDULABLE_STATUSES.includes(bundle.status)) {
+    return true;
+  }
+
+  // Review UI shows caption + artwork previews while formal status is still needs_*.
+  if (
+    (bundle.status === "needs_caption" || bundle.status === "needs_artwork") &&
+    bundleHasReviewPublishContent(bundle)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function reviewPublishMilestoneStatusLabel(
+  status: MetaPublishBundleStatus | undefined,
+): string {
+  switch (status) {
+    case "scheduled":
+    case "approved":
+    case "posting":
+      return "Scheduled";
+    case "published":
+      return "Published";
+    case "failed":
+      return "Failed";
+    case "ready":
+      return "Ready";
+    default:
+      return "In review";
+  }
+}
+
+export function resolveReviewPublishScheduleBlockedMessage(
+  focusBundles: MetaPublishBundle[],
+): string {
+  return resolveReviewPublishActionBlockedMessage(focusBundles, "schedule");
+}
+
+export function resolveReviewPublishPublishBlockedMessage(
+  focusBundles: MetaPublishBundle[],
+): string {
+  return resolveReviewPublishActionBlockedMessage(focusBundles, "publish");
+}
+
+function resolveReviewPublishActionBlockedMessage(
+  focusBundles: MetaPublishBundle[],
+  action: "schedule" | "publish",
+): string {
+  const primary = focusBundles[0];
+  if (!primary) {
+    return action === "schedule"
+      ? "No milestones are ready to schedule yet."
+      : "Nothing ready to publish yet.";
+  }
+
+  if (["published", "posting"].includes(primary.status)) {
+    return "This milestone has already been published.";
+  }
+
+  if (!bundleHasPublishPath(primary)) {
+    return "Select at least one platform with publishing enabled.";
+  }
+
+  if (primary.status === "needs_artwork" || primary.status === "needs_caption") {
+    return action === "schedule"
+      ? "Approve artwork and captions before scheduling."
+      : "Approve artwork and captions before publishing.";
+  }
+
+  return action === "schedule"
+    ? "No milestones are ready to schedule yet."
+    : "Nothing ready to publish yet.";
 }
 
 export function isReviewPublishVisibleBundle(bundle: MetaPublishBundle): boolean {

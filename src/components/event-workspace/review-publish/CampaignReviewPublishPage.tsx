@@ -26,6 +26,9 @@ import {
   allReviewPublishMetaBundlesHandled,
   bundleIsSchedulable,
   isReviewPublishVisibleBundle,
+  resolveReviewPublishScheduleBlockedMessage,
+  resolveReviewPublishPublishBlockedMessage,
+  reviewPublishMilestoneStatusLabel,
 } from "@/lib/meta-publishing/bundle-display";
 import {
   publishMetaBundleNowAction,
@@ -223,11 +226,11 @@ export function CampaignReviewPublishPage({
     }
 
     const relativeDays = focusBundles
-      .filter((bundle) => ["ready", "scheduled", "approved", "failed"].includes(bundle.status))
+      .filter((bundle) => bundleIsSchedulable(bundle))
       .map((bundle) => bundle.relativeDay);
 
     if (relativeDays.length === 0) {
-      setError("Nothing ready to publish yet.");
+      setError(resolveReviewPublishPublishBlockedMessage(focusBundles));
       return;
     }
 
@@ -277,7 +280,7 @@ export function CampaignReviewPublishPage({
       .map((bundle) => bundle.relativeDay);
 
     if (relativeDays.length === 0) {
-      setError("No milestones are ready to schedule yet.");
+      setError(resolveReviewPublishScheduleBlockedMessage(focusBundles));
       return;
     }
 
@@ -363,6 +366,7 @@ export function CampaignReviewPublishPage({
               selectedRelativeDay={selectedRelativeDay}
               onSelectMilestone={handleSelectMilestone}
               scheduledFor={resolveMetaPublishBundleScheduledFor(selectedBundle)}
+              statusLabel={reviewPublishMilestoneStatusLabel(selectedBundle?.status)}
               className="-mx-5 mb-5 lg:-mx-6 lg:mb-6"
             />
           )}
