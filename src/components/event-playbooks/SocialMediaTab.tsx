@@ -158,7 +158,7 @@ export function SocialMediaTab({
       onStepChange={navigateToWorkflowStep}
       defaultStep={initialStep}
       manageHash={false}
-      fullBleedSteps={["schedule", "publish"]}
+      fullBleedSteps={["artwork", "schedule", "publish"]}
       plan={
           <CampaignCommunicationPlanStep
             eventId={eventId}
@@ -182,6 +182,7 @@ export function SocialMediaTab({
             assets={assets}
             metaPublishBundles={metaPublishBundles}
             onNavigateToCaptions={handleNavigateToCaptions}
+            onWorkflowStepSelect={navigateToWorkflowStep}
           />
         }
         schedule={
