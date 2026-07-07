@@ -15,7 +15,11 @@ import {
   buildMetaCaptionSystemPrompt,
   buildMetaCaptionUserPrompt,
 } from "@/lib/meta-captions/prompts";
-import { getMetaSocialCaptionsForEvent, upsertMetaSocialCaption } from "@/lib/meta-captions/queries";
+import {
+  getCaptionForMilestone,
+  getMetaSocialCaptionsForEvent,
+  upsertMetaSocialCaption,
+} from "@/lib/meta-captions/queries";
 import { getEventById } from "@/lib/events/queries";
 import type {
   MetaCaptionGenerationOptions,
@@ -69,6 +73,13 @@ export async function generateMetaSocialCaption(input: {
   });
   const hasArtworkImage = Boolean(artworkImageUrl);
 
+  let revisionContext = input.generationOptions?.revisionContext?.trim() ?? null;
+  if (!revisionContext && input.placement === "feed") {
+    const captions = await getMetaSocialCaptionsForEvent(input.eventId);
+    revisionContext =
+      getCaptionForMilestone(captions, input.relativeDay, "feed")?.content?.trim() ?? null;
+  }
+
   const promptInput = {
     placement: input.placement,
     milestoneTitle: input.milestoneTitle,
@@ -76,6 +87,7 @@ export async function generateMetaSocialCaption(input: {
     eventDate: event.date,
     factsBlock,
     existingFeedCaption: input.existingFeedCaption,
+    revisionContext,
     hasArtworkImage,
     tone: input.generationOptions?.tone,
     length: input.generationOptions?.length,

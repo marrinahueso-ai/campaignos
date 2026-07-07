@@ -48,6 +48,8 @@ export type MetaCaptionLength = "Short" | "Medium" | "Long";
 export interface MetaCaptionGenerationOptions {
   tone?: MetaCaptionTone;
   length?: MetaCaptionLength;
+  /** Current caption draft the user edited or selected — used as revision context. */
+  revisionContext?: string | null;
 }
 
 export type MetaSocialCaptionActionResult = {

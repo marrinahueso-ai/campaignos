@@ -70,6 +70,27 @@ function readMilestoneFeedContent(
   return milestone?.feed?.content;
 }
 
+function resolveExistingCaptionContext(
+  options: CaptionOption[],
+  selectedOptionId: string | null,
+  milestone: MetaSocialCaptionMilestone | undefined,
+): string | null {
+  if (selectedOptionId) {
+    const selected = options.find((option) => option.id === selectedOptionId);
+    if (selected?.text.trim()) {
+      return selected.text.trim();
+    }
+  }
+
+  const fromMilestone = readMilestoneFeedContent(milestone)?.trim();
+  if (fromMilestone) {
+    return fromMilestone;
+  }
+
+  const firstOption = options.find((option) => option.text.trim());
+  return firstOption?.text.trim() ?? null;
+}
+
 interface CampaignCaptionsPageProps {
   eventId: string;
   milestones: MetaSocialCaptionMilestone[];
@@ -209,7 +230,7 @@ export function CampaignCaptionsPage({
     }
   }, []);
 
-  async function handleRegenerateAll(generationOptions: MetaCaptionGenerationOptions) {
+  async function handleGenerateCaption(generationOptions: MetaCaptionGenerationOptions) {
     if (!aiStatus.available) {
       return;
     }
@@ -221,41 +242,39 @@ export function CampaignCaptionsPage({
 
     setError(null);
     setIsRegenerating(true);
-    const generated: CaptionOption[] = [];
+
+    const revisionContext = resolveExistingCaptionContext(
+      currentOptions,
+      selectedOptionId,
+      selectedMilestone,
+    );
 
     try {
-      for (let index = 0; index < 3; index += 1) {
-        const result = await generateMetaSocialCaptionAction(
-          eventId,
-          selectedDay,
-          "feed",
-          generationOptions,
-        );
-        if (!result.success) {
-          setError(result.error ?? "Unable to generate caption.");
-          break;
-        }
+      const result = await generateMetaSocialCaptionAction(
+        eventId,
+        selectedDay,
+        "feed",
+        { ...generationOptions, revisionContext },
+      );
+      if (!result.success) {
+        setError(result.error ?? "Unable to generate caption.");
+        return;
+      }
 
-        const content = result.content?.trim();
-        if (!content) {
-          break;
-        }
-
-        generated.push({ id: createOptionId(), text: content });
+      const content = result.content?.trim();
+      if (content) {
+        const newOption = { id: createOptionId(), text: content };
+        setOptionsForDay(selectedDay, [newOption]);
+        setSelectedOptionByDay((current) => ({
+          ...current,
+          [selectedDay]: newOption.id,
+        }));
+        router.refresh();
       }
     } catch {
       setError("Unable to generate captions. Refresh the page and try again.");
     } finally {
       setIsRegenerating(false);
-    }
-
-    if (generated.length > 0) {
-      setOptionsForDay(selectedDay, generated);
-      setSelectedOptionByDay((current) => ({
-        ...current,
-        [selectedDay]: generated[0].id,
-      }));
-      router.refresh();
     }
   }
 
@@ -272,12 +291,18 @@ export function CampaignCaptionsPage({
     setError(null);
     setIsGeneratingMore(true);
 
+    const revisionContext = resolveExistingCaptionContext(
+      currentOptions,
+      selectedOptionId,
+      selectedMilestone,
+    );
+
     try {
       const result = await generateMetaSocialCaptionAction(
         eventId,
         selectedDay,
         "feed",
-        generationOptions,
+        { ...generationOptions, revisionContext },
       );
       if (!result.success) {
         setError(result.error ?? "Unable to generate caption.");
@@ -487,7 +512,7 @@ export function CampaignCaptionsPage({
               }
               onSaveOption={handleSaveOption}
               onUseOption={handleUseOption}
-              onRegenerateAll={handleRegenerateAll}
+              onGenerateCaption={handleGenerateCaption}
               onGenerateMore={handleGenerateMore}
               isRegenerating={isRegenerating}
               isGeneratingMore={isGeneratingMore}

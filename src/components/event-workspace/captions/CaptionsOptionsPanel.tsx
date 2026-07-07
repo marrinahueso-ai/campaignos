@@ -34,7 +34,7 @@ interface CaptionsOptionsPanelProps {
   onSelectOption: (id: string) => void;
   onSaveOption: (id: string, text: string) => void;
   onUseOption: (id: string) => void;
-  onRegenerateAll: (options: MetaCaptionGenerationOptions) => void;
+  onGenerateCaption: (options: MetaCaptionGenerationOptions) => void;
   onGenerateMore: (options: MetaCaptionGenerationOptions) => void;
   isRegenerating?: boolean;
   isGeneratingMore?: boolean;
@@ -55,7 +55,7 @@ export function CaptionsOptionsPanel({
   onSelectOption,
   onSaveOption,
   onUseOption,
-  onRegenerateAll,
+  onGenerateCaption,
   onGenerateMore,
   isRegenerating = false,
   isGeneratingMore = false,
@@ -125,14 +125,14 @@ export function CaptionsOptionsPanel({
             size="sm"
             className="h-9 px-3"
             disabled={!aiAvailable || isRegenerating}
-            onClick={() => onRegenerateAll(generationOptions)}
+            onClick={() => onGenerateCaption(generationOptions)}
             title={aiAvailable ? undefined : (aiUnavailableReason ?? undefined)}
           >
             <RefreshCw
               className={cn("h-3.5 w-3.5", isRegenerating && "animate-spin")}
               aria-hidden
             />
-            Regenerate all
+            Generate Caption
           </Button>
         </div>
       </div>

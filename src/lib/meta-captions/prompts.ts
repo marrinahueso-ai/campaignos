@@ -62,6 +62,7 @@ export function buildMetaCaptionUserPrompt(input: {
   eventDate: string | null;
   factsBlock: string;
   existingFeedCaption?: string | null;
+  revisionContext?: string | null;
   hasArtworkImage?: boolean;
   tone?: MetaCaptionTone;
   length?: MetaCaptionLength;
@@ -103,12 +104,23 @@ export function buildMetaCaptionUserPrompt(input: {
     resolveCaptionLengthGuide(input.length),
   ].filter(Boolean);
 
+  const revisionContext = input.revisionContext?.trim();
+  const revisionGuide =
+    revisionContext && input.placement === "feed"
+      ? [
+          "",
+          "The user already has this caption draft. Revise and improve it — keep their intent, emoji choices, hashtags, and key details unless tone or length settings require a clear shift:",
+          `"${revisionContext}"`,
+        ].join("\n")
+      : null;
+
   return [
     `Timing: ${input.milestoneTitle}`,
     `Campaign moment: ${stage.label} — ${stage.description}`,
     "",
     placementGuide,
     ...(styleGuides.length > 0 ? ["", ...styleGuides] : []),
+    ...(revisionGuide ? [revisionGuide] : []),
     "",
     "Verified facts (use only these):",
     input.factsBlock,
