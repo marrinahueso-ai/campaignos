@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
   Loader2,
-  RefreshCw,
-  Send,
+  Paperclip,
+  Smile,
   Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import {
   approveInboxReplyAction,
   generateInboxAiDraftAction,
@@ -18,6 +16,7 @@ import {
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
+import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 interface InboxThreadReplyPanelProps {
@@ -25,17 +24,26 @@ interface InboxThreadReplyPanelProps {
   messages: InboxMessage[];
 }
 
-function statusLabel(status: InboxMessage["status"]): string {
-  switch (status) {
-    case "approved":
-      return "Approved";
-    case "sent":
-      return "Sent";
-    case "archived":
-      return "Archived";
-    default:
-      return "Review";
-  }
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+function renderTextWithLinks(text: string) {
+  const parts = text.split(URL_PATTERN);
+  return parts.map((part, index) => {
+    if (/^https?:\/\//.test(part)) {
+      return (
+        <a
+          key={`${part}-${index}`}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-[#1a6b4a] underline decoration-[#1a6b4a]/30 underline-offset-2 hover:decoration-[#1a6b4a]"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
 }
 
 export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPanelProps) {
@@ -55,13 +63,18 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
       : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
 
   const [draftBody, setDraftBody] = useState(initialBody);
+  const [manualReply, setManualReply] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [draftRequested, setDraftRequested] = useState(false);
 
+  const participantFirstName =
+    thread.participantName?.trim().split(/\s+/)[0] ?? "contact";
+
   useEffect(() => {
     setDraftBody(initialBody);
+    setManualReply("");
     setIsEditing(false);
     setActionError(null);
     setDraftRequested(false);
@@ -109,8 +122,8 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
 
   if (!replyTarget) {
     return (
-      <div className="shrink-0 border-t border-cos-border bg-cos-card px-4 py-3">
-        <p className="text-xs text-cos-muted">
+      <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-4">
+        <p className="text-sm text-[#8a8a88]">
           {messages.length === 0
             ? "No messages in this thread yet."
             : "No inbound message to reply to in this thread."}
@@ -124,6 +137,8 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
   const displayBody = isSent
     ? replyTarget.approvedBody ?? replyTarget.body
     : draftBody;
+  const draftTimestamp = replyTarget.aiDraftGeneratedAt ?? replyTarget.sentAt;
+  const sendBody = manualReply.trim() || displayBody;
 
   function runAction(action: () => Promise<{ success: boolean; error?: string | null }>) {
     startTransition(async () => {
@@ -138,115 +153,176 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     });
   }
 
+  function handleApproveAndSend() {
+    if (!replyTarget) {
+      return;
+    }
+
+    startTransition(async () => {
+      setActionError(null);
+
+      const bodyToSend = sendBody;
+      if (!bodyToSend.trim()) {
+        setActionError("Write a reply before sending.");
+        return;
+      }
+
+      if (!isApproved || isEditing || bodyToSend !== (replyTarget.approvedBody ?? "")) {
+        const approveResult = await approveInboxReplyAction({
+          messageId: replyTarget.id,
+          body: bodyToSend,
+        });
+        if (!approveResult.success) {
+          setActionError(approveResult.error ?? "Could not approve reply.");
+          return;
+        }
+      }
+
+      const sendResult = await sendInboxReplyAction({ messageId: replyTarget.id });
+      if (!sendResult.success) {
+        setActionError(sendResult.error ?? "Could not send reply.");
+        return;
+      }
+
+      setIsEditing(false);
+      setManualReply("");
+      router.refresh();
+    });
+  }
+
   if (isSent) {
     return (
-      <div className="shrink-0 border-t border-cos-border bg-cos-card px-4 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-cos-muted">
+      <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#8a8a88]">
           Sent reply
         </p>
-        <p className="mt-1.5 whitespace-pre-wrap text-sm text-cos-text">{displayBody}</p>
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[#1a1a1a]">
+          {displayBody}
+        </p>
       </div>
     );
   }
 
+  const canSend = Boolean(sendBody.trim()) && !isPending;
+
   return (
-    <div className="shrink-0 border-t border-cos-border bg-cos-card px-4 py-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-cos-muted">
-          {replyTarget.aiDraftBody ? (
-            <Sparkles className="h-3 w-3 text-cos-accent" aria-hidden />
+    <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
+        <p className="text-sm font-semibold text-[#1a1a1a]">AI suggested reply</p>
+        {isPending && !displayBody ? (
+          <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-[#8a8a88]" />
+        ) : null}
+      </div>
+
+      {displayBody ? (
+        <div className="max-w-[85%]">
+          {isEditing ? (
+            <textarea
+              value={draftBody}
+              onChange={(event) => setDraftBody(event.target.value)}
+              rows={4}
+              disabled={isPending}
+              aria-label="Edit AI suggested reply"
+              className="w-full resize-none rounded-[1.25rem] rounded-bl-md bg-[#e8f3ec] px-4 py-3 text-sm leading-relaxed text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1a6b4a]/20 disabled:opacity-60"
+            />
+          ) : (
+            <div className="rounded-[1.25rem] rounded-bl-md bg-[#e8f3ec] px-4 py-3 text-sm leading-relaxed text-[#1a1a1a]">
+              <p className="whitespace-pre-wrap">
+                {renderTextWithLinks(displayBody)}
+              </p>
+            </div>
+          )}
+          {draftTimestamp ? (
+            <time
+              className="mt-1.5 block px-1 text-xs text-[#8a8a88]"
+              dateTime={draftTimestamp}
+            >
+              {formatMessageTime(draftTimestamp)}
+            </time>
           ) : null}
-          AI draft — approve before sending
-        </p>
-        <span
-          className={cn(
-            "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-            isApproved
-              ? "bg-cos-warning text-cos-warning-text"
-              : "bg-cos-bg text-cos-muted",
-          )}
-        >
-          {statusLabel(replyTarget.status)}
-        </span>
-      </div>
+        </div>
+      ) : (
+        <p className="text-sm text-[#8a8a88]">Generating a suggested reply…</p>
+      )}
 
-      <div className="flex items-end gap-2">
-        <textarea
-          value={displayBody}
-          onChange={(event) => {
-            setDraftBody(event.target.value);
-            setIsEditing(true);
-          }}
-          rows={2}
-          disabled={isPending}
-          placeholder="Type a reply…"
-          aria-label="Your reply"
-          className="max-h-32 min-h-[2.75rem] flex-1 resize-none rounded-2xl border border-cos-border bg-cos-bg px-4 py-2.5 text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none disabled:opacity-60"
-        />
-        <Button
-          size="sm"
-          disabled={isPending || !isApproved || isEditing || !draftBody.trim()}
-          className="h-10 w-10 shrink-0 rounded-full p-0"
-          aria-label="Send reply"
-          onClick={() =>
-            runAction(() => sendInboxReplyAction({ messageId: replyTarget.id }))
-          }
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={isPending || !canSend}
+          onClick={handleApproveAndSend}
+          className="inline-flex h-9 items-center justify-center rounded-full bg-[#1a1a1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:bg-[#d4d4d2] disabled:text-[#8a8a88]"
         >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="ghost"
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Approve & send"}
+        </button>
+        <button
+          type="button"
+          disabled={isPending || !displayBody}
+          onClick={() => setIsEditing(true)}
+          className="inline-flex h-9 items-center justify-center rounded-full border border-[#d8d8d6] bg-white px-5 text-sm font-medium text-[#1a1a1a] transition-colors hover:border-[#b8b8b6] disabled:opacity-50"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
           disabled={isPending}
-          className="h-7 px-2 text-xs"
           onClick={() => requestDraft()}
+          className="inline-flex h-9 items-center justify-center rounded-full border border-[#d8d8d6] bg-white px-5 text-sm font-medium text-[#1a1a1a] transition-colors hover:border-[#b8b8b6] disabled:opacity-50"
         >
-          {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          Regenerate
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={isPending || !draftBody.trim()}
-          className="h-7 px-2 text-xs"
-          onClick={() =>
-            runAction(() =>
-              approveInboxReplyAction({
-                messageId: replyTarget.id,
-                body: draftBody,
-              }),
-            )
-          }
-        >
-          {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-3.5 w-3.5" />
-          )}
-          Approve
-        </Button>
+          Ask AI
+        </button>
+      </div>
+
+      <div className="mt-5 rounded-[1.25rem] border border-[#e3e3e1] bg-[#fafaf9] px-4 py-3">
+        <textarea
+          value={manualReply}
+          onChange={(event) => setManualReply(event.target.value)}
+          rows={3}
+          disabled={isPending}
+          placeholder={`Reply to ${participantFirstName}...`}
+          aria-label={`Reply to ${participantFirstName}`}
+          className="w-full resize-none bg-transparent text-sm leading-relaxed text-[#1a1a1a] placeholder:text-[#a8a8a6] focus:outline-none disabled:opacity-60"
+        />
+        <div className="mt-2 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#8a8a88] transition-colors hover:bg-[#efefed] hover:text-[#1a1a1a]"
+            aria-label="Attach file"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#8a8a88] transition-colors hover:bg-[#efefed] hover:text-[#1a1a1a]"
+            aria-label="Add emoji"
+          >
+            <Smile className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            disabled={!canSend}
+            onClick={handleApproveAndSend}
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-full px-5 text-sm font-medium transition-colors",
+              canSend
+                ? "bg-[#1a1a1a] text-white hover:bg-[#2a2a2a]"
+                : "bg-[#efefed] text-[#a8a8a6]",
+            )}
+          >
+            Send
+          </button>
+        </div>
       </div>
 
       {actionError ? (
-        <p className="mt-2 text-xs text-red-600" role="alert">
+        <p className="mt-3 text-xs text-red-600" role="alert">
           {actionError}
         </p>
       ) : null}
 
       {isEditing && isApproved ? (
-        <p className="mt-1.5 text-[11px] text-cos-muted">
-          You edited the reply — click Approve again before sending.
+        <p className="mt-2 text-xs text-[#8a8a88]">
+          You edited the reply — approve again before sending.
         </p>
       ) : null}
     </div>

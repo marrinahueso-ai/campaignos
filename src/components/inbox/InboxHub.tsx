@@ -5,25 +5,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
-  Inbox,
+  ChevronDown,
+  ChevronRight,
   MessageCircle,
   MessagesSquare,
-  Settings,
+  Repeat2,
 } from "lucide-react";
+import { InstagramPlatformIcon } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { InboxThreadReplyPanel } from "@/components/inbox/InboxThreadReplyPanel";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
-import { resolveThreadPageAvatarUrl } from "@/lib/inbox/avatars";
 import {
   INBOX_CHANNEL_LABELS,
-  INBOX_CHANNEL_SHORT_LABELS,
-  INBOX_CHANNEL_TYPES,
-  INBOX_TAG_CHANNEL_TYPES,
   isCommentChannel,
+  isInstagramChannel,
   isReplyChannel,
   isTaggedChannel,
 } from "@/lib/inbox/constants";
@@ -38,7 +36,8 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { markInboxThreadReadAction } from "@/lib/inbox/actions";
 import { cn } from "@/lib/utils/cn";
 
-type ChannelFilter = "all" | "tagged" | InboxChannelType;
+type CategoryFilter = "all" | "messages" | "comments" | "mentions";
+type PlatformFilter = "all" | "instagram";
 
 interface InboxHubProps {
   data: InboxPageData;
@@ -61,14 +60,23 @@ function formatRelativeUpdated(iso: string): string {
   return `${days}d`;
 }
 
-function channelKindLabel(channelType: InboxChannelType): string {
-  if (channelType === "instagram_dm" || channelType === "facebook_message") {
-    return "PRIVATE MESSAGE";
+function threadChannelDisplayLabel(channelType: InboxChannelType): string {
+  switch (channelType) {
+    case "instagram_dm":
+      return "Instagram DM";
+    case "facebook_message":
+      return "Facebook Message";
+    case "instagram_comment":
+      return "Instagram Comment";
+    case "facebook_comment":
+      return "Facebook Comment";
+    case "instagram_tag":
+      return "Instagram Mention";
+    case "facebook_tag":
+      return "Facebook Mention";
+    default:
+      return INBOX_CHANNEL_LABELS[channelType];
   }
-  if (isCommentChannel(channelType)) {
-    return "COMMENT";
-  }
-  return "TAGGED";
 }
 
 function participantInitials(name: string | null): string {
@@ -84,15 +92,34 @@ function participantInitials(name: string | null): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function isMessageChannel(channelType: InboxChannelType): boolean {
+  return channelType === "instagram_dm" || channelType === "facebook_message";
+}
+
+function matchesCategoryFilter(
+  channelType: InboxChannelType,
+  filter: CategoryFilter,
+): boolean {
+  switch (filter) {
+    case "all":
+      return true;
+    case "messages":
+      return isMessageChannel(channelType);
+    case "comments":
+      return isCommentChannel(channelType);
+    case "mentions":
+      return isTaggedChannel(channelType);
+  }
+}
+
 function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) {
   if (!connection.integrationConfigured && !connection.metaConfiguredViaEnv) {
     return (
       <Link
         href="/settings/meta"
-        className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs text-amber-900 transition-colors hover:border-amber-300"
+        className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1.5 text-xs font-medium text-amber-900 transition-colors hover:border-amber-300"
       >
         Meta not configured
-        <span className="font-medium">Settings</span>
       </Link>
     );
   }
@@ -101,92 +128,76 @@ function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) 
     return (
       <Link
         href="/settings/meta"
-        className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-cos-card px-3 py-1 text-xs text-cos-muted transition-colors hover:border-cos-muted hover:text-cos-text"
+        className="inline-flex items-center gap-2 rounded-full border border-[#d8d8d6] bg-white px-3.5 py-1.5 text-xs font-medium text-[#8a8a88] transition-colors hover:border-[#b8b8b6] hover:text-[#1a1a1a]"
       >
         Not connected
-        <span className="font-medium text-cos-accent">Connect in Settings</span>
       </Link>
     );
   }
 
-  const label = connection.pageName ?? connection.organizationName ?? "Connected";
-
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-3">
       <Link
         href="/settings/meta"
-        className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-800 transition-colors hover:border-emerald-300"
+        className="inline-flex items-center gap-2 rounded-full border border-[#b8dcc4] bg-[#e8f5ec] px-3.5 py-1.5 text-xs font-medium text-[#1a6b4a] transition-colors hover:border-[#9ecfb8]"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
-        Connected · {label}
+        <span className="h-1.5 w-1.5 rounded-full bg-[#1a6b4a]" aria-hidden />
+        Connected • Pro plan
       </Link>
-      {connection.lastSyncedAt ? (
-        <span className="text-xs text-cos-muted">
-          Last updated {formatRelativeUpdated(connection.lastSyncedAt)}
-        </span>
-      ) : null}
+      <span className="text-xs text-[#8a8a88]">
+        Updated {connection.lastSyncedAt ? formatRelativeUpdated(connection.lastSyncedAt) : "just now"}
+      </span>
     </div>
   );
 }
 
-function ChannelFilterButton({
+function FilterPill({
   label,
-  count,
   active,
   onClick,
-  icon,
+  badge,
+  trailingIcon,
 }: {
   label: string;
-  count: number;
-  active: boolean;
+  active?: boolean;
   onClick: () => void;
-  icon?: React.ReactNode;
+  badge?: number;
+  trailingIcon?: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] tracking-wide transition-colors",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
         active
-          ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
-          : "border-cos-border bg-cos-card text-cos-muted hover:border-cos-muted hover:text-cos-text",
+          ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+          : "border-[#d8d8d6] bg-white text-[#1a1a1a] hover:border-[#b8b8b6]",
       )}
       aria-pressed={active}
     >
-      {icon}
       <span>{label}</span>
-      <span
-        className={cn(
-          "min-w-[1.1rem] rounded-full px-1 py-0.5 text-[9px] font-semibold tabular-nums",
-          active ? "bg-white/15 text-[#f6f2eb]" : "bg-cos-bg text-cos-text",
-        )}
-      >
-        {count}
-      </span>
+      {badge !== undefined ? (
+        <span
+          className={cn(
+            "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
+            active ? "bg-white/15 text-white" : "bg-[#8a8a88] text-white",
+          )}
+        >
+          {badge}
+        </span>
+      ) : null}
+      {trailingIcon}
     </button>
   );
 }
 
-function ThreadAvatar({
-  thread,
-  selected,
-}: {
-  thread: InboxThread;
-  selected: boolean;
-}) {
+function ThreadAvatar({ thread }: { thread: InboxThread }) {
   const avatarUrl = thread.participantAvatarUrl;
 
   return (
     <div className="relative shrink-0">
-      <div
-        className={cn(
-          "flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border text-xs font-semibold",
-          selected
-            ? "border-white/30 bg-white/15 text-[#f6f2eb]"
-            : "border-cos-border bg-cos-bg text-cos-text",
-        )}
-      >
+      <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-[#efefed] text-xs font-semibold text-[#1a1a1a]">
         {avatarUrl ? (
           <img
             src={avatarUrl}
@@ -199,14 +210,6 @@ function ThreadAvatar({
           participantInitials(thread.participantName)
         )}
       </div>
-      <span
-        className={cn(
-          "absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border bg-cos-card",
-          selected ? "border-white/30" : "border-cos-border",
-        )}
-      >
-        <InboxPlatformIcon channelType={thread.channelType} size="xs" />
-      </span>
     </div>
   );
 }
@@ -229,177 +232,64 @@ function ConversationListRow({
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors",
-        selected
-          ? "bg-cos-dark text-[#f6f2eb]"
-          : "hover:bg-cos-bg/70",
+        "relative flex w-full items-start gap-3 px-5 py-4 text-left transition-colors",
+        selected ? "bg-[#f3f3f2]" : "hover:bg-[#fafaf9]",
       )}
       aria-current={selected ? "true" : undefined}
     >
-      <ThreadAvatar thread={thread} selected={selected} />
+      <ThreadAvatar thread={thread} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <p
-            className={cn(
-              "truncate text-sm font-medium",
-              selected ? "text-[#f6f2eb]" : "text-cos-text",
-              hasUnread && !selected && "font-semibold",
-            )}
-          >
-            {displayName}
-          </p>
-          {thread.lastMessageAt ? (
-            <time
-              className={cn(
-                "shrink-0 text-[10px] tabular-nums",
-                selected ? "text-[#f6f2eb]/70" : "text-cos-muted",
-              )}
-              dateTime={thread.lastMessageAt}
-            >
-              {formatRelativeUpdated(thread.lastMessageAt)}
-            </time>
+          <p className="truncate text-sm font-semibold text-[#1a1a1a]">{displayName}</p>
+          {hasUnread ? (
+            <span
+              className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#007aff]"
+              aria-label="Unread"
+            />
           ) : null}
         </div>
-        <p
-          className={cn(
-            "mt-0.5 truncate text-xs",
-            selected ? "text-[#f6f2eb]/75" : "text-cos-muted",
-          )}
-        >
-          {INBOX_CHANNEL_SHORT_LABELS[thread.channelType]}
-          {thread.status === "sent" ? " · Replied" : null}
+        <p className="mt-0.5 text-xs text-[#8a8a88]">
+          {threadChannelDisplayLabel(thread.channelType)}
+          {thread.lastMessageAt ? ` • ${formatRelativeUpdated(thread.lastMessageAt)}` : null}
         </p>
         {thread.lastMessageSnippet ? (
-          <p
-            className={cn(
-              "mt-1 truncate text-sm",
-              selected ? "text-[#f6f2eb]/90" : "text-cos-text/80",
-              hasUnread && !selected && "font-medium text-cos-text",
-            )}
-          >
+          <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-[#4a4a48]">
             {thread.lastMessageSnippet}
           </p>
         ) : null}
       </div>
-      {hasUnread ? (
-        <span
-          className={cn(
-            "mt-2 h-2 w-2 shrink-0 rounded-full",
-            selected ? "bg-[#f6f2eb]" : "bg-cos-accent",
-          )}
-          aria-label="Unread"
-        />
-      ) : null}
     </button>
   );
 }
 
-function MessageAvatar({
-  imageUrl,
-  name,
-  align,
-}: {
-  imageUrl: string | null;
-  name: string | null;
-  align: "start" | "end";
-}) {
-  return (
-    <div
-      className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cos-border bg-cos-bg text-[10px] font-semibold text-cos-text",
-        align === "end" ? "order-2" : "order-1",
-      )}
-    >
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        participantInitials(name)
-      )}
-    </div>
-  );
-}
+function ThreadMessageList({ messages }: { messages: InboxMessage[] }) {
+  const inboundMessages = messages.filter((message) => message.direction === "inbound");
 
-function ThreadMessageList({
-  messages,
-  thread,
-  pagePictureUrl,
-  pageName,
-}: {
-  messages: InboxMessage[];
-  thread: InboxThread;
-  pagePictureUrl?: string | null;
-  pageName?: string | null;
-}) {
-  if (messages.length === 0) {
+  if (inboundMessages.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-cos-muted">
+      <p className="py-8 text-center text-sm text-[#8a8a88]">
         No messages in this thread yet.
       </p>
     );
   }
 
   return (
-    <ul className="flex flex-col gap-3" role="list">
-      {messages.map((message) => {
-        const isOutbound = message.direction === "outbound";
-        const avatarUrl = isOutbound
-          ? resolveThreadPageAvatarUrl({
-              channelType: thread.channelType,
-              metadata: thread.metadata,
-              connectionPagePictureUrl: pagePictureUrl,
-            }) ?? thread.pageAvatarUrl
-          : thread.participantAvatarUrl;
-        const avatarName = isOutbound
-          ? pageName ?? message.senderName
-          : message.senderName ?? thread.participantName;
-
-        return (
-          <li
-            key={message.id}
-            className={cn(
-              "flex max-w-[85%] items-end gap-2",
-              isOutbound ? "ml-auto flex-row-reverse" : "mr-auto",
-            )}
-          >
-            <MessageAvatar
-              imageUrl={avatarUrl}
-              name={avatarName}
-              align={isOutbound ? "end" : "start"}
-            />
-            <div
-              className={cn(
-                "flex flex-col",
-                isOutbound ? "items-end" : "items-start",
-              )}
+    <ul className="flex flex-col gap-4" role="list">
+      {inboundMessages.map((message) => (
+        <li key={message.id} className="max-w-[85%]">
+          <div className="rounded-[1.25rem] rounded-bl-md bg-[#f3f3f2] px-4 py-3 text-sm leading-relaxed text-[#1a1a1a]">
+            <p className="whitespace-pre-wrap">{message.body}</p>
+          </div>
+          {message.sentAt ? (
+            <time
+              className="mt-1.5 block px-1 text-xs text-[#8a8a88]"
+              dateTime={message.sentAt}
             >
-              <div
-                className={cn(
-                  "rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm",
-                  isOutbound
-                    ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
-                    : "rounded-bl-md border border-cos-border/80 bg-white text-cos-text",
-                )}
-              >
-                <p className="whitespace-pre-wrap">{message.body}</p>
-              </div>
-              {message.sentAt ? (
-                <time
-                  className="mt-1 px-1 text-[10px] tabular-nums text-cos-muted"
-                  dateTime={message.sentAt}
-                >
-                  {formatMessageTime(message.sentAt)}
-                </time>
-              ) : null}
-            </div>
-          </li>
-        );
-      })}
+              {formatMessageTime(message.sentAt)}
+            </time>
+          ) : null}
+        </li>
+      ))}
     </ul>
   );
 }
@@ -407,15 +297,11 @@ function ThreadMessageList({
 function ConversationPanel({
   thread,
   messages,
-  pageName,
-  pagePictureUrl,
   onBack,
   showBack,
 }: {
   thread: InboxThread;
   messages: InboxMessage[];
-  pageName: string | null;
-  pagePictureUrl?: string | null;
   onBack?: () => void;
   showBack?: boolean;
 }) {
@@ -424,53 +310,38 @@ function ConversationPanel({
   const showDirectPostLink = hasThreadPostPermalink(thread);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center gap-3 border-b border-cos-border bg-cos-card px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col bg-white">
+      <div className="flex shrink-0 items-center gap-3 border-b border-[#ebebea] px-6 py-4">
         {showBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text lg:hidden"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#8a8a88] transition-colors hover:bg-[#f3f3f2] hover:text-[#1a1a1a] lg:hidden"
             aria-label="Back to conversations"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <ThreadAvatar thread={thread} selected={false} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-cos-text">{displayName}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-[10px] font-medium tracking-wide text-cos-muted uppercase">
-              <InboxPlatformIcon channelType={thread.channelType} size="xs" />
-              {channelKindLabel(thread.channelType)}
-              {pageName ? ` · ${pageName}` : null}
-            </p>
-          </div>
+        <ThreadAvatar thread={thread} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-semibold text-[#1a1a1a]">{displayName}</p>
+          <p className="mt-0.5 text-sm text-[#8a8a88]">
+            {threadChannelDisplayLabel(thread.channelType)}
+          </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-2">
           {showDirectPostLink ? <InboxDirectPostLinkButton thread={thread} /> : null}
-          <Link
-            href="/settings/meta"
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cos-border px-2.5 py-1.5 text-[11px] text-cos-muted transition-colors hover:border-cos-muted hover:text-cos-text"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Settings</span>
-          </Link>
+          <InboxPlatformIcon channelType={thread.channelType} size="md" />
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-cos-bg/60 px-4 py-4">
-        <ThreadMessageList
-          messages={messages}
-          thread={thread}
-          pagePictureUrl={pagePictureUrl}
-          pageName={pageName}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <ThreadMessageList messages={messages} />
 
         {isTaggedChannel(thread.channelType) ? (
-          <div className="mt-4 border-t border-cos-border/60 pt-4">
+          <div className="mt-4 border-t border-[#ebebea] pt-4">
             <InboxTaggedPanel thread={thread} />
           </div>
         ) : null}
@@ -483,12 +354,34 @@ function ConversationPanel({
   );
 }
 
+function RepostBanner() {
+  return (
+    <button
+      type="button"
+      className="group flex w-full items-center gap-4 rounded-[1.25rem] border border-[#ebebea] bg-white px-5 py-4 text-left shadow-[0_8px_24px_rgba(26,26,26,0.06)] transition-colors hover:border-[#d8d8d6]"
+    >
+      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f97316] text-white">
+        <Repeat2 className="h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-[#1a1a1a]">Repost this moment</span>
+        <span className="mt-0.5 block text-sm text-[#8a8a88]">
+          Turn this post or comment into new content.
+        </span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-[#8a8a88] transition-transform group-hover:translate-x-0.5" />
+    </button>
+  );
+}
+
 export function InboxHub({ data }: InboxHubProps) {
   const router = useRouter();
-  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
-  const { connection, threads, messagesByThreadId, channelCounts } = data;
+  const { connection, threads, messagesByThreadId } = data;
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -534,15 +427,25 @@ export function InboxHub({ data }: InboxHubProps) {
     };
   }, [router]);
 
+  const unreadCount = useMemo(
+    () => threads.filter((thread) => thread.unreadCount > 0).length,
+    [threads],
+  );
+
   const filteredThreads = useMemo(() => {
-    if (channelFilter === "all") {
-      return threads;
-    }
-    if (channelFilter === "tagged") {
-      return threads.filter((thread) => isTaggedChannel(thread.channelType));
-    }
-    return threads.filter((thread) => thread.channelType === channelFilter);
-  }, [channelFilter, threads]);
+    return threads.filter((thread) => {
+      if (!matchesCategoryFilter(thread.channelType, categoryFilter)) {
+        return false;
+      }
+      if (platformFilter === "instagram" && !isInstagramChannel(thread.channelType)) {
+        return false;
+      }
+      if (unreadOnly && thread.unreadCount <= 0) {
+        return false;
+      }
+      return true;
+    });
+  }, [categoryFilter, platformFilter, threads, unreadOnly]);
 
   const selectedThread = useMemo(
     () => filteredThreads.find((thread) => thread.id === selectedThreadId) ?? null,
@@ -553,6 +456,12 @@ export function InboxHub({ data }: InboxHubProps) {
     if (selectedThreadId && !filteredThreads.some((thread) => thread.id === selectedThreadId)) {
       setSelectedThreadId(null);
       setMobileShowDetail(false);
+    }
+  }, [filteredThreads, selectedThreadId]);
+
+  useEffect(() => {
+    if (!selectedThreadId && filteredThreads.length > 0) {
+      setSelectedThreadId(filteredThreads[0]!.id);
     }
   }, [filteredThreads, selectedThreadId]);
 
@@ -574,31 +483,85 @@ export function InboxHub({ data }: InboxHubProps) {
     setMobileShowDetail(false);
   }
 
+  function toggleInstagramFilter() {
+    setPlatformFilter((current) => (current === "instagram" ? "all" : "instagram"));
+  }
+
   return (
-    <div className="studio-page space-y-8">
-      <header className="border-b border-cos-border pb-6">
-        <div className="flex items-start justify-between gap-5">
-          <div className="flex items-start gap-5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-cos-border bg-cos-card">
-              <Inbox className="h-5 w-5 text-cos-accent" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="studio-eyebrow">Workspace</p>
-              <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Inbox</h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-                Instagram DMs, Facebook Page messages, comments, and tagged posts — with
-                AI-suggested replies you approve before sending.
-              </p>
-            </div>
-          </div>
-          <InboxStatusChip connection={connection} />
+    <div className="relative mx-auto w-full max-w-[88rem] px-1 pb-28 pt-2">
+      <header className="mb-6 flex items-start justify-between gap-6">
+        <div className="max-w-2xl">
+          <h1 className="font-display text-[2.75rem] leading-none text-[#1a1a1a] sm:text-5xl">
+            Inbox
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8a8a88]">
+            Messages, comments, and mentions from all your channels. AI searches your content
+            first to give smart, helpful replies.
+          </p>
         </div>
+        <InboxStatusChip connection={connection} />
       </header>
 
-      <Card
-        padding="none"
-        className="flex min-h-[min(720px,calc(100vh-14rem))] flex-col overflow-hidden lg:flex-row"
-      >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <FilterPill
+          label="All"
+          active={categoryFilter === "all" && platformFilter === "all" && !unreadOnly}
+          onClick={() => {
+            setCategoryFilter("all");
+            setPlatformFilter("all");
+            setUnreadOnly(false);
+          }}
+          trailingIcon={<ChevronDown className="h-4 w-4 opacity-80" />}
+        />
+        <FilterPill
+          label="Messages"
+          active={categoryFilter === "messages" && !unreadOnly}
+          onClick={() => {
+            setCategoryFilter("messages");
+            setUnreadOnly(false);
+          }}
+        />
+        <FilterPill
+          label="Comments"
+          active={categoryFilter === "comments" && !unreadOnly}
+          onClick={() => {
+            setCategoryFilter("comments");
+            setUnreadOnly(false);
+          }}
+        />
+        <FilterPill
+          label="Mentions"
+          active={categoryFilter === "mentions" && !unreadOnly}
+          onClick={() => {
+            setCategoryFilter("mentions");
+            setUnreadOnly(false);
+          }}
+        />
+        <button
+          type="button"
+          onClick={toggleInstagramFilter}
+          className={cn(
+            "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors",
+            platformFilter === "instagram"
+              ? "border-[#1a1a1a] bg-[#1a1a1a]"
+              : "border-[#d8d8d6] bg-white hover:border-[#b8b8b6]",
+          )}
+          aria-label="Filter Instagram"
+          aria-pressed={platformFilter === "instagram"}
+        >
+          <InstagramPlatformIcon
+            className={cn("h-5 w-5", platformFilter === "instagram" ? "brightness-0 invert" : "")}
+          />
+        </button>
+        <FilterPill
+          label="Unread"
+          active={unreadOnly}
+          onClick={() => setUnreadOnly((current) => !current)}
+          badge={unreadCount}
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-[1.5rem] border border-[#ebebea] bg-white shadow-[0_1px_2px_rgba(26,26,26,0.04)]">
         {showConnectionEmptyState ? (
           <EmptyState
             icon={MessagesSquare}
@@ -614,53 +577,26 @@ export function InboxHub({ data }: InboxHubProps) {
           <EmptyState
             icon={MessageCircle}
             title={
-              channelFilter === "all"
-                ? "No messages yet"
-                : channelFilter === "tagged"
-                  ? "No tagged posts yet"
-                  : `No ${INBOX_CHANNEL_LABELS[channelFilter].toLowerCase()} yet`
+              unreadOnly
+                ? "No unread messages"
+                : categoryFilter === "all"
+                  ? "No messages yet"
+                  : categoryFilter === "mentions"
+                    ? "No mentions yet"
+                    : `No ${categoryFilter} yet`
             }
-            description="New DMs, comments, and tags will show up here as they arrive."
+            description="New DMs, comments, and mentions will show up here as they arrive."
             className="py-16"
           />
         ) : (
-          <>
+          <div className="flex min-h-[min(720px,calc(100vh-14rem))] flex-col lg:flex-row">
             <aside
               className={cn(
-                "flex w-full shrink-0 flex-col border-b border-cos-border lg:w-80 lg:border-r lg:border-b-0",
+                "flex w-full shrink-0 flex-col border-b border-[#ebebea] lg:w-[min(100%,22rem)] lg:max-w-[34%] lg:border-r lg:border-b-0",
                 mobileShowDetail ? "hidden lg:flex" : "flex min-h-0 flex-1 lg:min-h-0 lg:flex-none",
               )}
             >
-              <div className="shrink-0 border-b border-cos-border px-3 py-3">
-                <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <ChannelFilterButton
-                    label="All"
-                    count={channelCounts.all}
-                    active={channelFilter === "all"}
-                    onClick={() => setChannelFilter("all")}
-                  />
-                  <ChannelFilterButton
-                    label="Tagged"
-                    count={channelCounts.tagged}
-                    active={channelFilter === "tagged"}
-                    onClick={() => setChannelFilter("tagged")}
-                  />
-                  {INBOX_CHANNEL_TYPES.filter(
-                    (channel) => !INBOX_TAG_CHANNEL_TYPES.includes(channel),
-                  ).map((channel) => (
-                    <ChannelFilterButton
-                      key={channel}
-                      label={INBOX_CHANNEL_SHORT_LABELS[channel]}
-                      count={channelCounts[channel]}
-                      active={channelFilter === channel}
-                      onClick={() => setChannelFilter(channel)}
-                      icon={<InboxPlatformIcon channelType={channel} size="xs" />}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <ul className="min-h-0 flex-1 divide-y divide-cos-border overflow-y-auto" role="list">
+              <ul className="min-h-0 flex-1 divide-y divide-[#ebebea] overflow-y-auto" role="list">
                 {filteredThreads.map((thread) => (
                   <li key={thread.id}>
                     <ConversationListRow
@@ -675,7 +611,7 @@ export function InboxHub({ data }: InboxHubProps) {
 
             <div
               className={cn(
-                "flex min-h-0 min-w-0 flex-1 flex-col bg-cos-card",
+                "flex min-h-0 min-w-0 flex-1 flex-col",
                 !mobileShowDetail && "hidden lg:flex",
               )}
             >
@@ -683,28 +619,32 @@ export function InboxHub({ data }: InboxHubProps) {
                 <ConversationPanel
                   thread={selectedThread}
                   messages={messagesByThreadId[selectedThread.id] ?? []}
-                  pageName={connection.pageName}
-                  pagePictureUrl={connection.pagePictureUrl}
                   showBack
                   onBack={handleBackToList}
                 />
               ) : (
                 <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
                   <MessageCircle
-                    className="h-10 w-10 text-cos-muted/50"
+                    className="h-10 w-10 text-[#d4d4d2]"
                     strokeWidth={1.25}
                     aria-hidden
                   />
-                  <p className="mt-4 text-sm font-medium text-cos-text">Select a conversation</p>
-                  <p className="mt-1 max-w-xs text-xs text-cos-muted">
+                  <p className="mt-4 text-sm font-medium text-[#1a1a1a]">Select a conversation</p>
+                  <p className="mt-1 max-w-xs text-xs text-[#8a8a88]">
                     Choose a thread from the list to view messages and reply with AI-assisted drafts.
                   </p>
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
-      </Card>
+      </div>
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-20 mx-auto w-full max-w-[88rem] px-4 sm:px-6">
+        <div className="pointer-events-auto">
+          <RepostBanner />
+        </div>
+      </div>
     </div>
   );
 }
