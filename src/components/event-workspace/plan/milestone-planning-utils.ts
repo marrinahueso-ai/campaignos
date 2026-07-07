@@ -1,5 +1,6 @@
 import { planDueDateToScheduledTime } from "@/lib/campaign-plan/plan-milestone-display";
 import { metaWorkflowMilestonesFromCommunicationSteps } from "@/lib/campaign-plan/plan-milestone-client";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { formatDateTime, parseLocalDate, toLocalDateString } from "@/lib/utils/dates";
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type {
@@ -98,6 +99,58 @@ export function relativeDayFromDate(eventDate: string, selectedDate: string): nu
   const selected = parseLocalDate(selectedDate);
   const diffMs = selected.getTime() - event.getTime();
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
+export function resolvePrimaryPlatform(
+  milestone: MilestonePlanningItem,
+): "facebook" | "instagram" | null {
+  const { contentPlatforms } = milestone;
+  const hasFacebook =
+    contentPlatforms.facebookFeed || contentPlatforms.facebookStory;
+  const hasInstagram =
+    contentPlatforms.instagramFeed || contentPlatforms.instagramStory;
+
+  if (hasFacebook && !hasInstagram) {
+    return "facebook";
+  }
+  if (hasInstagram && !hasFacebook) {
+    return "instagram";
+  }
+  if (hasFacebook) {
+    return "facebook";
+  }
+  if (hasInstagram) {
+    return "instagram";
+  }
+  return null;
+}
+
+export function enrichMilestoneItemsWithBundles(
+  items: MilestonePlanningItem[],
+  bundles: MetaPublishBundle[],
+): MilestonePlanningItem[] {
+  return items.map((item) => {
+    const bundle = bundles.find(
+      (candidate) =>
+        candidate.isMetaPost &&
+        candidate.relativeDay === item.relativeDay &&
+        candidate.status !== "skipped",
+    );
+
+    if (!bundle) {
+      return item;
+    }
+
+    const isScheduled =
+      bundle.status === "scheduled" ||
+      bundle.status === "approved" ||
+      bundle.status === "published";
+
+    return {
+      ...item,
+      status: isScheduled ? "scheduled" : item.dueDate ? item.status : "not_started",
+    };
+  });
 }
 
 export function milestoneItemsFromSteps(steps: EventCommunicationStep[]): MilestonePlanningItem[] {

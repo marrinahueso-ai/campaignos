@@ -15,6 +15,7 @@ import {
 import {
   formatMilestoneTiming,
   MILESTONE_PLANNING_COLORS,
+  resolvePrimaryPlatform,
   type MilestonePlanningItem,
 } from "@/components/event-workspace/plan/milestone-planning-utils";
 import { cn } from "@/lib/utils/cn";
@@ -38,31 +39,23 @@ interface MilestonePlanningRowProps {
   onDragEnd: () => void;
 }
 
-function ContentPlatformIcons({ milestone }: { milestone: MilestonePlanningItem }) {
-  const { contentPlatforms } = milestone;
-  const icons: React.ReactNode[] = [];
+function PlatformCell({ milestone }: { milestone: MilestonePlanningItem }) {
+  const platform = resolvePrimaryPlatform(milestone);
 
-  if (contentPlatforms.instagramFeed || contentPlatforms.instagramStory) {
-    icons.push(
-      <span key="ig" className="inline-flex items-center gap-0.5" title="Instagram">
-        <InstagramPlatformIcon className="h-3.5 w-3.5" />
-      </span>,
-    );
-  }
-
-  if (contentPlatforms.facebookFeed || contentPlatforms.facebookStory) {
-    icons.push(
-      <span key="fb" className="inline-flex items-center gap-0.5" title="Facebook">
-        <FacebookPlatformIcon className="h-3.5 w-3.5" />
-      </span>,
-    );
-  }
-
-  if (icons.length === 0) {
+  if (!platform) {
     return <span className="text-xs" style={{ color: "#7A7268" }}>—</span>;
   }
 
-  return <span className="inline-flex items-center gap-1.5">{icons}</span>;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: "#7A7268" }}>
+      {platform === "facebook" ? (
+        <FacebookPlatformIcon className="h-3.5 w-3.5" />
+      ) : (
+        <InstagramPlatformIcon className="h-3.5 w-3.5" />
+      )}
+      {platform === "facebook" ? "Facebook" : "Instagram"}
+    </span>
+  );
 }
 
 export function MilestonePlanningRow({
@@ -94,7 +87,7 @@ export function MilestonePlanningRow({
       onDragOver={(event) => event.preventDefault()}
       onDragEnd={onDragEnd}
       className={cn(
-        "grid cursor-pointer items-center gap-3 border-b px-4 py-3.5 transition-colors sm:grid-cols-[auto_1fr_0.7fr_1fr_auto_auto]",
+        "grid cursor-pointer items-center gap-3 border-b px-4 py-3.5 transition-colors sm:grid-cols-[auto_1fr_0.85fr_1fr_auto_auto]",
         isDragging && "opacity-40",
         isDragOver && "bg-[#FAF7F2]",
         isExpanded && "bg-[#FAF7F2]",
@@ -129,7 +122,10 @@ export function MilestonePlanningRow({
           <CategoryIcon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium" style={{ color: MILESTONE_PLANNING_COLORS.text }}>
+          <p
+            className="truncate text-sm font-medium"
+            style={{ color: MILESTONE_PLANNING_COLORS.text }}
+          >
             {milestone.title}
           </p>
           {milestone.description && (
@@ -141,7 +137,7 @@ export function MilestonePlanningRow({
       </div>
 
       <div className="hidden sm:block">
-        <ContentPlatformIcons milestone={milestone} />
+        <PlatformCell milestone={milestone} />
       </div>
 
       <div className="hidden text-sm sm:block" style={{ color: "#7A7268" }}>

@@ -138,6 +138,8 @@ export function EventPlanningHub({
         initialStep={campaignStep}
         onCampaignStepChange={setCampaignStep}
         planningOverview={planningOverview}
+        artwork={campaignWorkspace.artwork}
+        tasks={hubData.tasks}
       />
     ) : null;
 

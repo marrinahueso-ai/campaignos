@@ -12,8 +12,11 @@ export function MilestonePlanningSmartBanner({
 }: MilestonePlanningSmartBannerProps) {
   return (
     <div
-      className="mt-6 flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-      style={{ backgroundColor: MILESTONE_PLANNING_COLORS.suggestionBg }}
+      className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      style={{
+        backgroundColor: MILESTONE_PLANNING_COLORS.suggestionBg,
+        borderColor: MILESTONE_PLANNING_COLORS.border,
+      }}
     >
       <div className="flex min-w-0 items-start gap-2.5">
         <Sparkles

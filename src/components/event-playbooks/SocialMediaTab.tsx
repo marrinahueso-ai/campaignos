@@ -26,6 +26,8 @@ import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-ro
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventCommunicationStep, EventPlaybookData } from "@/types/playbooks";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
+import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
+import type { EventPlaybookTask } from "@/types/event-playbooks";
 
 function resolveCaptionExpandedDay(
   relativeDay: number,
@@ -77,6 +79,8 @@ interface SocialMediaTabProps {
   initialStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
   planningOverview?: EventPlanningOverviewData | null;
+  artwork?: HeroArtworkSelection | null;
+  tasks?: EventPlaybookTask[];
 }
 
 export function SocialMediaTab({
@@ -101,6 +105,8 @@ export function SocialMediaTab({
   initialStep = "plan",
   onCampaignStepChange,
   planningOverview = null,
+  artwork = null,
+  tasks = [],
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
     if (typeof window === "undefined") {
@@ -203,6 +209,11 @@ export function SocialMediaTab({
             defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
             onWorkflowStepSelect={navigateToWorkflowStep}
+            artwork={artwork}
+            ownership={ownership}
+            communicationStrategy={event.communicationStrategy}
+            metaPublishBundles={metaPublishBundles}
+            tasks={tasks}
           />
         }
         artwork={

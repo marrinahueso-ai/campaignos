@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
-import { MilestonePlanningPageHeader } from "@/components/event-workspace/plan/MilestonePlanningPageHeader";
+import { useCallback, useRef } from "react";
+import { SocialMediaCenterShell } from "@/components/event-workspace/plan/SocialMediaCenterShell";
 import { MilestonePlanningSection } from "@/components/event-workspace/plan/MilestonePlanningSection";
-import { MILESTONE_PLANNING_COLORS } from "@/components/event-workspace/plan/milestone-planning-utils";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
+import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
+import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { EventPlaybookTask } from "@/types/event-playbooks";
 import type { Event } from "@/types";
 import type { CommunicationPlaybook, EventCommunicationStep } from "@/types/playbooks";
+import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 interface CampaignPlanPageProps {
   event: Event;
@@ -21,61 +24,49 @@ interface CampaignPlanPageProps {
   defaultCommitteePerson: string;
   assignedSteps: EventCommunicationStep[];
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
+  artwork?: HeroArtworkSelection | null;
+  ownership?: EventRosterOwnership | null;
+  communicationStrategy?: CommunicationStrategy;
+  metaPublishBundles?: MetaPublishBundle[];
+  tasks?: EventPlaybookTask[];
 }
 
 export function CampaignPlanPage({
   event,
   eventDate,
-  playbookId,
-  availablePlaybooks,
-  vpRoles,
-  defaultVpRoleId,
-  committeePersonOptions,
-  defaultCommitteePerson,
   assignedSteps,
   onWorkflowStepSelect,
+  artwork = null,
+  ownership = null,
+  communicationStrategy,
+  metaPublishBundles = [],
+  tasks = [],
 }: CampaignPlanPageProps) {
-  const savePlanRef = useRef<(() => void) | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const addMilestoneRef = useRef<(() => void) | null>(null);
 
-  const handleSaveReady = useCallback((save: () => void, state: { isPending: boolean }) => {
-    savePlanRef.current = save;
-    setIsSaving((current) => (current === state.isPending ? current : state.isPending));
+  const handleAddMilestoneReady = useCallback((addMilestone: () => void) => {
+    addMilestoneRef.current = addMilestone;
   }, []);
 
   return (
-    <div
-      className="overflow-hidden border"
-      style={{
-        borderColor: MILESTONE_PLANNING_COLORS.border,
-        backgroundColor: MILESTONE_PLANNING_COLORS.pageBg,
-      }}
+    <SocialMediaCenterShell
+      event={event}
+      artwork={artwork}
+      ownership={ownership}
+      communicationStrategy={communicationStrategy}
+      activeStep="plan"
+      onStepSelect={onWorkflowStepSelect}
+      metaPublishBundles={metaPublishBundles}
+      tasks={tasks}
+      onCreateMilestone={() => addMilestoneRef.current?.()}
     >
-      <CaptionsProgressStepper
-        activeStep="plan"
-        onStepSelect={onWorkflowStepSelect}
+      <MilestonePlanningSection
+        eventId={event.id}
+        eventDate={eventDate}
+        assignedSteps={assignedSteps}
+        metaPublishBundles={metaPublishBundles}
+        onAddMilestoneReady={handleAddMilestoneReady}
       />
-
-      <div className="p-5 lg:p-6">
-        <MilestonePlanningPageHeader
-          eventId={event.id}
-          event={event}
-          playbookId={playbookId}
-          availablePlaybooks={availablePlaybooks}
-          vpRoles={vpRoles}
-          defaultVpRoleId={defaultVpRoleId}
-          committeePersonOptions={committeePersonOptions}
-          defaultCommitteePerson={defaultCommitteePerson}
-          onSavePlan={() => savePlanRef.current?.()}
-          isSaving={isSaving}
-        />
-        <MilestonePlanningSection
-          eventId={event.id}
-          eventDate={eventDate}
-          assignedSteps={assignedSteps}
-          onSaveReady={handleSaveReady}
-        />
-      </div>
-    </div>
+    </SocialMediaCenterShell>
   );
 }
