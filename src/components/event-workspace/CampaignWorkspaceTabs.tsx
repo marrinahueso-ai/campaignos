@@ -63,6 +63,7 @@ const LEGACY_HASH_TO_STEP: Record<string, CampaignWorkflowStep> = {
   published: "published",
   activity: "published",
   "notes-memory": "published",
+  "scheduled-milestones": "published",
 };
 
 export function stepFromHash(hash: string): CampaignWorkflowStep | null {

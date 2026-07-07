@@ -51,6 +51,7 @@ export function CaptionsProgressStepper({
               type="button"
               onClick={() => onStepSelect?.(step)}
               disabled={!onStepSelect}
+              aria-label={`${label}${isActive ? " (current step)" : isComplete ? " (completed)" : ""}`}
               className={cn(
                 "flex items-center gap-2 rounded-full px-2 py-1.5 text-left transition-colors sm:px-3",
                 isActive && "bg-cos-bg",

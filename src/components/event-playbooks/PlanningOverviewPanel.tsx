@@ -27,17 +27,12 @@ function resolveItemTitle(item: ApprovalQueueItem): string {
 }
 
 function resolveDraftHref(
-  item: ApprovalQueueItem,
+  eventId: string,
   section: "changes" | "pending" | "approved",
 ): string {
-  const step =
-    section === "changes"
-      ? "schedule"
-      : section === "approved"
-        ? "publish"
-        : "publish";
+  const step = section === "changes" ? "schedule" : "publish";
 
-  return `/events/${item.eventId}#${step}`;
+  return `/events/${eventId}#${step}`;
 }
 
 function resolveApprovedBy(item: ApprovalQueueItem): string {
@@ -104,6 +99,7 @@ function OverviewStatusCard({
 }
 
 function OverviewQueueList({
+  eventId,
   items,
   emptyTitle,
   emptyDescription,
@@ -111,6 +107,7 @@ function OverviewQueueList({
   showApprovedCheck = false,
   timestampPrefix,
 }: {
+  eventId: string;
   items: ApprovalQueueItem[];
   emptyTitle: string;
   emptyDescription: string;
@@ -143,7 +140,7 @@ function OverviewQueueList({
         return (
           <li key={item.id}>
             <Link
-              href={resolveDraftHref(item, section)}
+              href={resolveDraftHref(eventId, section)}
               className="group flex items-start gap-3 px-1 py-4 transition-colors hover:bg-cos-bg/50"
             >
               <CommunicationChannelIcon channel={item.channel} size="md" />
@@ -293,6 +290,7 @@ export function PlanningOverviewPanel({
           </div>
           <div className="px-5 pb-2">
             <OverviewQueueList
+              eventId={eventId}
               items={overview.changesRequested}
               emptyTitle="No change requests"
               emptyDescription="Drafts sent back for edits will show up here."
@@ -319,6 +317,7 @@ export function PlanningOverviewPanel({
           </div>
           <div className="px-5 pb-2">
             <OverviewQueueList
+              eventId={eventId}
               items={overview.recentlyApproved}
               emptyTitle="Nothing approved yet"
               emptyDescription="Approved communications will appear here once cleared."

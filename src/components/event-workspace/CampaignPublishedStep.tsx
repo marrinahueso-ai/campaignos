@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
 import { CreativeStudioStepHeader } from "@/components/event-workspace/plan/CreativeStudioStepHeader";
@@ -29,6 +30,7 @@ import { formatDateTime } from "@/lib/utils/dates";
 import { milestoneAccordionCardProps } from "@/lib/utils/milestone-accordion";
 import type { MetaPublishBundle, MetaPublishBundleStatus } from "@/lib/meta-publishing/types";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
+import { normalizeLocationHash } from "@/lib/navigation/location-hash";
 import { cn } from "@/lib/utils/cn";
 
 interface CampaignPublishedStepProps {
@@ -39,7 +41,11 @@ interface CampaignPublishedStepProps {
   backHref?: string;
 }
 
-const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = ["scheduled", "approved"];
+const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = [
+  "scheduled",
+  "approved",
+  "posting",
+];
 
 function sortBundlesByWhen(bundles: MetaPublishBundle[]): MetaPublishBundle[] {
   return [...bundles].sort((left, right) => {
@@ -117,9 +123,11 @@ function PublishedMilestoneCard({
               milestoneWorkflowBadgeClassName(badgeStatus),
             )}
           >
-            {section === "scheduled" && bundle.status === "approved"
-              ? "Queued for auto-post"
-              : milestoneWorkflowBadgeLabel(badgeStatus)}
+            {bundle.status === "posting"
+              ? "Posting"
+              : section === "scheduled" && bundle.status === "approved"
+                ? "Queued for auto-post"
+                : milestoneWorkflowBadgeLabel(badgeStatus)}
           </span>
         )}
       </div>
@@ -219,6 +227,19 @@ export function CampaignPublishedStep({
   const publishedBundles = sortBundlesByWhen(
     metaBundles.filter((bundle) => bundle.status === "published"),
   );
+
+  useEffect(() => {
+    if (normalizeLocationHash(window.location.hash) !== "scheduled-milestones") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      document.getElementById("scheduled-milestones")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
 
   return (
     <div className="space-y-6">

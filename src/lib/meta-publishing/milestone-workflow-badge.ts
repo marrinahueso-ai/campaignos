@@ -25,7 +25,11 @@ export function resolvePublishWorkflowBadgeStatus(
     return "published";
   }
 
-  if (bundleStatus === "scheduled" || bundleStatus === "approved") {
+  if (
+    bundleStatus === "scheduled" ||
+    bundleStatus === "approved" ||
+    bundleStatus === "posting"
+  ) {
     return "scheduled";
   }
 

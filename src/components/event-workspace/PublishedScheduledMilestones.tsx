@@ -90,16 +90,18 @@ function ScheduledMilestoneCard({
                 milestoneWorkflowBadgeClassName(badgeStatus),
               )}
             >
-              {bundle.status === "approved"
-                ? "Queued for auto-post"
-                : milestoneWorkflowBadgeLabel(badgeStatus)}
+              {bundle.status === "posting"
+                ? "Posting"
+                : bundle.status === "approved"
+                  ? "Queued for auto-post"
+                  : milestoneWorkflowBadgeLabel(badgeStatus)}
             </span>
           )}
           <Button
             type="button"
             variant="secondary"
             size="sm"
-            disabled={unschedulePending}
+            disabled={unschedulePending || bundle.status === "posting"}
             onClick={() => onUnschedule(bundle.relativeDay, bundle.title)}
           >
             {unschedulePending ? "Unscheduling…" : "Unschedule"}
@@ -147,7 +149,6 @@ export function PublishedScheduledMilestones({
   bundles,
 }: PublishedScheduledMilestonesProps) {
   const router = useRouter();
-  const [pendingDay, setPendingDay] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -161,10 +162,8 @@ export function PublishedScheduledMilestones({
     }
 
     setError(null);
-    setPendingDay(relativeDay);
     startTransition(async () => {
       const result = await unscheduleMetaBundleAction(eventId, relativeDay);
-      setPendingDay(null);
 
       if (!result.success) {
         setError(result.error ?? "Unable to unschedule this milestone.");
@@ -204,7 +203,7 @@ export function PublishedScheduledMilestones({
               key={bundle.relativeDay}
               bundle={bundle}
               onUnschedule={handleUnschedule}
-              unschedulePending={isPending && pendingDay === bundle.relativeDay}
+              unschedulePending={isPending}
             />
           ))}
         </div>
