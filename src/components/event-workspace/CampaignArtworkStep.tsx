@@ -1,6 +1,6 @@
 "use client";
 
-import { CampaignArtworkStep } from "@/components/event-workspace/CampaignArtworkStep";
+import { CampaignArtworkPage } from "@/components/event-workspace/artwork/CampaignArtworkPage";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { Event } from "@/types";
@@ -8,7 +8,7 @@ import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStep, EventType } from "@/types/playbooks";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 
-interface CampaignCreativeTabProps {
+interface CampaignArtworkStepProps {
   eventId: string;
   event: Event;
   organizationName?: string | null;
@@ -21,7 +21,7 @@ interface CampaignCreativeTabProps {
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
 }
 
-export function CampaignCreativeTab({
+export function CampaignArtworkStep({
   eventId,
   event,
   organizationName = null,
@@ -32,9 +32,9 @@ export function CampaignCreativeTab({
   metaPublishBundles = [],
   onNavigateToCaptions,
   onWorkflowStepSelect,
-}: CampaignCreativeTabProps) {
+}: CampaignArtworkStepProps) {
   return (
-    <CampaignArtworkStep
+    <CampaignArtworkPage
       eventId={eventId}
       event={event}
       organizationName={organizationName}

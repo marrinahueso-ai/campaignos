@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
+import {
+  ArtworkCampaignWorkspace,
+} from "@/components/event-workspace/artwork/ArtworkCampaignWorkspace";
+import type { ArtworkCustomizeAction } from "@/components/event-workspace/artwork/ArtworkCustomizeToolbar";
 import { ArtworkV2ApprovedScreen } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import {
   ArtworkV2BatchGenerateScreen,
@@ -75,6 +79,8 @@ interface ArtworkV2ShellProps {
   assets: EventAsset[];
   metaPublishBundles?: MetaPublishBundle[];
   onNavigateToCaptions?: (relativeDay: number) => void;
+  /** Campaign workflow layout matching captions / review-publish redesign. */
+  variant?: "legacy" | "campaign";
 }
 
 function revokeReferencePreviews(references: ArtworkV2Reference[]): void {
@@ -172,6 +178,7 @@ export function ArtworkV2Shell({
   assets,
   metaPublishBundles = [],
   onNavigateToCaptions,
+  variant = "legacy",
 }: ArtworkV2ShellProps) {
   const router = useRouter();
   const workflowItems = useMemo(
@@ -236,6 +243,9 @@ export function ArtworkV2Shell({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationWarning, setGenerationWarning] = useState<string | null>(null);
   const [lastGenerationMode, setLastGenerationMode] = useState<ArtworkGenerationMode>("quick");
+  const [generationMode, setGenerationMode] = useState<ArtworkGenerationMode>("quick");
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [adjustmentComments, setAdjustmentComments] = useState("");
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
@@ -250,6 +260,12 @@ export function ArtworkV2Shell({
   useEffect(() => {
     selectedItemRef.current = selectedItem;
   }, [selectedItem]);
+
+  useEffect(() => {
+    if (selectedVersionId && !reviewVersions.some((version) => version.id === selectedVersionId)) {
+      setSelectedVersionId(null);
+    }
+  }, [selectedVersionId, reviewVersions]);
 
   useEffect(() => {
     void getCanvaConnectionStatusAction().then(setCanvaStatus);
@@ -1060,6 +1076,117 @@ export function ArtworkV2Shell({
     if (firstReady) {
       openMilestone(firstReady.relativeDay);
     }
+  }
+
+  const autoOpenAttemptedRef = useRef(false);
+  const [campaignInitializing, setCampaignInitializing] = useState(variant === "campaign");
+
+  useEffect(() => {
+    if (variant !== "campaign") {
+      setCampaignInitializing(false);
+      return;
+    }
+
+    if (step !== "pick" || autoOpenAttemptedRef.current) {
+      setCampaignInitializing(false);
+      return;
+    }
+
+    autoOpenAttemptedRef.current = true;
+
+    if (isPhaseWorkflow) {
+      const firstPending = phaseItems.find((item) => {
+        if (item.metaPlacement !== "feed") {
+          return false;
+        }
+        const asset = resolveWorkflowAsset(item, null, assets);
+        return !isApprovedArtworkAsset(asset);
+      });
+
+      if (firstPending) {
+        openMilestone(firstPending.relativeDay);
+        setCampaignInitializing(false);
+        return;
+      }
+
+      const firstFeed = phaseItems.find((item) => item.metaPlacement === "feed");
+      if (firstFeed) {
+        openMilestone(firstFeed.relativeDay);
+      }
+
+      setCampaignInitializing(false);
+      return;
+    }
+
+    const firstPending = workflowItems.find((item) => !resolveApprovedDownload(item, assets));
+    if (firstPending) {
+      openItem(firstPending);
+    }
+
+    setCampaignInitializing(false);
+  }, [variant, step, isPhaseWorkflow, phaseItems, assets, workflowItems]);
+
+  function handleCampaignGenerateWithEdits() {
+    if (!selectedVersionId || !adjustmentComments.trim()) {
+      return;
+    }
+
+    handleAdjust(selectedVersionId, adjustmentComments.trim());
+    setAdjustmentComments("");
+  }
+
+  function handleCampaignApproveSelected() {
+    if (!selectedVersionId) {
+      return;
+    }
+
+    handleApprove(selectedVersionId);
+  }
+
+  function handleCampaignGenerateMore() {
+    handleRegenerate(lastGenerationMode);
+  }
+
+  function handleCampaignCustomizeAction(_action: ArtworkCustomizeAction) {
+    // Prompt prefill is handled in ArtworkCampaignWorkspace.
+  }
+
+  if (variant === "campaign" && step === "pick" && campaignInitializing) {
+    return (
+      <div className="min-h-[20rem] animate-pulse rounded-sm bg-cos-bg/40" aria-hidden />
+    );
+  }
+
+  if (variant === "campaign" && (step === "create" || step === "review") && selectedItem) {
+    return (
+      <ArtworkCampaignWorkspace
+        item={selectedItem}
+        prompt={prompt}
+        references={references}
+        versions={reviewVersions}
+        generationMode={generationMode}
+        selectedVersionId={selectedVersionId}
+        adjustmentComments={adjustmentComments}
+        isGenerating={isGenerating}
+        isReviewBusy={isReviewBusy}
+        isApprovingInspiration={isReviewBusy}
+        error={generationError}
+        reviewError={reviewError}
+        generationWarning={generationWarning}
+        showReview={step === "review"}
+        onPromptChange={setPrompt}
+        onReferencesChange={setReferences}
+        onGenerationModeChange={setGenerationMode}
+        onGenerate={handleGenerate}
+        onApproveInspiration={handleApproveInspiration}
+        onSelectVersion={setSelectedVersionId}
+        onAdjustmentCommentsChange={setAdjustmentComments}
+        onGenerateWithEdits={handleCampaignGenerateWithEdits}
+        onApproveSelected={handleCampaignApproveSelected}
+        onGenerateMore={handleCampaignGenerateMore}
+        onCustomizeAction={handleCampaignCustomizeAction}
+      />
+    );
   }
 
   if (step === "pick") {

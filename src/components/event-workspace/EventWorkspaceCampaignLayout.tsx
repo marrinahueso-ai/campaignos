@@ -150,7 +150,7 @@ export function EventWorkspaceCampaignLayout({
 
       <CampaignWorkspaceTabs
         defaultStep="plan"
-        fullBleedSteps={["schedule", "publish"]}
+        fullBleedSteps={["artwork", "schedule", "publish"]}
         plan={
           <CampaignCommunicationPlanStep
             eventId={eventId}
@@ -174,6 +174,10 @@ export function EventWorkspaceCampaignLayout({
             assets={assets}
             metaPublishBundles={metaPublishBundles}
             onNavigateToCaptions={handleNavigateToCaptions}
+            onWorkflowStepSelect={(step) => {
+              window.location.hash = step;
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
           />
         }
         schedule={

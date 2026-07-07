@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
@@ -247,6 +248,10 @@ export function Sidebar({
           );
         })}
       </nav>
+
+      <div className={cn(showLabels ? "px-4 pb-4" : "flex justify-center px-2 pb-4")}>
+        {showLabels ? <AiCreditsWidget /> : <AiCreditsWidget compact />}
+      </div>
 
       {showLabels && (
         <div className="border-t border-cos-border p-5">
