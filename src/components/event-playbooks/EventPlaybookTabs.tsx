@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import {
   stepFromHash as campaignStepFromHash,
@@ -72,27 +71,42 @@ function parseLocationHash(): {
   return { tab: "overview", campaignStep: null };
 }
 
-function resolveInitialPlaybookState(
+function resolvePlaybookTabFromHash(
   visibleTabs: { id: EventPlaybookTab; label: string }[],
   defaultTab: EventPlaybookTab,
-  initialCampaignStep: CampaignWorkflowStep,
-): {
-  tab: EventPlaybookTab;
-  campaignStep: CampaignWorkflowStep;
-} {
-  if (typeof window === "undefined") {
-    return { tab: defaultTab, campaignStep: initialCampaignStep };
-  }
-
+): EventPlaybookTab {
   const parsed = parseLocationHash();
-  const tab = visibleTabs.some((entry) => entry.id === parsed.tab)
+  return visibleTabs.some((entry) => entry.id === parsed.tab)
     ? parsed.tab
     : defaultTab;
+}
 
-  return {
-    tab,
-    campaignStep: parsed.campaignStep ?? initialCampaignStep,
-  };
+function resolveCampaignStepFromHash(
+  initialCampaignStep: CampaignWorkflowStep,
+): CampaignWorkflowStep {
+  const parsed = parseLocationHash();
+  return parsed.campaignStep ?? initialCampaignStep;
+}
+
+function usePlaybookTabFromHash(
+  visibleTabs: { id: EventPlaybookTab; label: string }[],
+  defaultTab: EventPlaybookTab,
+): EventPlaybookTab {
+  return useSyncExternalStore(
+    subscribeToLocationHash,
+    () => resolvePlaybookTabFromHash(visibleTabs, defaultTab),
+    () => defaultTab,
+  );
+}
+
+function useCampaignStepFromHash(
+  initialCampaignStep: CampaignWorkflowStep,
+): CampaignWorkflowStep {
+  return useSyncExternalStore(
+    subscribeToLocationHash,
+    () => resolveCampaignStepFromHash(initialCampaignStep),
+    () => initialCampaignStep,
+  );
 }
 
 interface EventPlaybookTabsProps {
@@ -125,31 +139,21 @@ export function EventPlaybookTabs({
   initialCampaignStep = "plan",
   onCampaignStepChange,
 }: EventPlaybookTabsProps) {
-  const pathname = usePathname();
   const visibleTabs = hasCampaign
     ? ALL_TABS
     : ALL_TABS.filter((tab) => tab.id !== "social-media");
 
-  const [activeTab, setActiveTab] = useState<EventPlaybookTab>(() =>
-    resolveInitialPlaybookState(visibleTabs, defaultTab, initialCampaignStep).tab,
-  );
-  const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>(() =>
-    resolveInitialPlaybookState(visibleTabs, defaultTab, initialCampaignStep).campaignStep,
-  );
-  const [initialized, setInitialized] = useState(
-    () => typeof window !== "undefined",
-  );
+  const activeTab = usePlaybookTabFromHash(visibleTabs, defaultTab);
+  const campaignStep = useCampaignStepFromHash(initialCampaignStep);
 
   const navigateToTab = useCallback(
     (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => {
       const resolvedTab = visibleTabs.some((entry) => entry.id === tab)
         ? tab
         : defaultTab;
-      setActiveTab(resolvedTab);
 
       if (resolvedTab === "social-media" && hasCampaign) {
         const nextStep = step ?? campaignStep;
-        setCampaignStep(nextStep);
         onCampaignStepChange?.(nextStep);
         window.history.replaceState(null, "", `#${nextStep}`);
         return;
@@ -160,34 +164,9 @@ export function EventPlaybookTabs({
     [campaignStep, defaultTab, hasCampaign, onCampaignStepChange, visibleTabs],
   );
 
-  const syncFromHash = useCallback(() => {
-    const parsed = parseLocationHash();
-    const tab = visibleTabs.some((entry) => entry.id === parsed.tab)
-      ? parsed.tab
-      : defaultTab;
-    setActiveTab(tab);
-    if (parsed.campaignStep) {
-      setCampaignStep(parsed.campaignStep);
-      onCampaignStepChange?.(parsed.campaignStep);
-    }
-  }, [defaultTab, onCampaignStepChange, visibleTabs]);
-
   useEffect(() => {
-    setCampaignStep(initialCampaignStep);
-  }, [initialCampaignStep]);
-
-  useEffect(() => {
-    syncFromHash();
-    setInitialized(true);
-
-    const unsubscribe = subscribeToLocationHash(syncFromHash);
-    const frame = requestAnimationFrame(() => syncFromHash());
-
-    return () => {
-      unsubscribe();
-      cancelAnimationFrame(frame);
-    };
-  }, [syncFromHash, pathname]);
+    onCampaignStepChange?.(campaignStep);
+  }, [campaignStep, onCampaignStepChange]);
 
   function selectTab(tab: EventPlaybookTab) {
     navigateToTab(tab);
@@ -262,23 +241,19 @@ export function EventPlaybookTabs({
           isFullBleedView ? "-mt-8 pt-0 lg:-mt-10" : "bg-cos-bg p-6 lg:p-8",
         )}
       >
-        {!initialized ? (
-          <div className="min-h-[12rem] animate-pulse bg-cos-bg/60" />
-        ) : (
-          visibleTabs.map((tab) =>
-            activeTab === tab.id ? (
-              <div
-                key={tab.id}
-                id={`playbook-tab-${tab.id}`}
-                role="tabpanel"
-                aria-labelledby={`playbook-tab-trigger-${tab.id}`}
-              >
-                {tab.id === "social-media" && socialMedia
-                  ? socialMedia
-                  : panels[tab.id]}
-              </div>
-            ) : null,
-          )
+        {visibleTabs.map((tab) =>
+          activeTab === tab.id ? (
+            <div
+              key={tab.id}
+              id={`playbook-tab-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`playbook-tab-trigger-${tab.id}`}
+            >
+              {tab.id === "social-media" && socialMedia
+                ? socialMedia
+                : panels[tab.id]}
+            </div>
+          ) : null,
         )}
       </div>
     </div>
