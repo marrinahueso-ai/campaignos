@@ -74,6 +74,8 @@ interface EventPlanningHubProps {
   campaignWorkspace?: CampaignWorkspaceBundle;
   calendarContext?: CalendarContextBundle;
   planningOverview?: EventPlanningOverviewData | null;
+  committeePersonOptions?: string[];
+  defaultCommitteePerson?: string;
 }
 
 export function EventPlanningHub({
@@ -90,6 +92,8 @@ export function EventPlanningHub({
   campaignWorkspace,
   calendarContext,
   planningOverview = null,
+  committeePersonOptions = [],
+  defaultCommitteePerson = "",
 }: EventPlanningHubProps) {
   const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>("plan");
 
@@ -163,6 +167,14 @@ export function EventPlanningHub({
       calendarSettingsExtras={calendarSettingsExtras}
       initialCampaignStep={campaignStep}
       onCampaignStepChange={setCampaignStep}
+      committeePersonOptions={
+        committeePersonOptions.length > 0
+          ? committeePersonOptions
+          : (campaignWorkspace?.committeePersonOptions ?? [])
+      }
+      defaultCommitteePerson={
+        defaultCommitteePerson || campaignWorkspace?.defaultCommitteePerson || ""
+      }
     />
   );
 }

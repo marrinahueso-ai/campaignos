@@ -1,46 +1,135 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import {
-  BarChart3,
-  CircleDollarSign,
-  MapPin,
-  Tag,
-  Target,
-  Users,
-} from "lucide-react";
-import { EVENT_TYPE_LABELS, DEFAULT_EVENT_TYPE } from "@/lib/playbooks/constants";
+  OverviewInlineSelect,
+  OverviewInlineText,
+} from "@/components/event-playbooks/OverviewInlineFields";
+import { buildPlanningOverviewFromEvent } from "@/lib/event-playbooks/build-planning-overview-state";
+import { saveEventPlanningOverviewAction } from "@/lib/event-playbooks/planning-actions";
+import {
+  DEFAULT_EVENT_TYPE,
+  EVENT_TYPES,
+} from "@/lib/playbooks/constants";
 import type { Event } from "@/types";
+import type { EventType } from "@/types/playbooks";
 
 interface OverviewEventDetailsGridProps {
   event: Event;
 }
 
 export function OverviewEventDetailsGrid({ event }: OverviewEventDetailsGridProps) {
-  const eventTypeLabel =
-    EVENT_TYPE_LABELS[event.eventType ?? DEFAULT_EVENT_TYPE] ?? "General Event";
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const overview = buildPlanningOverviewFromEvent(event);
 
-  const rows = [
-    { icon: Target, label: "Goal", value: event.goal?.trim() || "Not set" },
-    { icon: Users, label: "Audience", value: event.audience?.trim() || "Not set" },
-    { icon: MapPin, label: "Location", value: event.location?.trim() || "Not set" },
+  function refreshAfterSave() {
+    startTransition(() => {
+      router.refresh();
+    });
+  }
+
+  async function saveField(
+    patch: Partial<ReturnType<typeof buildPlanningOverviewFromEvent>>,
+  ) {
+    const result = await saveEventPlanningOverviewAction(event.id, {
+      ...overview,
+      ...patch,
+    });
+    if (result.success) {
+      refreshAfterSave();
+    }
+  }
+
+  const rows: {
+    label: string;
+    content: React.ReactNode;
+  }[] = [
     {
-      icon: BarChart3,
-      label: "Expected attendance",
-      value: event.expectedAttendance?.trim() || event.audience?.trim() || "TBD",
+      label: "Goal",
+      content: (
+        <OverviewInlineText
+          value={overview.goal}
+          placeholder="Not set"
+          multiline
+          rows={2}
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (goal) => saveField({ goal })}
+        />
+      ),
     },
-    { icon: CircleDollarSign, label: "Budget", value: event.budget?.trim() || "Not set" },
-    { icon: Tag, label: "Event type", value: eventTypeLabel },
+    {
+      label: "Audience",
+      content: (
+        <OverviewInlineText
+          value={overview.audience}
+          placeholder="Not set"
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (audience) => saveField({ audience })}
+        />
+      ),
+    },
+    {
+      label: "Location",
+      content: (
+        <OverviewInlineText
+          value={overview.location}
+          placeholder="Not set"
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (location) => saveField({ location })}
+        />
+      ),
+    },
+    {
+      label: "Expected attendance",
+      content: (
+        <OverviewInlineText
+          value={overview.expectedAttendance}
+          displayValue={
+            overview.expectedAttendance.trim() ||
+            overview.audience.trim() ||
+            "TBD"
+          }
+          placeholder="TBD"
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (expectedAttendance) => saveField({ expectedAttendance })}
+        />
+      ),
+    },
+    {
+      label: "Budget",
+      content: (
+        <OverviewInlineText
+          value={overview.budget}
+          placeholder="Not set"
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (budget) => saveField({ budget })}
+        />
+      ),
+    },
+    {
+      label: "Event type",
+      content: (
+        <OverviewInlineSelect
+          value={overview.eventType}
+          options={EVENT_TYPES.map(({ value, label }) => ({ value, label }))}
+          placeholder={DEFAULT_EVENT_TYPE}
+          valueClassName="text-sm font-medium text-cos-text"
+          onSave={async (eventType) =>
+            saveField({ eventType: eventType as EventType })
+          }
+        />
+      ),
+    },
   ];
 
   return (
     <div className="mt-6 grid gap-px overflow-hidden rounded-sm border border-cos-border bg-cos-border sm:grid-cols-2">
-      {rows.map(({ icon: Icon, label, value }) => (
-        <div key={label} className="flex gap-3 bg-cos-card p-4">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cos-bg-alt text-cos-dark-muted">
-            <Icon className="h-4 w-4" strokeWidth={1.5} />
-          </span>
-          <div className="min-w-0">
-            <p className="cos-section-title">{label}</p>
-            <p className="mt-1 text-sm font-medium text-cos-text">{value}</p>
-          </div>
+      {rows.map(({ label, content }) => (
+        <div key={label} className="bg-cos-card p-4">
+          <p className="cos-section-title">{label}</p>
+          <div className="mt-1 min-w-0">{content}</div>
         </div>
       ))}
     </div>

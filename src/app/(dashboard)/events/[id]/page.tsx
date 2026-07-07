@@ -124,6 +124,25 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     ? resolveEventRosterOwnership(event, orgWorkspace)
     : null;
 
+  const resolvedOwnership = ownership ?? {
+    committeeName: null,
+    chairNames: [],
+    vpRoleName: null,
+    vpContactName: null,
+    committeeFilled: false,
+    vpFilled: false,
+  };
+
+  const committeePersonOptions = buildCommitteePersonOptions(
+    resolvedOwnership,
+    orgWorkspace?.committees ?? [],
+  );
+  const defaultCommitteePerson = resolveDefaultCommitteePerson(
+    event.eventOwner,
+    resolvedOwnership,
+    committeePersonOptions,
+  );
+
   if (!hasCampaign) {
     const campaignIntelligence = getCampaignIntelligenceFromWorkspace(
       event,
@@ -152,6 +171,8 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           tablesAvailable={tablesAvailable}
           taskGroupsAvailable={taskGroupsAvailable}
           hasCampaign={false}
+          committeePersonOptions={committeePersonOptions}
+          defaultCommitteePerson={defaultCommitteePerson}
           calendarContext={{
             nextStep: getEventNextStep(false, []),
             artwork: heroArtwork,
@@ -207,15 +228,6 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
 
   const assetVersions = Object.fromEntries(assetVersionsMap.entries());
 
-  const resolvedOwnership = ownership ?? {
-    committeeName: null,
-    chairNames: [],
-    vpRoleName: null,
-    vpContactName: null,
-    committeeFilled: false,
-    vpFilled: false,
-  };
-
   const approvalRoles =
     orgWorkspace?.roles.map((role) => ({
       id: role.id,
@@ -228,16 +240,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     )?.defaultRoleId ?? null;
 
   const vpRoles = buildVpRoleOptions(orgWorkspace?.roles ?? []);
-  const committeePersonOptions = buildCommitteePersonOptions(
-    resolvedOwnership,
-    orgWorkspace?.committees ?? [],
-  );
   const defaultVpRoleId = resolveDefaultVpRoleId(resolvedOwnership, vpRoles);
-  const defaultCommitteePerson = resolveDefaultCommitteePerson(
-    event.eventOwner,
-    resolvedOwnership,
-    committeePersonOptions,
-  );
 
   const planningOverview = await getEventPlanningOverviewData({
     eventId: event.id,
@@ -258,6 +261,8 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
         tablesAvailable={tablesAvailable}
         taskGroupsAvailable={taskGroupsAvailable}
         hasCampaign
+        committeePersonOptions={committeePersonOptions}
+        defaultCommitteePerson={defaultCommitteePerson}
         campaignWorkspace={{
           organizationName: organization?.name ?? null,
           nextStep: getEventNextStep(true, resolvedPlaybook.steps),

@@ -39,6 +39,8 @@ interface EventPlaybookHubShellProps {
   initialCampaignStep?: CampaignWorkflowStep;
   onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
   defaultTab?: EventPlaybookTab;
+  committeePersonOptions?: string[];
+  defaultCommitteePerson?: string;
 }
 
 export function EventPlaybookHubShell({
@@ -57,6 +59,8 @@ export function EventPlaybookHubShell({
   initialCampaignStep = "plan",
   onCampaignStepChange,
   defaultTab = "overview",
+  committeePersonOptions = [],
+  defaultCommitteePerson = "",
 }: EventPlaybookHubShellProps) {
   const showArtwork = hasDisplayableArtwork(artwork);
   const lessonCount = hubData.notes.filter((n) => n.noteType === "lesson").length;
@@ -124,6 +128,8 @@ export function EventPlaybookHubShell({
             pastEvents={pastEvents}
             hasCampaign={hasCampaign}
             tablesAvailable={tablesAvailable}
+            committeePersonOptions={committeePersonOptions}
+            defaultCommitteePerson={defaultCommitteePerson}
           />
         }
         tasks={
