@@ -6,9 +6,11 @@ import { ArtworkGeneratedOptionsGrid } from "@/components/event-workspace/artwor
 import { ArtworkPageHeader } from "@/components/event-workspace/artwork/ArtworkPageHeader";
 import { ArtworkPromptPanel } from "@/components/event-workspace/artwork/ArtworkPromptPanel";
 import { ArtworkV2ReviewLightbox } from "@/components/artwork-v2/ArtworkV2ReviewLightbox";
-import { Button } from "@/components/ui/Button";
-import { Textarea } from "@/components/ui/Textarea";
 import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
+import {
+  metaPlacementToDefaultFormatLabel,
+  resolveArtworkPreviewAspectRatio,
+} from "@/lib/artwork-v2/format-selection";
 import type { ArtworkV2Reference, ArtworkV2ReviewVersion } from "@/lib/artwork-v2/types";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 
@@ -23,11 +25,11 @@ const CUSTOMIZE_PROMPTS: Record<ArtworkCustomizeAction, string> = {
 interface ArtworkCampaignWorkspaceProps {
   item: ArtworkWorkflowItem;
   prompt: string;
+  format: string;
   references: ArtworkV2Reference[];
   versions: ArtworkV2ReviewVersion[];
   generationMode: ArtworkGenerationMode;
   selectedVersionId: string | null;
-  adjustmentComments: string;
   isGenerating?: boolean;
   isReviewBusy?: boolean;
   isApprovingInspiration?: boolean;
@@ -35,13 +37,12 @@ interface ArtworkCampaignWorkspaceProps {
   reviewError?: string | null;
   generationWarning?: string | null;
   onPromptChange: (value: string) => void;
+  onFormatChange: (value: string) => void;
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
   onGenerationModeChange: (mode: ArtworkGenerationMode) => void;
   onGenerate: (mode: ArtworkGenerationMode) => void;
   onApproveInspiration: (referenceId: string) => void;
   onSelectVersion: (versionId: string) => void;
-  onAdjustmentCommentsChange: (value: string) => void;
-  onGenerateWithEdits: () => void;
   onApproveSelected: () => void;
   onGenerateMore: () => void;
   onCustomizeAction: (action: ArtworkCustomizeAction) => void;
@@ -50,43 +51,51 @@ interface ArtworkCampaignWorkspaceProps {
 export function ArtworkCampaignWorkspace({
   item,
   prompt,
+  format,
   references,
   versions,
   generationMode,
   selectedVersionId,
-  adjustmentComments,
   isGenerating = false,
   isReviewBusy = false,
   error = null,
   reviewError = null,
   generationWarning = null,
   onPromptChange,
+  onFormatChange,
   onReferencesChange,
   onGenerationModeChange,
   onGenerate,
   onSelectVersion,
-  onAdjustmentCommentsChange,
-  onGenerateWithEdits,
   onApproveSelected,
   onGenerateMore,
   onCustomizeAction,
 }: ArtworkCampaignWorkspaceProps) {
-  const [format, setFormat] = useState(
-    item.metaPlacement === "story" ? "Instagram Story (9:16)" : "Instagram Post (1:1)",
-  );
   const [brandStyle, setBrandStyle] = useState("Hey Ralli (Primary)");
   const [colorVibe, setColorVibe] = useState("Colorful & Playful");
   const [lightboxVersion, setLightboxVersion] = useState<ArtworkV2ReviewVersion | null>(null);
 
   const hasSelection = selectedVersionId != null;
-  const hasComments = adjustmentComments.trim().length > 0;
   const hasGeneratedVersions = versions.length > 0;
+  const previewAspectRatio = resolveArtworkPreviewAspectRatio(
+    item.metaPlacement === "story" ? "story" : "feed",
+  );
 
   function handleCustomizeAction(action: ArtworkCustomizeAction) {
     onCustomizeAction(action);
-    if (!adjustmentComments.trim()) {
-      onAdjustmentCommentsChange(CUSTOMIZE_PROMPTS[action]);
+    const editHint = CUSTOMIZE_PROMPTS[action];
+    if (!prompt.trim()) {
+      onPromptChange(editHint);
+      return;
     }
+
+    if (!prompt.includes(editHint)) {
+      onPromptChange(`${prompt.trim()}\n\n${editHint}`);
+    }
+  }
+
+  function handleGenerateClick() {
+    onGenerate(generationMode);
   }
 
   return (
@@ -109,8 +118,8 @@ export function ArtworkCampaignWorkspace({
         <ArtworkPromptPanel
           prompt={prompt}
           onPromptChange={onPromptChange}
-          format={format}
-          onFormatChange={setFormat}
+          format={format || metaPlacementToDefaultFormatLabel(item.metaPlacement === "story" ? "story" : "feed")}
+          onFormatChange={onFormatChange}
           brandStyle={brandStyle}
           onBrandStyleChange={setBrandStyle}
           colorVibe={colorVibe}
@@ -119,8 +128,11 @@ export function ArtworkCampaignWorkspace({
           onGenerationModeChange={onGenerationModeChange}
           references={references}
           onReferencesChange={onReferencesChange}
-          onGenerate={() => onGenerate(generationMode)}
+          onGenerate={handleGenerateClick}
+          onApproveSelected={onApproveSelected}
+          hasSelection={hasSelection && hasGeneratedVersions}
           isGenerating={isGenerating}
+          isReviewBusy={isReviewBusy}
           generateDisabled={!prompt.trim()}
           disabled={isGenerating || isReviewBusy}
         />
@@ -129,6 +141,7 @@ export function ArtworkCampaignWorkspace({
           versions={versions}
           itemLabel={item.label}
           selectedVersionId={selectedVersionId}
+          aspectRatio={previewAspectRatio}
           onSelectVersion={onSelectVersion}
           onPreviewVersion={(version) => setLightboxVersion(version)}
           onGenerateMore={hasGeneratedVersions ? onGenerateMore : undefined}
@@ -140,42 +153,6 @@ export function ArtworkCampaignWorkspace({
           onAction={handleCustomizeAction}
           disabled={!hasSelection || isReviewBusy || !hasGeneratedVersions}
         />
-
-        {hasSelection && hasGeneratedVersions && (
-          <div className="space-y-3 border border-cos-border bg-cos-bg/30 p-4">
-            <label htmlFor="artwork-campaign-adjust" className="cos-section-title">
-              Your edits
-            </label>
-            <Textarea
-              id="artwork-campaign-adjust"
-              value={adjustmentComments}
-              onChange={(event) => onAdjustmentCommentsChange(event.target.value)}
-              rows={3}
-              placeholder="Describe what you'd like different — colors, layout, text, spacing…"
-              disabled={isReviewBusy}
-              className="min-h-[88px] text-sm"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                disabled={isReviewBusy || !hasComments}
-                onClick={onGenerateWithEdits}
-              >
-                {isReviewBusy ? "Generating…" : "Generate with my edits"}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled={isReviewBusy}
-                onClick={onApproveSelected}
-              >
-                {isReviewBusy ? "Saving…" : "Approve selected"}
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {lightboxVersion?.imageUrl && (

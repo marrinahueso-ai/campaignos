@@ -41,6 +41,10 @@ import {
 } from "@/lib/artwork-v2/campaign-phases";
 import { buildDefaultArtworkPrompt } from "@/lib/artwork-v2/event-prompt";
 import {
+  formatLabelToMetaPlacement,
+  metaPlacementToDefaultFormatLabel,
+} from "@/lib/artwork-v2/format-selection";
+import {
   getRemainingArtworkMilestones,
   resolveMilestoneArtworkStatus,
 } from "@/lib/artwork-v2/batch-generate";
@@ -109,6 +113,17 @@ function appendReferencesToFormData(formData: FormData, references: ArtworkV2Ref
 
 function isPhaseItem(item: ArtworkWorkflowItem): item is ArtworkPhaseWorkflowItem {
   return typeof item.relativeDay === "number";
+}
+
+function syncCampaignFormatFromItem(
+  item: ArtworkWorkflowItem,
+  setFormat: (format: string) => void,
+) {
+  if (!isPhaseItem(item)) {
+    return;
+  }
+
+  setFormat(metaPlacementToDefaultFormatLabel(item.metaPlacement));
 }
 
 function referenceFromApprovedAsset(asset: EventAsset): ArtworkV2Reference {
@@ -245,7 +260,8 @@ export function ArtworkV2Shell({
   const [lastGenerationMode, setLastGenerationMode] = useState<ArtworkGenerationMode>("quick");
   const [generationMode, setGenerationMode] = useState<ArtworkGenerationMode>("quick");
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
-  const [adjustmentComments, setAdjustmentComments] = useState("");
+  const [campaignFormat, setCampaignFormat] = useState<string>("Instagram Post (1:1)");
+  const generationBasePromptRef = useRef("");
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
   const [isGenerating, startGenerating] = useTransition();
@@ -321,6 +337,7 @@ export function ArtworkV2Shell({
 
   function openItem(item: ArtworkWorkflowItem) {
     setSelectedItem(item);
+    syncCampaignFormatFromItem(item, setCampaignFormat);
     setMilestoneFormats(null);
     setApprovedMilestoneDay(null);
     setMilestoneFormatOverrides(null);
@@ -367,12 +384,14 @@ export function ArtworkV2Shell({
     setApprovedArtwork(null);
     const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
     setPrompt(defaults.prompt);
+    generationBasePromptRef.current = defaults.prompt;
     setReferences(defaults.references);
     setStep("create");
   }
 
   async function openReviewForItem(item: ArtworkWorkflowItem) {
     setSelectedItem(item);
+    syncCampaignFormatFromItem(item, setCampaignFormat);
     setReviewError(null);
     setGenerationWarning(null);
     setHasGeneratedOnce(true);
@@ -381,6 +400,7 @@ export function ArtworkV2Shell({
     if (!result.success || result.versions.length === 0) {
       const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
       setPrompt(defaults.prompt);
+      generationBasePromptRef.current = defaults.prompt;
       setReferences(defaults.references);
       setStep("create");
       return;
@@ -388,6 +408,7 @@ export function ArtworkV2Shell({
 
     const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
     setPrompt(defaults.prompt);
+    generationBasePromptRef.current = defaults.prompt;
     revokeReferencePreviews(references);
     setReferences(defaults.references);
     setReviewVersions(result.versions);
@@ -816,6 +837,7 @@ export function ArtworkV2Shell({
     setGenerationWarning(null);
     setReviewError(null);
     setLastGenerationMode(mode);
+    generationBasePromptRef.current = prompt.trim();
 
     startGenerating(async () => {
       const formData = new FormData();
@@ -836,6 +858,58 @@ export function ArtworkV2Shell({
       setGenerationWarning(result.warning ?? null);
       setStep("review");
     });
+  }
+
+  function handleCampaignGenerate(mode: ArtworkGenerationMode) {
+    if (!selectedItem || !prompt.trim()) return;
+
+    if (selectedVersionId && reviewVersions.length > 0) {
+      handleAdjust(selectedVersionId, prompt.trim(), generationBasePromptRef.current || prompt.trim());
+      return;
+    }
+
+    handleGenerate(mode);
+  }
+
+  async function handleCampaignFormatChange(format: string) {
+    setCampaignFormat(format);
+
+    if (!selectedItem || !isPhaseItem(selectedItem)) {
+      return;
+    }
+
+    const placement = formatLabelToMetaPlacement(format);
+    const targetItem =
+      placement === "story"
+        ? findMilestoneStoryItem(phaseItems, selectedItem.relativeDay)
+        : findMilestoneFeedItem(phaseItems, selectedItem.relativeDay);
+
+    if (!targetItem || targetItem.id === selectedItem.id) {
+      return;
+    }
+
+    setSelectedItem(targetItem);
+    setGenerationError(null);
+    setReviewError(null);
+    setSelectedVersionId(null);
+
+    const defaults = buildCreatorDefaults(targetItem, phaseItems, assets, event, organizationName);
+    setPrompt(defaults.prompt);
+    generationBasePromptRef.current = defaults.prompt;
+    revokeReferencePreviews(references);
+    setReferences(defaults.references);
+
+    const reviewResult = await getArtworkV2ReviewVersionsAction(eventId, targetItem.id);
+    if (reviewResult.success && reviewResult.versions.length > 0) {
+      setReviewVersions(reviewResult.versions);
+      setHasGeneratedOnce(true);
+      setStep("review");
+      return;
+    }
+
+    setReviewVersions([]);
+    setHasGeneratedOnce(false);
+    setStep("create");
   }
 
   function handleRegenerate(mode: ArtworkGenerationMode) {
@@ -916,15 +990,19 @@ export function ArtworkV2Shell({
     });
   }
 
-  function handleAdjust(versionId: string, adjustmentComments: string) {
-    if (!selectedItem || !prompt.trim()) return;
+  function handleAdjust(
+    versionId: string,
+    adjustmentComments: string,
+    originalPrompt: string = generationBasePromptRef.current,
+  ) {
+    if (!selectedItem || !adjustmentComments.trim()) return;
 
     setReviewError(null);
 
     startReviewAction(async () => {
       const formData = new FormData();
       formData.set("workflowItemId", selectedItem.id);
-      formData.set("originalPrompt", prompt);
+      formData.set("originalPrompt", originalPrompt || adjustmentComments);
       formData.set("adjustmentComments", adjustmentComments);
       formData.set("versionId", versionId);
       formData.set("generationMode", lastGenerationMode);
@@ -1126,15 +1204,6 @@ export function ArtworkV2Shell({
     setCampaignInitializing(false);
   }, [variant, step, isPhaseWorkflow, phaseItems, assets, workflowItems]);
 
-  function handleCampaignGenerateWithEdits() {
-    if (!selectedVersionId || !adjustmentComments.trim()) {
-      return;
-    }
-
-    handleAdjust(selectedVersionId, adjustmentComments.trim());
-    setAdjustmentComments("");
-  }
-
   function handleCampaignApproveSelected() {
     if (!selectedVersionId) {
       return;
@@ -1162,11 +1231,18 @@ export function ArtworkV2Shell({
       <ArtworkCampaignWorkspace
         item={selectedItem}
         prompt={prompt}
+        format={
+          campaignFormat ||
+          metaPlacementToDefaultFormatLabel(
+            isPhaseItem(selectedItem) && selectedItem.metaPlacement === "story"
+              ? "story"
+              : "feed",
+          )
+        }
         references={references}
         versions={reviewVersions}
         generationMode={generationMode}
         selectedVersionId={selectedVersionId}
-        adjustmentComments={adjustmentComments}
         isGenerating={isGenerating}
         isReviewBusy={isReviewBusy}
         isApprovingInspiration={isReviewBusy}
@@ -1174,13 +1250,12 @@ export function ArtworkV2Shell({
         reviewError={reviewError}
         generationWarning={generationWarning}
         onPromptChange={setPrompt}
+        onFormatChange={handleCampaignFormatChange}
         onReferencesChange={setReferences}
         onGenerationModeChange={setGenerationMode}
-        onGenerate={handleGenerate}
+        onGenerate={handleCampaignGenerate}
         onApproveInspiration={handleApproveInspiration}
         onSelectVersion={setSelectedVersionId}
-        onAdjustmentCommentsChange={setAdjustmentComments}
-        onGenerateWithEdits={handleCampaignGenerateWithEdits}
         onApproveSelected={handleCampaignApproveSelected}
         onGenerateMore={handleCampaignGenerateMore}
         onCustomizeAction={handleCampaignCustomizeAction}

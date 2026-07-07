@@ -11,6 +11,7 @@ interface ArtworkGeneratedOptionsGridProps {
   versions: ArtworkV2ReviewVersion[];
   itemLabel: string;
   selectedVersionId: string | null;
+  aspectRatio?: "square" | "story";
   onSelectVersion: (versionId: string) => void;
   onPreviewVersion?: (version: ArtworkV2ReviewVersion) => void;
   onGenerateMore?: () => void;
@@ -18,10 +19,15 @@ interface ArtworkGeneratedOptionsGridProps {
   disabled?: boolean;
 }
 
+function slotAspectClass(aspectRatio: "square" | "story"): string {
+  return aspectRatio === "story" ? "aspect-[9/16]" : "aspect-square";
+}
+
 export function ArtworkGeneratedOptionsGrid({
   versions,
   itemLabel,
   selectedVersionId,
+  aspectRatio = "square",
   onSelectVersion,
   onPreviewVersion,
   onGenerateMore,
@@ -29,18 +35,29 @@ export function ArtworkGeneratedOptionsGrid({
   disabled = false,
 }: ArtworkGeneratedOptionsGridProps) {
   const slots = Array.from({ length: GRID_SLOTS }, (_, index) => versions[index] ?? null);
+  const aspectClass = slotAspectClass(aspectRatio);
 
   return (
     <section className="space-y-4">
       <p className="cos-section-title">AI generated options</p>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div
+        className={cn(
+          "grid gap-3",
+          aspectRatio === "story"
+            ? "grid-cols-2 sm:grid-cols-4"
+            : "grid-cols-2 sm:grid-cols-4",
+        )}
+      >
         {slots.map((version, index) => {
           if (!version) {
             return (
               <div
                 key={`empty-${index}`}
-                className="aspect-square rounded-sm border-2 border-dashed border-cos-border/80 bg-cos-bg/40"
+                className={cn(
+                  aspectClass,
+                  "rounded-sm border-2 border-dashed border-cos-border/80 bg-cos-bg/40",
+                )}
                 aria-hidden
               />
             );
@@ -56,7 +73,8 @@ export function ArtworkGeneratedOptionsGrid({
               onClick={() => onSelectVersion(version.id)}
               onDoubleClick={() => onPreviewVersion?.(version)}
               className={cn(
-                "relative aspect-square overflow-hidden border border-cos-border bg-[#f7f6f3] text-left transition-shadow",
+                aspectClass,
+                "relative overflow-hidden border border-cos-border bg-[#f7f6f3] text-left transition-shadow",
                 isSelected && "ring-2 ring-cos-dark ring-offset-2 ring-offset-cos-card",
                 !disabled && "cursor-pointer hover:shadow-sm",
               )}

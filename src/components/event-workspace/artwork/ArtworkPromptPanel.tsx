@@ -8,15 +8,10 @@ import {
   type ArtworkGenerationMode,
 } from "@/lib/artwork-v2/generation-mode";
 import type { ArtworkV2Reference } from "@/lib/artwork-v2/types";
+import { ARTWORK_FORMAT_OPTIONS } from "@/lib/artwork-v2/format-selection";
+import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils/cn";
-
-const FORMAT_OPTIONS = [
-  "Instagram Post (1:1)",
-  "Instagram Story (9:16)",
-  "Facebook Post (1:1)",
-  "Facebook Story (9:16)",
-] as const;
 
 const BRAND_STYLE_OPTIONS = ["Hey Ralli (Primary)", "School brand", "Minimal", "Bold"] as const;
 
@@ -43,7 +38,10 @@ interface ArtworkPromptPanelProps {
   references: ArtworkV2Reference[];
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
   onGenerate: () => void;
+  onApproveSelected?: () => void;
+  hasSelection?: boolean;
   isGenerating?: boolean;
+  isReviewBusy?: boolean;
   generateDisabled?: boolean;
   disabled?: boolean;
 }
@@ -72,7 +70,10 @@ export function ArtworkPromptPanel({
   references,
   onReferencesChange,
   onGenerate,
+  onApproveSelected,
+  hasSelection = false,
   isGenerating = false,
+  isReviewBusy = false,
   generateDisabled = false,
   disabled = false,
 }: ArtworkPromptPanelProps) {
@@ -122,26 +123,46 @@ export function ArtworkPromptPanel({
           rows={3}
           placeholder="Describe the artwork you want — style, colors, text, mood…"
           disabled={disabled}
-          className="min-h-[88px] resize-y border-cos-border bg-cos-bg/40 pr-28 pb-10 text-sm leading-relaxed"
+          className="min-h-[88px] resize-y border-cos-border bg-cos-bg/40 pr-4 pb-12 text-sm leading-relaxed"
         />
-        <button
-          type="button"
-          disabled={generateDisabled || isGenerating || !prompt.trim() || disabled}
-          onClick={onGenerate}
-          className={cn(
-            "absolute right-2 bottom-2 inline-flex h-8 items-center gap-1.5 bg-cos-dark px-3 text-xs font-medium text-[#f6f2eb] transition-colors hover:bg-cos-text disabled:pointer-events-none disabled:opacity-50",
+        <div className="absolute right-2 bottom-2 flex items-center gap-2">
+          {hasSelection && onApproveSelected && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={isReviewBusy || disabled}
+              onClick={onApproveSelected}
+              className="h-8 px-3 text-xs"
+            >
+              {isReviewBusy ? "Saving…" : "Approve selected"}
+            </Button>
           )}
-        >
-          <Sparkles className="h-3.5 w-3.5" aria-hidden />
-          {isGenerating ? "Generating…" : "Generate"}
-        </button>
+          <button
+            type="button"
+            disabled={
+              generateDisabled || isGenerating || isReviewBusy || !prompt.trim() || disabled
+            }
+            onClick={onGenerate}
+            className={cn(
+              "inline-flex h-8 items-center gap-1.5 bg-cos-dark px-3 text-xs font-medium text-[#f6f2eb] transition-colors hover:bg-cos-text disabled:pointer-events-none disabled:opacity-50",
+            )}
+          >
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            {isGenerating || isReviewBusy
+              ? "Generating…"
+              : hasSelection
+                ? "Generate with my edits"
+                : "Generate"}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
         <ArtworkPromptSelect
           label="Format"
           value={format}
-          options={FORMAT_OPTIONS}
+          options={ARTWORK_FORMAT_OPTIONS}
           onChange={onFormatChange}
           disabled={disabled}
         />
