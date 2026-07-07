@@ -33,7 +33,7 @@ export interface SendStoryPostKitResult {
 function resolveSiteBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    "https://campaignos-six.vercel.app"
+    "https://heyralli.com"
   );
 }
 

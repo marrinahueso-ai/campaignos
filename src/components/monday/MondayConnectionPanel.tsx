@@ -116,14 +116,14 @@ export function MondayConnectionPanel({
           <li>
             Set <code className="rounded bg-cos-bg px-1">NEXT_PUBLIC_SITE_URL</code> to your
             public site origin (e.g.{" "}
-            <code className="rounded bg-cos-bg px-1">https://campaignos-six.vercel.app</code>)
+            <code className="rounded bg-cos-bg px-1">https://heyralli.com</code>)
             so OAuth redirect URLs stay consistent in production
           </li>
           <li>
             Draft-only apps can still complete OAuth (no Promote to Live required). If you test a
             specific draft version as an app collaborator, pass{" "}
             <code className="rounded bg-cos-bg px-1">app_version_id</code> on the authorize URL —
-            CampaignOS uses the default live-or-latest version.
+            Hey Ralli uses the default live-or-latest version.
           </li>
         </ul>
       </div>
@@ -189,7 +189,7 @@ export function MondayConnectionPanel({
             ) : (
               <>
                 <p className="text-cos-muted">
-                  Authorize CampaignOS in Monday.com. Installing the app in Monday alone does not
+                  Authorize Hey Ralli in Monday.com. Installing the app in Monday alone does not
                   connect your school — click the button below and approve access.
                 </p>
                 <Button href={connectHref}>Connect Monday</Button>
