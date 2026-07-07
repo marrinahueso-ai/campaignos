@@ -8,7 +8,7 @@ import {
   type CaptionOption,
 } from "@/components/event-workspace/captions/CaptionsOptionsPanel";
 import { CaptionsMilestoneBar } from "@/components/event-workspace/captions/CaptionsMilestoneBar";
-import { CaptionsPageHeader } from "@/components/event-workspace/captions/CaptionsPageHeader";
+import { CreativeStudioStepHeader } from "@/components/event-workspace/plan/CreativeStudioStepHeader";
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
 import { CaptionsPublishPlatforms } from "@/components/event-workspace/captions/CaptionsPublishPlatforms";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -84,6 +84,7 @@ interface CampaignCaptionsPageProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToArtwork?: () => void;
+  backHref?: string;
 }
 
 export function CampaignCaptionsPage({
@@ -95,9 +96,10 @@ export function CampaignCaptionsPage({
   onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToArtwork,
+  backHref,
 }: CampaignCaptionsPageProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -293,16 +295,6 @@ export function CampaignCaptionsPage({
     });
   }
 
-  function handleSaveCaptions() {
-    const option = currentOptions.find((entry) => entry.id === selectedOptionId);
-    if (!option?.text.trim()) {
-      setError("Select a caption option before saving.");
-      return;
-    }
-
-    handleUseOption(option.id);
-  }
-
   if (milestones.length === 0) {
     return (
       <EmptyState
@@ -315,11 +307,11 @@ export function CampaignCaptionsPage({
 
   return (
     <div className="space-y-6">
-      <CaptionsPageHeader
+      <CreativeStudioStepHeader
         eventId={eventId}
-        onSaveCaptions={handleSaveCaptions}
-        isSaving={isPending}
-        saveDisabled={!selectedOptionId}
+        title="Captions"
+        description="Create custom captions for each milestone. Our AI suggests engaging copy based on your artwork, audience, and campaign goals."
+        backHref={backHref}
       />
 
       <div className="overflow-hidden border border-cos-border bg-cos-card">

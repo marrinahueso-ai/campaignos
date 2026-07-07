@@ -13,6 +13,7 @@ interface CampaignReviewPublishStepProps {
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
   onViewPublished?: () => void;
+  backHref?: string;
 }
 
 export function CampaignReviewPublishStep({
@@ -24,6 +25,7 @@ export function CampaignReviewPublishStep({
   onWorkflowStepSelect,
   onNavigateToMilestone,
   onViewPublished,
+  backHref,
 }: CampaignReviewPublishStepProps) {
   return (
     <CampaignReviewPublishPage
@@ -35,6 +37,7 @@ export function CampaignReviewPublishStep({
       onWorkflowStepSelect={onWorkflowStepSelect}
       onNavigateToMilestone={onNavigateToMilestone}
       onViewPublished={onViewPublished}
+      backHref={backHref}
     />
   );
 }

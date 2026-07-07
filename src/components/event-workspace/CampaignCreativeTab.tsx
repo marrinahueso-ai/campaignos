@@ -22,6 +22,7 @@ interface CampaignCreativeTabProps {
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   brandAssets?: BrandAssets | null;
+  backHref?: string;
 }
 
 export function CampaignCreativeTab({
@@ -38,6 +39,7 @@ export function CampaignCreativeTab({
   onNavigateToCaptions,
   onWorkflowStepSelect,
   brandAssets = null,
+  backHref,
 }: CampaignCreativeTabProps) {
   return (
     <CampaignArtworkStep
@@ -54,6 +56,7 @@ export function CampaignCreativeTab({
       onNavigateToCaptions={onNavigateToCaptions}
       onWorkflowStepSelect={onWorkflowStepSelect}
       brandAssets={brandAssets}
+      backHref={backHref}
     />
   );
 }

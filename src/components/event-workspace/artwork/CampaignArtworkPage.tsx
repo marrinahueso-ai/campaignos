@@ -1,6 +1,7 @@
 "use client";
 
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
+import { CreativeStudioStepHeader } from "@/components/event-workspace/plan/CreativeStudioStepHeader";
 import { ArtworkV2Shell } from "@/components/artwork-v2/ArtworkV2Shell";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
@@ -23,6 +24,7 @@ interface CampaignArtworkPageProps {
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   brandAssets?: BrandAssets | null;
+  backHref?: string;
 }
 
 export function CampaignArtworkPage({
@@ -39,9 +41,18 @@ export function CampaignArtworkPage({
   onNavigateToCaptions,
   onWorkflowStepSelect,
   brandAssets = null,
+  backHref,
 }: CampaignArtworkPageProps) {
   return (
-    <div className="overflow-hidden border border-cos-border bg-cos-card">
+    <div className="space-y-6">
+      <CreativeStudioStepHeader
+        eventId={eventId}
+        title="Artwork"
+        description="Generate custom, on-brand artwork for each milestone in your campaign."
+        backHref={backHref}
+      />
+
+      <div className="overflow-hidden border border-cos-border bg-cos-card">
       <CaptionsProgressStepper
         activeStep="artwork"
         onStepSelect={onWorkflowStepSelect}
@@ -64,6 +75,7 @@ export function CampaignArtworkPage({
           brandAssets={brandAssets}
         />
       </div>
+    </div>
     </div>
   );
 }

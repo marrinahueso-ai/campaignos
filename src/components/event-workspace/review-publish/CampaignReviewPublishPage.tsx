@@ -12,7 +12,7 @@ import {
 import { ReviewPublishContentPanel } from "@/components/event-workspace/review-publish/ReviewPublishContentPanel";
 import { ReviewPublishFooterActions } from "@/components/event-workspace/review-publish/ReviewPublishFooterActions";
 import { ReviewPublishOptionsPanel } from "@/components/event-workspace/review-publish/ReviewPublishOptionsPanel";
-import { ReviewPublishPageHeader } from "@/components/event-workspace/review-publish/ReviewPublishPageHeader";
+import { CreativeStudioStepHeader } from "@/components/event-workspace/plan/CreativeStudioStepHeader";
 import type { ReviewPublishPlatformId } from "@/components/event-workspace/review-publish/ReviewPublishPlatformCheckboxes";
 import {
   combineDateAndTimeToIso,
@@ -76,6 +76,7 @@ interface CampaignReviewPublishPageProps {
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
   onViewPublished?: () => void;
+  backHref?: string;
 }
 
 type ConfirmationState = {
@@ -92,6 +93,7 @@ export function CampaignReviewPublishPage({
   onWorkflowStepSelect,
   onNavigateToMilestone,
   onViewPublished,
+  backHref,
 }: CampaignReviewPublishPageProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -319,6 +321,13 @@ export function CampaignReviewPublishPage({
   if (confirmation && confirmationBundle) {
     return (
       <div className="space-y-6">
+        <CreativeStudioStepHeader
+          eventId={eventId}
+          title="Review & publish"
+          description="Review your content and choose when and where to publish."
+          backHref={backHref}
+        />
+
         <div className="overflow-hidden border border-cos-border bg-cos-card">
           <CaptionsProgressStepper
             activeStep="publish"
@@ -343,6 +352,13 @@ export function CampaignReviewPublishPage({
 
   return (
     <div className="space-y-6">
+      <CreativeStudioStepHeader
+        eventId={eventId}
+        title="Review & publish"
+        description="Review your content and choose when and where to publish."
+        backHref={backHref}
+      />
+
       <div className="overflow-hidden border border-cos-border bg-cos-card">
         <CaptionsProgressStepper
           activeStep="publish"
@@ -350,8 +366,6 @@ export function CampaignReviewPublishPage({
         />
 
         <div className="p-5 lg:p-6">
-          <ReviewPublishPageHeader />
-
           {showMilestoneBar && (
             <MilestoneScheduleBar
               milestones={reviewMilestones}

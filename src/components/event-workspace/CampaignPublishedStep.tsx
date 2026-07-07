@@ -2,6 +2,7 @@
 
 import { CalendarCheck, CheckCircle2 } from "lucide-react";
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
+import { CreativeStudioStepHeader } from "@/components/event-workspace/plan/CreativeStudioStepHeader";
 import { PlanningOverviewPanel } from "@/components/event-playbooks/PlanningOverviewPanel";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
@@ -35,6 +36,7 @@ interface CampaignPublishedStepProps {
   metaPublishBundles: MetaPublishBundle[];
   planningOverview?: EventPlanningOverviewData | null;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
+  backHref?: string;
 }
 
 const SCHEDULED_STATUSES: MetaPublishBundleStatus[] = ["scheduled", "approved"];
@@ -204,6 +206,7 @@ export function CampaignPublishedStep({
   metaPublishBundles,
   planningOverview = null,
   onWorkflowStepSelect,
+  backHref,
 }: CampaignPublishedStepProps) {
   const metaBundles = metaPublishBundles.filter(
     (bundle) => bundle.isMetaPost && bundle.status !== "skipped",
@@ -218,7 +221,15 @@ export function CampaignPublishedStep({
   );
 
   return (
-    <div className="overflow-hidden border border-cos-border bg-cos-card">
+    <div className="space-y-6">
+      <CreativeStudioStepHeader
+        eventId={eventId}
+        title="Published"
+        description="Track scheduled and live posts for this campaign."
+        backHref={backHref}
+      />
+
+      <div className="overflow-hidden border border-cos-border bg-cos-card">
       <CaptionsProgressStepper
         activeStep="published"
         onStepSelect={onWorkflowStepSelect}
@@ -240,6 +251,7 @@ export function CampaignPublishedStep({
           emptyTitle="Nothing published yet"
           emptyDescription="When communications are marked published, they will appear here with their publish date and time."
         />
+      </div>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ interface CampaignArtworkStepProps {
   onNavigateToCaptions?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   brandAssets?: BrandAssets | null;
+  backHref?: string;
 }
 
 export function CampaignArtworkStep({
@@ -38,6 +39,7 @@ export function CampaignArtworkStep({
   onNavigateToCaptions,
   onWorkflowStepSelect,
   brandAssets = null,
+  backHref,
 }: CampaignArtworkStepProps) {
   return (
     <CampaignArtworkPage
@@ -54,6 +56,7 @@ export function CampaignArtworkStep({
       onNavigateToCaptions={onNavigateToCaptions}
       onWorkflowStepSelect={onWorkflowStepSelect}
       brandAssets={brandAssets}
+      backHref={backHref}
     />
   );
 }

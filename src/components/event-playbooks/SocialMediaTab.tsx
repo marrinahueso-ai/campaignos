@@ -243,6 +243,7 @@ export function SocialMediaTab({
             onNavigateToCaptions={handleNavigateToCaptions}
             onWorkflowStepSelect={navigateToWorkflowStep}
             brandAssets={brandAssets}
+            backHref={backHref}
           />
         }
         schedule={
@@ -255,6 +256,7 @@ export function SocialMediaTab({
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToArtwork={() => navigateToWorkflowStep("artwork")}
+            backHref={backHref}
           />
         }
         publish={
@@ -267,6 +269,7 @@ export function SocialMediaTab({
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToMilestone={handleNavigateToMilestone}
             onViewPublished={handleViewPublished}
+            backHref={backHref}
           />
         }
         published={
@@ -275,6 +278,7 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             planningOverview={planningOverview}
             onWorkflowStepSelect={navigateToWorkflowStep}
+            backHref={backHref}
           />
         }
     />
