@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { ArtworkCustomizeToolbar, type ArtworkCustomizeAction } from "@/components/event-workspace/artwork/ArtworkCustomizeToolbar";
 import { ArtworkGeneratedOptionsGrid } from "@/components/event-workspace/artwork/ArtworkGeneratedOptionsGrid";
-import { ArtworkGenerationModeSection } from "@/components/event-workspace/artwork/ArtworkGenerationModeSection";
-import { ArtworkInspirationUpload } from "@/components/event-workspace/artwork/ArtworkInspirationUpload";
 import { ArtworkPageHeader } from "@/components/event-workspace/artwork/ArtworkPageHeader";
 import { ArtworkPromptPanel } from "@/components/event-workspace/artwork/ArtworkPromptPanel";
 import { ArtworkV2ReviewLightbox } from "@/components/artwork-v2/ArtworkV2ReviewLightbox";
@@ -59,7 +57,6 @@ export function ArtworkCampaignWorkspace({
   adjustmentComments,
   isGenerating = false,
   isReviewBusy = false,
-  isApprovingInspiration = false,
   error = null,
   reviewError = null,
   generationWarning = null,
@@ -67,7 +64,6 @@ export function ArtworkCampaignWorkspace({
   onReferencesChange,
   onGenerationModeChange,
   onGenerate,
-  onApproveInspiration,
   onSelectVersion,
   onAdjustmentCommentsChange,
   onGenerateWithEdits,
@@ -119,22 +115,10 @@ export function ArtworkCampaignWorkspace({
           onBrandStyleChange={setBrandStyle}
           colorVibe={colorVibe}
           onColorVibeChange={setColorVibe}
-          onGenerate={() => onGenerate(generationMode)}
-          isGenerating={isGenerating}
-          generateDisabled={!prompt.trim()}
-        />
-
-        <ArtworkInspirationUpload
+          generationMode={generationMode}
+          onGenerationModeChange={onGenerationModeChange}
           references={references}
           onReferencesChange={onReferencesChange}
-          onApproveInspiration={onApproveInspiration}
-          isApproving={isApprovingInspiration}
-          disabled={isGenerating || isReviewBusy}
-        />
-
-        <ArtworkGenerationModeSection
-          value={generationMode}
-          onChange={onGenerationModeChange}
           onGenerate={() => onGenerate(generationMode)}
           isGenerating={isGenerating}
           generateDisabled={!prompt.trim()}
