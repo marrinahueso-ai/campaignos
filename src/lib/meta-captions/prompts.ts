@@ -109,7 +109,7 @@ export function buildMetaCaptionUserPrompt(input: {
     revisionContext && input.placement === "feed"
       ? [
           "",
-          "The user already has this caption draft. Revise and improve it — keep their intent, emoji choices, hashtags, and key details unless tone or length settings require a clear shift:",
+          "The user already has this caption draft. Revise and improve it — you MUST preserve every user-added detail, phrase, reminder, hashtag, and emoji verbatim (including specific wording they inserted). Keep their intent and insertions unless tone or length settings require a clear shift:",
           `"${revisionContext}"`,
         ].join("\n")
       : null;

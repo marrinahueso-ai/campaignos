@@ -124,7 +124,7 @@ export function CaptionsOptionsPanel({
             variant="secondary"
             size="sm"
             className="h-9 px-3"
-            disabled={!aiAvailable || isRegenerating}
+            disabled={!aiAvailable || isRegenerating || isSavingOption}
             onClick={() => onGenerateCaption(generationOptions)}
             title={aiAvailable ? undefined : (aiUnavailableReason ?? undefined)}
           >

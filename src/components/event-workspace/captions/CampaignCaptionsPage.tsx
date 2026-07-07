@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CaptionsArtworkPreview } from "@/components/event-workspace/captions/CaptionsArtworkPreview";
 import {
@@ -71,10 +71,17 @@ function readMilestoneFeedContent(
 }
 
 function resolveExistingCaptionContext(
+  day: number,
+  latestDraftByDay: Record<number, string>,
   options: CaptionOption[],
   selectedOptionId: string | null,
   milestone: MetaSocialCaptionMilestone | undefined,
 ): string | null {
+  const fromDraft = latestDraftByDay[day]?.trim();
+  if (fromDraft) {
+    return fromDraft;
+  }
+
   if (selectedOptionId) {
     const selected = options.find((option) => option.id === selectedOptionId);
     if (selected?.text.trim()) {
@@ -156,6 +163,7 @@ export function CampaignCaptionsPage({
   });
 
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const latestCaptionDraftByDayRef = useRef<Record<number, string>>({});
 
   useEffect(() => {
     setSelectedDay((current) =>
@@ -244,6 +252,8 @@ export function CampaignCaptionsPage({
     setIsRegenerating(true);
 
     const revisionContext = resolveExistingCaptionContext(
+      selectedDay,
+      latestCaptionDraftByDayRef.current,
       currentOptions,
       selectedOptionId,
       selectedMilestone,
@@ -263,6 +273,10 @@ export function CampaignCaptionsPage({
 
       const content = result.content?.trim();
       if (content) {
+        latestCaptionDraftByDayRef.current = {
+          ...latestCaptionDraftByDayRef.current,
+          [selectedDay]: content,
+        };
         const newOption = { id: createOptionId(), text: content };
         setOptionsForDay(selectedDay, [newOption]);
         setSelectedOptionByDay((current) => ({
@@ -292,6 +306,8 @@ export function CampaignCaptionsPage({
     setIsGeneratingMore(true);
 
     const revisionContext = resolveExistingCaptionContext(
+      selectedDay,
+      latestCaptionDraftByDayRef.current,
       currentOptions,
       selectedOptionId,
       selectedMilestone,
@@ -311,6 +327,10 @@ export function CampaignCaptionsPage({
 
       const content = result.content?.trim();
       if (content) {
+        latestCaptionDraftByDayRef.current = {
+          ...latestCaptionDraftByDayRef.current,
+          [selectedDay]: content,
+        };
         const newOption = { id: createOptionId(), text: content };
         setOptionsForDay(selectedDay, [...currentOptions, newOption]);
         router.refresh();
@@ -327,6 +347,11 @@ export function CampaignCaptionsPage({
     if (!trimmed) {
       return;
     }
+
+    latestCaptionDraftByDayRef.current = {
+      ...latestCaptionDraftByDayRef.current,
+      [selectedDay]: trimmed,
+    };
 
     const updated = currentOptions.map((option) =>
       option.id === optionId ? { ...option, text: trimmed } : option,
