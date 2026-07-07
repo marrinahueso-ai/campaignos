@@ -110,7 +110,9 @@ export function CampaignWorkspaceTabs({
 }: CampaignWorkspaceTabsProps) {
   const [internalStep, setInternalStep] = useState<CampaignWorkflowStep>(defaultStep);
   const activeStep = controlledStep ?? internalStep;
-  const [initialized, setInitialized] = useState(false);
+  const [initialized, setInitialized] = useState(
+    () => controlledStep !== undefined || !manageHash,
+  );
 
   const syncFromHash = useCallback(() => {
     if (controlledStep !== undefined || !manageHash) {

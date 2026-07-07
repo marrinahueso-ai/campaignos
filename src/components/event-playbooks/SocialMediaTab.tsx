@@ -91,7 +91,13 @@ export function SocialMediaTab({
   onCampaignStepChange,
   planningOverview = null,
 }: SocialMediaTabProps) {
-  const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(initialStep);
+  const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(() => {
+    if (typeof window === "undefined") {
+      return initialStep;
+    }
+
+    return stepFromHash(window.location.hash) ?? initialStep;
+  });
   const [focusedRelativeDay, setFocusedRelativeDay] = useState<number | null>(null);
 
   const approvalRoleLabel = resolveEventApprovalRoleLabel(

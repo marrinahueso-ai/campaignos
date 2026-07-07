@@ -472,6 +472,10 @@ export function ArtworkV2Shell({
     setGenerationWarning(null);
     setHasGeneratedOnce(true);
 
+    if (variant === "campaign") {
+      setStep("create");
+    }
+
     const result = await getArtworkV2ReviewVersionsAction(eventId, item.id);
     if (!result.success || result.versions.length === 0) {
       const defaults = buildCreatorDefaults(item, phaseItems, assets, event, organizationName);
@@ -1320,61 +1324,69 @@ export function ArtworkV2Shell({
   useEffect(() => {
     if (variant !== "campaign") {
       setCampaignInitializing(false);
-      return;
     }
+  }, [variant]);
 
-    if (step !== "pick" || autoOpenAttemptedRef.current) {
+  useEffect(() => {
+    if (variant === "campaign" && step !== "pick") {
       setCampaignInitializing(false);
+    }
+  }, [variant, step]);
+
+  useEffect(() => {
+    if (variant !== "campaign" || autoOpenAttemptedRef.current) {
       return;
     }
 
     autoOpenAttemptedRef.current = true;
 
+    let openedMilestone = false;
+
     if (isPhaseWorkflow) {
       const preferredDay = resolveArtworkRelativeDay(milestoneOptions, initialRelativeDay);
       if (preferredDay != null) {
         openMilestone(preferredDay);
-        setCampaignInitializing(false);
-        return;
-      }
+        openedMilestone = true;
+      } else {
+        const firstPending = phaseItems.find((item) => {
+          if (item.metaPlacement !== "feed") {
+            return false;
+          }
+          const asset = resolveWorkflowAsset(item, null, assets);
+          return !isApprovedArtworkAsset(asset);
+        });
 
-      const firstPending = phaseItems.find((item) => {
-        if (item.metaPlacement !== "feed") {
-          return false;
-        }
-        const asset = resolveWorkflowAsset(item, null, assets);
-        return !isApprovedArtworkAsset(asset);
-      });
-
-      if (firstPending) {
-        openMilestone(firstPending.relativeDay);
-        setCampaignInitializing(false);
-        return;
-      }
-
-      const firstFeed = phaseItems.find((item) => item.metaPlacement === "feed");
-      if (firstFeed) {
-        if (
-          variant === "campaign" &&
-          isMilestoneArtworkComplete(firstFeed.relativeDay)
-        ) {
-          onNavigateToCaptions?.(firstFeed.relativeDay);
+        if (firstPending) {
+          openMilestone(firstPending.relativeDay);
+          openedMilestone = true;
         } else {
-          openMilestone(firstFeed.relativeDay);
+          const firstFeed = phaseItems.find((item) => item.metaPlacement === "feed");
+          if (firstFeed) {
+            if (isMilestoneArtworkComplete(firstFeed.relativeDay)) {
+              onNavigateToCaptions?.(firstFeed.relativeDay);
+            } else {
+              openMilestone(firstFeed.relativeDay);
+              openedMilestone = true;
+            }
+          }
         }
       }
 
-      setCampaignInitializing(false);
+      if (!openedMilestone) {
+        setCampaignInitializing(false);
+      }
+
       return;
     }
 
     const firstPending = workflowItems.find((item) => !resolveApprovedDownload(item, assets));
     if (firstPending) {
       openItem(firstPending);
+      return;
     }
 
     setCampaignInitializing(false);
-  }, [variant, step, isPhaseWorkflow, phaseItems, assets, workflowItems]);
+  }, [variant, isPhaseWorkflow, phaseItems, assets, workflowItems, milestoneOptions, initialRelativeDay]);
 
   function handleCampaignApproveSelected() {
     if (!selectedVersionId) {
@@ -1392,7 +1404,11 @@ export function ArtworkV2Shell({
     // Prompt prefill is handled in ArtworkCampaignWorkspace.
   }
 
-  if (variant === "campaign" && step === "pick" && campaignInitializing) {
+  if (
+    variant === "campaign" &&
+    step === "pick" &&
+    (campaignInitializing || selectedItem != null)
+  ) {
     return (
       <div className="min-h-[20rem] animate-pulse rounded-sm bg-cos-bg/40" aria-hidden />
     );
