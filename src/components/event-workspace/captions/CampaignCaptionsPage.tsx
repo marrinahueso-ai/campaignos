@@ -350,7 +350,10 @@ export function CampaignCaptionsPage({
               feedArtworkUrl={selectedBundle?.feedArtworkUrl ?? null}
               storyArtworkUrl={selectedBundle?.storyArtworkUrl ?? null}
               milestoneTitle={selectedMilestone?.title ?? "Milestone"}
-              onEditArtwork={onNavigateToArtwork}
+              onEditArtwork={() => {
+                onFocusedMilestoneChange?.(selectedDay);
+                onNavigateToArtwork?.();
+              }}
             />
 
             <CaptionsOptionsPanel

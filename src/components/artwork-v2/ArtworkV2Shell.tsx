@@ -954,19 +954,22 @@ export function ArtworkV2Shell({
     });
   }
 
-  function handleGenerate(mode: ArtworkGenerationMode) {
-    if (!selectedItem || !prompt.trim()) return;
+  function handleGenerate(mode: ArtworkGenerationMode, promptOverride?: string) {
+    if (!selectedItem) return;
+
+    const effectivePrompt = (promptOverride ?? prompt).trim();
+    if (!effectivePrompt) return;
 
     setGenerationError(null);
     setGenerationWarning(null);
     setReviewError(null);
     setLastGenerationMode(mode);
-    generationBasePromptRef.current = prompt.trim();
+    generationBasePromptRef.current = effectivePrompt;
 
     startGenerating(async () => {
       const formData = new FormData();
       formData.set("workflowItemId", selectedItem.id);
-      formData.set("prompt", prompt);
+      formData.set("prompt", effectivePrompt);
       formData.set("generationMode", mode);
       appendReferencesToFormData(formData, references);
 
@@ -984,15 +987,20 @@ export function ArtworkV2Shell({
     });
   }
 
-  function handleCampaignGenerate(mode: ArtworkGenerationMode) {
-    if (!selectedItem || !prompt.trim()) return;
+  function handleCampaignGenerate(mode: ArtworkGenerationMode, effectivePrompt?: string) {
+    const resolvedPrompt = (effectivePrompt ?? prompt).trim();
+    if (!selectedItem || !resolvedPrompt) return;
 
     if (selectedVersionId && reviewVersions.length > 0) {
-      handleAdjust(selectedVersionId, prompt.trim(), generationBasePromptRef.current || prompt.trim());
+      handleAdjust(
+        selectedVersionId,
+        resolvedPrompt,
+        generationBasePromptRef.current || resolvedPrompt,
+      );
       return;
     }
 
-    handleGenerate(mode);
+    handleGenerate(mode, resolvedPrompt);
   }
 
   async function handleCampaignFormatChange(format: string) {
@@ -1036,13 +1044,14 @@ export function ArtworkV2Shell({
     setStep("create");
   }
 
-  function handleRegenerate(mode: ArtworkGenerationMode) {
-    if (!selectedItem || !prompt.trim()) {
+  function handleRegenerate(mode: ArtworkGenerationMode, promptOverride?: string) {
+    const resolvedPrompt = (promptOverride ?? prompt).trim();
+    if (!selectedItem || !resolvedPrompt) {
       setStep("create");
       return;
     }
 
-    handleGenerate(mode);
+    handleGenerate(mode, resolvedPrompt);
   }
 
   function handleDeny(versionId: string) {
@@ -1397,8 +1406,8 @@ export function ArtworkV2Shell({
     handleApprove(selectedVersionId);
   }
 
-  function handleCampaignGenerateMore() {
-    handleRegenerate(lastGenerationMode);
+  function handleCampaignGenerateMore(effectivePrompt?: string) {
+    handleRegenerate(lastGenerationMode, effectivePrompt);
   }
 
   if (
@@ -1435,7 +1444,6 @@ export function ArtworkV2Shell({
         brandAssets={brandAssets}
         isGenerating={isGenerating}
         isReviewBusy={isReviewBusy}
-        isApprovingInspiration={isReviewBusy}
         error={generationError}
         reviewError={reviewError}
         generationWarning={generationWarning}
@@ -1444,7 +1452,6 @@ export function ArtworkV2Shell({
         onReferencesChange={setReferences}
         onGenerationModeChange={setGenerationMode}
         onGenerate={handleCampaignGenerate}
-        onApproveInspiration={handleApproveInspiration}
         onSelectVersion={setSelectedVersionId}
         onApproveSelected={handleCampaignApproveSelected}
         onGenerateMore={handleCampaignGenerateMore}

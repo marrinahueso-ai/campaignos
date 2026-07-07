@@ -28,12 +28,17 @@ export function ArtworkLogoPickerModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/20 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="presentation"
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="artwork-logo-picker-title"
         className="w-full max-w-md border border-cos-border bg-cos-card shadow-xl"
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-cos-border px-5 py-4">
           <h2 id="artwork-logo-picker-title" className="text-base font-semibold text-cos-text">

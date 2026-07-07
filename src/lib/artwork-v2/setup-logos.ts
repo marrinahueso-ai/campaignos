@@ -5,6 +5,7 @@ export interface SetupLogoOption {
   id: "pto" | "school";
   label: string;
   url: string;
+  storagePath: string;
 }
 
 export function buildSetupLogoOptions(
@@ -17,13 +18,23 @@ export function buildSetupLogoOptions(
   const options: SetupLogoOption[] = [];
 
   const ptoUrl = resolveAssetImageUrl(brandAssets.ptoLogo);
-  if (ptoUrl) {
-    options.push({ id: "pto", label: "PTO logo", url: ptoUrl });
+  if (ptoUrl && brandAssets.ptoLogo) {
+    options.push({
+      id: "pto",
+      label: "PTO logo",
+      url: ptoUrl,
+      storagePath: brandAssets.ptoLogo,
+    });
   }
 
   const schoolUrl = resolveAssetImageUrl(brandAssets.schoolLogo);
-  if (schoolUrl) {
-    options.push({ id: "school", label: "School logo", url: schoolUrl });
+  if (schoolUrl && brandAssets.schoolLogo) {
+    options.push({
+      id: "school",
+      label: "School logo",
+      url: schoolUrl,
+      storagePath: brandAssets.schoolLogo,
+    });
   }
 
   return options;

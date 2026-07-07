@@ -15,14 +15,10 @@ import { ARTWORK_FORMAT_OPTIONS } from "@/lib/artwork-v2/format-selection";
 import { Textarea } from "@/components/ui/Textarea";
 import { cn } from "@/lib/utils/cn";
 
-const BRAND_STYLE_OPTIONS = ["Hey Ralli (Primary)", "School brand", "Minimal", "Bold"] as const;
-
-const COLOR_VIBE_OPTIONS = [
-  "Colorful & Playful",
-  "Warm & Inviting",
-  "Clean & Modern",
-  "School spirit",
-] as const;
+import {
+  CAMPAIGN_BRAND_STYLE_OPTIONS,
+  CAMPAIGN_COLOR_VIBE_OPTIONS,
+} from "@/lib/artwork-v2/campaign-creative-direction";
 
 interface ArtworkPromptPanelProps {
   prompt: string;
@@ -132,11 +128,27 @@ export function ArtworkPromptPanel({
 
     if (!prompt.trim()) {
       onPromptChange(hint);
-      return;
+    } else if (!prompt.includes(hint)) {
+      onPromptChange(`${prompt.trim()}\n\n${hint}`);
     }
 
-    if (!prompt.includes(hint)) {
-      onPromptChange(`${prompt.trim()}\n\n${hint}`);
+    const alreadyAttached = references.some(
+      (reference) =>
+        reference.source === "stored" &&
+        reference.inspirationStoragePath === logo.storagePath,
+    );
+
+    if (!alreadyAttached && references.length < ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
+      onReferencesChange([
+        ...references,
+        {
+          id: createReferenceId(),
+          source: "stored",
+          label: logo.label,
+          previewUrl: logo.url,
+          inspirationStoragePath: logo.storagePath,
+        },
+      ]);
     }
   }
 
@@ -163,14 +175,14 @@ export function ArtworkPromptPanel({
         <ArtworkPromptSelect
           label="Brand style"
           value={brandStyle}
-          options={BRAND_STYLE_OPTIONS}
+          options={CAMPAIGN_BRAND_STYLE_OPTIONS}
           onChange={onBrandStyleChange}
           disabled={inputsDisabled}
         />
         <ArtworkPromptSelect
           label="Color vibe"
           value={colorVibe}
-          options={COLOR_VIBE_OPTIONS}
+          options={CAMPAIGN_COLOR_VIBE_OPTIONS}
           onChange={onColorVibeChange}
           disabled={inputsDisabled}
         />

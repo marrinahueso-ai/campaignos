@@ -1,6 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import {
+  applyCampaignCreativeDirection,
+  CAMPAIGN_BRAND_STYLE_OPTIONS,
+  CAMPAIGN_COLOR_VIBE_OPTIONS,
+} from "@/lib/artwork-v2/campaign-creative-direction";
 import { MilestoneScheduleBar } from "@/components/event-workspace/MilestoneScheduleBar";
 import { ArtworkGeneratedOptionsGrid } from "@/components/event-workspace/artwork/ArtworkGeneratedOptionsGrid";
 import { ArtworkPageHeader } from "@/components/event-workspace/artwork/ArtworkPageHeader";
@@ -36,7 +41,6 @@ interface ArtworkCampaignWorkspaceProps {
   brandAssets?: BrandAssets | null;
   isGenerating?: boolean;
   isReviewBusy?: boolean;
-  isApprovingInspiration?: boolean;
   error?: string | null;
   reviewError?: string | null;
   generationWarning?: string | null;
@@ -44,11 +48,10 @@ interface ArtworkCampaignWorkspaceProps {
   onFormatChange: (value: string) => void;
   onReferencesChange: (references: ArtworkV2Reference[]) => void;
   onGenerationModeChange: (mode: ArtworkGenerationMode) => void;
-  onGenerate: (mode: ArtworkGenerationMode) => void;
-  onApproveInspiration: (referenceId: string) => void;
+  onGenerate: (mode: ArtworkGenerationMode, effectivePrompt?: string) => void;
   onSelectVersion: (versionId: string) => void;
   onApproveSelected: () => void;
-  onGenerateMore: () => void;
+  onGenerateMore: (effectivePrompt?: string) => void;
 }
 
 export function ArtworkCampaignWorkspace({
@@ -78,11 +81,27 @@ export function ArtworkCampaignWorkspace({
   onApproveSelected,
   onGenerateMore,
 }: ArtworkCampaignWorkspaceProps) {
-  const [brandStyle, setBrandStyle] = useState("Hey Ralli (Primary)");
-  const [colorVibe, setColorVibe] = useState("Colorful & Playful");
+  const [brandStyle, setBrandStyle] = useState<string>(CAMPAIGN_BRAND_STYLE_OPTIONS[0]);
+  const [colorVibe, setColorVibe] = useState<string>(CAMPAIGN_COLOR_VIBE_OPTIONS[0]);
   const [lightboxVersion, setLightboxVersion] = useState<ArtworkV2ReviewVersion | null>(null);
 
   const setupLogos = useMemo(() => buildSetupLogoOptions(brandAssets), [brandAssets]);
+
+  const enrichPrompt = useCallback(
+    (value: string) => applyCampaignCreativeDirection(value, brandStyle, colorVibe),
+    [brandStyle, colorVibe],
+  );
+
+  const handleGenerate = useCallback(
+    (mode: ArtworkGenerationMode) => {
+      onGenerate(mode, enrichPrompt(prompt));
+    },
+    [enrichPrompt, onGenerate, prompt],
+  );
+
+  const handleGenerateMore = useCallback(() => {
+    onGenerateMore(enrichPrompt(prompt));
+  }, [enrichPrompt, onGenerateMore, prompt]);
 
   const hasSelection = selectedVersionId != null;
   const hasGeneratedVersions = versions.length > 0;
@@ -136,7 +155,7 @@ export function ArtworkCampaignWorkspace({
           references={references}
           onReferencesChange={onReferencesChange}
           setupLogos={setupLogos}
-          onGenerate={onGenerate}
+          onGenerate={handleGenerate}
           isGenerating={isGenerating}
           isReviewBusy={isReviewBusy}
           inputsDisabled={isGenerating || isReviewBusy}
@@ -149,7 +168,7 @@ export function ArtworkCampaignWorkspace({
           aspectRatio={previewAspectRatio}
           onSelectVersion={onSelectVersion}
           onPreviewVersion={(version) => setLightboxVersion(version)}
-          onGenerateMore={hasGeneratedVersions ? onGenerateMore : undefined}
+          onGenerateMore={hasGeneratedVersions ? handleGenerateMore : undefined}
           onApproveSelected={hasSelection && hasGeneratedVersions ? onApproveSelected : undefined}
           isGeneratingMore={isGenerating || isReviewBusy}
           isReviewBusy={isReviewBusy}

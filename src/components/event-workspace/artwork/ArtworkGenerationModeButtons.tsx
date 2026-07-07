@@ -54,7 +54,7 @@ export function ArtworkGenerationModeButtons({
           <button
             key={mode}
             type="button"
-            disabled={isReviewBusy}
+            disabled={isReviewBusy || isGenerating}
             onClick={() => handleModeClick(mode)}
             aria-pressed={selected}
             className={cn(
