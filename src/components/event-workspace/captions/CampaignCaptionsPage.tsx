@@ -17,27 +17,22 @@ import type { AiAssistantStatus } from "@/lib/ai";
 import {
   commitMetaSocialCaptionAction,
   generateMetaSocialCaptionAction,
+  saveMetaSocialCaptionAction,
 } from "@/lib/meta-captions/actions";
+import type {
+  MetaCaptionGenerationOptions,
+  MetaCaptionLength,
+  MetaCaptionTone,
+} from "@/lib/meta-captions/types";
+import { setMetaPublishPlatformEnabledAction } from "@/lib/meta-publishing/actions";
 import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaSocialCaptionMilestone } from "@/lib/meta-captions/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { CalendarClock } from "lucide-react";
 
-const PLACEHOLDER_OPTIONS: CaptionOption[] = [
-  {
-    id: "placeholder-1",
-    text: "Just two weeks until our Back to School Fair at Emmerson Elementary! 🥳 Mark your calendars for Wednesday, August 5, 2026, and get ready for a day of fun and community. We can't wait to celebrate the start of a new school year with all of you! Let's make some memories together! 🍎",
-  },
-  {
-    id: "placeholder-2",
-    text: "Countdown: 2 weeks! Our Back to School Fair is almost here! Join us on Aug 5, 2026 for games, giveaways, spirit wear, and more. Bring your family, invite a friend, and let's kick off the school year right!",
-  },
-  {
-    id: "placeholder-3",
-    text: "New year. New friends. New adventures. ✨ We're TWO weeks away from the Back to School Fair on August 5, 2026! Don't miss out on the fun—see you there! 🎡🍎",
-  },
-];
+const DEFAULT_TONE: MetaCaptionTone = "Friendly";
+const DEFAULT_LENGTH: MetaCaptionLength = "Medium";
 
 function createOptionId(): string {
   return `caption-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -103,8 +98,12 @@ export function CampaignCaptionsPage({
   const router = useRouter();
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const [isSavingOption, startSaveTransition] = useTransition();
+  const [isTogglingPlatform, startPlatformTransition] = useTransition();
   const [usingOptionId, setUsingOptionId] = useState<string | null>(null);
+  const [savingOptionId, setSavingOptionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tone, setTone] = useState<MetaCaptionTone>(DEFAULT_TONE);
+  const [length, setLength] = useState<MetaCaptionLength>(DEFAULT_LENGTH);
 
   const [selectedDay, setSelectedDay] = useState<number>(() =>
     resolveCaptionRelativeDay(milestones, initialRelativeDay),
@@ -147,6 +146,38 @@ export function CampaignCaptionsPage({
     onFocusedMilestoneChange?.(selectedDay);
   }, [onFocusedMilestoneChange, selectedDay]);
 
+  useEffect(() => {
+    setOptionsByDay((current) => {
+      const next = { ...current };
+      for (const milestone of milestones) {
+        const fromCaption = buildOptionsFromCaption(readMilestoneFeedContent(milestone));
+        if (fromCaption.length === 0) {
+          continue;
+        }
+
+        const existing = next[milestone.relativeDay] ?? [];
+        const hasSavedContent = existing.some(
+          (option) => option.text.trim() === fromCaption[0].text.trim(),
+        );
+        if (!hasSavedContent) {
+          next[milestone.relativeDay] = [...existing, ...fromCaption];
+        }
+      }
+      return next;
+    });
+
+    setSelectedOptionByDay((current) => {
+      const next = { ...current };
+      for (const milestone of milestones) {
+        const fromCaption = buildOptionsFromCaption(readMilestoneFeedContent(milestone));
+        if (fromCaption[0] && !next[milestone.relativeDay]) {
+          next[milestone.relativeDay] = fromCaption[0].id;
+        }
+      }
+      return next;
+    });
+  }, [milestones]);
+
   function handleSelectMilestone(relativeDay: number) {
     setSelectedDay(relativeDay);
   }
@@ -162,10 +193,7 @@ export function CampaignCaptionsPage({
       return fromCaption;
     }
 
-    return PLACEHOLDER_OPTIONS.map((option) => ({
-      ...option,
-      id: `${selectedDay}-${option.id}`,
-    }));
+    return [];
   }, [optionsByDay, selectedDay, selectedMilestone]);
 
   const selectedOptionId =
@@ -181,7 +209,7 @@ export function CampaignCaptionsPage({
     }
   }, []);
 
-  async function handleRegenerateAll() {
+  async function handleRegenerateAll(generationOptions: MetaCaptionGenerationOptions) {
     if (!aiStatus.available) {
       return;
     }
@@ -197,7 +225,12 @@ export function CampaignCaptionsPage({
 
     try {
       for (let index = 0; index < 3; index += 1) {
-        const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
+        const result = await generateMetaSocialCaptionAction(
+          eventId,
+          selectedDay,
+          "feed",
+          generationOptions,
+        );
         if (!result.success) {
           setError(result.error ?? "Unable to generate caption.");
           break;
@@ -226,7 +259,7 @@ export function CampaignCaptionsPage({
     }
   }
 
-  async function handleGenerateMore() {
+  async function handleGenerateMore(generationOptions: MetaCaptionGenerationOptions) {
     if (!aiStatus.available) {
       return;
     }
@@ -240,7 +273,12 @@ export function CampaignCaptionsPage({
     setIsGeneratingMore(true);
 
     try {
-      const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
+      const result = await generateMetaSocialCaptionAction(
+        eventId,
+        selectedDay,
+        "feed",
+        generationOptions,
+      );
       if (!result.success) {
         setError(result.error ?? "Unable to generate caption.");
         return;
@@ -259,11 +297,92 @@ export function CampaignCaptionsPage({
     }
   }
 
-  function handleEditOption(optionId: string, text: string) {
+  function handleSaveOption(optionId: string, text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return;
+    }
+
     const updated = currentOptions.map((option) =>
-      option.id === optionId ? { ...option, text } : option,
+      option.id === optionId ? { ...option, text: trimmed } : option,
     );
     setOptionsForDay(selectedDay, updated);
+    setSavingOptionId(optionId);
+    setError(null);
+
+    startSaveTransition(async () => {
+      try {
+        const result = await saveMetaSocialCaptionAction(
+          eventId,
+          selectedDay,
+          "feed",
+          trimmed,
+        );
+        if (!result.success) {
+          setError(result.error ?? "Unable to save caption.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("Unable to save caption. Refresh the page and try again.");
+      } finally {
+        setSavingOptionId(null);
+      }
+    });
+  }
+
+  const publishPlatforms = useMemo(
+    () => [
+      {
+        id: "instagram" as const,
+        label: "Instagram",
+        checked: selectedBundle?.publishPlatforms.instagram ?? true,
+        disabled: isTogglingPlatform,
+      },
+      {
+        id: "facebook" as const,
+        label: "Facebook",
+        checked: selectedBundle?.publishPlatforms.facebook ?? true,
+        disabled: isTogglingPlatform,
+      },
+      {
+        id: "linkedin" as const,
+        label: "LinkedIn",
+        checked: false,
+        disabled: true,
+      },
+    ],
+    [isTogglingPlatform, selectedBundle],
+  );
+
+  function handleTogglePlatform(platform: "instagram" | "facebook" | "linkedin") {
+    if (platform === "linkedin") {
+      return;
+    }
+
+    const current = publishPlatforms.find((entry) => entry.id === platform);
+    if (!current || current.disabled) {
+      return;
+    }
+
+    setError(null);
+    startPlatformTransition(async () => {
+      try {
+        const result = await setMetaPublishPlatformEnabledAction(
+          eventId,
+          selectedDay,
+          platform,
+          !current.checked,
+        );
+        if (!result.success) {
+          setError(result.error ?? "Unable to update publish platforms.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setError("Unable to update publish platforms. Refresh the page and try again.");
+      }
+    });
   }
 
   function handleUseOption(optionId: string) {
@@ -359,16 +478,21 @@ export function CampaignCaptionsPage({
             <CaptionsOptionsPanel
               options={currentOptions}
               selectedOptionId={selectedOptionId}
+              tone={tone}
+              length={length}
+              onToneChange={setTone}
+              onLengthChange={setLength}
               onSelectOption={(id) =>
                 setSelectedOptionByDay((current) => ({ ...current, [selectedDay]: id }))
               }
-              onEditOption={handleEditOption}
+              onSaveOption={handleSaveOption}
               onUseOption={handleUseOption}
               onRegenerateAll={handleRegenerateAll}
               onGenerateMore={handleGenerateMore}
               isRegenerating={isRegenerating}
               isGeneratingMore={isGeneratingMore}
               isSavingOption={isSavingOption}
+              savingOptionId={savingOptionId}
               usingOptionId={usingOptionId}
               aiAvailable={aiStatus.available}
               aiUnavailableReason={aiStatus.reason}
@@ -376,7 +500,10 @@ export function CampaignCaptionsPage({
           </div>
         </div>
 
-        <CaptionsPublishPlatforms />
+        <CaptionsPublishPlatforms
+          platforms={publishPlatforms}
+          onTogglePlatform={handleTogglePlatform}
+        />
       </div>
     </div>
   );

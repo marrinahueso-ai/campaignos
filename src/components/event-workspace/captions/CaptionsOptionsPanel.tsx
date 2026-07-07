@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import type { MetaCaptionGenerationOptions } from "@/lib/meta-captions/types";
 import { cn } from "@/lib/utils/cn";
 
 export interface CaptionOption {
@@ -20,17 +21,25 @@ export interface CaptionOption {
 const TONE_OPTIONS = ["Friendly", "Professional", "Enthusiastic", "Concise"] as const;
 const LENGTH_OPTIONS = ["Short", "Medium", "Long"] as const;
 
+type CaptionTone = (typeof TONE_OPTIONS)[number];
+type CaptionLength = (typeof LENGTH_OPTIONS)[number];
+
 interface CaptionsOptionsPanelProps {
   options: CaptionOption[];
   selectedOptionId: string | null;
+  tone: CaptionTone;
+  length: CaptionLength;
+  onToneChange: (tone: CaptionTone) => void;
+  onLengthChange: (length: CaptionLength) => void;
   onSelectOption: (id: string) => void;
-  onEditOption: (id: string, text: string) => void;
+  onSaveOption: (id: string, text: string) => void;
   onUseOption: (id: string) => void;
-  onRegenerateAll: () => void;
-  onGenerateMore: () => void;
+  onRegenerateAll: (options: MetaCaptionGenerationOptions) => void;
+  onGenerateMore: (options: MetaCaptionGenerationOptions) => void;
   isRegenerating?: boolean;
   isGeneratingMore?: boolean;
   isSavingOption?: boolean;
+  savingOptionId?: string | null;
   usingOptionId?: string | null;
   aiAvailable?: boolean;
   aiUnavailableReason?: string | null;
@@ -39,22 +48,26 @@ interface CaptionsOptionsPanelProps {
 export function CaptionsOptionsPanel({
   options,
   selectedOptionId,
+  tone,
+  length,
+  onToneChange,
+  onLengthChange,
   onSelectOption,
-  onEditOption,
+  onSaveOption,
   onUseOption,
   onRegenerateAll,
   onGenerateMore,
   isRegenerating = false,
   isGeneratingMore = false,
   isSavingOption = false,
+  savingOptionId = null,
   usingOptionId = null,
   aiAvailable = true,
   aiUnavailableReason = null,
 }: CaptionsOptionsPanelProps) {
-  const [tone, setTone] = useState<(typeof TONE_OPTIONS)[number]>("Friendly");
-  const [length, setLength] = useState<(typeof LENGTH_OPTIONS)[number]>("Medium");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const [copyFeedbackId, setCopyFeedbackId] = useState<string | null>(null);
 
   function startEdit(option: CaptionOption) {
     setEditingId(option.id);
@@ -64,11 +77,23 @@ export function CaptionsOptionsPanel({
   function commitEdit(optionId: string) {
     const trimmed = editDraft.trim();
     if (trimmed) {
-      onEditOption(optionId, trimmed);
+      onSaveOption(optionId, trimmed);
     }
     setEditingId(null);
     setEditDraft("");
   }
+
+  async function copyOptionText(option: CaptionOption) {
+    try {
+      await navigator.clipboard.writeText(option.text);
+      setCopyFeedbackId(option.id);
+      window.setTimeout(() => setCopyFeedbackId(null), 2000);
+    } catch {
+      // Clipboard unavailable — no-op.
+    }
+  }
+
+  const generationOptions: MetaCaptionGenerationOptions = { tone, length };
 
   return (
     <div className="border border-cos-border bg-cos-card p-5 lg:p-6">
@@ -86,13 +111,13 @@ export function CaptionsOptionsPanel({
             label="Tone"
             value={tone}
             options={TONE_OPTIONS}
-            onChange={(value) => setTone(value as (typeof TONE_OPTIONS)[number])}
+            onChange={(value) => onToneChange(value as CaptionTone)}
           />
           <ToneLengthSelect
             label="Length"
             value={length}
             options={LENGTH_OPTIONS}
-            onChange={(value) => setLength(value as (typeof LENGTH_OPTIONS)[number])}
+            onChange={(value) => onLengthChange(value as CaptionLength)}
           />
           <Button
             type="button"
@@ -100,7 +125,7 @@ export function CaptionsOptionsPanel({
             size="sm"
             className="h-9 px-3"
             disabled={!aiAvailable || isRegenerating}
-            onClick={onRegenerateAll}
+            onClick={() => onRegenerateAll(generationOptions)}
             title={aiAvailable ? undefined : (aiUnavailableReason ?? undefined)}
           >
             <RefreshCw
@@ -192,10 +217,10 @@ export function CaptionsOptionsPanel({
                             type="button"
                             size="sm"
                             className="h-8 px-3"
-                            disabled={!editDraft.trim()}
+                            disabled={!editDraft.trim() || isSavingOption}
                             onClick={() => commitEdit(option.id)}
                           >
-                            Save
+                            {savingOptionId === option.id && isSavingOption ? "Saving…" : "Save"}
                           </Button>
                         </>
                       ) : (
@@ -222,7 +247,15 @@ export function CaptionsOptionsPanel({
                           <button
                             type="button"
                             className="flex h-8 w-8 items-center justify-center rounded-sm text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
-                            aria-label="More options"
+                            aria-label={
+                              copyFeedbackId === option.id
+                                ? "Caption copied"
+                                : "Copy caption to clipboard"
+                            }
+                            title={
+                              copyFeedbackId === option.id ? "Copied!" : "Copy caption"
+                            }
+                            onClick={() => copyOptionText(option)}
                           >
                             <MoreVertical className="h-4 w-4" aria-hidden />
                           </button>
@@ -247,7 +280,7 @@ export function CaptionsOptionsPanel({
         type="button"
         className="mt-4 inline-flex h-9 items-center gap-1.5 border border-cos-border bg-cos-card px-4 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:pointer-events-none disabled:opacity-50"
         disabled={!aiAvailable || isGeneratingMore}
-        onClick={onGenerateMore}
+        onClick={() => onGenerateMore(generationOptions)}
         title={aiAvailable ? undefined : (aiUnavailableReason ?? undefined)}
       >
         {isGeneratingMore ? "Generating…" : "+ Generate more options"}

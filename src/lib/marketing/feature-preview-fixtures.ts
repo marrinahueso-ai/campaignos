@@ -1053,6 +1053,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     metaPublishSurfaces: "both",
     storyManualPublish: false,
     publishMode: "feed_and_story_auto",
+    publishPlatforms: { instagram: true, facebook: true },
     storyReminderSentAt: null,
   },
   {
@@ -1073,6 +1074,7 @@ export const previewMetaPublishBundles: MetaPublishBundle[] = [
     metaPublishSurfaces: "both",
     storyManualPublish: false,
     publishMode: "feed_and_story_auto",
+    publishPlatforms: { instagram: false, facebook: false },
     storyReminderSentAt: null,
   },
 ];

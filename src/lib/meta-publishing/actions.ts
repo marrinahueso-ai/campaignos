@@ -1010,3 +1010,81 @@ export async function updateStoryManualPublishAction(
 
   return { success: true, updatedCount: 1, error: null };
 }
+
+export async function setMetaPublishPlatformEnabledAction(
+  eventId: string,
+  relativeDay: number,
+  platform: "instagram" | "facebook",
+  enabled: boolean,
+): Promise<MetaPublishActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to update publish settings." };
+  }
+
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { data: slots, error: lookupError } = await supabase
+    .from("meta_publication_slots")
+    .select("id, status, platform")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .eq("platform", platform);
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  if (!slots?.length && !enabled) {
+    return { success: true, updatedCount: 0, error: null };
+  }
+
+  if (!enabled) {
+    const blocked = slots?.some((slot) =>
+      ["published", "posting"].includes(slot.status as string),
+    );
+    if (blocked) {
+      return {
+        success: false,
+        error: "Cannot disable — this platform has already published or is posting.",
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("meta_publication_slots")
+      .update({ status: "cancelled", updated_at: now })
+      .eq("event_id", eventId)
+      .eq("relative_day", relativeDay)
+      .eq("platform", platform)
+      .in("status", ["draft", "scheduled", "approved", "failed"])
+      .select("id");
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidateMetaPaths(eventId);
+    return { success: true, updatedCount: data?.length ?? 0, error: null };
+  }
+
+  const { data: restored, error: restoreError } = await supabase
+    .from("meta_publication_slots")
+    .update({ status: "draft", updated_at: now })
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .eq("platform", platform)
+    .eq("status", "cancelled")
+    .select("id");
+
+  if (restoreError) {
+    return { success: false, error: restoreError.message };
+  }
+
+  if (!restored?.length) {
+    await syncMetaPublicationSlots(eventId);
+  }
+
+  revalidateMetaPaths(eventId);
+  return { success: true, updatedCount: restored?.length ?? 0, error: null };
+}

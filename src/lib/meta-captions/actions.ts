@@ -24,6 +24,7 @@ import {
 import { getEventById } from "@/lib/events/queries";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  MetaCaptionGenerationOptions,
   MetaSocialCaptionActionResult,
   MetaSocialCaptionPlacement,
 } from "@/lib/meta-captions/types";
@@ -92,6 +93,7 @@ export async function generateMetaSocialCaptionAction(
   eventId: string,
   relativeDay: number,
   placement: MetaSocialCaptionPlacement,
+  generationOptions?: MetaCaptionGenerationOptions,
 ): Promise<MetaSocialCaptionActionResult> {
   const role = await getCurrentCampaignRole();
   if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
@@ -121,6 +123,7 @@ export async function generateMetaSocialCaptionAction(
     milestoneTitle: milestone.title,
     placement,
     existingFeedCaption,
+    generationOptions,
   });
 
   if (result.success && placement === "feed" && result.content) {

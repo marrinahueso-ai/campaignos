@@ -1,5 +1,9 @@
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
-import type { MetaSocialCaptionPlacement } from "@/lib/meta-captions/types";
+import type {
+  MetaCaptionLength,
+  MetaCaptionTone,
+  MetaSocialCaptionPlacement,
+} from "@/lib/meta-captions/types";
 
 export function buildMetaCaptionSystemPrompt(input?: { hasArtworkImage?: boolean }): string {
   const lines = [
@@ -21,6 +25,36 @@ export function buildMetaCaptionSystemPrompt(input?: { hasArtworkImage?: boolean
   return lines.join(" ");
 }
 
+function resolveCaptionLengthGuide(length: MetaCaptionLength | undefined): string {
+  switch (length) {
+    case "Short":
+      return "Keep it brief — 1–2 short sentences.";
+    case "Long":
+      return "Use 4–5 sentences with a bit more detail and warmth.";
+    case "Medium":
+    default:
+      return "Use 2–4 short sentences.";
+  }
+}
+
+function resolveCaptionToneGuide(tone: MetaCaptionTone | undefined): string | null {
+  if (!tone) {
+    return null;
+  }
+
+  switch (tone) {
+    case "Professional":
+      return "Tone: polished and professional, still warm for a school community.";
+    case "Enthusiastic":
+      return "Tone: upbeat and enthusiastic — celebrate the moment.";
+    case "Concise":
+      return "Tone: concise and direct — every word should earn its place.";
+    case "Friendly":
+    default:
+      return "Tone: friendly and welcoming, like a parent posting to the group.";
+  }
+}
+
 export function buildMetaCaptionUserPrompt(input: {
   placement: MetaSocialCaptionPlacement;
   milestoneTitle: string;
@@ -29,6 +63,8 @@ export function buildMetaCaptionUserPrompt(input: {
   factsBlock: string;
   existingFeedCaption?: string | null;
   hasArtworkImage?: boolean;
+  tone?: MetaCaptionTone;
+  length?: MetaCaptionLength;
 }): string {
   const stage = resolveCampaignStage({
     relativeDay: input.relativeDay,
@@ -62,11 +98,17 @@ export function buildMetaCaptionUserPrompt(input: {
           .filter(Boolean)
           .join(" ");
 
+  const styleGuides = [
+    resolveCaptionToneGuide(input.tone),
+    resolveCaptionLengthGuide(input.length),
+  ].filter(Boolean);
+
   return [
     `Timing: ${input.milestoneTitle}`,
     `Campaign moment: ${stage.label} — ${stage.description}`,
     "",
     placementGuide,
+    ...(styleGuides.length > 0 ? ["", ...styleGuides] : []),
     "",
     "Verified facts (use only these):",
     input.factsBlock,

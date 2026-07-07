@@ -18,6 +18,7 @@ import {
 import { getMetaSocialCaptionsForEvent, upsertMetaSocialCaption } from "@/lib/meta-captions/queries";
 import { getEventById } from "@/lib/events/queries";
 import type {
+  MetaCaptionGenerationOptions,
   MetaSocialCaptionActionResult,
   MetaSocialCaptionMilestone,
   MetaSocialCaptionPlacement,
@@ -37,6 +38,7 @@ export async function generateMetaSocialCaption(input: {
   milestoneTitle: string;
   placement: MetaSocialCaptionPlacement;
   existingFeedCaption?: string | null;
+  generationOptions?: MetaCaptionGenerationOptions;
 }): Promise<MetaSocialCaptionActionResult> {
   if (!isAiConfigured()) {
     return { success: false, error: "AI caption generation is not configured." };
@@ -75,6 +77,8 @@ export async function generateMetaSocialCaption(input: {
     factsBlock,
     existingFeedCaption: input.existingFeedCaption,
     hasArtworkImage,
+    tone: input.generationOptions?.tone,
+    length: input.generationOptions?.length,
   };
 
   let generation = await generateText({

@@ -38,6 +38,8 @@ import type {
   MetaPublicationSlotStatus,
   MetaPublishBundle,
   MetaPublishBundleStatus,
+  MetaPublishPlatformsEnabled,
+  MetaPublishTargetPreview,
 } from "@/lib/meta-publishing/types";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -57,6 +59,25 @@ function targetLabel(platform: string, placement: string): string {
 
 function slotStatuses(slots: MetaPublicationSlot[]): MetaPublicationSlotStatus[] {
   return slots.map((slot) => slot.status);
+}
+
+function resolvePublishPlatformsFromSlots(
+  groupSlots: MetaPublicationSlot[],
+  enabledTargets: MetaPublishTargetPreview[],
+): MetaPublishPlatformsEnabled {
+  function isPlatformEnabled(platform: "instagram" | "facebook"): boolean {
+    const platformSlots = groupSlots.filter((slot) => slot.platform === platform);
+    if (platformSlots.length === 0) {
+      return enabledTargets.some((target) => target.platform === platform);
+    }
+
+    return platformSlots.some((slot) => slot.status !== "cancelled");
+  }
+
+  return {
+    instagram: isPlatformEnabled("instagram"),
+    facebook: isPlatformEnabled("facebook"),
+  };
 }
 
 function isMetaSocialChannel(channel: CommunicationChannel | null | undefined): boolean {
@@ -278,6 +299,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
         metaPublishSurfaces,
         storyManualPublish,
         publishMode,
+        publishPlatforms: { instagram: false, facebook: false },
         storyReminderSentAt,
       };
     }
@@ -328,6 +350,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       metaPublishSurfaces,
       storyManualPublish,
       publishMode,
+      publishPlatforms: resolvePublishPlatformsFromSlots(groupSlots, enabledTargets),
       storyReminderSentAt,
     };
   });

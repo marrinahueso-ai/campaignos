@@ -92,6 +92,11 @@ export interface MetaPublishTargetPreview {
   label: string;
 }
 
+export interface MetaPublishPlatformsEnabled {
+  instagram: boolean;
+  facebook: boolean;
+}
+
 export interface MetaPublishBundle {
   relativeDay: number;
   title: string;
@@ -116,6 +121,8 @@ export interface MetaPublishBundle {
   storyManualPublish: boolean;
   /** Derived single publish mode for UI and scheduling logic. */
   publishMode: MetaPublishMode;
+  /** Active Instagram/Facebook targets for this milestone (from publication slots). */
+  publishPlatforms: MetaPublishPlatformsEnabled;
   /** When story post kit email was sent for manual story modes. */
   storyReminderSentAt: string | null;
 }

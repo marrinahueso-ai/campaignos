@@ -42,6 +42,14 @@ export interface MetaSocialCaptionMilestone {
   story: MetaSocialCaptionPlacementState;
 }
 
+export type MetaCaptionTone = "Friendly" | "Professional" | "Enthusiastic" | "Concise";
+export type MetaCaptionLength = "Short" | "Medium" | "Long";
+
+export interface MetaCaptionGenerationOptions {
+  tone?: MetaCaptionTone;
+  length?: MetaCaptionLength;
+}
+
 export type MetaSocialCaptionActionResult = {
   success: boolean;
   error?: string | null;
