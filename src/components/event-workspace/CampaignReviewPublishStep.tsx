@@ -9,6 +9,7 @@ interface CampaignReviewPublishStepProps {
   metaPublishBundles: MetaPublishBundle[];
   approvalRoleLabel?: string | null;
   initialExpandedDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
   onViewPublished?: () => void;
@@ -19,6 +20,7 @@ export function CampaignReviewPublishStep({
   metaPublishBundles,
   approvalRoleLabel = null,
   initialExpandedDay = null,
+  onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToMilestone,
   onViewPublished,
@@ -29,6 +31,7 @@ export function CampaignReviewPublishStep({
       metaPublishBundles={metaPublishBundles}
       approvalRoleLabel={approvalRoleLabel}
       initialExpandedDay={initialExpandedDay}
+      onFocusedMilestoneChange={onFocusedMilestoneChange}
       onWorkflowStepSelect={onWorkflowStepSelect}
       onNavigateToMilestone={onNavigateToMilestone}
       onViewPublished={onViewPublished}

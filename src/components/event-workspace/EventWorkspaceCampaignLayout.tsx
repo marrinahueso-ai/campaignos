@@ -207,6 +207,7 @@ export function EventWorkspaceCampaignLayout({
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={(step) => {
               window.location.hash = step;
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);

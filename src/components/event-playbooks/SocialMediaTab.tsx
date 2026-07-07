@@ -220,6 +220,7 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToMilestone={handleNavigateToMilestone}
             onViewPublished={handleViewPublished}

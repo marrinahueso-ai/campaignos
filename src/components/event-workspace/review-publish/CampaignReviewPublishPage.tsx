@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation";
 import { CalendarClock, Send } from "lucide-react";
 import { CaptionsProgressStepper } from "@/components/event-workspace/captions/CaptionsProgressStepper";
+import { MilestoneScheduleBar } from "@/components/event-workspace/MilestoneScheduleBar";
 import {
   buildReviewPostsFromBundles,
   resolveFocusBundles,
@@ -34,6 +35,8 @@ import {
   allMetaMilestonesComplete,
   findNextIncompleteMilestone,
 } from "@/lib/meta-publishing/next-milestone";
+import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
+import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 
 const DEFAULT_PUBLISH_PLATFORMS: Record<ReviewPublishPlatformId, boolean> = {
@@ -46,11 +49,30 @@ const DEFAULT_SCHEDULE_PLATFORMS: Record<ReviewPublishPlatformId, boolean> = {
   facebook: false,
 };
 
+function resolveReviewPublishRelativeDay(
+  milestones: { relativeDay: number }[],
+  preferredDay: number | null | undefined,
+): number | null {
+  if (milestones.length === 0) {
+    return null;
+  }
+
+  if (
+    preferredDay != null &&
+    milestones.some((milestone) => milestone.relativeDay === preferredDay)
+  ) {
+    return preferredDay;
+  }
+
+  return milestones[0]?.relativeDay ?? null;
+}
+
 interface CampaignReviewPublishPageProps {
   eventId: string;
   metaPublishBundles: MetaPublishBundle[];
   approvalRoleLabel?: string | null;
   initialExpandedDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToMilestone?: (step: CampaignWorkflowStep, relativeDay: number) => void;
   onViewPublished?: () => void;
@@ -66,6 +88,7 @@ export function CampaignReviewPublishPage({
   metaPublishBundles,
   approvalRoleLabel = null,
   initialExpandedDay = null,
+  onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToMilestone,
   onViewPublished,
@@ -75,17 +98,49 @@ export function CampaignReviewPublishPage({
   const [error, setError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(null);
 
+  const reviewMilestones = useMemo(
+    () =>
+      metaPublishBundles
+        .filter((bundle) => bundle.isMetaPost && bundle.status !== "skipped")
+        .map((bundle) => ({
+          relativeDay: bundle.relativeDay,
+          title: bundle.title,
+        }))
+        .sort((left, right) => left.relativeDay - right.relativeDay),
+    [metaPublishBundles],
+  );
+
+  const [selectedRelativeDay, setSelectedRelativeDay] = useState<number | null>(() =>
+    resolveReviewPublishRelativeDay(reviewMilestones, initialExpandedDay),
+  );
+
+  useEffect(() => {
+    setSelectedRelativeDay((current) =>
+      resolveReviewPublishRelativeDay(reviewMilestones, initialExpandedDay ?? current),
+    );
+  }, [initialExpandedDay, reviewMilestones]);
+
+  useEffect(() => {
+    if (selectedRelativeDay != null) {
+      onFocusedMilestoneChange?.(selectedRelativeDay);
+    }
+  }, [onFocusedMilestoneChange, selectedRelativeDay]);
+
   const [timingOption, setTimingOption] = useState<ReviewPublishTimingOption>("now");
   const [bestTimeSuggestions, setBestTimeSuggestions] = useState(true);
   const [publishPlatforms, setPublishPlatforms] = useState(DEFAULT_PUBLISH_PLATFORMS);
   const [schedulePlatforms, setSchedulePlatforms] = useState(DEFAULT_SCHEDULE_PLATFORMS);
 
   const focusBundles = useMemo(
-    () => resolveFocusBundles(metaPublishBundles, initialExpandedDay),
-    [metaPublishBundles, initialExpandedDay],
+    () => resolveFocusBundles(metaPublishBundles, selectedRelativeDay),
+    [metaPublishBundles, selectedRelativeDay],
   );
 
-  const primaryBundle = focusBundles[0];
+  const selectedBundle =
+    selectedRelativeDay != null
+      ? findMetaPublishBundleForDay(metaPublishBundles, selectedRelativeDay)
+      : undefined;
+  const primaryBundle = focusBundles[0] ?? selectedBundle;
   const posts = useMemo(() => buildReviewPostsFromBundles(focusBundles), [focusBundles]);
 
   const [scheduleDate, setScheduleDate] = useState(() =>
@@ -134,6 +189,13 @@ export function CampaignReviewPublishPage({
   function handleEditCaptionsOrArtwork(step: CampaignWorkflowStep) {
     onWorkflowStepSelect?.(step);
   }
+
+  function handleSelectMilestone(relativeDay: number) {
+    setSelectedRelativeDay(relativeDay);
+  }
+
+  const showMilestoneBar =
+    reviewMilestones.length > 0 && selectedRelativeDay != null;
 
   function runPublishNow() {
     if (!publishPlatforms.instagram && !publishPlatforms.facebook) {
@@ -291,6 +353,16 @@ export function CampaignReviewPublishPage({
 
         <div className="p-5 lg:p-6">
           <ReviewPublishPageHeader />
+
+          {showMilestoneBar && (
+            <MilestoneScheduleBar
+              milestones={reviewMilestones}
+              selectedRelativeDay={selectedRelativeDay}
+              onSelectMilestone={handleSelectMilestone}
+              scheduledFor={resolveMetaPublishBundleScheduledFor(selectedBundle)}
+              className="-mx-5 mb-5 lg:-mx-6 lg:mb-6"
+            />
+          )}
 
           {error && (
             <p className="mb-4 text-sm text-red-600" role="alert">
