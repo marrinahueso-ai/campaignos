@@ -118,6 +118,10 @@ export function EventPlaybookTabs({
   }, [defaultTab, onCampaignStepChange, visibleTabs]);
 
   useEffect(() => {
+    setCampaignStep(initialCampaignStep);
+  }, [initialCampaignStep]);
+
+  useEffect(() => {
     syncFromHash();
     setInitialized(true);
     window.addEventListener("hashchange", syncFromHash);
@@ -126,6 +130,10 @@ export function EventPlaybookTabs({
 
   function selectTab(tab: EventPlaybookTab) {
     setActiveTab(tab);
+    if (tab === "social-media" && hasCampaign) {
+      window.history.replaceState(null, "", `#${campaignStep}`);
+      return;
+    }
     window.history.replaceState(null, "", `#${tab}`);
   }
 

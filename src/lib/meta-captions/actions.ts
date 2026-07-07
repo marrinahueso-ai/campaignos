@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canApproveDraft } from "@/lib/auth/campaign-roles";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import * as campaignAssetPermissions from "@/lib/creative-assets/permissions";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
@@ -77,7 +77,7 @@ export async function generateMetaSocialCaptionAction(
   placement: MetaSocialCaptionPlacement,
 ): Promise<MetaSocialCaptionActionResult> {
   const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 
@@ -125,7 +125,7 @@ export async function generateAllMetaSocialCaptionsAction(
   eventId: string,
 ): Promise<MetaSocialCaptionActionResult> {
   const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 
@@ -145,7 +145,7 @@ export async function saveMetaSocialCaptionAction(
   content: string,
 ): Promise<MetaSocialCaptionActionResult> {
   const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
     return { success: false, error: "You do not have permission to edit captions." };
   }
 
@@ -194,7 +194,7 @@ export async function syncStoryFromFeedCaptionAction(
   relativeDay: number,
 ): Promise<MetaSocialCaptionActionResult> {
   const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 

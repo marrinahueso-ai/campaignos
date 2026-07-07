@@ -147,6 +147,7 @@ export function EventWorkspaceCampaignLayout({
 
       <CampaignWorkspaceTabs
         defaultStep="plan"
+        fullBleedSteps={["schedule", "publish"]}
         plan={
           <CampaignCommunicationPlanStep
             eventId={eventId}
@@ -192,10 +193,13 @@ export function EventWorkspaceCampaignLayout({
         publish={
           <CampaignReviewPublishStep
             eventId={eventId}
-            event={event}
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={expandedPublishDay}
+            onWorkflowStepSelect={(step) => {
+              window.location.hash = step;
+              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+            }}
             onNavigateToMilestone={handleNavigateToMilestone}
             onViewPublished={handleViewPublished}
           />

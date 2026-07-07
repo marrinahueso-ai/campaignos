@@ -18,8 +18,8 @@ interface CampaignScheduleStepProps {
 
 export function CampaignScheduleStep({
   eventId,
-  metaPublishBundles,
-  metaSocialCaptionMilestones,
+  metaPublishBundles = [],
+  metaSocialCaptionMilestones = [],
   aiStatus,
   initialExpandedDay = null,
   onWorkflowStepSelect,

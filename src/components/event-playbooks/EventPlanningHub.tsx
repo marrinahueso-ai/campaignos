@@ -111,6 +111,7 @@ export function EventPlanningHub({
         approvalRoles={campaignWorkspace.approvalRoles}
         defaultApprovalRoleId={campaignWorkspace.defaultApprovalRoleId}
         initialStep={campaignStep}
+        onCampaignStepChange={setCampaignStep}
       />
     ) : null;
 

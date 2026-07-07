@@ -63,6 +63,30 @@ function resolveScheduledFor(bundle: MetaPublishBundle | undefined): string | nu
   return planDueDateToScheduledTime(bundle.dueDate);
 }
 
+function resolveCaptionRelativeDay(
+  milestones: MetaSocialCaptionMilestone[],
+  preferredDay: number | null | undefined,
+): number {
+  if (milestones.length === 0) {
+    return 0;
+  }
+
+  if (
+    preferredDay != null &&
+    milestones.some((milestone) => milestone.relativeDay === preferredDay)
+  ) {
+    return preferredDay;
+  }
+
+  return milestones[0].relativeDay;
+}
+
+function readMilestoneFeedContent(
+  milestone: MetaSocialCaptionMilestone | undefined,
+): string | null | undefined {
+  return milestone?.feed?.content;
+}
+
 interface CampaignCaptionsPageProps {
   eventId: string;
   milestones: MetaSocialCaptionMilestone[];
@@ -75,8 +99,8 @@ interface CampaignCaptionsPageProps {
 
 export function CampaignCaptionsPage({
   eventId,
-  milestones,
-  metaPublishBundles,
+  milestones = [],
+  metaPublishBundles = [],
   aiStatus,
   initialRelativeDay = null,
   onWorkflowStepSelect,
@@ -87,9 +111,8 @@ export function CampaignCaptionsPage({
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const defaultDay = milestones[0]?.relativeDay ?? 0;
-  const [selectedDay, setSelectedDay] = useState<number>(
-    initialRelativeDay ?? defaultDay,
+  const [selectedDay, setSelectedDay] = useState<number>(() =>
+    resolveCaptionRelativeDay(milestones, initialRelativeDay),
   );
 
   const selectedMilestone = milestones.find((m) => m.relativeDay === selectedDay);
@@ -98,7 +121,7 @@ export function CampaignCaptionsPage({
   const [optionsByDay, setOptionsByDay] = useState<Record<number, CaptionOption[]>>(() => {
     const initial: Record<number, CaptionOption[]> = {};
     for (const milestone of milestones) {
-      const fromCaption = buildOptionsFromCaption(milestone.feed.content);
+      const fromCaption = buildOptionsFromCaption(readMilestoneFeedContent(milestone));
       if (fromCaption.length > 0) {
         initial[milestone.relativeDay] = fromCaption;
       }
@@ -109,7 +132,7 @@ export function CampaignCaptionsPage({
   const [selectedOptionByDay, setSelectedOptionByDay] = useState<Record<number, string>>(() => {
     const initial: Record<number, string> = {};
     for (const milestone of milestones) {
-      const fromCaption = buildOptionsFromCaption(milestone.feed.content);
+      const fromCaption = buildOptionsFromCaption(readMilestoneFeedContent(milestone));
       if (fromCaption[0]) {
         initial[milestone.relativeDay] = fromCaption[0].id;
       }
@@ -120,10 +143,10 @@ export function CampaignCaptionsPage({
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
-    if (initialRelativeDay != null) {
-      setSelectedDay(initialRelativeDay);
-    }
-  }, [initialRelativeDay]);
+    setSelectedDay((current) =>
+      resolveCaptionRelativeDay(milestones, initialRelativeDay ?? current),
+    );
+  }, [initialRelativeDay, milestones]);
 
   const currentOptions = useMemo(() => {
     const stored = optionsByDay[selectedDay];
@@ -131,7 +154,7 @@ export function CampaignCaptionsPage({
       return stored;
     }
 
-    const fromCaption = buildOptionsFromCaption(selectedMilestone?.feed.content);
+    const fromCaption = buildOptionsFromCaption(readMilestoneFeedContent(selectedMilestone));
     if (fromCaption.length > 0) {
       return fromCaption;
     }
@@ -140,7 +163,7 @@ export function CampaignCaptionsPage({
       ...option,
       id: `${selectedDay}-${option.id}`,
     }));
-  }, [optionsByDay, selectedDay, selectedMilestone?.feed.content]);
+  }, [optionsByDay, selectedDay, selectedMilestone]);
 
   const selectedOptionId =
     selectedOptionByDay[selectedDay] ?? currentOptions[0]?.id ?? null;
@@ -156,7 +179,12 @@ export function CampaignCaptionsPage({
   }, []);
 
   async function handleRegenerateAll() {
-    if (!aiStatus.available || !selectedMilestone) {
+    if (!aiStatus.available) {
+      return;
+    }
+
+    if (!selectedMilestone) {
+      setError("Select a milestone before generating captions.");
       return;
     }
 
@@ -164,22 +192,26 @@ export function CampaignCaptionsPage({
     setIsRegenerating(true);
     const generated: CaptionOption[] = [];
 
-    for (let index = 0; index < 3; index += 1) {
-      const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
-      if (!result.success) {
-        setError(result.error ?? "Unable to generate caption.");
-        break;
-      }
+    try {
+      for (let index = 0; index < 3; index += 1) {
+        const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
+        if (!result.success) {
+          setError(result.error ?? "Unable to generate caption.");
+          break;
+        }
 
-      const content = result.content?.trim();
-      if (!content) {
-        break;
-      }
+        const content = result.content?.trim();
+        if (!content) {
+          break;
+        }
 
-      generated.push({ id: createOptionId(), text: content });
+        generated.push({ id: createOptionId(), text: content });
+      }
+    } catch {
+      setError("Unable to generate captions. Refresh the page and try again.");
+    } finally {
+      setIsRegenerating(false);
     }
-
-    setIsRegenerating(false);
 
     if (generated.length > 0) {
       setOptionsForDay(selectedDay, generated);
@@ -192,26 +224,35 @@ export function CampaignCaptionsPage({
   }
 
   async function handleGenerateMore() {
-    if (!aiStatus.available || !selectedMilestone) {
+    if (!aiStatus.available) {
+      return;
+    }
+
+    if (!selectedMilestone) {
+      setError("Select a milestone before generating captions.");
       return;
     }
 
     setError(null);
     setIsGeneratingMore(true);
 
-    const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
-    setIsGeneratingMore(false);
+    try {
+      const result = await generateMetaSocialCaptionAction(eventId, selectedDay, "feed");
+      if (!result.success) {
+        setError(result.error ?? "Unable to generate caption.");
+        return;
+      }
 
-    if (!result.success) {
-      setError(result.error ?? "Unable to generate caption.");
-      return;
-    }
-
-    const content = result.content?.trim();
-    if (content) {
-      const newOption = { id: createOptionId(), text: content };
-      setOptionsForDay(selectedDay, [...currentOptions, newOption]);
-      router.refresh();
+      const content = result.content?.trim();
+      if (content) {
+        const newOption = { id: createOptionId(), text: content };
+        setOptionsForDay(selectedDay, [...currentOptions, newOption]);
+        router.refresh();
+      }
+    } catch {
+      setError("Unable to generate captions. Refresh the page and try again.");
+    } finally {
+      setIsGeneratingMore(false);
     }
   }
 
@@ -228,20 +269,29 @@ export function CampaignCaptionsPage({
       return;
     }
 
+    if (!selectedMilestone) {
+      setError("Select a milestone before saving.");
+      return;
+    }
+
     setError(null);
     startTransition(async () => {
-      const result = await saveMetaSocialCaptionAction(
-        eventId,
-        selectedDay,
-        "feed",
-        option.text,
-      );
-      if (!result.success) {
-        setError(result.error ?? "Unable to save caption.");
-        return;
+      try {
+        const result = await saveMetaSocialCaptionAction(
+          eventId,
+          selectedDay,
+          "feed",
+          option.text,
+        );
+        if (!result.success) {
+          setError(result.error ?? "Unable to save caption.");
+          return;
+        }
+        setSelectedOptionByDay((current) => ({ ...current, [selectedDay]: optionId }));
+        router.refresh();
+      } catch {
+        setError("Unable to save caption. Refresh the page and try again.");
       }
-      setSelectedOptionByDay((current) => ({ ...current, [selectedDay]: optionId }));
-      router.refresh();
     });
   }
 

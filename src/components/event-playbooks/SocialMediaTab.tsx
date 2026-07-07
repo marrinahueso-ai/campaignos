@@ -70,6 +70,7 @@ interface SocialMediaTabProps {
   approvalRoles: ApprovalRoleOption[];
   defaultApprovalRoleId: string | null;
   initialStep?: CampaignWorkflowStep;
+  onCampaignStepChange?: (step: CampaignWorkflowStep) => void;
 }
 
 export function SocialMediaTab({
@@ -88,6 +89,7 @@ export function SocialMediaTab({
   approvalRoles,
   defaultApprovalRoleId,
   initialStep = "plan",
+  onCampaignStepChange,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(initialStep);
   const [expandedCaptionDay, setExpandedCaptionDay] = useState<number | null>(null);
@@ -103,6 +105,13 @@ export function SocialMediaTab({
     setActiveStep(initialStep);
   }, [initialStep]);
 
+  function navigateToWorkflowStep(step: CampaignWorkflowStep) {
+    setActiveStep(step);
+    onCampaignStepChange?.(step);
+    window.history.replaceState(null, "", `#${step}`);
+    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
   function handleNavigateToCaptions(relativeDay: number) {
     const resolvedDay = resolveCaptionExpandedDay(
       relativeDay,
@@ -110,14 +119,12 @@ export function SocialMediaTab({
       playbookData.steps,
     );
     setExpandedCaptionDay(resolvedDay);
-    setActiveStep("schedule");
-    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+    navigateToWorkflowStep("schedule");
   }
 
   function handleNavigateToPublish(relativeDay: number) {
     setExpandedPublishDay(relativeDay);
-    setActiveStep("publish");
-    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+    navigateToWorkflowStep("publish");
   }
 
   function handleNavigateToMilestone(step: CampaignWorkflowStep, relativeDay: number) {
@@ -130,27 +137,25 @@ export function SocialMediaTab({
       return;
     }
     if (step === "artwork") {
-      setActiveStep("artwork");
-      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+      navigateToWorkflowStep("artwork");
       return;
     }
     if (step === "published") {
-      setActiveStep("published");
-      window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+      navigateToWorkflowStep("published");
     }
   }
 
   function handleViewPublished() {
-    setActiveStep("published");
-    window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+    navigateToWorkflowStep("published");
   }
 
   return (
     <CampaignWorkspaceTabs
       activeStep={activeStep}
-      onStepChange={setActiveStep}
+      onStepChange={navigateToWorkflowStep}
       defaultStep={initialStep}
       manageHash={false}
+      fullBleedSteps={["schedule", "publish"]}
       plan={
           <CampaignCommunicationPlanStep
             eventId={eventId}
@@ -183,20 +188,17 @@ export function SocialMediaTab({
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
             initialExpandedDay={expandedCaptionDay}
-            onWorkflowStepSelect={setActiveStep}
-            onNavigateToArtwork={() => {
-              setActiveStep("artwork");
-              window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
-            }}
+            onWorkflowStepSelect={navigateToWorkflowStep}
+            onNavigateToArtwork={() => navigateToWorkflowStep("artwork")}
           />
         }
         publish={
           <CampaignReviewPublishStep
             eventId={eventId}
-            event={event}
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
             initialExpandedDay={expandedPublishDay}
+            onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToMilestone={handleNavigateToMilestone}
             onViewPublished={handleViewPublished}
           />
