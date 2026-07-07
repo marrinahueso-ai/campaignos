@@ -84,6 +84,7 @@ interface CampaignCaptionsPageProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToArtwork?: () => void;
+  onNavigateToPublish?: (relativeDay: number) => void;
   backHref?: string;
 }
 
@@ -96,6 +97,7 @@ export function CampaignCaptionsPage({
   onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToArtwork,
+  onNavigateToPublish,
   backHref,
 }: CampaignCaptionsPageProps) {
   const router = useRouter();
@@ -292,6 +294,7 @@ export function CampaignCaptionsPage({
           return;
         }
         router.refresh();
+        onNavigateToPublish?.(selectedDay);
       } catch {
         setError("Unable to save caption. Refresh the page and try again.");
       } finally {

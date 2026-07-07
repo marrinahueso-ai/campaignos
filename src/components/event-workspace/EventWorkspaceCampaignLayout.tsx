@@ -27,6 +27,7 @@ import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCo
 import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import { resolveEventApprovalRoleLabel } from "@/lib/event-workspace/approval-role-display";
+import { setLocationHash } from "@/lib/navigation/location-hash";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 
 function scrollCampaignWorkflowIntoView() {
@@ -106,13 +107,13 @@ export function EventWorkspaceCampaignLayout({
       relativeDay;
 
     setFocusedRelativeDay(resolvedDay);
-    window.location.hash = "schedule";
+    setLocationHash("schedule");
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
   function handleNavigateToPublish(relativeDay: number) {
     setFocusedRelativeDay(relativeDay);
-    window.location.hash = "publish";
+    setLocationHash("publish");
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
@@ -131,18 +132,18 @@ export function EventWorkspaceCampaignLayout({
     }
     if (step === "artwork") {
       setFocusedRelativeDay(relativeDay);
-      window.location.hash = "artwork";
+      setLocationHash("artwork");
       window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
       return;
     }
     if (step === "published") {
-      window.location.hash = "published";
+      setLocationHash("published");
       window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
     }
   }
 
   function handleViewPublished() {
-    window.location.hash = "published";
+    setLocationHash("published");
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
@@ -171,7 +172,7 @@ export function EventWorkspaceCampaignLayout({
             defaultCommitteePerson={defaultCommitteePerson}
             assignedSteps={playbookData.steps}
             onWorkflowStepSelect={(step) => {
-              window.location.hash = step;
+              setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
           />
@@ -190,7 +191,7 @@ export function EventWorkspaceCampaignLayout({
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onNavigateToCaptions={handleNavigateToCaptions}
             onWorkflowStepSelect={(step) => {
-              window.location.hash = step;
+              setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
           />
@@ -204,13 +205,14 @@ export function EventWorkspaceCampaignLayout({
             initialExpandedDay={focusedRelativeDay}
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={(step) => {
-              window.location.hash = step;
+              setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
             onNavigateToArtwork={() => {
-              window.location.hash = "artwork";
+              setLocationHash("artwork");
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
+            onNavigateToPublish={handleNavigateToPublish}
           />
         }
         publish={
@@ -221,7 +223,7 @@ export function EventWorkspaceCampaignLayout({
             initialExpandedDay={focusedRelativeDay}
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={(step) => {
-              window.location.hash = step;
+              setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
             onNavigateToMilestone={handleNavigateToMilestone}
@@ -233,7 +235,7 @@ export function EventWorkspaceCampaignLayout({
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             onWorkflowStepSelect={(step) => {
-              window.location.hash = step;
+              setLocationHash(step);
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
             }}
           />

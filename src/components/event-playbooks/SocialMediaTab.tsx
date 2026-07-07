@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CampaignWorkspaceTabs, stepFromHash } from "@/components/event-workspace/CampaignWorkspaceTabs";
-import { subscribeToLocationHash } from "@/lib/navigation/location-hash";
+import { subscribeToLocationHash, setLocationHash } from "@/lib/navigation/location-hash";
 import { CampaignPlanPage } from "@/components/event-workspace/plan/CampaignPlanPage";
 import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
@@ -153,7 +153,7 @@ export function SocialMediaTab({
   function navigateToWorkflowStep(step: CampaignWorkflowStep) {
     setActiveStep(step);
     onCampaignStepChange?.(step);
-    window.history.replaceState(null, "", `#${step}`);
+    setLocationHash(step);
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
@@ -256,6 +256,7 @@ export function SocialMediaTab({
             onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToArtwork={() => navigateToWorkflowStep("artwork")}
+            onNavigateToPublish={handleNavigateToPublish}
             backHref={backHref}
           />
         }

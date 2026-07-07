@@ -15,6 +15,7 @@ interface CampaignScheduleStepProps {
   onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToArtwork?: () => void;
+  onNavigateToPublish?: (relativeDay: number) => void;
   backHref?: string;
 }
 
@@ -27,6 +28,7 @@ export function CampaignScheduleStep({
   onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToArtwork,
+  onNavigateToPublish,
   backHref,
 }: CampaignScheduleStepProps) {
   return (
@@ -39,6 +41,7 @@ export function CampaignScheduleStep({
       onFocusedMilestoneChange={onFocusedMilestoneChange}
       onWorkflowStepSelect={onWorkflowStepSelect}
       onNavigateToArtwork={onNavigateToArtwork}
+      onNavigateToPublish={onNavigateToPublish}
       backHref={backHref}
     />
   );

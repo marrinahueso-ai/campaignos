@@ -236,8 +236,8 @@ export function CampaignReviewPublishPage({
           return;
         }
 
-        setConfirmation({ relativeDay: relativeDays[0], action: "published" });
         router.refresh();
+        onViewPublished?.();
       } catch {
         setError("Unable to publish. Refresh the page and try again.");
       }
@@ -270,8 +270,8 @@ export function CampaignReviewPublishPage({
           return;
         }
 
-        setConfirmation({ relativeDay: relativeDays[0], action: "scheduled" });
         router.refresh();
+        onViewPublished?.();
       } catch {
         setError("Unable to schedule milestones. Refresh the page and try again.");
       }
