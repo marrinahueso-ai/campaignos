@@ -24,6 +24,7 @@ import {
   previewPlanningHubData,
   previewPlanningHubEvent,
   previewPlanningHubOwnership,
+  PREVIEW_USER_FIRST_NAME,
 } from "@/lib/marketing/feature-preview-fixtures";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import { useMemo, useState } from "react";
@@ -43,13 +44,16 @@ export function FeaturePreviewRecordCampaignsFlow() {
           artwork={previewPlanningHubArtwork}
           ownership={previewPlanningHubOwnership}
           hubData={previewPlanningHubData}
-          pastEvents={[]}
           pastLessonCount={0}
           aiStatus={{ available: true, reason: null }}
           tablesAvailable
           hasCampaign
           socialMedia={null}
           defaultTab="overview"
+          greetingName={PREVIEW_USER_FIRST_NAME}
+          campaignEvents={[previewPlanningHubEvent]}
+          notificationCount={3}
+          userEmail="ralli@example.com"
         />
       </div>
     );

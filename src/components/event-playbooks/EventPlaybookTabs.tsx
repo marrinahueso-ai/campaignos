@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import {
   stepFromHash as campaignStepFromHash,
   type CampaignWorkflowStep,
@@ -70,7 +72,10 @@ function parseLocationHash(): {
 }
 
 interface EventPlaybookTabsProps {
-  overview: React.ReactNode;
+  overview: (navigateToTab: (
+    tab: EventPlaybookTab,
+    step?: CampaignWorkflowStep,
+  ) => void) => React.ReactNode;
   tasks: React.ReactNode;
   notes: React.ReactNode;
   files: React.ReactNode;
@@ -105,6 +110,26 @@ export function EventPlaybookTabs({
     useState<CampaignWorkflowStep>(initialCampaignStep);
   const [initialized, setInitialized] = useState(false);
 
+  const navigateToTab = useCallback(
+    (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => {
+      const resolvedTab = visibleTabs.some((entry) => entry.id === tab)
+        ? tab
+        : defaultTab;
+      setActiveTab(resolvedTab);
+
+      if (resolvedTab === "social-media" && hasCampaign) {
+        const nextStep = step ?? campaignStep;
+        setCampaignStep(nextStep);
+        onCampaignStepChange?.(nextStep);
+        window.history.replaceState(null, "", `#${nextStep}`);
+        return;
+      }
+
+      window.history.replaceState(null, "", `#${resolvedTab}`);
+    },
+    [campaignStep, defaultTab, hasCampaign, onCampaignStepChange, visibleTabs],
+  );
+
   const syncFromHash = useCallback(() => {
     const parsed = parseLocationHash();
     const tab = visibleTabs.some((entry) => entry.id === parsed.tab)
@@ -129,16 +154,11 @@ export function EventPlaybookTabs({
   }, [syncFromHash]);
 
   function selectTab(tab: EventPlaybookTab) {
-    setActiveTab(tab);
-    if (tab === "social-media" && hasCampaign) {
-      window.history.replaceState(null, "", `#${campaignStep}`);
-      return;
-    }
-    window.history.replaceState(null, "", `#${tab}`);
+    navigateToTab(tab);
   }
 
   const panels: Record<EventPlaybookTab, React.ReactNode> = {
-    overview,
+    overview: overview(navigateToTab),
     tasks,
     notes,
     files,
@@ -147,43 +167,65 @@ export function EventPlaybookTabs({
     settings,
   };
 
-  return (
-    <div className="border border-cos-border bg-cos-card shadow-sm">
-      <div
-        className="sticky-dashboard-subnav border-b border-cos-border px-4 pt-4 lg:px-6"
-        role="navigation"
-        aria-label="Planning hub sections"
-      >
-        <div
-          className="flex gap-0 overflow-x-auto border border-cos-border bg-cos-bg p-1"
-          role="tablist"
-        >
-          {visibleTabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                aria-controls={`playbook-tab-${tab.id}`}
-                id={`playbook-tab-trigger-${tab.id}`}
-                onClick={() => selectTab(tab.id)}
-                className={cn(
-                  "shrink-0 px-4 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-cos-card text-cos-text shadow-sm"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+  const showPlanningDashboard = activeTab === "overview";
 
-      <div className="bg-cos-bg p-6 lg:p-8">
+  return (
+    <div
+      className={cn(
+        showPlanningDashboard
+          ? undefined
+          : "border border-cos-border bg-cos-card shadow-sm",
+      )}
+    >
+      {!showPlanningDashboard && (
+        <div
+          className="sticky-dashboard-subnav border-b border-cos-border px-4 pt-4 lg:px-6"
+          role="navigation"
+          aria-label="Planning hub sections"
+        >
+          <Link
+            href="#overview"
+            onClick={(event) => {
+              event.preventDefault();
+              navigateToTab("overview");
+            }}
+            className="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#d97706] hover:text-[#b45309]"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Back to Planning Hub
+          </Link>
+
+          <div
+            className="flex gap-0 overflow-x-auto border border-cos-border bg-cos-bg p-1"
+            role="tablist"
+          >
+            {visibleTabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`playbook-tab-${tab.id}`}
+                  id={`playbook-tab-trigger-${tab.id}`}
+                  onClick={() => selectTab(tab.id)}
+                  className={cn(
+                    "shrink-0 px-4 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-cos-card text-cos-text shadow-sm"
+                      : "text-cos-muted hover:text-cos-text",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className={cn(showPlanningDashboard ? undefined : "bg-cos-bg p-6 lg:p-8")}>
         {!initialized ? (
           <div className="min-h-[12rem] animate-pulse bg-cos-bg/60" />
         ) : (
@@ -207,5 +249,4 @@ export function EventPlaybookTabs({
   );
 }
 
-// Re-export for hash parsing in hub shell
 export { type CampaignWorkflowStep };

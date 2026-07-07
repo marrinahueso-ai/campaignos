@@ -64,7 +64,6 @@ interface EventPlanningHubProps {
   event: Event;
   ownership: EventRosterOwnership | null;
   hubData: EventPlaybookHubData;
-  pastEvents: Event[];
   pastLessonCount: number;
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
@@ -76,13 +75,17 @@ interface EventPlanningHubProps {
   planningOverview?: EventPlanningOverviewData | null;
   committeePersonOptions?: string[];
   defaultCommitteePerson?: string;
+  greetingName: string;
+  timezone?: string;
+  campaignEvents: Event[];
+  notificationCount: number;
+  userEmail?: string | null;
 }
 
 export function EventPlanningHub({
   event,
   ownership,
   hubData,
-  pastEvents,
   pastLessonCount,
   aiStatus,
   userRole,
@@ -94,6 +97,11 @@ export function EventPlanningHub({
   planningOverview = null,
   committeePersonOptions = [],
   defaultCommitteePerson = "",
+  greetingName,
+  timezone,
+  campaignEvents,
+  notificationCount,
+  userEmail,
 }: EventPlanningHubProps) {
   const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>("plan");
 
@@ -157,7 +165,6 @@ export function EventPlanningHub({
       artwork={heroArtwork}
       ownership={ownership}
       hubData={hubData}
-      pastEvents={pastEvents}
       pastLessonCount={pastLessonCount}
       aiStatus={aiStatus}
       tablesAvailable={tablesAvailable}
@@ -175,6 +182,12 @@ export function EventPlanningHub({
       defaultCommitteePerson={
         defaultCommitteePerson || campaignWorkspace?.defaultCommitteePerson || ""
       }
+      metaPublishBundles={campaignWorkspace?.metaPublishBundles ?? []}
+      greetingName={greetingName}
+      timezone={timezone}
+      campaignEvents={campaignEvents}
+      notificationCount={notificationCount}
+      userEmail={userEmail}
     />
   );
 }

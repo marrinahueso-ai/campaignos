@@ -8,16 +8,20 @@ import {
 } from "@/lib/event-workspace/event-details-notice";
 import { buildCampaignProgress } from "@/lib/campaign-progress/build";
 import { shouldAssignPlaybook } from "@/lib/events/communication-strategy";
+import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { initializeEventWorkspace } from "@/lib/event-workspace/mutations";
 import { getEventNextStep } from "@/lib/event-workspace/get-next-helpful-action";
 import { buildFallbackWorkspaceData } from "@/lib/event-workspace/mock-data";
 import { getEventWorkspaceData } from "@/lib/event-workspace/queries";
+import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { selectHeroArtwork } from "@/lib/event-workspace/select-hero-artwork";
 import { getEventById } from "@/lib/events/queries";
 import { getEventMemory } from "@/lib/memory";
 import { getAiAssistantStatus } from "@/lib/ai";
+import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getAssetVersionsForEvent } from "@/lib/creative-assets/queries";
+import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
 import { buildMetaSocialCaptionMilestones } from "@/lib/meta-captions/generation";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -42,10 +46,10 @@ import {
   areEventPlaybookTaskGroupsAvailable,
   getEventPlaybookHubData,
   getPastEventLessonsForType,
-  getPastEventsForType,
 } from "@/lib/event-playbooks/queries";
 import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
+import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
@@ -76,11 +80,17 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     await seedDefaultPlaybookTasks(event.id);
   }
 
-  const [organization, workspace, userRole] = await Promise.all([
-    getLatestOrganization(),
-    getEventWorkspaceData(event.id),
-    getCurrentCampaignRole(),
-  ]);
+  const [organization, workspace, userRole, authUser, sidebarCounts, inboxUnreadCount] =
+    await Promise.all([
+      getLatestOrganization(),
+      getEventWorkspaceData(event.id),
+      getCurrentCampaignRole(),
+      getAuthUser(),
+      getApprovalSidebarCountsForCurrentUser(),
+      getInboxUnreadCountForCurrentOrg(),
+    ]);
+
+  const campaignEvents = await getCampaignPageEvents(organization?.id ?? null);
 
   let resolvedWorkspace = workspace ?? buildFallbackWorkspaceData(event);
 
@@ -106,9 +116,8 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
 
   const aiStatus = getAiAssistantStatus();
 
-  const [hubData, pastEvents, pastEventLessons, orgWorkspace] = await Promise.all([
+  const [hubData, pastEventLessons, orgWorkspace] = await Promise.all([
     getEventPlaybookHubData(event.id),
-    getPastEventsForType(event.eventType, event.id),
     getPastEventLessonsForType(event.eventType, event.id),
     organization
       ? getOrganizationWorkspaceData(organization.id)
@@ -143,6 +152,36 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     committeePersonOptions,
   );
 
+  const greetingName = resolveTodayGreetingName({
+    currentUser: authUser
+      ? { displayName: authUser.displayName, email: authUser.email }
+      : null,
+    memberCandidates: [],
+    organizationContactName: organization?.principal ?? null,
+    organizationName: organization?.name ?? null,
+    blockedRoleNames: orgWorkspace?.roles.map((role) => role.name) ?? [],
+  });
+
+  const notificationCount =
+    sidebarCounts.assignedApprovalsCount +
+    sidebarCounts.changeRequestsCount +
+    inboxUnreadCount;
+
+  const sharedHubProps = {
+    pastLessonCount,
+    aiStatus,
+    userRole,
+    tablesAvailable,
+    taskGroupsAvailable,
+    committeePersonOptions,
+    defaultCommitteePerson,
+    greetingName,
+    timezone: organization?.timezone ?? undefined,
+    campaignEvents,
+    notificationCount,
+    userEmail: authUser?.email ?? null,
+  };
+
   if (!hasCampaign) {
     const campaignIntelligence = getCampaignIntelligenceFromWorkspace(
       event,
@@ -164,15 +203,8 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
           event={event}
           ownership={ownership}
           hubData={hubData}
-          pastEvents={pastEvents}
-          pastLessonCount={pastLessonCount}
-          aiStatus={aiStatus}
-          userRole={userRole}
-          tablesAvailable={tablesAvailable}
-          taskGroupsAvailable={taskGroupsAvailable}
           hasCampaign={false}
-          committeePersonOptions={committeePersonOptions}
-          defaultCommitteePerson={defaultCommitteePerson}
+          {...sharedHubProps}
           calendarContext={{
             nextStep: getEventNextStep(false, []),
             artwork: heroArtwork,
@@ -254,15 +286,8 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
         event={event}
         ownership={resolvedOwnership}
         hubData={hubData}
-        pastEvents={pastEvents}
-        pastLessonCount={pastLessonCount}
-        aiStatus={aiStatus}
-        userRole={userRole}
-        tablesAvailable={tablesAvailable}
-        taskGroupsAvailable={taskGroupsAvailable}
         hasCampaign
-        committeePersonOptions={committeePersonOptions}
-        defaultCommitteePerson={defaultCommitteePerson}
+        {...sharedHubProps}
         campaignWorkspace={{
           organizationName: organization?.name ?? null,
           nextStep: getEventNextStep(true, resolvedPlaybook.steps),

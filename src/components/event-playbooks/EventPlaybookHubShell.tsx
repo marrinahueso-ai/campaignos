@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, CalendarDays } from "lucide-react";
 import {
   EventPlaybookTabs,
   type CampaignWorkflowStep,
@@ -13,22 +11,18 @@ import { NotesTab } from "@/components/event-playbooks/NotesTab";
 import { FilesTab } from "@/components/event-playbooks/FilesTab";
 import { AIInsightsTab } from "@/components/event-playbooks/AIInsightsTab";
 import { SettingsTab } from "@/components/event-playbooks/SettingsTab";
-import { EventHeroArtwork } from "@/components/event-workspace/EventHeroArtwork";
-import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
-import { EventOwnershipStrip } from "@/components/events/EventOwnershipStrip";
-import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { AiAssistantStatus } from "@/lib/ai";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
-import { formatEventDate } from "@/lib/utils/dates";
-import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { Event } from "@/types";
+
 interface EventPlaybookHubShellProps {
   event: Event;
   artwork: HeroArtworkSelection | null;
   ownership: EventRosterOwnership | null;
   hubData: EventPlaybookHubData;
-  pastEvents: Event[];
   pastLessonCount: number;
   aiStatus: AiAssistantStatus;
   tablesAvailable: boolean;
@@ -41,6 +35,12 @@ interface EventPlaybookHubShellProps {
   defaultTab?: EventPlaybookTab;
   committeePersonOptions?: string[];
   defaultCommitteePerson?: string;
+  metaPublishBundles?: MetaPublishBundle[];
+  greetingName: string;
+  timezone?: string;
+  campaignEvents: Event[];
+  notificationCount: number;
+  userEmail?: string | null;
 }
 
 export function EventPlaybookHubShell({
@@ -48,7 +48,6 @@ export function EventPlaybookHubShell({
   artwork,
   ownership,
   hubData,
-  pastEvents,
   pastLessonCount,
   aiStatus,
   tablesAvailable,
@@ -61,123 +60,88 @@ export function EventPlaybookHubShell({
   defaultTab = "overview",
   committeePersonOptions = [],
   defaultCommitteePerson = "",
+  metaPublishBundles = [],
+  greetingName,
+  timezone,
+  campaignEvents,
+  notificationCount,
+  userEmail,
 }: EventPlaybookHubShellProps) {
-  const showArtwork = hasDisplayableArtwork(artwork);
-  const lessonCount = hubData.notes.filter((n) => n.noteType === "lesson").length;
-  const planningNoteCount = hubData.notes.filter((n) => n.noteType === "note").length;
+  const lessonCount = hubData.notes.filter((note) => note.noteType === "lesson").length;
+  const planningNoteCount = hubData.notes.filter((note) => note.noteType === "note").length;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-3 border-b border-cos-border pb-5 sm:pb-6">
-        <Link
-          href="/events"
-          className="inline-flex items-center gap-1.5 text-xs font-medium tracking-wide text-cos-muted transition-colors hover:text-cos-text"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to campaigns
-        </Link>
-
-        <div
-          className={
-            showArtwork
-              ? "grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 lg:gap-5"
-              : undefined
-          }
-        >
-          <div className="min-w-0">
-            <p className="studio-eyebrow">Planning hub</p>
-            <h1 className="font-display mt-1 text-3xl leading-tight text-cos-text sm:text-4xl">
-              {event.title}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-cos-muted sm:text-sm">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                {formatEventDate(event.date)}
-              </span>
-              <CommunicationStrategyBadge strategy={event.communicationStrategy} />
-            </div>
-          </div>
-
-          {showArtwork && (
-            <EventHeroArtwork
-              artwork={artwork}
-              eventTitle={event.title}
-              size="hub"
-            />
-          )}
-        </div>
-
-        {ownership && (
-          <div className="mt-2">
-            <EventOwnershipStrip ownership={ownership} />
-          </div>
-        )}
-      </header>
-
-      <EventPlaybookTabs
-        hasCampaign={hasCampaign}
-        initialCampaignStep={initialCampaignStep}
-        onCampaignStepChange={onCampaignStepChange}
-        defaultTab={defaultTab}
-        overview={
-          <OverviewTab
-            event={event}
-            eventId={event.id}
-            ownership={ownership}
-            hubData={hubData}
-            pastEvents={pastEvents}
-            hasCampaign={hasCampaign}
-            tablesAvailable={tablesAvailable}
-            committeePersonOptions={committeePersonOptions}
-            defaultCommitteePerson={defaultCommitteePerson}
-          />
-        }
-        tasks={
-          <TasksTab
-            eventId={event.id}
-            tasks={hubData.tasks}
-            taskGroups={hubData.taskGroups}
-            tablesAvailable={tablesAvailable}
-            taskGroupsAvailable={taskGroupsAvailable}
-          />
-        }
-        notes={
-          <NotesTab
-            eventId={event.id}
-            notes={hubData.notes}
-            tablesAvailable={tablesAvailable}
-          />
-        }
-        files={
-          <FilesTab
-            eventId={event.id}
-            files={hubData.files}
-            tablesAvailable={tablesAvailable}
-          />
-        }
-        socialMedia={socialMedia}
-        aiInsights={
-          <AIInsightsTab
-            eventId={event.id}
-            eventTitle={event.title}
-            eventType={event.eventType}
-            aiStatus={aiStatus}
-            tasks={hubData.tasks}
-            lessonCount={lessonCount}
-            planningNoteCount={planningNoteCount}
-            pastLessonCount={pastLessonCount}
-            tablesAvailable={tablesAvailable}
-          />
-        }
-        settings={
-          <SettingsTab
-            event={event}
-            ownership={ownership}
-            hasCampaign={hasCampaign}
-            calendarExtras={calendarSettingsExtras}
-          />
-        }
-      />
-    </div>
+    <EventPlaybookTabs
+      hasCampaign={hasCampaign}
+      initialCampaignStep={initialCampaignStep}
+      onCampaignStepChange={onCampaignStepChange}
+      defaultTab={defaultTab}
+      overview={(navigateToTab) => (
+        <OverviewTab
+          event={event}
+          ownership={ownership}
+          hubData={hubData}
+          artwork={artwork}
+          hasCampaign={hasCampaign}
+          tablesAvailable={tablesAvailable}
+          metaPublishBundles={metaPublishBundles}
+          committeePersonOptions={committeePersonOptions}
+          defaultCommitteePerson={defaultCommitteePerson}
+          greetingName={greetingName}
+          timezone={timezone}
+          campaignEvents={campaignEvents}
+          notificationCount={notificationCount}
+          userEmail={userEmail}
+          aiStatus={aiStatus}
+          pastLessonCount={pastLessonCount}
+          onNavigateTab={navigateToTab}
+        />
+      )}
+      tasks={
+        <TasksTab
+          eventId={event.id}
+          tasks={hubData.tasks}
+          taskGroups={hubData.taskGroups}
+          tablesAvailable={tablesAvailable}
+          taskGroupsAvailable={taskGroupsAvailable}
+        />
+      }
+      notes={
+        <NotesTab
+          eventId={event.id}
+          notes={hubData.notes}
+          tablesAvailable={tablesAvailable}
+        />
+      }
+      files={
+        <FilesTab
+          eventId={event.id}
+          files={hubData.files}
+          tablesAvailable={tablesAvailable}
+        />
+      }
+      socialMedia={socialMedia}
+      aiInsights={
+        <AIInsightsTab
+          eventId={event.id}
+          eventTitle={event.title}
+          eventType={event.eventType}
+          aiStatus={aiStatus}
+          tasks={hubData.tasks}
+          lessonCount={lessonCount}
+          planningNoteCount={planningNoteCount}
+          pastLessonCount={pastLessonCount}
+          tablesAvailable={tablesAvailable}
+        />
+      }
+      settings={
+        <SettingsTab
+          event={event}
+          ownership={ownership}
+          hasCampaign={hasCampaign}
+          calendarExtras={calendarSettingsExtras}
+        />
+      }
+    />
   );
 }
