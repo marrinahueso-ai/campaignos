@@ -152,6 +152,7 @@ export function EventWorkspaceCampaignLayout({
         plan={
           <CampaignPlanPage
             eventId={eventId}
+            eventDate={event.date}
             communicationStrategy={communicationStrategy}
             eventType={event.eventType}
             approvalOrganizationRoleId={event.approvalOrganizationRoleId}

@@ -14,7 +14,7 @@ export type CampaignWorkflowStep =
 export type CampaignWorkspaceTab = CampaignWorkflowStep;
 
 const WORKFLOW_STEPS: { id: CampaignWorkflowStep; label: string }[] = [
-  { id: "plan", label: "Campaign plan" },
+  { id: "plan", label: "Milestone planning" },
   { id: "artwork", label: "Artwork" },
   { id: "schedule", label: "Captions" },
   { id: "publish", label: "Review & publish" },
