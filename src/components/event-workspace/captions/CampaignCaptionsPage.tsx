@@ -93,6 +93,7 @@ interface CampaignCaptionsPageProps {
   metaPublishBundles: MetaPublishBundle[];
   aiStatus: AiAssistantStatus;
   initialRelativeDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToArtwork?: () => void;
 }
@@ -103,6 +104,7 @@ export function CampaignCaptionsPage({
   metaPublishBundles = [],
   aiStatus,
   initialRelativeDay = null,
+  onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToArtwork,
 }: CampaignCaptionsPageProps) {
@@ -147,6 +149,14 @@ export function CampaignCaptionsPage({
       resolveCaptionRelativeDay(milestones, initialRelativeDay ?? current),
     );
   }, [initialRelativeDay, milestones]);
+
+  useEffect(() => {
+    onFocusedMilestoneChange?.(selectedDay);
+  }, [onFocusedMilestoneChange, selectedDay]);
+
+  function handleSelectMilestone(relativeDay: number) {
+    setSelectedDay(relativeDay);
+  }
 
   const currentOptions = useMemo(() => {
     const stored = optionsByDay[selectedDay];
@@ -337,7 +347,7 @@ export function CampaignCaptionsPage({
             title: m.title,
           }))}
           selectedRelativeDay={selectedDay}
-          onSelectMilestone={setSelectedDay}
+          onSelectMilestone={handleSelectMilestone}
           scheduledFor={resolveScheduledFor(selectedBundle)}
         />
 

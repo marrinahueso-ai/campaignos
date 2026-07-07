@@ -85,12 +85,10 @@ export function resolveFocusBundles(
   bundles: MetaPublishBundle[],
   initialExpandedDay: number | null | undefined,
 ): MetaPublishBundle[] {
-  const visible = bundles.filter(isReviewPublishVisibleBundle);
-
   if (initialExpandedDay == null) {
-    return visible;
+    return bundles.filter(isReviewPublishVisibleBundle);
   }
 
-  const focused = visible.filter((bundle) => bundle.relativeDay === initialExpandedDay);
-  return focused.length > 0 ? focused : visible;
+  const focused = bundles.filter((bundle) => bundle.relativeDay === initialExpandedDay);
+  return focused.length > 0 ? focused : bundles.filter(isReviewPublishVisibleBundle);
 }

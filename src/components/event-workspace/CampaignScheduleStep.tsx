@@ -12,6 +12,7 @@ interface CampaignScheduleStepProps {
   metaSocialCaptionMilestones: MetaSocialCaptionMilestone[];
   aiStatus: AiAssistantStatus;
   initialExpandedDay?: number | null;
+  onFocusedMilestoneChange?: (relativeDay: number) => void;
   onWorkflowStepSelect?: (step: CampaignWorkflowStep) => void;
   onNavigateToArtwork?: () => void;
 }
@@ -22,6 +23,7 @@ export function CampaignScheduleStep({
   metaSocialCaptionMilestones = [],
   aiStatus,
   initialExpandedDay = null,
+  onFocusedMilestoneChange,
   onWorkflowStepSelect,
   onNavigateToArtwork,
 }: CampaignScheduleStepProps) {
@@ -32,6 +34,7 @@ export function CampaignScheduleStep({
       metaPublishBundles={metaPublishBundles}
       aiStatus={aiStatus}
       initialRelativeDay={initialExpandedDay}
+      onFocusedMilestoneChange={onFocusedMilestoneChange}
       onWorkflowStepSelect={onWorkflowStepSelect}
       onNavigateToArtwork={onNavigateToArtwork}
     />

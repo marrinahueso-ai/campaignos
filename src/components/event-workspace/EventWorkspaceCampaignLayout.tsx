@@ -79,8 +79,7 @@ export function EventWorkspaceCampaignLayout({
   approvalRoles,
   defaultApprovalRoleId,
 }: EventWorkspaceCampaignLayoutProps) {
-  const [expandedCaptionDay, setExpandedCaptionDay] = useState<number | null>(null);
-  const [expandedPublishDay, setExpandedPublishDay] = useState<number | null>(null);
+  const [focusedRelativeDay, setFocusedRelativeDay] = useState<number | null>(null);
 
   const approvalRoleLabel = resolveEventApprovalRoleLabel(
     event.approvalOrganizationRoleId,
@@ -99,15 +98,19 @@ export function EventWorkspaceCampaignLayout({
         : undefined) ??
       relativeDay;
 
-    setExpandedCaptionDay(resolvedDay);
+    setFocusedRelativeDay(resolvedDay);
     window.location.hash = "schedule";
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
   }
 
   function handleNavigateToPublish(relativeDay: number) {
-    setExpandedPublishDay(relativeDay);
+    setFocusedRelativeDay(relativeDay);
     window.location.hash = "publish";
     window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
+  }
+
+  function handleFocusedMilestoneChange(relativeDay: number) {
+    setFocusedRelativeDay(relativeDay);
   }
 
   function handleNavigateToMilestone(step: CampaignWorkflowStep, relativeDay: number) {
@@ -179,7 +182,8 @@ export function EventWorkspaceCampaignLayout({
             metaPublishBundles={metaPublishBundles}
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
-            initialExpandedDay={expandedCaptionDay}
+            initialExpandedDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={(step) => {
               window.location.hash = step;
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);
@@ -195,7 +199,7 @@ export function EventWorkspaceCampaignLayout({
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
-            initialExpandedDay={expandedPublishDay}
+            initialExpandedDay={focusedRelativeDay}
             onWorkflowStepSelect={(step) => {
               window.location.hash = step;
               window.requestAnimationFrame(scrollCampaignWorkflowIntoView);

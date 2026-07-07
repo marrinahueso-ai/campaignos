@@ -92,8 +92,7 @@ export function SocialMediaTab({
   onCampaignStepChange,
 }: SocialMediaTabProps) {
   const [activeStep, setActiveStep] = useState<CampaignWorkflowStep>(initialStep);
-  const [expandedCaptionDay, setExpandedCaptionDay] = useState<number | null>(null);
-  const [expandedPublishDay, setExpandedPublishDay] = useState<number | null>(null);
+  const [focusedRelativeDay, setFocusedRelativeDay] = useState<number | null>(null);
 
   const approvalRoleLabel = resolveEventApprovalRoleLabel(
     event.approvalOrganizationRoleId,
@@ -118,13 +117,17 @@ export function SocialMediaTab({
       metaSocialCaptionMilestones,
       playbookData.steps,
     );
-    setExpandedCaptionDay(resolvedDay);
+    setFocusedRelativeDay(resolvedDay);
     navigateToWorkflowStep("schedule");
   }
 
   function handleNavigateToPublish(relativeDay: number) {
-    setExpandedPublishDay(relativeDay);
+    setFocusedRelativeDay(relativeDay);
     navigateToWorkflowStep("publish");
+  }
+
+  function handleFocusedMilestoneChange(relativeDay: number) {
+    setFocusedRelativeDay(relativeDay);
   }
 
   function handleNavigateToMilestone(step: CampaignWorkflowStep, relativeDay: number) {
@@ -187,7 +190,8 @@ export function SocialMediaTab({
             metaPublishBundles={metaPublishBundles}
             metaSocialCaptionMilestones={metaSocialCaptionMilestones}
             aiStatus={aiStatus}
-            initialExpandedDay={expandedCaptionDay}
+            initialExpandedDay={focusedRelativeDay}
+            onFocusedMilestoneChange={handleFocusedMilestoneChange}
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToArtwork={() => navigateToWorkflowStep("artwork")}
           />
@@ -197,7 +201,7 @@ export function SocialMediaTab({
             eventId={eventId}
             metaPublishBundles={metaPublishBundles}
             approvalRoleLabel={approvalRoleLabel}
-            initialExpandedDay={expandedPublishDay}
+            initialExpandedDay={focusedRelativeDay}
             onWorkflowStepSelect={navigateToWorkflowStep}
             onNavigateToMilestone={handleNavigateToMilestone}
             onViewPublished={handleViewPublished}
