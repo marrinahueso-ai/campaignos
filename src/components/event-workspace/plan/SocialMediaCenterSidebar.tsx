@@ -6,6 +6,7 @@ import {
   FacebookPlatformIcon,
   InstagramPlatformIcon,
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
+import { SocialMediaCenterContextCard } from "@/components/event-workspace/plan/SocialMediaCenterContextCard";
 import { computePlanningProgress } from "@/lib/event-playbooks/progress";
 import {
   filterSocialBundles,
@@ -14,13 +15,23 @@ import {
   isScheduledSocialPost,
 } from "@/lib/event-playbooks/planning-hub-utils";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventPlaybookTask } from "@/types/event-playbooks";
+import type { Event } from "@/types";
+import type { CommunicationPlaybook } from "@/types/playbooks";
 
 interface SocialMediaCenterSidebarProps {
+  event: Event;
   eventId: string;
   tasks: EventPlaybookTask[];
   metaPublishBundles: MetaPublishBundle[];
   onCreateMilestone?: () => void;
+  playbookId: string;
+  availablePlaybooks: CommunicationPlaybook[];
+  vpRoles: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId: string;
+  committeePersonOptions: string[];
+  defaultCommitteePerson: string;
 }
 
 function MilestoneProgressDonut({ percent }: { percent: number }) {
@@ -120,10 +131,17 @@ function SidebarLink({
 }
 
 export function SocialMediaCenterSidebar({
+  event,
   eventId,
   tasks,
   metaPublishBundles,
   onCreateMilestone,
+  playbookId,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
 }: SocialMediaCenterSidebarProps) {
   const progressPercent = computePlanningProgress(tasks);
   const doneTaskCount = tasks.filter((task) => task.status === "done").length;
@@ -145,6 +163,16 @@ export function SocialMediaCenterSidebar({
           </div>
         </div>
       </SidebarCard>
+
+      <SocialMediaCenterContextCard
+        event={event}
+        playbookId={playbookId}
+        availablePlaybooks={availablePlaybooks}
+        vpRoles={vpRoles}
+        defaultVpRoleId={defaultVpRoleId}
+        committeePersonOptions={committeePersonOptions}
+        defaultCommitteePerson={defaultCommitteePerson}
+      />
 
       <SidebarCard
         title="Upcoming Milestones"

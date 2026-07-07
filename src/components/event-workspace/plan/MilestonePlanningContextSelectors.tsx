@@ -10,6 +10,7 @@ import {
 import { buildEventDetailsFormState } from "@/lib/event-workspace/event-form-utils";
 import { updateEventDetailsAction } from "@/lib/event-workspace/actions";
 import { assignPlaybookToEventAction } from "@/lib/playbooks/actions";
+import { cn } from "@/lib/utils/cn";
 import type { Event } from "@/types";
 import type { CommunicationPlaybook } from "@/types/playbooks";
 
@@ -21,21 +22,26 @@ interface MilestonePlanningContextSelectorsProps {
   defaultVpRoleId: string;
   committeePersonOptions: string[];
   defaultCommitteePerson: string;
+  layout?: "inline" | "stacked";
+  committeeLabel?: string;
+  idPrefix?: string;
+  className?: string;
 }
 
-const selectClassName =
+export const milestonePlanningSelectClassName =
   "h-9 w-full appearance-none border border-cos-border bg-cos-card px-3 pr-8 text-xs text-cos-text focus:outline-none focus:ring-2 focus:ring-cos-text/10 disabled:cursor-not-allowed disabled:opacity-50";
 
-const labelClassName =
+export const milestonePlanningLabelClassName =
   "mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-cos-muted";
 
-function PlanningSelect({
+export function MilestonePlanningSelect({
   id,
   label,
   value,
   onChange,
   disabled,
   children,
+  fullWidth = false,
 }: {
   id: string;
   label: string;
@@ -43,10 +49,11 @@ function PlanningSelect({
   onChange: (value: string) => void;
   disabled?: boolean;
   children: ReactNode;
+  fullWidth?: boolean;
 }) {
   return (
-    <div className="min-w-0 flex-1 sm:max-w-[15rem]">
-      <label htmlFor={id} className={labelClassName}>
+    <div className={cn("min-w-0", fullWidth ? "w-full" : "flex-1 sm:max-w-[15rem]")}>
+      <label htmlFor={id} className={milestonePlanningLabelClassName}>
         {label}
       </label>
       <div className="relative">
@@ -55,7 +62,7 @@ function PlanningSelect({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          className={selectClassName}
+          className={milestonePlanningSelectClassName}
         >
           {children}
         </select>
@@ -72,6 +79,10 @@ export function MilestonePlanningContextSelectors({
   defaultVpRoleId,
   committeePersonOptions,
   defaultCommitteePerson,
+  layout = "inline",
+  committeeLabel = "Committee Person",
+  idPrefix = "milestone-planning",
+  className,
 }: MilestonePlanningContextSelectorsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -129,62 +140,81 @@ export function MilestonePlanningContextSelectors({
     });
   }
 
+  const vpSelect = (
+    <MilestonePlanningSelect
+      id={`${idPrefix}-vp`}
+      label="VP"
+      value={selectedVpRoleId}
+      onChange={setSelectedVpRoleId}
+      disabled={vpRoles.length === 0}
+      fullWidth={layout === "stacked"}
+    >
+      {vpRoles.length === 0 ? (
+        <option value="">No VP roles configured</option>
+      ) : (
+        vpRoles.map((role) => (
+          <option key={role.id} value={role.id}>
+            {formatVpRoleLabel(role)}
+          </option>
+        ))
+      )}
+    </MilestonePlanningSelect>
+  );
+
+  const committeeSelect = (
+    <MilestonePlanningSelect
+      id={`${idPrefix}-committee-person`}
+      label={committeeLabel}
+      value={selectedCommitteePerson}
+      onChange={handleCommitteePersonChange}
+      disabled={isPending || committeeOptions.length === 0}
+      fullWidth={layout === "stacked"}
+    >
+      {committeeOptions.length === 0 ? (
+        <option value="">No committee chairs yet</option>
+      ) : (
+        committeeOptions.map((person) => (
+          <option key={person} value={person}>
+            {person}
+          </option>
+        ))
+      )}
+    </MilestonePlanningSelect>
+  );
+
+  const playbookSelect = (
+    <MilestonePlanningSelect
+      id={`${idPrefix}-playbook`}
+      label="Playbook"
+      value={selectedPlaybookId}
+      onChange={handlePlaybookChange}
+      disabled={isPending || availablePlaybooks.length === 0}
+      fullWidth={layout === "stacked"}
+    >
+      {availablePlaybooks.length === 0 ? (
+        <option value={playbookId}>Default playbook</option>
+      ) : (
+        availablePlaybooks.map((playbook) => (
+          <option key={playbook.id} value={playbook.id}>
+            {playbook.name}
+          </option>
+        ))
+      )}
+    </MilestonePlanningSelect>
+  );
+
   return (
-    <div className="mt-4 space-y-2">
-      <div className="flex flex-row flex-wrap items-end gap-3 sm:gap-4">
-        <PlanningSelect
-          id="milestone-planning-vp"
-          label="VP"
-          value={selectedVpRoleId}
-          onChange={setSelectedVpRoleId}
-          disabled={vpRoles.length === 0}
-        >
-          {vpRoles.length === 0 ? (
-            <option value="">No VP roles configured</option>
-          ) : (
-            vpRoles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {formatVpRoleLabel(role)}
-              </option>
-            ))
-          )}
-        </PlanningSelect>
-
-        <PlanningSelect
-          id="milestone-planning-playbook"
-          label="Playbook"
-          value={selectedPlaybookId}
-          onChange={handlePlaybookChange}
-          disabled={isPending || availablePlaybooks.length === 0}
-        >
-          {availablePlaybooks.length === 0 ? (
-            <option value={playbookId}>Default playbook</option>
-          ) : (
-            availablePlaybooks.map((playbook) => (
-              <option key={playbook.id} value={playbook.id}>
-                {playbook.name}
-              </option>
-            ))
-          )}
-        </PlanningSelect>
-
-        <PlanningSelect
-          id="milestone-planning-committee-person"
-          label="Committee Person"
-          value={selectedCommitteePerson}
-          onChange={handleCommitteePersonChange}
-          disabled={isPending || committeeOptions.length === 0}
-        >
-          {committeeOptions.length === 0 ? (
-            <option value="">No committee chairs yet</option>
-          ) : (
-            committeeOptions.map((person) => (
-              <option key={person} value={person}>
-                {person}
-              </option>
-            ))
-          )}
-        </PlanningSelect>
+    <div className={cn(layout === "inline" ? "mt-4 space-y-2" : "space-y-3", className)}>
+      <div
+        className={cn(
+          layout === "stacked"
+            ? "flex flex-col gap-3"
+            : "flex flex-row flex-wrap items-end gap-3 sm:gap-4",
+        )}
+      >
+        {vpSelect}
+        {layout === "stacked" ? committeeSelect : playbookSelect}
+        {layout === "stacked" ? playbookSelect : committeeSelect}
       </div>
 
       {error && (

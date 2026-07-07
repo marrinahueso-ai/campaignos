@@ -16,8 +16,10 @@ import { cn } from "@/lib/utils/cn";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { MilestonePlanningVpRoleOption } from "@/lib/event-workspace/plan/milestone-planning-context-utils";
 import type { EventPlaybookTask } from "@/types/event-playbooks";
 import type { Event } from "@/types";
+import type { CommunicationPlaybook } from "@/types/playbooks";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 const STEPPER_STEPS: CampaignWorkflowStep[] = [
@@ -38,6 +40,12 @@ interface SocialMediaCenterShellProps {
   metaPublishBundles?: MetaPublishBundle[];
   tasks?: EventPlaybookTask[];
   onCreateMilestone?: () => void;
+  playbookId?: string;
+  availablePlaybooks?: CommunicationPlaybook[];
+  vpRoles?: MilestonePlanningVpRoleOption[];
+  defaultVpRoleId?: string;
+  committeePersonOptions?: string[];
+  defaultCommitteePerson?: string;
   /** Defaults to the event workspace page. Use `#overview` from Planning Hub. */
   backHref?: string;
   children: React.ReactNode;
@@ -154,7 +162,7 @@ function CampaignSummaryCard({
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className="w-full shrink-0 border border-cos-border bg-cos-card p-4 sm:w-[17.5rem] lg:absolute lg:top-0 lg:right-0">
+    <div className="w-full shrink-0 border border-cos-border bg-cos-card p-4 sm:w-[17.5rem]">
       <div className="flex gap-3">
         <div className="relative h-14 w-14 shrink-0 overflow-hidden border border-cos-border">
           {showArtwork && artwork?.imageUrl ? (
@@ -214,6 +222,12 @@ export function SocialMediaCenterShell({
   metaPublishBundles = [],
   tasks = [],
   onCreateMilestone,
+  playbookId = "",
+  availablePlaybooks = [],
+  vpRoles = [],
+  defaultVpRoleId = "",
+  committeePersonOptions = [],
+  defaultCommitteePerson = "",
   backHref,
   children,
 }: SocialMediaCenterShellProps) {
@@ -230,7 +244,7 @@ export function SocialMediaCenterShell({
           Back to campaign
         </Link>
 
-        <div className="relative mt-4 lg:pr-[19rem]">
+        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 max-w-2xl">
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Social Media Center
@@ -240,14 +254,12 @@ export function SocialMediaCenterShell({
             </p>
           </div>
 
-          <div className="mt-4 lg:mt-0">
-            <CampaignSummaryCard
-              event={event}
-              artwork={artwork}
-              ownership={ownership}
-              communicationStrategy={communicationStrategy}
-            />
-          </div>
+          <CampaignSummaryCard
+            event={event}
+            artwork={artwork}
+            ownership={ownership}
+            communicationStrategy={communicationStrategy}
+          />
         </div>
       </div>
 
@@ -258,10 +270,17 @@ export function SocialMediaCenterShell({
       <div className="grid gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_17.5rem] lg:gap-6 lg:px-8 lg:py-6">
         <div className="min-w-0">{children}</div>
         <SocialMediaCenterSidebar
+          event={event}
           eventId={event.id}
           tasks={tasks}
           metaPublishBundles={metaPublishBundles}
           onCreateMilestone={onCreateMilestone}
+          playbookId={playbookId}
+          availablePlaybooks={availablePlaybooks}
+          vpRoles={vpRoles}
+          defaultVpRoleId={defaultVpRoleId}
+          committeePersonOptions={committeePersonOptions}
+          defaultCommitteePerson={defaultCommitteePerson}
         />
       </div>
     </div>

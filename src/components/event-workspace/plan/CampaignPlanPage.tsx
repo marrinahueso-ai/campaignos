@@ -35,6 +35,12 @@ interface CampaignPlanPageProps {
 export function CampaignPlanPage({
   event,
   eventDate,
+  playbookId,
+  availablePlaybooks,
+  vpRoles,
+  defaultVpRoleId,
+  committeePersonOptions,
+  defaultCommitteePerson,
   assignedSteps,
   onWorkflowStepSelect,
   artwork = null,
@@ -62,6 +68,12 @@ export function CampaignPlanPage({
       tasks={tasks}
       onCreateMilestone={() => addMilestoneRef.current?.()}
       backHref={backHref}
+      playbookId={playbookId}
+      availablePlaybooks={availablePlaybooks}
+      vpRoles={vpRoles}
+      defaultVpRoleId={defaultVpRoleId}
+      committeePersonOptions={committeePersonOptions}
+      defaultCommitteePerson={defaultCommitteePerson}
     >
       <MilestonePlanningSection
         eventId={event.id}
