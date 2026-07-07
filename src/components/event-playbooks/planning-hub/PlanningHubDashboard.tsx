@@ -29,7 +29,6 @@ interface PlanningHubDashboardProps {
   committeePersonOptions?: string[];
   defaultCommitteePerson?: string;
   greetingName: string;
-  timezone?: string;
   campaignEvents: Event[];
   notificationCount: number;
   userEmail?: string | null;
@@ -49,7 +48,6 @@ export function PlanningHubDashboard({
   committeePersonOptions = [],
   defaultCommitteePerson = "",
   greetingName,
-  timezone,
   campaignEvents,
   notificationCount,
   userEmail,
@@ -66,16 +64,14 @@ export function PlanningHubDashboard({
   return (
     <PlanningHubPage>
       <PlanningHubContextBar
-        event={event}
-        campaignEvents={campaignEvents}
         notificationCount={notificationCount}
         greetingName={greetingName}
         userEmail={userEmail}
       />
 
       <PlanningHubHeader
-        greetingName={greetingName}
-        timezone={timezone}
+        event={event}
+        campaignEvents={campaignEvents}
         onNavigateTab={onNavigateTab}
       />
 

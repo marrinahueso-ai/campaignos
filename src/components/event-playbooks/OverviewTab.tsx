@@ -41,7 +41,6 @@ export function OverviewTab({
   committeePersonOptions = [],
   defaultCommitteePerson = "",
   greetingName,
-  timezone,
   campaignEvents,
   notificationCount,
   userEmail,
@@ -60,7 +59,6 @@ export function OverviewTab({
       committeePersonOptions={committeePersonOptions}
       defaultCommitteePerson={defaultCommitteePerson}
       greetingName={greetingName}
-      timezone={timezone}
       campaignEvents={campaignEvents}
       notificationCount={notificationCount}
       userEmail={userEmail}
