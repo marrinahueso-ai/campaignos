@@ -16,6 +16,7 @@ import {
   PH,
   PlanningHubCard,
 } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
+import { buildPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-utils";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -94,10 +95,7 @@ export function PlanningHubHeader({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const eventsForDropdown =
-    campaignEvents.length > 0
-      ? campaignEvents
-      : [event];
+  const eventsForDropdown = buildPlanningHubSwitcherEvents(campaignEvents, event);
 
   return (
     <div className="space-y-4">

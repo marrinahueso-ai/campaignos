@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventRows } from "@/lib/events/mappers";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
 
 /** Events on the Campaigns page — full campaigns and reminder-only social plans. */
@@ -16,19 +17,29 @@ export async function getCampaignPageEvents(
     return [];
   }
 
-  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
+  const activeSchoolYear = await getActiveSchoolYear(scopedOrgId);
+  const schoolYearIds = activeSchoolYear?.id
+    ? [activeSchoolYear.id]
+    : await getOrganizationSchoolYearIds(scopedOrgId);
   if (!schoolYearIds.length) {
     return [];
   }
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("events")
     .select("*")
     .neq("status", "archived")
-    .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
+
+  if (schoolYearIds.length === 1) {
+    query = query.eq("school_year_id", schoolYearIds[0]!);
+  } else {
+    query = query.in("school_year_id", schoolYearIds);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Failed to fetch campaign page events:", error.message);

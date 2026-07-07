@@ -77,3 +77,23 @@ export function sortCampaignMonthGroups(
 export function isPastCampaignMonth(group: CampaignMonthGroup, today: string): boolean {
   return group.key < today.slice(0, 7);
 }
+
+/** Planning Hub event switcher — active-year list, A–Z, current event always included. */
+export function buildPlanningHubSwitcherEvents(
+  campaignEvents: Event[],
+  currentEvent: Event,
+): Event[] {
+  const eventsById = new Map<string, Event>();
+
+  for (const entry of campaignEvents) {
+    eventsById.set(entry.id, entry);
+  }
+
+  if (!eventsById.has(currentEvent.id)) {
+    eventsById.set(currentEvent.id, currentEvent);
+  }
+
+  return [...eventsById.values()].sort((left, right) =>
+    left.title.localeCompare(right.title, undefined, { sensitivity: "base" }),
+  );
+}
