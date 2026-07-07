@@ -15,8 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { AiAssistantStatus } from "@/lib/ai";
 import {
+  commitMetaSocialCaptionAction,
   generateMetaSocialCaptionAction,
-  saveMetaSocialCaptionAction,
 } from "@/lib/meta-captions/actions";
 import { findMetaPublishBundleForDay } from "@/lib/meta-publishing/milestone-workflow-badge";
 import { resolveMetaPublishBundleScheduledFor } from "@/lib/meta-publishing/resolve-bundle-scheduled-for";
@@ -282,10 +282,9 @@ export function CampaignCaptionsPage({
 
     startSaveTransition(async () => {
       try {
-        const result = await saveMetaSocialCaptionAction(
+        const result = await commitMetaSocialCaptionAction(
           eventId,
           selectedDay,
-          "feed",
           option.text,
         );
         if (!result.success) {

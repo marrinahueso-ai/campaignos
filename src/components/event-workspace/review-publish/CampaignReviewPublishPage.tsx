@@ -25,6 +25,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import {
   allReviewPublishMetaBundlesHandled,
+  bundleIsSchedulable,
   isReviewPublishVisibleBundle,
 } from "@/lib/meta-publishing/bundle-display";
 import {
@@ -251,7 +252,7 @@ export function CampaignReviewPublishPage({
     }
 
     const relativeDays = focusBundles
-      .filter((bundle) => bundle.status === "ready")
+      .filter((bundle) => bundleIsSchedulable(bundle))
       .map((bundle) => bundle.relativeDay);
 
     if (relativeDays.length === 0) {

@@ -336,23 +336,8 @@ export function countBundlesByStatus(
   return bundles.filter((bundle) => statuses.includes(bundle.status)).length;
 }
 
-/** True when this milestone has at least one Meta slot that auto-publishes via API. */
-export function bundleHasAutoPublishTargets(bundle: MetaPublishBundle): boolean {
-  return bundle.isMetaPost && bundle.targets.length > 0;
-}
-
-/** True when schedule/publish is handled manually (story-only, no Meta API slots). */
-export function bundleIsManualStoryOnly(bundle: MetaPublishBundle): boolean {
-  return (
-    bundle.isMetaPost &&
-    isManualStoryOnlyBundle(bundle.metaPublishSurfaces, bundle.storyManualPublish)
-  );
-}
-
-/** True when this milestone can be scheduled (auto or manual story-only). */
-export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
-  if (!bundle.isMetaPost || bundle.status !== "ready") {
-    return false;
-  }
-  return bundleHasAutoPublishTargets(bundle) || bundleIsManualStoryOnly(bundle);
-}
+export {
+  bundleHasAutoPublishTargets,
+  bundleIsManualStoryOnly,
+  bundleIsSchedulable,
+} from "@/lib/meta-publishing/bundle-display";

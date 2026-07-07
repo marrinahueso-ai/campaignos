@@ -13,6 +13,7 @@ import {
   generateMetaSocialCaption,
   syncStoryFromFeedCaption,
 } from "@/lib/meta-captions/generation";
+import { isStorySurfaceEnabled } from "@/lib/artwork-v2/campaign-phases";
 import { resolveSocialMetaMilestonesForEvent } from "@/lib/campaign-plan/resolve-plan-milestones";
 import {
   getCaptionForMilestone,
@@ -26,6 +27,7 @@ import type {
   MetaSocialCaptionActionResult,
   MetaSocialCaptionPlacement,
 } from "@/lib/meta-captions/types";
+import type { MetaPublishSurfaces } from "@/types/playbooks";
 
 function revalidateCaptionPaths(eventId: string): void {
   void syncMetaPublicationSlots(eventId);
@@ -39,6 +41,21 @@ async function resolveMilestone(
 ) {
   const milestones = await resolveSocialMetaMilestonesForEvent(eventId);
   return milestones.find((entry) => entry.relativeDay === relativeDay);
+}
+
+async function resolveMilestonePublishSurfaces(
+  eventId: string,
+  relativeDay: number,
+): Promise<MetaPublishSurfaces> {
+  const supabase = await createClient();
+  const { data: step } = await supabase
+    .from("event_communication_steps")
+    .select("meta_publish_surfaces")
+    .eq("event_id", eventId)
+    .eq("relative_day", relativeDay)
+    .maybeSingle();
+
+  return (step?.meta_publish_surfaces as MetaPublishSurfaces | undefined) ?? "both";
 }
 
 async function maybeAutoSyncStoryFromFeed(input: {
@@ -184,6 +201,69 @@ export async function saveMetaSocialCaptionAction(
       feedCaption: trimmed,
     });
   }
+
+  revalidateCaptionPaths(eventId);
+  return { success: true, content: trimmed };
+}
+
+/** Commit a caption option for publishing — approves feed (+ story when required). */
+export async function commitMetaSocialCaptionAction(
+  eventId: string,
+  relativeDay: number,
+  content: string,
+): Promise<MetaSocialCaptionActionResult> {
+  const role = await getCurrentCampaignRole();
+  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+    return { success: false, error: "You do not have permission to edit captions." };
+  }
+
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return { success: false, error: "Caption cannot be empty." };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  const milestone = await resolveMilestone(eventId, relativeDay);
+  if (!milestone) {
+    return { success: false, error: "Milestone not found." };
+  }
+
+  const surfaces = await resolveMilestonePublishSurfaces(eventId, relativeDay);
+
+  const saved = await upsertMetaSocialCaption({
+    eventId,
+    relativeDay,
+    milestoneTitle: milestone.title,
+    placement: "feed",
+    content: trimmed,
+    status: "approved",
+  });
+
+  if (!saved.success) {
+    return { success: false, error: saved.error ?? "Could not save caption." };
+  }
+
+  if (isStorySurfaceEnabled(surfaces)) {
+    const storySaved = await upsertMetaSocialCaption({
+      eventId,
+      relativeDay,
+      milestoneTitle: milestone.title,
+      placement: "story",
+      content: trimmed,
+      status: "approved",
+    });
+
+    if (!storySaved.success) {
+      return { success: false, error: storySaved.error ?? "Could not save story caption." };
+    }
+  }
+
+  const actor = await getApprovalActorFromSession();
+  await ensureMetaMilestoneApprovalRequest(eventId, relativeDay, actor);
 
   revalidateCaptionPaths(eventId);
   return { success: true, content: trimmed };

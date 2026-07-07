@@ -1,3 +1,4 @@
+import { isManualStoryOnlyBundle } from "@/lib/meta-publishing/publish-mode";
 import { CHANNEL_LABELS } from "@/lib/playbooks/constants";
 import type {
   MetaPublishBundle,
@@ -21,11 +22,48 @@ const REVIEW_PUBLISH_VISIBLE_STATUSES: MetaPublishBundleStatus[] = [
   "needs_caption",
 ];
 
-export function isReviewPublishVisibleBundle(bundle: MetaPublishBundle): boolean {
+export function bundleHasReviewPublishContent(bundle: MetaPublishBundle): boolean {
+  if (!bundle.isMetaPost || bundle.status === "skipped") {
+    return false;
+  }
+
+  const hasCaption =
+    Boolean(bundle.captionPreview?.trim()) ||
+    Boolean(bundle.storyCaptionPreview?.trim());
+  const hasArtwork =
+    Boolean(bundle.feedArtworkUrl) || Boolean(bundle.storyArtworkUrl);
+
+  return hasCaption && hasArtwork;
+}
+
+export function bundleHasAutoPublishTargets(bundle: MetaPublishBundle): boolean {
+  return bundle.isMetaPost && bundle.targets.length > 0;
+}
+
+export function bundleIsManualStoryOnly(bundle: MetaPublishBundle): boolean {
   return (
     bundle.isMetaPost &&
-    bundle.status !== "skipped" &&
-    REVIEW_PUBLISH_VISIBLE_STATUSES.includes(bundle.status)
+    isManualStoryOnlyBundle(bundle.metaPublishSurfaces, bundle.storyManualPublish)
+  );
+}
+
+/** True when this milestone can be scheduled (auto or manual story-only). */
+export function bundleIsSchedulable(bundle: MetaPublishBundle): boolean {
+  if (!bundle.isMetaPost || bundle.status !== "ready") {
+    return false;
+  }
+
+  return bundleHasAutoPublishTargets(bundle) || bundleIsManualStoryOnly(bundle);
+}
+
+export function isReviewPublishVisibleBundle(bundle: MetaPublishBundle): boolean {
+  if (!bundle.isMetaPost || bundle.status === "skipped") {
+    return false;
+  }
+
+  return (
+    REVIEW_PUBLISH_VISIBLE_STATUSES.includes(bundle.status) ||
+    bundleHasReviewPublishContent(bundle)
   );
 }
 

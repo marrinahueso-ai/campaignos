@@ -2,7 +2,10 @@ import {
   isFeedSurfaceEnabled,
   isStorySurfaceEnabled,
 } from "@/lib/artwork-v2/campaign-phases";
-import { isReviewPublishVisibleBundle } from "@/lib/meta-publishing/bundle-display";
+import {
+  bundleHasReviewPublishContent,
+  isReviewPublishVisibleBundle,
+} from "@/lib/meta-publishing/bundle-display";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 
 export type ReviewPublishPlacement = "feed" | "story";
@@ -83,12 +86,27 @@ export function buildReviewPostsFromBundles(
 
 export function resolveFocusBundles(
   bundles: MetaPublishBundle[],
-  initialExpandedDay: number | null | undefined,
+  selectedRelativeDay: number | null | undefined,
 ): MetaPublishBundle[] {
-  if (initialExpandedDay == null) {
-    return bundles.filter(isReviewPublishVisibleBundle);
+  const visible = bundles.filter(isReviewPublishVisibleBundle);
+
+  if (selectedRelativeDay == null) {
+    return visible;
   }
 
-  const focused = bundles.filter((bundle) => bundle.relativeDay === initialExpandedDay);
-  return focused.length > 0 ? focused : bundles.filter(isReviewPublishVisibleBundle);
+  const focusedVisible = visible.filter(
+    (bundle) => bundle.relativeDay === selectedRelativeDay,
+  );
+  if (focusedVisible.length > 0) {
+    return focusedVisible;
+  }
+
+  const focusedWithContent = bundles
+    .filter((bundle) => bundle.relativeDay === selectedRelativeDay)
+    .filter(bundleHasReviewPublishContent);
+  if (focusedWithContent.length > 0) {
+    return focusedWithContent;
+  }
+
+  return visible;
 }
