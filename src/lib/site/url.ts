@@ -8,11 +8,26 @@ function stripTrailingSlash(url: string): string {
   return url.replace(/\/$/, "");
 }
 
+function normalizeSiteOrigin(origin: string): string {
+  try {
+    const url = new URL(origin);
+    if (isLocalHostname(url.hostname)) {
+      return stripTrailingSlash(origin);
+    }
+    if (isLegacyVercelHost(url.hostname) || isVercelAppHost(url.hostname)) {
+      return DEFAULT_SITE_URL;
+    }
+  } catch {
+    // keep configured string when it is not a full URL
+  }
+  return stripTrailingSlash(origin);
+}
+
 export function getConfiguredSiteUrl(): string | null {
   const configured =
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim();
-  return configured ? stripTrailingSlash(configured) : null;
+  return configured ? normalizeSiteOrigin(configured) : null;
 }
 
 export function isLocalHostname(hostname: string): boolean {
@@ -37,15 +52,10 @@ function isVercelAppHost(hostname: string): boolean {
 }
 
 /**
- * Prefer configured public site URL, then heyralli.com for legacy/Vercel hosts.
- * Request origin is only used for local development.
+ * Prefer the incoming request origin/host, then configured public site URL.
+ * Legacy Vercel hostnames always resolve to heyralli.com.
  */
 export function resolveSiteOrigin(requestOrigin?: string | null): string {
-  const configured = getConfiguredSiteUrl();
-  if (configured) {
-    return configured;
-  }
-
   const origin = requestOrigin?.trim();
   if (origin) {
     try {
@@ -58,8 +68,13 @@ export function resolveSiteOrigin(requestOrigin?: string | null): string {
       }
       return stripTrailingSlash(origin);
     } catch {
-      // fall through to default
+      // fall through to configured/default
     }
+  }
+
+  const configured = getConfiguredSiteUrl();
+  if (configured) {
+    return configured;
   }
 
   return DEFAULT_SITE_URL;
@@ -70,11 +85,6 @@ export function resolveSiteUrlFromHeaders(
   host: string | null,
   proto: string | null = "https",
 ): string {
-  const configured = getConfiguredSiteUrl();
-  if (configured) {
-    return configured;
-  }
-
   if (host) {
     const hostname = host.split(":")[0];
     if (isLocalHostname(hostname)) {
@@ -86,6 +96,11 @@ export function resolveSiteUrlFromHeaders(
     }
     const scheme = proto?.trim() || "https";
     return stripTrailingSlash(`${scheme}://${host}`);
+  }
+
+  const configured = getConfiguredSiteUrl();
+  if (configured) {
+    return configured;
   }
 
   return DEFAULT_SITE_URL;

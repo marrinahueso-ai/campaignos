@@ -1,4 +1,4 @@
-import { resolveSiteOrigin } from "@/lib/site/url";
+import { resolveSiteOrigin, resolveSiteUrlFromHeaders } from "@/lib/site/url";
 
 export function buildInviteLoginUrl(
   inviteToken: string,
@@ -9,9 +9,15 @@ export function buildInviteLoginUrl(
   return url.toString();
 }
 
-/** @deprecated Use resolveSiteOrigin from @/lib/site/url — kept for existing imports. */
+/** Resolve auth redirect origin from proxy headers (preferred) or Origin header. */
 export function resolveAuthSiteOrigin(
   requestOrigin: string | null,
+  host?: string | null,
+  proto?: string | null,
 ): string {
+  if (host) {
+    return resolveSiteUrlFromHeaders(host, proto);
+  }
+
   return resolveSiteOrigin(requestOrigin);
 }

@@ -62,7 +62,11 @@ export async function getOAuthSignInUrl(
 
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = resolveAuthSiteOrigin(headersList.get("origin"));
+  const origin = resolveAuthSiteOrigin(
+    headersList.get("origin"),
+    headersList.get("x-forwarded-host") ?? headersList.get("host"),
+    headersList.get("x-forwarded-proto"),
+  );
   const redirectTo = new URL("/auth/callback", origin);
 
   if (inviteToken) {
@@ -175,7 +179,11 @@ export async function signInWithEmailAction(
 
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = resolveAuthSiteOrigin(headersList.get("origin"));
+  const origin = resolveAuthSiteOrigin(
+    headersList.get("origin"),
+    headersList.get("x-forwarded-host") ?? headersList.get("host"),
+    headersList.get("x-forwarded-proto"),
+  );
   const redirectTo = new URL("/auth/callback", origin);
   if (inviteToken) {
     redirectTo.searchParams.set("invite", inviteToken);
@@ -373,7 +381,11 @@ export async function inviteTeamMemberAction(
   const headersList = await headers();
   const inviteUrl = buildInviteLoginUrl(
     result.inviteToken,
-    resolveAuthSiteOrigin(headersList.get("origin")),
+    resolveAuthSiteOrigin(
+      headersList.get("origin"),
+      headersList.get("x-forwarded-host") ?? headersList.get("host"),
+      headersList.get("x-forwarded-proto"),
+    ),
   );
 
   revalidatePath("/settings/team");

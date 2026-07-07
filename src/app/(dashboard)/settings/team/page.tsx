@@ -45,7 +45,12 @@ export default async function TeamSettingsPage() {
     user && !membership && organization && activeCount === 0,
   );
 
-  const siteOrigin = resolveAuthSiteOrigin((await headers()).get("origin"));
+  const headersList = await headers();
+  const siteOrigin = resolveAuthSiteOrigin(
+    headersList.get("origin"),
+    headersList.get("x-forwarded-host") ?? headersList.get("host"),
+    headersList.get("x-forwarded-proto"),
+  );
 
   return (
     <div className="studio-page space-y-10 pb-12">
