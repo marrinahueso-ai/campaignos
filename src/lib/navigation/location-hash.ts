@@ -1,6 +1,6 @@
 type LocationHashListener = () => void;
 
-let listeners = new Set<LocationHashListener>();
+const listeners = new Set<LocationHashListener>();
 let historyPatched = false;
 let originalPushState: History["pushState"] | null = null;
 let originalReplaceState: History["replaceState"] | null = null;
