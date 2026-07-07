@@ -152,18 +152,20 @@ function CampaignSummaryCard({
   artwork,
   ownership,
   communicationStrategy,
+  className,
 }: {
   event: Event;
   artwork?: HeroArtworkSelection | null;
   ownership?: EventRosterOwnership | null;
   communicationStrategy?: CommunicationStrategy;
+  className?: string;
 }) {
   const showArtwork = hasDisplayableArtwork(artwork ?? null);
   const chairLabel = formatChairLabel(event, ownership);
 
   return (
-    <div className="flex w-full shrink-0 bg-cos-card sm:w-[22rem] lg:h-full">
-      <div className="relative w-[7.5rem] shrink-0 self-stretch overflow-hidden sm:w-[8.5rem]">
+    <div className={cn("flex h-full w-full shrink-0 bg-cos-card sm:w-[22rem]", className)}>
+      <div className="relative w-1/2 shrink-0 self-stretch overflow-hidden">
         {showArtwork && artwork?.imageUrl ? (
           <Image
             src={artwork.imageUrl}
@@ -246,8 +248,8 @@ export function SocialMediaCenterShell({
           Back to campaign
         </Link>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch lg:gap-6">
-          <div className="flex min-w-0 flex-col justify-center pb-0 lg:pb-5">
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[auto_auto] lg:items-stretch lg:gap-x-6 lg:gap-y-0">
+          <div className="flex h-full min-h-[9.5rem] min-w-0 flex-col justify-center lg:row-start-1 lg:col-start-1">
             <h1 className="font-display text-3xl text-cos-text sm:text-[2.25rem] sm:leading-tight">
               Social Media Center
             </h1>
@@ -261,12 +263,13 @@ export function SocialMediaCenterShell({
             artwork={artwork}
             ownership={ownership}
             communicationStrategy={communicationStrategy}
+            className="lg:row-start-1 lg:col-start-2 lg:self-stretch"
           />
-        </div>
-      </div>
 
-      <div className="mt-5 lg:mt-0">
-        <SocialMediaCenterStepper activeStep={activeStep} onStepSelect={onStepSelect} />
+          <div className="col-span-full -mx-4 sm:-mx-6 lg:row-start-2 lg:-mx-8">
+            <SocialMediaCenterStepper activeStep={activeStep} onStepSelect={onStepSelect} />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1fr_17.5rem] lg:gap-6 lg:px-8 lg:py-6">
