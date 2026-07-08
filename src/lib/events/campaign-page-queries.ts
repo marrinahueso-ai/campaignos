@@ -81,6 +81,41 @@ export async function getPlanningHubSwitcherEvents(
   return fetchScopedCampaignEvents({ organizationId, dateWindow });
 }
 
+/** Event ids that have at least one uploaded campaign file. */
+export async function getEventIdsWithCampaignFiles(
+  eventIds: string[],
+): Promise<Set<string>> {
+  if (eventIds.length === 0) {
+    return new Set();
+  }
+
+  const { areEventPlaybookTablesAvailable } =
+    await import("@/lib/event-playbooks/queries");
+  if (!(await areEventPlaybookTablesAvailable())) {
+    return new Set();
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_files")
+    .select("event_id")
+    .in("event_id", eventIds);
+
+  if (error) {
+    if (error.code === "42P01" || error.message.includes("event_playbook_files")) {
+      return new Set();
+    }
+    console.error("Failed to fetch campaign file event ids:", error.message);
+    return new Set();
+  }
+
+  const withFiles = new Set<string>();
+  for (const row of data ?? []) {
+    withFiles.add(row.event_id);
+  }
+  return withFiles;
+}
+
 /** Event ids with at least one Meta slot scheduled or approved for posting. */
 export async function getMetaScheduledEventIds(
   eventIds: string[],

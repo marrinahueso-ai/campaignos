@@ -1,7 +1,11 @@
 import { Plus } from "lucide-react";
 import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageContent";
 import { Button } from "@/components/ui/Button";
-import { getCampaignPageEvents, getMetaScheduledEventIds } from "@/lib/events/campaign-page-queries";
+import {
+  getCampaignPageEvents,
+  getEventIdsWithCampaignFiles,
+  getMetaScheduledEventIds,
+} from "@/lib/events/campaign-page-queries";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
@@ -18,10 +22,12 @@ export default async function EventsPage() {
   const events = await getCampaignPageEvents(organization?.id ?? null);
   const eventIds = events.map((event) => event.id);
 
-  const [artworkByEventId, metaScheduledEventIds] = await Promise.all([
-    getEventArtworkMap(eventIds),
-    getMetaScheduledEventIds(eventIds),
-  ]);
+  const [artworkByEventId, metaScheduledEventIds, eventIdsWithFiles] =
+    await Promise.all([
+      getEventArtworkMap(eventIds),
+      getMetaScheduledEventIds(eventIds),
+      getEventIdsWithCampaignFiles(eventIds),
+    ]);
 
   const workspace = organization
     ? await getOrganizationWorkspaceData(organization.id)
@@ -29,15 +35,14 @@ export default async function EventsPage() {
   const ownershipByEventId = buildEventRosterOwnershipMap(events, workspace);
 
   return (
-    <div className="studio-page space-y-10">
-      <header className="flex flex-col gap-4 border-b border-cos-border pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div className="studio-page space-y-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="studio-eyebrow">Workspace</p>
-          <h1 className="font-display mt-2 text-4xl text-cos-text sm:text-5xl">Campaigns</h1>
+          <h1 className="font-display text-4xl text-cos-text sm:text-5xl">Campaigns</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted sm:text-base">
-            Full campaigns and reminder-only plans grouped by month — these are the
-            events that get social posts and communications. Pure calendar dates stay
-            on the Calendar only.
+            Full campaigns and reminder-only plans — these are the events that get
+            social posts and communications. Pure calendar dates stay on the Calendar
+            only.
           </p>
         </div>
         <Button href="/events/create" className="shrink-0">
@@ -52,6 +57,7 @@ export default async function EventsPage() {
         artworkByEventId={artworkByEventId}
         ownershipByEventId={ownershipByEventId}
         metaScheduledEventIds={metaScheduledEventIds}
+        eventIdsWithFiles={eventIdsWithFiles}
       />
     </div>
   );
