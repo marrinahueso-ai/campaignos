@@ -7,6 +7,8 @@ import { EventOwnershipStrip } from "@/components/events/EventOwnershipStrip";
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
 import { Badge } from "@/components/ui/Badge";
+import { canDemoteToCalendarOnly } from "@/lib/events/communication-strategy";
+import { RemoveFromCampaignButton } from "@/components/events/RemoveFromCampaignButton";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { getEventCardDescription } from "@/lib/events/event-card-display";
 import { EVENT_TYPE_LABELS, DEFAULT_EVENT_TYPE } from "@/lib/playbooks/constants";
@@ -88,13 +90,18 @@ export function CampaignsListView({
               </div>
             </div>
 
-            <Link
-              href={`/events/${event.id}`}
-              className="inline-flex shrink-0 items-center gap-1.5 self-start text-sm font-medium text-cos-muted transition-colors hover:text-cos-text sm:self-center"
-            >
-              Open
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex shrink-0 flex-col items-end gap-2 self-start sm:self-center">
+              <Link
+                href={`/events/${event.id}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-cos-muted transition-colors hover:text-cos-text"
+              >
+                Open
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              {canDemoteToCalendarOnly(event.communicationStrategy) && (
+                <RemoveFromCampaignButton eventId={event.id} eventTitle={event.title} />
+              )}
+            </div>
           </article>
         );
       })}

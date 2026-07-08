@@ -6,6 +6,7 @@ import {
   getPreviewCampaignMonthGroups,
   getPreviewCampaignOwnershipMap,
   previewMetaScheduledEventIds,
+  PREVIEW_TODAY,
 } from "@/lib/marketing/feature-preview-fixtures";
 import { useMemo } from "react";
 
@@ -27,10 +28,10 @@ export function FeaturePreviewWorkflowSlide() {
 
       <CampaignEventsList
         monthGroups={monthGroups}
+        today={PREVIEW_TODAY}
         artworkByEventId={artworkByEventId}
         ownershipByEventId={ownershipByEventId}
         metaScheduledEventIds={previewMetaScheduledEventIds}
-        defaultExpanded
       />
     </div>
   );

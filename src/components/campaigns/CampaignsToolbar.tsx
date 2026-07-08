@@ -103,9 +103,10 @@ export function CampaignsToolbar({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="block min-w-0 sm:w-64">
+        <label htmlFor="campaigns-search" className="block min-w-0 sm:w-64">
           <span className="sr-only">Search campaigns</span>
           <input
+            id="campaigns-search"
             type="search"
             value={searchQuery}
             onChange={(event) => onSearchChange(event.target.value)}

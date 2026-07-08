@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils/cn";
 
 interface CampaignEventsListProps {
   monthGroups: SortedCampaignMonthGroups;
+  today: string;
   artworkByEventId: Map<string, HeroArtworkSelection | null>;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
   metaScheduledEventIds?: Set<string>;
-  defaultExpanded?: boolean;
 }
 
 function CampaignMonthSection({
@@ -36,6 +36,7 @@ function CampaignMonthSection({
   defaultExpanded?: boolean;
 }) {
   const [open, setOpen] = useState(defaultExpanded);
+  const panelId = `campaign-month-${group.key}`;
 
   return (
     <section
@@ -52,6 +53,7 @@ function CampaignMonthSection({
           open && "border-b border-cos-border",
         )}
         aria-expanded={open}
+        aria-controls={panelId}
       >
         <span className="mt-1 shrink-0 rounded-lg p-1 text-cos-muted">
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -77,7 +79,7 @@ function CampaignMonthSection({
       </button>
 
       {open && (
-        <div className="grid gap-6 p-5 md:grid-cols-2 xl:grid-cols-3">
+        <div id={panelId} className="grid gap-6 p-5 md:grid-cols-2 xl:grid-cols-3">
           {group.events.map((event) => (
             <EventCard
               key={event.id}
@@ -96,13 +98,31 @@ function CampaignMonthSection({
 
 export function CampaignEventsList({
   monthGroups,
+  today,
   artworkByEventId,
   ownershipByEventId,
   metaScheduledEventIds,
-  defaultExpanded = false,
 }: CampaignEventsListProps) {
   const { activeGroups, pastGroups } = monthGroups;
   const totalGroups = activeGroups.length + pastGroups.length;
+  const currentMonthKey = today.slice(0, 7);
+  const activeHasCurrentMonth = activeGroups.some((group) => group.key === currentMonthKey);
+
+  function shouldExpandActiveGroup(group: CampaignMonthGroup, index: number) {
+    if (group.key === currentMonthKey) {
+      return true;
+    }
+
+    if (!activeHasCurrentMonth && index === 0) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function shouldExpandPastGroup(index: number) {
+    return activeGroups.length === 0 && index === 0;
+  }
 
   if (totalGroups === 0) {
     return (
@@ -118,21 +138,21 @@ export function CampaignEventsList({
 
   return (
     <div className="space-y-4">
-      {activeGroups.map((group) => (
+      {activeGroups.map((group, index) => (
         <CampaignMonthSection
           key={group.key}
           group={group}
           artworkByEventId={artworkByEventId}
           ownershipByEventId={ownershipByEventId}
           metaScheduledEventIds={metaScheduledEventIds}
-          defaultExpanded={defaultExpanded}
+          defaultExpanded={shouldExpandActiveGroup(group, index)}
         />
       ))}
 
       {pastGroups.length > 0 && (
         <div className="space-y-4 pt-4">
           <p className="cos-section-title px-1">Past months</p>
-          {pastGroups.map((group) => (
+          {pastGroups.map((group, index) => (
             <CampaignMonthSection
               key={group.key}
               group={group}
@@ -140,6 +160,7 @@ export function CampaignEventsList({
               artworkByEventId={artworkByEventId}
               ownershipByEventId={ownershipByEventId}
               metaScheduledEventIds={metaScheduledEventIds}
+              defaultExpanded={shouldExpandPastGroup(index)}
             />
           ))}
         </div>

@@ -1,4 +1,8 @@
-import { EVENT_TYPES } from "@/lib/playbooks/constants";
+import {
+  DEFAULT_EVENT_TYPE,
+  EVENT_TYPE_LABELS,
+  EVENT_TYPES,
+} from "@/lib/playbooks/constants";
 import type { EventType } from "@/types/playbooks";
 import type { Event, EventStatus } from "@/types";
 
@@ -54,12 +58,16 @@ export function filterCampaignEvents(
       return true;
     }
 
+    const eventTypeLabel =
+      EVENT_TYPE_LABELS[event.eventType ?? DEFAULT_EVENT_TYPE];
+
     const haystack = [
       event.title,
       event.description,
       event.location,
       event.category,
       event.theme,
+      eventTypeLabel,
     ]
       .filter(Boolean)
       .join(" ")

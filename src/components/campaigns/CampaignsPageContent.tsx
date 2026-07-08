@@ -90,6 +90,7 @@ export function CampaignsPageContent({
       ) : viewMode === "month" ? (
         <CampaignEventsList
           monthGroups={monthGroups}
+          today={today}
           artworkByEventId={artworkByEventId}
           ownershipByEventId={ownershipByEventId}
           metaScheduledEventIds={metaScheduledEventIds}
