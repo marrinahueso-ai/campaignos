@@ -132,7 +132,7 @@ export function CaptionsOptionsPanel({
               className={cn("h-3.5 w-3.5", isRegenerating && "animate-spin")}
               aria-hidden
             />
-            Generate Caption
+            Regenerate Caption
           </Button>
         </div>
       </div>
