@@ -38,8 +38,8 @@ interface PlanningHubKpiRowProps {
 
 function CompactProgressRing({
   percent,
-  size = 56,
-  strokeWidth = 5,
+  size = 48,
+  strokeWidth = 4,
 }: {
   percent: number;
   size?: number;
@@ -128,9 +128,9 @@ export function PlanningHubKpiRow({
   }
 
   const kpiCardClass =
-    "flex flex-col items-center p-4 text-center";
+    "flex flex-col items-center px-3 py-2.5 text-center";
   const kpiValueClass =
-    "mt-3 flex flex-1 flex-col items-center justify-center [&>button]:w-auto [&>button]:text-center";
+    "mt-2 flex flex-col items-center justify-center [&>button]:w-auto [&>button]:text-center";
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -148,18 +148,18 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink href={calendarUrl} className="mt-3 self-center">
+        <PlanningHubActionLink href={calendarUrl} className="mt-2 self-center">
           Add to calendar →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
-        <div className="mt-3 flex flex-1 flex-col items-center justify-center">
+        <div className="mt-2 flex flex-col items-center justify-center">
           <p className="font-display text-[2.75rem] leading-none text-cos-text">
             {countdown.isPast ? "0" : countdown.daysRemaining}
           </p>
-          <p className="mt-2 text-sm text-cos-muted">
+          <p className="mt-1 text-sm text-cos-muted">
             {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
           </p>
         </div>
@@ -178,7 +178,7 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-3 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-2 self-center">
           Update estimate →
         </PlanningHubActionLink>
       </PlanningHubCard>
@@ -196,20 +196,20 @@ export function PlanningHubKpiRow({
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-3 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-2 self-center">
           Set budget →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CheckSquareIcon} label="Task progress" />
-        <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-2">
+        <div className="mt-2 flex flex-col items-center justify-center gap-1.5">
           <CompactProgressRing percent={taskProgressPercent} />
           <p className="font-display text-xl leading-tight text-cos-text">
             {doneTaskCount} of {totalTaskCount} tasks
           </p>
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-3 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-2 self-center">
           View tasks →
         </PlanningHubActionLink>
       </PlanningHubCard>
