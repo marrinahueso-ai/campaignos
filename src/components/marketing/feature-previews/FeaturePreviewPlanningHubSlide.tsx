@@ -4,6 +4,7 @@ import { EventPlaybookHubShell } from "@/components/event-playbooks/EventPlayboo
 import {
   previewPlanningHubArtwork,
   previewPlanningHubData,
+  previewFilesPageData,
   previewPlanningHubEvent,
   previewPlanningHubOwnership,
   PREVIEW_USER_FIRST_NAME,
@@ -23,6 +24,7 @@ export function FeaturePreviewPlanningHubSlide({
         artwork={previewPlanningHubArtwork}
         ownership={previewPlanningHubOwnership}
         hubData={previewPlanningHubData}
+        filesPageData={previewFilesPageData}
         pastLessonCount={0}
         aiStatus={{ available: true, reason: null }}
         tablesAvailable

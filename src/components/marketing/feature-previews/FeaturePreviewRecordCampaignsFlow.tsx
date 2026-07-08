@@ -22,6 +22,7 @@ import {
   previewMetaScheduledEventIds,
   previewPlanningHubArtwork,
   previewPlanningHubData,
+  previewFilesPageData,
   previewPlanningHubEvent,
   previewPlanningHubOwnership,
   PREVIEW_USER_FIRST_NAME,
@@ -44,6 +45,7 @@ export function FeaturePreviewRecordCampaignsFlow() {
           artwork={previewPlanningHubArtwork}
           ownership={previewPlanningHubOwnership}
           hubData={previewPlanningHubData}
+          filesPageData={previewFilesPageData}
           pastLessonCount={0}
           aiStatus={{ available: true, reason: null }}
           tablesAvailable

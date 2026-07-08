@@ -30,6 +30,7 @@ function revalidatePlaybookPaths(eventId: string) {
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/calendar");
   revalidatePath("/tasks");
+  revalidatePath("/files");
 }
 
 export async function createEventPlaybookTaskAction(

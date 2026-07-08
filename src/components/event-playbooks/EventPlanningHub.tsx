@@ -28,6 +28,7 @@ import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCommunicationPlanSettings";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { FilesPageData } from "@/types/campaign-files";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
 
 interface CampaignWorkspaceBundle {
@@ -67,6 +68,7 @@ interface EventPlanningHubProps {
   event: Event;
   ownership: EventRosterOwnership | null;
   hubData: EventPlaybookHubData;
+  filesPageData: FilesPageData;
   pastLessonCount: number;
   aiStatus: AiAssistantStatus;
   userRole: CampaignRole;
@@ -89,6 +91,7 @@ export function EventPlanningHub({
   event,
   ownership,
   hubData,
+  filesPageData,
   pastLessonCount,
   aiStatus,
   userRole,
@@ -174,6 +177,7 @@ export function EventPlanningHub({
       artwork={heroArtwork}
       ownership={ownership}
       hubData={hubData}
+      filesPageData={filesPageData}
       pastLessonCount={pastLessonCount}
       aiStatus={aiStatus}
       tablesAvailable={tablesAvailable}

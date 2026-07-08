@@ -16,6 +16,7 @@ import type { AiAssistantStatus } from "@/lib/ai";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { FilesPageData } from "@/types/campaign-files";
 import type { Event } from "@/types";
 
 interface EventPlaybookHubShellProps {
@@ -23,6 +24,7 @@ interface EventPlaybookHubShellProps {
   artwork: HeroArtworkSelection | null;
   ownership: EventRosterOwnership | null;
   hubData: EventPlaybookHubData;
+  filesPageData: FilesPageData;
   pastLessonCount: number;
   aiStatus: AiAssistantStatus;
   tablesAvailable: boolean;
@@ -48,6 +50,7 @@ export function EventPlaybookHubShell({
   artwork,
   ownership,
   hubData,
+  filesPageData,
   pastLessonCount,
   aiStatus,
   tablesAvailable,
@@ -114,11 +117,7 @@ export function EventPlaybookHubShell({
         />
       }
       files={
-        <FilesTab
-          eventId={event.id}
-          files={hubData.files}
-          tablesAvailable={tablesAvailable}
-        />
+        <FilesTab eventId={event.id} data={filesPageData} />
       }
       socialMedia={socialMedia}
       aiInsights={

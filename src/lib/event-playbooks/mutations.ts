@@ -6,7 +6,7 @@ import type {
   EventPlaybookTaskStatus,
 } from "@/types/event-playbooks";
 
-async function logActivity(
+export async function logActivity(
   eventId: string,
   action: string,
   actorName: string | null = "You",

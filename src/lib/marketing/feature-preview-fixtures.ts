@@ -9,6 +9,7 @@ import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { TodayWeekEntry, TodayWhatsNext } from "@/types/today";
 import type { Event } from "@/types";
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
+import type { FilesPageData } from "@/types/campaign-files";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { EventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
@@ -209,6 +210,23 @@ export const previewPlanningHubData: EventPlaybookHubData = {
       createdAt: "2026-07-05T09:30:00Z",
     },
   ],
+};
+
+export const previewFilesPageData: FilesPageData = {
+  tablesAvailable: true,
+  files: [],
+  events: [
+    {
+      eventId: previewPlanningHubEvent.id,
+      title: previewPlanningHubEvent.title,
+      date: previewPlanningHubEvent.date,
+      artwork: previewPlanningHubArtwork,
+      fileCount: 0,
+    },
+  ],
+  eventList: [previewPlanningHubEvent],
+  uploaderNames: [],
+  currentUserName: PREVIEW_USER_FIRST_NAME,
 };
 
 function previewApprovalItem(

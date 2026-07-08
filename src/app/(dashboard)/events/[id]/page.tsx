@@ -52,6 +52,7 @@ import {
   getEventPlaybookHubData,
   getPastEventLessonsForType,
 } from "@/lib/event-playbooks/queries";
+import { getFilesPageData } from "@/lib/campaign-files/queries";
 import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
 import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
@@ -129,12 +130,13 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
 
   const aiStatus = getAiAssistantStatus();
 
-  const [hubData, pastEventLessons, orgWorkspace] = await Promise.all([
+  const [hubData, pastEventLessons, orgWorkspace, filesPageData] = await Promise.all([
     getEventPlaybookHubData(event.id),
     getPastEventLessonsForType(event.eventType, event.id),
     organization
       ? getOrganizationWorkspaceData(organization.id)
       : Promise.resolve(null),
+    getFilesPageData(event.id),
   ]);
 
   const pastLessonCount = pastEventLessons.reduce(
@@ -193,6 +195,7 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     campaignEvents: planningHubSwitcherEvents,
     notificationCount,
     userEmail: authUser?.email ?? null,
+    filesPageData,
   };
 
   if (!hasCampaign) {
