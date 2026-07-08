@@ -6,18 +6,15 @@ import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlac
 import { CampaignBuilderModal } from "@/components/campaign-builder-v2/CampaignBuilderModal";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
-import { regenerateArtworkAction } from "@/lib/campaign-builder-v2/actions";
+import { regenerateMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
-import {
-  ARTWORK_VIEW_LABELS,
-  aspectClassForView,
-} from "@/lib/campaign-builder-v2/platform-utils";
+import { aspectClassForView } from "@/lib/campaign-builder-v2/platform-utils";
 import type {
-  ArtworkView,
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
+  MilestoneArtwork,
+  MilestonePreviewContent,
 } from "@/lib/campaign-builder-v2/types";
-import { cn } from "@/lib/utils/cn";
 
 const QUICK_SUGGESTIONS = [
   "More green",
@@ -31,32 +28,33 @@ const QUICK_SUGGESTIONS = [
 interface EditArtworkModalProps {
   eventId: string;
   milestoneId: string;
-  view: ArtworkView;
   brandKitId: string | null;
   inspiration: CampaignBuilderInspiration;
   milestone: CampaignBuilderMilestone;
-  currentImageUrl: string | null;
+  previewContent: MilestonePreviewContent;
+  milestones: CampaignBuilderMilestone[];
   artworkNotes?: string;
   onClose: () => void;
-  onApply: (imageUrl: string) => void;
+  onApply: (artwork: MilestoneArtwork) => void;
 }
 
 export function EditArtworkModal({
   eventId,
   milestoneId,
-  view,
   brandKitId,
   inspiration,
   milestone,
-  currentImageUrl,
+  previewContent,
+  milestones,
   artworkNotes,
   onClose,
   onApply,
 }: EditArtworkModalProps) {
   const [instructions, setInstructions] = useState(artworkNotes ?? "");
   const [styleStrength, setStyleStrength] = useState(50);
-  const [variations, setVariations] = useState<string[]>([]);
-  const [selectedVariation, setSelectedVariation] = useState<number | null>(null);
+  const [previewArtwork, setPreviewArtwork] = useState<MilestoneArtwork>(
+    previewContent.artwork,
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -67,22 +65,24 @@ export function EditArtworkModal({
       const inspirationImages = await prepareInspirationImagesForServer(
         inspiration.inspirationImages,
       );
-      const result = await regenerateArtworkAction({
+      const result = await regenerateMilestoneArtworkAction({
         eventId,
         milestoneId,
-        view,
         instructions,
         styleStrength,
         brandKitId,
         useBrandKit: brandKitId !== null,
         inspiration,
         milestone,
-        currentImageUrl,
+        milestones,
+        previewContent: {
+          ...previewContent,
+          artwork: previewArtwork,
+        },
         inspirationImages,
       });
       if (result.success) {
-        setVariations(result.variationUrls);
-        setSelectedVariation(0);
+        setPreviewArtwork(result.artwork);
       } else {
         setErrorMessage(result.message);
       }
@@ -92,13 +92,7 @@ export function EditArtworkModal({
   }
 
   function handleApply() {
-    const imageUrl =
-      selectedVariation !== null && variations[selectedVariation]
-        ? variations[selectedVariation]
-        : currentImageUrl ?? variations[0] ?? "";
-    if (imageUrl) {
-      onApply(imageUrl);
-    }
+    onApply(previewArtwork);
   }
 
   const styleLabel =
@@ -111,7 +105,7 @@ export function EditArtworkModal({
   return (
     <CampaignBuilderModal
       title="Edit artwork"
-      subtitle={`${ARTWORK_VIEW_LABELS[view]} — describe changes and regenerate`}
+      subtitle="Regenerate feed (1:1) and story (9:16) together — describe changes below"
       onClose={onClose}
       size="xl"
       footer={
@@ -132,7 +126,7 @@ export function EditArtworkModal({
               aria-label="Style strength"
             />
           </div>
-          <Button onClick={handleRegenerate} disabled={isGenerating}>
+          <Button onClick={() => void handleRegenerate()} disabled={isGenerating}>
             <Sparkles className="h-4 w-4" strokeWidth={1.5} />
             {isGenerating ? "Generating…" : "Regenerate artwork"}
           </Button>
@@ -140,14 +134,27 @@ export function EditArtworkModal({
       }
     >
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
             Current artwork
           </p>
-          <ArtworkPlaceholder
-            aspectClassName={aspectClassForView(view)}
-            imageUrl={currentImageUrl}
-          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-[11px] text-cos-muted">Feed (1:1)</p>
+              <ArtworkPlaceholder
+                aspectClassName={aspectClassForView("feed")}
+                imageUrl={previewContent.artwork.feedUrl}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-[11px] text-cos-muted">Story (9:16)</p>
+              <ArtworkPlaceholder
+                aspectClassName={aspectClassForView("story")}
+                imageUrl={previewContent.artwork.storyUrl}
+                className="max-h-64"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -183,29 +190,18 @@ export function EditArtworkModal({
 
           <div>
             <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-              Variations
+              Regenerated preview
             </p>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              {(variations.length > 0 ? variations : [null, null, null, null]).map(
-                (url, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => url && setSelectedVariation(index)}
-                    className={cn(
-                      "overflow-hidden border-2 transition-colors",
-                      selectedVariation === index
-                        ? "border-cos-text"
-                        : "border-cos-border hover:border-cos-accent",
-                    )}
-                  >
-                    <ArtworkPlaceholder
-                      aspectClassName={aspectClassForView(view)}
-                      imageUrl={url}
-                    />
-                  </button>
-                ),
-              )}
+            <div className="mt-2 grid gap-4 sm:grid-cols-2">
+              <ArtworkPlaceholder
+                aspectClassName={aspectClassForView("feed")}
+                imageUrl={previewArtwork.feedUrl}
+              />
+              <ArtworkPlaceholder
+                aspectClassName={aspectClassForView("story")}
+                imageUrl={previewArtwork.storyUrl}
+                className="max-h-64"
+              />
             </div>
           </div>
 
@@ -214,7 +210,7 @@ export function EditArtworkModal({
               <p className="mr-auto text-sm text-red-600">{errorMessage}</p>
             ) : null}
             <Button variant="secondary" onClick={handleApply}>
-              Apply selected
+              Apply artwork
             </Button>
           </div>
         </div>

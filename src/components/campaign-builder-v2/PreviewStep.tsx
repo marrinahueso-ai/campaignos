@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Clock, Copy, Sparkles, Trash2 } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
@@ -10,8 +11,11 @@ import { EditCaptionModal } from "@/components/campaign-builder-v2/EditCaptionMo
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
-import { generateMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
-import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
+import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
+import {
+  getSharedCaptionText,
+  syncCaptionsToPlatforms,
+} from "@/lib/campaign-builder-v2/caption-utils";
 import {
   ARTWORK_VIEW_OPTIONS,
   PLATFORM_FORMAT_OPTIONS,
@@ -106,19 +110,13 @@ export function PreviewStep() {
     setSelectedMilestoneId,
     setPreviewTab,
     updatePreviewContent,
-    updateInspiration,
     duplicateMilestone,
     removeMilestone,
   } = useCampaignBuilder();
 
+  const router = useRouter();
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
-  const [artworkView, setArtworkView] = useState<ArtworkView>("feed");
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
-  const [captionPlatform, setCaptionPlatform] = useState<"facebook" | "instagram">(
-    "facebook",
-  );
-  const [isGeneratingArtwork, setIsGeneratingArtwork] = useState(false);
-  const [artworkError, setArtworkError] = useState<string | null>(null);
 
   const selectedId =
     session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
@@ -166,51 +164,9 @@ export function PreviewStep() {
     updatePreviewContent(selectedPreview.milestoneId, { enabledFormats });
   }
 
-  async function handleGenerateMilestoneArtwork() {
-    if (!selectedMilestone || !selectedPreview) {
-      return;
-    }
-
-    setIsGeneratingArtwork(true);
-    setArtworkError(null);
-
-    try {
-      const brandKitId = brandKitIdForAi(session.inspiration.brandKitId);
-      const inspirationImages = await prepareInspirationImagesForServer(
-        session.inspiration.inspirationImages,
-      );
-      const result = await generateMilestoneArtworkAction({
-        eventId: session.eventId,
-        milestoneId: selectedPreview.milestoneId,
-        inspiration: session.inspiration,
-        milestone: selectedMilestone,
-        previewContent: selectedPreview,
-        brandKitId,
-        useBrandKit: brandKitId !== null,
-        inspirationImages,
-      });
-
-      if (!result.success) {
-        setArtworkError(result.message);
-        return;
-      }
-
-      updatePreviewContent(selectedPreview.milestoneId, {
-        artwork: result.artwork,
-        status: "needs-review",
-      });
-
-      if (result.updatedInspiration) {
-        updateInspiration(result.updatedInspiration);
-      }
-    } catch (error) {
-      setArtworkError(
-        error instanceof Error ? error.message : "Could not generate artwork.",
-      );
-    } finally {
-      setIsGeneratingArtwork(false);
-    }
-  }
+  const sharedCaptionText = selectedPreview
+    ? getSharedCaptionText(selectedPreview.captions)
+    : "";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -308,29 +264,9 @@ export function PreviewStep() {
               <div className="space-y-6">
                 {showArtwork && (
                   <section className="cos-card space-y-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <h2 className="font-display text-xl text-cos-text">
-                        {selectedMilestone.name}
-                      </h2>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        disabled={isGeneratingArtwork}
-                        onClick={() => void handleGenerateMilestoneArtwork()}
-                      >
-                        <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-                        {isGeneratingArtwork ? "Generating…" : "Generate"}
-                      </Button>
-                    </div>
-
-                    {artworkError && (
-                      <p
-                        className="rounded border border-cos-warning/40 bg-cos-warning/10 px-3 py-2 text-sm text-cos-warning-text"
-                        role="alert"
-                      >
-                        {artworkError}
-                      </p>
-                    )}
+                    <h2 className="font-display text-xl text-cos-text">
+                      {selectedMilestone.name}
+                    </h2>
 
                     {selectedMilestone.artworkNotes && (
                       <p className="text-xs text-cos-muted">
@@ -365,21 +301,17 @@ export function PreviewStep() {
                                 view === "story" ? "max-h-64" : undefined
                               }
                             />
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="w-full"
-                              onClick={() => {
-                                setArtworkView(view);
-                                setArtworkModalOpen(true);
-                              }}
-                            >
-                              Edit artwork
-                            </Button>
                           </div>
                         );
                       })}
                     </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setArtworkModalOpen(true)}
+                    >
+                      Edit artwork
+                    </Button>
                   </section>
                 )}
 
@@ -391,32 +323,25 @@ export function PreviewStep() {
                         Caption notes: {selectedMilestone.captionNotes}
                       </p>
                     )}
-                    {selectedPreview.captions.map((caption) => (
-                      <div key={caption.platform} className="space-y-2">
-                        <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                          {caption.platform === "facebook"
-                            ? "Facebook"
-                            : "Instagram"}
-                        </p>
-                        <p className="rounded border border-cos-border bg-cos-bg/50 p-4 text-sm leading-relaxed text-cos-text">
-                          {caption.text || (
-                            <span className="text-cos-muted">
-                              No caption yet — click Edit caption to generate
-                            </span>
-                          )}
-                        </p>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            setCaptionPlatform(caption.platform);
-                            setCaptionModalOpen(true);
-                          }}
-                        >
-                          Edit caption
-                        </Button>
-                      </div>
-                    ))}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+                        Facebook & Instagram
+                      </p>
+                      <p className="rounded border border-cos-border bg-cos-bg/50 p-4 text-sm leading-relaxed text-cos-text">
+                        {sharedCaptionText || (
+                          <span className="text-cos-muted">
+                            No caption yet — click Edit caption to generate
+                          </span>
+                        )}
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setCaptionModalOpen(true)}
+                      >
+                        Edit caption
+                      </Button>
+                    </div>
                   </section>
                 )}
               </div>
@@ -591,25 +516,25 @@ export function PreviewStep() {
         <EditArtworkModal
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
-          view={artworkView}
           brandKitId={brandKitIdForAi(session.inspiration.brandKitId)}
           inspiration={session.inspiration}
           milestone={selectedMilestone}
-          currentImageUrl={
-            selectedPreview.artwork[artworkKeyForView(artworkView)]
-          }
+          previewContent={selectedPreview}
+          milestones={session.milestones}
           artworkNotes={selectedMilestone.artworkNotes}
           onClose={() => setArtworkModalOpen(false)}
-          onApply={(imageUrl) => {
-            const key = artworkKeyForView(artworkView);
+          onApply={(artwork) => {
             updatePreviewContent(selectedPreview.milestoneId, {
-              artwork: {
-                ...selectedPreview.artwork,
-                [key]: imageUrl,
-              },
+              artwork,
               status: "needs-review",
             });
             setArtworkModalOpen(false);
+            void syncAppliedMilestoneArtworkAction({
+              eventId: session.eventId,
+              milestones: session.milestones,
+              milestoneId: selectedPreview.milestoneId,
+              artwork,
+            }).then(() => router.refresh());
           }}
         />
       )}
@@ -618,13 +543,9 @@ export function PreviewStep() {
         <EditCaptionModal
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
-          platform={captionPlatform}
           inspiration={session.inspiration}
           milestone={selectedMilestone}
-          currentCaption={
-            selectedPreview.captions.find((c) => c.platform === captionPlatform)
-              ?.text ?? ""
-          }
+          currentCaption={sharedCaptionText}
           captionNotes={selectedMilestone.captionNotes}
           voiceTone={session.inspiration.voiceTone}
           artworkImageUrl={
@@ -633,9 +554,7 @@ export function PreviewStep() {
           onClose={() => setCaptionModalOpen(false)}
           onApply={(text) => {
             updatePreviewContent(selectedPreview.milestoneId, {
-              captions: selectedPreview.captions.map((c) =>
-                c.platform === captionPlatform ? { ...c, text } : c,
-              ),
+              captions: syncCaptionsToPlatforms(text, selectedMilestone.platforms),
               status: "needs-review",
             });
             setCaptionModalOpen(false);

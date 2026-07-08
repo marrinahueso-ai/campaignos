@@ -2,6 +2,7 @@
 
 import { Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/Input";
+import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
 import {
   ARTWORK_VIEW_OPTIONS,
   PLATFORM_FORMAT_LABELS,
@@ -101,6 +102,12 @@ export function ExpandedMilestoneReview({
   });
 
   const artworkSummaryViews = enabledArtworkViews(preview.enabledFormats);
+  const sharedCaptionText = getSharedCaptionText(preview.captions);
+  const captionsAreShared =
+    preview.captions.length <= 1 ||
+    preview.captions.every(
+      (caption) => caption.text.trim() === sharedCaptionText.trim(),
+    );
 
   return (
     <div className="border-b border-cos-border last:border-b-0">
@@ -202,26 +209,45 @@ export function ExpandedMilestoneReview({
                 ))}
               </ul>
               <p className="pt-2 font-medium text-cos-text">Captions</p>
-              <ul className="space-y-1">
-                {preview.captions.map((caption) => (
-                  <li key={caption.platform} className="flex items-center gap-2">
-                    <Check
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        caption.text
-                          ? "text-cos-success"
-                          : "text-cos-border",
-                      )}
-                      strokeWidth={2.5}
-                    />
-                    <span className="text-cos-muted">
-                      {caption.platform === "facebook"
-                        ? "Facebook caption"
-                        : "Instagram caption"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {captionsAreShared ? (
+                <div className="flex items-start gap-2">
+                  <Check
+                    className={cn(
+                      "mt-0.5 h-3.5 w-3.5 shrink-0",
+                      sharedCaptionText.trim()
+                        ? "text-cos-success"
+                        : "text-cos-border",
+                    )}
+                    strokeWidth={2.5}
+                  />
+                  <span className="text-cos-muted">
+                    {sharedCaptionText.trim()
+                      ? "Facebook & Instagram caption"
+                      : "No caption yet"}
+                  </span>
+                </div>
+              ) : (
+                <ul className="space-y-1">
+                  {preview.captions.map((caption) => (
+                    <li key={caption.platform} className="flex items-center gap-2">
+                      <Check
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          caption.text
+                            ? "text-cos-success"
+                            : "text-cos-border",
+                        )}
+                        strokeWidth={2.5}
+                      />
+                      <span className="text-cos-muted">
+                        {caption.platform === "facebook"
+                          ? "Facebook caption"
+                          : "Instagram caption"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </section>
 
@@ -311,25 +337,42 @@ export function ExpandedMilestoneReview({
                       <span className="text-cos-muted">{asset.label}</span>
                     </li>
                   ))}
-                  {preview.captions.map((caption) => (
-                    <li
-                      key={`email-${caption.platform}`}
-                      className="flex items-center gap-2"
-                    >
+                  {captionsAreShared ? (
+                    <li className="flex items-center gap-2">
                       <Check
                         className={cn(
                           "h-3.5 w-3.5",
-                          caption.text ? "text-cos-success" : "text-cos-border",
+                          sharedCaptionText.trim()
+                            ? "text-cos-success"
+                            : "text-cos-border",
                         )}
                         strokeWidth={2.5}
                       />
                       <span className="text-cos-muted">
-                        {caption.platform === "facebook"
-                          ? "Facebook caption"
-                          : "Instagram caption"}
+                        Facebook & Instagram caption
                       </span>
                     </li>
-                  ))}
+                  ) : (
+                    preview.captions.map((caption) => (
+                      <li
+                        key={`email-${caption.platform}`}
+                        className="flex items-center gap-2"
+                      >
+                        <Check
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            caption.text ? "text-cos-success" : "text-cos-border",
+                          )}
+                          strokeWidth={2.5}
+                        />
+                        <span className="text-cos-muted">
+                          {caption.platform === "facebook"
+                            ? "Facebook caption"
+                            : "Instagram caption"}
+                        </span>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </div>
               <p className="text-xs text-cos-muted">

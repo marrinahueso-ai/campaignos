@@ -20,6 +20,8 @@ export async function maybePromoteApprovedArtworkToHero(input: {
   filename: string;
   generationPrompt: string;
   uploadedBy: string | null;
+  /** When true, overwrites an existing uploaded hero (e.g. campaign builder regen). */
+  replaceExistingHero?: boolean;
 }): Promise<boolean> {
   const isFeedMilestonePromotion =
     input.assetType !== undefined &&
@@ -34,7 +36,7 @@ export async function maybePromoteApprovedArtworkToHero(input: {
   const hasHeroImage =
     existingHero?.status === "uploaded" && Boolean(existingHero.storagePath);
 
-  if (hasHeroImage) {
+  if (hasHeroImage && !input.replaceExistingHero) {
     return false;
   }
 

@@ -59,7 +59,7 @@ export function CampaignsListView({
               <div className="min-w-0 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
-                    href={`/events/${event.id}`}
+                    href={`/events/${event.id}#overview`}
                     className="font-medium text-cos-text transition-colors hover:text-cos-primary"
                   >
                     {event.title}
@@ -92,7 +92,7 @@ export function CampaignsListView({
 
             <div className="flex shrink-0 flex-col items-end gap-2 self-start sm:self-center">
               <Link
-                href={`/events/${event.id}`}
+                href={`/events/${event.id}#overview`}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-cos-muted transition-colors hover:text-cos-text"
               >
                 Open

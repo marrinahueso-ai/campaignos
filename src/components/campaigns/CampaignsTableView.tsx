@@ -121,7 +121,7 @@ export function CampaignsTableView({
               <TableRow key={event.id}>
                 <TableCell>
                   <Link
-                    href={`/events/${event.id}`}
+                    href={`/events/${event.id}#overview`}
                     className="inline-flex min-w-0 items-center gap-3 font-medium text-cos-text transition-colors hover:text-cos-primary"
                   >
                     <CampaignThumbnail

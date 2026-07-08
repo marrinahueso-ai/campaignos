@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   getLocationHash,
   setLocationHash,
@@ -226,6 +227,7 @@ export function CampaignBuilderProvider({
   campaignOptions,
   children,
 }: CampaignBuilderProviderProps) {
+  const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
     buildDefaultSession(eventId, eventTitle, eventDate),
   );
@@ -702,6 +704,7 @@ export function CampaignBuilderProvider({
         setSession(next);
         persistLocalSession(next);
         await persistSession(next);
+        router.refresh();
         goToStep("preview");
 
         return { success: true, message: result.message };
@@ -715,7 +718,7 @@ export function CampaignBuilderProvider({
         setIsGeneratingContent(false);
       }
     },
-    [flushSave, goToStep, persistSession],
+    [flushSave, goToStep, persistSession, router],
   );
 
   const setSelectedMilestoneId = useCallback(

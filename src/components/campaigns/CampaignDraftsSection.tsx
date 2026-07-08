@@ -51,7 +51,7 @@ export function CampaignDraftsSection({
           return (
             <Link
               key={event.id}
-              href={`/events/${event.id}`}
+              href={`/events/${event.id}#overview`}
               className="flex min-w-[17rem] max-w-[17rem] shrink-0 gap-3 border border-cos-border bg-cos-card p-3 transition-colors hover:border-cos-accent/50 hover:bg-cos-bg/30"
             >
               <CampaignThumbnail

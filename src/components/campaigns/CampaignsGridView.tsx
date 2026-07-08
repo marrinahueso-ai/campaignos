@@ -87,7 +87,7 @@ export function CampaignsGridView({
             </div>
 
             <div className="mt-4 border-t border-cos-border pt-3">
-              <Button href={`/events/${event.id}`} variant="secondary" size="sm" className="w-full">
+              <Button href={`/events/${event.id}#overview`} variant="secondary" size="sm" className="w-full">
                 Open planning hub
                 <ArrowRight className="h-4 w-4" />
               </Button>

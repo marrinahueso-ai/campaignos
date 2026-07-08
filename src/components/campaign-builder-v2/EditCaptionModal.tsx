@@ -24,7 +24,6 @@ const QUICK_SUGGESTIONS = [
 interface EditCaptionModalProps {
   eventId: string;
   milestoneId: string;
-  platform: "facebook" | "instagram";
   inspiration: CampaignBuilderInspiration;
   milestone: CampaignBuilderMilestone;
   currentCaption: string;
@@ -38,7 +37,6 @@ interface EditCaptionModalProps {
 export function EditCaptionModal({
   eventId,
   milestoneId,
-  platform,
   inspiration,
   milestone,
   currentCaption,
@@ -61,7 +59,7 @@ export function EditCaptionModal({
       const result = await regenerateCaptionAction({
         eventId,
         milestoneId,
-        platform,
+        platform: milestone.platforms[0] ?? "facebook",
         instructions,
         tone,
         currentCaption,
@@ -82,7 +80,7 @@ export function EditCaptionModal({
   return (
     <CampaignBuilderModal
       title="Edit caption"
-      subtitle={`${platform === "facebook" ? "Facebook" : "Instagram"} caption`}
+      subtitle="Caption for Facebook and Instagram"
       onClose={onClose}
       size="lg"
       footer={
@@ -166,7 +164,7 @@ export function EditCaptionModal({
           ) : (
             <span />
           )}
-          <Button onClick={handleRegenerate} disabled={isGenerating}>
+          <Button onClick={() => void handleRegenerate()} disabled={isGenerating}>
             <Sparkles className="h-4 w-4" strokeWidth={1.5} />
             {isGenerating ? "Generating…" : "Regenerate caption"}
           </Button>

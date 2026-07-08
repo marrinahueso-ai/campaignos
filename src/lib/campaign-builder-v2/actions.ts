@@ -16,6 +16,11 @@ import {
   generateCampaignBuilderArtwork,
   generateCampaignBuilderCaption,
 } from "@/lib/campaign-builder-v2/generation";
+import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
+import {
+  syncHeroFromAllMilestoneArtwork,
+  syncHeroFromMilestoneArtwork,
+} from "@/lib/campaign-builder-v2/hero-sync";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
 import type {
   ArtworkView,
@@ -128,6 +133,8 @@ async function generateArtworkForMilestone(input: {
   useBrandKit: boolean;
   existingArtwork?: MilestoneArtwork;
   forceRegenerate?: boolean;
+  extraInstructions?: string | null;
+  styleStrength?: number;
 }): Promise<{
   success: boolean;
   artwork: MilestoneArtwork;
@@ -151,6 +158,13 @@ async function generateArtworkForMilestone(input: {
     }
 
     const storyFromFeed = view === "story" && Boolean(artwork.feedUrl);
+    const feedUrl = artwork.feedUrl;
+    const isAdjust =
+      view === "feed" &&
+      Boolean(existingUrl?.trim()) &&
+      !isPlaceholderArtworkUrl(existingUrl) &&
+      Boolean(input.extraInstructions?.trim());
+
     const artworkResult = await generateCampaignBuilderArtwork({
       eventId: input.eventId,
       milestone: input.milestone,
@@ -159,7 +173,10 @@ async function generateArtworkForMilestone(input: {
       inspirationImageUrls: input.inspirationImageUrls,
       brandKitId: input.brandKitId,
       useBrandKit: input.useBrandKit,
-      previousImageUrl: storyFromFeed ? artwork.feedUrl : null,
+      styleStrength: input.styleStrength,
+      extraInstructions: isAdjust ? null : input.extraInstructions?.trim() || null,
+      adjustmentComments: isAdjust ? input.extraInstructions?.trim() : null,
+      previousImageUrl: isAdjust ? existingUrl : storyFromFeed ? feedUrl : null,
       storyFromFeed,
       versionCount: 1,
     });
@@ -185,6 +202,7 @@ export interface GenerateMilestoneArtworkInput {
   milestoneId: string;
   inspiration: CampaignBuilderInspiration;
   milestone: CampaignBuilderMilestone;
+  milestones: CampaignBuilderMilestone[];
   previewContent: MilestonePreviewContent;
   brandKitId: string | null;
   useBrandKit: boolean;
@@ -226,6 +244,15 @@ export async function generateMilestoneArtworkAction(
     existingArtwork: input.previewContent.artwork,
     forceRegenerate: true,
   });
+
+  if (generation.success) {
+    await syncHeroFromMilestoneArtwork({
+      eventId: input.eventId,
+      milestones: input.milestones,
+      milestoneId: input.milestoneId,
+      artwork: generation.artwork,
+    });
+  }
 
   return {
     success: generation.success,
@@ -274,13 +301,79 @@ export async function regenerateArtworkAction(
     adjustmentComments: isAdjust ? input.instructions.trim() : null,
     previousImageUrl: isAdjust ? input.currentImageUrl : null,
     storyFromFeed: false,
-    versionCount: 4,
+    versionCount: 1,
   });
 
   return {
     success: result.success,
     variationUrls: result.variationUrls,
     message: result.message,
+  };
+}
+
+export interface RegenerateMilestoneArtworkInput {
+  eventId: string;
+  milestoneId: string;
+  inspiration: CampaignBuilderInspiration;
+  milestone: CampaignBuilderMilestone;
+  milestones: CampaignBuilderMilestone[];
+  previewContent: MilestonePreviewContent;
+  instructions: string;
+  styleStrength: number;
+  brandKitId: string | null;
+  useBrandKit: boolean;
+  inspirationImages?: InspirationImagePayload[];
+}
+
+export async function regenerateMilestoneArtworkAction(
+  input: RegenerateMilestoneArtworkInput,
+): Promise<GenerateMilestoneArtworkResult> {
+  const resolved = await resolveInspirationForGeneration(
+    input.eventId,
+    input.inspiration,
+    input.inspirationImages,
+  );
+
+  if (resolved.error) {
+    return {
+      success: false,
+      artwork: input.previewContent.artwork,
+      message: resolved.error,
+    };
+  }
+
+  const generation = await generateArtworkForMilestone({
+    eventId: input.eventId,
+    milestone: input.milestone,
+    enabledFormats: input.previewContent.enabledFormats,
+    inspiration: resolved.inspiration,
+    inspirationImageUrls: resolved.inspirationImageUrls,
+    brandKitId: input.brandKitId,
+    useBrandKit: input.useBrandKit,
+    existingArtwork: input.previewContent.artwork,
+    forceRegenerate: true,
+    extraInstructions: input.instructions.trim() || null,
+    styleStrength: input.styleStrength,
+  });
+
+  if (generation.success) {
+    await syncHeroFromMilestoneArtwork({
+      eventId: input.eventId,
+      milestones: input.milestones,
+      milestoneId: input.milestoneId,
+      artwork: generation.artwork,
+    });
+  }
+
+  return {
+    success: generation.success,
+    artwork: generation.artwork,
+    message:
+      generation.message ??
+      (generation.success
+        ? "Feed and story artwork regenerated."
+        : "Artwork regeneration failed."),
+    updatedInspiration: resolved.inspiration,
   };
 }
 
@@ -365,38 +458,34 @@ export async function generateAllContentAction(
       const artwork = artworkGeneration.artwork;
       const artworkViews = enabledArtworkViews(enabledFormats);
 
-      const captions: PlatformCaption[] = [];
       const feedArtworkUrl = artwork.feedUrl ?? artwork.storyUrl;
+      const existingCaption =
+        preview?.captions.find((caption) => caption.text.trim())?.text ?? "";
 
-      for (const platform of milestone.platforms) {
-        const existing =
-          preview?.captions.find((caption) => caption.platform === platform)?.text ?? "";
+      const captionResult = await generateCampaignBuilderCaption({
+        eventId: input.eventId,
+        inspiration: resolved.inspiration,
+        milestone,
+        platform: milestone.platforms[0] ?? "facebook",
+        currentCaption: existingCaption || undefined,
+        artworkImageUrl: feedArtworkUrl,
+      });
 
-        const captionResult = await generateCampaignBuilderCaption({
-          eventId: input.eventId,
-          inspiration: resolved.inspiration,
-          milestone,
-          platform,
-          currentCaption: existing || undefined,
-          artworkImageUrl: feedArtworkUrl,
-        });
-
-        if (!captionResult.success) {
-          return {
-            success: false,
-            results: [],
-            message:
-              captionResult.message ||
-              `Could not generate ${platform} caption for "${milestone.name}".`,
-            updatedInspiration: resolved.inspiration,
-          };
-        }
-
-        captions.push({
-          platform,
-          text: captionResult.caption,
-        });
+      if (!captionResult.success) {
+        return {
+          success: false,
+          results: [],
+          message:
+            captionResult.message ||
+            `Could not generate caption for "${milestone.name}".`,
+          updatedInspiration: resolved.inspiration,
+        };
       }
+
+      const captions = syncCaptionsToPlatforms(
+        captionResult.caption,
+        milestone.platforms,
+      );
 
       const hasArtwork = artworkViews.some((view) => artwork[artworkKeyForView(view)]);
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
@@ -408,6 +497,12 @@ export async function generateAllContentAction(
         status: hasArtwork || hasCaptions ? "needs-review" : "draft",
       });
     }
+
+    await syncHeroFromAllMilestoneArtwork({
+      eventId: input.eventId,
+      milestones: input.milestones,
+      results,
+    });
 
     return {
       success: true,
@@ -532,4 +627,13 @@ export async function saveDraftAction(eventId: string): Promise<{
     success: true,
     message: "Campaign saved as draft (demo stub).",
   };
+}
+
+export async function syncAppliedMilestoneArtworkAction(input: {
+  eventId: string;
+  milestones: CampaignBuilderMilestone[];
+  milestoneId: string;
+  artwork: MilestoneArtwork;
+}): Promise<void> {
+  await syncHeroFromMilestoneArtwork(input);
 }
