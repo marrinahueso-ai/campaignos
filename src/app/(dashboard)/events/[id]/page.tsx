@@ -97,11 +97,14 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
       getInboxUnreadCountForCurrentOrg(),
     ]);
 
-  const activeSchoolYear = organization?.id
-    ? await getActiveSchoolYear(organization.id)
-    : null;
+  const [activeSchoolYear, switcherEvents] = await Promise.all([
+    organization?.id
+      ? getActiveSchoolYear(organization.id)
+      : Promise.resolve(null),
+    getPlanningHubSwitcherEvents(organization?.id ?? null),
+  ]);
   const planningHubSwitcherEvents = buildPlanningHubSwitcherEvents(
-    await getPlanningHubSwitcherEvents(organization?.id ?? null),
+    switcherEvents,
     event,
     { dateWindow: getPlanningHubSwitcherDateWindow(activeSchoolYear) },
   );

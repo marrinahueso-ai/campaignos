@@ -74,7 +74,12 @@ export function ReviewStep() {
   async function handleSendForApproval() {
     setIsSending(true);
     try {
-      const result = await sendForApprovalAction(session.eventId);
+      const result = await sendForApprovalAction({
+        eventId: session.eventId,
+        campaignName: session.inspiration.campaignName,
+        milestones: session.milestones,
+        previewContents: session.previewContents,
+      });
       setActionMessage(result.message);
     } finally {
       setIsSending(false);

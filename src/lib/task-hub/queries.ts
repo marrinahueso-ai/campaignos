@@ -105,12 +105,17 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
   const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
 
   const mondayIntegrationEnabled = isMondayIntegrationEnabled();
-  const mondayConnection = mondayIntegrationEnabled
-    ? await getMondayConnectionForOrganization(organization.id)
-    : null;
-  const mondayMapping = mondayIntegrationEnabled
-    ? await getMondayBoardMappingForOrganization(organization.id)
-    : null;
+  const mondayConnectionPromise = mondayIntegrationEnabled
+    ? getMondayConnectionForOrganization(organization.id)
+    : Promise.resolve(null);
+  const mondayMappingPromise = mondayIntegrationEnabled
+    ? getMondayBoardMappingForOrganization(organization.id)
+    : Promise.resolve(null);
+
+  const [mondayConnection, mondayMapping] = await Promise.all([
+    mondayConnectionPromise,
+    mondayMappingPromise,
+  ]);
   const mondaySyncEnabled =
     mondayIntegrationEnabled &&
     Boolean(mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId);

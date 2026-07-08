@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import {
   resolvePlanningHubSwitcherDateWindow,
@@ -28,7 +29,7 @@ export async function getSchoolYearsForOrganization(
   return (data as SchoolYearRow[]).map(mapSchoolYearRow);
 }
 
-export async function getActiveSchoolYear(
+export const getActiveSchoolYear = cache(async function getActiveSchoolYear(
   organizationId: string,
 ): Promise<SchoolYear | null> {
   const supabase = await createClient();
@@ -54,7 +55,7 @@ export async function getActiveSchoolYear(
   }
 
   return mapSchoolYearRow(data as SchoolYearRow);
-}
+});
 
 export function getPlanningHubSwitcherDateWindow(
   schoolYear: Pick<SchoolYear, "label"> | null | undefined,

@@ -30,7 +30,7 @@ export function PublishedStep() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button href="/publishing">View publishing schedule</Button>
+              <Button href="/approvals">View approvals & schedule</Button>
               <Button
                 variant="secondary"
                 href={`/events/${session.eventId}#published`}

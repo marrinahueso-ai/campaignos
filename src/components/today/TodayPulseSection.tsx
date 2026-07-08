@@ -66,7 +66,7 @@ export function TodayPulseSection({
 
       <PulseCard
         title="Recently published"
-        viewAllHref="/publishing"
+        viewAllHref="/approvals"
         viewAllLabel="View publishing"
       >
         {publishedPreview.length > 0 ? (

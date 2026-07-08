@@ -1,8 +1,8 @@
-import { ApprovalsHub } from "@/components/approvals/ApprovalsHub";
-import { getApprovalQueueForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
+import { ApprovalsSchedulingHub } from "@/components/approvals-scheduling/ApprovalsSchedulingHub";
+import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
 
 export const metadata = {
-  title: "Approvals",
+  title: "Approvals & Scheduling",
 };
 
 interface ApprovalsPageProps {
@@ -11,15 +11,12 @@ interface ApprovalsPageProps {
 
 export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps) {
   const params = await searchParams;
-  const queue = await getApprovalQueueForCurrentUser();
+  const data = await getUnifiedApprovalsSchedulingData();
 
   return (
-    <ApprovalsHub
-      assignedToMe={queue.assignedToMe}
-      allPending={queue.allPending}
-      changesRequested={queue.changesRequested}
-      recentlyApproved={queue.recentlyApproved}
-      eventIdFilter={params.event ?? null}
+    <ApprovalsSchedulingHub
+      {...data}
+      initialEventFilter={params.event ?? null}
     />
   );
 }

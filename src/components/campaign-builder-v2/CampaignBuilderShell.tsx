@@ -1,19 +1,49 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { CampaignBuilderProvider, useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderStepper } from "@/components/campaign-builder-v2/CampaignBuilderStepper";
 import { CampaignHealthGauge } from "@/components/campaign-builder-v2/CampaignHealthGauge";
 import { InspirationStep } from "@/components/campaign-builder-v2/InspirationStep";
 import { MilestonesStep } from "@/components/campaign-builder-v2/MilestonesStep";
-import { PreviewStep } from "@/components/campaign-builder-v2/PreviewStep";
-import { PublishedStep } from "@/components/campaign-builder-v2/PublishedStep";
-import { ReviewStep } from "@/components/campaign-builder-v2/ReviewStep";
 import type {
   BrandKitOption,
   CampaignBuilderStepId,
   CampaignOption,
   PlaybookOption,
 } from "@/lib/campaign-builder-v2/types";
+
+const PreviewStep = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/PreviewStep").then((module) => ({
+      default: module.PreviewStep,
+    })),
+  { loading: () => <CampaignBuilderStepFallback /> },
+);
+
+const ReviewStep = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/ReviewStep").then((module) => ({
+      default: module.ReviewStep,
+    })),
+  { loading: () => <CampaignBuilderStepFallback /> },
+);
+
+const PublishedStep = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/PublishedStep").then((module) => ({
+      default: module.PublishedStep,
+    })),
+  { loading: () => <CampaignBuilderStepFallback /> },
+);
+
+function CampaignBuilderStepFallback() {
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="h-8 w-48 animate-pulse rounded-lg bg-cos-bg-alt" />
+    </div>
+  );
+}
 
 interface CampaignBuilderShellProps {
   eventId: string;

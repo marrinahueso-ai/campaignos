@@ -6,6 +6,8 @@
  */
 
 import { suggestMilestonesFromContext } from "@/lib/campaign-builder-v2/suggest-milestones";
+import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
+import { validateBeforeGeneration } from "@/lib/campaign-builder-v2/validation";
 import {
   artworkKeyForView,
   enabledArtworkViews,
@@ -56,6 +58,7 @@ export interface RegenerateCaptionInput {
   inspiration: CampaignBuilderInspiration;
   milestone: CampaignBuilderMilestone;
   artworkImageUrl?: string | null;
+  playbookName?: string | null;
 }
 
 export interface RegenerateArtworkResult {
@@ -78,6 +81,9 @@ export interface GenerateAllContentInput {
   previewContents: MilestonePreviewContent[];
   brandKitId: string | null;
   useBrandKit: boolean;
+  /** When set, only these milestones are generated (no cross-milestone mixing). */
+  milestoneIds?: string[];
+  playbookName?: string | null;
 }
 
 export interface GenerateAllContentMilestoneResult {
@@ -389,6 +395,7 @@ export async function regenerateCaptionAction(
     tone: input.tone,
     currentCaption: input.currentCaption,
     artworkImageUrl: input.artworkImageUrl,
+    playbookName: input.playbookName ?? null,
   });
 
   return {
@@ -401,13 +408,25 @@ export async function regenerateCaptionAction(
 export async function generateAllContentAction(
   input: GenerateAllContentInput,
 ): Promise<GenerateAllContentResult> {
-  if (input.milestones.length === 0) {
+  const validation = validateBeforeGeneration({
+    inspiration: input.inspiration,
+    milestones: input.milestones,
+    milestoneIds: input.milestoneIds,
+  });
+
+  if (!validation.valid) {
     return {
       success: false,
       results: [],
-      message: "Add at least one milestone before generating content.",
+      message: validation.message ?? "Complete required fields before generating.",
     };
   }
+
+  const targetMilestones = input.milestoneIds?.length
+    ? input.milestones.filter((milestone) =>
+        input.milestoneIds!.includes(milestone.id),
+      )
+    : input.milestones;
 
   try {
     const resolved = await resolveInspirationForGeneration(
@@ -426,7 +445,7 @@ export async function generateAllContentAction(
 
     const results: GenerateAllContentMilestoneResult[] = [];
 
-    for (const milestone of input.milestones) {
+    for (const milestone of targetMilestones) {
       const preview =
         input.previewContents.find((content) => content.milestoneId === milestone.id) ??
         null;
@@ -469,6 +488,7 @@ export async function generateAllContentAction(
         platform: milestone.platforms[0] ?? "facebook",
         currentCaption: existingCaption || undefined,
         artworkImageUrl: feedArtworkUrl,
+        playbookName: input.playbookName ?? null,
       });
 
       if (!captionResult.success) {
@@ -504,10 +524,17 @@ export async function generateAllContentAction(
       results,
     });
 
+    const scopeLabel =
+      input.milestoneIds?.length === 1
+        ? "this milestone"
+        : input.milestoneIds?.length
+          ? "selected milestones"
+          : "all milestones";
+
     return {
       success: true,
       results,
-      message: "Artwork and captions generated for all milestones.",
+      message: `Artwork and captions generated for ${scopeLabel}.`,
       updatedInspiration: resolved.inspiration,
     };
   } catch (error) {
@@ -593,15 +620,41 @@ export async function suggestMilestonesAction(input: {
   };
 }
 
-export async function sendForApprovalAction(eventId: string): Promise<{
+export async function sendForApprovalAction(input: {
+  eventId: string;
+  campaignName: string;
+  recipientEmail?: string | null;
+  milestones?: CampaignBuilderMilestone[];
+  previewContents?: MilestonePreviewContent[];
+}): Promise<{
   success: boolean;
   message: string;
 }> {
-  void eventId;
+  if (input.milestones?.length && input.previewContents?.length) {
+    const result = await sendCampaignBuilderForApproval({
+      eventId: input.eventId,
+      campaignName: input.campaignName,
+      milestones: input.milestones,
+      previewContents: input.previewContents,
+    });
+
+    return {
+      success: result.success,
+      message: result.message,
+    };
+  }
+
+  const { sendCampaignBuilderForApprovalFromSession } = await import(
+    "@/lib/campaign-builder-v2/approval-bridge"
+  );
+  const result = await sendCampaignBuilderForApprovalFromSession(
+    input.eventId,
+    input.campaignName,
+  );
 
   return {
-    success: true,
-    message: "Approval request queued (demo stub).",
+    success: result.success,
+    message: result.message,
   };
 }
 

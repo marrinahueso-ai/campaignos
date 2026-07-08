@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   ListChecks,
   Megaphone,
-  Send,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -199,7 +198,6 @@ const navItems: {
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Files", href: "/files", icon: FolderOpen },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
-  { label: "Publishing", href: "/publishing", icon: Send },
   { label: "Inbox", href: "/inbox", icon: Inbox },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Insights", href: "/insights", icon: BarChart3 },
@@ -371,6 +369,7 @@ export function Sidebar({
             <Link
               key={label}
               href={linkHref}
+              prefetch={!isCampaignBuilder}
               title={showLabels ? undefined : label}
               onClick={(event) => {
                 if (isCampaignBuilder) {

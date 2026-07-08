@@ -88,8 +88,10 @@ export function MilestonesStep() {
         if (form) {
           const patch = readMilestoneEditorPatch(form);
           const result = await generateAllContent({
-            id: editingMilestone.id,
-            ...patch,
+            milestonePatch: {
+              id: editingMilestone.id,
+              ...patch,
+            },
           });
           setEditingId(null);
           if (!result.success) {
@@ -226,18 +228,33 @@ export function MilestonesStep() {
           </section>
 
           {generateError && (
-            <p
+            <div
               className="rounded border border-cos-warning/40 bg-cos-warning/10 px-4 py-3 text-sm text-cos-warning-text"
               role="alert"
             >
-              {generateError}
-            </p>
+              <p>{generateError}</p>
+              <button
+                type="button"
+                onClick={() => void handleGenerateContent()}
+                disabled={isGeneratingContent}
+                className="mt-2 font-medium underline hover:no-underline"
+              >
+                Retry generation
+              </button>
+            </div>
           )}
 
           {isGeneratingContent && (
-            <p className="text-center text-sm text-cos-muted">
-              Generating artwork and captions…
-            </p>
+            <div className="rounded border border-cos-border bg-cos-bg/40 px-4 py-4 text-center text-sm text-cos-muted">
+              <p className="font-medium text-cos-text">
+                Generating artwork and captions…
+              </p>
+              <p className="mt-1">
+                This can take several minutes per milestone. Keep this tab open
+                until generation finishes — your campaign setup is saved, but
+                in-progress AI generation will stop if you navigate away.
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -7,9 +7,11 @@ import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
 import { logAiUsage } from "@/lib/ai/usage";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
-import { getBrandKitItems } from "@/lib/creative-assets/queries";
-import type { BrandKitItem } from "@/lib/creative-assets/types";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import {
+  resolveBrandContextForGeneration,
+} from "@/lib/campaign-builder-v2/brand-context";
+import { mergeInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
 import { generateArtworkV2ImageNative } from "@/lib/artwork-v2/orchestrator";
 import { resolveArtworkGenerationProfile } from "@/lib/artwork-v2/generation-mode";
 import { resolveMetaCaptionModel } from "@/lib/meta-captions/constants";
@@ -39,43 +41,6 @@ function buildGeneratedArtworkStoragePath(input: {
     `${input.view}-${input.index}.png`,
   );
   return `${input.eventId}/campaign-builder-v2/generated/${input.milestoneId}/${input.batchId}/${filename}`;
-}
-
-function buildBrandGuidanceBlock(items: BrandKitItem[]): string | null {
-  if (items.length === 0) {
-    return null;
-  }
-
-  const lines: string[] = [];
-  for (const item of items) {
-    if (item.category === "color" && item.valueText?.trim()) {
-      lines.push(`Color — ${item.label}: ${item.valueText.trim()}`);
-    }
-    if (item.category === "font" && item.valueText?.trim()) {
-      lines.push(`Font — ${item.label}: ${item.valueText.trim()}`);
-    }
-    if (item.category === "brand_voice" && item.valueText?.trim()) {
-      lines.push(`Brand voice: ${item.valueText.trim()}`);
-    }
-  }
-
-  return lines.length > 0 ? lines.join("\n") : null;
-}
-
-async function resolveBrandGuidance(
-  useBrandKit: boolean,
-): Promise<string | null> {
-  if (!useBrandKit) {
-    return null;
-  }
-
-  const organization = await getLatestOrganization();
-  if (!organization?.id) {
-    return null;
-  }
-
-  const items = await getBrandKitItems(organization.id);
-  return buildBrandGuidanceBlock(items);
 }
 
 function styleStrengthLabel(styleStrength: number): string {
@@ -119,7 +84,10 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     `Event date: ${input.inspiration.eventDate}`,
     `Milestone date: ${input.milestone.suggestedDate}`,
     `Purpose: ${input.milestone.purpose}`,
-  ];
+    input.inspiration.voiceTone.trim()
+      ? `Voice / tone: ${input.inspiration.voiceTone.trim()}`
+      : null,
+  ].filter((line): line is string => Boolean(line));
 
   if (artworkParts.length > 0) {
     lines.push("", "Art direction:", artworkParts.join(". "));
@@ -259,17 +227,21 @@ export async function generateCampaignBuilderArtwork(input: {
     };
   }
 
-  const brandGuidance = await resolveBrandGuidance(input.useBrandKit);
+  const brandContext = await resolveBrandContextForGeneration(input.useBrandKit);
+  const baseInspirationUrls = mergeInspirationImageUrls(
+    input.inspirationImageUrls,
+    brandContext.logoUrls,
+  );
   const inspirationUrls =
     input.storyFromFeed && input.previousImageUrl
-      ? [input.previousImageUrl, ...input.inspirationImageUrls].slice(0, 4)
-      : input.inspirationImageUrls;
+      ? [input.previousImageUrl, ...baseInspirationUrls].slice(0, 4)
+      : baseInspirationUrls;
 
   const userPrompt = buildCampaignBuilderArtworkPrompt({
     inspiration: input.inspiration,
     milestone: input.milestone,
     view: input.view,
-    brandGuidance,
+    brandGuidance: brandContext.guidance,
     extraInstructions: input.adjustmentComments ? null : input.extraInstructions,
     hasInspirationImages: inspirationUrls.length > 0,
     storyFromFeed: Boolean(input.storyFromFeed),

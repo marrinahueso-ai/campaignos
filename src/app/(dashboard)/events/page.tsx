@@ -19,7 +19,14 @@ export const metadata = {
 export default async function EventsPage() {
   const today = getTodayDateString();
   const organization = await getCurrentOrganization();
-  const events = await getCampaignPageEvents(organization?.id ?? null);
+
+  const [events, workspace] = await Promise.all([
+    getCampaignPageEvents(organization?.id ?? null),
+    organization
+      ? getOrganizationWorkspaceData(organization.id)
+      : Promise.resolve(null),
+  ]);
+
   const eventIds = events.map((event) => event.id);
 
   const [artworkByEventId, metaScheduledEventIds, eventIdsWithFiles] =
@@ -28,10 +35,6 @@ export default async function EventsPage() {
       getMetaScheduledEventIds(eventIds),
       getEventIdsWithCampaignFiles(eventIds),
     ]);
-
-  const workspace = organization
-    ? await getOrganizationWorkspaceData(organization.id)
-    : null;
   const ownershipByEventId = buildEventRosterOwnershipMap(events, workspace);
 
   return (

@@ -13,6 +13,7 @@ import {
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
 import type {
   ApprovalQueueItem,
   ApprovalQueuePreview,
@@ -320,7 +321,9 @@ async function enrichApprovalQueuePreviews(
   });
 }
 
-async function resolveApprovalQueueBase(eventId?: string): Promise<{
+const resolveApprovalQueueBase = cache(async function resolveApprovalQueueBase(
+  eventId?: string,
+): Promise<{
   actor: ApprovalActor | null;
   rows: ApprovalQueueRow[];
   items: ApprovalQueueItem[];
@@ -357,7 +360,7 @@ async function resolveApprovalQueueBase(eventId?: string): Promise<{
     .filter((item): item is ApprovalQueueItem => item !== null);
 
   return { actor, rows: refreshedRows, items };
-}
+});
 
 function filterPendingAssignedToMe(items: ApprovalQueueItem[]): ApprovalQueueItem[] {
   return items.filter(

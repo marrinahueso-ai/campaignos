@@ -37,11 +37,11 @@ export default async function CampaignBuilderPage({
   }
 
   const organization = await getLatestOrganization();
-  const playbooks = await getPlaybooksForOrganization(organization?.id ?? null);
-  const campaignOptions = await getCampaignBuilderCampaignOptions(
-    organization?.id ?? null,
-    event,
-  );
+
+  const [playbooks, campaignOptions] = await Promise.all([
+    getPlaybooksForOrganization(organization?.id ?? null),
+    getCampaignBuilderCampaignOptions(organization?.id ?? null, event),
+  ]);
 
   const playbookOptions: PlaybookOption[] = playbooks.map((playbook) => ({
     id: playbook.id,

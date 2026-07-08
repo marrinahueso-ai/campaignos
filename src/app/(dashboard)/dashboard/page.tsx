@@ -2,10 +2,9 @@ import { TodayCompanionSection } from "@/components/today/TodayCompanionSection"
 import { TodayHero } from "@/components/today/TodayHero";
 import { TodayPulseSection } from "@/components/today/TodayPulseSection";
 import { TodaySnapshot } from "@/components/today/TodaySnapshot";
-import { WhatsNextSection } from "@/components/today/WhatsNextSection";
+import { WhatsNextSectionSuspense } from "@/components/today/WhatsNextSectionSuspense";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getApprovalQueueForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
-import { getEventArtwork } from "@/lib/event-workspace/get-event-artwork";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
@@ -47,10 +46,6 @@ export default async function DashboardPage() {
     (item) => item.kind === "published",
   );
 
-  const nextUpArtwork = todayData.whatsNext.eventId
-    ? await getEventArtwork(todayData.whatsNext.eventId)
-    : null;
-
   return (
     <div className="studio-page pb-12">
       <div className="flex flex-col lg:flex-row lg:items-start lg:gap-x-10">
@@ -62,10 +57,7 @@ export default async function DashboardPage() {
             timezone={organization?.timezone ?? "America/Chicago"}
           />
           <div className="mt-6 flex flex-col gap-8 lg:mt-7 lg:gap-10">
-            <WhatsNextSection
-              whatsNext={todayData.whatsNext}
-              artwork={nextUpArtwork}
-            />
+            <WhatsNextSectionSuspense whatsNext={todayData.whatsNext} />
             <TodayPulseSection
               pendingApprovals={approvalQueue.assignedToMe}
               totalPendingCount={approvalQueue.allPending.length}

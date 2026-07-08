@@ -112,6 +112,7 @@ export function PreviewStep() {
     updatePreviewContent,
     duplicateMilestone,
     removeMilestone,
+    playbookOptions,
   } = useCampaignBuilder();
 
   const router = useRouter();
@@ -548,6 +549,11 @@ export function PreviewStep() {
           currentCaption={sharedCaptionText}
           captionNotes={selectedMilestone.captionNotes}
           voiceTone={session.inspiration.voiceTone}
+          playbookName={
+            playbookOptions.find(
+              (option) => option.id === session.inspiration.playbookId,
+            )?.name ?? null
+          }
           artworkImageUrl={
             selectedPreview.artwork.feedUrl ?? selectedPreview.artwork.storyUrl
           }

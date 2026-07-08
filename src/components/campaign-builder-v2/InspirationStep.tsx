@@ -7,6 +7,7 @@ import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/Campaign
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Input } from "@/components/ui/Input";
+import { isNoBrandKit, NO_BRAND_KIT_GUIDANCE } from "@/lib/campaign-builder-v2/brand-kit";
 import { cn } from "@/lib/utils/cn";
 
 export function InspirationStep() {
@@ -21,6 +22,8 @@ export function InspirationStep() {
     brandKitOptions,
     voiceToneOptions,
     campaignOptions,
+    inspirationUploadError,
+    clearInspirationUploadError,
   } = useCampaignBuilder();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -173,20 +176,40 @@ export function InspirationStep() {
                 )}
               </div>
             </div>
+            {inspirationUploadError && (
+              <p
+                className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {inspirationUploadError}{" "}
+                <button
+                  type="button"
+                  onClick={clearInspirationUploadError}
+                  className="font-medium underline hover:no-underline"
+                >
+                  Dismiss
+                </button>
+              </p>
+            )}
           </section>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Select
-              label="Brand kit"
-              value={inspiration.brandKitId}
-              onChange={(e) => updateInspiration({ brandKitId: e.target.value })}
-            >
-              {brandKitOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </Select>
+            <div className="space-y-2">
+              <Select
+                label="Brand kit"
+                value={inspiration.brandKitId}
+                onChange={(e) => updateInspiration({ brandKitId: e.target.value })}
+              >
+                {brandKitOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+              {isNoBrandKit(inspiration.brandKitId) && (
+                <p className="text-xs text-cos-muted">{NO_BRAND_KIT_GUIDANCE}</p>
+              )}
+            </div>
             <Select
               label="Voice / Tone"
               value={inspiration.voiceTone}

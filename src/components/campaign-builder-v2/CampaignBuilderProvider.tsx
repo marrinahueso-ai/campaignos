@@ -92,9 +92,12 @@ interface CampaignBuilderContextValue {
   duplicateMilestone: (id: string) => void;
   suggestMilestones: () => Promise<void>;
   flushSave: () => Promise<void>;
-  generateAllContent: (
-    milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string },
-  ) => Promise<{ success: boolean; message: string }>;
+  generateAllContent: (options?: {
+    milestoneId?: string;
+    milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+  }) => Promise<{ success: boolean; message: string }>;
+  inspirationUploadError: string | null;
+  clearInspirationUploadError: () => void;
   setSelectedMilestoneId: (id: string | null) => void;
   setPreviewTab: (tab: PreviewTabId) => void;
   updatePreviewContent: (
@@ -236,6 +239,9 @@ export function CampaignBuilderProvider({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [inspirationUploadError, setInspirationUploadError] = useState<string | null>(
+    null,
+  );
   const [isHydrated, setIsHydrated] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionRef = useRef(session);
@@ -375,6 +381,7 @@ export function CampaignBuilderProvider({
     (file: File) => {
       const imageId = `inspiration-${Date.now()}`;
       const previewUrl = URL.createObjectURL(file);
+      setInspirationUploadError(null);
       updateSession((prev) => ({
         ...prev,
         inspiration: {
@@ -398,6 +405,9 @@ export function CampaignBuilderProvider({
         formData.set("id", imageId);
         const result = await uploadInspirationImageAction(eventId, formData);
         if (!result.success || !result.image?.url) {
+          setInspirationUploadError(
+            result.message || "Could not upload inspiration image.",
+          );
           return;
         }
 
@@ -619,13 +629,21 @@ export function CampaignBuilderProvider({
     }));
   }, [session.inspiration, updateSession]);
 
+  const clearInspirationUploadError = useCallback(() => {
+    setInspirationUploadError(null);
+  }, []);
+
   const generateAllContent = useCallback(
-    async (
-      milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string },
-    ): Promise<{ success: boolean; message: string }> => {
+    async (options?: {
+      milestoneId?: string;
+      milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+    }): Promise<{ success: boolean; message: string }> => {
       setIsGeneratingContent(true);
       try {
         let base = sessionRef.current;
+        const milestonePatch = options?.milestonePatch;
+        const targetMilestoneId = options?.milestoneId ?? milestonePatch?.id;
+
         if (milestonePatch) {
           const { id, ...patch } = milestonePatch;
           const milestones = base.milestones.map((milestone) =>
@@ -653,6 +671,12 @@ export function CampaignBuilderProvider({
         await flushSave();
 
         const brandKitId = brandKitIdForAi(base.inspiration.brandKitId);
+        const resolvedPlaybooks =
+          playbooks.length > 0 ? playbooks : DEFAULT_PLAYBOOK_OPTIONS;
+        const playbookName =
+          resolvedPlaybooks.find(
+            (option) => option.id === base.inspiration.playbookId,
+          )?.name ?? null;
         const inspirationImages = await prepareInspirationImagesForServer(
           base.inspiration.inspirationImages,
         );
@@ -664,6 +688,8 @@ export function CampaignBuilderProvider({
           previewContents: base.previewContents,
           brandKitId,
           useBrandKit: brandKitId !== null,
+          milestoneIds: targetMilestoneId ? [targetMilestoneId] : undefined,
+          playbookName,
         });
 
         if (!result.success) {
@@ -697,7 +723,10 @@ export function CampaignBuilderProvider({
             };
           }),
           selectedMilestoneId:
-            base.selectedMilestoneId ?? base.milestones[0]?.id ?? null,
+            targetMilestoneId ??
+            base.selectedMilestoneId ??
+            base.milestones[0]?.id ??
+            null,
         };
 
         sessionRef.current = next;
@@ -718,7 +747,7 @@ export function CampaignBuilderProvider({
         setIsGeneratingContent(false);
       }
     },
-    [flushSave, goToStep, persistSession, router],
+    [flushSave, goToStep, persistSession, playbooks, router],
   );
 
   const setSelectedMilestoneId = useCallback(
@@ -852,6 +881,8 @@ export function CampaignBuilderProvider({
     suggestMilestones,
     flushSave,
     generateAllContent,
+    inspirationUploadError,
+    clearInspirationUploadError,
     setSelectedMilestoneId,
     setPreviewTab,
     updatePreviewContent,

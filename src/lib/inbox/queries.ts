@@ -21,6 +21,7 @@ import type {
 } from "@/lib/inbox/types";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
 import type { InboxMessageRow, InboxThreadRow } from "@/lib/inbox/db-types";
 import {
   ensureMetaConnectionHealthyForOrganization,
@@ -169,7 +170,8 @@ async function listMessagesForThreads(
   return grouped;
 }
 
-export async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
+export const getInboxUnreadCountForCurrentOrg = cache(
+  async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
   const organization = await getLatestOrganization();
   if (!organization?.id) {
     return 0;
@@ -187,7 +189,8 @@ export async function getInboxUnreadCountForCurrentOrg(): Promise<number> {
   }
 
   return data.reduce((total, row) => total + (row.unread_count as number), 0);
-}
+  },
+);
 
 export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus> {
   const organization = await getLatestOrganization();

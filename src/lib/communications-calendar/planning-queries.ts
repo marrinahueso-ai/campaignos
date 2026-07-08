@@ -21,15 +21,15 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
   const organization = await getLatestOrganization();
   const schoolYear = organization?.schoolYear ?? null;
 
-  const activeSchoolYear = organization
-    ? await getActiveSchoolYear(organization.id)
-    : null;
-
-  const [raw, importedList, publishedAtTimestamps] = await Promise.all([
-    fetchUnifiedCalendarRawData(schoolYear, organization?.id ?? null),
-    getImportedEventsForCalendarList(),
-    fetchPublishedPostTimestamps(),
-  ]);
+  const [activeSchoolYear, raw, importedList, publishedAtTimestamps] =
+    await Promise.all([
+      organization
+        ? getActiveSchoolYear(organization.id)
+        : Promise.resolve(null),
+      fetchUnifiedCalendarRawData(schoolYear, organization?.id ?? null),
+      getImportedEventsForCalendarList(),
+      fetchPublishedPostTimestamps(),
+    ]);
 
   let importCleanup: PlanningCalendarData["importCleanup"] = null;
 

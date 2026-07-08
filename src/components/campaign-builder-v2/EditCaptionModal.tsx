@@ -29,6 +29,7 @@ interface EditCaptionModalProps {
   currentCaption: string;
   captionNotes?: string;
   voiceTone: string;
+  playbookName?: string | null;
   artworkImageUrl?: string | null;
   onClose: () => void;
   onApply: (text: string) => void;
@@ -42,6 +43,7 @@ export function EditCaptionModal({
   currentCaption,
   captionNotes,
   voiceTone,
+  playbookName,
   artworkImageUrl,
   onClose,
   onApply,
@@ -66,6 +68,7 @@ export function EditCaptionModal({
         inspiration,
         milestone,
         artworkImageUrl,
+        playbookName: playbookName ?? null,
       });
       if (result.success) {
         setPreviewCaption(result.caption);

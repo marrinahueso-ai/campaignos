@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { cn } from "@/lib/utils/cn";
@@ -21,6 +22,14 @@ function getPlaceholderGradient(title: string): string {
   return palette[index];
 }
 
+function isOptimizableImageUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
 export function CampaignThumbnail({
   artwork,
   title,
@@ -28,6 +37,7 @@ export function CampaignThumbnail({
   size = "md",
 }: CampaignThumbnailProps) {
   const dimension = size === "sm" ? "h-10 w-10" : "h-14 w-14";
+  const pixelSize = size === "sm" ? 40 : 56;
 
   if (hasDisplayableArtwork(artwork) && artwork.imageUrl) {
     return (
@@ -38,8 +48,25 @@ export function CampaignThumbnail({
           className,
         )}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={artwork.imageUrl} alt="" className="h-full w-full object-cover" />
+        {isOptimizableImageUrl(artwork.imageUrl) ? (
+          <Image
+            src={artwork.imageUrl}
+            alt=""
+            width={pixelSize}
+            height={pixelSize}
+            className="h-full w-full object-cover"
+            sizes={`${pixelSize}px`}
+            loading="lazy"
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={artwork.imageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        )}
       </span>
     );
   }
