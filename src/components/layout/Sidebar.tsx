@@ -12,7 +12,6 @@ import {
   ListChecks,
   Megaphone,
   Send,
-  Sparkles,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,7 +29,6 @@ import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
 const LAST_EVENT_STORAGE_KEY = "campaignos-last-event-id";
-const CREATIVE_STUDIO_HASH = "plan";
 
 const lastEventIdListeners = new Set<() => void>();
 
@@ -86,39 +84,6 @@ function extractEventId(pathname: string): string | null {
     return null;
   }
   return match[1];
-}
-
-function resolveCreativeStudioHref(
-  pathname: string,
-  lastEventId: string | null,
-): string {
-  const eventId = extractEventId(pathname);
-  if (eventId) {
-    return `/events/${eventId}#${CREATIVE_STUDIO_HASH}`;
-  }
-  if (lastEventId) {
-    return `/events/${lastEventId}#${CREATIVE_STUDIO_HASH}`;
-  }
-  return "/events";
-}
-
-function handleCreativeStudioClick(
-  event: MouseEvent<HTMLAnchorElement>,
-  linkHref: string,
-) {
-  event.preventDefault();
-
-  const [pathPart, hashPart = CREATIVE_STUDIO_HASH] = linkHref.split("#");
-  const hash = hashPart.replace(/^#/, "");
-  const targetEventId = extractEventId(pathPart);
-
-  if (pathPart === "/events" && !targetEventId) {
-    window.location.assign("/events");
-    return;
-  }
-
-  // Full navigation keeps the hash on App Router dynamic routes and resets tab state.
-  window.location.assign(`${pathPart}#${hash}`);
 }
 
 const CAMPAIGN_BUILDER_HASH = "inspiration";
@@ -231,13 +196,6 @@ const navItems: {
         } as const,
       ]
     : []),
-  {
-    label: "Creative Studio (Classic)",
-    href: "/events",
-    icon: Sparkles,
-    resolveHref: resolveCreativeStudioHref,
-    isActive: isCreativeStudioActive,
-  },
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Files", href: "/files", icon: FolderOpen },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
@@ -407,7 +365,6 @@ export function Sidebar({
               (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/inbox";
-          const isCreativeStudio = label === "Creative Studio (Classic)";
           const isCampaignBuilder = label === "Create with AI";
 
           return (
@@ -416,9 +373,7 @@ export function Sidebar({
               href={linkHref}
               title={showLabels ? undefined : label}
               onClick={(event) => {
-                if (isCreativeStudio) {
-                  handleCreativeStudioClick(event, linkHref);
-                } else if (isCampaignBuilder) {
+                if (isCampaignBuilder) {
                   handleCampaignBuilderClick(event, linkHref);
                 }
                 onNavigate?.();
