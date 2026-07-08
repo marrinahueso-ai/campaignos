@@ -13,22 +13,51 @@ import {
   Megaphone,
   Send,
   Sparkles,
+  WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { AiCreditsWidget } from "@/components/layout/AiCreditsWidget";
 import { RalliAiAssistantWidget } from "@/components/layout/RalliAiAssistantWidget";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type MouseEvent } from "react";
 import {
   getLocationHash,
   subscribeToLocationHash,
 } from "@/lib/navigation/location-hash";
+import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
 const LAST_EVENT_STORAGE_KEY = "campaignos-last-event-id";
 const CREATIVE_STUDIO_HASH = "plan";
+
+const lastEventIdListeners = new Set<() => void>();
+
+function subscribeToLastEventId(onStoreChange: () => void): () => void {
+  lastEventIdListeners.add(onStoreChange);
+  return () => {
+    lastEventIdListeners.delete(onStoreChange);
+  };
+}
+
+function notifyLastEventIdListeners(): void {
+  for (const listener of lastEventIdListeners) {
+    listener();
+  }
+}
+
+function getLastEventIdSnapshot(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return localStorage.getItem(LAST_EVENT_STORAGE_KEY);
+}
+
+function setLastEventIdSnapshot(eventId: string): void {
+  localStorage.setItem(LAST_EVENT_STORAGE_KEY, eventId);
+  notifyLastEventIdListeners();
+}
 
 const CREATIVE_STUDIO_HASHES = new Set([
   "social-media",
@@ -52,7 +81,7 @@ const CREATIVE_STUDIO_HASHES = new Set([
 ]);
 
 function extractEventId(pathname: string): string | null {
-  const match = pathname.match(/^\/events\/([^/]+)$/);
+  const match = pathname.match(/^\/events\/([^/]+)(?:\/campaign-builder)?$/);
   if (!match || match[1] === "create") {
     return null;
   }
@@ -92,7 +121,58 @@ function handleCreativeStudioClick(
   window.location.assign(`${pathPart}#${hash}`);
 }
 
+const CAMPAIGN_BUILDER_HASH = "inspiration";
+
+function extractCampaignBuilderEventId(pathname: string): string | null {
+  const match = pathname.match(/^\/events\/([^/]+)\/campaign-builder$/);
+  if (!match || match[1] === "create") {
+    return null;
+  }
+  return match[1];
+}
+
+function resolveCampaignBuilderHref(
+  pathname: string,
+  lastEventId: string | null,
+): string {
+  const eventId =
+    extractCampaignBuilderEventId(pathname) ?? extractEventId(pathname);
+  if (eventId) {
+    return `/events/${eventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
+  }
+  if (lastEventId) {
+    return `/events/${lastEventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
+  }
+  return "/events";
+}
+
+function handleCampaignBuilderClick(
+  event: MouseEvent<HTMLAnchorElement>,
+  linkHref: string,
+) {
+  event.preventDefault();
+
+  const [pathPart, hashPart = CAMPAIGN_BUILDER_HASH] = linkHref.split("#");
+  const hash = hashPart.replace(/^#/, "");
+  const targetEventId = extractCampaignBuilderEventId(pathPart);
+
+  if (pathPart === "/events" && !targetEventId) {
+    window.location.assign("/events");
+    return;
+  }
+
+  window.location.assign(`${pathPart}#${hash}`);
+}
+
+function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
+  return extractCampaignBuilderEventId(pathname) !== null;
+}
+
 function isCreativeStudioActive(pathname: string, hash: string): boolean {
+  if (isCampaignBuilderActive(pathname, hash)) {
+    return false;
+  }
+
   const eventId = extractEventId(pathname);
   if (!eventId) {
     return false;
@@ -107,6 +187,9 @@ function isCreativeStudioActive(pathname: string, hash: string): boolean {
 }
 
 function isCampaignsActive(pathname: string, hash: string): boolean {
+  if (isCampaignBuilderActive(pathname, hash)) {
+    return false;
+  }
   if (pathname === "/events" || pathname.startsWith("/events?")) {
     return true;
   }
@@ -137,8 +220,19 @@ const navItems: {
     icon: Megaphone,
     isActive: isCampaignsActive,
   },
+  ...(isCampaignBuilderV2Enabled()
+    ? [
+        {
+          label: "Create with AI",
+          href: "/events",
+          icon: WandSparkles,
+          resolveHref: resolveCampaignBuilderHref,
+          isActive: isCampaignBuilderActive,
+        } as const,
+      ]
+    : []),
   {
-    label: "Creative Studio",
+    label: "Creative Studio (Classic)",
     href: "/events",
     icon: Sparkles,
     resolveHref: resolveCreativeStudioHref,
@@ -224,13 +318,16 @@ export function Sidebar({
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
-  const [locationHash, setLocationHash] = useState("");
-  const [lastEventId, setLastEventId] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-    return localStorage.getItem(LAST_EVENT_STORAGE_KEY);
-  });
+  const locationHash = useSyncExternalStore(
+    subscribeToLocationHash,
+    getLocationHash,
+    () => "",
+  );
+  const lastEventId = useSyncExternalStore(
+    subscribeToLastEventId,
+    getLastEventIdSnapshot,
+    () => null,
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -241,18 +338,8 @@ export function Sidebar({
   useEffect(() => {
     const eventId = extractEventId(pathname);
     if (eventId) {
-      localStorage.setItem(LAST_EVENT_STORAGE_KEY, eventId);
-      setLastEventId(eventId);
-      return;
+      setLastEventIdSnapshot(eventId);
     }
-
-    setLastEventId(localStorage.getItem(LAST_EVENT_STORAGE_KEY));
-  }, [pathname]);
-
-  useEffect(() => {
-    const syncHash = () => setLocationHash(getLocationHash());
-    syncHash();
-    return subscribeToLocationHash(syncHash);
   }, [pathname]);
 
   function toggleExpanded() {
@@ -320,7 +407,8 @@ export function Sidebar({
               (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/inbox";
-          const isCreativeStudio = label === "Creative Studio";
+          const isCreativeStudio = label === "Creative Studio (Classic)";
+          const isCampaignBuilder = label === "Create with AI";
 
           return (
             <Link
@@ -330,6 +418,8 @@ export function Sidebar({
               onClick={(event) => {
                 if (isCreativeStudio) {
                   handleCreativeStudioClick(event, linkHref);
+                } else if (isCampaignBuilder) {
+                  handleCampaignBuilderClick(event, linkHref);
                 }
                 onNavigate?.();
               }}
