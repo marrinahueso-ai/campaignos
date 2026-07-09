@@ -7,6 +7,7 @@ import {
   archivePlaybook,
   assignPlaybookToEvent,
   createPlaybook,
+  deletePlaybook,
   duplicatePlaybook,
   reassignEventPlaybook,
   replaceEventCommunicationTimeline,
@@ -141,6 +142,22 @@ export async function archivePlaybookAction(
   }
 
   revalidatePath("/settings/playbooks");
+  revalidatePath("/settings/playbooks-milestones");
+  return { error: null, success: true };
+}
+
+export async function deletePlaybookAction(
+  playbookId: string,
+): Promise<PlaybookActionState> {
+  const organization = await getLatestOrganization();
+  const result = await deletePlaybook(playbookId, organization?.id ?? null);
+
+  if (!result.success) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/playbooks");
+  revalidatePath("/settings/playbooks-milestones");
   return { error: null, success: true };
 }
 

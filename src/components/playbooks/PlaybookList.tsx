@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   Archive,
   Copy,
   Edit,
   Layers,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,7 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   archivePlaybookAction,
+  deletePlaybookAction,
   duplicatePlaybookAction,
 } from "@/lib/playbooks/actions";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
@@ -29,8 +31,14 @@ interface PlaybookListProps {
 export function PlaybookList({ playbooks }: PlaybookListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
 
-  if (playbooks.length === 0) {
+  const visiblePlaybooks = playbooks.filter(
+    (playbook) => !deletedIds.includes(playbook.id),
+  );
+
+  if (visiblePlaybooks.length === 0) {
     return (
       <EmptyState
         icon={Layers}
@@ -42,24 +50,70 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
   }
 
   function handleDuplicate(playbookId: string) {
+    setError(null);
     startTransition(async () => {
       const result = await duplicatePlaybookAction(playbookId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
       if (result.playbookId) {
         router.push(`/settings/playbooks/${result.playbookId}`);
       }
     });
   }
 
-  function handleArchive(playbookId: string) {
+  function handleArchive(playbookId: string, playbookName: string) {
+    const confirmed = window.confirm(
+      `Archive "${playbookName}"?\n\nIt will be hidden from this list but existing event assignments are unchanged.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
     startTransition(async () => {
-      await archivePlaybookAction(playbookId);
+      const result = await archivePlaybookAction(playbookId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setDeletedIds((current) => [...current, playbookId]);
+      router.refresh();
+    });
+  }
+
+  function handleDelete(playbook: CommunicationPlaybook) {
+    const confirmed = window.confirm(
+      `Permanently delete "${playbook.name}"?\n\nThis removes the playbook and its steps. This cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      const result = await deletePlaybookAction(playbook.id);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setDeletedIds((current) => [...current, playbook.id]);
       router.refresh();
     });
   }
 
   return (
     <div className="grid gap-4">
-      {playbooks.map((playbook) => (
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {visiblePlaybooks.map((playbook) => (
         <Card key={playbook.id} padding="md">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
@@ -98,15 +152,26 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
                 Duplicate
               </Button>
               {!playbook.isSystem && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() => handleArchive(playbook.id)}
-                >
-                  <Archive className="h-3.5 w-3.5" />
-                  Archive
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => handleArchive(playbook.id, playbook.name)}
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                    Archive
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => handleDelete(playbook)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                </>
               )}
             </div>
           </div>

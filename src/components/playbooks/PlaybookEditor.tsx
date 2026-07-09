@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
   createPlaybookAction,
+  deletePlaybookAction,
   updatePlaybookAction,
   type PlaybookActionState,
 } from "@/lib/playbooks/actions";
@@ -64,6 +65,8 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
   const [steps, setSteps] = useState<PlaybookStepInput[]>(
     initialSteps.length > 0 ? stepsToInput(initialSteps) : [createEmptyStep()],
   );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   const action = isEditing
     ? updatePlaybookAction.bind(null, playbook!.id)
@@ -99,11 +102,49 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
   }
 
   function removeStep(index: number) {
+    if (steps.length === 1) {
+      return;
+    }
+
+    const step = steps[index];
+    const confirmed = window.confirm(
+      `Remove "${step.title}" from this playbook?\n\nSave the playbook to apply this change.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setSteps((current) => current.filter((_, i) => i !== index));
   }
 
   function addStep() {
     setSteps((current) => [...current, createEmptyStep()]);
+  }
+
+  function handleDeletePlaybook() {
+    if (!playbook || playbook.isSystem) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Permanently delete "${playbook.name}"?\n\nThis removes the playbook and all of its steps. This cannot be undone.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteError(null);
+    startDeleteTransition(async () => {
+      const result = await deletePlaybookAction(playbook.id);
+      if (result.error) {
+        setDeleteError(result.error);
+        return;
+      }
+      router.push("/settings/playbooks-milestones");
+      router.refresh();
+    });
   }
 
   return (
@@ -283,7 +324,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
         <Button
           type="button"
           variant="secondary"
-          onClick={() => router.push("/settings/playbooks")}
+          onClick={() => router.push("/settings/playbooks-milestones")}
         >
           Cancel
         </Button>
@@ -291,6 +332,32 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
           {isPending ? "Saving..." : isEditing ? "Save Playbook" : "Create Playbook"}
         </Button>
       </div>
+
+      {isEditing && playbook && !playbook.isSystem && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Delete Playbook</CardTitle>
+            <CardDescription>
+              Permanently remove this playbook. Playbooks assigned to events cannot
+              be deleted — archive them instead.
+            </CardDescription>
+          </CardHeader>
+          {deleteError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {deleteError}
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={isDeleting || isPending}
+            onClick={handleDeletePlaybook}
+          >
+            <Trash2 className="h-4 w-4" />
+            {isDeleting ? "Deleting..." : "Delete Playbook"}
+          </Button>
+        </Card>
+      )}
     </form>
   );
 }

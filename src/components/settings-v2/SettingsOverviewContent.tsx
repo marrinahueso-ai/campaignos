@@ -12,7 +12,6 @@ import {
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import type { SettingsOverviewData } from "@/lib/settings-v2/queries";
-import { cn } from "@/lib/utils/cn";
 
 interface SettingsOverviewContentProps {
   data: SettingsOverviewData;
@@ -283,91 +282,6 @@ export function SettingsOverviewContent({ data }: SettingsOverviewContentProps) 
             </ul>
           </div>
         </SettingsV2Card>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {[
-          {
-            title: "Organization",
-            description: "Profile, branding, and timezone",
-            status: data.organizationName ? "Configured" : "Setup needed",
-            href: "/settings/organization",
-          },
-          {
-            title: "Team & Access",
-            description: "Members, roles, and permissions",
-            status: `${data.teamCount} members`,
-            href: "/settings/team-access",
-          },
-          {
-            title: "Integrations",
-            description: "Connect tools and platforms",
-            status: `${data.activeIntegrationsCount} connected`,
-            href: "/settings/integrations",
-          },
-          {
-            title: "AI Brain",
-            description: "How Hey Ralli thinks and writes",
-            status: data.aiVoiceSnippet ? "Configured" : "Not configured",
-            href: "/settings/ai-brain",
-          },
-          {
-            title: "Inbox AI",
-            description: "Sources and FAQ content",
-            status: `${data.inboxSourcesCount} sources`,
-            href: "/settings/inbox-ai",
-          },
-          {
-            title: "Posting Schedule",
-            description: "Best times and posting windows",
-            status: data.timezone ?? "Not set",
-            href: "/settings/posting-schedule",
-          },
-          {
-            title: "Playbooks / Milestones",
-            description: "Communication playbooks",
-            status: `${data.playbookCount} playbooks`,
-            href: "/settings/playbooks-milestones",
-          },
-          {
-            title: "School Setup",
-            description: "School info and resources",
-            status: data.organizationName ? "Complete" : "Incomplete",
-            href: "/settings/school-setup",
-          },
-          {
-            title: "Billing & Plan",
-            description: "Subscription and payment",
-            status: data.planLabel,
-            href: "/settings/billing-plan",
-          },
-          {
-            title: "Advanced",
-            description: "System and data settings",
-            status: "Available",
-            href: "/settings/advanced",
-          },
-        ].map((section) => (
-          <SettingsV2Card key={section.href}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="font-display text-lg text-cos-text">{section.title}</h3>
-                <p className="mt-1 text-sm text-cos-muted">{section.description}</p>
-                <p
-                  className={cn(
-                    "mt-2 text-xs font-medium",
-                    section.status.includes("needed") || section.status === "Not configured"
-                      ? "text-amber-700"
-                      : "text-emerald-700",
-                  )}
-                >
-                  {section.status}
-                </p>
-              </div>
-              <OverviewLink href={section.href}>Manage</OverviewLink>
-            </div>
-          </SettingsV2Card>
-        ))}
       </div>
     </div>
   );
