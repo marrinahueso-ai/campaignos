@@ -473,8 +473,10 @@ export function TeamAccessMemberDrawer({
                 <p className="text-cos-muted">
                   Permissions for {campaignRoleLabel(member.accessLevel)} (
                   {accessLevelLabel(member.accessLevel)}).
-                  {canManage && !member.raw
-                    ? " Invite this member to assign an access level."
+                  {canManage && !canEditAccess && !member.raw
+                    ? member.emailMissing
+                      ? " Add an email address before you can set access level."
+                      : null
                     : null}
                 </p>
               )}

@@ -87,6 +87,10 @@ function committeeAssignmentRole(
   return null;
 }
 
+function rosterCanSetAccessLevel(member: UnifiedTeamMember): boolean {
+  return !member.emailMissing && Boolean(member.email?.trim());
+}
+
 export function resolveMemberEditContext(
   member: UnifiedTeamMember,
   workspace: OrganizationWorkspaceData,
@@ -121,7 +125,7 @@ export function resolveMemberEditContext(
         canEditEmail: true,
         canEditPhone: true,
         canEditRole: false,
-        canEditAccess: false,
+        canEditAccess: rosterCanSetAccessLevel(member),
         canEditStatus: false,
         canEditVpPortfolio: false,
         canEditCommittee: false,
@@ -140,7 +144,7 @@ export function resolveMemberEditContext(
       canEditEmail: true,
       canEditPhone: false,
       canEditRole: true,
-      canEditAccess: false,
+      canEditAccess: rosterCanSetAccessLevel(member),
       canEditStatus: true,
       canEditVpPortfolio: true,
       canEditCommittee: true,
@@ -181,7 +185,7 @@ export function resolveMemberEditContext(
       canEditEmail: true,
       canEditPhone: true,
       canEditRole: false,
-      canEditAccess: false,
+      canEditAccess: rosterCanSetAccessLevel(member),
       canEditStatus: false,
       canEditVpPortfolio: true,
       canEditCommittee: true,

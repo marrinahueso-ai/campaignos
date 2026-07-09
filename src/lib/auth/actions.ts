@@ -421,6 +421,83 @@ export async function updateTeamMemberAction(
   return { error: null, success: true };
 }
 
+export async function setTeamMemberAccessLevelAction(input: {
+  membershipId?: string;
+  email: string;
+  organizationRoleId?: string | null;
+  campaignRole: CampaignRole;
+}): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  const organization = await getCurrentOrganization();
+  const currentRole = await getCurrentCampaignRole();
+
+  if (!user || !organization) {
+    return { error: "Sign in and set up your organization first.", success: false };
+  }
+
+  if (!canManageTeam(currentRole)) {
+    return { error: "You do not have permission to update team members.", success: false };
+  }
+
+  if (!isCampaignRole(input.campaignRole)) {
+    return { error: "Invalid access role.", success: false };
+  }
+
+  const email = input.email.trim();
+  if (!email) {
+    return { error: "Email is required to set access level.", success: false };
+  }
+
+  if (input.membershipId) {
+    const result = await updateOrganizationMembership(input.membershipId, {
+      campaignRole: input.campaignRole,
+      organizationRoleId: input.organizationRoleId,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+
+    revalidatePath("/settings/team-access");
+    return { error: null, success: true };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("organization_users")
+    .select("id, status")
+    .eq("organization_id", organization.id)
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (existing?.status === "active") {
+    const result = await updateOrganizationMembership(existing.id, {
+      campaignRole: input.campaignRole,
+      organizationRoleId: input.organizationRoleId,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+
+    revalidatePath("/settings/team-access");
+    return { error: null, success: true };
+  }
+
+  const result = await inviteOrganizationUser({
+    organizationId: organization.id,
+    email,
+    organizationRoleId: input.organizationRoleId ?? null,
+    campaignRole: input.campaignRole,
+    invitedByUserId: user.id,
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return { error: null, success: true };
+}
+
 export async function removeTeamMemberAction(
   membershipId: string,
 ): Promise<AuthActionState> {

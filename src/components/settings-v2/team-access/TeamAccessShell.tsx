@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { OrganizationRosterImportBar } from "@/components/organization-workspace/OrganizationRosterImportBar";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { TeamAccessCommitteeDetailDrawer } from "@/components/settings-v2/team-access/TeamAccessCommitteeDetailDrawer";
@@ -29,6 +29,7 @@ import {
   claimOrganizationAccessAction,
   removeTeamMemberAction,
   resendTeamInviteAction,
+  setTeamMemberAccessLevelAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
@@ -158,6 +159,30 @@ export function TeamAccessShell({
     committeeFilter,
   ]);
 
+  useEffect(() => {
+    if (!selectedMember) {
+      return;
+    }
+
+    const refreshed = unifiedMembers.find(
+      (member) =>
+        member.id === selectedMember.id ||
+        (selectedMember.email &&
+          member.email.toLowerCase() === selectedMember.email.toLowerCase()) ||
+        (member.displayName === selectedMember.displayName &&
+          member.organizationRoleId === selectedMember.organizationRoleId),
+    );
+
+    if (
+      refreshed &&
+      (refreshed.accessLevel !== selectedMember.accessLevel ||
+        refreshed.raw?.id !== selectedMember.raw?.id ||
+        refreshed.status !== selectedMember.status)
+    ) {
+      setSelectedMember(refreshed);
+    }
+  }, [unifiedMembers, selectedMember]);
+
   const selectedCommittee = selectedCommitteeId
     ? workspace.committees.find((committee) => committee.id === selectedCommitteeId) ?? null
     : null;
@@ -258,11 +283,18 @@ export function TeamAccessShell({
     member: UnifiedTeamMember,
     campaignRole: CampaignRole,
   ): Promise<string | null> {
-    if (!member.raw) {
-      return "This member must be invited before you can change access level.";
+    if (member.emailMissing || !member.email.trim()) {
+      return "Add an email address before you can set access level.";
     }
 
-    const result = await updateTeamMemberAction(member.raw.id, { campaignRole });
+    const result = member.raw
+      ? await updateTeamMemberAction(member.raw.id, { campaignRole })
+      : await setTeamMemberAccessLevelAction({
+          email: member.email,
+          organizationRoleId: member.organizationRoleId,
+          campaignRole,
+        });
+
     if (result.error) {
       return result.error;
     }
@@ -274,6 +306,8 @@ export function TeamAccessShell({
             ...current,
             accessLevel: campaignRole,
             accessLabel: accessLevelLabel(campaignRole),
+            status: current.raw?.status ?? "invited",
+            isRosterOnly: false,
             raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
           }
         : current,
