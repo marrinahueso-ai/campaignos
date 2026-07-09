@@ -23,7 +23,6 @@ import {
   type StepperStepState,
 } from "@/lib/campaign-builder-v2/health";
 import {
-  loadCampaignBuilderSessionAction,
   saveCampaignBuilderSessionAction,
 } from "@/lib/campaign-builder-v2/session";
 import {
@@ -38,7 +37,6 @@ import {
   DEFAULT_BRAND_KIT_OPTIONS,
   DEFAULT_PLAYBOOK_OPTIONS,
   DEFAULT_VOICE_TONE_OPTIONS,
-  buildDefaultSession,
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
@@ -63,6 +61,8 @@ interface CampaignBuilderProviderProps {
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
+  initialSession: CampaignBuilderSession;
+  restoredFromServer: boolean;
   children: ReactNode;
 }
 
@@ -228,11 +228,18 @@ export function CampaignBuilderProvider({
   playbooks,
   brandKits,
   campaignOptions,
+  initialSession,
+  restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
-    buildDefaultSession(eventId, eventTitle, eventDate),
+    normalizeCampaignBuilderSession(
+      initialSession,
+      eventId,
+      eventTitle,
+      eventDate,
+    ),
   );
   const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() =>
     stepFromHash(typeof window !== "undefined" ? getLocationHash() : ""),
@@ -242,7 +249,6 @@ export function CampaignBuilderProvider({
   const [inspirationUploadError, setInspirationUploadError] = useState<string | null>(
     null,
   );
-  const [isHydrated, setIsHydrated] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionRef = useRef(session);
 
@@ -293,36 +299,19 @@ export function CampaignBuilderProvider({
   );
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function hydrate() {
-      const remote = await loadCampaignBuilderSessionAction(eventId);
-      if (cancelled) {
-        return;
-      }
-
-      if (remote) {
-        setSession(
-          normalizeCampaignBuilderSession(remote, eventId, eventTitle, eventDate),
-        );
-        setIsHydrated(true);
-        return;
-      }
-
-      const local = loadLocalSession(eventId);
-      if (local) {
-        setSession(
-          normalizeCampaignBuilderSession(local, eventId, eventTitle, eventDate),
-        );
-      }
-      setIsHydrated(true);
+    if (restoredFromServer) {
+      return;
     }
 
-    void hydrate();
-    return () => {
-      cancelled = true;
-    };
-  }, [eventId, eventTitle, eventDate]);
+    const local = loadLocalSession(eventId);
+    if (!local) {
+      return;
+    }
+
+    setSession(
+      normalizeCampaignBuilderSession(local, eventId, eventTitle, eventDate),
+    );
+  }, [eventId, eventTitle, eventDate, restoredFromServer]);
 
   useEffect(() => {
     const sync = () => setCurrentStep(stepFromHash(getLocationHash()));
@@ -851,53 +840,92 @@ export function CampaignBuilderProvider({
     [session.milestones, session.previewContents],
   );
 
-  const value: CampaignBuilderContextValue = {
-    session,
-    currentStep,
-    healthPercent,
-    stepperStates,
-    stepWarnings,
-    playbookOptions: playbooks.length > 0 ? playbooks : DEFAULT_PLAYBOOK_OPTIONS,
-    brandKitOptions: [
+  const playbookOptionsResolved = useMemo(
+    () => (playbooks.length > 0 ? playbooks : DEFAULT_PLAYBOOK_OPTIONS),
+    [playbooks],
+  );
+
+  const brandKitOptionsResolved = useMemo(
+    () => [
       { id: NO_BRAND_KIT_ID, name: "No brand kit" },
       ...(brandKits.length > 0 ? brandKits : DEFAULT_BRAND_KIT_OPTIONS.slice(1)),
     ],
-    voiceToneOptions: DEFAULT_VOICE_TONE_OPTIONS,
-    campaignOptions,
-    isSaving,
-    isGeneratingContent,
-    goToStep,
-    updateInspiration,
-    selectCampaign,
-    addInspirationImage,
-    removeInspirationImage,
-    setMilestones,
-    reorderMilestones,
-    moveMilestone,
-    addMilestone,
-    updateMilestone,
-    removeMilestone,
-    duplicateMilestone,
-    suggestMilestones,
-    flushSave,
-    generateAllContent,
-    inspirationUploadError,
-    clearInspirationUploadError,
-    setSelectedMilestoneId,
-    setPreviewTab,
-    updatePreviewContent,
-    setReviewFilter,
-    toggleExpandedReview,
-    navigateToWarning,
-  };
+    [brandKits],
+  );
 
-  if (!isHydrated) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-cos-muted">
-        Loading campaign builder…
-      </div>
-    );
-  }
+  const value = useMemo<CampaignBuilderContextValue>(
+    () => ({
+      session,
+      currentStep,
+      healthPercent,
+      stepperStates,
+      stepWarnings,
+      playbookOptions: playbookOptionsResolved,
+      brandKitOptions: brandKitOptionsResolved,
+      voiceToneOptions: DEFAULT_VOICE_TONE_OPTIONS,
+      campaignOptions,
+      isSaving,
+      isGeneratingContent,
+      goToStep,
+      updateInspiration,
+      selectCampaign,
+      addInspirationImage,
+      removeInspirationImage,
+      setMilestones,
+      reorderMilestones,
+      moveMilestone,
+      addMilestone,
+      updateMilestone,
+      removeMilestone,
+      duplicateMilestone,
+      suggestMilestones,
+      flushSave,
+      generateAllContent,
+      inspirationUploadError,
+      clearInspirationUploadError,
+      setSelectedMilestoneId,
+      setPreviewTab,
+      updatePreviewContent,
+      setReviewFilter,
+      toggleExpandedReview,
+      navigateToWarning,
+    }),
+    [
+      session,
+      currentStep,
+      healthPercent,
+      stepperStates,
+      stepWarnings,
+      playbookOptionsResolved,
+      brandKitOptionsResolved,
+      campaignOptions,
+      isSaving,
+      isGeneratingContent,
+      goToStep,
+      updateInspiration,
+      selectCampaign,
+      addInspirationImage,
+      removeInspirationImage,
+      setMilestones,
+      reorderMilestones,
+      moveMilestone,
+      addMilestone,
+      updateMilestone,
+      removeMilestone,
+      duplicateMilestone,
+      suggestMilestones,
+      flushSave,
+      generateAllContent,
+      inspirationUploadError,
+      clearInspirationUploadError,
+      setSelectedMilestoneId,
+      setPreviewTab,
+      updatePreviewContent,
+      setReviewFilter,
+      toggleExpandedReview,
+      navigateToWarning,
+    ],
+  );
 
   return (
     <CampaignBuilderContext.Provider value={value}>

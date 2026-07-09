@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { buildSetupLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { getBrandKitItems } from "@/lib/creative-assets/queries";
 import type { BrandKitItem } from "@/lib/creative-assets/types";
@@ -69,7 +70,7 @@ export function buildBrandGuidanceBlock(input: {
   return lines.length > 0 ? lines.join("\n") : null;
 }
 
-export async function resolveBrandContextForGeneration(
+async function resolveBrandContextForGenerationUncached(
   useBrandKit: boolean,
 ): Promise<BrandContextForGeneration> {
   const [organization, schoolProfile] = await Promise.all([
@@ -114,3 +115,8 @@ export async function resolveBrandContextForGeneration(
     ptoName,
   };
 }
+
+/** Per-request cached brand kit + logo resolution for AI generation. */
+export const resolveBrandContextForGeneration = cache(
+  resolveBrandContextForGenerationUncached,
+);

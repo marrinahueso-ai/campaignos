@@ -1,10 +1,15 @@
 import { notFound, redirect } from "next/navigation";
 import { CampaignBuilderShell } from "@/components/campaign-builder-v2/CampaignBuilderShell";
-import { getCampaignBuilderCampaignOptions } from "@/lib/campaign-builder-v2/campaign-options";
+import {
+  getCachedCampaignBuilderCampaignOptions,
+  getCachedPlaybooksForOrganization,
+} from "@/lib/campaign-builder-v2/page-queries";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
+import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
-import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 import type { BrandKitOption, PlaybookOption } from "@/lib/campaign-builder-v2/types";
 
 interface CampaignBuilderPageProps {
@@ -30,17 +35,20 @@ export default async function CampaignBuilderPage({
   }
 
   const { id } = await params;
-  const event = await getEventById(id);
+
+  const [event, organization, savedSession] = await Promise.all([
+    getEventById(id),
+    getLatestOrganization(),
+    loadCampaignBuilderSession(id),
+  ]);
 
   if (!event) {
     notFound();
   }
 
-  const organization = await getLatestOrganization();
-
   const [playbooks, campaignOptions] = await Promise.all([
-    getPlaybooksForOrganization(organization?.id ?? null),
-    getCampaignBuilderCampaignOptions(organization?.id ?? null, event),
+    getCachedPlaybooksForOrganization(organization?.id ?? null),
+    getCachedCampaignBuilderCampaignOptions(organization?.id ?? null, event),
   ]);
 
   const playbookOptions: PlaybookOption[] = playbooks.map((playbook) => ({
@@ -53,6 +61,16 @@ export default async function CampaignBuilderPage({
     { id: "ees-pto", name: "EES PTO Brand Kit" },
   ];
 
+  const restoredFromServer = savedSession !== null;
+  const initialSession = savedSession
+    ? normalizeCampaignBuilderSession(
+        savedSession,
+        event.id,
+        event.title,
+        event.date,
+      )
+    : buildDefaultSession(event.id, event.title, event.date);
+
   return (
     <CampaignBuilderShell
       eventId={event.id}
@@ -61,6 +79,8 @@ export default async function CampaignBuilderPage({
       playbooks={playbookOptions}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
+      initialSession={initialSession}
+      restoredFromServer={restoredFromServer}
     />
   );
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Clock, Copy, Sparkles, Trash2 } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
-import { EditArtworkModal } from "@/components/campaign-builder-v2/EditArtworkModal";
-import { EditCaptionModal } from "@/components/campaign-builder-v2/EditCaptionModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
@@ -32,6 +31,22 @@ import type {
   PlatformFormat,
   PreviewTabId,
 } from "@/lib/campaign-builder-v2/types";
+
+const EditArtworkModal = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/EditArtworkModal").then((module) => ({
+      default: module.EditArtworkModal,
+    })),
+  { ssr: false },
+);
+
+const EditCaptionModal = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/EditCaptionModal").then((module) => ({
+      default: module.EditCaptionModal,
+    })),
+  { ssr: false },
+);
 
 const PREVIEW_TABS: Array<{ id: PreviewTabId; label: string }> = [
   { id: "all", label: "All Milestones" },

@@ -51,7 +51,7 @@ export async function getOrganizationById(
 /** @deprecated Use getCurrentOrganization — kept for compatibility. */
 export const getLatestOrganization = cache(getCurrentOrganization);
 
-export async function getSchoolProfile(): Promise<SchoolProfile | null> {
+async function getSchoolProfileUncached(): Promise<SchoolProfile | null> {
   const organization = await getLatestOrganization();
 
   if (!organization) {
@@ -87,6 +87,9 @@ export async function getSchoolProfile(): Promise<SchoolProfile | null> {
       : null,
   };
 }
+
+/** Per-request cached school profile (org + brand assets). */
+export const getSchoolProfile = cache(getSchoolProfileUncached);
 
 export async function hasSchoolProfile(): Promise<boolean> {
   const organization = await getLatestOrganization();

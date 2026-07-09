@@ -5,13 +5,21 @@ import { CampaignBuilderProvider, useCampaignBuilder } from "@/components/campai
 import { CampaignBuilderStepper } from "@/components/campaign-builder-v2/CampaignBuilderStepper";
 import { CampaignHealthGauge } from "@/components/campaign-builder-v2/CampaignHealthGauge";
 import { InspirationStep } from "@/components/campaign-builder-v2/InspirationStep";
-import { MilestonesStep } from "@/components/campaign-builder-v2/MilestonesStep";
 import type {
   BrandKitOption,
+  CampaignBuilderSession,
   CampaignBuilderStepId,
   CampaignOption,
   PlaybookOption,
 } from "@/lib/campaign-builder-v2/types";
+
+const MilestonesStep = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/MilestonesStep").then((module) => ({
+      default: module.MilestonesStep,
+    })),
+  { loading: () => <CampaignBuilderStepFallback /> },
+);
 
 const PreviewStep = dynamic(
   () =>
@@ -52,6 +60,25 @@ interface CampaignBuilderShellProps {
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
+  initialSession: CampaignBuilderSession;
+  restoredFromServer: boolean;
+}
+
+function renderActiveStep(step: CampaignBuilderStepId) {
+  switch (step) {
+    case "inspiration":
+      return <InspirationStep />;
+    case "milestones":
+      return <MilestonesStep />;
+    case "preview":
+      return <PreviewStep />;
+    case "review":
+      return <ReviewStep />;
+    case "published":
+      return <PublishedStep />;
+    default:
+      return <InspirationStep />;
+  }
 }
 
 function CampaignBuilderContent() {
@@ -64,14 +91,6 @@ function CampaignBuilderContent() {
     navigateToWarning,
     isSaving,
   } = useCampaignBuilder();
-
-  const steps: Record<CampaignBuilderStepId, React.ReactNode> = {
-    inspiration: <InspirationStep />,
-    milestones: <MilestonesStep />,
-    preview: <PreviewStep />,
-    review: <ReviewStep />,
-    published: <PublishedStep />,
-  };
 
   return (
     <div className="-mx-4 -my-8 flex min-h-[calc(100vh-var(--cos-dashboard-header-height))] flex-col lg:-mx-8 lg:-my-10">
@@ -95,7 +114,7 @@ function CampaignBuilderContent() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col bg-cos-bg">
-        {steps[currentStep]}
+        {renderActiveStep(currentStep)}
       </div>
     </div>
   );
@@ -108,6 +127,8 @@ export function CampaignBuilderShell({
   playbooks,
   brandKits,
   campaignOptions,
+  initialSession,
+  restoredFromServer,
 }: CampaignBuilderShellProps) {
   return (
     <CampaignBuilderProvider
@@ -117,6 +138,8 @@ export function CampaignBuilderShell({
       playbooks={playbooks}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
+      initialSession={initialSession}
+      restoredFromServer={restoredFromServer}
     >
       <CampaignBuilderContent />
     </CampaignBuilderProvider>

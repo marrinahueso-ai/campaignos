@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   DndContext,
   KeyboardSensor,
@@ -19,12 +20,18 @@ import { Plus, Sparkles } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { CampaignBuilderMilestoneRow } from "@/components/campaign-builder-v2/CampaignBuilderMilestoneRow";
-import {
-  MilestoneEditorModal,
-  readMilestoneEditorPatch,
-} from "@/components/campaign-builder-v2/MilestoneEditorModal";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
+
+const MilestoneEditorModal = dynamic(
+  () =>
+    import("@/components/campaign-builder-v2/MilestoneEditorModal").then(
+      (module) => ({
+        default: module.MilestoneEditorModal,
+      }),
+    ),
+  { ssr: false },
+);
 
 const ROW_GRID =
   "grid items-center gap-x-4 gap-y-2 px-4 py-4 sm:grid-cols-[2rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_7rem]";
@@ -86,6 +93,9 @@ export function MilestonesStep() {
           "milestone-editor-form",
         ) as HTMLFormElement | null;
         if (form) {
+          const { readMilestoneEditorPatch } = await import(
+            "@/components/campaign-builder-v2/MilestoneEditorModal"
+          );
           const patch = readMilestoneEditorPatch(form);
           const result = await generateAllContent({
             milestonePatch: {
