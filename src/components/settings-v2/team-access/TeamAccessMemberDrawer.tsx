@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { TeamAccessDrawer } from "@/components/settings-v2/team-access/TeamAccessDrawer";
 import {
+  PERMISSION_MATRIX,
+  type PermissionLevel,
+} from "@/components/settings-v2/team-access/permissions-matrix";
+import {
   accessBadgeVariant,
   formatCount,
   formatMemberEmail,
@@ -12,6 +16,11 @@ import {
   formatRelativeDate,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
+import {
+  campaignRoleLabel,
+  type CampaignRole,
+} from "@/lib/auth/campaign-roles";
+import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
 import { cn } from "@/lib/utils/cn";
 
 type DrawerTab = "overview" | "committees" | "permissions" | "activity";
@@ -22,9 +31,15 @@ interface TeamAccessMemberDrawerProps {
   onClose: () => void;
   activeTab: DrawerTab;
   onTabChange: (tab: DrawerTab) => void;
+  workspace: OrganizationWorkspaceData;
   onEdit: () => void;
+  onInvite: () => void;
+  onResendInvite: () => void;
+  onCancelInvite: () => void;
   onSendMessage: () => void;
   onDeactivate: () => void;
+  onArchive: () => void;
+  onRemove: () => void;
   onViewTasks: () => void;
   onSelectCommittee: (committeeId: string) => void;
   canManage: boolean;
@@ -105,6 +120,34 @@ function formatCommitteeLeaders(assignment: UnifiedTeamMember["committees"][numb
   return assignment.memberNames.join(", ");
 }
 
+function resolvePermissionColumn(role: CampaignRole): string {
+  switch (role) {
+    case "admin":
+      return "owner";
+    case "president":
+      return "president";
+    case "vp_communications":
+      return "vp";
+    case "committee_chair":
+      return "chair";
+    case "contributor":
+      return "volunteer";
+    default:
+      return "viewer";
+  }
+}
+
+function permissionLabel(level: PermissionLevel): string {
+  switch (level) {
+    case "allowed":
+      return "Allowed";
+    case "limited":
+      return "Limited";
+    case "denied":
+      return "Not allowed";
+  }
+}
+
 export function TeamAccessMemberDrawer({
   member,
   open,
@@ -112,8 +155,12 @@ export function TeamAccessMemberDrawer({
   activeTab,
   onTabChange,
   onEdit,
+  onInvite,
+  onResendInvite,
+  onCancelInvite,
   onSendMessage,
   onDeactivate,
+  onArchive,
   onViewTasks,
   onSelectCommittee,
   canManage,
@@ -123,6 +170,7 @@ export function TeamAccessMemberDrawer({
   }
 
   const committeeTabCount = member.committees.length;
+  const permissionColumn = resolvePermissionColumn(member.accessLevel);
 
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
@@ -326,33 +374,21 @@ export function TeamAccessMemberDrawer({
           {activeTab === "permissions" && (
             <div className="space-y-3 text-sm">
               <p className="text-cos-muted">
-                Permissions derived from {member.accessLabel} access level.
+                Permissions for {campaignRoleLabel(member.accessLevel)} (
+                {member.accessLabel}).
               </p>
               <ul className="space-y-2">
-                <li className="flex justify-between border-b border-cos-border py-2">
-                  <span className="text-cos-muted">Manage members</span>
-                  <span className="text-cos-text">
-                    {["admin", "president"].includes(member.accessLevel)
-                      ? "Allowed"
-                      : "Not allowed"}
-                  </span>
-                </li>
-                <li className="flex justify-between border-b border-cos-border py-2">
-                  <span className="text-cos-muted">Approve communications</span>
-                  <span className="text-cos-text">
-                    {["admin", "president", "vp_communications"].includes(
-                      member.accessLevel,
-                    )
-                      ? "Allowed"
-                      : "Not allowed"}
-                  </span>
-                </li>
-                <li className="flex justify-between border-b border-cos-border py-2">
-                  <span className="text-cos-muted">Create campaigns</span>
-                  <span className="text-cos-text">
-                    {member.accessLevel === "view_only" ? "Not allowed" : "Allowed"}
-                  </span>
-                </li>
+                {PERMISSION_MATRIX.map((row) => (
+                  <li
+                    key={row.id}
+                    className="flex justify-between border-b border-cos-border py-2"
+                  >
+                    <span className="text-cos-muted">{row.label}</span>
+                    <span className="text-cos-text">
+                      {permissionLabel(row.levels[permissionColumn] ?? "denied")}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
           )}
@@ -364,15 +400,40 @@ export function TeamAccessMemberDrawer({
           )}
         </div>
 
-        {canManage && activeTab === "overview" && member.raw ? (
-          <div className="flex gap-2 border-t border-cos-border px-6 py-4">
+        {canManage && activeTab === "overview" ? (
+          <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
             <Button type="button" variant="secondary" size="sm" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
               Edit member
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={onDeactivate}>
-              Deactivate
-            </Button>
+            {member.status === "invited" && member.raw ? (
+              <>
+                <Button type="button" variant="secondary" size="sm" onClick={onResendInvite}>
+                  Resend invite
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={onCancelInvite}>
+                  Cancel invite
+                </Button>
+              </>
+            ) : member.isRosterOnly || member.emailMissing ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onInvite}>
+                Invite
+              </Button>
+            ) : null}
+            {member.raw ? (
+              <>
+                <Button type="button" variant="ghost" size="sm" onClick={onDeactivate}>
+                  Deactivate
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={onArchive}>
+                  Archive
+                </Button>
+              </>
+            ) : (
+              <Button type="button" variant="ghost" size="sm" onClick={onArchive}>
+                Archive
+              </Button>
+            )}
           </div>
         ) : null}
       </div>

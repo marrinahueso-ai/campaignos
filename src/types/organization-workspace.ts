@@ -34,6 +34,7 @@ export interface OrganizationRole {
   contactName: string | null;
   roleKind: OrganizationRoleKind | null;
   sortOrder: number;
+  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -48,6 +49,7 @@ export interface OrganizationRoleRow {
   contact_name: string | null;
   role_kind: OrganizationRoleKind | null;
   sort_order: number;
+  archived_at: string | null;
   created_at: string;
 }
 
@@ -123,6 +125,7 @@ export interface OrganizationCommittee {
   playbookSlug: string | null;
   eventMatchKey: string | null;
   sortOrder: number;
+  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -138,6 +141,7 @@ export interface OrganizationCommitteeRow {
   playbook_slug: string | null;
   event_match_key: string | null;
   sort_order: number;
+  archived_at: string | null;
   created_at: string;
 }
 

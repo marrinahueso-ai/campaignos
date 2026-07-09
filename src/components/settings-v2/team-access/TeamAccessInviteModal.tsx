@@ -22,6 +22,12 @@ interface TeamAccessInviteModalProps {
   roles: OrganizationRole[];
   committees: OrganizationCommittee[];
   canProvisionAccounts: boolean;
+  prefill?: {
+    email?: string;
+    name?: string;
+    committeeId?: string;
+    organizationRoleId?: string;
+  } | null;
 }
 
 export function TeamAccessInviteModal({
@@ -29,6 +35,7 @@ export function TeamAccessInviteModal({
   onClose,
   roles,
   committees,
+  prefill,
 }: TeamAccessInviteModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -110,9 +117,20 @@ export function TeamAccessInviteModal({
             label="Email address"
             type="email"
             placeholder="name@schoolpto.org"
+            defaultValue={prefill?.email ?? ""}
             required
           />
-          <Select name="organizationRoleId" label="Role" defaultValue="">
+          <Input
+            name="fullName"
+            label="Full name (optional)"
+            placeholder="Jamie Smith"
+            defaultValue={prefill?.name ?? ""}
+          />
+          <Select
+            name="organizationRoleId"
+            label="Role"
+            defaultValue={prefill?.organizationRoleId ?? ""}
+          >
             <option value="">Select role (optional)</option>
             {roles.map((role) => (
               <option key={role.id} value={role.id}>
@@ -127,7 +145,11 @@ export function TeamAccessInviteModal({
               </option>
             ))}
           </Select>
-          <Select name="committeeId" label="Committee (optional)" defaultValue="">
+          <Select
+            name="committeeId"
+            label="Committee (optional)"
+            defaultValue={prefill?.committeeId ?? ""}
+          >
             <option value="">None</option>
             {committees.map((committee) => (
               <option key={committee.id} value={committee.id}>

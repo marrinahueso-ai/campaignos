@@ -66,6 +66,7 @@ export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
 
 export const SETTINGS_TAB_REDIRECTS: Record<string, string> = {
   "board-roster": "/settings/team-access",
+  "responsibility-matrix": "/settings/team-access",
   general: "/settings",
   team: "/settings/team-access",
   organization: "/settings/organization",

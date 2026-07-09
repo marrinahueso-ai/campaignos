@@ -230,7 +230,6 @@ export function TeamAccessMemberTable({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          disabled={member.isRosterOnly}
                           onClick={() => onEditMember(member)}
                         >
                           <Pencil className="h-4 w-4" />

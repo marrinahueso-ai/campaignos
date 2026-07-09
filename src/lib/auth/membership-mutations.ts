@@ -211,6 +211,52 @@ export async function deleteOrganizationMembership(
   return { success: true };
 }
 
+export async function cancelOrganizationInvite(
+  membershipId: string,
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_users")
+    .delete()
+    .eq("id", membershipId)
+    .eq("status", "invited");
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function refreshOrganizationInviteToken(
+  membershipId: string,
+): Promise<{ inviteToken: string } | { error: string }> {
+  const supabase = await createClient();
+  const inviteToken = randomUUID();
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("organization_users")
+    .update({
+      invite_token: inviteToken,
+      invited_at: now,
+    })
+    .eq("id", membershipId)
+    .eq("status", "invited")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data) {
+    return { error: "Pending invite not found." };
+  }
+
+  return { inviteToken };
+}
+
 export function resolveCampaignRoleForInvite(
   explicitRole: string | null | undefined,
   roleKind: OrganizationRoleKind | null | undefined,

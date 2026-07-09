@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import {
+  cancelOrganizationInvite,
   deleteOrganizationMembership,
   inviteOrganizationUser,
+  refreshOrganizationInviteToken,
   resolveCampaignRoleForInvite,
   updateOrganizationMembership,
 } from "@/lib/auth/membership-mutations";
@@ -434,6 +436,55 @@ export async function removeTeamMemberAction(
 
   revalidatePath("/settings/team-access");
   return { error: null, success: true };
+}
+
+export async function resendTeamInviteAction(
+  membershipId: string,
+): Promise<AuthActionState> {
+  const campaignRole = await getCurrentCampaignRole();
+  if (!canManageTeam(campaignRole)) {
+    return { error: "You do not have permission to resend invites.", success: false };
+  }
+
+  const result = await refreshOrganizationInviteToken(membershipId);
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  const headersList = await headers();
+  const inviteUrl = buildInviteLoginUrl(
+    result.inviteToken,
+    resolveAuthSiteOrigin(
+      headersList.get("origin"),
+      headersList.get("x-forwarded-host") ?? headersList.get("host"),
+      headersList.get("x-forwarded-proto"),
+    ),
+  );
+
+  revalidatePath("/settings/team-access");
+  return {
+    error: null,
+    success: true,
+    inviteUrl,
+    message: "Invite link refreshed. Share the new link below.",
+  };
+}
+
+export async function cancelTeamInviteAction(
+  membershipId: string,
+): Promise<AuthActionState> {
+  const campaignRole = await getCurrentCampaignRole();
+  if (!canManageTeam(campaignRole)) {
+    return { error: "You do not have permission to cancel invites.", success: false };
+  }
+
+  const result = await cancelOrganizationInvite(membershipId);
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return { error: null, success: true, message: "Invite cancelled." };
 }
 
 export async function claimOrganizationAccessAction(): Promise<AuthActionState> {

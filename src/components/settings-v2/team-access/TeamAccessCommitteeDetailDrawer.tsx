@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { ArrowRight, Mail, Pencil, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { TeamAccessDrawer } from "@/components/settings-v2/team-access/TeamAccessDrawer";
 import { formatCount } from "@/components/settings-v2/team-access/team-access-utils";
 import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
+import { archiveOrganizationCommitteeAction } from "@/lib/organization-workspace/actions";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationCommittee } from "@/types/organization-workspace";
 
@@ -16,6 +19,9 @@ interface TeamAccessCommitteeDetailDrawerProps {
   committee: OrganizationCommittee | null;
   workload: TeamAccessWorkloadIndex;
   canManage: boolean;
+  onEdit: () => void;
+  onInvite: () => void;
+  onAddMember: () => void;
 }
 
 export function TeamAccessCommitteeDetailDrawer({
@@ -24,7 +30,13 @@ export function TeamAccessCommitteeDetailDrawer({
   committee,
   workload,
   canManage,
+  onEdit,
+  onInvite,
+  onAddMember,
 }: TeamAccessCommitteeDetailDrawerProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
   if (!committee) {
     return null;
   }
@@ -32,6 +44,24 @@ export function TeamAccessCommitteeDetailDrawer({
   const chairs = parseCommitteeChairNames(committee.contactName);
   const hasOpenRole = chairs.length === 0;
   const stats = workload.byCommitteeId[committee.id];
+
+  function handleArchive() {
+    if (!committee) {
+      return;
+    }
+    if (
+      !window.confirm(
+        `Archive "${committee.name}"? It will be hidden from active views but history is preserved.`,
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      await archiveOrganizationCommitteeAction(committee.id);
+      router.refresh();
+      onClose();
+    });
+  }
 
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
@@ -66,6 +96,12 @@ export function TeamAccessCommitteeDetailDrawer({
                 <dt className="text-cos-muted">Co-chair</dt>
                 <dd className="text-cos-text">{chairs[1] ?? "—"}</dd>
               </div>
+              {chairs.slice(2).map((name) => (
+                <div key={name} className="flex justify-between">
+                  <dt className="text-cos-muted">Member</dt>
+                  <dd className="text-cos-text">{name}</dd>
+                </div>
+              ))}
             </dl>
           </div>
 
@@ -113,14 +149,31 @@ export function TeamAccessCommitteeDetailDrawer({
           <Button href="/events" variant="secondary" size="sm" onClick={onClose}>
             View campaigns
           </Button>
+          <Button href="/approvals" variant="secondary" size="sm" onClick={onClose}>
+            View approvals
+          </Button>
           {canManage ? (
             <>
-              <Button variant="secondary" size="sm" type="button" disabled>
+              <Button variant="secondary" size="sm" type="button" onClick={onEdit}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+              <Button variant="secondary" size="sm" type="button" onClick={onAddMember}>
+                <UserPlus className="h-4 w-4" />
                 Add member
               </Button>
-              <Button variant="ghost" size="sm" type="button" disabled>
+              <Button variant="secondary" size="sm" type="button" onClick={onInvite}>
                 <Mail className="h-4 w-4" />
-                Send message
+                Invite
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                disabled={isPending}
+                onClick={handleArchive}
+              >
+                Archive
               </Button>
             </>
           ) : null}

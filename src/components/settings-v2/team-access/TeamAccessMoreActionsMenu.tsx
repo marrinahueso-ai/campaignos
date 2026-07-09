@@ -13,20 +13,11 @@ interface TeamAccessMoreActionsMenuProps {
   onViewTasks: () => void;
   onViewApprovals: () => void;
   onSendMessage: () => void;
+  onInvite: () => void;
   onDeactivate: () => void;
+  onArchive: () => void;
   onRemove: () => void;
 }
-
-const MENU_ITEMS = [
-  { id: "profile", label: "View profile" },
-  { id: "edit", label: "Edit" },
-  { id: "assign", label: "Assign committee" },
-  { id: "tasks", label: "View tasks" },
-  { id: "approvals", label: "View approvals" },
-  { id: "message", label: "Send message" },
-  { id: "deactivate", label: "Deactivate" },
-  { id: "remove", label: "Remove", danger: true },
-] as const;
 
 export function TeamAccessMoreActionsMenu({
   member,
@@ -38,7 +29,9 @@ export function TeamAccessMoreActionsMenu({
   onViewTasks,
   onViewApprovals,
   onSendMessage,
+  onInvite,
   onDeactivate,
+  onArchive,
   onRemove,
 }: TeamAccessMoreActionsMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -57,6 +50,23 @@ export function TeamAccessMoreActionsMenu({
     return null;
   }
 
+  const items = [
+    { id: "profile", label: "View profile" },
+    { id: "edit", label: "Edit" },
+    { id: "assign", label: "Assign committee" },
+    { id: "tasks", label: "View tasks" },
+    { id: "approvals", label: "View approvals" },
+    { id: "message", label: "Send message" },
+    ...(member.isRosterOnly || member.emailMissing
+      ? [{ id: "invite", label: "Invite" }]
+      : []),
+    ...(member.raw
+      ? [{ id: "deactivate", label: "Deactivate" }]
+      : []),
+    { id: "archive", label: "Archive" },
+    ...(member.raw ? [{ id: "remove", label: "Remove", danger: true }] : []),
+  ] as const;
+
   const handlers: Record<string, () => void> = {
     profile: onViewProfile,
     edit: onEdit,
@@ -64,7 +74,9 @@ export function TeamAccessMoreActionsMenu({
     tasks: onViewTasks,
     approvals: onViewApprovals,
     message: onSendMessage,
+    invite: onInvite,
     deactivate: onDeactivate,
+    archive: onArchive,
     remove: onRemove,
   };
 
@@ -77,7 +89,7 @@ export function TeamAccessMoreActionsMenu({
         left: Math.max(8, anchor.right - 180),
       }}
     >
-      {MENU_ITEMS.map((item) => (
+      {items.map((item) => (
         <button
           key={item.id}
           type="button"

@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import {
   applyOrganizationRosterImport,
+  archiveOrganizationCommittee,
   clearOrganizationRosterImport,
   createOrganizationCommittee,
   deleteAllOrganizationCommittees,
   deleteOrganizationCommittee,
+  restoreOrganizationCommittee,
   updateOrganizationCommittee,
 } from "@/lib/organization-workspace/committee-mutations";
 import { parseRosterFromFile } from "@/lib/organization-workspace/parse-roster-file";
@@ -358,6 +360,42 @@ export async function updateOrganizationCommitteeAction(
   }
 
   const result = await updateOrganizationCommittee(committeeId, input);
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidateOrganizationWorkspace();
+  return { error: null, success: true };
+}
+
+export async function archiveOrganizationCommitteeAction(
+  committeeId: string,
+): Promise<OrganizationActionState> {
+  const org = await requireOrganizationId();
+  if ("error" in org) {
+    return { error: org.error, success: false };
+  }
+
+  const result = await archiveOrganizationCommittee(committeeId);
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidateOrganizationWorkspace();
+  return { error: null, success: true };
+}
+
+export async function restoreOrganizationCommitteeAction(
+  committeeId: string,
+): Promise<OrganizationActionState> {
+  const org = await requireOrganizationId();
+  if ("error" in org) {
+    return { error: org.error, success: false };
+  }
+
+  const result = await restoreOrganizationCommittee(committeeId);
 
   if ("error" in result) {
     return { error: result.error, success: false };

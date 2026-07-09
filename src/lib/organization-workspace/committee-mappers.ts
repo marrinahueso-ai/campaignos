@@ -20,6 +20,7 @@ export function mapOrganizationCommitteeRow(
     playbookSlug: row.playbook_slug,
     eventMatchKey: row.event_match_key,
     sortOrder: row.sort_order,
+    archivedAt: row.archived_at ?? null,
     createdAt: row.created_at,
   };
 }

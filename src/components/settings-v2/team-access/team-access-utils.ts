@@ -562,6 +562,9 @@ function collectRosterPeople(
   }
 
   for (const rosterMember of workspace.members) {
+    if (!rosterMember.active) {
+      continue;
+    }
     mergePersonSeed(people, {
       displayName: rosterMember.name,
       email: rosterMember.email,
@@ -577,6 +580,9 @@ function collectRosterPeople(
   }
 
   for (const role of workspace.roles) {
+    if (role.archivedAt) {
+      continue;
+    }
     if (!role.contactName?.trim()) {
       continue;
     }
@@ -600,6 +606,9 @@ function collectRosterPeople(
   }
 
   for (const committee of workspace.committees) {
+    if (committee.archivedAt) {
+      continue;
+    }
     const chairs = parseCommitteeChairNames(committee.contactName);
     const vpPortfolioId = committee.parentRoleId;
     const vpPortfolioName = committee.parentRoleName;

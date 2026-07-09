@@ -156,6 +156,38 @@ export async function updateOrganizationCommittee(
   return { success: true };
 }
 
+export async function archiveOrganizationCommittee(
+  committeeId: string,
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_committees")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", committeeId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function restoreOrganizationCommittee(
+  committeeId: string,
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organization_committees")
+    .update({ archived_at: null })
+    .eq("id", committeeId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: true };
+}
+
 export async function deleteOrganizationCommittee(
   committeeId: string,
 ): Promise<{ error: string } | { success: true }> {

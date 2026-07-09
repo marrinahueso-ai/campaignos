@@ -21,6 +21,7 @@ export function mapOrganizationRoleRow(row: OrganizationRoleRow): OrganizationRo
     contactName: row.contact_name,
     roleKind: row.role_kind,
     sortOrder: row.sort_order,
+    archivedAt: row.archived_at ?? null,
     createdAt: row.created_at,
   };
 }
