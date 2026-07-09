@@ -5,7 +5,6 @@ import { useMemo, useState, useTransition } from "react";
 import { OrganizationRosterImportBar } from "@/components/organization-workspace/OrganizationRosterImportBar";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { TeamAccessCommitteeDetailDrawer } from "@/components/settings-v2/team-access/TeamAccessCommitteeDetailDrawer";
-import { TeamAccessCommitteesPanel } from "@/components/settings-v2/team-access/TeamAccessCommitteesPanel";
 import { TeamAccessCreateRoleModal } from "@/components/settings-v2/team-access/TeamAccessCreateRoleModal";
 import { TeamAccessEditCommitteeModal } from "@/components/settings-v2/team-access/TeamAccessEditCommitteeModal";
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
@@ -21,6 +20,7 @@ import { TeamAccessSummaryCards } from "@/components/settings-v2/team-access/Tea
 import {
   buildUnifiedTeamMembers,
   countOpenCommitteeRoles,
+  accessLevelLabel,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +31,7 @@ import {
   resendTeamInviteAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import {
   updateOrganizationMemberAction,
 } from "@/lib/organization-workspace/actions";
@@ -253,6 +254,33 @@ export function TeamAccessShell({
     });
   }
 
+  async function handleSaveAccessLevel(
+    member: UnifiedTeamMember,
+    campaignRole: CampaignRole,
+  ): Promise<string | null> {
+    if (!member.raw) {
+      return "This member must be invited before you can change access level.";
+    }
+
+    const result = await updateTeamMemberAction(member.raw.id, { campaignRole });
+    if (result.error) {
+      return result.error;
+    }
+
+    router.refresh();
+    setSelectedMember((current) =>
+      current?.id === member.id
+        ? {
+            ...current,
+            accessLevel: campaignRole,
+            accessLabel: accessLevelLabel(campaignRole),
+            raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
+          }
+        : current,
+    );
+    return null;
+  }
+
   function handleClaim() {
     startTransition(async () => {
       await claimOrganizationAccessAction();
@@ -349,32 +377,6 @@ export function TeamAccessShell({
         canManage={canManage}
       />
 
-      {canManage ? (
-        <TeamAccessCommitteesPanel
-          roles={workspace.roles}
-          committees={workspace.committees}
-          canManage={canManage}
-          onAddCommittee={(parentRoleId) => {
-            setEditCommittee(null);
-            setCommitteeParentRoleId(parentRoleId ?? "");
-            setCommitteeEditOpen(true);
-          }}
-          onEditCommittee={(committee) => {
-            setEditCommittee(committee);
-            setCommitteeParentRoleId(committee.parentRoleId ?? "");
-            setCommitteeEditOpen(true);
-          }}
-          onEditRole={(role) => {
-            setEditRole(role);
-            setRoleEditOpen(true);
-          }}
-          onSelectCommittee={(committeeId) => {
-            setSelectedCommitteeId(committeeId);
-            setCommitteeDetailOpen(true);
-          }}
-        />
-      ) : null}
-
       <TeamAccessMemberDrawer
         member={selectedMember}
         open={memberDrawerOpen}
@@ -428,6 +430,11 @@ export function TeamAccessShell({
           setSelectedCommitteeId(committeeId);
           setCommitteeDetailOpen(true);
         }}
+        onSaveAccessLevel={
+          canManage && selectedMember
+            ? (campaignRole) => handleSaveAccessLevel(selectedMember, campaignRole)
+            : undefined
+        }
         canManage={canManage}
       />
 

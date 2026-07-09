@@ -161,36 +161,58 @@ export function TeamAccessRolesModal({
       ) : null}
 
       {tab === "matrix" ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-cos-border text-xs uppercase tracking-wide text-cos-muted">
-                <th className="pb-3 pr-4 font-medium">Permission</th>
-                {PERMISSION_COLUMNS.map((column) => (
-                  <th key={column.id} className="pb-3 pr-4 text-center font-medium">
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {PERMISSION_MATRIX.map((row) => (
-                <tr key={row.id} className="border-b border-cos-border">
-                  <td className="py-3 pr-4 text-cos-text">{row.label}</td>
+        <div className="space-y-4">
+          <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-4 text-sm text-cos-muted">
+            <p className="font-medium text-cos-text">How to change permissions</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>
+                Open a member&apos;s drawer → Permissions tab to change their access
+                level (Admin, VP, Chair, etc.).
+              </li>
+              <li>
+                Use the{" "}
+                <button
+                  type="button"
+                  onClick={() => setTab("responsibilities")}
+                  className="font-medium text-cos-primary hover:underline"
+                >
+                  Responsibilities
+                </button>{" "}
+                tab to set which org role handles approvals and routing defaults.
+              </li>
+            </ul>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-cos-border text-xs uppercase tracking-wide text-cos-muted">
+                  <th className="pb-3 pr-4 font-medium">Permission</th>
                   {PERMISSION_COLUMNS.map((column) => (
-                    <td key={column.id} className="py-3 pr-4 text-center">
-                      <div className="flex justify-center">
-                        <PermissionIcon level={row.levels[column.id] ?? "denied"} />
-                      </div>
-                    </td>
+                    <th key={column.id} className="pb-3 pr-4 text-center font-medium">
+                      {column.label}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-4 text-sm text-cos-muted">
-            Role permissions are derived from access levels. Edit individual member
-            access in the member drawer or edit modal.
+              </thead>
+              <tbody>
+                {PERMISSION_MATRIX.map((row) => (
+                  <tr key={row.id} className="border-b border-cos-border">
+                    <td className="py-3 pr-4 text-cos-text">{row.label}</td>
+                    {PERMISSION_COLUMNS.map((column) => (
+                      <td key={column.id} className="py-3 pr-4 text-center">
+                        <div className="flex justify-center">
+                          <PermissionIcon level={row.levels[column.id] ?? "denied"} />
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-cos-muted">
+            This matrix is a reference for each access level. Individual member
+            permissions are controlled by their access level, not edited cell by cell.
           </p>
         </div>
       ) : null}

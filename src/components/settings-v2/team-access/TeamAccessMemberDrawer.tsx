@@ -1,15 +1,19 @@
 "use client";
 
 import { ArrowRight, Mail, Pencil, Phone } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 import { TeamAccessDrawer } from "@/components/settings-v2/team-access/TeamAccessDrawer";
+import { resolveMemberEditContext } from "@/components/settings-v2/team-access/member-edit-utils";
 import {
   PERMISSION_MATRIX,
   type PermissionLevel,
 } from "@/components/settings-v2/team-access/permissions-matrix";
 import {
   accessBadgeVariant,
+  accessLevelLabel,
   formatCount,
   formatMemberEmail,
   formatMemberPhone,
@@ -17,6 +21,7 @@ import {
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import {
+  CAMPAIGN_ROLES,
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
@@ -42,6 +47,7 @@ interface TeamAccessMemberDrawerProps {
   onRemove: () => void;
   onViewTasks: () => void;
   onSelectCommittee: (committeeId: string) => void;
+  onSaveAccessLevel?: (campaignRole: CampaignRole) => Promise<string | null>;
   canManage: boolean;
 }
 
@@ -104,11 +110,31 @@ function roleOnCommitteeLabel(
   }
 }
 
-function StatItem({ label, value }: { label: string; value: string | number }) {
+function StatItem({
+  label,
+  value,
+  action,
+  onAction,
+}: {
+  label: string;
+  value: string | number;
+  action?: string;
+  onAction?: () => void;
+}) {
   return (
     <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-3">
       <p className="text-xs text-cos-muted">{label}</p>
       <p className="mt-1 text-sm font-medium text-cos-text">{value}</p>
+      {action && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-cos-primary hover:underline"
+        >
+          <Pencil className="h-3 w-3" />
+          {action}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -154,6 +180,7 @@ export function TeamAccessMemberDrawer({
   onClose,
   activeTab,
   onTabChange,
+  workspace,
   onEdit,
   onInvite,
   onResendInvite,
@@ -163,14 +190,51 @@ export function TeamAccessMemberDrawer({
   onArchive,
   onViewTasks,
   onSelectCommittee,
+  onSaveAccessLevel,
   canManage,
 }: TeamAccessMemberDrawerProps) {
+  const [draftAccessLevel, setDraftAccessLevel] = useState<CampaignRole>("view_only");
+  const [accessError, setAccessError] = useState<string | null>(null);
+  const [isSavingAccess, startSaveAccess] = useTransition();
+
+  const editContext = useMemo(
+    () => (member ? resolveMemberEditContext(member, workspace) : null),
+    [member, workspace],
+  );
+  const canEditAccess = Boolean(canManage && editContext?.canEditAccess && onSaveAccessLevel);
+
+  useEffect(() => {
+    if (!member) {
+      return;
+    }
+    setDraftAccessLevel(member.accessLevel);
+    setAccessError(null);
+  }, [member]);
+
   if (!member) {
     return null;
   }
 
   const committeeTabCount = member.committees.length;
-  const permissionColumn = resolvePermissionColumn(member.accessLevel);
+  const previewAccessLevel =
+    activeTab === "permissions" && canEditAccess ? draftAccessLevel : member.accessLevel;
+  const permissionColumn = resolvePermissionColumn(previewAccessLevel);
+  const accessLevelDirty = draftAccessLevel !== member.accessLevel;
+
+  function handleSaveAccessLevel() {
+    if (!onSaveAccessLevel || !accessLevelDirty) {
+      return;
+    }
+
+    startSaveAccess(async () => {
+      const error = await onSaveAccessLevel(draftAccessLevel);
+      if (error) {
+        setAccessError(error);
+        return;
+      }
+      setAccessError(null);
+    });
+  }
 
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
@@ -227,7 +291,14 @@ export function TeamAccessMemberDrawer({
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3">
                 <StatItem label="Org role" value={member.orgRoleLabel} />
-                <StatItem label="Access level" value={member.accessLabel} />
+                <StatItem
+                  label="Access level"
+                  value={member.accessLabel}
+                  action={canEditAccess ? "Change access level" : undefined}
+                  onAction={
+                    canEditAccess ? () => onTabChange("permissions") : undefined
+                  }
+                />
                 <StatItem label="Reports to" value={member.reportsTo ?? "—"} />
                 {member.hasRoleOversight ? (
                   <>
@@ -372,11 +443,41 @@ export function TeamAccessMemberDrawer({
           )}
 
           {activeTab === "permissions" && (
-            <div className="space-y-3 text-sm">
-              <p className="text-cos-muted">
-                Permissions for {campaignRoleLabel(member.accessLevel)} (
-                {member.accessLabel}).
-              </p>
+            <div className="space-y-4 text-sm">
+              {canEditAccess ? (
+                <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-4">
+                  <Select
+                    label="Access level"
+                    value={draftAccessLevel}
+                    disabled={isSavingAccess}
+                    onChange={(event) => {
+                      setDraftAccessLevel(event.target.value as CampaignRole);
+                      setAccessError(null);
+                    }}
+                  >
+                    {CAMPAIGN_ROLES.map((role) => (
+                      <option key={role} value={role}>
+                        {campaignRoleLabel(role)}
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="mt-2 text-xs text-cos-muted">
+                    Access level controls what this member can do. Permissions below
+                    update as you change the level.
+                  </p>
+                  {accessError ? (
+                    <p className="mt-2 text-xs text-red-600">{accessError}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-cos-muted">
+                  Permissions for {campaignRoleLabel(member.accessLevel)} (
+                  {accessLevelLabel(member.accessLevel)}).
+                  {canManage && !member.raw
+                    ? " Invite this member to assign an access level."
+                    : null}
+                </p>
+              )}
               <ul className="space-y-2">
                 {PERMISSION_MATRIX.map((row) => (
                   <li
@@ -390,6 +491,12 @@ export function TeamAccessMemberDrawer({
                   </li>
                 ))}
               </ul>
+              {canManage ? (
+                <p className="text-xs text-cos-muted">
+                  Per-member permissions follow access level. To change approval
+                  routing defaults, use Manage roles & permissions → Responsibilities.
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -400,13 +507,23 @@ export function TeamAccessMemberDrawer({
           )}
         </div>
 
-        {canManage && activeTab === "overview" ? (
+        {canManage && (activeTab === "overview" || activeTab === "permissions") ? (
           <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
+            {activeTab === "permissions" && canEditAccess && accessLevelDirty ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={isSavingAccess}
+                onClick={handleSaveAccessLevel}
+              >
+                Save access level
+              </Button>
+            ) : null}
             <Button type="button" variant="secondary" size="sm" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
               Edit member
             </Button>
-            {member.status === "invited" && member.raw ? (
+            {activeTab === "overview" && member.status === "invited" && member.raw ? (
               <>
                 <Button type="button" variant="secondary" size="sm" onClick={onResendInvite}>
                   Resend invite
@@ -415,12 +532,12 @@ export function TeamAccessMemberDrawer({
                   Cancel invite
                 </Button>
               </>
-            ) : member.isRosterOnly || member.emailMissing ? (
+            ) : activeTab === "overview" && (member.isRosterOnly || member.emailMissing) ? (
               <Button type="button" variant="secondary" size="sm" onClick={onInvite}>
                 Invite
               </Button>
             ) : null}
-            {member.raw ? (
+            {activeTab === "overview" && member.raw ? (
               <>
                 <Button type="button" variant="ghost" size="sm" onClick={onDeactivate}>
                   Deactivate
@@ -429,11 +546,11 @@ export function TeamAccessMemberDrawer({
                   Archive
                 </Button>
               </>
-            ) : (
+            ) : activeTab === "overview" ? (
               <Button type="button" variant="ghost" size="sm" onClick={onArchive}>
                 Archive
               </Button>
-            )}
+            ) : null}
           </div>
         ) : null}
       </div>
