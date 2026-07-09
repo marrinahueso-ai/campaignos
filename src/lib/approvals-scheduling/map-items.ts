@@ -2,10 +2,12 @@ import { channelLabel } from "@/lib/ai/content";
 import {
   deriveClassicWorkflowStatus,
   derivePlanningWorkflowStatus,
+  deriveSchedulingWorkflowStatus,
   formatFutureRelativeTime,
   formatRelativeTime,
   initialsFromName,
   nextActionForStatus,
+  schedulingNeedsApproverAssignment,
   statusDetailForItem,
 } from "@/lib/approvals-scheduling/status";
 import type {
@@ -116,6 +118,7 @@ export function mapClassicApprovalItem(
     scheduleLabel: scheduleAt ? formatDateTime(scheduleAt) : null,
     assignedToMe: item.assignedToMe,
     submittedByMe: item.submittedByMe,
+    hasAssignedUser: assigneeName !== "Board",
     approvalRequestId: item.id,
     communicationItemId: item.communicationItemId,
     schedulingItemId: null,
@@ -184,6 +187,7 @@ export function mapPlanningPublishingItem(
     scheduleLabel: formatDateTime(scheduleAt),
     assignedToMe: false,
     submittedByMe: false,
+    hasAssignedUser: true,
     approvalRequestId: null,
     communicationItemId: item.communicationItemId,
     schedulingItemId: null,
@@ -217,6 +221,26 @@ export function mapSchedulingItemRow(
 ): UnifiedApprovalItem {
   const deliveryMethod = parseDeliveryMethod(row.delivery_method);
   const platforms = parsePlatforms(row.platforms);
+  const workflowStatus = deriveSchedulingWorkflowStatus(row, assignedToMe);
+  const needsApproverAssignment = schedulingNeedsApproverAssignment(
+    row,
+    workflowStatus,
+  );
+  const history: UnifiedApprovalItem["approvalHistory"] = [
+    {
+      label: "Submitted for approval",
+      timestamp: row.requested_at,
+      actor: submittedByMe ? "You" : "Creator",
+    },
+  ];
+
+  if (row.workflow_status === "changes_requested" && row.notes) {
+    history.push({
+      label: "Changes requested",
+      timestamp: row.resolved_at ?? row.updated_at,
+      actor: assigneeDisplayName,
+    });
+  }
 
   return {
     id: `cb2-${row.id}`,
@@ -226,17 +250,18 @@ export function mapSchedulingItemRow(
     campaignName: row.campaign_name ?? eventTitle,
     milestoneName: row.milestone_name,
     thumbnailUrl: row.feed_artwork_url,
-    workflowStatus: row.workflow_status,
+    workflowStatus,
     statusDetail: statusDetailForItem(
-      row.workflow_status,
+      workflowStatus,
       row.requested_at,
       row.schedule_at,
       now,
+      needsApproverAssignment,
     ),
     assigneeName: assigneeDisplayName,
-    assigneeRole,
+    assigneeRole: needsApproverAssignment ? "Unassigned" : assigneeRole,
     assigneeInitials: initialsFromName(assigneeDisplayName),
-    nextAction: nextActionForStatus(row.workflow_status),
+    nextAction: nextActionForStatus(workflowStatus, needsApproverAssignment),
     nextActionTime: `Submitted ${formatRelativeTime(row.requested_at, now)}`,
     deliveryMethod,
     platforms: platforms.length > 0 ? platforms : ["facebook", "instagram"],
@@ -244,6 +269,7 @@ export function mapSchedulingItemRow(
     scheduleLabel: row.schedule_at ? formatDateTime(row.schedule_at) : null,
     assignedToMe,
     submittedByMe,
+    hasAssignedUser: Boolean(row.assigned_user_id),
     approvalRequestId: row.approval_request_id,
     communicationItemId: row.communication_item_id,
     schedulingItemId: row.id,
@@ -256,13 +282,7 @@ export function mapSchedulingItemRow(
       storyArtworkUrl: row.story_artwork_url,
     },
     requestedAt: row.requested_at,
-    approvalHistory: [
-      {
-        label: "Submitted for approval",
-        timestamp: row.requested_at,
-        actor: submittedByMe ? "You" : "Creator",
-      },
-    ],
+    approvalHistory: history,
   };
 }
 

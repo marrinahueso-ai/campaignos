@@ -4,11 +4,12 @@ import { describe, it } from "node:test";
 
 import {
   deriveClassicWorkflowStatus,
+  deriveSchedulingWorkflowStatus,
   searchMatchesItem,
   summarizeCounts,
   tabMatchesItem,
 } from "../status.ts";
-import type { UnifiedApprovalItem } from "../types.ts";
+import type { ApprovalSchedulingItemRow, UnifiedApprovalItem } from "../types.ts";
 
 function buildItem(
   overrides: Partial<UnifiedApprovalItem> = {},
@@ -34,6 +35,7 @@ function buildItem(
     scheduleLabel: null,
     assignedToMe: true,
     submittedByMe: false,
+    hasAssignedUser: true,
     approvalRequestId: "req-1",
     communicationItemId: "comm-1",
     schedulingItemId: null,
@@ -108,6 +110,113 @@ describe("permissions helpers", () => {
     const adminRoles = new Set(["admin", "president", "vp_communications"]);
     assert.equal(adminRoles.has("admin"), true);
     assert.equal(adminRoles.has("contributor"), false);
+  });
+});
+
+describe("deriveSchedulingWorkflowStatus", () => {
+  const baseRow = {
+    id: "sched-1",
+    event_id: "evt-1",
+    approval_request_id: null,
+    communication_item_id: null,
+    source: "campaign_builder",
+    campaign_milestone_id: "ms-1",
+    campaign_name: "Fair",
+    milestone_name: "Save the Date",
+    assigned_organization_role_id: null,
+    requested_by_user_id: "creator-1",
+    delivery_method: "auto-publish",
+    platforms: ["facebook"],
+    schedule_at: null,
+    caption_text: null,
+    story_caption: null,
+    feed_artwork_url: null,
+    story_artwork_url: null,
+    notes: null,
+    requested_at: "2026-05-17T10:00:00.000Z",
+    resolved_at: null,
+    created_at: "2026-05-17T10:00:00.000Z",
+    updated_at: "2026-05-17T10:00:00.000Z",
+  } satisfies ApprovalSchedulingItemRow;
+
+  it("maps unassigned pending rows to in_queue", () => {
+    assert.equal(
+      deriveSchedulingWorkflowStatus(
+        {
+          ...baseRow,
+          workflow_status: "assigned_to_me",
+          assigned_user_id: null,
+        },
+        false,
+      ),
+      "in_queue",
+    );
+  });
+
+  it("maps assigned rows to assigned_to_me for the assignee", () => {
+    assert.equal(
+      deriveSchedulingWorkflowStatus(
+        {
+          ...baseRow,
+          workflow_status: "assigned_to_me",
+          assigned_user_id: "user-1",
+        },
+        true,
+      ),
+      "assigned_to_me",
+    );
+  });
+
+  it("maps assigned rows to in_queue for other viewers", () => {
+    assert.equal(
+      deriveSchedulingWorkflowStatus(
+        {
+          ...baseRow,
+          workflow_status: "assigned_to_me",
+          assigned_user_id: "user-1",
+        },
+        false,
+      ),
+      "in_queue",
+    );
+  });
+
+  it("preserves changes_requested", () => {
+    assert.equal(
+      deriveSchedulingWorkflowStatus(
+        {
+          ...baseRow,
+          workflow_status: "changes_requested",
+          assigned_user_id: "user-1",
+        },
+        true,
+      ),
+      "changes_requested",
+    );
+  });
+});
+
+describe("canActOnUnifiedItem guard", () => {
+  it("blocks approval when campaign builder item has no assigned user", () => {
+    const source = readFileSync(
+      new URL("../permissions.ts", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(source, /!item\.hasAssignedUser/);
+    assert.match(source, /item\.source === "campaign_builder"/);
+  });
+});
+
+describe("approval routing source checks", () => {
+  it("stores in_queue when no assignee in approval-bridge", () => {
+    const source = readFileSync(
+      new URL("../../campaign-builder-v2/approval-bridge.ts", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(source, /assignee\.assignedUserId \? "assigned_to_me" : "in_queue"/);
+    assert.match(source, /resubmitStatuses/);
   });
 });
 

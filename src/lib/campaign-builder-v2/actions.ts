@@ -5,6 +5,7 @@
  * Artwork uses artwork-v2 orchestrator; captions use the shared AI text provider.
  */
 
+import { revalidatePath } from "next/cache";
 import { suggestMilestonesFromContext } from "@/lib/campaign-builder-v2/suggest-milestones";
 import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
 import { validateBeforeGeneration } from "@/lib/campaign-builder-v2/validation";
@@ -638,6 +639,10 @@ export async function sendForApprovalAction(input: {
       previewContents: input.previewContents,
     });
 
+    if (result.success) {
+      revalidatePath("/approvals");
+    }
+
     return {
       success: result.success,
       message: result.message,
@@ -651,6 +656,10 @@ export async function sendForApprovalAction(input: {
     input.eventId,
     input.campaignName,
   );
+
+  if (result.success) {
+    revalidatePath("/approvals");
+  }
 
   return {
     success: result.success,
@@ -674,11 +683,24 @@ export async function saveDraftAction(eventId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  void eventId;
+  const { loadCampaignBuilderSessionAction, saveCampaignBuilderSessionAction } =
+    await import("@/lib/campaign-builder-v2/session");
+  const session = await loadCampaignBuilderSessionAction(eventId);
+
+  if (!session) {
+    return {
+      success: false,
+      message: "Campaign session not found.",
+    };
+  }
+
+  const result = await saveCampaignBuilderSessionAction(session);
 
   return {
-    success: true,
-    message: "Campaign saved as draft (demo stub).",
+    success: result.success,
+    message: result.success
+      ? "Campaign saved as draft."
+      : result.message,
   };
 }
 

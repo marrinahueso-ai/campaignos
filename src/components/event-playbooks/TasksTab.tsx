@@ -57,7 +57,7 @@ export function TasksTab({
               href="/tasks"
               className="inline-flex shrink-0 items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
             >
-              View in task hub
+              View all tasks
               <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
             </Link>
           </div>

@@ -37,7 +37,6 @@ interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
 
 export function ApprovalsSchedulingHub({
   items,
-  summary,
   campaigns,
   actorEmail,
   role,
@@ -54,8 +53,13 @@ export function ApprovalsSchedulingHub({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const viewScopedItems = useMemo(
+    () => filterItemsByViewScope(items, viewScope, canViewAll),
+    [items, viewScope, canViewAll],
+  );
+
   const scopedItems = useMemo(() => {
-    let next = filterItemsByViewScope(items, viewScope, canViewAll);
+    let next = viewScopedItems;
 
     if (eventFilter !== "all") {
       next = next.filter((item) => item.eventId === eventFilter);
@@ -70,9 +74,21 @@ export function ApprovalsSchedulingHub({
     }
 
     return next;
-  }, [items, viewScope, canViewAll, eventFilter, searchQuery, activeTab]);
+  }, [viewScopedItems, eventFilter, searchQuery, activeTab]);
 
-  const tabCounts = useMemo(() => summarizeCounts(items), [items]);
+  const tabCounts = useMemo(() => summarizeCounts(viewScopedItems), [viewScopedItems]);
+
+  const scopedSummary = useMemo(() => {
+    const counts = summarizeCounts(viewScopedItems);
+    return {
+      inQueue: counts.in_queue,
+      assignedToMe: counts.assigned_to_me,
+      scheduled: counts.scheduled,
+      posted: counts.posted,
+      published: counts.published,
+      changesRequested: counts.changes_requested,
+    };
+  }, [viewScopedItems]);
 
   const canActOnReviewItem = reviewItem
     ? canActOnUnifiedItem(reviewItem, role)
@@ -124,7 +140,7 @@ export function ApprovalsSchedulingHub({
         communicationItemId: reviewItem.communicationItemId,
         schedulingItemId: reviewItem.schedulingItemId,
         comment,
-        creatorEmail: reviewItem.submittedByMe ? actorEmail ?? undefined : undefined,
+        creatorEmail: undefined,
         campaignName: reviewItem.campaignName,
         milestoneName: reviewItem.milestoneName,
       });
@@ -212,7 +228,7 @@ export function ApprovalsSchedulingHub({
         </div>
       </header>
 
-      <SummaryCards summary={summary} />
+      <SummaryCards summary={scopedSummary} />
 
       <div className="space-y-4">
         <ApprovalTabs

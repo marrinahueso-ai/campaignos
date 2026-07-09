@@ -61,6 +61,7 @@ export interface UnifiedApprovalItem {
   scheduleLabel: string | null;
   assignedToMe: boolean;
   submittedByMe: boolean;
+  hasAssignedUser: boolean;
   approvalRequestId: string | null;
   communicationItemId: string | null;
   schedulingItemId: string | null;

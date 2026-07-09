@@ -27,6 +27,14 @@ export function canActOnUnifiedItem(
   item: UnifiedApprovalItem,
   role: CampaignRole,
 ): boolean {
+  if (
+    item.source === "campaign_builder" &&
+    !item.hasAssignedUser &&
+    (item.workflowStatus === "in_queue" || item.workflowStatus === "assigned_to_me")
+  ) {
+    return false;
+  }
+
   if (canApproveDraft(role)) {
     return true;
   }

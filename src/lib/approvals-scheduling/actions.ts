@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   sendChangeRequestedEmail,
   sendContentApprovedEmail,
+  sendCampaignManualUploadEmail,
   sendScheduledDeliveryEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
@@ -66,6 +67,24 @@ async function loadSchedulingItem(schedulingItemId: string) {
   return data;
 }
 
+async function resolveSchedulingCreatorEmail(
+  schedulingItemId: string,
+): Promise<string | null> {
+  const row = await loadSchedulingItem(schedulingItemId);
+  if (!row?.requested_by_user_id) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("organization_users")
+    .select("email")
+    .eq("id", row.requested_by_user_id)
+    .maybeSingle();
+
+  return data?.email ?? null;
+}
+
 export async function approveUnifiedItemAction(input: {
   eventId: string;
   communicationItemId?: string | null;
@@ -86,8 +105,23 @@ export async function approveUnifiedItemAction(input: {
 
   if (input.schedulingItemId) {
     const row = await loadSchedulingItem(input.schedulingItemId);
+    if (!row) {
+      return { success: false, error: "Scheduling item not found." };
+    }
+
+    if (
+      !row.assigned_user_id &&
+      (row.workflow_status === "in_queue" ||
+        row.workflow_status === "assigned_to_me")
+    ) {
+      return {
+        success: false,
+        error: "Assign an approver before approving this item.",
+      };
+    }
+
     const nextStatus: UnifiedWorkflowStatus =
-      row?.delivery_method === "draft-only" ? "published" : "scheduled";
+      row.delivery_method === "draft-only" ? "published" : "scheduled";
 
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
@@ -98,21 +132,37 @@ export async function approveUnifiedItemAction(input: {
       return { success: false, error: "Unable to update scheduling item." };
     }
 
-    if (input.recipientEmail && input.campaignName && input.milestoneName) {
+    const creatorEmail =
+      (await resolveSchedulingCreatorEmail(input.schedulingItemId)) ??
+      input.recipientEmail ??
+      null;
+
+    if (creatorEmail && input.campaignName && input.milestoneName) {
       await sendContentApprovedEmail({
         eventId: input.eventId,
         campaignName: input.campaignName,
         milestoneName: input.milestoneName,
-        recipientEmail: input.recipientEmail,
+        recipientEmail: creatorEmail,
         schedulingItemId: input.schedulingItemId,
       });
 
-      if (row?.schedule_at && nextStatus === "scheduled") {
+      if (row.delivery_method === "manual-email") {
+        await sendCampaignManualUploadEmail({
+          eventId: input.eventId,
+          campaignName: input.campaignName,
+          milestoneName: input.milestoneName,
+          recipientEmail: creatorEmail,
+          scheduleLabel: row.schedule_at
+            ? formatDateTime(row.schedule_at)
+            : "Manual upload",
+          schedulingItemId: input.schedulingItemId,
+        });
+      } else if (row.schedule_at && nextStatus === "scheduled") {
         await sendScheduledDeliveryEmail({
           eventId: input.eventId,
           campaignName: input.campaignName,
           milestoneName: input.milestoneName,
-          recipientEmail: input.recipientEmail,
+          recipientEmail: creatorEmail,
           scheduleLabel: formatDateTime(row.schedule_at),
           schedulingItemId: input.schedulingItemId,
         });
@@ -160,12 +210,18 @@ export async function requestUnifiedChangesAction(input: {
     }
   }
 
-  if (input.creatorEmail && input.campaignName && input.milestoneName) {
+  const creatorEmail =
+    input.creatorEmail ??
+    (input.schedulingItemId
+      ? await resolveSchedulingCreatorEmail(input.schedulingItemId)
+      : null);
+
+  if (creatorEmail && input.campaignName && input.milestoneName) {
     await sendChangeRequestedEmail({
       eventId: input.eventId,
       campaignName: input.campaignName,
       milestoneName: input.milestoneName,
-      recipientEmail: input.creatorEmail,
+      recipientEmail: creatorEmail,
       comment,
       schedulingItemId: input.schedulingItemId ?? null,
     });

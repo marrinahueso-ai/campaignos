@@ -262,6 +262,28 @@ export async function getUnifiedApprovalsSchedulingData(): Promise<UnifiedApprov
   return resolveUnifiedApprovalsData();
 }
 
+export async function getChangeRequestsSchedulingCount(): Promise<number> {
+  const membership = await getActiveMembership();
+  const actor: ApprovalActor | null = membership
+    ? {
+        organizationUserId: membership.user.id,
+        organizationRoleId: membership.user.organizationRoleId,
+        email: membership.user.email,
+      }
+    : null;
+
+  if (!actor?.organizationUserId) {
+    return 0;
+  }
+
+  const rows = await fetchCampaignBuilderSchedulingItems(actor);
+  return rows.filter(
+    (row) =>
+      row.workflow_status === "changes_requested" &&
+      row.requested_by_user_id === actor.organizationUserId,
+  ).length;
+}
+
 export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
   const membership = await getActiveMembership();
   const actor: ApprovalActor | null = membership

@@ -1,6 +1,7 @@
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type {
+  ApprovalSchedulingItemRow,
   UnifiedApprovalItem,
   UnifiedTabId,
   UnifiedWorkflowStatus,
@@ -94,6 +95,36 @@ export function deriveClassicWorkflowStatus(
   return "in_queue";
 }
 
+export function deriveSchedulingWorkflowStatus(
+  row: ApprovalSchedulingItemRow,
+  assignedToMe: boolean,
+): UnifiedWorkflowStatus {
+  if (row.workflow_status === "changes_requested") {
+    return "changes_requested";
+  }
+
+  if (
+    row.workflow_status === "scheduled" ||
+    row.workflow_status === "posted" ||
+    row.workflow_status === "published"
+  ) {
+    return row.workflow_status;
+  }
+
+  if (!row.assigned_user_id) {
+    return "in_queue";
+  }
+
+  return assignedToMe ? "assigned_to_me" : "in_queue";
+}
+
+export function schedulingNeedsApproverAssignment(
+  row: ApprovalSchedulingItemRow,
+  workflowStatus: UnifiedWorkflowStatus,
+): boolean {
+  return workflowStatus === "in_queue" && !row.assigned_user_id;
+}
+
 export function derivePlanningWorkflowStatus(
   item: PlanningCalendarItem,
   today: string,
@@ -126,6 +157,7 @@ export function statusDetailForItem(
   requestedAt: string,
   scheduleAt: string | null,
   now = new Date(),
+  needsApproverAssignment = false,
 ): string {
   switch (status) {
     case "assigned_to_me":
@@ -140,6 +172,9 @@ export function statusDetailForItem(
       return "Live on all platforms";
     case "in_queue":
     default:
+      if (needsApproverAssignment) {
+        return "Needs approver assigned";
+      }
       if (scheduleAt) {
         return formatFutureRelativeTime(scheduleAt, now);
       }
@@ -147,7 +182,10 @@ export function statusDetailForItem(
   }
 }
 
-export function nextActionForStatus(status: UnifiedWorkflowStatus): string {
+export function nextActionForStatus(
+  status: UnifiedWorkflowStatus,
+  needsApproverAssignment = false,
+): string {
   switch (status) {
     case "assigned_to_me":
       return "Review and approve";
@@ -161,7 +199,9 @@ export function nextActionForStatus(status: UnifiedWorkflowStatus): string {
       return "Completed";
     case "in_queue":
     default:
-      return "Awaiting assignment";
+      return needsApproverAssignment
+        ? "Needs approver assigned"
+        : "Awaiting assignment";
   }
 }
 

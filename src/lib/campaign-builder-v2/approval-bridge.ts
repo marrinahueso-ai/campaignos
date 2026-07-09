@@ -99,56 +99,97 @@ export async function sendCampaignBuilderForApproval(
 
     const captionText = getSharedCaptionText(preview.captions);
     const scheduleAt = resolveScheduleIso(preview);
+    const workflowStatus = assignee.assignedUserId ? "assigned_to_me" : "in_queue";
 
-    const { data: inserted, error } = await supabase
+    const { data: existing } = await supabase
       .from("approval_scheduling_items")
-      .insert({
-        event_id: input.eventId,
-        source: "campaign_builder",
-        campaign_milestone_id: milestone.id,
-        campaign_name: input.campaignName,
-        milestone_name: milestone.name,
-        workflow_status: "assigned_to_me",
-        assigned_organization_role_id: assignee.organizationRoleId,
-        assigned_user_id: assignee.assignedUserId,
-        requested_by_user_id: membership?.user.id ?? null,
-        delivery_method: preview.deliveryMethod,
-        platforms: milestone.platforms,
-        schedule_at: scheduleAt,
-        caption_text: captionText,
-        story_caption: preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
-        feed_artwork_url: preview.artwork.feedUrl,
-        story_artwork_url: preview.artwork.storyUrl,
-        requested_at: now,
-        updated_at: now,
-      })
-      .select("id")
+      .select("id, workflow_status")
+      .eq("event_id", input.eventId)
+      .eq("campaign_milestone_id", milestone.id)
       .maybeSingle();
 
-    if (error?.code === "42P01") {
-      return {
-        success: false,
-        message:
-          "Approval scheduling table is not migrated yet. Run migration 048_approval_scheduling_unified.sql.",
-        createdCount: 0,
-      };
-    }
+    const resubmitStatuses = new Set([
+      "in_queue",
+      "assigned_to_me",
+      "changes_requested",
+    ]);
 
-    if (error || !inserted?.id) {
-      console.error("Failed to create approval scheduling item:", error?.message);
+    const rowPayload = {
+      event_id: input.eventId,
+      source: "campaign_builder" as const,
+      campaign_milestone_id: milestone.id,
+      campaign_name: input.campaignName,
+      milestone_name: milestone.name,
+      workflow_status: workflowStatus,
+      assigned_organization_role_id: assignee.organizationRoleId,
+      assigned_user_id: assignee.assignedUserId,
+      requested_by_user_id: membership?.user.id ?? null,
+      delivery_method: preview.deliveryMethod,
+      platforms: milestone.platforms,
+      schedule_at: scheduleAt,
+      caption_text: captionText,
+      story_caption:
+        preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
+      feed_artwork_url: preview.artwork.feedUrl,
+      story_artwork_url: preview.artwork.storyUrl,
+      notes: null,
+      resolved_at: null,
+      requested_at: now,
+      updated_at: now,
+    };
+
+    let schedulingItemId: string | null = null;
+
+    if (existing?.id && resubmitStatuses.has(existing.workflow_status)) {
+      const { data: updated, error } = await supabase
+        .from("approval_scheduling_items")
+        .update(rowPayload)
+        .eq("id", existing.id)
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to update approval scheduling item:", error.message);
+        continue;
+      }
+
+      schedulingItemId = updated?.id ?? existing.id;
+    } else if (!existing?.id) {
+      const { data: inserted, error } = await supabase
+        .from("approval_scheduling_items")
+        .insert(rowPayload)
+        .select("id")
+        .maybeSingle();
+
+      if (error?.code === "42P01") {
+        return {
+          success: false,
+          message:
+            "Approval scheduling table is not migrated yet. Run migration 048_approval_scheduling_unified.sql.",
+          createdCount: 0,
+        };
+      }
+
+      if (error || !inserted?.id) {
+        console.error("Failed to create approval scheduling item:", error?.message);
+        continue;
+      }
+
+      schedulingItemId = inserted.id;
+    } else {
       continue;
     }
 
     createdCount += 1;
 
-    if (recipientEmail) {
+    if (recipientEmail && schedulingItemId) {
       await sendApprovalAssignedEmail({
         eventId: input.eventId,
         campaignName: input.campaignName,
         milestoneName: milestone.name,
         recipientEmail,
         approverRole: assignee.organizationRoleName ?? "committee-chair",
-        schedulingItemId: inserted.id,
+        schedulingItemId,
       });
     }
   }
