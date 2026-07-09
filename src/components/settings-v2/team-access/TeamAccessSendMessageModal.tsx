@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
 import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
+import { formatMemberEmail } from "@/components/settings-v2/team-access/team-access-utils";
 
 interface TeamAccessSendMessageModalProps {
   open: boolean;
@@ -22,7 +23,7 @@ export function TeamAccessSendMessageModal({
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
 
-  if (!member) {
+  if (!member || member.emailMissing) {
     return null;
   }
 
@@ -67,12 +68,12 @@ export function TeamAccessSendMessageModal({
     >
       {sent ? (
         <p className="text-sm text-cos-muted">
-          Message queued for delivery to {member.email}. (Shell — messaging backend
+          Message queued for delivery to {formatMemberEmail(member)}. (Shell — messaging backend
           not yet connected.)
         </p>
       ) : (
         <div className="space-y-4">
-          <Input label="To" value={member.email} readOnly disabled />
+          <Input label="To" value={formatMemberEmail(member)} readOnly disabled />
           <Input
             label="Subject"
             value={subject}

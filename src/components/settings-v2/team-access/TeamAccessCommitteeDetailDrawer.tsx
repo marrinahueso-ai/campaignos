@@ -5,13 +5,16 @@ import { ArrowRight, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { TeamAccessDrawer } from "@/components/settings-v2/team-access/TeamAccessDrawer";
+import { formatCount } from "@/components/settings-v2/team-access/team-access-utils";
 import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
+import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationCommittee } from "@/types/organization-workspace";
 
 interface TeamAccessCommitteeDetailDrawerProps {
   open: boolean;
   onClose: () => void;
   committee: OrganizationCommittee | null;
+  workload: TeamAccessWorkloadIndex;
   canManage: boolean;
 }
 
@@ -19,6 +22,7 @@ export function TeamAccessCommitteeDetailDrawer({
   open,
   onClose,
   committee,
+  workload,
   canManage,
 }: TeamAccessCommitteeDetailDrawerProps) {
   if (!committee) {
@@ -27,6 +31,7 @@ export function TeamAccessCommitteeDetailDrawer({
 
   const chairs = parseCommitteeChairNames(committee.contactName);
   const hasOpenRole = chairs.length === 0;
+  const stats = workload.byCommitteeId[committee.id];
 
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
@@ -67,15 +72,21 @@ export function TeamAccessCommitteeDetailDrawer({
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg border border-cos-border p-3 text-center">
               <p className="text-xs text-cos-muted">Open tasks</p>
-              <p className="mt-1 font-medium text-cos-text">—</p>
+              <p className="mt-1 font-medium text-cos-text">
+                {formatCount(stats?.openTasks ?? 0)}
+              </p>
             </div>
             <div className="rounded-lg border border-cos-border p-3 text-center">
               <p className="text-xs text-cos-muted">Campaigns</p>
-              <p className="mt-1 font-medium text-cos-text">—</p>
+              <p className="mt-1 font-medium text-cos-text">
+                {formatCount(stats?.campaigns ?? 0)}
+              </p>
             </div>
             <div className="rounded-lg border border-cos-border p-3 text-center">
               <p className="text-xs text-cos-muted">Approvals</p>
-              <p className="mt-1 font-medium text-cos-text">—</p>
+              <p className="mt-1 font-medium text-cos-text">
+                {formatCount(stats?.approvalsWaiting ?? 0)}
+              </p>
             </div>
           </div>
 

@@ -33,11 +33,11 @@ export function TeamAccessEditMemberModal({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (!member) {
+  if (!member || member.isRosterOnly) {
     return null;
   }
 
-  const memberId = member.id;
+  const memberId = member.raw!.id;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -13,6 +13,7 @@ import {
   buildFallbackOrganizationWorkspaceData,
   getOrganizationWorkspaceData,
 } from "@/lib/organization-workspace/queries";
+import { getTeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import { resolveAuthSiteOrigin } from "@/lib/auth/invite-url";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { headers } from "next/headers";
@@ -40,6 +41,10 @@ export default async function TeamAccessSettingsPage() {
   const members = organization
     ? await getOrganizationUsers(organization.id)
     : [];
+
+  const workload = organization
+    ? await getTeamAccessWorkloadIndex(organization.id)
+    : { byCommitteeId: {} };
 
   const activeCount = organization
     ? await countActiveOrganizationUsers(organization.id)
@@ -74,6 +79,7 @@ export default async function TeamAccessSettingsPage() {
     <TeamAccessSettingsContent
       members={members}
       workspace={workspace}
+      workload={workload}
       canManage={canManageTeam(campaignRole) || showClaimBanner}
       showClaimBanner={showClaimBanner}
       currentUserEmail={user?.email ?? null}

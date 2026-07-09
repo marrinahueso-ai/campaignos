@@ -1,11 +1,14 @@
 "use client";
 
-import { ArrowRight, Mail, Pencil } from "lucide-react";
+import { ArrowRight, Mail, Pencil, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { TeamAccessDrawer } from "@/components/settings-v2/team-access/TeamAccessDrawer";
 import {
   accessBadgeVariant,
+  formatCount,
+  formatMemberEmail,
+  formatMemberPhone,
   formatRelativeDate,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
@@ -42,6 +45,8 @@ function statusBadge(status: UnifiedTeamMember["status"]) {
       return <Badge variant="warning">Pending</Badge>;
     case "deactivated":
       return <Badge variant="default">Deactivated</Badge>;
+    case "roster":
+      return <Badge variant="info">Roster</Badge>;
   }
 }
 
@@ -58,6 +63,21 @@ function committeeStatusBadge(status: string) {
   }
 }
 
+function roleOnCommitteeLabel(role: string): string {
+  switch (role) {
+    case "vp":
+      return "VP oversight";
+    case "chair":
+      return "Committee Chair";
+    case "co_chair":
+      return "Committee Co-Chair";
+    case "member":
+      return "Committee Member";
+    default:
+      return role.replace("_", " ");
+  }
+}
+
 function StatItem({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-3">
@@ -65,6 +85,13 @@ function StatItem({ label, value }: { label: string; value: string | number }) {
       <p className="mt-1 text-sm font-medium text-cos-text">{value}</p>
     </div>
   );
+}
+
+function formatCommitteeLeaders(assignment: UnifiedTeamMember["committees"][number]): string {
+  if (assignment.memberNames.length === 0) {
+    return "Open role";
+  }
+  return assignment.memberNames.join(", ");
 }
 
 export function TeamAccessMemberDrawer({
@@ -84,6 +111,10 @@ export function TeamAccessMemberDrawer({
     return null;
   }
 
+  const committeeTabCount = member.isVp
+    ? member.vpOversightCommittees.length
+    : member.committees.length;
+
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
       <div className="flex h-full flex-col">
@@ -96,13 +127,19 @@ export function TeamAccessMemberDrawer({
               <div className="flex flex-wrap items-center gap-2">
                 {statusBadge(member.status)}
                 <Badge variant={accessBadgeVariant(member.accessLevel)}>
-                  {member.roleLabel}
+                  {member.orgRoleLabel}
                 </Badge>
               </div>
               <h2 className="font-display mt-2 text-2xl text-cos-text">
                 {member.displayName}
               </h2>
-              <p className="text-sm text-cos-muted">{member.email}</p>
+              <p className="text-sm text-cos-muted">{formatMemberEmail(member)}</p>
+              {!member.phoneMissing ? (
+                <p className="mt-1 inline-flex items-center gap-1 text-sm text-cos-muted">
+                  <Phone className="h-3.5 w-3.5" />
+                  {formatMemberPhone(member)}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -120,8 +157,8 @@ export function TeamAccessMemberDrawer({
                 )}
               >
                 {tab.label}
-                {tab.id === "committees" && member.committeeCount > 0
-                  ? ` (${member.committeeCount})`
+                {tab.id === "committees" && committeeTabCount > 0
+                  ? ` (${committeeTabCount})`
                   : ""}
               </button>
             ))}
@@ -132,12 +169,33 @@ export function TeamAccessMemberDrawer({
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-3">
+                <StatItem label="Org role" value={member.orgRoleLabel} />
                 <StatItem label="Access level" value={member.accessLabel} />
                 <StatItem label="Reports to" value={member.reportsTo ?? "—"} />
-                <StatItem label="Team members" value={member.teamMemberCount} />
-                <StatItem label="Open tasks" value="—" />
-                <StatItem label="Campaigns" value="—" />
-                <StatItem label="Approvals waiting" value="—" />
+                {member.isVp ? (
+                  <>
+                    <StatItem label="Total committees" value={member.totalCommittees} />
+                    <StatItem
+                      label="Total committee members"
+                      value={member.totalCommitteeMembers}
+                    />
+                    <StatItem
+                      label="Open committee roles"
+                      value={member.openCommitteeRoles}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <StatItem label="VP portfolio" value={member.vpPortfolio ?? "—"} />
+                    <StatItem label="Committees" value={member.committeeCount || "—"} />
+                  </>
+                )}
+                <StatItem label="Open tasks" value={formatCount(member.openTasks)} />
+                <StatItem label="Campaigns" value={formatCount(member.campaigns)} />
+                <StatItem
+                  label="Approvals waiting"
+                  value={formatCount(member.approvalsWaiting)}
+                />
               </div>
 
               <div>
@@ -166,6 +224,7 @@ export function TeamAccessMemberDrawer({
                     variant="secondary"
                     size="sm"
                     onClick={onSendMessage}
+                    disabled={member.emailMissing}
                   >
                     <Mail className="h-4 w-4" />
                     Send message
@@ -191,8 +250,12 @@ export function TeamAccessMemberDrawer({
                     </dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-cos-muted">2FA status</dt>
-                    <dd className="text-cos-text">—</dd>
+                    <dt className="text-cos-muted">Contact email</dt>
+                    <dd className="text-cos-text">{formatMemberEmail(member)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-cos-muted">Contact phone</dt>
+                    <dd className="text-cos-text">{formatMemberPhone(member)}</dd>
                   </div>
                 </dl>
               </div>
@@ -205,7 +268,7 @@ export function TeamAccessMemberDrawer({
                 <>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-cos-muted">
-                      Committees overseen by {member.displayName}
+                      Committees under {member.vpPortfolio ?? member.displayName}
                     </p>
                     {canManage ? (
                       <Button variant="secondary" size="sm" type="button" disabled>
@@ -213,10 +276,10 @@ export function TeamAccessMemberDrawer({
                       </Button>
                     ) : null}
                   </div>
-                  {member.committees.length === 0 ? (
+                  {member.vpOversightCommittees.length === 0 ? (
                     <p className="text-sm text-cos-muted">No committees assigned yet.</p>
                   ) : (
-                    member.committees.map((assignment) => (
+                    member.vpOversightCommittees.map((assignment) => (
                       <button
                         key={assignment.committee.id}
                         type="button"
@@ -229,15 +292,16 @@ export function TeamAccessMemberDrawer({
                               {assignment.committee.name}
                             </p>
                             <p className="mt-1 text-xs text-cos-muted">
-                              Chair: {assignment.committee.contactName ?? "Open role"}
+                              {formatCommitteeLeaders(assignment)}
                             </p>
                           </div>
                           {committeeStatusBadge(assignment.status)}
                         </div>
-                        <div className="mt-3 flex gap-4 text-xs text-cos-muted">
-                          <span>Open tasks: {assignment.openTasks}</span>
-                          <span>Campaigns: {assignment.campaigns}</span>
-                          <span>Approvals: {assignment.approvals}</span>
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cos-muted">
+                          <span>Members: {assignment.memberCount || "—"}</span>
+                          <span>Open tasks: {formatCount(assignment.openTasks)}</span>
+                          <span>Campaigns: {formatCount(assignment.campaigns)}</span>
+                          <span>Approvals: {formatCount(assignment.approvals)}</span>
                         </div>
                       </button>
                     ))
@@ -245,27 +309,34 @@ export function TeamAccessMemberDrawer({
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-cos-muted">Committees assigned</p>
+                  <p className="text-sm text-cos-muted">Committee assignments</p>
                   {member.committees.length === 0 ? (
                     <p className="text-sm text-cos-muted">No committee assignments.</p>
                   ) : (
                     member.committees.map((assignment) => (
-                      <div
+                      <button
                         key={assignment.committee.id}
-                        className="rounded-lg border border-cos-border p-4"
+                        type="button"
+                        onClick={() => onSelectCommittee(assignment.committee.id)}
+                        className="w-full rounded-lg border border-cos-border p-4 text-left transition-colors hover:border-cos-primary/40 hover:bg-cos-bg"
                       >
                         <p className="font-medium text-cos-text">
                           {assignment.committee.name}
                         </p>
                         <p className="mt-1 text-sm text-cos-muted">
-                          Role: {assignment.roleOnCommittee.replace("_", " ")}
+                          Role: {roleOnCommitteeLabel(assignment.roleOnCommittee)}
                         </p>
                         {assignment.committee.parentRoleName ? (
                           <p className="mt-1 text-sm text-cos-muted">
-                            Reports to: {assignment.committee.parentRoleName}
+                            VP: {assignment.committee.parentRoleName}
                           </p>
                         ) : null}
-                      </div>
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cos-muted">
+                          <span>Open tasks: {formatCount(assignment.openTasks)}</span>
+                          <span>Campaigns: {formatCount(assignment.campaigns)}</span>
+                          <span>Approvals: {formatCount(assignment.approvals)}</span>
+                        </div>
+                      </button>
                     ))
                   )}
                 </>
@@ -314,7 +385,7 @@ export function TeamAccessMemberDrawer({
           )}
         </div>
 
-        {canManage && activeTab === "overview" ? (
+        {canManage && activeTab === "overview" && member.raw ? (
           <div className="flex gap-2 border-t border-cos-border px-6 py-4">
             <Button type="button" variant="secondary" size="sm" onClick={onEdit}>
               <Pencil className="h-4 w-4" />

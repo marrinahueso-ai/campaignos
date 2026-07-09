@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import {
   accessBadgeVariant,
+  formatMemberEmail,
   formatRelativeDate,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
@@ -21,20 +22,26 @@ import {
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
-import type { OrganizationCommittee } from "@/types/organization-workspace";
+import type {
+  OrganizationCommittee,
+  OrganizationRole,
+} from "@/types/organization-workspace";
 
 interface TeamAccessMemberTableProps {
   members: UnifiedTeamMember[];
+  roles: OrganizationRole[];
   committees: OrganizationCommittee[];
   search: string;
   roleFilter: string;
   accessFilter: string;
   statusFilter: string;
+  vpPortfolioFilter: string;
   committeeFilter: string;
   onSearchChange: (value: string) => void;
   onRoleFilterChange: (value: string) => void;
   onAccessFilterChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
+  onVpPortfolioFilterChange: (value: string) => void;
   onCommitteeFilterChange: (value: string) => void;
   onSelectMember: (member: UnifiedTeamMember) => void;
   onEditMember: (member: UnifiedTeamMember) => void;
@@ -50,30 +57,34 @@ function statusBadge(status: UnifiedTeamMember["status"]) {
       return <Badge variant="warning">Pending</Badge>;
     case "deactivated":
       return <Badge variant="default">Deactivated</Badge>;
+    case "roster":
+      return <Badge variant="info">Roster</Badge>;
   }
 }
 
 export function TeamAccessMemberTable({
   members,
+  roles,
   committees,
   search,
   roleFilter,
   accessFilter,
   statusFilter,
+  vpPortfolioFilter,
   committeeFilter,
   onSearchChange,
   onRoleFilterChange,
   onAccessFilterChange,
   onStatusFilterChange,
+  onVpPortfolioFilterChange,
   onCommitteeFilterChange,
   onSelectMember,
   onEditMember,
   onMoreActions,
   canManage,
 }: TeamAccessMemberTableProps) {
-  const roleOptions = [
-    ...new Set(members.map((member) => member.roleLabel)),
-  ].sort();
+  const roleOptions = [...new Set(members.map((member) => member.orgRoleLabel))].sort();
+  const vpPortfolioOptions = roles.filter((role) => role.roleKind === "vp");
 
   return (
     <SettingsV2Card>
@@ -121,6 +132,19 @@ export function TeamAccessMemberTable({
             <option value="active">Active</option>
             <option value="invited">Pending</option>
             <option value="deactivated">Deactivated</option>
+            <option value="roster">Roster</option>
+          </Select>
+          <Select
+            value={vpPortfolioFilter}
+            onChange={(event) => onVpPortfolioFilterChange(event.target.value)}
+            className="h-9 min-w-[160px]"
+          >
+            <option value="">All VP portfolios</option>
+            {vpPortfolioOptions.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
           </Select>
           <Select
             value={committeeFilter}
@@ -142,12 +166,13 @@ export function TeamAccessMemberTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+        <table className="w-full min-w-[1100px] text-left text-sm">
           <thead>
             <tr className="border-b border-cos-border text-xs uppercase tracking-wide text-cos-muted">
               <th className="pb-3 pr-4 font-medium">Member</th>
-              <th className="pb-3 pr-4 font-medium">Role</th>
+              <th className="pb-3 pr-4 font-medium">Org role</th>
               <th className="pb-3 pr-4 font-medium">Access</th>
+              <th className="pb-3 pr-4 font-medium">VP portfolio</th>
               <th className="pb-3 pr-4 font-medium">Committees</th>
               <th className="pb-3 pr-4 font-medium">Status</th>
               <th className="pb-3 pr-4 font-medium">Last active</th>
@@ -157,7 +182,7 @@ export function TeamAccessMemberTable({
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 7 : 6} className="py-8 text-center text-cos-muted">
+                <td colSpan={canManage ? 8 : 7} className="py-8 text-center text-cos-muted">
                   No members match your filters.
                 </td>
               </tr>
@@ -175,15 +200,18 @@ export function TeamAccessMemberTable({
                       </div>
                       <div>
                         <p className="font-medium text-cos-text">{member.displayName}</p>
-                        <p className="text-xs text-cos-muted">{member.email}</p>
+                        <p className="text-xs text-cos-muted">{formatMemberEmail(member)}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 pr-4 text-cos-text">{member.roleLabel}</td>
+                  <td className="py-4 pr-4 text-cos-text">{member.orgRoleLabel}</td>
                   <td className="py-4 pr-4">
                     <Badge variant={accessBadgeVariant(member.accessLevel)}>
                       {member.accessLabel}
                     </Badge>
+                  </td>
+                  <td className="py-4 pr-4 text-cos-text">
+                    {member.vpPortfolio ?? "—"}
                   </td>
                   <td className="py-4 pr-4 text-cos-text">
                     {member.committeeCount > 0 ? member.committeeCount : "—"}
@@ -202,6 +230,7 @@ export function TeamAccessMemberTable({
                           type="button"
                           variant="ghost"
                           size="sm"
+                          disabled={member.isRosterOnly}
                           onClick={() => onEditMember(member)}
                         >
                           <Pencil className="h-4 w-4" />

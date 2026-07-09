@@ -15,14 +15,14 @@ export interface TaskHubUserContext {
   email: string | null;
 }
 
-function normalizePersonToken(value: string): string {
+export function normalizePersonToken(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
 
-function personTokensMatch(a: string, b: string): boolean {
+export function personTokensMatch(a: string, b: string): boolean {
   const normA = normalizePersonToken(a);
   const normB = normalizePersonToken(b);
 

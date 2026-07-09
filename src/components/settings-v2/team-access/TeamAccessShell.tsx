@@ -24,6 +24,7 @@ import {
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import { Button } from "@/components/ui/Button";
+import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import {
   claimOrganizationAccessAction,
   removeTeamMemberAction,
@@ -35,6 +36,7 @@ import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
 interface TeamAccessShellProps {
   members: OrganizationUser[];
   workspace: OrganizationWorkspaceData;
+  workload: TeamAccessWorkloadIndex;
   canManage: boolean;
   showClaimBanner: boolean;
   currentUserEmail: string | null;
@@ -48,6 +50,7 @@ type DrawerTab = "overview" | "committees" | "permissions" | "activity";
 export function TeamAccessShell({
   members,
   workspace,
+  workload,
   canManage,
   showClaimBanner,
   currentUserEmail,
@@ -58,14 +61,15 @@ export function TeamAccessShell({
   const [isPending, startTransition] = useTransition();
 
   const unifiedMembers = useMemo(
-    () => buildUnifiedTeamMembers(members, workspace),
-    [members, workspace],
+    () => buildUnifiedTeamMembers(members, workspace, workload),
+    [members, workspace, workload],
   );
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [accessFilter, setAccessFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [vpPortfolioFilter, setVpPortfolioFilter] = useState("");
   const [committeeFilter, setCommitteeFilter] = useState("");
 
   const [selectedMember, setSelectedMember] = useState<UnifiedTeamMember | null>(null);
@@ -88,7 +92,9 @@ export function TeamAccessShell({
   const [moreActionsMember, setMoreActionsMember] = useState<UnifiedTeamMember | null>(null);
   const [moreActionsAnchor, setMoreActionsAnchor] = useState<DOMRect | null>(null);
 
-  const activeCount = members.filter((member) => member.status === "active").length;
+  const activeCount = unifiedMembers.filter(
+    (member) => member.status === "active" || member.status === "roster",
+  ).length;
   const pendingCount = members.filter((member) => member.status === "invited").length;
   const openRoleCount = countOpenCommitteeRoles(workspace.committees);
 
@@ -100,9 +106,11 @@ export function TeamAccessShell({
         member.displayName.toLowerCase().includes(searchLower) ||
         member.email.toLowerCase().includes(searchLower);
 
-      const matchesRole = !roleFilter || member.roleLabel === roleFilter;
+      const matchesRole = !roleFilter || member.orgRoleLabel === roleFilter;
       const matchesAccess = !accessFilter || member.accessLevel === accessFilter;
       const matchesStatus = !statusFilter || member.status === statusFilter;
+      const matchesVpPortfolio =
+        !vpPortfolioFilter || member.vpPortfolioId === vpPortfolioFilter;
       const matchesCommittee =
         !committeeFilter ||
         member.committees.some(
@@ -110,7 +118,12 @@ export function TeamAccessShell({
         );
 
       return (
-        matchesSearch && matchesRole && matchesAccess && matchesStatus && matchesCommittee
+        matchesSearch &&
+        matchesRole &&
+        matchesAccess &&
+        matchesStatus &&
+        matchesVpPortfolio &&
+        matchesCommittee
       );
     });
   }, [
@@ -119,6 +132,7 @@ export function TeamAccessShell({
     roleFilter,
     accessFilter,
     statusFilter,
+    vpPortfolioFilter,
     committeeFilter,
   ]);
 
@@ -133,8 +147,11 @@ export function TeamAccessShell({
   }
 
   function handleDeactivate(member: UnifiedTeamMember) {
+    if (!member.raw) {
+      return;
+    }
     startTransition(async () => {
-      await updateTeamMemberAction(member.id, {
+      await updateTeamMemberAction(member.raw!.id, {
         status: member.status === "deactivated" ? "active" : "deactivated",
       });
       router.refresh();
@@ -143,11 +160,14 @@ export function TeamAccessShell({
   }
 
   function handleRemove(member: UnifiedTeamMember) {
+    if (!member.raw) {
+      return;
+    }
     if (!window.confirm(`Remove ${member.displayName} from the team?`)) {
       return;
     }
     startTransition(async () => {
-      await removeTeamMemberAction(member.id);
+      await removeTeamMemberAction(member.raw!.id);
       router.refresh();
     });
   }
@@ -222,16 +242,19 @@ export function TeamAccessShell({
 
       <TeamAccessMemberTable
         members={filteredMembers}
+        roles={workspace.roles}
         committees={workspace.committees}
         search={search}
         roleFilter={roleFilter}
         accessFilter={accessFilter}
         statusFilter={statusFilter}
+        vpPortfolioFilter={vpPortfolioFilter}
         committeeFilter={committeeFilter}
         onSearchChange={setSearch}
         onRoleFilterChange={setRoleFilter}
         onAccessFilterChange={setAccessFilter}
         onStatusFilterChange={setStatusFilter}
+        onVpPortfolioFilterChange={setVpPortfolioFilter}
         onCommitteeFilterChange={setCommitteeFilter}
         onSelectMember={(member) => openMemberDrawer(member)}
         onEditMember={(member) => {
@@ -355,6 +378,7 @@ export function TeamAccessShell({
         open={committeeDetailOpen}
         onClose={() => setCommitteeDetailOpen(false)}
         committee={selectedCommittee}
+        workload={workload}
         canManage={canManage}
       />
 
