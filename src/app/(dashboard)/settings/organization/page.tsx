@@ -1,28 +1,22 @@
-import { OrganizationWorkspaceShell } from "@/components/organization-workspace/OrganizationWorkspaceShell";
-import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
-import { Button } from "@/components/ui/Button";
+import { OrganizationSettingsContent } from "@/components/settings-v2/OrganizationSettingsContent";
+import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GraduationCap } from "lucide-react";
-import { getLatestOrganization } from "@/lib/organizations/queries";
-import {
-  buildFallbackOrganizationWorkspaceData,
-  getOrganizationWorkspaceData,
-} from "@/lib/organization-workspace/queries";
+import { getSchoolProfile } from "@/lib/organizations/queries";
 
 export const metadata = {
-  title: "Organization Workspace",
+  title: "Organization",
 };
 
-export default async function OrganizationWorkspaceSettingsPage() {
-  const organization = await getLatestOrganization();
+export default async function OrganizationSettingsPage() {
+  const schoolProfile = await getSchoolProfile();
 
-  if (!organization) {
+  if (!schoolProfile?.organization) {
     return (
-      <div className="studio-page space-y-10 pb-12">
-        <StudioPageHeader
-          backHref="/settings"
-          title="Organization Workspace"
-          eyebrow="Configure"
+      <div className="space-y-6">
+        <SettingsV2PageHeader
+          title="Organization"
+          description="Set up your school profile, branding, and workspace preferences."
         />
         <EmptyState
           icon={GraduationCap}
@@ -35,39 +29,10 @@ export default async function OrganizationWorkspaceSettingsPage() {
     );
   }
 
-  const workspace =
-    (await getOrganizationWorkspaceData(organization.id)) ??
-    buildFallbackOrganizationWorkspaceData();
-
   return (
-    <div className="studio-page space-y-10 pb-12">
-      <StudioPageHeader
-        backHref="/settings"
-        title="Organization Workspace"
-        description="Upload your board roster, then add person names for each VP and committee chair. Committees nest under their VP in collapsible groups below."
-        eyebrow="Configure"
-      />
-
-      <OrganizationWorkspaceShell workspace={workspace} />
-
-      <section className="cos-card border-dashed">
-        <h2 className="font-display text-xl text-cos-text">Coming later</h2>
-        <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-          Assignments, approvals, notifications, and permissions will build on
-          this foundation — not part of Engine 7.1.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="secondary" disabled>
-            Assignments
-          </Button>
-          <Button variant="secondary" disabled>
-            Approvals
-          </Button>
-          <Button variant="secondary" disabled>
-            Notifications
-          </Button>
-        </div>
-      </section>
-    </div>
+    <OrganizationSettingsContent
+      organization={schoolProfile.organization}
+      brandAssets={schoolProfile.brandAssets}
+    />
   );
 }

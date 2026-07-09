@@ -1,13 +1,7 @@
-import { AiBrainProfileForm } from "@/components/ai-brain/AiBrainProfileForm";
-import { TrainingLibrarySection } from "@/components/ai-brain/TrainingLibrarySection";
-import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
+import { AiBrainSettingsContent } from "@/components/settings-v2/AiBrainSettingsContent";
+import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
+import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { getOrganizationIntelligence } from "@/lib/organization-intelligence/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -20,24 +14,20 @@ export default async function AiBrainSettingsPage() {
 
   if (!organization) {
     return (
-      <div className="studio-page mx-auto max-w-3xl space-y-10 pb-12">
-        <StudioPageHeader
-          backHref="/settings"
+      <div className="space-y-6">
+        <SettingsV2PageHeader
           title="AI Brain"
           description="Teach Hey Ralli how your school communicates before connecting AI."
-          eyebrow="Configure"
         />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>School Setup Required</CardTitle>
-            <CardDescription>
-              Complete School Setup to create your organization profile, then
-              return here to configure your AI Brain.
-            </CardDescription>
-          </CardHeader>
-          <Button href="/settings/school-setup">Go to School Setup</Button>
-        </Card>
+        <SettingsV2Card title="School Setup Required">
+          <p className="text-sm leading-relaxed text-cos-muted">
+            Complete School Setup to create your organization profile, then return
+            here to configure your AI Brain.
+          </p>
+          <Button className="mt-4" href="/settings/school-setup">
+            Go to School Setup
+          </Button>
+        </SettingsV2Card>
       </div>
     );
   }
@@ -45,16 +35,9 @@ export default async function AiBrainSettingsPage() {
   const intelligence = await getOrganizationIntelligence(organization.id);
 
   return (
-    <div className="studio-page mx-auto max-w-3xl space-y-10 pb-12">
-      <StudioPageHeader
-        backHref="/settings"
-        title="AI Brain"
-        description={`Configure how ${organization.name} communicates. Hey Ralli uses this profile when generating drafts.`}
-        eyebrow="Configure"
-      />
-
-      <AiBrainProfileForm profile={intelligence.profile} />
-      <TrainingLibrarySection documents={intelligence.trainingDocuments} />
-    </div>
+    <AiBrainSettingsContent
+      organizationName={organization.name}
+      intelligence={intelligence}
+    />
   );
 }

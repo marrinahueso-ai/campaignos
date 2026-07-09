@@ -93,6 +93,7 @@ export async function saveInboxAiSourcesAction(
   }
 
   revalidatePath("/settings/inbox-ai-sources");
+  revalidatePath("/settings/inbox-ai");
   revalidatePath("/settings/ai-brain");
   revalidatePath("/inbox");
 
