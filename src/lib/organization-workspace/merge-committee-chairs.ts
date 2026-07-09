@@ -24,9 +24,11 @@ export function parseCommitteeChairNames(
     return [];
   }
 
+  const normalized = contactName.replace(/\u00a0/g, " ");
+
   return [
     ...new Set(
-      contactName
+      normalized
         .split(/[,·|/]+/)
         .map((part) => part.trim())
         .filter(Boolean),

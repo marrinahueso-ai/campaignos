@@ -47,6 +47,7 @@ export interface UnifiedTeamMember {
   teamMemberCount: number;
   isVp: boolean;
   isPresident: boolean;
+  hasRoleOversight: boolean;
   openTasks: number;
   campaigns: number;
   approvalsWaiting: number;
@@ -77,6 +78,7 @@ interface RosterPersonSeed {
   isPresident: boolean;
   vpPortfolioId: string | null;
   vpPortfolioName: string | null;
+  oversightRoleId?: string;
   committeeAssignment?: {
     committee: OrganizationCommittee;
     roleOnCommittee: MemberCommitteeAssignment["roleOnCommittee"];
@@ -95,6 +97,7 @@ interface PersonAccumulator {
   isPresident: boolean;
   vpPortfolioId: string | null;
   vpPortfolioName: string | null;
+  oversightRoleIds: Set<string>;
   organizationUser: OrganizationUser | null;
   committeeAssignments: Map<
     string,
@@ -198,6 +201,7 @@ function mergePersonSeed(
     isPresident: seed.isPresident,
     vpPortfolioId: seed.vpPortfolioId,
     vpPortfolioName: seed.vpPortfolioName,
+    oversightRoleIds: new Set(),
     organizationUser: seed.organizationUser,
     committeeAssignments: new Map(),
   };
@@ -235,6 +239,14 @@ function mergePersonSeed(
     person.isPresident = true;
   }
 
+  if (seed.oversightRoleId) {
+    person.oversightRoleIds.add(seed.oversightRoleId);
+    if (!person.organizationRoleId) {
+      person.organizationRoleId = seed.oversightRoleId;
+      person.organizationRoleName = seed.organizationRoleName;
+    }
+  }
+
   if (!person.isVp && seed.vpPortfolioId && !person.vpPortfolioId) {
     person.vpPortfolioId = seed.vpPortfolioId;
     person.vpPortfolioName = seed.vpPortfolioName;
@@ -257,14 +269,16 @@ function mergePersonSeed(
 
 function rolePriority(role: MemberCommitteeAssignment["roleOnCommittee"]): number {
   switch (role) {
-    case "vp":
-      return 4;
     case "chair":
-      return 3;
+      return 4;
     case "co_chair":
+      return 3;
+    case "member":
       return 2;
-    default:
+    case "vp":
       return 1;
+    default:
+      return 0;
   }
 }
 
@@ -429,18 +443,44 @@ function buildCommitteeAssignment(
   };
 }
 
-function buildVpOversightCommittees(
-  vpRoleId: string | null,
+function buildRoleOversightCommittees(
+  oversightRoleIds: Set<string>,
   workspace: OrganizationWorkspaceData,
   workload?: TeamAccessWorkloadIndex,
 ): MemberCommitteeAssignment[] {
-  if (!vpRoleId) {
+  if (oversightRoleIds.size === 0) {
     return [];
   }
 
   return workspace.committees
-    .filter((committee) => committee.parentRoleId === vpRoleId)
+    .filter(
+      (committee) =>
+        committee.parentRoleId !== null &&
+        oversightRoleIds.has(committee.parentRoleId),
+    )
     .map((committee) => buildCommitteeAssignment(committee, "vp", workload));
+}
+
+function mergeMemberCommitteeAssignments(
+  directAssignments: MemberCommitteeAssignment[],
+  oversightAssignments: MemberCommitteeAssignment[],
+): MemberCommitteeAssignment[] {
+  const byCommitteeId = new Map<string, MemberCommitteeAssignment>();
+
+  for (const assignment of [...oversightAssignments, ...directAssignments]) {
+    const existing = byCommitteeId.get(assignment.committee.id);
+    if (
+      !existing ||
+      rolePriority(assignment.roleOnCommittee) >
+        rolePriority(existing.roleOnCommittee)
+    ) {
+      byCommitteeId.set(assignment.committee.id, assignment);
+    }
+  }
+
+  return [...byCommitteeId.values()].sort((a, b) =>
+    a.committee.name.localeCompare(b.committee.name),
+  );
 }
 
 function countUniqueCommitteeMembers(committees: OrganizationCommittee[]): number {
@@ -453,17 +493,18 @@ function countUniqueCommitteeMembers(committees: OrganizationCommittee[]): numbe
   return names.size;
 }
 
-function countOpenCommitteeRolesForVp(
-  vpRoleId: string | null,
+function countOpenCommitteeRolesForOversightRoles(
+  oversightRoleIds: Set<string>,
   committees: OrganizationCommittee[],
 ): number {
-  if (!vpRoleId) {
+  if (oversightRoleIds.size === 0) {
     return 0;
   }
 
   return committees.filter(
     (committee) =>
-      committee.parentRoleId === vpRoleId &&
+      committee.parentRoleId !== null &&
+      oversightRoleIds.has(committee.parentRoleId) &&
       parseCommitteeChairNames(committee.contactName).length === 0,
   ).length;
 }
@@ -553,6 +594,7 @@ function collectRosterPeople(
       isPresident,
       vpPortfolioId: isVp || isPresident ? role.id : null,
       vpPortfolioName: isVp || isPresident ? role.name : null,
+      oversightRoleId: role.id,
       organizationUser: null,
     });
   }
@@ -583,11 +625,17 @@ function collectRosterPeople(
   }
 
   for (const person of people.values()) {
-    if (person.isVp && person.organizationRoleId) {
+    for (const roleId of person.oversightRoleIds) {
       for (const committee of workspace.committees) {
-        if (committee.parentRoleId !== person.organizationRoleId) {
+        if (committee.parentRoleId !== roleId) {
           continue;
         }
+
+        const current = person.committeeAssignments.get(committee.id);
+        if (current && current.roleOnCommittee !== "vp") {
+          continue;
+        }
+
         person.committeeAssignments.set(committee.id, {
           committee,
           roleOnCommittee: "vp",
@@ -604,7 +652,7 @@ function finalizeUnifiedMember(
   workspace: OrganizationWorkspaceData,
   workload?: TeamAccessWorkloadIndex,
 ): UnifiedTeamMember {
-  const assignedCommittees = [...person.committeeAssignments.values()]
+  const directCommitteeAssignments = [...person.committeeAssignments.values()]
     .filter((assignment) => assignment.roleOnCommittee !== "vp")
     .map((assignment) =>
       buildCommitteeAssignment(
@@ -614,32 +662,41 @@ function finalizeUnifiedMember(
       ),
     );
 
-  const vpOversightCommittees = person.isVp
-    ? buildVpOversightCommittees(person.organizationRoleId, workspace, workload)
-    : [];
+  const roleOversightCommittees = buildRoleOversightCommittees(
+    person.oversightRoleIds,
+    workspace,
+    workload,
+  );
 
-  const committees = person.isVp ? vpOversightCommittees : assignedCommittees;
+  const committees = mergeMemberCommitteeAssignments(
+    directCommitteeAssignments,
+    roleOversightCommittees,
+  );
+
+  const vpOversightCommittees = roleOversightCommittees;
 
   const accessLevel = resolveAccessLevel(
     person.organizationUser,
     person.isVp,
     person.isPresident,
-    assignedCommittees,
+    directCommitteeAssignments,
   );
 
   const orgRoleLabel = resolveOrgRoleLabel({
     isPresident: person.isPresident,
     isVp: person.isVp,
     organizationRoleName: person.organizationRoleName,
-    committeeAssignments: assignedCommittees,
+    committeeAssignments: directCommitteeAssignments,
     campaignRole: accessLevel,
   });
 
-  const vpCommittees = person.isVp
-    ? workspace.committees.filter(
-        (committee) => committee.parentRoleId === person.organizationRoleId,
-      )
-    : [];
+  const oversightCommittees = workspace.committees.filter(
+    (committee) =>
+      committee.parentRoleId !== null &&
+      person.oversightRoleIds.has(committee.parentRoleId),
+  );
+
+  const hasRoleOversight = person.oversightRoleIds.size > 0;
 
   const openTasks = committees.reduce((sum, assignment) => sum + assignment.openTasks, 0);
   const campaigns = committees.reduce((sum, assignment) => sum + assignment.campaigns, 0);
@@ -679,18 +736,24 @@ function finalizeUnifiedMember(
     organizationRoleId: person.organizationRoleId,
     organizationRoleName: person.organizationRoleName,
     reportsTo: resolveReportsTo(person, workspace),
-    teamMemberCount: person.isVp ? countUniqueCommitteeMembers(vpCommittees) : 0,
+    teamMemberCount: hasRoleOversight
+      ? countUniqueCommitteeMembers(oversightCommittees)
+      : 0,
     isVp: person.isVp,
     isPresident: person.isPresident,
+    hasRoleOversight,
     openTasks,
     campaigns,
     approvalsWaiting,
-    totalCommittees: person.isVp ? vpCommittees.length : committees.length,
-    totalCommitteeMembers: person.isVp
-      ? countUniqueCommitteeMembers(vpCommittees)
+    totalCommittees: hasRoleOversight ? oversightCommittees.length : committees.length,
+    totalCommitteeMembers: hasRoleOversight
+      ? countUniqueCommitteeMembers(oversightCommittees)
       : 0,
-    openCommitteeRoles: person.isVp
-      ? countOpenCommitteeRolesForVp(person.organizationRoleId, workspace.committees)
+    openCommitteeRoles: hasRoleOversight
+      ? countOpenCommitteeRolesForOversightRoles(
+          person.oversightRoleIds,
+          workspace.committees,
+        )
       : 0,
     raw: person.organizationUser,
   };

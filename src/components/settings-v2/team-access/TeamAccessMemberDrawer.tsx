@@ -63,10 +63,21 @@ function committeeStatusBadge(status: string) {
   }
 }
 
-function roleOnCommitteeLabel(role: string): string {
+function roleOnCommitteeLabel(
+  role: string,
+  member: UnifiedTeamMember,
+): string {
   switch (role) {
     case "vp":
-      return "VP oversight";
+      if (member.isPresident) {
+        return "President portfolio";
+      }
+      if (member.isVp) {
+        return "VP oversight";
+      }
+      return member.organizationRoleName
+        ? `${member.organizationRoleName} portfolio`
+        : "Role portfolio";
     case "chair":
       return "Committee Chair";
     case "co_chair":
@@ -111,9 +122,7 @@ export function TeamAccessMemberDrawer({
     return null;
   }
 
-  const committeeTabCount = member.isVp
-    ? member.vpOversightCommittees.length
-    : member.committees.length;
+  const committeeTabCount = member.committees.length;
 
   return (
     <TeamAccessDrawer open={open} onClose={onClose}>
@@ -172,7 +181,7 @@ export function TeamAccessMemberDrawer({
                 <StatItem label="Org role" value={member.orgRoleLabel} />
                 <StatItem label="Access level" value={member.accessLabel} />
                 <StatItem label="Reports to" value={member.reportsTo ?? "—"} />
-                {member.isVp ? (
+                {member.hasRoleOversight ? (
                   <>
                     <StatItem label="Total committees" value={member.totalCommittees} />
                     <StatItem
@@ -264,82 +273,52 @@ export function TeamAccessMemberDrawer({
 
           {activeTab === "committees" && (
             <div className="space-y-4">
-              {member.isVp ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-cos-muted">
-                      Committees under {member.vpPortfolio ?? member.displayName}
-                    </p>
-                    {canManage ? (
-                      <Button variant="secondary" size="sm" type="button" disabled>
-                        Add committee
-                      </Button>
-                    ) : null}
-                  </div>
-                  {member.vpOversightCommittees.length === 0 ? (
-                    <p className="text-sm text-cos-muted">No committees assigned yet.</p>
-                  ) : (
-                    member.vpOversightCommittees.map((assignment) => (
-                      <button
-                        key={assignment.committee.id}
-                        type="button"
-                        onClick={() => onSelectCommittee(assignment.committee.id)}
-                        className="w-full rounded-lg border border-cos-border bg-cos-bg/40 p-4 text-left transition-colors hover:border-cos-primary/40 hover:bg-cos-bg"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium text-cos-text">
-                              {assignment.committee.name}
-                            </p>
-                            <p className="mt-1 text-xs text-cos-muted">
-                              {formatCommitteeLeaders(assignment)}
-                            </p>
-                          </div>
-                          {committeeStatusBadge(assignment.status)}
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cos-muted">
-                          <span>Members: {assignment.memberCount || "—"}</span>
-                          <span>Open tasks: {formatCount(assignment.openTasks)}</span>
-                          <span>Campaigns: {formatCount(assignment.campaigns)}</span>
-                          <span>Approvals: {formatCount(assignment.approvals)}</span>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </>
+              <p className="text-sm text-cos-muted">
+                {member.hasRoleOversight
+                  ? `Committees under ${member.organizationRoleName ?? member.displayName}`
+                  : "Committee assignments"}
+              </p>
+              {member.committees.length === 0 ? (
+                <p className="text-sm text-cos-muted">No committee assignments.</p>
               ) : (
-                <>
-                  <p className="text-sm text-cos-muted">Committee assignments</p>
-                  {member.committees.length === 0 ? (
-                    <p className="text-sm text-cos-muted">No committee assignments.</p>
-                  ) : (
-                    member.committees.map((assignment) => (
-                      <button
-                        key={assignment.committee.id}
-                        type="button"
-                        onClick={() => onSelectCommittee(assignment.committee.id)}
-                        className="w-full rounded-lg border border-cos-border p-4 text-left transition-colors hover:border-cos-primary/40 hover:bg-cos-bg"
-                      >
+                member.committees.map((assignment) => (
+                  <button
+                    key={assignment.committee.id}
+                    type="button"
+                    onClick={() => onSelectCommittee(assignment.committee.id)}
+                    className="w-full rounded-lg border border-cos-border p-4 text-left transition-colors hover:border-cos-primary/40 hover:bg-cos-bg"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
                         <p className="font-medium text-cos-text">
                           {assignment.committee.name}
                         </p>
                         <p className="mt-1 text-sm text-cos-muted">
-                          Role: {roleOnCommitteeLabel(assignment.roleOnCommittee)}
+                          Role: {roleOnCommitteeLabel(assignment.roleOnCommittee, member)}
                         </p>
-                        {assignment.committee.parentRoleName ? (
-                          <p className="mt-1 text-sm text-cos-muted">
-                            VP: {assignment.committee.parentRoleName}
+                        {assignment.roleOnCommittee === "vp" ? (
+                          <p className="mt-1 text-xs text-cos-muted">
+                            {formatCommitteeLeaders(assignment)}
                           </p>
                         ) : null}
-                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cos-muted">
-                          <span>Open tasks: {formatCount(assignment.openTasks)}</span>
-                          <span>Campaigns: {formatCount(assignment.campaigns)}</span>
-                          <span>Approvals: {formatCount(assignment.approvals)}</span>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </>
+                        {assignment.committee.parentRoleName ? (
+                          <p className="mt-1 text-sm text-cos-muted">
+                            Portfolio: {assignment.committee.parentRoleName}
+                          </p>
+                        ) : null}
+                      </div>
+                      {committeeStatusBadge(assignment.status)}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cos-muted">
+                      {assignment.roleOnCommittee === "vp" ? (
+                        <span>Members: {assignment.memberCount || "—"}</span>
+                      ) : null}
+                      <span>Open tasks: {formatCount(assignment.openTasks)}</span>
+                      <span>Campaigns: {formatCount(assignment.campaigns)}</span>
+                      <span>Approvals: {formatCount(assignment.approvals)}</span>
+                    </div>
+                  </button>
+                ))
               )}
             </div>
           )}
