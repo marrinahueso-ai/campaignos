@@ -321,7 +321,7 @@ export async function createTeamMemberAccountAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/team-access");
   return {
     error: null,
     success: true,
@@ -388,7 +388,7 @@ export async function inviteTeamMemberAction(
     ),
   );
 
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/team-access");
   return {
     error: null,
     success: true,
@@ -415,7 +415,7 @@ export async function updateTeamMemberAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/team-access");
   return { error: null, success: true };
 }
 
@@ -432,7 +432,7 @@ export async function removeTeamMemberAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath("/settings/team");
+  revalidatePath("/settings/team-access");
   return { error: null, success: true };
 }
 

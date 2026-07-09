@@ -9,7 +9,10 @@ import {
 } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getOrganizationById } from "@/lib/organizations/queries";
-import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import {
+  buildFallbackOrganizationWorkspaceData,
+  getOrganizationWorkspaceData,
+} from "@/lib/organization-workspace/queries";
 import { resolveAuthSiteOrigin } from "@/lib/auth/invite-url";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { headers } from "next/headers";
@@ -30,8 +33,9 @@ export default async function TeamAccessSettingsPage() {
     : null;
 
   const workspace = organization
-    ? await getOrganizationWorkspaceData(organization.id)
-    : null;
+    ? (await getOrganizationWorkspaceData(organization.id)) ??
+      buildFallbackOrganizationWorkspaceData()
+    : buildFallbackOrganizationWorkspaceData();
 
   const members = organization
     ? await getOrganizationUsers(organization.id)
@@ -57,7 +61,7 @@ export default async function TeamAccessSettingsPage() {
       <div className="space-y-6">
         <SettingsV2PageHeader
           title="Team & Access"
-          description="Invite board members and assign who can approve communications."
+          description="Manage members, roles, permissions, and committee responsibilities in one place."
         />
         <p className="text-sm leading-relaxed text-cos-muted">
           Complete School Setup first, then return here to invite your board.
@@ -69,7 +73,7 @@ export default async function TeamAccessSettingsPage() {
   return (
     <TeamAccessSettingsContent
       members={members}
-      roles={workspace?.roles ?? []}
+      workspace={workspace}
       canManage={canManageTeam(campaignRole) || showClaimBanner}
       showClaimBanner={showClaimBanner}
       currentUserEmail={user?.email ?? null}

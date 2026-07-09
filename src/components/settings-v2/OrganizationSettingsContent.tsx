@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { OrganizationWorkspaceShell } from "@/components/organization-workspace/OrganizationWorkspaceShell";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
-import {
-  buildFallbackOrganizationWorkspaceData,
-  getOrganizationWorkspaceData,
-} from "@/lib/organization-workspace/queries";
 import type { BrandAssets, Organization } from "@/types";
 
 interface OrganizationSettingsContentProps {
@@ -28,10 +23,6 @@ export async function OrganizationSettingsContent({
   organization,
   brandAssets,
 }: OrganizationSettingsContentProps) {
-  const workspace =
-    (await getOrganizationWorkspaceData(organization.id)) ??
-    buildFallbackOrganizationWorkspaceData();
-
   return (
     <div className="space-y-6">
       <SettingsV2PageHeader
@@ -107,28 +98,22 @@ export async function OrganizationSettingsContent({
         </SettingsV2Card>
 
         <SettingsV2Card
-          title="Board roster workspace"
-          description="Upload your board roster and manage VP/committee structure."
+          title="Board roster & committees"
+          description="Manage members, roles, committees, and approval routing in one place."
           footer={
             <Link
-              href="#board-roster"
+              href="/settings/team-access"
               className="inline-flex items-center gap-1 text-sm font-medium text-cos-text hover:text-cos-primary"
             >
-              Open board roster
+              Open Team & Access
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
             </Link>
           }
         >
           <p className="text-sm leading-relaxed text-cos-muted">
-            Assign person names to each VP and committee chair. Committees nest
-            under their VP in collapsible groups.
+            Board roster, committee structure, and team permissions now live in
+            Team & Access.
           </p>
-        </SettingsV2Card>
-      </div>
-
-      <div id="board-roster">
-        <SettingsV2Card title="Board Roster & Roles">
-          <OrganizationWorkspaceShell workspace={workspace} />
         </SettingsV2Card>
       </div>
     </div>

@@ -48,6 +48,7 @@ async function requireOrganizationId(): Promise<
 
 function revalidateOrganizationWorkspace() {
   revalidatePath(ORGANIZATION_PATH);
+  revalidatePath("/settings/team-access");
   revalidatePath("/events/[id]", "page");
 }
 

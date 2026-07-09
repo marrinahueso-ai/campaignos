@@ -1,0 +1,406 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { OrganizationRosterImportBar } from "@/components/organization-workspace/OrganizationRosterImportBar";
+import { OrganizationRosterSection } from "@/components/organization-workspace/OrganizationRosterSection";
+import { ResponsibilityMatrixSection } from "@/components/organization-workspace/ResponsibilityMatrixSection";
+import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
+import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
+import { TeamAccessCommitteeDetailDrawer } from "@/components/settings-v2/team-access/TeamAccessCommitteeDetailDrawer";
+import { TeamAccessCreateRoleModal } from "@/components/settings-v2/team-access/TeamAccessCreateRoleModal";
+import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
+import { TeamAccessInviteModal } from "@/components/settings-v2/team-access/TeamAccessInviteModal";
+import { TeamAccessMemberDrawer } from "@/components/settings-v2/team-access/TeamAccessMemberDrawer";
+import { TeamAccessMemberTable } from "@/components/settings-v2/team-access/TeamAccessMemberTable";
+import { TeamAccessMoreActionsMenu } from "@/components/settings-v2/team-access/TeamAccessMoreActionsMenu";
+import { TeamAccessOpenTasksDrawer } from "@/components/settings-v2/team-access/TeamAccessOpenTasksDrawer";
+import { TeamAccessRolesModal } from "@/components/settings-v2/team-access/TeamAccessRolesModal";
+import { TeamAccessSendMessageModal } from "@/components/settings-v2/team-access/TeamAccessSendMessageModal";
+import { TeamAccessSummaryCards } from "@/components/settings-v2/team-access/TeamAccessSummaryCards";
+import {
+  buildUnifiedTeamMembers,
+  countOpenCommitteeRoles,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
+import { Button } from "@/components/ui/Button";
+import {
+  claimOrganizationAccessAction,
+  removeTeamMemberAction,
+  updateTeamMemberAction,
+} from "@/lib/auth/actions";
+import type { OrganizationUser } from "@/types/auth";
+import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
+
+interface TeamAccessShellProps {
+  members: OrganizationUser[];
+  workspace: OrganizationWorkspaceData;
+  canManage: boolean;
+  showClaimBanner: boolean;
+  currentUserEmail: string | null;
+  siteOrigin: string;
+  canProvisionAccounts: boolean;
+  seatLimit?: number;
+}
+
+type DrawerTab = "overview" | "committees" | "permissions" | "activity";
+
+export function TeamAccessShell({
+  members,
+  workspace,
+  canManage,
+  showClaimBanner,
+  currentUserEmail,
+  canProvisionAccounts,
+  seatLimit = 18,
+}: TeamAccessShellProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const unifiedMembers = useMemo(
+    () => buildUnifiedTeamMembers(members, workspace),
+    [members, workspace],
+  );
+
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [accessFilter, setAccessFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [committeeFilter, setCommitteeFilter] = useState("");
+
+  const [selectedMember, setSelectedMember] = useState<UnifiedTeamMember | null>(null);
+  const [drawerTab, setDrawerTab] = useState<DrawerTab>("overview");
+  const [memberDrawerOpen, setMemberDrawerOpen] = useState(false);
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [rolesOpen, setRolesOpen] = useState(false);
+  const [createRoleOpen, setCreateRoleOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editMember, setEditMember] = useState<UnifiedTeamMember | null>(null);
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageMember, setMessageMember] = useState<UnifiedTeamMember | null>(null);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [tasksMember, setTasksMember] = useState<UnifiedTeamMember | null>(null);
+
+  const [committeeDetailOpen, setCommitteeDetailOpen] = useState(false);
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<string | null>(null);
+
+  const [moreActionsMember, setMoreActionsMember] = useState<UnifiedTeamMember | null>(null);
+  const [moreActionsAnchor, setMoreActionsAnchor] = useState<DOMRect | null>(null);
+
+  const activeCount = members.filter((member) => member.status === "active").length;
+  const pendingCount = members.filter((member) => member.status === "invited").length;
+  const openRoleCount = countOpenCommitteeRoles(workspace.committees);
+
+  const filteredMembers = useMemo(() => {
+    return unifiedMembers.filter((member) => {
+      const searchLower = search.toLowerCase();
+      const matchesSearch =
+        !search ||
+        member.displayName.toLowerCase().includes(searchLower) ||
+        member.email.toLowerCase().includes(searchLower);
+
+      const matchesRole = !roleFilter || member.roleLabel === roleFilter;
+      const matchesAccess = !accessFilter || member.accessLevel === accessFilter;
+      const matchesStatus = !statusFilter || member.status === statusFilter;
+      const matchesCommittee =
+        !committeeFilter ||
+        member.committees.some(
+          (assignment) => assignment.committee.id === committeeFilter,
+        );
+
+      return (
+        matchesSearch && matchesRole && matchesAccess && matchesStatus && matchesCommittee
+      );
+    });
+  }, [
+    unifiedMembers,
+    search,
+    roleFilter,
+    accessFilter,
+    statusFilter,
+    committeeFilter,
+  ]);
+
+  const selectedCommittee = selectedCommitteeId
+    ? workspace.committees.find((committee) => committee.id === selectedCommitteeId) ?? null
+    : null;
+
+  function openMemberDrawer(member: UnifiedTeamMember, tab: DrawerTab = "overview") {
+    setSelectedMember(member);
+    setDrawerTab(tab);
+    setMemberDrawerOpen(true);
+  }
+
+  function handleDeactivate(member: UnifiedTeamMember) {
+    startTransition(async () => {
+      await updateTeamMemberAction(member.id, {
+        status: member.status === "deactivated" ? "active" : "deactivated",
+      });
+      router.refresh();
+      setMemberDrawerOpen(false);
+    });
+  }
+
+  function handleRemove(member: UnifiedTeamMember) {
+    if (!window.confirm(`Remove ${member.displayName} from the team?`)) {
+      return;
+    }
+    startTransition(async () => {
+      await removeTeamMemberAction(member.id);
+      router.refresh();
+    });
+  }
+
+  function handleClaim() {
+    startTransition(async () => {
+      await claimOrganizationAccessAction();
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <SettingsV2PageHeader
+        title="Team & Access"
+        description="Manage members, roles, permissions, and committee responsibilities in one place."
+        actions={
+          canManage ? (
+            <>
+              <Button type="button" size="sm" onClick={() => setInviteOpen(true)}>
+                Invite member
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setRolesOpen(true)}
+              >
+                Manage roles & permissions
+              </Button>
+            </>
+          ) : null
+        }
+      />
+
+      {showClaimBanner && (
+        <div className="border border-amber-200 bg-amber-50/50 p-5">
+          <h3 className="font-display text-xl text-amber-950">Link your account</h3>
+          <p className="mt-1 text-sm text-amber-900">
+            This PTO workspace exists but has no signed-in users yet. Claim admin
+            access as <span className="font-medium">{currentUserEmail}</span> to
+            manage the team.
+          </p>
+          <Button
+            type="button"
+            className="mt-3"
+            disabled={isPending}
+            onClick={handleClaim}
+          >
+            Claim admin access
+          </Button>
+        </div>
+      )}
+
+      <TeamAccessSummaryCards
+        activeCount={activeCount}
+        seatLimit={seatLimit}
+        pendingCount={pendingCount}
+        roleCount={workspace.roles.length}
+        committeeCount={workspace.committees.length}
+        openRoleCount={openRoleCount}
+        onViewInvites={() => setStatusFilter("invited")}
+        onViewRoles={() => setRolesOpen(true)}
+      />
+
+      {canManage ? (
+        <OrganizationRosterImportBar
+          roleCount={workspace.roles.length}
+          committeeCount={workspace.committees.length}
+        />
+      ) : null}
+
+      <TeamAccessMemberTable
+        members={filteredMembers}
+        committees={workspace.committees}
+        search={search}
+        roleFilter={roleFilter}
+        accessFilter={accessFilter}
+        statusFilter={statusFilter}
+        committeeFilter={committeeFilter}
+        onSearchChange={setSearch}
+        onRoleFilterChange={setRoleFilter}
+        onAccessFilterChange={setAccessFilter}
+        onStatusFilterChange={setStatusFilter}
+        onCommitteeFilterChange={setCommitteeFilter}
+        onSelectMember={(member) => openMemberDrawer(member)}
+        onEditMember={(member) => {
+          setEditMember(member);
+          setEditOpen(true);
+        }}
+        onMoreActions={(member, anchor) => {
+          setMoreActionsMember(member);
+          setMoreActionsAnchor(anchor);
+        }}
+        canManage={canManage}
+      />
+
+      {canManage ? (
+        <div className="space-y-6">
+          <SettingsV2Card
+            title="Board roster structure"
+            description="Manage VP roles, committee chairs, and nested committees. Changes update approval routing and tasks."
+          >
+            <OrganizationRosterSection
+              roles={workspace.roles}
+              committees={workspace.committees}
+              showIntro={false}
+            />
+          </SettingsV2Card>
+
+          <SettingsV2Card
+            title="Responsibility matrix"
+            description="Default roles for communications, publishing, and approvals."
+          >
+            <ResponsibilityMatrixSection
+              entries={workspace.responsibilityMatrix}
+              roles={workspace.roles}
+              showIntro={false}
+            />
+          </SettingsV2Card>
+        </div>
+      ) : null}
+
+      <TeamAccessMemberDrawer
+        member={selectedMember}
+        open={memberDrawerOpen}
+        onClose={() => setMemberDrawerOpen(false)}
+        activeTab={drawerTab}
+        onTabChange={setDrawerTab}
+        onEdit={() => {
+          if (selectedMember) {
+            setEditMember(selectedMember);
+            setEditOpen(true);
+          }
+        }}
+        onSendMessage={() => {
+          if (selectedMember) {
+            setMessageMember(selectedMember);
+            setMessageOpen(true);
+          }
+        }}
+        onDeactivate={() => {
+          if (selectedMember) {
+            handleDeactivate(selectedMember);
+          }
+        }}
+        onViewTasks={() => {
+          if (selectedMember) {
+            setTasksMember(selectedMember);
+            setTasksOpen(true);
+          }
+        }}
+        onSelectCommittee={(committeeId) => {
+          setSelectedCommitteeId(committeeId);
+          setCommitteeDetailOpen(true);
+        }}
+        canManage={canManage}
+      />
+
+      <TeamAccessInviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        roles={workspace.roles}
+        committees={workspace.committees}
+        canProvisionAccounts={canProvisionAccounts}
+      />
+
+      <TeamAccessRolesModal
+        open={rolesOpen}
+        onClose={() => setRolesOpen(false)}
+        members={members}
+        workspace={workspace}
+        onCreateRole={() => {
+          setRolesOpen(false);
+          setCreateRoleOpen(true);
+        }}
+      />
+
+      <TeamAccessCreateRoleModal
+        open={createRoleOpen}
+        onClose={() => setCreateRoleOpen(false)}
+      />
+
+      <TeamAccessEditMemberModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        member={editMember}
+        roles={workspace.roles}
+        committees={workspace.committees}
+      />
+
+      <TeamAccessSendMessageModal
+        open={messageOpen}
+        onClose={() => setMessageOpen(false)}
+        member={messageMember}
+      />
+
+      <TeamAccessOpenTasksDrawer
+        open={tasksOpen}
+        onClose={() => setTasksOpen(false)}
+        member={tasksMember}
+      />
+
+      <TeamAccessCommitteeDetailDrawer
+        open={committeeDetailOpen}
+        onClose={() => setCommitteeDetailOpen(false)}
+        committee={selectedCommittee}
+        canManage={canManage}
+      />
+
+      <TeamAccessMoreActionsMenu
+        member={moreActionsMember}
+        anchor={moreActionsAnchor}
+        onClose={() => {
+          setMoreActionsMember(null);
+          setMoreActionsAnchor(null);
+        }}
+        onViewProfile={() => {
+          if (moreActionsMember) openMemberDrawer(moreActionsMember);
+        }}
+        onEdit={() => {
+          if (moreActionsMember) {
+            setEditMember(moreActionsMember);
+            setEditOpen(true);
+          }
+        }}
+        onAssignCommittee={() => {
+          if (moreActionsMember) openMemberDrawer(moreActionsMember, "committees");
+        }}
+        onViewTasks={() => {
+          if (moreActionsMember) {
+            setTasksMember(moreActionsMember);
+            setTasksOpen(true);
+          }
+        }}
+        onViewApprovals={() => {
+          if (moreActionsMember) {
+            window.location.href = "/approvals";
+          }
+        }}
+        onSendMessage={() => {
+          if (moreActionsMember) {
+            setMessageMember(moreActionsMember);
+            setMessageOpen(true);
+          }
+        }}
+        onDeactivate={() => {
+          if (moreActionsMember) handleDeactivate(moreActionsMember);
+        }}
+        onRemove={() => {
+          if (moreActionsMember) handleRemove(moreActionsMember);
+        }}
+      />
+    </div>
+  );
+}

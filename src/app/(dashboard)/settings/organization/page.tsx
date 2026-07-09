@@ -1,3 +1,4 @@
+import { BoardRosterHashRedirect } from "@/components/settings-v2/BoardRosterHashRedirect";
 import { OrganizationSettingsContent } from "@/components/settings-v2/OrganizationSettingsContent";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -30,9 +31,12 @@ export default async function OrganizationSettingsPage() {
   }
 
   return (
-    <OrganizationSettingsContent
-      organization={schoolProfile.organization}
-      brandAssets={schoolProfile.brandAssets}
-    />
+    <>
+      <BoardRosterHashRedirect />
+      <OrganizationSettingsContent
+        organization={schoolProfile.organization}
+        brandAssets={schoolProfile.brandAssets}
+      />
+    </>
   );
 }
