@@ -203,14 +203,7 @@ export function CommunicationsReplySection({
   }
 
   if (isSent) {
-    return (
-      <div className="border-t border-cos-border px-5 py-5">
-        <p className="text-xs font-semibold tracking-wide text-cos-muted uppercase">Sent reply</p>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-cos-text">
-          {displayBody}
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -47,10 +47,28 @@ function threadChannelDisplayLabel(thread: InboxThread): string {
   }
 }
 
-function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
-  const inboundMessages = messages.filter((message) => message.direction === "inbound");
+function sortTimelineMessages(messages: InboxMessage[]): InboxMessage[] {
+  return [...messages].sort((left, right) => {
+    const leftTime = Date.parse(left.sentAt ?? left.createdAt);
+    const rightTime = Date.parse(right.sentAt ?? right.createdAt);
+    return leftTime - rightTime;
+  });
+}
 
-  if (inboundMessages.length === 0) {
+function getTimelineMessages(messages: InboxMessage[]): InboxMessage[] {
+  return sortTimelineMessages(
+    messages.filter(
+      (message) =>
+        message.direction === "inbound" ||
+        (message.direction === "outbound" && message.status === "sent"),
+    ),
+  );
+}
+
+function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
+  const timelineMessages = getTimelineMessages(messages);
+
+  if (timelineMessages.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-cos-muted">
         No messages in this thread yet.
@@ -60,21 +78,36 @@ function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
 
   return (
     <ul className="flex flex-col gap-4" role="list">
-      {inboundMessages.map((message) => (
-        <li key={message.id} className="max-w-[85%]">
-          <div className="rounded-2xl rounded-bl-md bg-cos-bg px-4 py-3 text-sm leading-relaxed text-cos-text">
-            <p className="whitespace-pre-wrap">{message.body}</p>
-          </div>
-          {message.sentAt ? (
-            <time
-              className="mt-1.5 block px-1 text-xs text-cos-muted"
-              dateTime={message.sentAt}
+      {timelineMessages.map((message) => {
+        const isOutbound = message.direction === "outbound";
+
+        return (
+          <li key={message.id} className={cn("max-w-[85%]", isOutbound && "ml-auto")}>
+            <div
+              className={cn(
+                "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                isOutbound
+                  ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
+                  : "rounded-bl-md bg-cos-bg text-cos-text",
+              )}
             >
-              {formatMessageTime(message.sentAt)}
-            </time>
-          ) : null}
-        </li>
-      ))}
+              <p className="whitespace-pre-wrap">{message.body}</p>
+            </div>
+            {message.sentAt ? (
+              <time
+                className={cn(
+                  "mt-1.5 block px-1 text-xs text-cos-muted",
+                  isOutbound && "text-right",
+                )}
+                dateTime={message.sentAt}
+              >
+                {formatMessageTime(message.sentAt)}
+                {isOutbound ? " · Sent" : null}
+              </time>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }

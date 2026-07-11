@@ -3,6 +3,7 @@ import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 
 export type CommunicationsQueueFilter =
+  | "all"
   | "needs_reply"
   | "unread"
   | "waiting_on_ai"
@@ -152,6 +153,8 @@ export function filterThreadsForCommunicationsHub(input: {
     const state = classifyThreadQueueState(thread, messages);
 
     switch (input.queueFilter) {
+      case "all":
+        return true;
       case "needs_reply":
         return state.needsReply;
       case "unread":
@@ -166,6 +169,13 @@ export function filterThreadsForCommunicationsHub(input: {
         return state.completed;
     }
   });
+}
+
+export function pickDefaultQueueFilter(
+  totalThreads: number,
+  counts: CommunicationsQueueCounts,
+): "all" | "needs_reply" {
+  return counts.needsReply >= totalThreads ? "needs_reply" : "all";
 }
 
 export function deriveAiConfidenceScore(
