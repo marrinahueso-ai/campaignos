@@ -15,6 +15,8 @@ interface CommunicationsTopBarProps {
   connection: InboxConnectionStatus;
   onAiQueueClick: () => void;
   aiQueueActive: boolean;
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
 }
 
 function formatRelativeUpdated(iso: string | null): string {
@@ -103,6 +105,8 @@ export function CommunicationsTopBar({
   connection,
   onAiQueueClick,
   aiQueueActive,
+  hasActiveFilters,
+  onClearFilters,
 }: CommunicationsTopBarProps) {
   return (
     <div className="flex flex-col gap-4 border-b border-cos-border pb-4 lg:flex-row lg:items-center lg:justify-between">
@@ -152,9 +156,11 @@ export function CommunicationsTopBar({
           onClick={onAiQueueClick}
           className={cn(
             "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
-            aiQueueActive || queueCounts.waitingOnAi > 0
+            aiQueueActive
               ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-              : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark",
+              : queueCounts.waitingOnAi > 0
+                ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
+                : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark",
           )}
           aria-label={`AI queue: ${queueCounts.waitingOnAi} waiting`}
           aria-pressed={aiQueueActive}
@@ -167,6 +173,16 @@ export function CommunicationsTopBar({
             </span>
           ) : null}
         </button>
+
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="inline-flex h-10 items-center rounded-full border border-cos-border bg-cos-card px-4 text-sm font-medium text-cos-text transition-colors hover:border-cos-dark"
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <MetaConnectionBadge connection={connection} />

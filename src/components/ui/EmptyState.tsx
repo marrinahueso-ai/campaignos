@@ -8,7 +8,8 @@ interface EmptyStateProps {
   description: string;
   action?: {
     label: string;
-    href: string;
+    href?: string;
+    onClick?: () => void;
   };
   className?: string;
 }
@@ -32,14 +33,24 @@ export function EmptyState({
       </div>
       <p className="font-display mt-4 text-lg text-cos-text">{title}</p>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-cos-muted">{description}</p>
-      {action && (
-        <Link
-          href={action.href}
-          className="mt-5 text-xs tracking-[0.14em] text-cos-text uppercase transition-colors hover:text-cos-muted"
-        >
-          {action.label}
-        </Link>
-      )}
+      {action ? (
+        action.onClick ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="mt-5 text-xs tracking-[0.14em] text-cos-text uppercase transition-colors hover:text-cos-muted"
+          >
+            {action.label}
+          </button>
+        ) : action.href ? (
+          <Link
+            href={action.href}
+            className="mt-5 text-xs tracking-[0.14em] text-cos-text uppercase transition-colors hover:text-cos-muted"
+          >
+            {action.label}
+          </Link>
+        ) : null
+      ) : null}
     </div>
   );
 }

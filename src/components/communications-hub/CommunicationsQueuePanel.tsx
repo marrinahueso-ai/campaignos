@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils/cn";
 const QUEUE_ITEMS: Array<{
   id: CommunicationsQueueFilter;
   label: string;
-  countKey: keyof CommunicationsQueueCounts;
+  countKey?: keyof CommunicationsQueueCounts;
   shell?: boolean;
 }> = [
+  { id: "all", label: "All conversations" },
   { id: "needs_reply", label: "Needs Reply", countKey: "needsReply" },
   { id: "unread", label: "Unread", countKey: "unread" },
   { id: "waiting_on_ai", label: "Waiting on AI", countKey: "waitingOnAi" },
@@ -77,6 +78,7 @@ function threadStatusLabel(
 
 interface CommunicationsQueuePanelProps {
   threads: InboxThread[];
+  totalThreadCount: number;
   messagesByThreadId: Record<string, InboxMessage[]>;
   selectedThreadId: string | null;
   queueFilter: CommunicationsQueueFilter;
@@ -88,6 +90,7 @@ interface CommunicationsQueuePanelProps {
 
 export function CommunicationsQueuePanel({
   threads,
+  totalThreadCount,
   messagesByThreadId,
   selectedThreadId,
   queueFilter,
@@ -106,14 +109,16 @@ export function CommunicationsQueuePanel({
       <div className="border-b border-cos-border p-3">
         <ul className="space-y-0.5" role="list">
           {QUEUE_ITEMS.map((item) => {
-            const count = queueCounts[item.countKey];
+            const count = item.countKey ? queueCounts[item.countKey] : totalThreadCount;
             const active = queueFilter === item.id;
 
             return (
               <li key={item.id}>
                 <button
                   type="button"
-                  onClick={() => onQueueFilterChange(item.id)}
+                  onClick={() =>
+                    onQueueFilterChange(active && item.id !== "all" ? "all" : item.id)
+                  }
                   disabled={item.shell}
                   title={item.shell ? "Assignment tracking coming soon" : undefined}
                   className={cn(

@@ -154,7 +154,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     channelFilter !== "all" ||
-    queueFilter !== "all";
+    (queueFilter !== "all" && queueFilter !== defaultQueueFilter);
 
   function handleQueueFilterChange(filter: CommunicationsQueueFilter) {
     setQueueFilter(filter);

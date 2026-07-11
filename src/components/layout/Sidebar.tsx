@@ -24,6 +24,7 @@ import {
   subscribeToLocationHash,
 } from "@/lib/navigation/location-hash";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
+import { dispatchCommunicationsHubReset } from "@/lib/communications-hub/events";
 import { cn } from "@/lib/utils/cn";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
@@ -378,6 +379,9 @@ export function Sidebar({
               onClick={(event) => {
                 if (isCampaignBuilder) {
                   handleCampaignBuilderClick(event, linkHref);
+                }
+                if (href === "/communications") {
+                  dispatchCommunicationsHubReset();
                 }
                 onNavigate?.();
               }}
