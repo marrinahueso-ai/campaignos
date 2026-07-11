@@ -84,6 +84,8 @@ interface RosterPersonSeed {
     roleOnCommittee: MemberCommitteeAssignment["roleOnCommittee"];
   };
   organizationUser: OrganizationUser | null;
+  rosterCampaignRole?: CampaignRole | null;
+  rosterCampaignRolePriority?: number;
 }
 
 interface PersonAccumulator {
@@ -99,6 +101,8 @@ interface PersonAccumulator {
   vpPortfolioName: string | null;
   oversightRoleIds: Set<string>;
   organizationUser: OrganizationUser | null;
+  rosterCampaignRole: CampaignRole | null;
+  rosterCampaignRolePriority: number;
   committeeAssignments: Map<
     string,
     {
@@ -203,6 +207,8 @@ function mergePersonSeed(
     vpPortfolioName: seed.vpPortfolioName,
     oversightRoleIds: new Set(),
     organizationUser: seed.organizationUser,
+    rosterCampaignRole: null,
+    rosterCampaignRolePriority: 0,
     committeeAssignments: new Map(),
   };
 
@@ -260,6 +266,17 @@ function mergePersonSeed(
         committee,
         roleOnCommittee,
       });
+    }
+  }
+
+  if (seed.rosterCampaignRole) {
+    const priority = seed.rosterCampaignRolePriority ?? 0;
+    if (
+      !person.rosterCampaignRole ||
+      priority >= person.rosterCampaignRolePriority
+    ) {
+      person.rosterCampaignRole = seed.rosterCampaignRole;
+      person.rosterCampaignRolePriority = priority;
     }
   }
 
@@ -358,12 +375,17 @@ function resolveOrgRoleLabel(input: {
 
 function resolveAccessLevel(
   organizationUser: OrganizationUser | null,
+  rosterCampaignRole: CampaignRole | null,
   isVp: boolean,
   isPresident: boolean,
   committeeAssignments: MemberCommitteeAssignment[],
 ): CampaignRole {
   if (organizationUser) {
     return organizationUser.campaignRole;
+  }
+
+  if (rosterCampaignRole) {
+    return rosterCampaignRole;
   }
 
   if (isPresident) {
@@ -576,6 +598,8 @@ function collectRosterPeople(
       vpPortfolioId: rosterMember.organizationRoleId,
       vpPortfolioName: rosterMember.roleName,
       organizationUser: null,
+      rosterCampaignRole: rosterMember.campaignRole,
+      rosterCampaignRolePriority: 2,
     });
   }
 
@@ -602,6 +626,8 @@ function collectRosterPeople(
       vpPortfolioName: isVp || isPresident ? role.name : null,
       oversightRoleId: role.id,
       organizationUser: null,
+      rosterCampaignRole: role.campaignRole,
+      rosterCampaignRolePriority: 3,
     });
   }
 
@@ -629,6 +655,8 @@ function collectRosterPeople(
           committee,
           roleOnCommittee: resolveCommitteeRoleOnIndex(index),
         },
+        rosterCampaignRole: committee.campaignRole,
+        rosterCampaignRolePriority: 1,
       });
     });
   }
@@ -686,6 +714,7 @@ function finalizeUnifiedMember(
 
   const accessLevel = resolveAccessLevel(
     person.organizationUser,
+    person.rosterCampaignRole,
     person.isVp,
     person.isPresident,
     directCommitteeAssignments,

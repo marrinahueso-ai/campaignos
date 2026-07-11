@@ -187,7 +187,7 @@ export function SettingsOverviewContent({ data }: SettingsOverviewContentProps) 
               { label: "Manage permissions", href: "/settings/team-access" },
               { label: "Add AI source", href: "/settings/inbox-ai" },
               { label: "Create new playbook", href: "/settings/playbooks-milestones" },
-              { label: "Adjust posting schedule", href: "/settings/posting-schedule" },
+              { label: "Adjust posting schedule", href: "/settings/organization" },
               { label: "View system status", href: "/settings/advanced" },
             ].map((action) => (
               <li key={action.label}>

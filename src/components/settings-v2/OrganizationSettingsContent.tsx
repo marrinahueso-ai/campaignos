@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { PostingPreferencesPanel } from "@/components/settings/PostingPreferencesPanel";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
+import { getPostingPreferencesSettingsData } from "@/lib/organizations/posting-preferences-actions";
 import type { BrandAssets, Organization } from "@/types";
 
 interface OrganizationSettingsContentProps {
@@ -23,6 +25,8 @@ export async function OrganizationSettingsContent({
   organization,
   brandAssets,
 }: OrganizationSettingsContentProps) {
+  const postingPreferences = await getPostingPreferencesSettingsData();
+
   return (
     <div className="space-y-6">
       <SettingsV2PageHeader
@@ -82,11 +86,6 @@ export async function OrganizationSettingsContent({
         <SettingsV2Card
           title="Preferences"
           description="Language and regional defaults."
-          actions={
-            <Button variant="secondary" size="sm" href="/settings/posting-schedule">
-              Edit preferences
-            </Button>
-          }
         >
           <DetailRow label="Language" value="English (US)" />
           <DetailRow label="Timezone" value={organization.timezone} />
@@ -116,6 +115,20 @@ export async function OrganizationSettingsContent({
           </p>
         </SettingsV2Card>
       </div>
+
+      {postingPreferences ? (
+        <PostingPreferencesPanel initialInput={postingPreferences.input} />
+      ) : (
+        <SettingsV2Card title="Timezone & posting windows">
+          <p className="text-sm text-cos-muted">
+            Complete School Setup so Hey Ralli knows which organization timezone
+            and posting windows to use.
+          </p>
+          <Button className="mt-4" href="/settings/school-setup">
+            Go to School Setup
+          </Button>
+        </SettingsV2Card>
+      )}
     </div>
   );
 }

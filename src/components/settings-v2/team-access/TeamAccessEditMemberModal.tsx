@@ -12,7 +12,11 @@ import {
 } from "@/components/settings-v2/team-access/member-edit-utils";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
 import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
-import { updateTeamMemberAction, setTeamMemberAccessLevelAction } from "@/lib/auth/actions";
+import {
+  setRosterMemberAccessLevelAction,
+  setTeamMemberAccessLevelAction,
+  updateTeamMemberAction,
+} from "@/lib/auth/actions";
 import {
   CAMPAIGN_ROLES,
   campaignRoleLabel,
@@ -103,14 +107,18 @@ export function TeamAccessEditMemberModal({
       if (
         activeEditContext.canEditAccess &&
         !activeMember.raw &&
-        email &&
         source.kind !== "org_user"
       ) {
-        const accessResult = await setTeamMemberAccessLevelAction({
-          email,
-          organizationRoleId: organizationRoleId || activeMember.organizationRoleId,
-          campaignRole,
-        });
+        const accessResult = email
+          ? await setTeamMemberAccessLevelAction({
+              email,
+              organizationRoleId: organizationRoleId || activeMember.organizationRoleId,
+              campaignRole,
+            })
+          : await setRosterMemberAccessLevelAction({
+              source,
+              campaignRole,
+            });
         if (accessResult.error) {
           setError(accessResult.error);
           return;

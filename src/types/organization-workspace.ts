@@ -1,3 +1,4 @@
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 export type ResponsibilityType =
@@ -35,6 +36,7 @@ export interface OrganizationRole {
   roleKind: OrganizationRoleKind | null;
   sortOrder: number;
   archivedAt: string | null;
+  campaignRole: CampaignRole | null;
   createdAt: string;
 }
 
@@ -50,6 +52,7 @@ export interface OrganizationRoleRow {
   role_kind: OrganizationRoleKind | null;
   sort_order: number;
   archived_at: string | null;
+  campaign_role: CampaignRole | null;
   created_at: string;
 }
 
@@ -61,6 +64,7 @@ export interface OrganizationMember {
   organizationRoleId: string | null;
   roleName: string | null;
   active: boolean;
+  campaignRole: CampaignRole | null;
   createdAt: string;
 }
 
@@ -71,6 +75,7 @@ export interface OrganizationMemberRow {
   email: string;
   organization_role_id: string | null;
   active: boolean;
+  campaign_role: CampaignRole | null;
   created_at: string;
 }
 
@@ -126,6 +131,7 @@ export interface OrganizationCommittee {
   eventMatchKey: string | null;
   sortOrder: number;
   archivedAt: string | null;
+  campaignRole: CampaignRole | null;
   createdAt: string;
 }
 
@@ -142,6 +148,7 @@ export interface OrganizationCommitteeRow {
   event_match_key: string | null;
   sort_order: number;
   archived_at: string | null;
+  campaign_role: CampaignRole | null;
   created_at: string;
 }
 

@@ -219,6 +219,7 @@ export function buildFallbackOrganizationWorkspaceData(): OrganizationWorkspaceD
       roleKind: role.roleKind,
       sortOrder: role.sortOrder,
       archivedAt: null,
+      campaignRole: null,
       createdAt: new Date().toISOString(),
     }),
   );
@@ -266,6 +267,7 @@ export function buildFallbackOrganizationWorkspaceData(): OrganizationWorkspaceD
       eventMatchKey: committee.value,
       sortOrder: (index + 1) * 10,
       archivedAt: null,
+      campaignRole: null,
       createdAt: new Date().toISOString(),
     };
   });

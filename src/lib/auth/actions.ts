@@ -28,6 +28,14 @@ import {
   resolveAuthSiteOrigin,
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
+import type { MemberEditSource } from "@/components/settings-v2/team-access/member-edit-utils";
+import {
+  updateOrganizationCommittee,
+} from "@/lib/organization-workspace/committee-mutations";
+import {
+  updateOrganizationMember,
+  updateOrganizationRole,
+} from "@/lib/organization-workspace/mutations";
 import {
   clearPendingFoundingAccessCookie,
   isFoundingAccessCodeRequired,
@@ -492,6 +500,65 @@ export async function setTeamMemberAccessLevelAction(input: {
 
   if ("error" in result) {
     return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return { error: null, success: true };
+}
+
+export async function setRosterMemberAccessLevelAction(input: {
+  source: MemberEditSource;
+  campaignRole: CampaignRole;
+}): Promise<AuthActionState> {
+  const currentRole = await getCurrentCampaignRole();
+
+  if (!canManageTeam(currentRole)) {
+    return { error: "You do not have permission to update team members.", success: false };
+  }
+
+  if (!isCampaignRole(input.campaignRole)) {
+    return { error: "Invalid access role.", success: false };
+  }
+
+  const { source } = input;
+
+  if (source.kind === "org_user") {
+    const result = await updateOrganizationMembership(source.membershipId, {
+      campaignRole: input.campaignRole,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+    revalidatePath("/settings/team-access");
+    return { error: null, success: true };
+  }
+
+  if (source.kind === "org_role") {
+    const result = await updateOrganizationRole(source.roleId, {
+      campaignRole: input.campaignRole,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+  } else if (source.kind === "org_member") {
+    if (!source.memberId) {
+      return { error: "Member record not found.", success: false };
+    }
+    const result = await updateOrganizationMember(source.memberId, {
+      campaignRole: input.campaignRole,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+  } else if (source.kind === "committee") {
+    const result = await updateOrganizationCommittee(source.committeeId, {
+      campaignRole: input.campaignRole,
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+  } else {
+    return { error: "Unable to update access level for this member.", success: false };
   }
 
   revalidatePath("/settings/team-access");

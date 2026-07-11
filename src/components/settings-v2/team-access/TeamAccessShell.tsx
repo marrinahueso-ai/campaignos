@@ -23,12 +23,14 @@ import {
   accessLevelLabel,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
+import { resolveMemberEditContext } from "@/components/settings-v2/team-access/member-edit-utils";
 import { Button } from "@/components/ui/Button";
 import {
   cancelTeamInviteAction,
   claimOrganizationAccessAction,
   removeTeamMemberAction,
   resendTeamInviteAction,
+  setRosterMemberAccessLevelAction,
   setTeamMemberAccessLevelAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
@@ -283,17 +285,18 @@ export function TeamAccessShell({
     member: UnifiedTeamMember,
     campaignRole: CampaignRole,
   ): Promise<string | null> {
-    if (member.emailMissing || !member.email.trim()) {
-      return "Add an email address before you can set access level.";
-    }
-
     const result = member.raw
       ? await updateTeamMemberAction(member.raw.id, { campaignRole })
-      : await setTeamMemberAccessLevelAction({
-          email: member.email,
-          organizationRoleId: member.organizationRoleId,
-          campaignRole,
-        });
+      : member.email.trim()
+        ? await setTeamMemberAccessLevelAction({
+            email: member.email,
+            organizationRoleId: member.organizationRoleId,
+            campaignRole,
+          })
+        : await setRosterMemberAccessLevelAction({
+            source: resolveMemberEditContext(member, workspace).source,
+            campaignRole,
+          });
 
     if (result.error) {
       return result.error;
@@ -306,8 +309,8 @@ export function TeamAccessShell({
             ...current,
             accessLevel: campaignRole,
             accessLabel: accessLevelLabel(campaignRole),
-            status: current.raw?.status ?? "invited",
-            isRosterOnly: false,
+            status: current.raw?.status ?? current.status,
+            isRosterOnly: current.raw ? false : current.isRosterOnly,
             raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
           }
         : current,

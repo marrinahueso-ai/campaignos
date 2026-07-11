@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { OrganizationRoleKind } from "@/types/organization-workspace";
 
@@ -10,6 +11,7 @@ export interface OrganizationRoleInput {
   contactName?: string | null;
   roleKind?: OrganizationRoleKind | null;
   sortOrder?: number;
+  campaignRole?: CampaignRole | null;
 }
 
 function normalizeEmail(value: string | null | undefined): string | null {
@@ -120,6 +122,10 @@ export async function updateOrganizationRole(
     updates.sort_order = input.sortOrder;
   }
 
+  if (input.campaignRole !== undefined) {
+    updates.campaign_role = input.campaignRole;
+  }
+
   if (Object.keys(updates).length === 0) {
     return { success: true };
   }
@@ -213,6 +219,7 @@ export async function updateOrganizationMember(
     email?: string;
     organizationRoleId?: string | null;
     active?: boolean;
+    campaignRole?: CampaignRole | null;
   },
 ): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
@@ -240,6 +247,10 @@ export async function updateOrganizationMember(
 
   if (input.active !== undefined) {
     updates.active = input.active;
+  }
+
+  if (input.campaignRole !== undefined) {
+    updates.campaign_role = input.campaignRole;
   }
 
   if (Object.keys(updates).length === 0) {

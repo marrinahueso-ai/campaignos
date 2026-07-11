@@ -38,11 +38,6 @@ export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
     description: "Sources and FAQ content",
   },
   {
-    href: "/settings/posting-schedule",
-    label: "Posting Schedule",
-    description: "Best times and posting windows",
-  },
-  {
     href: "/settings/playbooks-milestones",
     label: "Playbooks",
     description: "Communication playbooks",
@@ -77,7 +72,7 @@ export const SETTINGS_TAB_REDIRECTS: Record<string, string> = {
   "inbox-ai": "/settings/inbox-ai",
   "inbox-ai-sources": "/settings/inbox-ai",
   playbooks: "/settings/playbooks-milestones",
-  "posting-schedule": "/settings/posting-schedule",
+  "posting-schedule": "/settings/organization",
   "school-setup": "/settings/school-setup",
   billing: "/settings/billing-plan",
   advanced: "/settings/advanced",

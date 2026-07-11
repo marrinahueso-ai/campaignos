@@ -21,6 +21,7 @@ export function mapOrganizationCommitteeRow(
     eventMatchKey: row.event_match_key,
     sortOrder: row.sort_order,
     archivedAt: row.archived_at ?? null,
+    campaignRole: row.campaign_role ?? null,
     createdAt: row.created_at,
   };
 }

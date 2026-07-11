@@ -27,6 +27,7 @@ import {
   updateOrganizationRole,
   updateResponsibilityMatrixEntry,
 } from "@/lib/organization-workspace/mutations";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 const ORGANIZATION_PATH = "/settings/organization";
@@ -99,6 +100,7 @@ export async function updateOrganizationRoleAction(
     contactPhone?: string | null;
     contactName?: string | null;
     roleKind?: "president" | "vp" | "other" | null;
+    campaignRole?: CampaignRole | null;
   },
 ): Promise<OrganizationActionState> {
   const org = await requireOrganizationId();
@@ -171,6 +173,7 @@ export async function updateOrganizationMemberAction(
     email?: string;
     organizationRoleId?: string | null;
     active?: boolean;
+    campaignRole?: CampaignRole | null;
   },
 ): Promise<OrganizationActionState> {
   const org = await requireOrganizationId();
@@ -352,6 +355,7 @@ export async function updateOrganizationCommitteeAction(
     contactName?: string | null;
     communicationStrategy?: CommunicationStrategy;
     playbookSlug?: string | null;
+    campaignRole?: CampaignRole | null;
   },
 ): Promise<OrganizationActionState> {
   const org = await requireOrganizationId();

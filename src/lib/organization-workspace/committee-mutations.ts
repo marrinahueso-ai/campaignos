@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { OrganizationRoleKind } from "@/types/organization-workspace";
 import type { ParsedRosterRole } from "@/lib/organization-workspace/parse-roster";
@@ -13,6 +14,7 @@ export interface OrganizationCommitteeInput {
   playbookSlug?: string | null;
   eventMatchKey?: string | null;
   sortOrder?: number;
+  campaignRole?: CampaignRole | null;
 }
 
 function normalizeName(value: string): string {
@@ -138,6 +140,10 @@ export async function updateOrganizationCommittee(
 
   if (input.sortOrder !== undefined) {
     updates.sort_order = input.sortOrder;
+  }
+
+  if (input.campaignRole !== undefined) {
+    updates.campaign_role = input.campaignRole;
   }
 
   if (Object.keys(updates).length === 0) {

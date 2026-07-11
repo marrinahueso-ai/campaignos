@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import {
   Download,
   ExternalLink,
@@ -20,18 +20,42 @@ interface FileRowActionsProps {
   compact?: boolean;
 }
 
+const MENU_MIN_WIDTH = 160;
+
 export function FileRowActions({ file, onEdit, compact = false }: FileRowActionsProps) {
   const router = useRouter();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
   const [pending, startTransition] = useTransition();
   const [downloadNote, setDownloadNote] = useState<string | null>(null);
+  const [downloadNoteAnchor, setDownloadNoteAnchor] = useState<DOMRect | null>(null);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    setMenuAnchor(null);
+  }
+
+  function toggleMenu() {
+    if (menuOpen) {
+      closeMenu();
+      return;
+    }
+
+    const rect = menuButtonRef.current?.getBoundingClientRect() ?? null;
+    setMenuAnchor(rect);
+    setMenuOpen(true);
+  }
 
   async function handlePdfDownload() {
     setDownloadNote(null);
+    setDownloadNoteAnchor(null);
     const response = await fetch(`/api/files/${file.id}/download?format=pdf`);
 
     if (!response.ok) {
       setDownloadNote("Unable to download file.");
+      setDownloadNoteAnchor(downloadButtonRef.current?.getBoundingClientRect() ?? null);
       return;
     }
 
@@ -39,10 +63,12 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
     const fallbackReason = response.headers.get("X-Download-Fallback-Reason");
     if (fallback === "true" && fallbackReason) {
       setDownloadNote(fallbackReason);
+      setDownloadNoteAnchor(downloadButtonRef.current?.getBoundingClientRect() ?? null);
     } else if (!canConvertToPdf(file.fileType)) {
       const message = pdfFallbackMessage(file.fileType);
       if (message) {
         setDownloadNote(message);
+        setDownloadNoteAnchor(downloadButtonRef.current?.getBoundingClientRect() ?? null);
       }
     }
 
@@ -70,7 +96,7 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
         window.alert(result.error ?? "Unable to remove file.");
         return;
       }
-      setMenuOpen(false);
+      closeMenu();
       router.refresh();
     });
   }
@@ -86,6 +112,7 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
   return (
     <div className={cn("relative flex items-center gap-1", compact && "justify-end")}>
       <button
+        ref={downloadButtonRef}
         type="button"
         onClick={handlePdfDownload}
         className="p-1.5 text-cos-muted transition-colors hover:text-cos-text"
@@ -96,28 +123,38 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
       </button>
 
       <button
+        ref={menuButtonRef}
         type="button"
-        onClick={() => setMenuOpen((open) => !open)}
+        onClick={toggleMenu}
         className="p-1.5 text-cos-muted transition-colors hover:text-cos-text"
         aria-label="More actions"
         aria-expanded={menuOpen}
+        aria-haspopup="menu"
       >
         <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
       </button>
 
-      {menuOpen && (
+      {menuOpen && menuAnchor && (
         <>
           <button
             type="button"
-            className="fixed inset-0 z-10 cursor-default"
+            className="fixed inset-0 z-40 cursor-default"
             aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           />
-          <div className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] border border-cos-border bg-cos-card py-1 shadow-sm">
+          <div
+            role="menu"
+            className="fixed z-50 min-w-[10rem] border border-cos-border bg-cos-card py-1 shadow-sm"
+            style={{
+              top: menuAnchor.bottom + 4,
+              left: Math.max(8, menuAnchor.right - MENU_MIN_WIDTH),
+            }}
+          >
             <button
               type="button"
+              role="menuitem"
               onClick={() => {
-                setMenuOpen(false);
+                closeMenu();
                 handleView();
               }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
@@ -128,8 +165,9 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
             {onEdit && (
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => {
-                  setMenuOpen(false);
+                  closeMenu();
                   onEdit(file);
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
@@ -140,6 +178,7 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
             )}
             <button
               type="button"
+              role="menuitem"
               onClick={handleDelete}
               disabled={pending}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-error hover:bg-cos-error-bg"
@@ -151,8 +190,14 @@ export function FileRowActions({ file, onEdit, compact = false }: FileRowActions
         </>
       )}
 
-      {downloadNote && (
-        <p className="absolute right-0 top-full z-30 mt-2 max-w-xs border border-cos-border bg-cos-card px-2 py-1 text-[10px] text-cos-muted shadow-sm">
+      {downloadNote && downloadNoteAnchor && (
+        <p
+          className="fixed z-50 max-w-xs border border-cos-border bg-cos-card px-2 py-1 text-[10px] text-cos-muted shadow-sm"
+          style={{
+            top: downloadNoteAnchor.bottom + 8,
+            left: Math.max(8, downloadNoteAnchor.right - 240),
+          }}
+        >
           {downloadNote}
         </p>
       )}
