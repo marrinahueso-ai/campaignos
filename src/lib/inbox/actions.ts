@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateInboxRoutes } from "@/lib/inbox/revalidate-paths";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
@@ -77,7 +78,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
 
   if (!result.ok && result.error) {
     const subscribeNote = subscribe.error ? ` Webhook subscribe: ${subscribe.error}` : "";
-    revalidatePath("/inbox");
+    revalidateInboxRoutes();
     revalidatePath("/settings/meta");
     return {
       success: false,
@@ -88,7 +89,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
     };
   }
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return {
     success: true,
@@ -119,7 +120,7 @@ export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult>
     return { success: false, error: subscribe.error };
   }
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return { success: true };
 }
@@ -161,7 +162,7 @@ export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenSc
     enableSync: true,
   });
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
 
   return {
@@ -237,7 +238,7 @@ export async function generateInboxAiDraftAction(input: {
     forceRegenerate: input.forceRegenerate,
   });
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return {
     success: result.success,
@@ -302,7 +303,7 @@ export async function approveInboxReplyAction(input: {
     return { success: false, error: "Could not save approved reply." };
   }
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return { success: true, status: "approved" };
 }
@@ -448,7 +449,7 @@ export async function sendInboxReplyAction(input: {
     .eq("id", thread.id)
     .eq("organization_id", access.organizationId);
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return { success: true, status: "sent" };
 }
@@ -534,7 +535,7 @@ export async function repostTaggedPostAction(input: {
     .eq("id", thread.id)
     .eq("organization_id", access.organizationId);
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return { success: true, status: "sent" };
 }
@@ -574,6 +575,6 @@ export async function markInboxThreadReadAction(input: {
     return { success: false, error: "Could not mark thread as read." };
   }
 
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
   return { success: true };
 }

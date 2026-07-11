@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidateInboxRoutes } from "@/lib/inbox/revalidate-paths";
 import {
   saveInboxAiSourcesSettings,
   validateInboxAiSourcesInput,
@@ -95,7 +96,7 @@ export async function saveInboxAiSourcesAction(
   revalidatePath("/settings/inbox-ai-sources");
   revalidatePath("/settings/inbox-ai");
   revalidatePath("/settings/ai-brain");
-  revalidatePath("/inbox");
+  revalidateInboxRoutes();
 
   const persistedCustomSources = await getCustomInboxAiSources(organization.id);
   const savedCustomSources = persistedCustomSources.map((source) => ({

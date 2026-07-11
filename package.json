@@ -9,6 +9,7 @@
     "lint": "eslint src",
     "test:campaign-builder-v2": "node --experimental-strip-types --test 'src/lib/campaign-builder-v2/__tests__/*.test.ts'",
     "test:approvals-scheduling": "node --experimental-strip-types --test 'src/lib/approvals-scheduling/__tests__/*.test.ts'",
+    "test:inbox-queue": "node scripts/test-inbox-queue-utils.mjs",
     "clean": "bash scripts/clean.sh",
     "dev:clean": "npm run clean && npm run dev",
     "verify": "bash scripts/verify.sh",

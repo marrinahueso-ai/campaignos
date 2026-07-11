@@ -1,12 +1,9 @@
-import { InboxHub } from "@/components/inbox/InboxHub";
-import { getInboxPageData } from "@/lib/inbox/queries";
+import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Inbox",
+  title: "Communications Hub",
 };
 
-export default async function InboxPage() {
-  const data = await getInboxPageData();
-
-  return <InboxHub data={data} />;
+export default function InboxRedirectPage() {
+  redirect("/communications");
 }

@@ -169,6 +169,10 @@ function isCampaignsActive(pathname: string, hash: string): boolean {
   return pathname.startsWith("/events");
 }
 
+function isCommunicationsHubActive(pathname: string): boolean {
+  return pathname === "/communications" || pathname === "/inbox";
+}
+
 const navItems: {
   label: string;
   href: string;
@@ -198,7 +202,7 @@ const navItems: {
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Files", href: "/files", icon: FolderOpen },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
-  { label: "Inbox", href: "/inbox", icon: Inbox },
+  { label: "Communications Hub", href: "/communications", icon: Inbox, isActive: isCommunicationsHubActive },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Insights", href: "/insights", icon: BarChart3 },
 ];
@@ -362,7 +366,7 @@ export function Sidebar({
             : pathname === href ||
               (href !== "/dashboard" && pathname.startsWith(href));
           const showApprovalBadges = href === "/approvals";
-          const showInboxBadge = href === "/inbox";
+          const showInboxBadge = href === "/communications";
           const isCampaignBuilder = label === "Create with AI";
 
           return (
