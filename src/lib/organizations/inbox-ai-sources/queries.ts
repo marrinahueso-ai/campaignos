@@ -1,4 +1,10 @@
+import {
+  buildPresetInboxAiSourcesFromOrganization,
+  mergeOrderedInboxAiSources,
+  presetSourcesToOrdered,
+} from "@/lib/organizations/inbox-ai-sources/preset-sources";
 import { createClient } from "@/lib/supabase/server";
+import { getOrganizationById } from "@/lib/organizations/queries";
 import type {
   InboxAiSourcesSettingsInput,
   OrganizationInboxAiSource,
@@ -111,6 +117,18 @@ export async function getInboxAiSourcesSettings(
 export async function loadOrderedInboxAiSourcesForOrganization(
   organizationId: string,
 ): Promise<OrderedInboxAiSource[]> {
-  const customSources = await getCustomInboxAiSources(organizationId);
-  return buildOrderedInboxAiSources({ customSources });
+  const [organization, customSources] = await Promise.all([
+    getOrganizationById(organizationId),
+    getCustomInboxAiSources(organizationId),
+  ]);
+
+  const customOrdered = buildOrderedInboxAiSources({ customSources });
+  const presetOrdered = organization
+    ? presetSourcesToOrdered(buildPresetInboxAiSourcesFromOrganization(organization))
+    : [];
+
+  return mergeOrderedInboxAiSources({
+    presetSources: presetOrdered,
+    customSources: customOrdered,
+  });
 }

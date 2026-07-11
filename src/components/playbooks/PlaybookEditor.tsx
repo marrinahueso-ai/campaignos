@@ -349,7 +349,7 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
           )}
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             disabled={isDeleting || isPending}
             onClick={handleDeletePlaybook}
           >

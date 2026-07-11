@@ -24,6 +24,9 @@ import {
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
 import type { CommunicationPlaybook } from "@/types/playbooks";
 
+const SYSTEM_PLAYBOOK_DELETE_TOOLTIP =
+  "System playbooks cannot be deleted. Duplicate to create your own copy.";
+
 interface PlaybookListProps {
   playbooks: CommunicationPlaybook[];
 }
@@ -152,26 +155,33 @@ export function PlaybookList({ playbooks }: PlaybookListProps) {
                 Duplicate
               </Button>
               {!playbook.isSystem && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleArchive(playbook.id, playbook.name)}
-                  >
-                    <Archive className="h-3.5 w-3.5" />
-                    Archive
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleDelete(playbook)}
-                  >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => handleArchive(playbook.id, playbook.name)}
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  Archive
+                </Button>
+              )}
+              {playbook.isSystem ? (
+                <span title={SYSTEM_PLAYBOOK_DELETE_TOOLTIP}>
+                  <Button variant="secondary" size="sm" disabled>
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete
                   </Button>
-                </>
+                </span>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => handleDelete(playbook)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </Button>
               )}
             </div>
           </div>

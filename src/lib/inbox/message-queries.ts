@@ -44,7 +44,7 @@ export async function getInboxMessageById(input: {
   return mapInboxMessageRow(data as InboxMessageRow);
 }
 
-async function listInboxMessagesForThread(input: {
+export async function getInboxMessagesForThread(input: {
   organizationId: string;
   threadId: string;
 }): Promise<InboxMessage[]> {
@@ -72,7 +72,7 @@ export async function getLatestReplyTarget(input: {
     return null;
   }
 
-  const messages = await listInboxMessagesForThread(input);
+  const messages = await getInboxMessagesForThread(input);
   return resolveInboxReplyTarget({
     channelType: thread.channelType,
     messages,

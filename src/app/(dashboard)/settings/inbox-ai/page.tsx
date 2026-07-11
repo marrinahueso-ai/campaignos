@@ -3,6 +3,7 @@ import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
 import { getInboxAiSourcesSettingsData } from "@/lib/organizations/inbox-ai-sources/actions";
+import { buildPresetInboxAiSourcesFromOrganization } from "@/lib/organizations/inbox-ai-sources/preset-sources";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const metadata = {
@@ -33,14 +34,9 @@ export default async function InboxAiSettingsPage() {
   }
 
   const organization = await getLatestOrganization();
-  const presetSources = [
-    { label: "Events page", url: organization?.eventsUrl ?? null, type: "Website" },
-    { label: "Calendar", url: organization?.calendarUrl ?? null, type: "Calendar" },
-    { label: "Resources", url: organization?.resourcesUrl ?? null, type: "Website" },
-    { label: "FAQ", url: organization?.faqUrl ?? null, type: "Document" },
-    { label: "School website", url: organization?.schoolWebsite ?? null, type: "Website" },
-    { label: "PTO website", url: organization?.ptoWebsite ?? null, type: "Website" },
-  ];
+  const presetSources = organization
+    ? buildPresetInboxAiSourcesFromOrganization(organization)
+    : [];
 
   return (
     <InboxAiSettingsContent

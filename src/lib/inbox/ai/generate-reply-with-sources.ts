@@ -25,6 +25,7 @@ import {
 import { getOrganizationById } from "@/lib/organizations/queries";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
 import { createClient } from "@/lib/supabase/server";
+import { getInboxMessagesForThread } from "@/lib/inbox/message-queries";
 
 function channelReplyGuidance(channelType: InboxChannelType): string {
   switch (channelType) {
@@ -130,25 +131,47 @@ STRICT INBOX RULES:
 Return ONLY the reply text — no quotes, labels, or markdown.`;
 }
 
+function formatThreadConversation(input: {
+  messages: InboxMessage[];
+  inboundMessageId: string;
+  maxMessages?: number;
+}): string {
+  const maxMessages = input.maxMessages ?? 6;
+  const recentMessages = input.messages.slice(-maxMessages);
+
+  if (recentMessages.length === 0) {
+    return "(No prior thread messages)";
+  }
+
+  return recentMessages
+    .map((message) => {
+      const prefix = message.senderName?.trim() ? `${message.senderName.trim()}: ` : "";
+      const marker = message.id === input.inboundMessageId ? " [reply target]" : "";
+      return `${prefix}${message.body.trim()}${marker}`;
+    })
+    .join("\n");
+}
+
 function buildVerifiedAnswerUserPrompt(input: {
   thread: InboxThread;
   inboundMessage: InboxMessage;
+  threadConversation: string;
   voiceBlock: string;
   sourceBlock: string;
   configuredSourcesCatalog: string;
 }): string {
   const channelLabel = INBOX_CHANNEL_LABELS[input.thread.channelType];
-  const conversationLines = [
-    input.inboundMessage.senderName
-      ? `${input.inboundMessage.senderName}: ${input.inboundMessage.body}`
-      : input.inboundMessage.body,
-  ];
 
   return `Channel: ${channelLabel}
 ${input.thread.subject ? `Context: ${input.thread.subject}` : ""}
 
-Recent message to reply to:
-${conversationLines.join("\n")}
+Inbox thread (comments/messages):
+${input.threadConversation}
+
+Message to reply to:
+${input.inboundMessage.senderName
+    ? `${input.inboundMessage.senderName}: ${input.inboundMessage.body}`
+    : input.inboundMessage.body}
 
 ORGANIZATION INBOX AI SOURCES (from settings — name, description, URL):
 ${input.configuredSourcesCatalog}
@@ -210,6 +233,15 @@ async function generateSourceAwareDraft(input: {
     sources: input.orderedSources,
   });
 
+  const threadMessages = await getInboxMessagesForThread({
+    organizationId: input.organizationId,
+    threadId: input.thread.id,
+  });
+  const threadConversation = formatThreadConversation({
+    messages: threadMessages,
+    inboundMessageId: input.inboundMessage.id,
+  });
+
   const profile = input.organization
     ? await getAiProfileByOrganizationId(input.organization.id)
     : null;
@@ -226,6 +258,7 @@ async function generateSourceAwareDraft(input: {
     userPrompt: buildVerifiedAnswerUserPrompt({
       thread: input.thread,
       inboundMessage: input.inboundMessage,
+      threadConversation,
       voiceBlock,
       sourceBlock,
       configuredSourcesCatalog,
