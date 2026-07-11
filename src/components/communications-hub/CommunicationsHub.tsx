@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { MessageCircle, MessagesSquare, Sparkles } from "lucide-react";
 import { CommunicationsQueuePanel } from "@/components/communications-hub/CommunicationsQueuePanel";
 import { CommunicationsTopBar } from "@/components/communications-hub/CommunicationsTopBar";
@@ -14,8 +14,10 @@ import type { InboxChannelType, InboxPageData } from "@/lib/inbox/types";
 import {
   computeQueueCounts,
   filterThreadsForCommunicationsHub,
+  pickDefaultQueueFilter,
   type CommunicationsQueueFilter,
 } from "@/lib/inbox/queue-utils";
+import { COMMUNICATIONS_HUB_RESET_EVENT } from "@/lib/communications-hub/events";
 import { cn } from "@/lib/utils/cn";
 
 interface CommunicationsHubProps {
@@ -26,12 +28,46 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const router = useRouter();
   const { connection, threads, messagesByThreadId } = data;
 
-  const [queueFilter, setQueueFilter] = useState<CommunicationsQueueFilter>("needs_reply");
+  const defaultQueueFilter = useMemo(
+    () => pickDefaultQueueFilter(threads.length, computeQueueCounts(threads, messagesByThreadId)),
+    [threads, messagesByThreadId],
+  );
+
+  const [queueFilter, setQueueFilter] = useState<CommunicationsQueueFilter>(defaultQueueFilter);
   const [searchQuery, setSearchQuery] = useState("");
   const [channelFilter, setChannelFilter] = useState<"all" | InboxChannelType>("all");
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [mobileShowAiPanel, setMobileShowAiPanel] = useState(false);
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setChannelFilter("all");
+    setQueueFilter("all");
+    setSelectedThreadId(null);
+    setMobileShowDetail(false);
+    setMobileShowAiPanel(false);
+  }, []);
+
+  const resetToDefault = useCallback(() => {
+    setSearchQuery("");
+    setChannelFilter("all");
+    setQueueFilter(defaultQueueFilter);
+    setSelectedThreadId(null);
+    setMobileShowDetail(false);
+    setMobileShowAiPanel(false);
+  }, [defaultQueueFilter]);
+
+  useEffect(() => {
+    function handleSidebarReset() {
+      resetToDefault();
+    }
+
+    window.addEventListener(COMMUNICATIONS_HUB_RESET_EVENT, handleSidebarReset);
+    return () => {
+      window.removeEventListener(COMMUNICATIONS_HUB_RESET_EVENT, handleSidebarReset);
+    };
+  }, [resetToDefault]);
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -115,9 +151,26 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
 
   const showConnectionEmptyState =
     !connection.metaConnected && !connection.metaConfiguredViaEnv;
-  const showEmptyState =
-    (connection.metaConnected || connection.metaConfiguredViaEnv) &&
-    filteredThreads.length === 0;
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    channelFilter !== "all" ||
+    queueFilter !== "all";
+
+  function handleQueueFilterChange(filter: CommunicationsQueueFilter) {
+    setQueueFilter(filter);
+    setSelectedThreadId(null);
+    setMobileShowDetail(false);
+    setMobileShowAiPanel(false);
+  }
+
+  function handleAiQueueClick() {
+    setQueueFilter((current) =>
+      current === "waiting_on_ai" ? "all" : "waiting_on_ai",
+    );
+    setSelectedThreadId(null);
+    setMobileShowDetail(false);
+    setMobileShowAiPanel(false);
+  }
 
   function handleSelectThread(threadId: string) {
     setSelectedThreadId(threadId);
@@ -148,8 +201,10 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
         onChannelFilterChange={setChannelFilter}
         queueCounts={queueCounts}
         connection={connection}
-        onAiQueueClick={() => setQueueFilter("waiting_on_ai")}
+        onAiQueueClick={handleAiQueueClick}
         aiQueueActive={queueFilter === "waiting_on_ai"}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
       />
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
@@ -164,61 +219,70 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
             }}
             className="py-16"
           />
-        ) : showEmptyState ? (
-          <EmptyState
-            icon={MessageCircle}
-            title="No conversations in this queue"
-            description="Try another queue filter or wait for new DMs, comments, and mentions to arrive from Meta."
-            className="py-16"
-          />
         ) : (
           <div className="flex min-h-[min(760px,calc(100vh-13rem))] flex-col xl:flex-row">
             <CommunicationsQueuePanel
               threads={filteredThreads}
+              totalThreadCount={threads.length}
               messagesByThreadId={messagesByThreadId}
               selectedThreadId={selectedThreadId}
               queueFilter={queueFilter}
               queueCounts={queueCounts}
-              onQueueFilterChange={setQueueFilter}
+              onQueueFilterChange={handleQueueFilterChange}
               onSelectThread={handleSelectThread}
               className={cn(
                 mobileShowDetail ? "hidden xl:flex" : "flex min-h-0 flex-1 xl:min-h-0 xl:flex-none",
               )}
             />
 
-            <CommunicationsWorkspace
-              thread={selectedThread}
-              messages={
-                selectedThread ? messagesByThreadId[selectedThread.id] ?? [] : []
-              }
-              showBack
-              onBack={() => {
-                setMobileShowDetail(false);
-                setMobileShowAiPanel(false);
-              }}
-              showAiPanel={!mobileShowAiPanel}
-              className={cn(!mobileShowDetail && "hidden xl:flex")}
-            />
+            {filteredThreads.length === 0 ? (
+              <EmptyState
+                icon={MessageCircle}
+                title="No conversations in this queue"
+                description="Try another queue filter or clear filters to see all conversations."
+                action={{
+                  label: "Clear filters and show all conversations",
+                  onClick: clearFilters,
+                }}
+                className="flex min-h-0 flex-1 items-center justify-center py-16"
+              />
+            ) : (
+              <>
+                <CommunicationsWorkspace
+                  thread={selectedThread}
+                  messages={
+                    selectedThread ? messagesByThreadId[selectedThread.id] ?? [] : []
+                  }
+                  showBack
+                  onBack={() => {
+                    setMobileShowDetail(false);
+                    setMobileShowAiPanel(false);
+                  }}
+                  showAiPanel={!mobileShowAiPanel}
+                  className={cn(!mobileShowDetail && "hidden xl:flex")}
+                />
 
-            {selectedThread && mobileShowDetail ? (
-              <div className="border-t border-cos-border xl:hidden">
-                <button
-                  type="button"
-                  onClick={() => setMobileShowAiPanel((open) => !open)}
-                  className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-cos-text hover:bg-cos-bg"
-                >
-                  <Sparkles className="h-4 w-4 text-[#f5c842]" aria-hidden />
-                  {mobileShowAiPanel ? "Hide AI Assistant" : "Show AI Assistant"}
-                </button>
-                {mobileShowAiPanel ? (
-                  <CommunicationsAiPanel
-                    thread={selectedThread}
-                    messages={messagesByThreadId[selectedThread.id] ?? []}
-                    className="border-t border-cos-border"
-                  />
+                {selectedThread && mobileShowDetail ? (
+                  <div className="border-t border-cos-border xl:hidden">
+                    <button
+                      type="button"
+                      onClick={() => setMobileShowAiPanel((open) => !open)}
+                      className="flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-cos-text hover:bg-cos-bg"
+                    >
+                      <Sparkles className="h-4 w-4 text-[#f5c842]" aria-hidden />
+                      {mobileShowAiPanel ? "Hide AI Assistant" : "Show AI Assistant"}
+                    </button>
+                    {mobileShowAiPanel ? (
+                      <CommunicationsAiPanel
+                        thread={selectedThread}
+                        messages={messagesByThreadId[selectedThread.id] ?? []}
+                        className="border-t border-cos-border"
+                      />
+                    ) : null}
+                  </div>
                 ) : null}
-              </div>
-            ) : null}
+              </>
+            )}
           </div>
         )}
       </div>
