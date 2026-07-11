@@ -22,6 +22,24 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = Object.fromEntries(
 
 export const DEFAULT_EVENT_TYPE: EventType = "general_event";
 
+export const SYSTEM_PLAYBOOK_REMOVE_TOOLTIP =
+  "Removes this system template from your organization's playbook list. Existing event assignments are unchanged.";
+
+export function systemPlaybookRemoveConfirmMessage(playbookName: string): string {
+  return (
+    `Remove "${playbookName}" from your playbook list?\n\n` +
+    "This is a system template — it will be hidden for your organization only, not deleted globally. " +
+    "Events already using this playbook are unchanged."
+  );
+}
+
+export function orgPlaybookDeleteConfirmMessage(playbookName: string): string {
+  return (
+    `Permanently delete "${playbookName}"?\n\n` +
+    "This removes the playbook and all of its steps. This cannot be undone."
+  );
+}
+
 export const SYSTEM_PLAYBOOK_IDS: Record<EventType, string> = {
   book_fair: "a1000001-0000-4000-8000-000000000001",
   teacher_appreciation: "a1000001-0000-4000-8000-000000000002",

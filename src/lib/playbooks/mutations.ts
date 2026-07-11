@@ -273,9 +273,52 @@ export async function archivePlaybook(playbookId: string): Promise<boolean> {
   return !error;
 }
 
-export type DeletePlaybookResult =
+export type PlaybookMutationResult =
   | { success: true }
   | { success: false; error: string };
+
+export type DeletePlaybookResult = PlaybookMutationResult;
+
+export async function hideSystemPlaybookForOrg(
+  playbookId: string,
+  organizationId: string,
+): Promise<PlaybookMutationResult> {
+  const supabase = await createClient();
+
+  const { data: playbook, error: fetchError } = await supabase
+    .from("communication_playbooks")
+    .select("id, is_system, name")
+    .eq("id", playbookId)
+    .maybeSingle();
+
+  if (fetchError || !playbook) {
+    return { success: false, error: "Playbook not found." };
+  }
+
+  if (!playbook.is_system) {
+    return {
+      success: false,
+      error: "Only system playbooks can be removed from your list this way.",
+    };
+  }
+
+  const { error: hideError } = await supabase
+    .from("organization_hidden_playbooks")
+    .upsert(
+      {
+        organization_id: organizationId,
+        playbook_id: playbookId,
+      },
+      { onConflict: "organization_id,playbook_id" },
+    );
+
+  if (hideError) {
+    console.error("Failed to hide system playbook:", hideError.message);
+    return { success: false, error: "Unable to remove playbook from your list." };
+  }
+
+  return { success: true };
+}
 
 export async function deletePlaybook(
   playbookId: string,

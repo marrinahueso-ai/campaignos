@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 export default async function IntegrationsSettingsPage() {
-  const { active, available } = await getIntegrationsSettingsData();
+  const { integrations } = await getIntegrationsSettingsData();
 
-  return <IntegrationsSettingsContent active={active} available={available} />;
+  return <IntegrationsSettingsContent integrations={integrations} />;
 }

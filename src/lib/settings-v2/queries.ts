@@ -21,15 +21,9 @@ import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getMondayConnectionForCurrentOrg } from "@/lib/monday/connection";
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
+import type { IntegrationStatus } from "@/lib/settings-v2/integration-types";
 
-export interface IntegrationStatus {
-  id: string;
-  name: string;
-  description: string;
-  connected: boolean;
-  manageHref: string;
-  available: boolean;
-}
+export type { IntegrationId, IntegrationStatus } from "@/lib/settings-v2/integration-types";
 
 export interface SettingsOverviewData {
   organizationName: string | null;
@@ -99,28 +93,37 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
 
   const integrations: IntegrationStatus[] = [
     {
-      id: "canva",
-      name: "Canva",
-      description: "Import designs and assets",
-      connected: isCanvaConnectionConfigured(canvaConnection),
-      manageHref: "/settings/canva",
-      available: isCanvaIntegrationConfigured(),
+      id: "google-calendar",
+      name: "Google Calendar",
+      description: "Import school events and sync subscribe feeds",
+      connected: hasCalendarImport,
+      manageHref: "/calendar/import",
+      available: true,
+    },
+    {
+      id: "google-inbox",
+      name: "Google Inbox (Gmail)",
+      description: "Sync Gmail threads and draft email replies",
+      connected: false,
+      manageHref: "/inbox",
+      available: true,
+      comingSoon: true,
     },
     {
       id: "meta",
       name: "Meta (Facebook & Instagram)",
-      description: "Publish and analytics",
+      description: "Publish posts, sync DMs, and manage comments",
       connected: isMetaConnectionConfigured(metaConnection),
       manageHref: "/settings/meta",
       available: isMetaIntegrationConfigured(),
     },
     {
-      id: "google-calendar",
-      name: "Google Calendar",
-      description: "Events and deadlines",
-      connected: hasCalendarImport,
-      manageHref: "/settings/integrations",
-      available: true,
+      id: "canva",
+      name: "Canva",
+      description: "Import designs and assets into campaign artwork",
+      connected: isCanvaConnectionConfigured(canvaConnection),
+      manageHref: "/settings/canva",
+      available: isCanvaIntegrationConfigured(),
     },
     {
       id: "monday",
@@ -129,6 +132,24 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       connected: Boolean(mondayConnection?.accessToken),
       manageHref: "/settings/monday",
       available: isMondayIntegrationEnabled() && isMondayIntegrationConfigured(),
+    },
+    {
+      id: "dropbox",
+      name: "Dropbox",
+      description: "Import files and assets",
+      connected: false,
+      manageHref: "/settings/integrations",
+      available: true,
+      comingSoon: true,
+    },
+    {
+      id: "constant-contact",
+      name: "Constant Contact",
+      description: "Email marketing sync",
+      connected: false,
+      manageHref: "/settings/integrations",
+      available: true,
+      comingSoon: true,
     },
   ];
 
@@ -159,35 +180,18 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
 }
 
 export async function getIntegrationsSettingsData(): Promise<{
-  active: IntegrationStatus[];
-  available: IntegrationStatus[];
+  integrations: IntegrationStatus[];
 }> {
   const overview = await getSettingsOverviewData();
 
-  const availableExtras: IntegrationStatus[] = [
-    {
-      id: "dropbox",
-      name: "Dropbox",
-      description: "Import files and assets",
-      connected: false,
-      manageHref: "/settings/integrations",
-      available: true,
-    },
-    {
-      id: "constant-contact",
-      name: "Constant Contact",
-      description: "Email marketing sync",
-      connected: false,
-      manageHref: "/settings/integrations",
-      available: true,
-    },
-  ];
+  const integrations = overview.integrations
+    .filter((item) => item.available)
+    .sort((left, right) => {
+      if (left.connected !== right.connected) {
+        return left.connected ? -1 : 1;
+      }
+      return left.name.localeCompare(right.name);
+    });
 
-  const active = overview.integrations.filter((item) => item.connected);
-  const available = [
-    ...overview.integrations.filter((item) => !item.connected && item.available),
-    ...availableExtras,
-  ];
-
-  return { active, available };
+  return { integrations };
 }

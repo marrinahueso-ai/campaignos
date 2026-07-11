@@ -9,6 +9,7 @@ import {
   createPlaybook,
   deletePlaybook,
   duplicatePlaybook,
+  hideSystemPlaybookForOrg,
   reassignEventPlaybook,
   replaceEventCommunicationTimeline,
   replacePlaybookSteps,
@@ -158,6 +159,27 @@ export async function deletePlaybookAction(
 
   revalidatePath("/settings/playbooks");
   revalidatePath("/settings/playbooks-milestones");
+  return { error: null, success: true };
+}
+
+export async function hideSystemPlaybookAction(
+  playbookId: string,
+): Promise<PlaybookActionState> {
+  const organization = await getLatestOrganization();
+
+  if (!organization?.id) {
+    return { error: "Organization not found.", success: false };
+  }
+
+  const result = await hideSystemPlaybookForOrg(playbookId, organization.id);
+
+  if (!result.success) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/playbooks");
+  revalidatePath("/settings/playbooks-milestones");
+  revalidatePath(`/settings/playbooks/${playbookId}`);
   return { error: null, success: true };
 }
 

@@ -1,47 +1,55 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { IntegrationLogo } from "@/components/settings-v2/IntegrationLogo";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import type { IntegrationStatus } from "@/lib/settings-v2/queries";
+import type { IntegrationStatus } from "@/lib/settings-v2/integration-types";
 
 interface IntegrationsSettingsContentProps {
-  active: IntegrationStatus[];
-  available: IntegrationStatus[];
+  integrations: IntegrationStatus[];
 }
 
-function IntegrationRow({
-  integration,
-  actionLabel,
-}: {
-  integration: IntegrationStatus;
-  actionLabel: string;
-}) {
+function IntegrationRow({ integration }: { integration: IntegrationStatus }) {
+  const actionLabel = integration.comingSoon
+    ? "Coming soon"
+    : integration.connected
+      ? "Manage"
+      : "Connect";
+
   return (
     <div className="flex flex-col gap-3 border-b border-cos-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-sm font-medium text-cos-text">{integration.name}</p>
-        <p className="text-xs text-cos-muted">{integration.description}</p>
+      <div className="flex min-w-0 items-start gap-3">
+        <IntegrationLogo id={integration.id} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-cos-text">{integration.name}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-cos-muted">
+            {integration.description}
+          </p>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        {integration.connected ? (
-          <Badge variant="success">Connected</Badge>
+      <div className="flex shrink-0 items-center gap-3 sm:pl-0 pl-[3.25rem]">
+        <Badge variant={integration.connected ? "success" : "default"}>
+          {integration.connected ? "Connected" : "Not connected"}
+        </Badge>
+        {integration.comingSoon ? (
+          <Button variant="secondary" size="sm" disabled>
+            {actionLabel}
+          </Button>
         ) : (
-          <Badge variant="default">Not connected</Badge>
+          <Button href={integration.manageHref} variant="secondary" size="sm">
+            {actionLabel}
+          </Button>
         )}
-        <Button href={integration.manageHref} variant="secondary" size="sm">
-          {actionLabel}
-        </Button>
       </div>
     </div>
   );
 }
 
 export function IntegrationsSettingsContent({
-  active,
-  available,
+  integrations,
 }: IntegrationsSettingsContentProps) {
+  const connectedCount = integrations.filter((integration) => integration.connected).length;
+
   return (
     <div className="space-y-6">
       <SettingsV2PageHeader
@@ -49,54 +57,18 @@ export function IntegrationsSettingsContent({
         description="Connect the tools your PTO already uses. OAuth flows stay on their existing routes."
       />
 
-      <SettingsV2Card title="Active Integrations">
-        {active.length === 0 ? (
-          <p className="text-sm text-cos-muted">No active integrations yet.</p>
+      <SettingsV2Card
+        title="Integrations"
+        description={`${connectedCount} connected · ${integrations.length} available`}
+      >
+        {integrations.length === 0 ? (
+          <p className="text-sm text-cos-muted">No integrations available yet.</p>
         ) : (
-          active.map((integration) => (
-            <IntegrationRow
-              key={integration.id}
-              integration={integration}
-              actionLabel="Manage"
-            />
+          integrations.map((integration) => (
+            <IntegrationRow key={integration.id} integration={integration} />
           ))
         )}
       </SettingsV2Card>
-
-      <SettingsV2Card
-        title="Available Integrations"
-        footer={
-          <p className="text-xs text-cos-muted">
-            Gmail and additional connectors are planned — connect buttons route to
-            existing handlers where available.
-          </p>
-        }
-      >
-        {available.map((integration) => (
-          <IntegrationRow
-            key={integration.id}
-            integration={integration}
-            actionLabel={integration.id === "dropbox" || integration.id === "constant-contact" ? "Coming soon" : "Connect"}
-          />
-        ))}
-      </SettingsV2Card>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {[
-          { label: "Canva settings", href: "/settings/canva" },
-          { label: "Meta settings", href: "/settings/meta" },
-          { label: "Monday settings", href: "/settings/monday" },
-        ].map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="cos-card cos-card-interactive flex items-center justify-between px-4 py-3 text-sm font-medium text-cos-text"
-          >
-            {link.label}
-            <ArrowRight className="h-4 w-4 text-cos-muted" strokeWidth={1.5} />
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }

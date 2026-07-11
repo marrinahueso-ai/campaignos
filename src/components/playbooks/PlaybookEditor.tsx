@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import {
   createPlaybookAction,
   deletePlaybookAction,
+  hideSystemPlaybookAction,
   updatePlaybookAction,
   type PlaybookActionState,
 } from "@/lib/playbooks/actions";
@@ -23,7 +24,9 @@ import {
   CHANNEL_LABELS,
   EVENT_TYPES,
   formatRelativeDay,
+  orgPlaybookDeleteConfirmMessage,
   STEP_DEFAULT_STATUS_OPTIONS,
+  systemPlaybookRemoveConfirmMessage,
 } from "@/lib/playbooks/constants";
 import type {
   CommunicationPlaybook,
@@ -123,12 +126,14 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
   }
 
   function handleDeletePlaybook() {
-    if (!playbook || playbook.isSystem) {
+    if (!playbook) {
       return;
     }
 
     const confirmed = window.confirm(
-      `Permanently delete "${playbook.name}"?\n\nThis removes the playbook and all of its steps. This cannot be undone.`,
+      playbook.isSystem
+        ? systemPlaybookRemoveConfirmMessage(playbook.name)
+        : orgPlaybookDeleteConfirmMessage(playbook.name),
     );
 
     if (!confirmed) {
@@ -137,7 +142,10 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
 
     setDeleteError(null);
     startDeleteTransition(async () => {
-      const result = await deletePlaybookAction(playbook.id);
+      const result = playbook.isSystem
+        ? await hideSystemPlaybookAction(playbook.id)
+        : await deletePlaybookAction(playbook.id);
+
       if (result.error) {
         setDeleteError(result.error);
         return;
@@ -320,43 +328,51 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
         </div>
       </Card>
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => router.push("/settings/playbooks-milestones")}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving..." : isEditing ? "Save Playbook" : "Create Playbook"}
-        </Button>
-      </div>
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {isEditing && playbook ? (
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant={playbook.isSystem ? "secondary" : "danger"}
+              disabled={isDeleting || isPending}
+              onClick={handleDeletePlaybook}
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting
+                ? playbook.isSystem
+                  ? "Removing..."
+                  : "Deleting..."
+                : "Delete Playbook"}
+            </Button>
+            {playbook.isSystem && (
+              <p className="text-xs text-cos-muted">
+                System template — removes from your list only. Duplicate to
+                customize, then delete your copy.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div />
+        )}
 
-      {isEditing && playbook && !playbook.isSystem && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Delete Playbook</CardTitle>
-            <CardDescription>
-              Permanently remove this playbook. Playbooks assigned to events cannot
-              be deleted — archive them instead.
-            </CardDescription>
-          </CardHeader>
-          {deleteError && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {deleteError}
-            </div>
-          )}
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="secondary"
-            disabled={isDeleting || isPending}
-            onClick={handleDeletePlaybook}
+            onClick={() => router.push("/settings/playbooks-milestones")}
           >
-            <Trash2 className="h-4 w-4" />
-            {isDeleting ? "Deleting..." : "Delete Playbook"}
+            Cancel
           </Button>
-        </Card>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Saving..." : isEditing ? "Save Playbook" : "Create Playbook"}
+          </Button>
+        </div>
+      </div>
+
+      {deleteError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {deleteError}
+        </div>
       )}
     </form>
   );

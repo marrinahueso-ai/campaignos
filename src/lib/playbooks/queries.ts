@@ -29,6 +29,26 @@ export async function arePlaybookTablesAvailable(): Promise<boolean> {
   return !error || error.code !== "42P01";
 }
 
+async function getHiddenPlaybookIdsForOrganization(
+  organizationId: string,
+): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_hidden_playbooks")
+    .select("playbook_id")
+    .eq("organization_id", organizationId);
+
+  if (error) {
+    if (error.code === "42P01") {
+      return new Set();
+    }
+    console.error("Failed to fetch hidden playbooks:", error.message);
+    return new Set();
+  }
+
+  return new Set((data ?? []).map((row) => row.playbook_id as string));
+}
+
 export async function getPlaybooksForOrganization(
   organizationId: string | null,
 ): Promise<CommunicationPlaybook[]> {
@@ -55,7 +75,14 @@ export async function getPlaybooksForOrganization(
     return [];
   }
 
-  const rows = (data ?? []) as CommunicationPlaybookRow[];
+  let rows = (data ?? []) as CommunicationPlaybookRow[];
+
+  if (organizationId) {
+    const hiddenIds = await getHiddenPlaybookIdsForOrganization(organizationId);
+    if (hiddenIds.size > 0) {
+      rows = rows.filter((row) => !hiddenIds.has(row.id));
+    }
+  }
   const playbookIds = rows.map((row) => row.id);
 
   const stepCounts = await getStepCountsByPlaybookIds(playbookIds);
