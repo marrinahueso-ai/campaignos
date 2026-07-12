@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import { ImagePlus, Upload, X } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
@@ -32,6 +33,12 @@ export function InspirationStep() {
   const { inspiration } = session;
   const visibleImages = inspiration.inspirationImages.slice(0, 5);
   const extraCount = Math.max(0, inspiration.inspirationImages.length - 5);
+  const hasSchoolColors = Boolean(
+    schoolColors.primary || schoolColors.secondary,
+  );
+  const selectedLogo = logoOptions.find(
+    (logo) => logo.id === inspiration.selectedLogoId,
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -228,33 +235,55 @@ export function InspirationStep() {
             </Select>
           </div>
 
-          {(logoOptions.length > 0 || schoolColors.primary || schoolColors.secondary) && (
-            <section className="space-y-4">
-              <div>
-                <h2 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                  School brand assets
-                </h2>
-                <p className="mt-1 text-sm text-cos-muted">
-                  Choose a stored logo and school colors to guide AI artwork.
-                </p>
-              </div>
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+                School brand assets
+              </h2>
+              <p className="mt-1 text-sm text-cos-muted">
+                Choose a stored logo and school colors to guide AI artwork.
+              </p>
+            </div>
 
-              {logoOptions.length > 0 && (
+            {logoOptions.length > 0 ? (
+              <div className="space-y-3">
+                <label className="inline-flex items-center gap-2 text-sm text-cos-text">
+                  <input
+                    type="checkbox"
+                    checked={inspiration.includeLogoInArtwork}
+                    onChange={(event) =>
+                      updateInspiration({
+                        includeLogoInArtwork: event.target.checked,
+                        selectedLogoId:
+                          event.target.checked && !inspiration.selectedLogoId
+                            ? (logoOptions[0]?.id ?? null)
+                            : inspiration.selectedLogoId,
+                      })
+                    }
+                    className="h-4 w-4 rounded border-cos-border"
+                  />
+                  Include logo in artwork
+                </label>
+
                 <div className="grid gap-3 sm:grid-cols-2">
                   {logoOptions.map((logo) => {
                     const selected = inspiration.selectedLogoId === logo.id;
+                    const disabled = !inspiration.includeLogoInArtwork;
                     return (
                       <button
                         key={logo.id}
                         type="button"
+                        disabled={disabled}
                         onClick={() =>
                           updateInspiration({
                             selectedLogoId: selected ? null : logo.id,
+                            includeLogoInArtwork: true,
                           })
                         }
                         className={cn(
                           "flex items-center gap-3 border px-3 py-3 text-left transition-colors",
-                          selected
+                          disabled && "cursor-not-allowed opacity-50",
+                          selected && inspiration.includeLogoInArtwork
                             ? "border-cos-dark bg-cos-bg-alt"
                             : "border-cos-border bg-cos-card hover:border-cos-accent/50",
                         )}
@@ -272,43 +301,83 @@ export function InspirationStep() {
                     );
                   })}
                 </div>
-              )}
 
-              {(schoolColors.primary || schoolColors.secondary) && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-2 text-sm text-cos-text">
-                    <input
-                      type="checkbox"
-                      checked={inspiration.useSchoolColors}
-                      onChange={(event) =>
-                        updateInspiration({ useSchoolColors: event.target.checked })
-                      }
-                      className="h-4 w-4 rounded border-cos-border"
-                    />
-                    Use school colors in AI artwork
-                  </label>
-                  {schoolColors.primary && (
-                    <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
-                      <span
-                        className="h-5 w-5 rounded-full border border-cos-border"
-                        style={{ backgroundColor: schoolColors.primary }}
-                      />
-                      Primary {schoolColors.primary}
-                    </span>
-                  )}
-                  {schoolColors.secondary && (
-                    <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
-                      <span
-                        className="h-5 w-5 rounded-full border border-cos-border"
-                        style={{ backgroundColor: schoolColors.secondary }}
-                      />
-                      Secondary {schoolColors.secondary}
-                    </span>
-                  )}
+                {inspiration.includeLogoInArtwork && selectedLogo && (
+                  <p className="text-xs text-cos-muted">
+                    AI will reference {selectedLogo.label} when generating artwork.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded border border-dashed border-cos-border bg-cos-bg/20 px-4 py-5">
+                <p className="text-sm text-cos-muted">
+                  No logos in your brand kit yet. Upload logos in Settings to guide
+                  AI artwork.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Link
+                    href="/settings/school-setup"
+                    className="text-sm font-medium text-cos-text underline hover:no-underline"
+                  >
+                    Organization branding
+                  </Link>
+                  <Link
+                    href="/settings/ai-brain"
+                    className="text-sm font-medium text-cos-text underline hover:no-underline"
+                  >
+                    AI Brain brand kit
+                  </Link>
                 </div>
-              )}
-            </section>
-          )}
+              </div>
+            )}
+
+            {hasSchoolColors ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm text-cos-text">
+                  <input
+                    type="checkbox"
+                    checked={inspiration.useSchoolColors}
+                    onChange={(event) =>
+                      updateInspiration({ useSchoolColors: event.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-cos-border"
+                  />
+                  Use school colors in AI artwork
+                </label>
+                {schoolColors.primary && (
+                  <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
+                    <span
+                      className="h-5 w-5 rounded-full border border-cos-border"
+                      style={{ backgroundColor: schoolColors.primary }}
+                    />
+                    Primary {schoolColors.primary}
+                  </span>
+                )}
+                {schoolColors.secondary && (
+                  <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
+                    <span
+                      className="h-5 w-5 rounded-full border border-cos-border"
+                      style={{ backgroundColor: schoolColors.secondary }}
+                    />
+                    Secondary {schoolColors.secondary}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="rounded border border-dashed border-cos-border bg-cos-bg/20 px-4 py-4">
+                <p className="text-sm text-cos-muted">
+                  No school colors saved yet.{" "}
+                  <Link
+                    href="/settings/school-setup"
+                    className="font-medium text-cos-text underline hover:no-underline"
+                  >
+                    Add brand colors in Organization settings
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
+          </section>
 
           <Textarea
             label="Global AI guidance"

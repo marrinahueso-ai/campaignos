@@ -10,6 +10,7 @@ import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import {
   resolveBrandContextForGeneration,
+  resolveSelectedLogoForGeneration,
 } from "@/lib/campaign-builder-v2/brand-context";
 import { mergeInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
 import { generateArtworkV2ImageNative } from "@/lib/artwork-v2/orchestrator";
@@ -62,6 +63,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
   hasInspirationImages: boolean;
   storyFromFeed: boolean;
   styleStrength?: number;
+  selectedLogoLabel?: string | null;
 }): string {
   const formatHint =
     input.view === "story"
@@ -93,8 +95,8 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.useSchoolColors && input.inspiration.secondarySchoolColor
       ? `Secondary school color: ${input.inspiration.secondarySchoolColor}`
       : null,
-    input.inspiration.selectedLogoId
-      ? `Include the selected ${input.inspiration.selectedLogoId === "school" ? "school" : "PTO"} logo in the design.`
+    input.inspiration.includeLogoInArtwork && input.selectedLogoLabel
+      ? `Include the selected ${input.selectedLogoLabel} prominently in the design.`
       : null,
   ].filter((line): line is string => Boolean(line));
 
@@ -237,9 +239,14 @@ export async function generateCampaignBuilderArtwork(input: {
   }
 
   const brandContext = await resolveBrandContextForGeneration(input.useBrandKit);
+  const selectedLogo = await resolveSelectedLogoForGeneration({
+    selectedLogoId: input.inspiration.selectedLogoId,
+    includeLogoInArtwork: input.inspiration.includeLogoInArtwork,
+  });
+  const logoUrls = selectedLogo.url ? [selectedLogo.url] : [];
   const baseInspirationUrls = mergeInspirationImageUrls(
     input.inspirationImageUrls,
-    brandContext.logoUrls,
+    logoUrls,
   );
   const inspirationUrls =
     input.storyFromFeed && input.previousImageUrl
@@ -255,6 +262,7 @@ export async function generateCampaignBuilderArtwork(input: {
     hasInspirationImages: inspirationUrls.length > 0,
     storyFromFeed: Boolean(input.storyFromFeed),
     styleStrength: input.styleStrength,
+    selectedLogoLabel: selectedLogo.label,
   });
 
   const generation = await generateArtworkVariations({

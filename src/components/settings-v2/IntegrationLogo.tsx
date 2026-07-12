@@ -34,6 +34,12 @@ const INTEGRATION_ICONS: Partial<
     width: 464,
     height: 398,
   },
+  "signup-genius": {
+    src: "/integrations/signup-genius.png",
+    alt: "SignUpGenius",
+    width: 338,
+    height: 326,
+  },
 };
 
 function LogoFrame({
@@ -62,15 +68,25 @@ function LogoFrame({
 export function IntegrationLogo({ id, className }: IntegrationLogoProps) {
   const icon = INTEGRATION_ICONS[id];
   if (icon) {
+    const isSvg = icon.src.endsWith(".svg");
     return (
       <LogoFrame className={className} backgroundClassName="bg-white">
-        <Image
-          src={icon.src}
-          alt={icon.alt}
-          width={icon.width}
-          height={icon.height}
-          className="h-8 w-8 object-contain"
-        />
+        {isSvg ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={icon.src}
+            alt={icon.alt}
+            className="h-8 w-8 object-contain"
+          />
+        ) : (
+          <Image
+            src={icon.src}
+            alt={icon.alt}
+            width={icon.width}
+            height={icon.height}
+            className="h-8 w-8 object-contain"
+          />
+        )}
       </LogoFrame>
     );
   }
@@ -105,19 +121,6 @@ export function IntegrationLogo({ id, className }: IntegrationLogoProps) {
               fill="#1856A3"
               d="M12 8.5c1.1 0 2 .5 2.6 1.2l-1.2 1.1c-.4-.4-.9-.6-1.4-.6-.9 0-1.6.7-1.6 1.6s.7 1.6 1.6 1.6c.5 0 1-.2 1.4-.6l1.2 1.1c-.6.7-1.5 1.2-2.6 1.2-1.9 0-3.4-1.5-3.4-3.4s1.5-3.4 3.4-3.4Z"
             />
-          </svg>
-        </LogoFrame>
-      );
-    case "signup-genius":
-      return (
-        <LogoFrame className={className} backgroundClassName="bg-[#F68B1F]">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" role="img" aria-label="SignUpGenius">
-            <rect x="4" y="5" width="16" height="14" rx="2" fill="#fff" />
-            <path
-              fill="#F68B1F"
-              d="M8 9h8v1.5H8V9Zm0 3h5.5v1.5H8V12Zm0 3h7v1.5H8V15Z"
-            />
-            <circle cx="17" cy="8" r="2.25" fill="#2D6A4F" />
           </svg>
         </LogoFrame>
       );

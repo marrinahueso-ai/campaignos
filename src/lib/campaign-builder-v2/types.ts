@@ -66,6 +66,7 @@ export interface CampaignBuilderInspiration {
   brandKitId: string;
   voiceTone: string;
   selectedLogoId: string | null;
+  includeLogoInArtwork: boolean;
   useSchoolColors: boolean;
   primarySchoolColor: string | null;
   secondarySchoolColor: string | null;

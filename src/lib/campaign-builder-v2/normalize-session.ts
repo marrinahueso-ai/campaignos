@@ -40,6 +40,9 @@ export function normalizeCampaignBuilderSession(
     ...raw.inspiration,
     campaignId: raw.inspiration?.campaignId ?? eventId,
     selectedLogoId: raw.inspiration?.selectedLogoId ?? defaults.inspiration.selectedLogoId,
+    includeLogoInArtwork:
+      raw.inspiration?.includeLogoInArtwork ??
+      defaults.inspiration.includeLogoInArtwork,
     useSchoolColors:
       raw.inspiration?.useSchoolColors ?? defaults.inspiration.useSchoolColors,
     primarySchoolColor:

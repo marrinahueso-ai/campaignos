@@ -6,8 +6,10 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
@@ -55,6 +57,7 @@ export function InboxAiSourcesPanel({
   presetSources,
 }: InboxAiSourcesPanelProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [customSources, setCustomSources] = useState(initialInput.customSources);
   const [expandedRowKeys, setExpandedRowKeys] = useState<Set<string>>(new Set());
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState(() =>
@@ -132,6 +135,28 @@ export function InboxAiSourcesPanel({
     });
   }
 
+  function confirmRemoveCustomSource(index: number) {
+    const source = customSources[index];
+    const label = source.label.trim() || "New source";
+    const isPersisted = Boolean(source.id);
+    const hasContent =
+      source.label.trim().length > 0 ||
+      source.url.trim().length > 0 ||
+      (source.description ?? "").trim().length > 0;
+
+    if (hasContent && !window.confirm(`Delete "${label}"?`)) {
+      return;
+    }
+
+    flushSync(() => {
+      removeCustomSource(index);
+    });
+
+    if (isPersisted) {
+      formRef.current?.requestSubmit();
+    }
+  }
+
   function updateCustomSource(
     index: number,
     field: "label" | "url" | "description",
@@ -170,7 +195,7 @@ export function InboxAiSourcesPanel({
   const showSuccessMessage = state.success && !hasUnsavedCustomSources;
 
   return (
-    <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
+    <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="space-y-4">
       <input
         type="hidden"
         name="customSourcesJson"
@@ -246,7 +271,7 @@ export function InboxAiSourcesPanel({
                       hasUrl={hasUrl}
                       hasDescription={hasDescription}
                       onToggle={() => toggleExpanded(rowKey)}
-                      onRemove={() => removeCustomSource(index)}
+                      onRemove={() => confirmRemoveCustomSource(index)}
                       onUpdate={(field, value) => updateCustomSource(index, field, value)}
                     />
                   );
@@ -450,9 +475,12 @@ function CustomSourceRow({
             type="button"
             size="sm"
             variant="ghost"
-            className="text-red-600 opacity-70 transition-opacity group-hover:opacity-100"
-            onClick={onRemove}
-            aria-label={`Remove ${label}`}
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
+            aria-label={`Delete ${label}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -489,6 +517,18 @@ function CustomSourceRow({
                 rows={3}
                 className="min-h-20"
               />
+              <div className="flex justify-end border-t border-cos-border pt-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={onRemove}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete source
+                </Button>
+              </div>
             </div>
           </td>
         </tr>

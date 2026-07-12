@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { buildSetupLogoOptions } from "@/lib/artwork-v2/setup-logos";
+import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { getBrandKitItems } from "@/lib/creative-assets/queries";
 import type { BrandKitItem } from "@/lib/creative-assets/types";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
@@ -93,7 +93,7 @@ async function resolveBrandContextForGenerationUncached(
   if (!organization?.id) {
     return {
       guidance: null,
-      logoUrls: buildSetupLogoOptions(schoolProfile?.brandAssets).map(
+      logoUrls: buildCampaignBuilderLogoOptions(schoolProfile?.brandAssets).map(
         (option) => option.url,
       ),
       organizationName,
@@ -103,9 +103,10 @@ async function resolveBrandContextForGenerationUncached(
 
   const items = await getBrandKitItems(organization.id);
   const kitLogoUrls = resolveBrandKitLogoUrls(items);
-  const profileLogoUrls = buildSetupLogoOptions(schoolProfile?.brandAssets).map(
-    (option) => option.url,
-  );
+  const profileLogoUrls = buildCampaignBuilderLogoOptions(
+    schoolProfile?.brandAssets,
+    items,
+  ).map((option) => option.url);
   const logoUrls = [...new Set([...kitLogoUrls, ...profileLogoUrls])];
 
   return {
@@ -113,6 +114,34 @@ async function resolveBrandContextForGenerationUncached(
     logoUrls,
     organizationName,
     ptoName,
+  };
+}
+
+export async function resolveSelectedLogoForGeneration(input: {
+  selectedLogoId: string | null;
+  includeLogoInArtwork: boolean;
+}): Promise<{ url: string | null; label: string | null }> {
+  if (!input.includeLogoInArtwork || !input.selectedLogoId) {
+    return { url: null, label: null };
+  }
+
+  const [organization, schoolProfile] = await Promise.all([
+    getLatestOrganization(),
+    getSchoolProfile(),
+  ]);
+
+  const brandKitItems = organization?.id
+    ? await getBrandKitItems(organization.id)
+    : [];
+  const options = buildCampaignBuilderLogoOptions(
+    schoolProfile?.brandAssets,
+    brandKitItems,
+  );
+  const selected = options.find((option) => option.id === input.selectedLogoId);
+
+  return {
+    url: selected?.url ?? null,
+    label: selected?.label ?? null,
   };
 }
 

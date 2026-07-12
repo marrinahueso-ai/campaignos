@@ -10,9 +10,10 @@ import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-qu
 import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
-import { buildSetupLogoOptions } from "@/lib/artwork-v2/setup-logos";
+import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
 import type { BrandKitOption, PlaybookOption } from "@/lib/campaign-builder-v2/types";
+import { getBrandKitItems } from "@/lib/creative-assets/queries";
 
 interface CampaignBuilderPageProps {
   params: Promise<{ id: string }>;
@@ -49,9 +50,12 @@ export default async function CampaignBuilderPage({
     notFound();
   }
 
-  const [playbooks, campaignOptions] = await Promise.all([
+  const [playbooks, campaignOptions, brandKitItems] = await Promise.all([
     getCachedPlaybooksForOrganization(organization?.id ?? null),
     getCachedCampaignBuilderCampaignOptions(organization?.id ?? null, event),
+    organization?.id
+      ? getBrandKitItems(organization.id)
+      : Promise.resolve([]),
   ]);
 
   const playbookOptions: PlaybookOption[] = playbooks.map((playbook) => ({
@@ -64,7 +68,10 @@ export default async function CampaignBuilderPage({
     { id: "org-default", name: "Organization Brand Kit" },
   ];
 
-  const logoOptions = buildSetupLogoOptions(schoolProfile?.brandAssets);
+  const logoOptions = buildCampaignBuilderLogoOptions(
+    schoolProfile?.brandAssets,
+    brandKitItems,
+  );
   const schoolColors = {
     primary: schoolProfile?.brandAssets?.primaryColor ?? null,
     secondary: schoolProfile?.brandAssets?.secondaryColor ?? null,
@@ -82,6 +89,7 @@ export default async function CampaignBuilderPage({
 
   if (!initialSession.inspiration.selectedLogoId && logoOptions[0]) {
     initialSession.inspiration.selectedLogoId = logoOptions[0].id;
+    initialSession.inspiration.includeLogoInArtwork = true;
   }
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
