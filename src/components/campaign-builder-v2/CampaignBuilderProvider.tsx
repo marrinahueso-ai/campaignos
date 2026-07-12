@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import {
   getLocationHash,
+  normalizeLocationHash,
   setLocationHash,
   subscribeToLocationHash,
 } from "@/lib/navigation/location-hash";
@@ -40,7 +41,10 @@ import {
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
-import { stepFromHash } from "@/lib/campaign-builder-v2/navigation";
+import {
+  isValidCampaignBuilderStep,
+  stepFromHash,
+} from "@/lib/campaign-builder-v2/navigation";
 import type {
   BrandKitOption,
   CampaignBuilderInspiration,
@@ -272,10 +276,15 @@ export function CampaignBuilderProvider({
   );
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionRef = useRef(session);
+  const currentStepRef = useRef(currentStep);
 
   useEffect(() => {
     sessionRef.current = session;
   }, [session]);
+
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   const persistSession = useCallback(async (next: CampaignBuilderSession) => {
     persistLocalSession(next);
@@ -334,11 +343,27 @@ export function CampaignBuilderProvider({
     );
   }, [eventId, eventTitle, eventDate, restoredFromServer]);
 
-  useEffect(() => {
-    const sync = () => setCurrentStep(stepFromHash(getLocationHash()));
-    sync();
-    return subscribeToLocationHash(sync);
+  const syncStepFromLocationHash = useCallback(() => {
+    const normalized = normalizeLocationHash(getLocationHash());
+
+    // App Router soft navigations (e.g. after revalidatePath) can call
+    // history.replaceState without the hash fragment, which would otherwise
+    // reset the builder to the default inspiration step.
+    if (!isValidCampaignBuilderStep(normalized)) {
+      const lastStep = currentStepRef.current;
+      if (isValidCampaignBuilderStep(lastStep)) {
+        setLocationHash(lastStep);
+        return;
+      }
+    }
+
+    setCurrentStep(stepFromHash(getLocationHash()));
   }, []);
+
+  useEffect(() => {
+    syncStepFromLocationHash();
+    return subscribeToLocationHash(syncStepFromLocationHash);
+  }, [syncStepFromLocationHash]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

@@ -75,14 +75,14 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
     },
     {
       id: "ms-two-week",
-      name: "Two-Week Reminder",
+      name: "Two-Week Push",
       category: "reminder",
-      purpose: "Remind families with key details and volunteer sign-up",
+      purpose: "Build excitement and drive attendance two weeks before the event",
       suggestedDate: offset(-14),
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
-      artworkNotes: "Highlight volunteer CTA",
-      captionNotes: "Mention volunteer sign-up link",
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "in-progress",
     },
     {
@@ -104,12 +104,12 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
       id: "ms-day-before",
       name: "Day Before Reminder",
       category: "reminder",
-      purpose: "Last-minute reminder with parking and arrival tips",
+      purpose: "Final heads-up the day before the event",
       suggestedDate: offset(-1),
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
-      artworkNotes: "Parking map or arrival tips visual",
-      captionNotes: "Include gate time and parking details",
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "pending",
     },
     {
@@ -166,9 +166,9 @@ function buildPreviewContent(
     },
     "ms-two-week": {
       facebook:
-        "Two weeks until our Back to School Fair! Volunteer spots are open — sign up today and help make this event amazing for our families.",
+        "Two weeks until our Back to School Fair! Mark your calendar and get ready for food, fun, and community connection.",
       instagram:
-        "2 weeks to go! Back to School Fair needs YOU. Volunteer link in bio.",
+        "2 weeks to go! Back to School Fair — save the date and spread the word.",
     },
     "ms-one-week": {
       facebook:
@@ -178,9 +178,9 @@ function buildPreviewContent(
     },
     "ms-day-before": {
       facebook:
-        "Tomorrow is the day! Gates open at 5:30 PM. Parking is in the south lot — look for the green balloons. See you soon!",
+        "Tomorrow is the day! We're excited to see our families at the Back to School Fair. See you there!",
       instagram:
-        "TOMORROW! 5:30 PM. South lot parking. Green balloons = you found us.",
+        "TOMORROW! Back to School Fair — see you soon!",
     },
     "ms-event-day": {
       facebook:

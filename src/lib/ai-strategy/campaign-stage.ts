@@ -10,6 +10,12 @@ const STAGE_DEFINITIONS: Record<
     description: "Introduce the event, build awareness, and share essential details.",
     urgency: "low",
   },
+  push: {
+    id: "push",
+    label: "Push",
+    description: "Build excitement and drive attendance — energetic outreach, not a passive reminder.",
+    urgency: "medium",
+  },
   reminder: {
     id: "reminder",
     label: "Reminder",
@@ -52,6 +58,7 @@ function stageFromTitle(title: string): CampaignStageId | null {
   if (normalized.includes("day before") || normalized.includes("morning of")) {
     return "day_before";
   }
+  if (normalized.includes("push")) return "push";
   if (
     normalized.includes("reminder") ||
     normalized.includes("final") ||

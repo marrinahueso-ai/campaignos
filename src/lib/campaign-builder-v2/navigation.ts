@@ -15,6 +15,12 @@ export const DEFAULT_CAMPAIGN_BUILDER_STEP: CampaignBuilderStepId = "inspiration
 
 const VALID_STEPS = new Set<string>(CAMPAIGN_BUILDER_STEPS.map((step) => step.id));
 
+export function isValidCampaignBuilderStep(
+  step: string,
+): step is CampaignBuilderStepId {
+  return VALID_STEPS.has(step);
+}
+
 export function stepFromHash(hash: string): CampaignBuilderStepId {
   const normalized = hash.replace(/^#/, "");
   if (VALID_STEPS.has(normalized)) {

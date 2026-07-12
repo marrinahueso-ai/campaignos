@@ -363,15 +363,6 @@ export async function regenerateMilestoneArtworkAction(
     styleStrength: input.styleStrength,
   });
 
-  if (generation.success) {
-    await syncHeroFromMilestoneArtwork({
-      eventId: input.eventId,
-      milestones: input.milestones,
-      milestoneId: input.milestoneId,
-      artwork: generation.artwork,
-    });
-  }
-
   return {
     success: generation.success,
     artwork: generation.artwork,
@@ -479,15 +470,12 @@ export async function generateAllContentAction(
       const artworkViews = enabledArtworkViews(enabledFormats);
 
       const feedArtworkUrl = artwork.feedUrl ?? artwork.storyUrl;
-      const existingCaption =
-        preview?.captions.find((caption) => caption.text.trim())?.text ?? "";
 
       const captionResult = await generateCampaignBuilderCaption({
         eventId: input.eventId,
         inspiration: resolved.inspiration,
         milestone,
         platform: milestone.platforms[0] ?? "facebook",
-        currentCaption: existingCaption || undefined,
         artworkImageUrl: feedArtworkUrl,
         playbookName: input.playbookName ?? null,
       });

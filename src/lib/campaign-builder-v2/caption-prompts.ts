@@ -1,3 +1,9 @@
+import {
+  CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+  CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES,
+  CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
+  shouldIncludeOrganizationName,
+} from "@/lib/campaign-builder-v2/prompt-guardrails";
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
 import {
   buildMetaCaptionSystemPrompt,
@@ -40,14 +46,34 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
   organizationName?: string | null;
   playbookName?: string | null;
 }): string {
+  const relativeDay = daysUntilEvent(
+    input.inspiration.eventDate,
+    input.milestone.suggestedDate,
+  );
+  const campaignMoment = resolveCampaignStage({
+    relativeDay,
+    stepTitle: input.milestone.name,
+    eventDate: input.inspiration.eventDate,
+  });
+
+  const includeOrgName = shouldIncludeOrganizationName(
+    input.organizationName,
+    input.inspiration.globalAiGuidance,
+    input.inspiration.campaignName,
+    input.milestone.captionNotes,
+    input.milestone.artworkNotes,
+    input.milestone.purpose,
+  );
+
   const lines = [
-    `Campaign: ${input.inspiration.campaignName}`,
+    `Campaign / event: ${input.inspiration.campaignName}`,
     `Event date: ${input.inspiration.eventDate}`,
     input.playbookName ? `Playbook: ${input.playbookName}` : null,
-    `Milestone: ${input.milestone.name}`,
-    `Milestone purpose: ${input.milestone.purpose}`,
+    `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
     `Suggested post date: ${input.milestone.suggestedDate}`,
-    input.organizationName ? `School/PTO: ${input.organizationName}` : null,
+    includeOrgName && input.organizationName
+      ? `School/PTO: ${input.organizationName}`
+      : null,
     input.inspiration.globalAiGuidance.trim()
       ? `Campaign voice guidance: ${input.inspiration.globalAiGuidance.trim()}`
       : null,
@@ -70,14 +96,30 @@ export function buildCampaignBuilderCaptionPrompts(input: {
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
+  const campaignMoment = resolveCampaignStage({
+    relativeDay,
+    stepTitle: input.milestone.name,
+    eventDate: input.inspiration.eventDate,
+  });
   const hasArtworkImage = Boolean(input.artworkImageUrl?.trim());
   const factsBlock = buildCampaignBuilderCaptionFactsBlock(input);
   const tone = mapVoiceToneToMetaTone(input.inspiration.voiceTone);
   const captionNotes = input.milestone.captionNotes.trim();
-  const revisionContext =
-    input.revisionInstructions?.trim() ||
-    input.existingCaption?.trim() ||
-    null;
+  const userRevisionInstructions = input.revisionInstructions?.trim() ?? "";
+  const existingCaptionDraft = input.existingCaption?.trim() ?? "";
+
+  const campaignRevisionGuide =
+    userRevisionInstructions && existingCaptionDraft
+      ? [
+          "",
+          "Revise the draft below per the user's instructions.",
+          "Improve clarity and tone — do not preserve invented logistics, volunteer asks, hashtags, or wording the user did not intend.",
+          `User instructions: ${userRevisionInstructions}`,
+          `Draft to revise:\n"${existingCaptionDraft}"`,
+        ].join("\n")
+      : userRevisionInstructions
+        ? `User instructions: ${userRevisionInstructions}`
+        : null;
 
   const platformGuide =
     input.platform === "facebook"
@@ -88,34 +130,42 @@ export function buildCampaignBuilderCaptionPrompts(input: {
     buildMetaCaptionUserPrompt({
       placement: "feed",
       milestoneTitle: input.milestone.name,
+      timingLabel: campaignMoment.label,
       relativeDay,
       eventDate: input.inspiration.eventDate,
       factsBlock,
       existingFeedCaption: null,
-      revisionContext,
+      revisionContext: null,
       hasArtworkImage,
       tone,
       length: "Medium",
+      feedCtaGuide:
+        "End warmly — save the date or build excitement. Do not ask for volunteers or sign-ups unless user notes explicitly request it.",
     }),
     "",
     platformGuide,
-    captionNotes ? `Milestone caption notes (apply these): ${captionNotes}` : null,
+    captionNotes
+      ? `Milestone caption direction (interpret intent — do not copy verbatim): ${captionNotes}`
+      : null,
     input.inspiration.globalAiGuidance.trim()
-      ? `Global AI guidance: ${input.inspiration.globalAiGuidance.trim()}`
+      ? `Global creative direction (interpret intent): ${input.inspiration.globalAiGuidance.trim()}`
       : null,
     `Voice / tone setting: ${input.inspiration.voiceTone}`,
     "",
-    `Campaign moment: ${resolveCampaignStage({
-      relativeDay,
-      stepTitle: input.milestone.name,
-      eventDate: input.inspiration.eventDate,
-    }).label}`,
+    CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
+    CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+    hasArtworkImage ? CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES : null,
+    campaignRevisionGuide,
   ]
     .filter(Boolean)
     .join("\n");
 
   return {
-    systemPrompt: buildMetaCaptionSystemPrompt({ hasArtworkImage }),
+    systemPrompt: [
+      buildMetaCaptionSystemPrompt({ hasArtworkImage }),
+      CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+      CAMPAIGN_BUILDER_CAPTION_ARTWORK_RULES,
+    ].join(" "),
     userPrompt,
     hasArtworkImage,
   };

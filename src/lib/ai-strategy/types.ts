@@ -8,6 +8,7 @@ import type { DefaultCtaStyle } from "@/types/organization-intelligence";
 
 export type CampaignStageId =
   | "announcement"
+  | "push"
   | "reminder"
   | "day_before"
   | "today"

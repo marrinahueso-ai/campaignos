@@ -66,6 +66,8 @@ export function buildMetaCaptionUserPrompt(input: {
   hasArtworkImage?: boolean;
   tone?: MetaCaptionTone;
   length?: MetaCaptionLength;
+  timingLabel?: string | null;
+  feedCtaGuide?: string | null;
 }): string {
   const stage = resolveCampaignStage({
     relativeDay: input.relativeDay,
@@ -82,7 +84,8 @@ export function buildMetaCaptionUserPrompt(input: {
             ? "The attached image is the approved feed graphic — write copy that pairs with it."
             : null,
           "Light emoji is fine if it feels natural — not every sentence.",
-          "End with a soft call to join in, save the date, or come celebrate — not corporate CTAs.",
+          input.feedCtaGuide?.trim() ??
+            "End with a soft call to join in, save the date, or come celebrate — not corporate CTAs.",
         ]
           .filter(Boolean)
           .join(" ")
@@ -115,7 +118,7 @@ export function buildMetaCaptionUserPrompt(input: {
       : null;
 
   return [
-    `Timing: ${input.milestoneTitle}`,
+    `Timing: ${input.timingLabel?.trim() || input.milestoneTitle}`,
     `Campaign moment: ${stage.label} — ${stage.description}`,
     "",
     placementGuide,

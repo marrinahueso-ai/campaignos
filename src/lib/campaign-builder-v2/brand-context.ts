@@ -37,14 +37,17 @@ export function buildBrandGuidanceBlock(input: {
   items: BrandKitItem[];
   organizationName?: string | null;
   ptoName?: string | null;
+  includeOrganizationNames?: boolean;
 }): string | null {
   const lines: string[] = [];
 
-  if (input.organizationName?.trim()) {
-    lines.push(`Organization: ${input.organizationName.trim()}`);
-  }
-  if (input.ptoName?.trim()) {
-    lines.push(`PTO name: ${input.ptoName.trim()}`);
+  if (input.includeOrganizationNames) {
+    if (input.organizationName?.trim()) {
+      lines.push(`Organization: ${input.organizationName.trim()}`);
+    }
+    if (input.ptoName?.trim()) {
+      lines.push(`PTO name: ${input.ptoName.trim()}`);
+    }
   }
 
   for (const item of input.items) {
@@ -62,7 +65,7 @@ export function buildBrandGuidanceBlock(input: {
       item.label?.trim()
     ) {
       lines.push(
-        `${item.category === "school_logo" ? "School logo" : "PTO logo"}: include ${item.label.trim()} in the design.`,
+        `${item.category === "school_logo" ? "School logo" : "PTO logo"}: include as a visual element from the attached reference — do not render the logo label as text.`,
       );
     }
   }
@@ -110,7 +113,12 @@ async function resolveBrandContextForGenerationUncached(
   const logoUrls = [...new Set([...kitLogoUrls, ...profileLogoUrls])];
 
   return {
-    guidance: buildBrandGuidanceBlock({ items, organizationName, ptoName }),
+    guidance: buildBrandGuidanceBlock({
+      items,
+      organizationName,
+      ptoName,
+      includeOrganizationNames: false,
+    }),
     logoUrls,
     organizationName,
     ptoName,

@@ -5,6 +5,14 @@ import {
 import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
 import type { CampaignBuilderSession, PreviewTabId } from "@/lib/campaign-builder-v2/types";
 
+const STALE_MILESTONE_NAME_FIXES: Record<string, string> = {
+  "Two-Week Reminder": "Two-Week Push",
+};
+
+function normalizeMilestoneName(name: string): string {
+  return STALE_MILESTONE_NAME_FIXES[name] ?? name;
+}
+
 function normalizePreviewTab(tab: PreviewTabId | string | undefined): PreviewTabId {
   if (tab === "fb-feed" || tab === "ig-feed") {
     return "feed";
@@ -54,6 +62,7 @@ export function normalizeCampaignBuilderSession(
   const milestones = [...(raw.milestones ?? defaults.milestones)]
     .map((milestone, index) => ({
       ...milestone,
+      name: normalizeMilestoneName(milestone.name),
       platformFormats:
         milestone.platformFormats ?? defaultEnabledFormats(),
       artworkNotes: milestone.artworkNotes ?? "",
