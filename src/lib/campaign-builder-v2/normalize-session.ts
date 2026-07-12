@@ -126,10 +126,18 @@ export function mergeCampaignBuilderSessions(
     mergedIds.add(secondaryPreview.milestoneId);
   }
 
+  const resultMilestones = primary.milestones ?? secondary.milestones;
+
+  if (typeof fetch === "function") {
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H3',location:'normalize-session.ts:mergeCampaignBuilderSessions',message:'merge primary/secondary milestones',data:{primaryMilestoneIds:(primary.milestones??[]).map(m=>({id:m.id,name:m.name})),secondaryMilestoneIds:(secondary.milestones??[]).map(m=>({id:m.id,name:m.name})),primaryMilestonesWasUndefined:primary.milestones===undefined,resultMilestoneIds:(resultMilestones??[]).map(m=>({id:m.id,name:m.name}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
+  }
+
   return {
     ...primary,
     ...secondary,
-    milestones: primary.milestones ?? secondary.milestones,
+    milestones: resultMilestones,
     previewContents,
     selectedMilestoneId:
       primary.selectedMilestoneId ?? secondary.selectedMilestoneId ?? null,
@@ -265,8 +273,28 @@ export function hydrateCampaignBuilderSession(
   eventId: string,
   eventTitle: string,
   eventDate: string,
+  // False when the server-side session read failed or found nothing (e.g. the
+  // DB table is unreachable, or this is a brand-new campaign). In that case
+  // `base` is just seed defaults, not a real record — the local copy (which
+  // may reflect real, unsaved edits like deletions) must win instead, or a
+  // failed read on any fresh page load would silently resurrect deleted
+  // milestones and discard other local-only edits.
+  serverLoadSucceeded: boolean = true,
 ): CampaignBuilderSession {
-  const merged = local ? mergeCampaignBuilderSessions(base, local) : base;
+  if (!local) {
+    return normalizeCampaignBuilderSession(base, eventId, eventTitle, eventDate);
+  }
+
+  const merged = serverLoadSucceeded
+    ? mergeCampaignBuilderSessions(base, local)
+    : mergeCampaignBuilderSessions(local, base);
+
+  if (typeof fetch === "function") {
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',runId:'post-fix',hypothesisId:'H3',location:'normalize-session.ts:hydrateCampaignBuilderSession',message:'hydrate merge direction chosen',data:{serverLoadSucceeded,baseMilestoneIds:(base.milestones??[]).map(m=>({id:m.id,name:m.name})),localMilestoneIds:(local.milestones??[]).map(m=>({id:m.id,name:m.name})),mergedMilestoneIds:(merged.milestones??[]).map(m=>({id:m.id,name:m.name}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
+  }
+
   return normalizeCampaignBuilderSession(merged, eventId, eventTitle, eventDate);
 }
 
@@ -357,6 +385,12 @@ export function normalizeCampaignBuilderSession(
     rawMilestones,
     defaults,
   );
+
+  if (typeof fetch === "function") {
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H4',location:'normalize-session.ts:normalizeCampaignBuilderSession',message:'normalize raw -> final milestones',data:{rawMilestonesWasProvided:raw.milestones!==undefined,rawMilestoneIds:(raw.milestones??[]).map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),finalMilestoneIds:milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
+  }
 
   return {
     ...defaults,

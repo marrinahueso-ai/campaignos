@@ -269,7 +269,7 @@ export function CampaignBuilderProvider({
   logoOptions,
   schoolColors,
   initialSession,
-  restoredFromServer: _restoredFromServer,
+  restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
@@ -280,6 +280,7 @@ export function CampaignBuilderProvider({
       eventId,
       eventTitle,
       eventDate,
+      restoredFromServer,
     ),
   );
   const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() =>
@@ -357,6 +358,7 @@ export function CampaignBuilderProvider({
       eventId,
       eventTitle,
       eventDate,
+      restoredFromServer,
     );
 
     setSession((prev) => {
@@ -373,6 +375,10 @@ export function CampaignBuilderProvider({
           previous.artwork.storyUrl !== content.artwork.storyUrl
         );
       });
+
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H2',location:'CampaignBuilderProvider.tsx:mountEffect',message:'mount hydration effect fired',data:{initialSessionMilestoneIds:(initialSession.milestones??[]).map(m=>({id:m.id,name:m.name})),prevMilestoneIds:prev.milestones.map(m=>({id:m.id,name:m.name})),hydratedMilestoneIds:hydrated.milestones.map(m=>({id:m.id,name:m.name})),willReplacePrev:changed||hydrated.previewContents.length!==prev.previewContents.length},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion agent log
 
       if (!changed && hydrated.previewContents.length === prev.previewContents.length) {
         return prev;
@@ -405,6 +411,10 @@ export function CampaignBuilderProvider({
         }
         return previous.generationStatus !== content.generationStatus;
       });
+
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H3',location:'CampaignBuilderProvider.tsx:reconcilePreviewStatuses',message:'reconcilePreviewStatuses ran (Preview step mount)',data:{prevMilestoneIds:prev.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),nextMilestoneIds:next.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),localStorageMilestoneIds:(loadLocalSession(eventId)?.milestones??[]).map(m=>({id:m.id,name:m.name})),changed},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion agent log
 
       if (!changed) {
         return prev;
@@ -672,9 +682,13 @@ export function CampaignBuilderProvider({
           prev.selectedMilestoneId === id
             ? (milestones[0]?.id ?? null)
             : prev.selectedMilestoneId;
+        const sorted = sortMilestones(milestones);
+        // #region agent log
+        fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H1',location:'CampaignBuilderProvider.tsx:removeMilestone',message:'removeMilestone called',data:{removedId:id,beforeIds:prev.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),afterIds:sorted.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion agent log
         return {
           ...prev,
-          milestones: sortMilestones(milestones),
+          milestones: sorted,
           previewContents,
           selectedMilestoneId,
           expandedReviewMilestoneIds: prev.expandedReviewMilestoneIds.filter(
@@ -964,6 +978,9 @@ export function CampaignBuilderProvider({
       sessionRef.current.milestones,
       sessionRef.current.previewContents,
     );
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H5',location:'CampaignBuilderProvider.tsx:generateNextMilestone',message:'generateNextMilestone picked target',data:{allMilestones:sessionRef.current.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),chosenNext:next?{id:next.id,name:next.name,sortOrder:next.sortOrder}:null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     if (!next) {
       return {
         success: false,
