@@ -9,7 +9,7 @@ import {
   isMilestoneContentComplete,
   milestoneHasArtwork,
 } from "../milestone-status.ts";
-import { emptyMilestoneArtwork } from "../platform-utils.ts";
+import { emptyMilestoneArtwork, normalizeMilestoneArtwork } from "../platform-utils.ts";
 import type {
   CampaignBuilderMilestone,
   MilestonePreviewContent,
@@ -124,6 +124,45 @@ describe("milestone-status", () => {
         feedUrl: null,
         storyUrl: "https://example.com/story.png",
       },
+      captions: [],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "generated",
+    );
+  });
+
+  it("detects generated from legacy artwork slot keys after normalization", () => {
+    const artwork = normalizeMilestoneArtwork({
+      feedUrl: null,
+      storyUrl: null,
+      facebookFeedUrl:
+        "https://example.supabase.co/storage/v1/object/public/event-assets/evt-1/feed.png",
+      instagramStoryUrl:
+        "https://example.supabase.co/storage/v1/object/public/event-assets/evt-1/story.png",
+    });
+    const preview = buildPreview({
+      artwork,
+      captions: [],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "generated",
+    );
+    assert.equal(milestoneHasArtwork(preview), true);
+  });
+
+  it("detects generated from relative storage artwork paths", () => {
+    const artwork = normalizeMilestoneArtwork({
+      feedUrl: "/storage/v1/object/public/event-assets/evt-1/feed.png",
+      storyUrl: null,
+    });
+    const preview = buildPreview({
+      artwork,
       captions: [],
       status: "draft",
       generationStatus: "ready_to_generate",

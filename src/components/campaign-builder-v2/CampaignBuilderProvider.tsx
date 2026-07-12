@@ -40,7 +40,7 @@ import {
   DEFAULT_VOICE_TONE_OPTIONS,
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
-import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
+import { hydrateCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import {
   findNextMilestoneToGenerate,
   inferGenerationStatus,
@@ -141,6 +141,7 @@ interface CampaignBuilderContextValue {
   ) => void;
   setReviewFilter: (filter: CampaignBuilderSession["reviewFilter"]) => void;
   toggleExpandedReview: (milestoneId: string) => void;
+  reconcilePreviewStatuses: () => void;
   navigateToWarning: (warning: StepWarning) => void;
 }
 
@@ -268,13 +269,14 @@ export function CampaignBuilderProvider({
   logoOptions,
   schoolColors,
   initialSession,
-  restoredFromServer,
+  restoredFromServer: _restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
-    normalizeCampaignBuilderSession(
+    hydrateCampaignBuilderSession(
       initialSession,
+      loadLocalSession(eventId),
       eventId,
       eventTitle,
       eventDate,
@@ -349,19 +351,70 @@ export function CampaignBuilderProvider({
   );
 
   useEffect(() => {
-    if (restoredFromServer) {
-      return;
-    }
-
-    const local = loadLocalSession(eventId);
-    if (!local) {
-      return;
-    }
-
-    setSession(
-      normalizeCampaignBuilderSession(local, eventId, eventTitle, eventDate),
+    const hydrated = hydrateCampaignBuilderSession(
+      initialSession,
+      loadLocalSession(eventId),
+      eventId,
+      eventTitle,
+      eventDate,
     );
-  }, [eventId, eventTitle, eventDate, restoredFromServer]);
+
+    setSession((prev) => {
+      const changed = hydrated.previewContents.some((content) => {
+        const previous = prev.previewContents.find(
+          (entry) => entry.milestoneId === content.milestoneId,
+        );
+        if (!previous) {
+          return true;
+        }
+        return (
+          previous.generationStatus !== content.generationStatus ||
+          previous.artwork.feedUrl !== content.artwork.feedUrl ||
+          previous.artwork.storyUrl !== content.artwork.storyUrl
+        );
+      });
+
+      if (!changed && hydrated.previewContents.length === prev.previewContents.length) {
+        return prev;
+      }
+
+      sessionRef.current = hydrated;
+      persistLocalSession(hydrated);
+      return hydrated;
+    });
+    // Reconcile persisted milestone statuses once per mount after hydration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
+
+  const reconcilePreviewStatuses = useCallback(() => {
+    setSession((prev) => {
+      const next = hydrateCampaignBuilderSession(
+        prev,
+        loadLocalSession(eventId),
+        eventId,
+        eventTitle,
+        eventDate,
+      );
+
+      const changed = next.previewContents.some((content) => {
+        const previous = prev.previewContents.find(
+          (entry) => entry.milestoneId === content.milestoneId,
+        );
+        if (!previous) {
+          return true;
+        }
+        return previous.generationStatus !== content.generationStatus;
+      });
+
+      if (!changed) {
+        return prev;
+      }
+
+      sessionRef.current = next;
+      scheduleSave(next);
+      return next;
+    });
+  }, [eventId, eventTitle, eventDate, scheduleSave]);
 
   const syncStepFromLocationHash = useCallback(() => {
     const normalized = normalizeLocationHash(getLocationHash());
@@ -1137,6 +1190,7 @@ export function CampaignBuilderProvider({
       updatePreviewContent,
       setReviewFilter,
       toggleExpandedReview,
+      reconcilePreviewStatuses,
       navigateToWarning,
     }),
     [
@@ -1178,6 +1232,7 @@ export function CampaignBuilderProvider({
       updatePreviewContent,
       setReviewFilter,
       toggleExpandedReview,
+      reconcilePreviewStatuses,
       navigateToWarning,
     ],
   );

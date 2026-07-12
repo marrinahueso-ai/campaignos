@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Copy, Trash2 } from "lucide-react";
@@ -93,7 +93,12 @@ export function PreviewStep() {
     generateNextMilestone,
     generatingMilestoneId,
     isGeneratingContent,
+    reconcilePreviewStatuses,
   } = useCampaignBuilder();
+
+  useEffect(() => {
+    reconcilePreviewStatuses();
+  }, [reconcilePreviewStatuses]);
 
   const router = useRouter();
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
