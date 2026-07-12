@@ -35,6 +35,7 @@ export function TasksV2Shell({ data }: TasksV2ShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = parseTasksV2Tab(searchParams.get("tab"));
+  const eventFilter = searchParams.get("event");
 
   const replaceParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -94,15 +95,19 @@ export function TasksV2Shell({ data }: TasksV2ShellProps) {
       return <TasksV2ComingSoon label={label} />;
     }
 
+    const eventGroups = eventFilter
+      ? data.eventGroups.filter((group) => group.eventId === eventFilter)
+      : data.eventGroups;
+
     return (
       <TasksV2MainTable
-        eventGroups={data.eventGroups}
+        eventGroups={eventGroups}
         canEdit={data.canEdit}
         events={data.events}
         orgMembers={data.orgMembers}
       />
     );
-  }, [activeTab, data]);
+  }, [activeTab, data, eventFilter]);
 
   return (
     <div className="space-y-6">

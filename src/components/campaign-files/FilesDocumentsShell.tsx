@@ -49,6 +49,7 @@ interface FilesDocumentsShellProps {
   data: FilesPageData;
   scope?: "global" | "event";
   lockedEventId?: string;
+  initialEventId?: string;
 }
 
 function EventThumbnail({
@@ -105,8 +106,10 @@ export function FilesDocumentsShell({
   data,
   scope = "global",
   lockedEventId,
+  initialEventId,
 }: FilesDocumentsShellProps) {
   const isEventScope = scope === "event";
+  const presetEventId = lockedEventId ?? initialEventId;
   const [viewMode, setViewMode] = useState<FilesViewMode>("list");
   const [page, setPage] = useState(1);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -114,10 +117,10 @@ export function FilesDocumentsShell({
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState(() =>
-    createDefaultFilesFilterState(lockedEventId),
+    createDefaultFilesFilterState(presetEventId),
   );
   const [carouselEventId, setCarouselEventId] = useState<string | "all">(
-    lockedEventId ?? "all",
+    presetEventId ?? "all",
   );
 
   const eventMap = useMemo(() => {
@@ -156,8 +159,8 @@ export function FilesDocumentsShell({
   }
 
   function clearAllFilters() {
-    setFilters(createDefaultFilesFilterState(lockedEventId));
-    setCarouselEventId(lockedEventId ?? "all");
+    setFilters(createDefaultFilesFilterState(presetEventId));
+    setCarouselEventId(presetEventId ?? "all");
     setPage(1);
   }
 

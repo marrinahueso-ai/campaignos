@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -10,8 +11,7 @@ import {
   Upload,
   UserPlus,
 } from "lucide-react";
-import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
-import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
+import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import {
   PH,
   PlanningHubCard,
@@ -19,65 +19,81 @@ import {
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
-const QUICK_ACTIONS = [
-  {
-    id: "create-post",
-    title: "Create Post",
-    subtext: "Social Media",
-    icon: MessageSquare,
-    iconBg: PH.iconTints.coral.bg,
-    iconColor: PH.iconTints.coral.color,
-    tab: "social-media" as EventPlaybookTab,
-    step: "plan" as CampaignWorkflowStep,
-  },
-  {
-    id: "add-task",
-    title: "Add Task",
-    subtext: "To-do list",
-    icon: CheckSquare,
-    iconBg: PH.iconTints.green.bg,
-    iconColor: PH.iconTints.green.color,
-    tab: "tasks" as EventPlaybookTab,
-  },
-  {
-    id: "upload-file",
-    title: "Upload File",
-    subtext: "Docs & Media",
-    icon: Upload,
-    iconBg: PH.iconTints.blue.bg,
-    iconColor: PH.iconTints.blue.color,
-    tab: "files" as EventPlaybookTab,
-  },
-  {
-    id: "invite-volunteer",
-    title: "Invite Volunteer",
-    subtext: "Get help",
-    icon: UserPlus,
-    iconBg: PH.iconTints.orange.bg,
-    iconColor: PH.iconTints.orange.color,
-    tab: "settings" as EventPlaybookTab,
-  },
-  {
-    id: "view-calendar",
-    title: "View Calendar",
-    subtext: "See what's next",
-    icon: CalendarDays,
-    iconBg: PH.iconTints.purple.bg,
-    iconColor: PH.iconTints.purple.color,
-    href: "/calendar",
-  },
-] as const;
+type QuickActionIcon = typeof MessageSquare;
+
+interface QuickAction {
+  id: string;
+  title: string;
+  subtext: string;
+  icon: QuickActionIcon;
+  iconBg: string;
+  iconColor: string;
+  resolveHref: (event: Event) => string;
+}
+
+function buildQuickActions(): QuickAction[] {
+  return [
+    {
+      id: "create-post",
+      title: "Create Post",
+      subtext: "Social Media",
+      icon: MessageSquare,
+      iconBg: PH.iconTints.coral.bg,
+      iconColor: PH.iconTints.coral.color,
+      resolveHref: (event) =>
+        isCampaignBuilderV2Enabled()
+          ? `/events/${event.id}/campaign-builder#inspiration`
+          : "/communications",
+    },
+    {
+      id: "add-task",
+      title: "Add Task",
+      subtext: "To-do list",
+      icon: CheckSquare,
+      iconBg: PH.iconTints.green.bg,
+      iconColor: PH.iconTints.green.color,
+      resolveHref: (event) => `/tasks?event=${event.id}`,
+    },
+    {
+      id: "upload-file",
+      title: "Upload File",
+      subtext: "Docs & Media",
+      icon: Upload,
+      iconBg: PH.iconTints.blue.bg,
+      iconColor: PH.iconTints.blue.color,
+      resolveHref: (event) => `/files?event=${event.id}`,
+    },
+    {
+      id: "invite-volunteer",
+      title: "Invite Volunteer",
+      subtext: "Get help",
+      icon: UserPlus,
+      iconBg: PH.iconTints.orange.bg,
+      iconColor: PH.iconTints.orange.color,
+      resolveHref: () => "/settings/team-access",
+    },
+    {
+      id: "view-calendar",
+      title: "View Calendar",
+      subtext: "See what's next",
+      icon: CalendarDays,
+      iconBg: PH.iconTints.purple.bg,
+      iconColor: PH.iconTints.purple.color,
+      resolveHref: (event) => `/calendar?event=${event.id}`,
+    },
+  ];
+}
+
+const QUICK_ACTIONS = buildQuickActions();
 
 interface PlanningHubHeaderProps {
   event: Event;
   campaignEvents: Event[];
-  onNavigateTab: (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => void;
 }
 
 export function PlanningHubHeader({
   event,
   campaignEvents,
-  onNavigateTab,
 }: PlanningHubHeaderProps) {
   const router = useRouter();
   const [campaignOpen, setCampaignOpen] = useState(false);
@@ -150,58 +166,31 @@ export function PlanningHubHeader({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {QUICK_ACTIONS.map((action) => {
           const Icon = action.icon;
-          const content = (
-            <>
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
-                style={{ backgroundColor: action.iconBg }}
-              >
-                <Icon
-                  className="h-[18px] w-[18px]"
-                  style={{ color: action.iconColor }}
-                  strokeWidth={1.75}
-                />
-              </span>
-              <span className="min-w-0 text-left">
-                <span className="block text-sm font-semibold text-cos-text">
-                  {action.title}
-                </span>
-                <span className="block text-xs text-cos-dark-muted">{action.subtext}</span>
-              </span>
-            </>
-          );
-
-          if ("href" in action && action.href) {
-            return (
-              <PlanningHubCard key={action.id} className="p-0">
-                <a
-                  href={action.href}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-cos-bg",
-                  )}
-                >
-                  {content}
-                </a>
-              </PlanningHubCard>
-            );
-          }
+          const href = action.resolveHref(event);
 
           return (
             <PlanningHubCard key={action.id} className="p-0">
-              <button
-                type="button"
-                onClick={() => {
-                  if ("tab" in action) {
-                    onNavigateTab(
-                      action.tab,
-                      "step" in action ? action.step : undefined,
-                    );
-                  }
-                }}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-cos-bg"
+              <Link
+                href={href}
+                className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-cos-bg"
               >
-                {content}
-              </button>
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]"
+                  style={{ backgroundColor: action.iconBg }}
+                >
+                  <Icon
+                    className="h-[18px] w-[18px]"
+                    style={{ color: action.iconColor }}
+                    strokeWidth={1.75}
+                  />
+                </span>
+                <span className="min-w-0 text-left">
+                  <span className="block text-sm font-semibold text-cos-text">
+                    {action.title}
+                  </span>
+                  <span className="block text-xs text-cos-dark-muted">{action.subtext}</span>
+                </span>
+              </Link>
             </PlanningHubCard>
           );
         })}

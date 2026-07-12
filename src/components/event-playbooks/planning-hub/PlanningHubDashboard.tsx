@@ -70,11 +70,7 @@ export function PlanningHubDashboard({
           userEmail={userEmail}
         />
 
-        <PlanningHubHeader
-          event={event}
-          campaignEvents={campaignEvents}
-          onNavigateTab={onNavigateTab}
-        />
+        <PlanningHubHeader event={event} campaignEvents={campaignEvents} />
       </div>
 
       <PlanningHubKpiRow
