@@ -18,10 +18,7 @@ async function fetchScopedCampaignEvents(input: {
     return [];
   }
 
-  const activeSchoolYear = await getActiveSchoolYear(scopedOrgId);
-  const schoolYearIds = activeSchoolYear?.id
-    ? [activeSchoolYear.id]
-    : await getOrganizationSchoolYearIds(scopedOrgId);
+  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
   if (!schoolYearIds.length) {
     return [];
   }

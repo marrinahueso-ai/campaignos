@@ -151,6 +151,15 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       available: true,
       comingSoon: true,
     },
+    {
+      id: "signup-genius",
+      name: "SignUpGenius",
+      description: "Import volunteer sign-ups and slot assignments",
+      connected: false,
+      manageHref: "/settings/integrations",
+      available: true,
+      comingSoon: true,
+    },
   ];
 
   const activeIntegrations = integrations.filter((item) => item.connected);

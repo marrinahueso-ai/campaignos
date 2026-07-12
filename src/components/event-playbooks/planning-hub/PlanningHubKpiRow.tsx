@@ -38,8 +38,8 @@ interface PlanningHubKpiRowProps {
 
 function CompactProgressRing({
   percent,
-  size = 48,
-  strokeWidth = 4,
+  size = 40,
+  strokeWidth = 3,
 }: {
   percent: number;
   size?: number;
@@ -72,7 +72,7 @@ function CompactProgressRing({
           strokeLinecap="round"
         />
       </svg>
-      <span className="absolute text-base font-semibold text-cos-text">
+      <span className="absolute text-sm font-semibold text-cos-text">
         {percent}%
       </span>
     </div>
@@ -128,9 +128,9 @@ export function PlanningHubKpiRow({
   }
 
   const kpiCardClass =
-    "flex flex-col items-center px-3 py-2.5 text-center";
+    "flex flex-col items-center px-2.5 py-2 text-center";
   const kpiValueClass =
-    "mt-2 flex flex-col items-center justify-center [&>button]:w-auto [&>button]:text-center";
+    "mt-1.5 flex flex-col items-center justify-center [&>button]:w-auto [&>button]:text-center";
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -142,13 +142,13 @@ export function PlanningHubKpiRow({
             displayValue={formatEventDate(event.date)}
             placeholder="Set date"
             inputType="date"
-            valueClassName="font-display text-2xl leading-tight"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (date) => {
               await saveEventDetails({ date });
             }}
           />
         </div>
-        <PlanningHubActionLink href={calendarUrl} className="mt-2 self-center">
+        <PlanningHubActionLink href={calendarUrl} className="mt-1.5 self-center">
           Add to calendar →
         </PlanningHubActionLink>
       </PlanningHubCard>
@@ -156,10 +156,10 @@ export function PlanningHubKpiRow({
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={Clock3} label="Days to go" />
         <div className="mt-2 flex flex-col items-center justify-center">
-          <p className="font-display text-[2.75rem] leading-none text-cos-text">
+          <p className="font-display text-3xl leading-none text-cos-text">
             {countdown.isPast ? "0" : countdown.daysRemaining}
           </p>
-          <p className="mt-1 text-sm text-cos-muted">
+          <p className="mt-0.5 text-xs text-cos-muted">
             {countdown.isPast ? "Event completed" : "Let's crush it! 🎉"}
           </p>
         </div>
@@ -172,13 +172,13 @@ export function PlanningHubKpiRow({
             value={event.expectedAttendance ?? ""}
             displayValue={attendanceEstimate}
             placeholder="TBD"
-            valueClassName="font-display text-2xl leading-tight"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (expectedAttendance) => {
               await savePlanningField({ expectedAttendance });
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-2 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("overview")} className="mt-1.5 self-center">
           Update estimate →
         </PlanningHubActionLink>
       </PlanningHubCard>
@@ -190,26 +190,26 @@ export function PlanningHubKpiRow({
             value={event.budget ?? ""}
             displayValue={budgetDisplay}
             placeholder="Not set"
-            valueClassName="font-display text-2xl leading-tight"
+            valueClassName="font-display text-xl leading-tight"
             onSave={async (budget) => {
               await savePlanningField({ budget });
             }}
           />
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-2 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("settings")} className="mt-1.5 self-center">
           Set budget →
         </PlanningHubActionLink>
       </PlanningHubCard>
 
       <PlanningHubCard className={kpiCardClass}>
         <PlanningHubKpiLabel icon={CheckSquareIcon} label="Task progress" />
-        <div className="mt-2 flex flex-col items-center justify-center gap-1.5">
+        <div className="mt-1.5 flex flex-col items-center justify-center gap-1">
           <CompactProgressRing percent={taskProgressPercent} />
-          <p className="font-display text-xl leading-tight text-cos-text">
+          <p className="font-display text-lg leading-tight text-cos-text">
             {doneTaskCount} of {totalTaskCount} tasks
           </p>
         </div>
-        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-2 self-center">
+        <PlanningHubActionLink onClick={() => onNavigateTab("tasks")} className="mt-1.5 self-center">
           View tasks →
         </PlanningHubActionLink>
       </PlanningHubCard>

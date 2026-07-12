@@ -36,6 +36,7 @@ interface PlanningHubDashboardProps {
   aiStatus: AiAssistantStatus;
   pastLessonCount: number;
   tablesAvailable: boolean;
+  taskGroupsAvailable?: boolean;
   onNavigateTab: (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => void;
   eventVendorsData?: import("@/types/vendors").EventVendorsData;
   vendorDirectoryData?: {
@@ -61,6 +62,7 @@ export function PlanningHubDashboard({
   aiStatus,
   pastLessonCount,
   tablesAvailable,
+  taskGroupsAvailable = true,
   onNavigateTab,
   eventVendorsData,
   vendorDirectoryData,
@@ -110,9 +112,9 @@ export function PlanningHubDashboard({
         </div>
         <div className="xl:col-span-4">
           <PlanningHubSocialCenter
+            eventId={event.id}
             bundles={metaPublishBundles}
             hasCampaign={hasCampaign}
-            onNavigateTab={onNavigateTab}
           />
         </div>
       </div>
@@ -123,6 +125,7 @@ export function PlanningHubDashboard({
           tasks={hubData.tasks}
           taskGroups={hubData.taskGroups}
           tablesAvailable={tablesAvailable}
+          taskGroupsAvailable={taskGroupsAvailable}
           onNavigateTab={onNavigateTab}
         />
         <PlanningHubVolunteerInfo event={event} onNavigateTab={onNavigateTab} />

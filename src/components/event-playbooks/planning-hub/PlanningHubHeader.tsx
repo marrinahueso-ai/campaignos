@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  CalendarDays,
   CheckSquare,
   ChevronDown,
   MessageSquare,
+  StickyNote,
   Upload,
-  UserPlus,
 } from "lucide-react";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import {
@@ -64,22 +63,13 @@ function buildQuickActions(): QuickAction[] {
       resolveHref: (event) => `/files?event=${event.id}`,
     },
     {
-      id: "invite-volunteer",
-      title: "Invite Volunteer",
-      subtext: "Get help",
-      icon: UserPlus,
+      id: "notes",
+      title: "Notes",
+      subtext: "Notes & lessons",
+      icon: StickyNote,
       iconBg: PH.iconTints.orange.bg,
       iconColor: PH.iconTints.orange.color,
-      resolveHref: () => "/settings/team-access",
-    },
-    {
-      id: "view-calendar",
-      title: "View Calendar",
-      subtext: "See what's next",
-      icon: CalendarDays,
-      iconBg: PH.iconTints.purple.bg,
-      iconColor: PH.iconTints.purple.color,
-      resolveHref: (event) => `/calendar?event=${event.id}`,
+      resolveHref: (event) => `/events/${event.id}#notes`,
     },
   ];
 }
@@ -163,7 +153,7 @@ export function PlanningHubHeader({
         </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {QUICK_ACTIONS.map((action) => {
           const Icon = action.icon;
           const href = action.resolveHref(event);

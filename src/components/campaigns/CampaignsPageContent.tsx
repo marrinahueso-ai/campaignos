@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { CampaignDraftsSection } from "@/components/campaigns/CampaignDraftsSection";
 import { CampaignSummaryCards } from "@/components/campaigns/CampaignSummaryCards";
 import { CampaignsGridView } from "@/components/campaigns/CampaignsGridView";
 import { CampaignsTableView } from "@/components/campaigns/CampaignsTableView";
@@ -14,7 +13,6 @@ import {
   countBySummaryFilter,
   createDefaultCampaignFilters,
   filterCampaignEvents,
-  getDraftCampaignEvents,
   getUpcomingCampaignEvents,
   paginateCampaignEvents,
   sortCampaignEvents,
@@ -36,6 +34,8 @@ interface CampaignsPageContentProps {
   ownershipByEventId?: Map<string, EventRosterOwnership>;
   metaScheduledEventIds?: Set<string>;
   eventIdsWithFiles?: Set<string>;
+  schoolYears?: Array<{ id: string; label: string }>;
+  activeSchoolYearId?: string | null;
 }
 
 export function CampaignsPageContent({
@@ -45,9 +45,11 @@ export function CampaignsPageContent({
   ownershipByEventId,
   metaScheduledEventIds,
   eventIdsWithFiles,
+  schoolYears = [],
+  activeSchoolYearId = null,
 }: CampaignsPageContentProps) {
-  const [filters, setFilters] = useState<CampaignPageFilterState>(
-    createDefaultCampaignFilters,
+  const [filters, setFilters] = useState<CampaignPageFilterState>(() =>
+    createDefaultCampaignFilters(activeSchoolYearId),
   );
   const [viewMode, setViewMode] = useState<CampaignViewMode>("list");
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -96,11 +98,6 @@ export function CampaignsPageContent({
     [filteredEvents, today],
   );
 
-  const draftEvents = useMemo(
-    () => getDraftCampaignEvents(filteredEvents),
-    [filteredEvents],
-  );
-
   const pageCount = totalCampaignPages(filteredEvents.length, CAMPAIGNS_PAGE_SIZE);
   const currentPage = Math.min(page, pageCount);
   const paginatedEvents = paginateCampaignEvents(
@@ -125,7 +122,7 @@ export function CampaignsPageContent({
   }
 
   function handleClearFilters() {
-    updateFilters(createDefaultCampaignFilters());
+    updateFilters(createDefaultCampaignFilters(activeSchoolYearId));
     setShowMoreFilters(false);
   }
 
@@ -157,6 +154,7 @@ export function CampaignsPageContent({
         viewMode={viewMode}
         showMoreFilters={showMoreFilters}
         ownershipByEventId={ownershipByEventId}
+        schoolYears={schoolYears}
         onFiltersChange={updateFilters}
         onViewModeChange={setViewMode}
         onShowMoreFiltersChange={setShowMoreFilters}
@@ -198,14 +196,6 @@ export function CampaignsPageContent({
         <>
           <CampaignUpcomingSection
             events={upcomingEvents}
-            today={today}
-            artworkByEventId={artworkByEventId}
-            ownershipByEventId={ownershipByEventId}
-            metaScheduledEventIds={metaScheduledEventIds}
-          />
-
-          <CampaignDraftsSection
-            events={draftEvents}
             today={today}
             artworkByEventId={artworkByEventId}
             ownershipByEventId={ownershipByEventId}

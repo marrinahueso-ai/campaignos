@@ -10,6 +10,10 @@ import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
 import { buildEventRosterOwnershipMap } from "@/lib/organization-workspace/resolve-event-roster-ownership";
+import {
+  getActiveSchoolYear,
+  getSchoolYearsForOrganization,
+} from "@/lib/school-years/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
 
 export const metadata = {
@@ -20,11 +24,15 @@ export default async function EventsPage() {
   const today = getTodayDateString();
   const organization = await getCurrentOrganization();
 
-  const [events, workspace] = await Promise.all([
+  const [events, workspace, schoolYears, activeSchoolYear] = await Promise.all([
     getCampaignPageEvents(organization?.id ?? null),
     organization
       ? getOrganizationWorkspaceData(organization.id)
       : Promise.resolve(null),
+    organization
+      ? getSchoolYearsForOrganization(organization.id)
+      : Promise.resolve([]),
+    organization ? getActiveSchoolYear(organization.id) : Promise.resolve(null),
   ]);
 
   const eventIds = events.map((event) => event.id);
@@ -61,6 +69,11 @@ export default async function EventsPage() {
         ownershipByEventId={ownershipByEventId}
         metaScheduledEventIds={metaScheduledEventIds}
         eventIdsWithFiles={eventIdsWithFiles}
+        schoolYears={schoolYears.map((year) => ({
+          id: year.id,
+          label: year.label,
+        }))}
+        activeSchoolYearId={activeSchoolYear?.id ?? null}
       />
     </div>
   );

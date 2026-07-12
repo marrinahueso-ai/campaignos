@@ -54,15 +54,15 @@ export function PlanningHubQuickLinks({
 }: PlanningHubQuickLinksProps) {
   const links = mergePlanningQuickLinks(event.planningQuickLinks);
 
-  function resolveHref(key: PlanningQuickLinkKey, url: string): string {
+  function resolveHref(key: PlanningQuickLinkKey, url: string, eventId: string): string {
     if (url.trim()) {
       return url;
     }
     if (key === "communication_plan" && hasCampaign) {
-      return "#social-media";
+      return `/events/${eventId}/campaign-builder#inspiration`;
     }
     if (key === "vendor_list") {
-      return "#files";
+      return `/vendors?event=${eventId}`;
     }
     if (key === "event_budget") {
       return "#settings";
@@ -77,7 +77,7 @@ export function PlanningHubQuickLinks({
       <ul className="mt-4 flex-1 divide-y divide-cos-border">
         {MOCKUP_QUICK_LINKS.map(({ key, label, icon: Icon }) => {
           const entry = links[key];
-          const href = resolveHref(key, entry.url);
+          const href = resolveHref(key, entry.url, event.id);
           const isExternal = Boolean(entry.url.trim());
           const iconStyle = ICON_STYLES[key];
 
@@ -118,8 +118,10 @@ export function PlanningHubQuickLinks({
                 <a href={href} target="_blank" rel="noreferrer">
                   {row}
                 </a>
-              ) : (
+              ) : href.startsWith("/") ? (
                 <Link href={href}>{row}</Link>
+              ) : (
+                row
               )}
             </li>
           );

@@ -40,6 +40,7 @@ export {
   CAMPAIGNS_PAGE_SIZE,
   buildMonthFilterOptions,
   buildOwnerFilterOptions,
+  buildSchoolYearFilterOptions,
   countBySummaryFilter,
   createDefaultCampaignFilters,
   formatCampaignUpdatedDate,
@@ -242,6 +243,12 @@ export function filterCampaignEvents(
 
     if (filters.month !== "all") {
       if (getMonthKeyFromDate(event.date) !== filters.month) {
+        return false;
+      }
+    }
+
+    if (filters.schoolYear !== "all") {
+      if (event.schoolYearId !== filters.schoolYear) {
         return false;
       }
     }

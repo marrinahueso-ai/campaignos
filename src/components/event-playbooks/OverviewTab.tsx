@@ -17,6 +17,7 @@ interface OverviewTabProps {
   artwork: HeroArtworkSelection | null;
   hasCampaign?: boolean;
   tablesAvailable?: boolean;
+  taskGroupsAvailable?: boolean;
   metaPublishBundles?: MetaPublishBundle[];
   committeePersonOptions?: string[];
   defaultCommitteePerson?: string;
@@ -43,6 +44,7 @@ export function OverviewTab({
   artwork,
   hasCampaign = true,
   tablesAvailable = true,
+  taskGroupsAvailable = true,
   metaPublishBundles = [],
   committeePersonOptions = [],
   defaultCommitteePerson = "",
@@ -73,6 +75,7 @@ export function OverviewTab({
       aiStatus={aiStatus}
       pastLessonCount={pastLessonCount}
       tablesAvailable={tablesAvailable}
+      taskGroupsAvailable={taskGroupsAvailable}
       onNavigateTab={onNavigateTab}
       eventVendorsData={eventVendorsData}
       vendorDirectoryData={vendorDirectoryData}

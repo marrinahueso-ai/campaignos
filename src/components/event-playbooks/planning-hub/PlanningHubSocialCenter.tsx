@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { MessageSquare, Plus } from "lucide-react";
@@ -17,8 +18,6 @@ import {
   PlanningHubCard,
   PlanningHubSectionTitle,
 } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
-import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
-import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -35,15 +34,15 @@ const TABS: { id: SocialPostFilter | "calendar"; label: string }[] = [
 ];
 
 interface PlanningHubSocialCenterProps {
+  eventId: string;
   bundles: MetaPublishBundle[];
   hasCampaign: boolean;
-  onNavigateTab: (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => void;
 }
 
 export function PlanningHubSocialCenter({
+  eventId,
   bundles,
   hasCampaign,
-  onNavigateTab,
 }: PlanningHubSocialCenterProps) {
   const [activeTab, setActiveTab] = useState<SocialPostFilter | "calendar">("upcoming");
 
@@ -79,7 +78,7 @@ export function PlanningHubSocialCenter({
         icon={MessageSquare}
         title="Social Media Center"
         action={
-          <PlanningHubActionLink onClick={() => onNavigateTab("social-media", "plan")}>
+          <PlanningHubActionLink href={`/events/${eventId}/campaign-builder#preview`}>
             View all posts →
           </PlanningHubActionLink>
         }
@@ -177,14 +176,13 @@ export function PlanningHubSocialCenter({
         )}
       </ul>
 
-      <button
-        type="button"
-        onClick={() => onNavigateTab("social-media", "plan")}
+      <Link
+        href={`/events/${eventId}/campaign-builder#inspiration`}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-[10px] border border-cos-border bg-cos-bg-alt px-4 py-2.5 text-sm font-semibold text-cos-text transition-colors hover:bg-cos-bg"
       >
         <Plus className="h-4 w-4" strokeWidth={1.75} />
         Create New Post
-      </button>
+      </Link>
     </PlanningHubCard>
   );
 }

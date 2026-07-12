@@ -5,7 +5,8 @@ export type IntegrationId =
   | "google-inbox"
   | "monday"
   | "dropbox"
-  | "constant-contact";
+  | "constant-contact"
+  | "signup-genius";
 
 export interface IntegrationStatus {
   id: IntegrationId;

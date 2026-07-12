@@ -49,6 +49,7 @@ export function MilestonesStep() {
     suggestMilestones,
     generateAllContent,
     isGeneratingContent,
+    generationProgress,
   } = useCampaignBuilder();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -257,13 +258,25 @@ export function MilestonesStep() {
           {isGeneratingContent && (
             <div className="rounded border border-cos-border bg-cos-bg/40 px-4 py-4 text-center text-sm text-cos-muted">
               <p className="font-medium text-cos-text">
-                Generating artwork and captions…
+                {generationProgress
+                  ? `Generating milestone ${generationProgress.current} of ${generationProgress.total}: ${generationProgress.milestoneName}`
+                  : "Generating artwork and captions…"}
               </p>
               <p className="mt-1">
-                This can take several minutes per milestone. Keep this tab open
-                until generation finishes — your campaign setup is saved, but
+                Each milestone is generated separately to avoid timeouts. Keep this tab
+                open until generation finishes — your campaign setup is saved, but
                 in-progress AI generation will stop if you navigate away.
               </p>
+              {generationProgress && generationProgress.total > 1 && (
+                <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-cos-border">
+                  <div
+                    className="h-full bg-cos-accent transition-all"
+                    style={{
+                      width: `${(generationProgress.current / generationProgress.total) * 100}%`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

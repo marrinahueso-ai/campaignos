@@ -9,7 +9,9 @@ import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/norma
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
 import { getEventById } from "@/lib/events/queries";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
+import { buildSetupLogoOptions } from "@/lib/artwork-v2/setup-logos";
+import { NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
 import type { BrandKitOption, PlaybookOption } from "@/lib/campaign-builder-v2/types";
 
 interface CampaignBuilderPageProps {
@@ -36,9 +38,10 @@ export default async function CampaignBuilderPage({
 
   const { id } = await params;
 
-  const [event, organization, savedSession] = await Promise.all([
+  const [event, organization, schoolProfile, savedSession] = await Promise.all([
     getEventById(id),
     getLatestOrganization(),
+    getSchoolProfile(),
     loadCampaignBuilderSession(id),
   ]);
 
@@ -57,9 +60,15 @@ export default async function CampaignBuilderPage({
   }));
 
   const brandKits: BrandKitOption[] = [
+    { id: NO_BRAND_KIT_ID, name: "No brand kit" },
     { id: "org-default", name: "Organization Brand Kit" },
-    { id: "ees-pto", name: "EES PTO Brand Kit" },
   ];
+
+  const logoOptions = buildSetupLogoOptions(schoolProfile?.brandAssets);
+  const schoolColors = {
+    primary: schoolProfile?.brandAssets?.primaryColor ?? null,
+    secondary: schoolProfile?.brandAssets?.secondaryColor ?? null,
+  };
 
   const restoredFromServer = savedSession !== null;
   const initialSession = savedSession
@@ -71,6 +80,12 @@ export default async function CampaignBuilderPage({
       )
     : buildDefaultSession(event.id, event.title, event.date);
 
+  if (!initialSession.inspiration.selectedLogoId && logoOptions[0]) {
+    initialSession.inspiration.selectedLogoId = logoOptions[0].id;
+  }
+  initialSession.inspiration.primarySchoolColor = schoolColors.primary;
+  initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
+
   return (
     <CampaignBuilderShell
       eventId={event.id}
@@ -79,6 +94,8 @@ export default async function CampaignBuilderPage({
       playbooks={playbookOptions}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
+      logoOptions={logoOptions}
+      schoolColors={schoolColors}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
     />

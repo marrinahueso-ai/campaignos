@@ -146,7 +146,7 @@ export function getAiAssistantStatus(): AiAssistantStatus {
 
   return {
     available: false,
-    reason: "Drafting help isn't set up yet.",
+    reason: "AI not configured — set OPENAI_API_KEY to enable Ralli AI.",
   };
 }
 

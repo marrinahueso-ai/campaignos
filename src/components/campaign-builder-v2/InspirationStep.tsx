@@ -22,6 +22,8 @@ export function InspirationStep() {
     brandKitOptions,
     voiceToneOptions,
     campaignOptions,
+    logoOptions,
+    schoolColors,
     inspirationUploadError,
     clearInspirationUploadError,
   } = useCampaignBuilder();
@@ -209,6 +211,9 @@ export function InspirationStep() {
               {isNoBrandKit(inspiration.brandKitId) && (
                 <p className="text-xs text-cos-muted">{NO_BRAND_KIT_GUIDANCE}</p>
               )}
+              <p className="text-xs text-cos-muted">
+                Brand kit settings flow into AI artwork prompts when a kit is selected.
+              </p>
             </div>
             <Select
               label="Voice / Tone"
@@ -222,6 +227,88 @@ export function InspirationStep() {
               ))}
             </Select>
           </div>
+
+          {(logoOptions.length > 0 || schoolColors.primary || schoolColors.secondary) && (
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+                  School brand assets
+                </h2>
+                <p className="mt-1 text-sm text-cos-muted">
+                  Choose a stored logo and school colors to guide AI artwork.
+                </p>
+              </div>
+
+              {logoOptions.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {logoOptions.map((logo) => {
+                    const selected = inspiration.selectedLogoId === logo.id;
+                    return (
+                      <button
+                        key={logo.id}
+                        type="button"
+                        onClick={() =>
+                          updateInspiration({
+                            selectedLogoId: selected ? null : logo.id,
+                          })
+                        }
+                        className={cn(
+                          "flex items-center gap-3 border px-3 py-3 text-left transition-colors",
+                          selected
+                            ? "border-cos-dark bg-cos-bg-alt"
+                            : "border-cos-border bg-cos-card hover:border-cos-accent/50",
+                        )}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={logo.url}
+                          alt={logo.label}
+                          className="h-10 w-10 object-contain"
+                        />
+                        <span className="text-sm font-medium text-cos-text">
+                          {logo.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {(schoolColors.primary || schoolColors.secondary) && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 text-sm text-cos-text">
+                    <input
+                      type="checkbox"
+                      checked={inspiration.useSchoolColors}
+                      onChange={(event) =>
+                        updateInspiration({ useSchoolColors: event.target.checked })
+                      }
+                      className="h-4 w-4 rounded border-cos-border"
+                    />
+                    Use school colors in AI artwork
+                  </label>
+                  {schoolColors.primary && (
+                    <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
+                      <span
+                        className="h-5 w-5 rounded-full border border-cos-border"
+                        style={{ backgroundColor: schoolColors.primary }}
+                      />
+                      Primary {schoolColors.primary}
+                    </span>
+                  )}
+                  {schoolColors.secondary && (
+                    <span className="inline-flex items-center gap-2 text-xs text-cos-muted">
+                      <span
+                        className="h-5 w-5 rounded-full border border-cos-border"
+                        style={{ backgroundColor: schoolColors.secondary }}
+                      />
+                      Secondary {schoolColors.secondary}
+                    </span>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           <Textarea
             label="Global AI guidance"

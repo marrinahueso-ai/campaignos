@@ -53,6 +53,7 @@ export interface CampaignPageFilterState {
   tab: CampaignTabFilter;
   summary: CampaignSummaryFilter;
   status: "all" | Event["status"];
+  schoolYear: string;
   month: string;
   type: "all" | NonNullable<Event["eventType"]>;
   sortField: CampaignSortField;
@@ -106,12 +107,15 @@ export const CAMPAIGN_SUMMARY_CARDS: {
   },
 ];
 
-export function createDefaultCampaignFilters(): CampaignPageFilterState {
+export function createDefaultCampaignFilters(
+  activeSchoolYearId?: string | null,
+): CampaignPageFilterState {
   return {
     search: "",
     tab: "all",
     summary: "all",
     status: "all",
+    schoolYear: activeSchoolYearId ?? "all",
     month: "all",
     type: "all",
     sortField: "upcoming",
@@ -127,6 +131,15 @@ export function createDefaultCampaignFilters(): CampaignPageFilterState {
       campaignType: "all",
     },
   };
+}
+
+export function buildSchoolYearFilterOptions(
+  schoolYears: Array<{ id: string; label: string }>,
+): { value: string; label: string }[] {
+  return [
+    { value: "all", label: "All school years" },
+    ...schoolYears.map((year) => ({ value: year.id, label: year.label })),
+  ];
 }
 
 export function getCampaignTypeLabel(strategy: CommunicationStrategy): string {

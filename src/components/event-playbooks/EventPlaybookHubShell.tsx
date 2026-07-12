@@ -95,6 +95,7 @@ export function EventPlaybookHubShell({
           artwork={artwork}
           hasCampaign={hasCampaign}
           tablesAvailable={tablesAvailable}
+          taskGroupsAvailable={taskGroupsAvailable}
           metaPublishBundles={metaPublishBundles}
           committeePersonOptions={committeePersonOptions}
           defaultCommitteePerson={defaultCommitteePerson}

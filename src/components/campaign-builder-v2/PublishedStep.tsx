@@ -8,6 +8,7 @@ import Link from "next/link";
 
 export function PublishedStep() {
   const { session, goToStep } = useCampaignBuilder();
+  const builderHref = `/events/${session.eventId}/campaign-builder#inspiration`;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -26,17 +27,14 @@ export function PublishedStep() {
                 {session.inspiration.campaignName}
               </span>{" "}
               milestones are scheduled and ready to go live. Monitor delivery in
-              Publishing or open Creative Studio (Classic) for legacy workflows.
+              Publishing or return to Create with AI to adjust inspiration and milestones.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button href="/approvals">View approvals & schedule</Button>
-              <Button
-                variant="secondary"
-                href={`/events/${session.eventId}#published`}
-              >
+              <Button variant="secondary" href={builderHref}>
                 <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
-                Open Creative Studio (Classic)
+                Return to Create with AI
               </Button>
             </div>
 
@@ -55,10 +53,10 @@ export function PublishedStep() {
         backLabel="Back to review"
         leftActions={
           <Link
-            href={`/events/${session.eventId}#plan`}
+            href={builderHref}
             className="text-sm text-cos-muted transition-colors hover:text-cos-text"
           >
-            Return to Creative Studio (Classic)
+            Return to Create with AI
           </Link>
         }
       />

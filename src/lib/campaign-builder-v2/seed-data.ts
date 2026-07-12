@@ -42,6 +42,10 @@ export function buildDefaultInspiration(
     inspirationImages: [],
     brandKitId: "ees-pto",
     voiceTone: DEFAULT_VOICE_TONE_OPTIONS[0],
+    selectedLogoId: null,
+    useSchoolColors: true,
+    primarySchoolColor: null,
+    secondarySchoolColor: null,
     globalAiGuidance:
       "Vintage school look. Cream background. Navy and green are our primary colors. Include playful school elements like pencils, apples, and chalkboard textures. Keep text readable and welcoming for families.",
   };

@@ -10,6 +10,7 @@ import {
 import {
   buildMonthFilterOptions,
   buildOwnerFilterOptions,
+  buildSchoolYearFilterOptions,
   CAMPAIGN_SORT_OPTIONS,
   CAMPAIGN_STATUS_FILTER_OPTIONS,
   CAMPAIGN_TYPE_FILTER_OPTIONS,
@@ -34,6 +35,7 @@ interface CampaignsToolbarProps {
   viewMode: CampaignViewMode;
   showMoreFilters: boolean;
   ownershipByEventId?: Map<string, EventRosterOwnership>;
+  schoolYears?: Array<{ id: string; label: string }>;
   onFiltersChange: (filters: CampaignPageFilterState) => void;
   onViewModeChange: (mode: CampaignViewMode) => void;
   onShowMoreFiltersChange: (open: boolean) => void;
@@ -78,6 +80,7 @@ export function CampaignsToolbar({
   viewMode,
   showMoreFilters,
   ownershipByEventId,
+  schoolYears = [],
   onFiltersChange,
   onViewModeChange,
   onShowMoreFiltersChange,
@@ -85,6 +88,7 @@ export function CampaignsToolbar({
 }: CampaignsToolbarProps) {
   const monthOptions = buildMonthFilterOptions(events);
   const ownerOptions = buildOwnerFilterOptions(events, ownershipByEventId);
+  const schoolYearOptions = buildSchoolYearFilterOptions(schoolYears);
 
   function patchFilters(patch: Partial<CampaignPageFilterState>) {
     onFiltersChange({ ...filters, ...patch });
@@ -216,6 +220,14 @@ export function CampaignsToolbar({
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
+          {schoolYearOptions.length > 1 && (
+            <FilterSelect
+              ariaLabel="Filter by school year"
+              value={filters.schoolYear}
+              options={schoolYearOptions}
+              onChange={(value) => patchFilters({ schoolYear: value })}
+            />
+          )}
           <FilterSelect
             ariaLabel="Filter by month"
             value={filters.month}

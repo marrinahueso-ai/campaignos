@@ -53,6 +53,18 @@ import type {
   PreviewTabId,
   StepWarning,
 } from "@/lib/campaign-builder-v2/types";
+import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
+
+export interface CampaignBuilderSchoolColors {
+  primary: string | null;
+  secondary: string | null;
+}
+
+export interface ContentGenerationProgress {
+  current: number;
+  total: number;
+  milestoneName: string;
+}
 
 interface CampaignBuilderProviderProps {
   eventId: string;
@@ -61,6 +73,8 @@ interface CampaignBuilderProviderProps {
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
+  logoOptions: SetupLogoOption[];
+  schoolColors: CampaignBuilderSchoolColors;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
   children: ReactNode;
@@ -76,8 +90,11 @@ interface CampaignBuilderContextValue {
   brandKitOptions: BrandKitOption[];
   voiceToneOptions: string[];
   campaignOptions: CampaignOption[];
+  logoOptions: SetupLogoOption[];
+  schoolColors: CampaignBuilderSchoolColors;
   isSaving: boolean;
   isGeneratingContent: boolean;
+  generationProgress: ContentGenerationProgress | null;
   goToStep: (step: CampaignBuilderStepId) => void;
   updateInspiration: (patch: Partial<CampaignBuilderInspiration>) => void;
   selectCampaign: (campaignId: string) => void;
@@ -228,6 +245,8 @@ export function CampaignBuilderProvider({
   playbooks,
   brandKits,
   campaignOptions,
+  logoOptions,
+  schoolColors,
   initialSession,
   restoredFromServer,
   children,
@@ -246,6 +265,8 @@ export function CampaignBuilderProvider({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [generationProgress, setGenerationProgress] =
+    useState<ContentGenerationProgress | null>(null);
   const [inspirationUploadError, setInspirationUploadError] = useState<string | null>(
     null,
   );
@@ -669,64 +690,103 @@ export function CampaignBuilderProvider({
         const inspirationImages = await prepareInspirationImagesForServer(
           base.inspiration.inspirationImages,
         );
-        const result = await generateAllContentAction({
-          eventId: base.eventId,
-          inspiration: base.inspiration,
-          inspirationImages,
-          milestones: base.milestones,
-          previewContents: base.previewContents,
-          brandKitId,
-          useBrandKit: brandKitId !== null,
-          milestoneIds: targetMilestoneId ? [targetMilestoneId] : undefined,
-          playbookName,
-        });
 
-        if (!result.success) {
+        const milestoneIdsToGenerate = targetMilestoneId
+          ? [targetMilestoneId]
+          : base.milestones.map((milestone) => milestone.id);
+
+        const failures: string[] = [];
+        let workingBase = base;
+
+        for (let index = 0; index < milestoneIdsToGenerate.length; index += 1) {
+          const milestoneId = milestoneIdsToGenerate[index]!;
+          const milestone = workingBase.milestones.find(
+            (entry) => entry.id === milestoneId,
+          );
+
+          setGenerationProgress({
+            current: index + 1,
+            total: milestoneIdsToGenerate.length,
+            milestoneName: milestone?.name ?? `Milestone ${index + 1}`,
+          });
+
+          const result = await generateAllContentAction({
+            eventId: workingBase.eventId,
+            inspiration: workingBase.inspiration,
+            inspirationImages,
+            milestones: workingBase.milestones,
+            previewContents: workingBase.previewContents,
+            brandKitId,
+            useBrandKit: brandKitId !== null,
+            milestoneIds: [milestoneId],
+            playbookName,
+          });
+
           if (result.updatedInspiration) {
-            const withInspiration = {
-              ...base,
+            workingBase = {
+              ...workingBase,
               inspiration: result.updatedInspiration,
             };
-            sessionRef.current = withInspiration;
-            setSession(withInspiration);
-            persistLocalSession(withInspiration);
           }
-          return { success: false, message: result.message };
+
+          if (!result.success) {
+            failures.push(result.message);
+            continue;
+          }
+
+          workingBase = {
+            ...workingBase,
+            inspiration: result.updatedInspiration ?? workingBase.inspiration,
+            previewContents: workingBase.previewContents.map((content) => {
+              const generated = result.results.find(
+                (entry) => entry.milestoneId === content.milestoneId,
+              );
+              if (!generated) {
+                return content;
+              }
+              return {
+                ...content,
+                artwork: generated.artwork,
+                captions: generated.captions,
+                status: generated.status,
+              };
+            }),
+            selectedMilestoneId:
+              targetMilestoneId ??
+              workingBase.selectedMilestoneId ??
+              workingBase.milestones[0]?.id ??
+              null,
+          };
+
+          sessionRef.current = workingBase;
+          setSession(workingBase);
+          persistLocalSession(workingBase);
         }
 
-        const next: CampaignBuilderSession = {
-          ...base,
-          inspiration: result.updatedInspiration ?? base.inspiration,
-          previewContents: base.previewContents.map((content) => {
-            const generated = result.results.find(
-              (entry) => entry.milestoneId === content.milestoneId,
-            );
-            if (!generated) {
-              return content;
-            }
-            return {
-              ...content,
-              artwork: generated.artwork,
-              captions: generated.captions,
-              status: generated.status,
-            };
-          }),
-          selectedMilestoneId:
-            targetMilestoneId ??
-            base.selectedMilestoneId ??
-            base.milestones[0]?.id ??
-            null,
-        };
+        setGenerationProgress(null);
 
-        sessionRef.current = next;
-        setSession(next);
-        persistLocalSession(next);
-        await persistSession(next);
+        if (failures.length === milestoneIdsToGenerate.length) {
+          return { success: false, message: failures[0] ?? "Content generation failed." };
+        }
+
+        await persistSession(workingBase);
         router.refresh();
         goToStep("preview");
 
-        return { success: true, message: result.message };
+        if (failures.length > 0) {
+          const generatedCount = milestoneIdsToGenerate.length - failures.length;
+          return {
+            success: false,
+            message: `Generated ${generatedCount} of ${milestoneIdsToGenerate.length} milestones. ${failures[failures.length - 1]}`,
+          };
+        }
+
+        return {
+          success: true,
+          message: `Artwork and captions generated for ${milestoneIdsToGenerate.length === 1 ? "this milestone" : "all milestones"}.`,
+        };
       } catch (error) {
+        setGenerationProgress(null);
         const message =
           error instanceof Error
             ? error.message
@@ -734,6 +794,7 @@ export function CampaignBuilderProvider({
         return { success: false, message };
       } finally {
         setIsGeneratingContent(false);
+        setGenerationProgress(null);
       }
     },
     [flushSave, goToStep, persistSession, playbooks, router],
@@ -864,8 +925,11 @@ export function CampaignBuilderProvider({
       brandKitOptions: brandKitOptionsResolved,
       voiceToneOptions: DEFAULT_VOICE_TONE_OPTIONS,
       campaignOptions,
+      logoOptions,
+      schoolColors,
       isSaving,
       isGeneratingContent,
+      generationProgress,
       goToStep,
       updateInspiration,
       selectCampaign,
@@ -899,8 +963,11 @@ export function CampaignBuilderProvider({
       playbookOptionsResolved,
       brandKitOptionsResolved,
       campaignOptions,
+      logoOptions,
+      schoolColors,
       isSaving,
       isGeneratingContent,
+      generationProgress,
       goToStep,
       updateInspiration,
       selectCampaign,

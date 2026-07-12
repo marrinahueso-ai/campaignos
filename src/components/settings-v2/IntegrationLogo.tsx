@@ -108,6 +108,19 @@ export function IntegrationLogo({ id, className }: IntegrationLogoProps) {
           </svg>
         </LogoFrame>
       );
+    case "signup-genius":
+      return (
+        <LogoFrame className={className} backgroundClassName="bg-[#F68B1F]">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" role="img" aria-label="SignUpGenius">
+            <rect x="4" y="5" width="16" height="14" rx="2" fill="#fff" />
+            <path
+              fill="#F68B1F"
+              d="M8 9h8v1.5H8V9Zm0 3h5.5v1.5H8V12Zm0 3h7v1.5H8V15Z"
+            />
+            <circle cx="17" cy="8" r="2.25" fill="#2D6A4F" />
+          </svg>
+        </LogoFrame>
+      );
     default:
       return (
         <LogoFrame className={className}>

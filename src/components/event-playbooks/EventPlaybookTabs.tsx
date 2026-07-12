@@ -21,7 +21,6 @@ export type EventPlaybookTab =
 
 const ALL_TABS: { id: EventPlaybookTab; label: string }[] = [
   { id: "overview", label: "Overview" },
-  { id: "social-media", label: "Social Media" },
   { id: "tasks", label: "Tasks" },
   { id: "notes", label: "Notes & Lessons" },
   { id: "files", label: "Files" },
@@ -57,15 +56,12 @@ function parseLocationHash(): {
   }
 
   if (LEGACY_CAMPAIGN_HASHES.has(raw)) {
-    return {
-      tab: "social-media",
-      campaignStep: campaignStepFromHash(`#${raw}`) ?? "plan",
-    };
+    return { tab: "overview", campaignStep: null };
   }
 
   const campaignStep = campaignStepFromHash(`#${raw}`);
   if (campaignStep) {
-    return { tab: "social-media", campaignStep };
+    return { tab: "overview", campaignStep: null };
   }
 
   return { tab: "overview", campaignStep: null };
@@ -139,29 +135,26 @@ export function EventPlaybookTabs({
   initialCampaignStep = "plan",
   onCampaignStepChange,
 }: EventPlaybookTabsProps) {
-  const visibleTabs = hasCampaign
-    ? ALL_TABS
-    : ALL_TABS.filter((tab) => tab.id !== "social-media");
+  const visibleTabs = ALL_TABS;
 
   const activeTab = usePlaybookTabFromHash(visibleTabs, defaultTab);
   const campaignStep = useCampaignStepFromHash(initialCampaignStep);
 
   const navigateToTab = useCallback(
     (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => {
+      void step;
       const resolvedTab = visibleTabs.some((entry) => entry.id === tab)
         ? tab
         : defaultTab;
 
       if (resolvedTab === "social-media" && hasCampaign) {
-        const nextStep = step ?? campaignStep;
-        onCampaignStepChange?.(nextStep);
-        window.history.replaceState(null, "", `#${nextStep}`);
+        window.location.href = `/events/${window.location.pathname.split("/").pop()}/campaign-builder#inspiration`;
         return;
       }
 
       window.history.replaceState(null, "", `#${resolvedTab}`);
     },
-    [campaignStep, defaultTab, hasCampaign, onCampaignStepChange, visibleTabs],
+    [defaultTab, hasCampaign, visibleTabs],
   );
 
   useEffect(() => {
@@ -183,8 +176,7 @@ export function EventPlaybookTabs({
   };
 
   const showPlanningDashboard = activeTab === "overview";
-  const showSocialMediaCenter = activeTab === "social-media" && hasCampaign;
-  const isFullBleedView = showPlanningDashboard || showSocialMediaCenter;
+  const isFullBleedView = showPlanningDashboard;
 
   return (
     <div className={cn(!isFullBleedView && "border border-cos-border bg-cos-card shadow-sm")}>

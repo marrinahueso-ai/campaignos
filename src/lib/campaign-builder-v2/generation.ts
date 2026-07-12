@@ -87,6 +87,15 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.voiceTone.trim()
       ? `Voice / tone: ${input.inspiration.voiceTone.trim()}`
       : null,
+    input.inspiration.useSchoolColors && input.inspiration.primarySchoolColor
+      ? `Primary school color: ${input.inspiration.primarySchoolColor}`
+      : null,
+    input.inspiration.useSchoolColors && input.inspiration.secondarySchoolColor
+      ? `Secondary school color: ${input.inspiration.secondarySchoolColor}`
+      : null,
+    input.inspiration.selectedLogoId
+      ? `Include the selected ${input.inspiration.selectedLogoId === "school" ? "school" : "PTO"} logo in the design.`
+      : null,
   ].filter((line): line is string => Boolean(line));
 
   if (artworkParts.length > 0) {

@@ -32,6 +32,7 @@ export function mapEventRow(row: EventRow): Event {
     approvedSquareImageUrl: row.approved_square_image_url ?? null,
     approvedSquareImageStatus:
       row.approved_square_image_status === "filled" ? "filled" : "open",
+    schoolYearId: row.school_year_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? null,
   };

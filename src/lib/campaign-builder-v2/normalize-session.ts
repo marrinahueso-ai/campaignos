@@ -39,6 +39,13 @@ export function normalizeCampaignBuilderSession(
     ...defaults.inspiration,
     ...raw.inspiration,
     campaignId: raw.inspiration?.campaignId ?? eventId,
+    selectedLogoId: raw.inspiration?.selectedLogoId ?? defaults.inspiration.selectedLogoId,
+    useSchoolColors:
+      raw.inspiration?.useSchoolColors ?? defaults.inspiration.useSchoolColors,
+    primarySchoolColor:
+      raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
+    secondarySchoolColor:
+      raw.inspiration?.secondarySchoolColor ?? defaults.inspiration.secondarySchoolColor,
   };
 
   const milestones = [...(raw.milestones ?? defaults.milestones)]

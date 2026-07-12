@@ -12,6 +12,8 @@ import type {
   CampaignOption,
   PlaybookOption,
 } from "@/lib/campaign-builder-v2/types";
+import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
+import type { CampaignBuilderSchoolColors } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 
 const MilestonesStep = dynamic(
   () =>
@@ -60,6 +62,8 @@ interface CampaignBuilderShellProps {
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
+  logoOptions: SetupLogoOption[];
+  schoolColors: CampaignBuilderSchoolColors;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
 }
@@ -139,6 +143,8 @@ export function CampaignBuilderShell({
   playbooks,
   brandKits,
   campaignOptions,
+  logoOptions,
+  schoolColors,
   initialSession,
   restoredFromServer,
 }: CampaignBuilderShellProps) {
@@ -150,6 +156,8 @@ export function CampaignBuilderShell({
       playbooks={playbooks}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
+      logoOptions={logoOptions}
+      schoolColors={schoolColors}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
     >

@@ -46,7 +46,7 @@ export function CampaignSummaryCards({
             type="button"
             onClick={() => onFilterChange(card.key)}
             className={cn(
-              "flex flex-col gap-3 border bg-cos-card p-4 text-left transition-colors",
+              "flex flex-col items-center gap-2 border bg-cos-card p-3 text-center transition-colors",
               isActive
                 ? "border-cos-dark bg-cos-bg-alt"
                 : "border-cos-border hover:border-cos-accent/50 hover:bg-cos-bg/40",
@@ -61,7 +61,7 @@ export function CampaignSummaryCards({
             >
               <Icon className="h-4 w-4" strokeWidth={1.5} />
             </span>
-            <span>
+            <span className="flex flex-col items-center">
               <span className="block text-xs font-medium text-cos-muted">
                 {card.label}
               </span>
