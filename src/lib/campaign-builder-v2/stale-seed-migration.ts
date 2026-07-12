@@ -10,6 +10,7 @@ const KNOWN_STALE_CAPTION_NOTES = new Set(
     "Warm welcome tone, include event date",
     "List top 3 things to expect",
     "Short, exciting live update",
+    "Warm gratitude tone for families",
   ].map((value) => value.toLowerCase()),
 );
 
@@ -88,6 +89,29 @@ export function isStaleSeedNote(value: string | null | undefined): boolean {
 export function sanitizeSeedNotes(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
   if (!trimmed || isStaleSeedNote(trimmed)) {
+    return "";
+  }
+  return trimmed;
+}
+
+/** Demo/example campaign-level AI guidance shipped in early seeds — never real user input. */
+const KNOWN_STALE_GLOBAL_AI_GUIDANCE = new Set(
+  [
+    "Vintage school look. Cream background. Navy and green are our primary colors. Include playful school elements like pencils, apples, and chalkboard textures. Keep text readable and welcoming for families.",
+  ].map((value) => value.toLowerCase()),
+);
+
+export function isStaleGlobalAiGuidance(value: string | null | undefined): boolean {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return false;
+  }
+  return KNOWN_STALE_GLOBAL_AI_GUIDANCE.has(normalizeComparable(trimmed));
+}
+
+export function sanitizeGlobalAiGuidance(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || isStaleGlobalAiGuidance(trimmed)) {
     return "";
   }
   return trimmed;

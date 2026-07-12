@@ -6,6 +6,7 @@ import { normalizeCampaignBuilderSession } from "../normalize-session.ts";
 import { buildDefaultSession } from "../seed-data.ts";
 import {
   isStaleSeedNote,
+  sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
 } from "../stale-seed-migration.ts";
@@ -19,6 +20,7 @@ import { mergeInspirationImageUrls } from "../inspiration-utils.ts";
 import { isNoBrandKit, brandKitIdForAi, NO_BRAND_KIT_ID } from "../brand-kit.ts";
 import {
   formatValidationErrors,
+  resolveSingleGenerationTarget,
   validateBeforeGeneration,
   validateInspirationForGeneration,
   validateMilestonesForGeneration,
@@ -115,6 +117,58 @@ describe("validateBeforeGeneration", () => {
   it("formats multiple errors", () => {
     const message = formatValidationErrors(["First issue.", "Second issue."]);
     assert.equal(message, "First issue. Second issue.");
+  });
+});
+
+describe("resolveSingleGenerationTarget", () => {
+  const milestones: CampaignBuilderMilestone[] = [
+    baseMilestone,
+    { ...baseMilestone, id: "ms-2", name: "Reminder", sortOrder: 1 },
+    { ...baseMilestone, id: "ms-3", name: "Recap", sortOrder: 2 },
+  ];
+
+  it("resolves exactly one milestone that belongs to the campaign", () => {
+    const result = resolveSingleGenerationTarget({
+      milestones,
+      milestoneIds: ["ms-2"],
+    });
+    assert.equal(result.error, null);
+    assert.equal(result.milestone?.id, "ms-2");
+  });
+
+  it("rejects zero milestone ids — must never fall back to generating everything", () => {
+    const result = resolveSingleGenerationTarget({
+      milestones,
+      milestoneIds: [],
+    });
+    assert.equal(result.milestone, null);
+    assert.match(result.error ?? "", /exactly one milestone/i);
+  });
+
+  it("rejects more than one milestone id — must never fan out to multiple milestones", () => {
+    const result = resolveSingleGenerationTarget({
+      milestones,
+      milestoneIds: ["ms-1", "ms-2"],
+    });
+    assert.equal(result.milestone, null);
+    assert.match(result.error ?? "", /exactly one milestone/i);
+  });
+
+  it("rejects a milestone id that does not belong to this campaign's milestone list", () => {
+    const result = resolveSingleGenerationTarget({
+      milestones,
+      milestoneIds: ["ms-from-another-campaign"],
+    });
+    assert.equal(result.milestone, null);
+    assert.match(result.error ?? "", /does not belong/i);
+  });
+
+  it("rejects undefined milestone ids", () => {
+    const result = resolveSingleGenerationTarget({
+      milestones,
+      milestoneIds: undefined,
+    });
+    assert.equal(result.milestone, null);
   });
 });
 
@@ -272,6 +326,91 @@ describe("normalizeCampaignBuilderSession", () => {
       "2026-08-17",
     );
     assert.equal(explicit.inspiration.includeLogoInArtwork, true);
+  });
+
+  it("never auto-fills a brand-new campaign's milestone notes or AI guidance with seed/demo text", () => {
+    // Reproduces Bug 3: a brand-new event (no saved session) previously
+    // bypassed normalization entirely (page.tsx used buildDefaultSession()
+    // directly), so hardcoded example copy like "Bold headline, vintage
+    // school poster style" and the canned global AI guidance paragraph
+    // landed in real form fields — and in real generation prompts — before
+    // the user ever typed anything.
+    const normalized = normalizeCampaignBuilderSession(
+      {},
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+
+    assert.equal(normalized.inspiration.globalAiGuidance, "");
+    for (const milestone of normalized.milestones) {
+      assert.equal(
+        milestone.artworkNotes,
+        "",
+        `expected empty artworkNotes for ${milestone.name}`,
+      );
+      assert.equal(
+        milestone.captionNotes,
+        "",
+        `expected empty captionNotes for ${milestone.name}`,
+      );
+    }
+  });
+
+  it("sanitizes a legacy saved session that still carries the demo global AI guidance", () => {
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          globalAiGuidance:
+            "Vintage school look. Cream background. Navy and green are our primary colors. Include playful school elements like pencils, apples, and chalkboard textures. Keep text readable and welcoming for families.",
+        },
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+    assert.equal(normalized.inspiration.globalAiGuidance, "");
+  });
+
+  it("preserves real user-authored global AI guidance", () => {
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          globalAiGuidance: "Use our maroon and gold colors with a retro font.",
+        },
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+    assert.equal(
+      normalized.inspiration.globalAiGuidance,
+      "Use our maroon and gold colors with a retro font.",
+    );
+  });
+});
+
+describe("sanitizeGlobalAiGuidance", () => {
+  it("strips the known demo guidance paragraph", () => {
+    assert.equal(
+      sanitizeGlobalAiGuidance(
+        "Vintage school look. Cream background. Navy and green are our primary colors. Include playful school elements like pencils, apples, and chalkboard textures. Keep text readable and welcoming for families.",
+      ),
+      "",
+    );
+  });
+
+  it("preserves real user guidance", () => {
+    assert.equal(
+      sanitizeGlobalAiGuidance("Bright colors, modern sans-serif fonts."),
+      "Bright colors, modern sans-serif fonts.",
+    );
+  });
+
+  it("treats empty/whitespace as empty", () => {
+    assert.equal(sanitizeGlobalAiGuidance("   "), "");
+    assert.equal(sanitizeGlobalAiGuidance(null), "");
+    assert.equal(sanitizeGlobalAiGuidance(undefined), "");
   });
 });
 

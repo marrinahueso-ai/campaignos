@@ -7,7 +7,6 @@ import {
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
-import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
 import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
@@ -78,14 +77,18 @@ export default async function CampaignBuilderPage({
   };
 
   const restoredFromServer = savedSession !== null;
-  const initialSession = savedSession
-    ? normalizeCampaignBuilderSession(
-        savedSession,
-        event.id,
-        event.title,
-        event.date,
-      )
-    : buildDefaultSession(event.id, event.title, event.date);
+  // Always normalize — even for a brand-new campaign with no saved session —
+  // so stale/demo seed text (artwork notes, caption notes, AI guidance) is
+  // stripped the same way it is for restored sessions. Without this, a new
+  // campaign's default milestones carried hardcoded example copy (e.g.
+  // "Bold headline, vintage school poster style") straight into real form
+  // fields and into generation prompts before the user ever typed anything.
+  const initialSession = normalizeCampaignBuilderSession(
+    savedSession ?? {},
+    event.id,
+    event.title,
+    event.date,
+  );
 
   if (!initialSession.inspiration.selectedLogoId && logoOptions[0]) {
     initialSession.inspiration.selectedLogoId = logoOptions[0].id;

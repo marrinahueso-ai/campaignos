@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   allMilestonesGenerated,
   countCompleteMilestones,
+  derivedPreviewStatus,
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isMilestoneContentComplete,
@@ -217,6 +218,60 @@ describe("milestone-status", () => {
     const progress = countCompleteMilestones(milestones, previewContents);
     assert.equal(progress.complete, 1);
     assert.equal(progress.total, 2);
+  });
+
+  it("derives ready from content even when the raw status field says needs-review (Edit artwork/caption apply)", () => {
+    // Reproduces the exact scenario from EditArtworkModal/EditCaptionModal's
+    // onApply handlers, which set status: "needs-review" whenever the user
+    // applies an edit — even when full content already exists. Every
+    // consumer must treat this milestone as complete/"ready", not just the
+    // rail's inferGenerationStatus.
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: "https://example.com/story.png",
+      },
+      captions: [
+        { platform: "facebook", text: "Hello" },
+        { platform: "instagram", text: "Hello" },
+      ],
+      status: "needs-review",
+      generationStatus: "needs_review",
+    });
+
+    assert.equal(derivedPreviewStatus(preview), "ready");
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "generated",
+    );
+  });
+
+  it("derives draft from content even when the raw status field is stale ready", () => {
+    const preview = buildPreview({
+      artwork: emptyMilestoneArtwork(),
+      captions: [
+        { platform: "facebook", text: "" },
+        { platform: "instagram", text: "" },
+      ],
+      status: "ready",
+      generationStatus: "ready_to_generate",
+    });
+
+    assert.equal(derivedPreviewStatus(preview), "draft");
+  });
+
+  it("derives needs-review when only captions exist regardless of raw status", () => {
+    const preview = buildPreview({
+      artwork: emptyMilestoneArtwork(),
+      captions: [
+        { platform: "facebook", text: "Caption only" },
+        { platform: "instagram", text: "Caption only" },
+      ],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+
+    assert.equal(derivedPreviewStatus(preview), "needs-review");
   });
 
   it("reports all generated when every milestone has content", () => {

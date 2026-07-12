@@ -762,6 +762,12 @@ export function CampaignBuilderProvider({
       setIsGeneratingContent(true);
 
       try {
+        // Flush any pending debounced save before generating so the server
+        // action reads the latest edits. This runs after the in-flight guard
+        // above (not before) so a rapid double-click can't slip through
+        // during the network round trip and start a second generation job
+        // for the same milestone.
+        await flushSave();
         let base = sessionRef.current;
         const milestonePatch = options?.milestonePatch;
 
@@ -936,20 +942,18 @@ export function CampaignBuilderProvider({
         setGenerationProgress(null);
       }
     },
-    [persistSession, playbooks, router],
+    [flushSave, persistSession, playbooks, router],
   );
 
   const generateMilestoneContent = useCallback(
-    async (
+    (
       milestoneId: string,
       options?: {
         milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
       },
-    ): Promise<{ success: boolean; message: string }> => {
-      await flushSave();
-      return runMilestoneGeneration(milestoneId, options);
-    },
-    [flushSave, runMilestoneGeneration],
+    ): Promise<{ success: boolean; message: string }> =>
+      runMilestoneGeneration(milestoneId, options),
+    [runMilestoneGeneration],
   );
 
   const generateNextMilestone = useCallback(async (): Promise<{

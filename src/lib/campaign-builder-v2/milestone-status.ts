@@ -8,6 +8,7 @@ import type {
   CampaignBuilderMilestone,
   MilestoneGenerationStatus,
   MilestonePreviewContent,
+  MilestonePreviewStatus,
 } from "./types.ts";
 
 const STALE_GENERATION_MS = 5 * 60 * 1000;
@@ -220,4 +221,26 @@ export function generationStatusAfterContent(
   enabledFormats: MilestonePreviewContent["enabledFormats"],
 ): MilestoneGenerationStatus {
   return contentGenerationStatus(preview, enabledFormats);
+}
+
+/**
+ * Single source of truth for the "ready / needs-review / draft" tri-state used
+ * across the top stepper, health gauge, Review & Approve, and per-milestone
+ * badges. Derives the state directly from actual generated content instead of
+ * trusting the persisted `preview.status` field, which handlers like the
+ * artwork/caption edit modals can set to "needs-review" even after complete
+ * content exists — that mismatch is what caused the rail/progress-count/banner
+ * to disagree with the top banner and Review & Approve readiness.
+ */
+export function derivedPreviewStatus(
+  preview: MilestonePreviewContent,
+): MilestonePreviewStatus {
+  const contentStatus = generationStatusAfterContent(preview, preview.enabledFormats);
+  if (contentStatus === "generated") {
+    return "ready";
+  }
+  if (contentStatus === "needs_review") {
+    return "needs-review";
+  }
+  return "draft";
 }

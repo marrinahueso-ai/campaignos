@@ -96,3 +96,40 @@ export function validateBeforeGeneration(input: {
 
   return validateMilestonesForGeneration(targetMilestones);
 }
+
+export interface SingleGenerationTargetResult {
+  milestone: CampaignBuilderMilestone | null;
+  error: string | null;
+}
+
+/**
+ * Strictly resolves exactly one milestone eligible for generation.
+ *
+ * Every "generate content for this milestone" entry point must go through
+ * this so a single, server-validated milestone (one that actually belongs to
+ * the campaign's own milestone list) is ever targeted — never the whole
+ * campaign, never a caller-supplied milestone that isn't part of this event.
+ */
+export function resolveSingleGenerationTarget(input: {
+  milestones: CampaignBuilderMilestone[];
+  milestoneIds: string[] | undefined;
+}): SingleGenerationTargetResult {
+  if (!input.milestoneIds || input.milestoneIds.length !== 1) {
+    return {
+      milestone: null,
+      error: "Select exactly one milestone to generate content.",
+    };
+  }
+
+  const [milestoneId] = input.milestoneIds;
+  const milestone = input.milestones.find((entry) => entry.id === milestoneId) ?? null;
+
+  if (!milestone) {
+    return {
+      milestone: null,
+      error: "That milestone does not belong to this campaign.",
+    };
+  }
+
+  return { milestone, error: null };
+}

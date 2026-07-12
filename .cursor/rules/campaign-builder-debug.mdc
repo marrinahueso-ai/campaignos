@@ -1,0 +1,146 @@
+---
+description: Debug Create with AI / Campaign Builder V2 — key files, failure modes, grep checklist
+globs: src/lib/campaign-builder-v2/**,src/components/campaign-builder-v2/**,src/app/**/campaign-builder/**
+alwaysApply: false
+---
+
+# Campaign Builder V2 — Debug Guide
+
+Use this when debugging **Create with AI** (Campaign Builder V2): volunteer hallucinations, bulk generation, milestone status, prompt leakage, stale sessions, or logo handling.
+
+## Key files
+
+| Area | Path |
+|------|------|
+| Page entry | `src/app/(dashboard)/events/[id]/campaign-builder/page.tsx` |
+| Client state + generate trigger | `src/components/campaign-builder-v2/CampaignBuilderProvider.tsx` |
+| Server actions | `src/lib/campaign-builder-v2/actions.ts` |
+| Artwork + caption generation | `src/lib/campaign-builder-v2/generation.ts` |
+| Session hydrate / merge | `src/lib/campaign-builder-v2/normalize-session.ts` |
+| Stale seed cleanup | `src/lib/campaign-builder-v2/stale-seed-migration.ts` |
+| Default seed data | `src/lib/campaign-builder-v2/seed-data.ts` |
+| Milestone status inference | `src/lib/campaign-builder-v2/milestone-status.ts` |
+| Shared prompt guardrails | `src/lib/campaign-builder-v2/prompt-guardrails.ts` |
+| Artwork prompt builder | `src/lib/campaign-builder-v2/artwork-prompts.ts` |
+| Caption prompt builder | `src/lib/campaign-builder-v2/caption-prompts.ts` |
+| Meta caption base prompts | `src/lib/meta-captions/prompts.ts` |
+| Event facts / volunteer grounding | `src/lib/ai-grounding/formatter.ts`, `src/lib/ai-grounding/assemble.ts` |
+| Brand + logo resolution | `src/lib/campaign-builder-v2/brand-context.ts` |
+| Tests | `src/lib/campaign-builder-v2/__tests__/*.test.ts` |
+| Debug logging (env-gated) | `src/lib/campaign-builder-v2/debug.ts` |
+
+## How generation works
+
+1. **Single milestone only** — `generateAllContentAction` rejects unless `milestoneIds` has exactly one id. UI sets `generating` status, calls the action, then merges results back into session.
+2. **On load** — `hydrateCampaignBuilderSession` merges server session + `localStorage`, runs `normalizeCampaignBuilderSession` (stale seed migration, status inference).
+3. **Artwork** — `generateArtworkForMilestone` → `generateCampaignBuilderArtwork` → `buildCampaignBuilderArtworkPrompt` → artwork-v2 orchestrator.
+4. **Captions** — `generateCampaignBuilderCaption` → `buildCampaignBuilderCaptionPrompts` → shared meta caption prompts + guardrails.
+5. **Story from feed** — when feed exists, story generation passes feed URL as reference (`storyFromFeed`).
+
+## localStorage
+
+- **Key format:** `campaign-builder-v2:{eventId}` (see `localSessionKey` in `seed-data.ts`)
+- **Written by:** `CampaignBuilderProvider.persistLocalSession` on every session change
+- **Merged on load:** local wins when it has richer preview content (`mergeCampaignBuilderSessions`)
+
+**Clear stale session:** DevTools → Application → Local Storage → delete `campaign-builder-v2:{eventId}`, then hard refresh.
+
+## Common failure modes
+
+### Stale localStorage / seed data
+- Old seeds baked in volunteer CTAs, demo captions, "Two-Week Reminder" names.
+- **Fix path:** `stale-seed-migration.ts` + `normalize-session.ts` — check `isStaleSeedNote`, `sanitizeSeedPurpose`, `isStaleDemoCaption`.
+- **Symptom:** Volunteer asks appear despite no volunteer needs on event.
+
+### Volunteer hallucinations
+- **Campaign builder guardrails:** `prompt-guardrails.ts` (`CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES`)
+- **Event grounding:** `ai-grounding/formatter.ts` — volunteer facts only when verified on file
+- **Stale notes still in session:** grep milestone `captionNotes`, `artworkNotes`, `purpose` for "volunteer"
+- **Do not** assume meta caption or strategy prompts alone prevent this — trace the full prompt chain.
+
+### Bulk generation
+- **Intentionally blocked** in `generateAllContentAction` (must pass exactly one `milestoneId`).
+- If multiple milestones generate, check client isn't calling the action in a loop without awaiting, or bypassing with old code paths.
+
+### Milestone status wrong
+- Status comes from `inferGenerationStatus` in `milestone-status.ts`, not raw DB fields.
+- Stale `generating` (>5 min) → `failed` or content-derived status via `isStaleGeneration`.
+- After generation, client sets status from action result; normalize may re-infer on reload.
+
+### Prompt leakage (milestone names, dates, notes on graphic)
+- Milestone names/purpose are **internal labels** — see `CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES`.
+- Scheduled post date must never render on artwork (`artwork-prompts.ts`).
+- User notes must be interpreted, not pasted (`CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES`).
+
+### includeLogoInArtwork
+- Toggle: `inspiration.includeLogoInArtwork` + `selectedLogoId`
+- Resolved in `brand-context.ts` → `resolveSelectedLogoForGeneration`
+- Logo URL merged into inspiration images in `generation.ts`; prompt adds logo section only when `hasAttachedLogo` is true.
+- Logo label must not appear as on-graphic text (`CAMPAIGN_BUILDER_LOGO_RULES`).
+
+## Debug checklist
+
+### 1. Run tests
+```bash
+npm run test:campaign-builder-v2
+```
+
+### 2. Grep patterns
+```bash
+# Stale volunteer / seed strings
+rg -i "volunteer|sign-up|sign up|Two-Week Reminder" src/lib/campaign-builder-v2/
+
+# Generation entry points
+rg "generateAllContentAction|generateCampaignBuilderArtwork|generateCampaignBuilderCaption" src/
+
+# Status inference
+rg "inferGenerationStatus|generationStatus" src/lib/campaign-builder-v2/
+
+# Logo handling
+rg "includeLogoInArtwork|resolveSelectedLogoForGeneration" src/
+
+# Prompt guardrails usage
+rg "CAMPAIGN_BUILDER_" src/lib/campaign-builder-v2/
+```
+
+### 3. Enable server debug logging
+Add to `.env.local` (never commit):
+```
+CAMPAIGN_BUILDER_DEBUG=true
+```
+Restart dev server. Logs appear as JSON lines prefixed `campaign-builder-v2:` with milestone id/name, prompt sections, generationStatus before/after, truncated prompt previews (no full prompts by default).
+
+For artwork orchestrator layer, also: `NEXT_PUBLIC_ARTWORK_DEBUG=1`.
+
+### 4. Inspect session in browser
+```js
+JSON.parse(localStorage.getItem('campaign-builder-v2:YOUR_EVENT_ID'))
+```
+Check `milestones[].captionNotes`, `artworkNotes`, `purpose`, and `previewContents[].generationStatus`.
+
+### 5. Trace a single generate
+1. Set breakpoint or enable `CAMPAIGN_BUILDER_DEBUG=true`
+2. Click generate on **one** milestone in Preview step
+3. Confirm server log shows one `generate-all` start/complete pair
+4. Verify `promptSections` excludes unexpected blocks
+
+## Production vs local
+
+- Feature flag: `NEXT_PUBLIC_CAMPAIGNOS_CAMPAIGN_BUILDER_V2_ENABLED` (`feature-flag.ts`)
+- User deploys via **GitHub Desktop** (push to remote → Vercel/host builds). Local `.env.local` debug flags do **not** apply in production unless explicitly set in host env vars.
+- After fixing seed/migration logic, users with stale localStorage may still need to clear the key once.
+
+## When changing prompts
+
+1. Update `prompt-guardrails.ts` for shared rules
+2. Update `artwork-prompts.ts` / `caption-prompts.ts` for builder-specific assembly
+3. Add/adjust tests in `__tests__/campaign-builder.test.ts` or `milestone-status.test.ts`
+4. Run `npm run test:campaign-builder-v2`
+5. Clear local session and re-test one milestone generate
+
+## Do NOT
+
+- Re-enable bulk/all-milestone generation without explicit product approval
+- Paste milestone names, purpose, or user notes verbatim into prompts as copy-to-render
+- Log full prompts or API keys in production
+- Commit `.env.local` or enable `CAMPAIGN_BUILDER_DEBUG` in production by default

@@ -47,8 +47,10 @@ export function buildDefaultInspiration(
     useSchoolColors: true,
     primarySchoolColor: null,
     secondarySchoolColor: null,
-    globalAiGuidance:
-      "Vintage school look. Cream background. Navy and green are our primary colors. Include playful school elements like pencils, apples, and chalkboard textures. Keep text readable and welcoming for families.",
+    // Never pre-fill AI guidance with example/demo copy — it must stay
+    // empty until the user actually writes something (see Bug 3 in
+    // .cursor/rules/campaign-builder-debug.mdc).
+    globalAiGuidance: "",
   };
 }
 
@@ -69,8 +71,12 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
       suggestedDate: offset(-42),
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
-      artworkNotes: "Bold headline, vintage school poster style",
-      captionNotes: "Warm welcome tone, include event date",
+      // Never bake example/demo copy into artworkNotes/captionNotes — these
+      // are real form fields, not placeholders, and must stay empty until
+      // the user actually writes something (see Bug 3 in
+      // .cursor/rules/campaign-builder-debug.mdc).
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "complete",
     },
     {
@@ -96,8 +102,8 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
         ...defaultEnabledFormats(),
         "instagram-story-manual",
       ],
-      artworkNotes: "Countdown visual, energetic layout",
-      captionNotes: "List top 3 things to expect",
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "needs-review",
     },
     {
@@ -120,8 +126,8 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
       suggestedDate: eventDate,
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
-      artworkNotes: "Live now badge, booth location",
-      captionNotes: "Short, exciting live update",
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "not-started",
     },
     {
@@ -132,8 +138,8 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
       suggestedDate: offset(2),
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
-      artworkNotes: "Photo collage style recap",
-      captionNotes: "Warm gratitude tone for families",
+      artworkNotes: "",
+      captionNotes: "",
       statusTag: "not-started",
     },
   ];

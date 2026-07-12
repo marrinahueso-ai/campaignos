@@ -223,6 +223,11 @@ export function MilestonesStep() {
 
       {editingMilestone && (
         <MilestoneEditorModal
+          // Force a full remount per milestone: the form fields below are
+          // uncontrolled (defaultValue), so without a key React would keep
+          // showing the previous milestone's artwork/caption notes if the
+          // edited milestone ever changed while the modal stayed mounted.
+          key={editingMilestone.id}
           milestone={editingMilestone}
           onClose={() => setEditingId(null)}
           onSave={(patch) => updateMilestone(editingMilestone.id, patch)}

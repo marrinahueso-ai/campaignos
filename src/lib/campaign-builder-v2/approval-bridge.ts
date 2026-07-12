@@ -7,6 +7,7 @@ import {
   sendApprovalAssignedEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
+import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
 import { loadCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
 import type {
   CampaignBuilderMilestone,
@@ -72,7 +73,7 @@ export async function sendCampaignBuilderForApproval(
 
   const milestonesToSubmit = input.milestones.filter((milestone) => {
     const preview = previewByMilestone.get(milestone.id);
-    return preview && preview.status !== "draft";
+    return Boolean(preview) && derivedPreviewStatus(preview!) !== "draft";
   });
 
   if (milestonesToSubmit.length === 0) {

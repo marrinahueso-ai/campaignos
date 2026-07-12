@@ -5,7 +5,10 @@ import type {
   MilestonePreviewContent,
   StepWarning,
 } from "@/lib/campaign-builder-v2/types";
-import { countCompleteMilestones } from "@/lib/campaign-builder-v2/milestone-status";
+import {
+  countCompleteMilestones,
+  derivedPreviewStatus,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import { CAMPAIGN_BUILDER_STEPS } from "@/lib/campaign-builder-v2/navigation";
 
 export function computeCampaignHealthPercent(
@@ -29,9 +32,10 @@ export function computeCampaignHealthPercent(
       continue;
     }
 
-    if (preview.status === "ready") {
+    const status = derivedPreviewStatus(preview);
+    if (status === "ready") {
       score += perMilestone;
-    } else if (preview.status === "needs-review") {
+    } else if (status === "needs-review") {
       score += perMilestone * 0.65;
     } else {
       score += perMilestone * 0.25;
@@ -53,13 +57,17 @@ export function computeStepperStates(
   previewContents: MilestonePreviewContent[],
   currentStep: CampaignBuilderStepId,
 ): Record<CampaignBuilderStepId, StepperStepState> {
-  const readyCount = previewContents.filter((c) => c.status === "ready").length;
-  const needsReviewCount = previewContents.filter(
-    (c) => c.status === "needs-review",
+  const readyCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "ready",
   ).length;
-  const draftCount = previewContents.filter((c) => c.status === "draft").length;
+  const needsReviewCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "needs-review",
+  ).length;
+  const draftCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "draft",
+  ).length;
   const configuredCount = previewContents.filter(
-    (c) => c.status !== "draft",
+    (c) => derivedPreviewStatus(c) !== "draft",
   ).length;
 
   const { complete: generatedComplete, total: milestoneTotal } =
@@ -81,7 +89,7 @@ export function computeStepperStates(
   const reviewPending = previewContents.some(
     (c) =>
       c.approvalStatuses.some((a) => a.status !== "approved") ||
-      c.status === "needs-review",
+      derivedPreviewStatus(c) === "needs-review",
   );
 
   const stepOrder: CampaignBuilderStepId[] = [
@@ -182,7 +190,7 @@ export function computeStepWarnings(
   const warnings: StepWarning[] = [];
 
   for (const preview of previewContents) {
-    if (preview.status === "needs-review") {
+    if (derivedPreviewStatus(preview) === "needs-review") {
       const milestone = milestones.find((m) => m.id === preview.milestoneId);
       warnings.push({
         id: `preview-${preview.milestoneId}`,
@@ -197,7 +205,7 @@ export function computeStepWarnings(
     const pendingApproval = preview.approvalStatuses.some(
       (a) => a.status === "pending",
     );
-    if (pendingApproval || preview.status === "needs-review") {
+    if (pendingApproval || derivedPreviewStatus(preview) === "needs-review") {
       const milestone = milestones.find((m) => m.id === preview.milestoneId);
       warnings.push({
         id: `review-${preview.milestoneId}`,
@@ -215,13 +223,17 @@ export function computeStepperSubtitles(
   milestones: CampaignBuilderMilestone[],
   previewContents: MilestonePreviewContent[],
 ): Record<string, string> {
-  const readyCount = previewContents.filter((c) => c.status === "ready").length;
-  const needsReviewCount = previewContents.filter(
-    (c) => c.status === "needs-review",
+  const readyCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "ready",
   ).length;
-  const draftCount = previewContents.filter((c) => c.status === "draft").length;
+  const needsReviewCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "needs-review",
+  ).length;
+  const draftCount = previewContents.filter(
+    (c) => derivedPreviewStatus(c) === "draft",
+  ).length;
   const configuredCount = previewContents.filter(
-    (c) => c.status !== "draft",
+    (c) => derivedPreviewStatus(c) !== "draft",
   ).length;
 
   return {

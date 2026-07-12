@@ -8,7 +8,10 @@
 import { revalidatePath } from "next/cache";
 import { suggestMilestonesFromContext } from "@/lib/campaign-builder-v2/suggest-milestones";
 import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
-import { validateBeforeGeneration } from "@/lib/campaign-builder-v2/validation";
+import {
+  resolveSingleGenerationTarget,
+  validateBeforeGeneration,
+} from "@/lib/campaign-builder-v2/validation";
 import {
   artworkKeyForView,
   enabledArtworkViews,
@@ -19,6 +22,7 @@ import {
   generateCampaignBuilderArtwork,
   generateCampaignBuilderCaption,
 } from "@/lib/campaign-builder-v2/generation";
+import { logGenerateAllContentDebug } from "@/lib/campaign-builder-v2/debug";
 import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
 import {
   syncHeroFromAllMilestoneArtwork,
@@ -416,17 +420,23 @@ export async function generateAllContentAction(
     };
   }
 
-  if (!input.milestoneIds?.length || input.milestoneIds.length !== 1) {
+  const target = resolveSingleGenerationTarget({
+    milestones: input.milestones,
+    milestoneIds: input.milestoneIds,
+  });
+
+  if (!target.milestone) {
     return {
       success: false,
       results: [],
-      message: "Select exactly one milestone to generate content.",
+      message: target.error ?? "Select exactly one milestone to generate content.",
     };
   }
 
-  const targetMilestones = input.milestones.filter((milestone) =>
-    input.milestoneIds!.includes(milestone.id),
-  );
+  // Single-element by construction — generation must never fan out to other
+  // milestones. Kept as an array only because the shared helpers below
+  // (hero sync, debug logging) are written against a results list.
+  const targetMilestones = [target.milestone];
 
   try {
     const resolved = await resolveInspirationForGeneration(
@@ -451,6 +461,14 @@ export async function generateAllContentAction(
         null;
       const enabledFormats = preview?.enabledFormats ?? milestone.platformFormats;
 
+      logGenerateAllContentDebug({
+        eventId: input.eventId,
+        milestoneId: milestone.id,
+        milestoneName: milestone.name,
+        generationStatusBefore: preview?.generationStatus ?? null,
+        phase: "start",
+      });
+
       const artworkGeneration = await generateArtworkForMilestone({
         eventId: input.eventId,
         milestone,
@@ -464,6 +482,18 @@ export async function generateAllContentAction(
       });
 
       if (!artworkGeneration.success) {
+        logGenerateAllContentDebug({
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          milestoneName: milestone.name,
+          generationStatusBefore: preview?.generationStatus ?? null,
+          generationStatusAfter: "failed",
+          phase: "failed",
+          message:
+            artworkGeneration.message ||
+            `Could not generate artwork for "${milestone.name}".`,
+        });
+
         return {
           success: false,
           results: [],
@@ -496,6 +526,18 @@ export async function generateAllContentAction(
         });
 
         if (!captionResult.success) {
+          logGenerateAllContentDebug({
+            eventId: input.eventId,
+            milestoneId: milestone.id,
+            milestoneName: milestone.name,
+            generationStatusBefore: preview?.generationStatus ?? null,
+            generationStatusAfter: "failed",
+            phase: "failed",
+            message:
+              captionResult.message ||
+              `Could not generate caption for "${milestone.name}".`,
+          });
+
           return {
             success: false,
             results: [],
@@ -518,16 +560,27 @@ export async function generateAllContentAction(
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
       const hasContent = hasArtwork || hasCaptions;
 
+      const generationStatus = hasArtwork
+        ? "generated"
+        : hasContent
+          ? "needs_review"
+          : "ready_to_generate";
+
       results.push({
         milestoneId: milestone.id,
         artwork,
         captions,
         status: hasArtwork ? "ready" : hasCaptions ? "needs-review" : "draft",
-        generationStatus: hasArtwork
-          ? "generated"
-          : hasContent
-            ? "needs_review"
-            : "ready_to_generate",
+        generationStatus,
+      });
+
+      logGenerateAllContentDebug({
+        eventId: input.eventId,
+        milestoneId: milestone.id,
+        milestoneName: milestone.name,
+        generationStatusBefore: preview?.generationStatus ?? null,
+        generationStatusAfter: generationStatus,
+        phase: "complete",
       });
     }
 
@@ -537,17 +590,10 @@ export async function generateAllContentAction(
       results,
     });
 
-    const scopeLabel =
-      input.milestoneIds?.length === 1
-        ? "this milestone"
-        : input.milestoneIds?.length
-          ? "selected milestones"
-          : "all milestones";
-
     return {
       success: true,
       results,
-      message: `Artwork and captions generated for ${scopeLabel}.`,
+      message: `Artwork and captions generated for ${target.milestone.name}.`,
       updatedInspiration: resolved.inspiration,
     };
   } catch (error) {

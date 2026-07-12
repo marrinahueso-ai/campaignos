@@ -11,6 +11,7 @@ import {
   saveDraftAction,
   sendForApprovalAction,
 } from "@/lib/campaign-builder-v2/actions";
+import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
 import { cn } from "@/lib/utils/cn";
 import type { ApprovalWorkflowStepStatus } from "@/lib/campaign-builder-v2/types";
 
@@ -62,13 +63,14 @@ export function ReviewStep() {
     );
     if (!preview) return false;
     if (session.reviewFilter === "all") return true;
+    const status = derivedPreviewStatus(preview);
     if (session.reviewFilter === "needs-review") {
-      return preview.status === "needs-review";
+      return status === "needs-review";
     }
     if (session.reviewFilter === "approved") {
-      return preview.status === "ready";
+      return status === "ready";
     }
-    return preview.status === "draft";
+    return status === "draft";
   });
 
   async function handleSendForApproval() {
@@ -130,11 +132,16 @@ export function ReviewStep() {
               </p>
             </div>
             <p className="text-sm text-cos-muted">
-              {session.previewContents.filter((c) => c.status === "ready").length}{" "}
+              {
+                session.previewContents.filter(
+                  (c) => derivedPreviewStatus(c) === "ready",
+                ).length
+              }{" "}
               ready ·{" "}
               {
-                session.previewContents.filter((c) => c.status === "needs-review")
-                  .length
+                session.previewContents.filter(
+                  (c) => derivedPreviewStatus(c) === "needs-review",
+                ).length
               }{" "}
               need review
             </p>

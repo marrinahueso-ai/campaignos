@@ -11,6 +11,7 @@ import {
 import { buildDefaultSession } from "./seed-data.ts";
 import {
   isStaleDemoCaption,
+  sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
 } from "./stale-seed-migration.ts";
@@ -314,6 +315,11 @@ export function normalizeCampaignBuilderSession(
       raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
     secondarySchoolColor:
       raw.inspiration?.secondarySchoolColor ?? defaults.inspiration.secondarySchoolColor,
+    // Strip demo/example AI guidance so it never masquerades as a real,
+    // user-authored campaign instruction fed into generation prompts.
+    globalAiGuidance: sanitizeGlobalAiGuidance(
+      raw.inspiration?.globalAiGuidance ?? defaults.inspiration.globalAiGuidance,
+    ),
   };
 
   const milestones = [...(raw.milestones ?? defaults.milestones)]

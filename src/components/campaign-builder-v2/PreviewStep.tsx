@@ -416,6 +416,10 @@ export function PreviewStep() {
 
       {artworkModalOpen && selectedPreview && selectedMilestone && (
         <EditArtworkModal
+          // Remount per milestone — instructions/preview state is local to
+          // the modal (useState from milestone-specific props), so it must
+          // not persist across a different selectedMilestoneId.
+          key={selectedPreview.milestoneId}
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
           brandKitId={brandKitIdForAi(session.inspiration.brandKitId)}
@@ -444,6 +448,7 @@ export function PreviewStep() {
 
       {captionModalOpen && selectedPreview && selectedMilestone && (
         <EditCaptionModal
+          key={selectedPreview.milestoneId}
           eventId={session.eventId}
           milestoneId={selectedPreview.milestoneId}
           inspiration={session.inspiration}

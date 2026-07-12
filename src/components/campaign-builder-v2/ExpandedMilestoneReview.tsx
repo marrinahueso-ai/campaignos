@@ -3,6 +3,7 @@
 import { Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
+import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
 import {
   ARTWORK_VIEW_OPTIONS,
   PLATFORM_FORMAT_LABELS,
@@ -90,6 +91,7 @@ export function ExpandedMilestoneReview({
   const showManualDetails =
     preview.deliveryMethod === "manual-email" ||
     preview.enabledFormats.includes("instagram-story-manual");
+  const contentStatus = derivedPreviewStatus(preview);
 
   const emailAssets = preview.enabledFormats.map((format) => {
     const view = artworkViewForFormat(format);
@@ -125,10 +127,10 @@ export function ExpandedMilestoneReview({
         <span
           className={cn(
             "shrink-0 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-            STATUS_STYLES[preview.status],
+            STATUS_STYLES[contentStatus],
           )}
         >
-          {STATUS_LABELS[preview.status]}
+          {STATUS_LABELS[contentStatus]}
         </span>
         <select
           value={preview.deliveryMethod}

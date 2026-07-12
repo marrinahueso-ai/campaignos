@@ -21,6 +21,12 @@ import { getLatestOrganization } from "@/lib/organizations/queries";
 import { sanitizeEventAssetFilename } from "@/lib/event-workspace/storage";
 import { buildCampaignBuilderArtworkPrompt } from "@/lib/campaign-builder-v2/artwork-prompts";
 import { buildCampaignBuilderCaptionPrompts } from "@/lib/campaign-builder-v2/caption-prompts";
+import {
+  logArtworkGenerationDebug,
+  logCaptionGenerationDebug,
+  summarizeArtworkPromptSections,
+  summarizeCaptionPromptSections,
+} from "@/lib/campaign-builder-v2/debug";
 import type {
   ArtworkView,
   CampaignBuilderInspiration,
@@ -186,6 +192,17 @@ export async function generateCampaignBuilderArtwork(input: {
     hasAttachedLogo: Boolean(selectedLogo.url),
   });
 
+  const promptSections = summarizeArtworkPromptSections({
+    inspiration: input.inspiration,
+    milestone: input.milestone,
+    brandGuidance: brandContext.guidance,
+    extraInstructions: input.adjustmentComments ? null : input.extraInstructions,
+    hasInspirationImages: inspirationUrls.length > 0,
+    storyFromFeed: Boolean(input.storyFromFeed),
+    styleStrength: input.styleStrength,
+    hasAttachedLogo: Boolean(selectedLogo.url),
+  });
+
   const generation = await generateArtworkVariations({
     eventId: input.eventId,
     milestoneId: input.milestone.id,
@@ -195,6 +212,20 @@ export async function generateCampaignBuilderArtwork(input: {
     previousImageUrl: input.previousImageUrl,
     adjustmentComments: input.adjustmentComments,
     versionCount: input.versionCount ?? 1,
+  });
+
+  logArtworkGenerationDebug({
+    eventId: input.eventId,
+    milestone: input.milestone,
+    view: input.view,
+    promptSections,
+    userPrompt,
+    includeLogoInArtwork: input.inspiration.includeLogoInArtwork,
+    hasAttachedLogo: Boolean(selectedLogo.url),
+    inspirationImageCount: inspirationUrls.length,
+    storyFromFeed: Boolean(input.storyFromFeed),
+    success: generation.success,
+    message: generation.error,
   });
 
   if (!generation.success) {
@@ -286,6 +317,15 @@ export async function generateCampaignBuilderCaption(input: {
     revisionInstructions: revisionInstructions || null,
   });
 
+  const captionPromptSections = summarizeCaptionPromptSections({
+    inspiration: input.inspiration,
+    milestone: input.milestone,
+    organizationName: organization?.name ?? null,
+    hasArtworkImage: prompts.hasArtworkImage,
+    revisionInstructions: revisionInstructions || null,
+    existingCaption,
+  });
+
   const model = resolveMetaCaptionModel();
   let generation = await generateText({
     systemPrompt: prompts.systemPrompt,
@@ -328,6 +368,18 @@ export async function generateCampaignBuilderCaption(input: {
       errorMessage: generation.error,
     });
 
+    logCaptionGenerationDebug({
+      eventId: input.eventId,
+      milestone: input.milestone,
+      platform: input.platform,
+      promptSections: captionPromptSections,
+      systemPrompt: prompts.systemPrompt,
+      userPrompt: prompts.userPrompt,
+      hasArtworkImage: prompts.hasArtworkImage,
+      success: false,
+      message: generation.error ?? "Caption generation failed.",
+    });
+
     return {
       success: false,
       caption: "",
@@ -346,6 +398,18 @@ export async function generateCampaignBuilderCaption(input: {
     completionTokens: generation.completionTokens,
     totalTokens: generation.totalTokens,
     success: true,
+  });
+
+  logCaptionGenerationDebug({
+    eventId: input.eventId,
+    milestone: input.milestone,
+    platform: input.platform,
+    promptSections: captionPromptSections,
+    systemPrompt: prompts.systemPrompt,
+    userPrompt: prompts.userPrompt,
+    hasArtworkImage: prompts.hasArtworkImage,
+    success: true,
+    captionPreview: caption,
   });
 
   return {
