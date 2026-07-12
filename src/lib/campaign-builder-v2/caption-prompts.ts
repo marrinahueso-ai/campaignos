@@ -5,6 +5,7 @@ import {
   shouldIncludeOrganizationName,
 } from "@/lib/campaign-builder-v2/prompt-guardrails";
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
+import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
 import {
   buildMetaCaptionSystemPrompt,
   buildMetaCaptionUserPrompt,
@@ -14,13 +15,6 @@ import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
 } from "@/lib/campaign-builder-v2/types";
-
-function daysUntilEvent(eventDate: string, milestoneDate: string): number {
-  const event = new Date(`${eventDate}T12:00:00`);
-  const milestone = new Date(`${milestoneDate}T12:00:00`);
-  const diffMs = event.getTime() - milestone.getTime();
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
-}
 
 function mapVoiceToneToMetaTone(voiceTone: string): MetaCaptionTone {
   const normalized = voiceTone.toLowerCase();
@@ -46,7 +40,7 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
   organizationName?: string | null;
   playbookName?: string | null;
 }): string {
-  const relativeDay = daysUntilEvent(
+  const relativeDay = playbookRelativeDay(
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
@@ -70,7 +64,7 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
     `Event date: ${input.inspiration.eventDate}`,
     input.playbookName ? `Playbook: ${input.playbookName}` : null,
     `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
-    `Suggested post date: ${input.milestone.suggestedDate}`,
+    `Internal scheduled post date (never include in caption unless user notes ask): ${input.milestone.suggestedDate}`,
     includeOrgName && input.organizationName
       ? `School/PTO: ${input.organizationName}`
       : null,
@@ -92,7 +86,7 @@ export function buildCampaignBuilderCaptionPrompts(input: {
   existingCaption?: string | null;
   revisionInstructions?: string | null;
 }): { systemPrompt: string; userPrompt: string; hasArtworkImage: boolean } {
-  const relativeDay = daysUntilEvent(
+  const relativeDay = playbookRelativeDay(
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
@@ -129,7 +123,7 @@ export function buildCampaignBuilderCaptionPrompts(input: {
   const userPrompt = [
     buildMetaCaptionUserPrompt({
       placement: "feed",
-      milestoneTitle: input.milestone.name,
+      milestoneTitle: campaignMoment.label,
       timingLabel: campaignMoment.label,
       relativeDay,
       eventDate: input.inspiration.eventDate,

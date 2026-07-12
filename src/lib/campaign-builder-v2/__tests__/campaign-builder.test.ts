@@ -1,15 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { playbookRelativeDay } from "../campaign-timing.ts";
+import {
+  CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+  CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+  CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+} from "../prompt-guardrails.ts";
+import { syncCaptionsToPlatforms, getSharedCaptionText } from "../caption-utils.ts";
+import { mergeInspirationImageUrls } from "../inspiration-utils.ts";
+import { isNoBrandKit, brandKitIdForAi, NO_BRAND_KIT_ID } from "../brand-kit.ts";
 import {
   formatValidationErrors,
   validateBeforeGeneration,
   validateInspirationForGeneration,
   validateMilestonesForGeneration,
 } from "../validation.ts";
-import { syncCaptionsToPlatforms, getSharedCaptionText } from "../caption-utils.ts";
-import { mergeInspirationImageUrls } from "../inspiration-utils.ts";
-import { isNoBrandKit, brandKitIdForAi, NO_BRAND_KIT_ID } from "../brand-kit.ts";
 import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
@@ -18,12 +24,17 @@ import type {
 const baseInspiration: CampaignBuilderInspiration = {
   campaignId: "evt-1",
   campaignName: "Back to School Fair",
-  eventDate: "2026-08-15",
+  eventDate: "2026-08-17",
   playbookId: "school-6-week",
   inspirationImages: [],
   brandKitId: "ees-pto",
   voiceTone: "Friendly, Exciting, Welcoming",
   globalAiGuidance: "Vintage school look",
+  selectedLogoId: null,
+  includeLogoInArtwork: false,
+  useSchoolColors: false,
+  primarySchoolColor: null,
+  secondarySchoolColor: null,
 };
 
 const baseMilestone: CampaignBuilderMilestone = {
@@ -31,7 +42,7 @@ const baseMilestone: CampaignBuilderMilestone = {
   name: "Save the Date",
   category: "awareness",
   purpose: "Announce the event",
-  suggestedDate: "2026-07-01",
+  suggestedDate: "2026-07-06",
   platforms: ["facebook", "instagram"],
   platformFormats: ["facebook-feed", "instagram-feed"],
   artworkNotes: "",
@@ -138,5 +149,49 @@ describe("mergeInspirationImageUrls", () => {
       ["logo-1", "logo-2"],
     );
     assert.deepEqual(merged, ["logo-1", "logo-2", "insp-1", "insp-2"]);
+  });
+});
+
+describe("campaign timing", () => {
+  it("uses playbook convention (negative = before event)", () => {
+    assert.equal(
+      playbookRelativeDay("2026-08-17", "2026-07-06"),
+      -42,
+    );
+    assert.equal(
+      playbookRelativeDay("2026-08-17", "2026-08-03"),
+      -14,
+    );
+  });
+});
+
+describe("prompt guardrails for artwork generation", () => {
+  it("forbids scheduled post dates on artwork", () => {
+    assert.match(
+      CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+      /Never render scheduled post dates/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+      /never the internal post or milestone schedule date/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
+      /Milestone:, Post date:, or Suggested date:/,
+    );
+  });
+
+  it("forbids reminder milestone copy on artwork", () => {
+    assert.match(
+      CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+      /Never use the words reminder, two-week reminder, or milestone on the graphic/,
+    );
+  });
+
+  it("forbids organization names unless user asks", () => {
+    assert.match(
+      CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
+      /Do not use the school, PTO, organization, or campaign name as on-graphic text/,
+    );
   });
 });

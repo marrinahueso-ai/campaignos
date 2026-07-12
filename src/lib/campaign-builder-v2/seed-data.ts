@@ -43,7 +43,7 @@ export function buildDefaultInspiration(
     brandKitId: "ees-pto",
     voiceTone: DEFAULT_VOICE_TONE_OPTIONS[0],
     selectedLogoId: null,
-    includeLogoInArtwork: true,
+    includeLogoInArtwork: false,
     useSchoolColors: true,
     primarySchoolColor: null,
     secondarySchoolColor: null,

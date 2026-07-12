@@ -416,11 +416,17 @@ export async function generateAllContentAction(
     };
   }
 
-  const targetMilestones = input.milestoneIds?.length
-    ? input.milestones.filter((milestone) =>
-        input.milestoneIds!.includes(milestone.id),
-      )
-    : input.milestones;
+  if (!input.milestoneIds?.length) {
+    return {
+      success: false,
+      results: [],
+      message: "Select a milestone to generate content.",
+    };
+  }
+
+  const targetMilestones = input.milestones.filter((milestone) =>
+    input.milestoneIds!.includes(milestone.id),
+  );
 
   try {
     const resolved = await resolveInspirationForGeneration(

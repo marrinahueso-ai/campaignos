@@ -46,7 +46,8 @@ function stageFromRelativeDay(relativeDay: number): CampaignStageId {
   if (relativeDay >= 1) return "thank_you";
   if (relativeDay === 0) return "today";
   if (relativeDay === -1) return "day_before";
-  if (relativeDay >= -13) return "reminder";
+  if (relativeDay >= -21 && relativeDay <= -8) return "push";
+  if (relativeDay >= -7 && relativeDay <= -2) return "reminder";
   return "announcement";
 }
 
@@ -59,6 +60,7 @@ function stageFromTitle(title: string): CampaignStageId | null {
     return "day_before";
   }
   if (normalized.includes("push")) return "push";
+  if (normalized.includes("two") && normalized.includes("week")) return "push";
   if (
     normalized.includes("reminder") ||
     normalized.includes("final") ||

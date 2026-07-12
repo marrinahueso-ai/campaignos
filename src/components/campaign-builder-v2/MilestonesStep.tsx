@@ -47,6 +47,9 @@ export function MilestonesStep() {
     removeMilestone,
     duplicateMilestone,
     suggestMilestones,
+    generateMilestoneContent,
+    generatingMilestoneId,
+    setSelectedMilestoneId,
   } = useCampaignBuilder();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -79,6 +82,12 @@ export function MilestonesStep() {
     } finally {
       setIsSuggesting(false);
     }
+  }
+
+  async function handleGenerateMilestone(milestoneId: string) {
+    setSelectedMilestoneId(milestoneId);
+    goToStep("preview");
+    await generateMilestoneContent(milestoneId);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -156,7 +165,9 @@ export function MilestonesStep() {
                     milestone={milestone}
                     index={index}
                     menuOpenId={menuOpenId}
+                    isGenerating={generatingMilestoneId === milestone.id}
                     onEdit={setEditingId}
+                    onGenerate={(id) => void handleGenerateMilestone(id)}
                     onToggleMenu={(id) =>
                       setMenuOpenId(menuOpenId === id ? null : id)
                     }
@@ -196,8 +207,8 @@ export function MilestonesStep() {
             </h2>
             <p className="text-sm text-cos-muted">
               Add specific instructions for the AI for each milestone. Use the
-              pencil icon to edit artwork and caption notes. Content is generated
-              one milestone at a time on the Preview step.
+              pencil icon to edit artwork and caption notes, or the sparkle icon
+              to generate content for one milestone at a time in Preview.
             </p>
           </section>
         </div>

@@ -19,10 +19,22 @@ import type {
 
 const STALE_MILESTONE_NAME_FIXES: Record<string, string> = {
   "Two-Week Reminder": "Two-Week Push",
+  "Two Week Reminder": "Two-Week Push",
+  "two-week reminder": "Two-Week Push",
 };
 
 function normalizeMilestoneName(name: string): string {
-  return STALE_MILESTONE_NAME_FIXES[name] ?? name;
+  const trimmed = name.trim();
+  if (STALE_MILESTONE_NAME_FIXES[trimmed]) {
+    return STALE_MILESTONE_NAME_FIXES[trimmed];
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("two") && lower.includes("week") && lower.includes("reminder")) {
+    return "Two-Week Push";
+  }
+
+  return trimmed;
 }
 
 function buildEmptyPreviewContent(

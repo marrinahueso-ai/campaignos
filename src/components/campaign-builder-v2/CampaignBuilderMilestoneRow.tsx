@@ -4,8 +4,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical,
+  Loader2,
   MoreHorizontal,
   Pencil,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -62,7 +64,9 @@ interface CampaignBuilderMilestoneRowProps {
   milestone: CampaignBuilderMilestone;
   index: number;
   menuOpenId: string | null;
+  isGenerating?: boolean;
   onEdit: (id: string) => void;
+  onGenerate?: (id: string) => void;
   onToggleMenu: (id: string) => void;
   onDuplicate: (id: string) => void;
   onMoveUp: (id: string) => void;
@@ -74,7 +78,9 @@ export function CampaignBuilderMilestoneRow({
   milestone,
   index,
   menuOpenId,
+  isGenerating = false,
   onEdit,
+  onGenerate,
   onToggleMenu,
   onDuplicate,
   onMoveUp,
@@ -150,6 +156,21 @@ export function CampaignBuilderMilestoneRow({
       </div>
 
       <div className="relative flex items-center gap-1 self-start">
+        {onGenerate && (
+          <button
+            type="button"
+            aria-label={`Generate content for ${milestone.name}`}
+            className="p-1.5 text-cos-accent transition-colors hover:text-cos-text disabled:opacity-50"
+            disabled={isGenerating}
+            onClick={() => onGenerate(milestone.id)}
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+            ) : (
+              <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+            )}
+          </button>
+        )}
         <button
           type="button"
           aria-label={`Edit ${milestone.name}`}
