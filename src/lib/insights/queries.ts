@@ -298,24 +298,31 @@ async function fetchLatestSyncRun(organizationId: string): Promise<{
   status: "completed" | "failed" | "running" | null;
   completedAt: string | null;
   errorMessage: string | null;
+  warnings: string[];
 }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("analytics_sync_runs")
-    .select("status, completed_at, error_message")
+    .select("status, completed_at, error_message, metadata")
     .eq("organization_id", organizationId)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (error || !data) {
-    return { status: null, completedAt: null, errorMessage: null };
+    return { status: null, completedAt: null, errorMessage: null, warnings: [] };
   }
+
+  const metadata = (data.metadata as { warnings?: unknown } | null) ?? null;
+  const warnings = Array.isArray(metadata?.warnings)
+    ? metadata.warnings.filter((entry): entry is string => typeof entry === "string")
+    : [];
 
   return {
     status: data.status as "completed" | "failed" | "running",
     completedAt: (data.completed_at as string | null) ?? null,
     errorMessage: (data.error_message as string | null) ?? null,
+    warnings,
   };
 }
 
@@ -339,6 +346,7 @@ async function buildConnectionHealth(
       lastSyncAt: latestSync.completedAt,
       lastSyncStatus: latestSync.status,
       lastSyncError: latestSync.errorMessage,
+      lastSyncWarnings: latestSync.warnings,
     };
   }
 
@@ -356,6 +364,7 @@ async function buildConnectionHealth(
     lastSyncAt: latestSync.completedAt,
     lastSyncStatus: latestSync.status,
     lastSyncError: latestSync.errorMessage,
+    lastSyncWarnings: latestSync.warnings,
   };
 }
 

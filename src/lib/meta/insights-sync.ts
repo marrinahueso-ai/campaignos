@@ -7,6 +7,7 @@ import {
   fetchInstagramAccountDailyInsights,
   fetchInstagramMediaInsights,
 } from "@/lib/meta/insights-graph";
+import { isSkippableInsightsError } from "@/lib/meta/insights-metrics";
 import { getMetaConnectionForOrganization } from "@/lib/meta-publishing/connection";
 import { inspectMetaPageToken } from "@/lib/meta-publishing/connection-token-health";
 import {
@@ -32,6 +33,49 @@ export type InsightsSyncResult = {
   error: string | null;
   warnings: string[];
 };
+
+type PostSyncFailure = {
+  externalPostId: string;
+  platform: PublishedSlot["platform"];
+  error: string;
+  errorCode?: number;
+};
+
+function summarizeSyncOutcome(input: {
+  warnings: string[];
+  postsSynced: number;
+  daysSynced: number;
+  postFailures: PostSyncFailure[];
+  totalPosts: number;
+}): {
+  ok: boolean;
+  status: "completed" | "failed";
+  userWarnings: string[];
+  errorMessage: string | null;
+} {
+  const userWarnings = [...input.warnings];
+
+  if (input.postFailures.length > 0) {
+    const skippedCount = input.postFailures.length;
+    if (skippedCount === input.totalPosts && input.totalPosts > 0) {
+      userWarnings.push("Post metrics unavailable for all published posts.");
+    } else {
+      userWarnings.push(
+        `Some post metrics unavailable (${skippedCount} of ${input.totalPosts} posts).`,
+      );
+    }
+  }
+
+  const hasData = input.postsSynced > 0 || input.daysSynced > 0;
+  const ok = hasData || userWarnings.length === 0;
+
+  return {
+    ok,
+    status: ok ? "completed" : "failed",
+    userWarnings,
+    errorMessage: ok ? null : userWarnings.join(" ") || "No metrics synced.",
+  };
+}
 
 async function startSyncRun(input: {
   organizationId: string;
@@ -375,12 +419,15 @@ export async function syncOrganizationInsights(input: {
     }
 
     const slots = await fetchPublishedSlotsForOrganization(input.organizationId);
+    const postFailures: PostSyncFailure[] = [];
+
     for (const slot of slots) {
       const fetchResult =
         slot.platform === "facebook"
           ? await fetchFacebookPostInsights({
               postId: slot.external_post_id,
               accessToken: connection.pageAccessToken,
+              placement: slot.placement,
             })
           : await fetchInstagramMediaInsights({
               mediaId: slot.external_post_id,
@@ -388,10 +435,35 @@ export async function syncOrganizationInsights(input: {
               placement: slot.placement,
             });
 
+      if (slot.platform === "facebook") {
+        const facebookResult = fetchResult as Awaited<
+          ReturnType<typeof fetchFacebookPostInsights>
+        >;
+        if (facebookResult.skipped) {
+          console.info("Insights sync skipped post:", {
+            externalPostId: slot.external_post_id,
+            platform: slot.platform,
+            reason: facebookResult.skipReason,
+          });
+          continue;
+        }
+      }
+
       if (fetchResult.error) {
-        warnings.push(
-          `Post ${slot.external_post_id}: ${fetchResult.error}`,
-        );
+        postFailures.push({
+          externalPostId: slot.external_post_id,
+          platform: slot.platform,
+          error: fetchResult.error,
+          errorCode: fetchResult.errorCode,
+        });
+        console.warn("Insights sync post metrics unavailable:", {
+          externalPostId: slot.external_post_id,
+          platform: slot.platform,
+          placement: slot.placement,
+          error: fetchResult.error,
+          errorCode: fetchResult.errorCode,
+          skippable: isSkippableInsightsError(fetchResult.errorCode),
+        });
         continue;
       }
 
@@ -412,22 +484,32 @@ export async function syncOrganizationInsights(input: {
 
     await backfillActivityFromInbox(input.organizationId);
 
-    const ok = daysSynced > 0 || postsSynced > 0 || warnings.length === 0;
-    await finishSyncRun({
-      runId,
-      status: ok ? "completed" : "failed",
+    const outcome = summarizeSyncOutcome({
+      warnings,
       postsSynced,
       daysSynced,
-      errorMessage: ok ? null : warnings.join("; ") || "No metrics synced.",
-      metadata: { warnings },
+      postFailures,
+      totalPosts: slots.length,
+    });
+
+    await finishSyncRun({
+      runId,
+      status: outcome.status,
+      postsSynced,
+      daysSynced,
+      errorMessage: outcome.errorMessage,
+      metadata: {
+        warnings: outcome.userWarnings,
+        postErrors: postFailures,
+      },
     });
 
     return {
-      ok,
+      ok: outcome.ok,
       postsSynced,
       daysSynced,
-      error: ok ? null : warnings.join("; ") || "No metrics synced.",
-      warnings,
+      error: outcome.errorMessage,
+      warnings: outcome.userWarnings,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Insights sync failed.";

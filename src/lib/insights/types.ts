@@ -89,6 +89,7 @@ export type InsightsConnectionHealth = {
   lastSyncAt: string | null;
   lastSyncStatus: "completed" | "failed" | "running" | null;
   lastSyncError: string | null;
+  lastSyncWarnings: string[];
 };
 
 export type InsightsPageData = {

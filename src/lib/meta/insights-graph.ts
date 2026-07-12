@@ -1,5 +1,15 @@
 import "server-only";
 
+import {
+  FACEBOOK_PAGE_DAILY_METRICS,
+  FACEBOOK_POST_METRICS,
+  INSTAGRAM_ACCOUNT_TIME_SERIES_METRICS,
+  INSTAGRAM_ACCOUNT_TOTAL_VALUE_METRICS,
+  INSTAGRAM_FEED_MEDIA_METRICS,
+  INSTAGRAM_STORY_MEDIA_METRICS,
+  looksLikeFacebookPhotoId,
+} from "@/lib/meta/insights-metrics";
+
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
 type GraphResult =
@@ -37,6 +47,7 @@ async function graphGet(path: string, params: Record<string, string>): Promise<G
   const response = await fetch(url.toString());
   const payload = (await response.json()) as {
     data?: unknown;
+    post_id?: string;
     error?: GraphErrorPayload;
   };
 
@@ -76,6 +87,12 @@ type InsightValueRow = {
   name?: string;
   period?: string;
   values?: Array<{ value?: number | Record<string, number>; end_time?: string }>;
+  total_value?: {
+    value?: number;
+    breakdowns?: Array<{
+      results?: Array<{ value?: number; end_time?: string }>;
+    }>;
+  };
 };
 
 function readMetricValue(value: number | Record<string, number> | undefined): number {
@@ -90,54 +107,105 @@ function readMetricValue(value: number | Record<string, number> | undefined): nu
   return 0;
 }
 
-function parseDailyInsights(rows: InsightValueRow[]): NormalizedDailyInsight[] {
-  const byDate = new Map<string, NormalizedDailyInsight>();
+function metricAmountForDate(row: InsightValueRow, date: string): number | null {
+  for (const entry of row.values ?? []) {
+    const endTime = entry.end_time;
+    if (!endTime || endTime.slice(0, 10) !== date) {
+      continue;
+    }
+    return readMetricValue(entry.value);
+  }
 
-  for (const row of rows) {
-    const metricName = row.name ?? "";
-    for (const entry of row.values ?? []) {
-      const endTime = entry.end_time;
-      if (!endTime) {
+  for (const breakdown of row.total_value?.breakdowns ?? []) {
+    for (const result of breakdown.results ?? []) {
+      const endTime = result.end_time;
+      if (!endTime || endTime.slice(0, 10) !== date) {
         continue;
       }
-
-      const date = endTime.slice(0, 10);
-      const current =
-        byDate.get(date) ??
-        ({
-          date,
-          reach: 0,
-          engagement: 0,
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          clicks: 0,
-          rawMetrics: {},
-        } satisfies NormalizedDailyInsight);
-
-      const amount = readMetricValue(entry.value);
-      current.rawMetrics[metricName] = amount;
-
-      if (
-        metricName.includes("impressions_unique") ||
-        metricName === "reach" ||
-        metricName === "impressions"
-      ) {
-        current.reach += amount;
-      } else if (metricName.includes("engagement") || metricName.includes("engaged")) {
-        current.engagement += amount;
-      } else if (metricName.includes("reactions_like") || metricName === "likes") {
-        current.likes += amount;
-      } else if (metricName.includes("comment")) {
-        current.comments += amount;
-      } else if (metricName.includes("share")) {
-        current.shares += amount;
-      } else if (metricName.includes("click")) {
-        current.clicks += amount;
-      }
-
-      byDate.set(date, current);
+      return readMetricValue(result.value);
     }
+  }
+
+  return null;
+}
+
+function collectDatesFromRows(rows: InsightValueRow[]): string[] {
+  const dates = new Set<string>();
+
+  for (const row of rows) {
+    for (const entry of row.values ?? []) {
+      if (entry.end_time) {
+        dates.add(entry.end_time.slice(0, 10));
+      }
+    }
+
+    for (const breakdown of row.total_value?.breakdowns ?? []) {
+      for (const result of breakdown.results ?? []) {
+        if (result.end_time) {
+          dates.add(result.end_time.slice(0, 10));
+        }
+      }
+    }
+  }
+
+  return [...dates].sort((a, b) => a.localeCompare(b));
+}
+
+function applyMetricToDailyRow(
+  current: NormalizedDailyInsight,
+  metricName: string,
+  amount: number,
+): void {
+  current.rawMetrics[metricName] = amount;
+
+  if (
+    metricName.includes("media_view_unique") ||
+    metricName.includes("impressions_unique") ||
+    metricName === "reach" ||
+    metricName === "impressions"
+  ) {
+    current.reach += amount;
+  } else if (metricName.includes("engagement") || metricName.includes("engaged")) {
+    current.engagement += amount;
+  } else if (metricName.includes("reactions_like") || metricName === "likes") {
+    current.likes += amount;
+  } else if (metricName.includes("comment")) {
+    current.comments += amount;
+  } else if (metricName.includes("share")) {
+    current.shares += amount;
+  } else if (metricName.includes("click")) {
+    current.clicks += amount;
+  } else if (metricName === "total_interactions") {
+    current.engagement += amount;
+  }
+}
+
+function parseDailyInsights(rows: InsightValueRow[]): NormalizedDailyInsight[] {
+  const dates = collectDatesFromRows(rows);
+  const byDate = new Map<string, NormalizedDailyInsight>();
+
+  for (const date of dates) {
+    const current: NormalizedDailyInsight = {
+      date,
+      reach: 0,
+      engagement: 0,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      clicks: 0,
+      rawMetrics: {},
+    };
+
+    for (const row of rows) {
+      const metricName = row.name ?? "";
+      const amount = metricAmountForDate(row, date);
+      if (amount == null) {
+        continue;
+      }
+      applyMetricToDailyRow(current, metricName, amount);
+    }
+
+    byDate.set(date, current);
   }
 
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
@@ -154,10 +222,13 @@ function parsePostInsights(rows: InsightValueRow[]): NormalizedPostInsight {
 
   for (const row of rows) {
     const metricName = row.name ?? "";
-    const amount = readMetricValue(row.values?.[0]?.value);
+    const amount =
+      readMetricValue(row.values?.[0]?.value) ||
+      readMetricValue(row.total_value?.value);
     rawMetrics[metricName] = amount;
 
     if (
+      metricName.includes("media_view_unique") ||
       metricName.includes("impressions_unique") ||
       metricName === "reach" ||
       metricName === "impressions"
@@ -173,6 +244,8 @@ function parsePostInsights(rows: InsightValueRow[]): NormalizedPostInsight {
       shares += amount;
     } else if (metricName.includes("click")) {
       clicks += amount;
+    } else if (metricName === "total_interactions") {
+      engagement += amount;
     }
   }
 
@@ -186,8 +259,7 @@ export async function fetchFacebookPageDailyInsights(input: {
   until: string;
 }): Promise<{ rows: NormalizedDailyInsight[]; error: string | null }> {
   const result = await graphGet(`/${input.pageId}/insights`, {
-    metric:
-      "page_impressions_unique,page_post_engagements,page_actions_post_reactions_like_total,page_posts_impressions",
+    metric: FACEBOOK_PAGE_DAILY_METRICS.join(","),
     period: "day",
     since: input.since,
     until: input.until,
@@ -200,6 +272,34 @@ export async function fetchFacebookPageDailyInsights(input: {
 
   const data = (result.data.data ?? []) as InsightValueRow[];
   return { rows: parseDailyInsights(data), error: null };
+}
+
+async function fetchInstagramAccountMetricRows(input: {
+  instagramAccountId: string;
+  accessToken: string;
+  since: string;
+  until: string;
+  metrics: readonly string[];
+  metricType?: "total_value";
+}): Promise<{ rows: InsightValueRow[]; error: string | null }> {
+  const params: Record<string, string> = {
+    metric: input.metrics.join(","),
+    period: "day",
+    since: input.since,
+    until: input.until,
+    access_token: input.accessToken,
+  };
+
+  if (input.metricType) {
+    params.metric_type = input.metricType;
+  }
+
+  const result = await graphGet(`/${input.instagramAccountId}/insights`, params);
+  if (!result.ok) {
+    return { rows: [], error: result.error };
+  }
+
+  return { rows: (result.data.data ?? []) as InsightValueRow[], error: null };
 }
 
 export async function fetchInstagramAccountDailyInsights(input: {
@@ -208,49 +308,134 @@ export async function fetchInstagramAccountDailyInsights(input: {
   since: string;
   until: string;
 }): Promise<{ rows: NormalizedDailyInsight[]; error: string | null }> {
-  const result = await graphGet(`/${input.instagramAccountId}/insights`, {
-    metric: "reach,accounts_engaged",
-    period: "day",
-    since: input.since,
-    until: input.until,
-    access_token: input.accessToken,
-  });
+  const [reachResult, engagedResult] = await Promise.all([
+    fetchInstagramAccountMetricRows({
+      instagramAccountId: input.instagramAccountId,
+      accessToken: input.accessToken,
+      since: input.since,
+      until: input.until,
+      metrics: INSTAGRAM_ACCOUNT_TIME_SERIES_METRICS,
+    }),
+    fetchInstagramAccountMetricRows({
+      instagramAccountId: input.instagramAccountId,
+      accessToken: input.accessToken,
+      since: input.since,
+      until: input.until,
+      metrics: INSTAGRAM_ACCOUNT_TOTAL_VALUE_METRICS,
+      metricType: "total_value",
+    }),
+  ]);
 
-  if (!result.ok) {
-    return { rows: [], error: result.error };
+  const errors = [reachResult.error, engagedResult.error].filter(Boolean);
+  if (errors.length === 2) {
+    return { rows: [], error: errors.join("; ") };
   }
 
-  const data = (result.data.data ?? []) as InsightValueRow[];
-  return { rows: parseDailyInsights(data), error: null };
+  const rows = [...reachResult.rows, ...engagedResult.rows];
+  return {
+    rows: parseDailyInsights(rows),
+    error: errors[0] ?? null,
+  };
 }
 
-export async function fetchFacebookPostInsights(input: {
-  postId: string;
+async function resolveFacebookPostIdForInsights(input: {
+  objectId: string;
   accessToken: string;
-}): Promise<{ insight: NormalizedPostInsight | null; error: string | null }> {
-  const result = await graphGet(`/${input.postId}/insights`, {
-    metric:
-      "post_impressions_unique,post_engaged_users,post_reactions_like_total,post_comments,post_shares,post_clicks",
+}): Promise<string | null> {
+  if (!looksLikeFacebookPhotoId(input.objectId)) {
+    return null;
+  }
+
+  const result = await graphGet(`/${input.objectId}`, {
+    fields: "post_id",
     access_token: input.accessToken,
   });
 
   if (!result.ok) {
-    return { insight: null, error: result.error };
+    return null;
+  }
+
+  const postId = String(result.data.post_id ?? "").trim();
+  return postId || null;
+}
+
+async function fetchFacebookPostInsightsForId(input: {
+  postId: string;
+  accessToken: string;
+}): Promise<{
+  insight: NormalizedPostInsight | null;
+  error: string | null;
+  errorCode?: number;
+}> {
+  const result = await graphGet(`/${input.postId}/insights`, {
+    metric: FACEBOOK_POST_METRICS.join(","),
+    access_token: input.accessToken,
+  });
+
+  if (!result.ok) {
+    return { insight: null, error: result.error, errorCode: result.errorCode };
   }
 
   const data = (result.data.data ?? []) as InsightValueRow[];
   return { insight: parsePostInsights(data), error: null };
 }
 
+export async function fetchFacebookPostInsights(input: {
+  postId: string;
+  accessToken: string;
+  placement?: "feed" | "story";
+}): Promise<{
+  insight: NormalizedPostInsight | null;
+  error: string | null;
+  errorCode?: number;
+  skipped?: boolean;
+  skipReason?: string;
+}> {
+  if (input.placement === "story") {
+    return {
+      insight: null,
+      error: null,
+      skipped: true,
+      skipReason: "Facebook stories do not expose post-level insights via Graph API.",
+    };
+  }
+
+  const direct = await fetchFacebookPostInsightsForId({
+    postId: input.postId,
+    accessToken: input.accessToken,
+  });
+  if (direct.insight || !direct.error) {
+    return direct;
+  }
+
+  const resolvedPostId = await resolveFacebookPostIdForInsights({
+    objectId: input.postId,
+    accessToken: input.accessToken,
+  });
+
+  if (!resolvedPostId || resolvedPostId === input.postId) {
+    return direct;
+  }
+
+  return fetchFacebookPostInsightsForId({
+    postId: resolvedPostId,
+    accessToken: input.accessToken,
+  });
+}
+
 export async function fetchInstagramMediaInsights(input: {
   mediaId: string;
   accessToken: string;
   placement: "feed" | "story";
-}): Promise<{ insight: NormalizedPostInsight | null; error: string | null }> {
+}): Promise<{
+  insight: NormalizedPostInsight | null;
+  error: string | null;
+  errorCode?: number;
+}> {
   const metrics =
     input.placement === "story"
-      ? "reach,replies,shares"
-      : "reach,likes,comments,shares,saved,total_interactions";
+      ? INSTAGRAM_STORY_MEDIA_METRICS.join(",")
+      : INSTAGRAM_FEED_MEDIA_METRICS.join(",");
 
   const result = await graphGet(`/${input.mediaId}/insights`, {
     metric: metrics,
@@ -258,7 +443,7 @@ export async function fetchInstagramMediaInsights(input: {
   });
 
   if (!result.ok) {
-    return { insight: null, error: result.error };
+    return { insight: null, error: result.error, errorCode: result.errorCode };
   }
 
   const data = (result.data.data ?? []) as InsightValueRow[];
