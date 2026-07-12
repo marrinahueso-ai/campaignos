@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { playbookRelativeDay } from "../campaign-timing.ts";
+import { normalizeCampaignBuilderSession } from "../normalize-session.ts";
+import { buildDefaultSession } from "../seed-data.ts";
+import {
+  isStaleSeedNote,
+  sanitizeSeedNotes,
+  sanitizeSeedPurpose,
+} from "../stale-seed-migration.ts";
 import {
   CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
@@ -162,6 +169,109 @@ describe("campaign timing", () => {
       playbookRelativeDay("2026-08-17", "2026-08-03"),
       -14,
     );
+  });
+});
+
+describe("stale seed migration", () => {
+  it("detects volunteer sign-up caption notes", () => {
+    assert.equal(isStaleSeedNote("Mention volunteer sign-up link"), true);
+    assert.equal(sanitizeSeedNotes("Mention volunteer sign-up link"), "");
+  });
+
+  it("detects volunteer artwork notes", () => {
+    assert.equal(isStaleSeedNote("Highlight volunteer CTA"), true);
+    assert.equal(sanitizeSeedNotes("Highlight volunteer CTA"), "");
+  });
+
+  it("rewrites volunteer-heavy purpose lines", () => {
+    const purpose = sanitizeSeedPurpose(
+      "Remind families about the event and encourage volunteer sign-ups",
+      "Two-Week Reminder",
+    );
+    assert.match(purpose, /excitement/i);
+    assert.doesNotMatch(purpose, /volunteer/i);
+  });
+
+  it("preserves custom user notes", () => {
+    assert.equal(sanitizeSeedNotes("Feature our carnival theme colors"), "Feature our carnival theme colors");
+  });
+});
+
+describe("normalizeCampaignBuilderSession", () => {
+  it("renames Two-Week Reminder and strips stale volunteer notes", () => {
+    const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        milestones: defaults.milestones.map((milestone) =>
+          milestone.id === "ms-two-week"
+            ? {
+                ...milestone,
+                name: "Two-Week Reminder",
+                captionNotes: "Mention volunteer sign-up link",
+                artworkNotes: "Highlight volunteer CTA",
+                purpose: "Remind families about the event and encourage volunteer sign-ups",
+              }
+            : milestone,
+        ),
+        previewContents: defaults.previewContents.map((preview) =>
+          preview.milestoneId === "ms-two-week"
+            ? {
+                ...preview,
+                captions: [
+                  {
+                    platform: "facebook",
+                    text: "Volunteer spots are open — sign up today",
+                  },
+                  { platform: "instagram", text: "" },
+                ],
+              }
+            : preview,
+        ),
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+
+    const twoWeek = normalized.milestones.find((m) => m.id === "ms-two-week");
+    assert.equal(twoWeek?.name, "Two-Week Push");
+    assert.equal(twoWeek?.captionNotes, "");
+    assert.equal(twoWeek?.artworkNotes, "");
+    assert.doesNotMatch(twoWeek?.purpose ?? "", /volunteer/i);
+
+    const preview = normalized.previewContents.find(
+      (content) => content.milestoneId === "ms-two-week",
+    );
+    assert.equal(preview?.captions[0]?.text, "");
+  });
+
+  it("resets auto-enabled logo inclusion unless user explicitly opted in", () => {
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          includeLogoInArtwork: true,
+          selectedLogoId: "logo-1",
+        },
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+    assert.equal(normalized.inspiration.includeLogoInArtwork, false);
+
+    const explicit = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          includeLogoInArtwork: true,
+          includeLogoInArtworkUserSet: true,
+          selectedLogoId: "logo-1",
+        },
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+    assert.equal(explicit.inspiration.includeLogoInArtwork, true);
   });
 });
 

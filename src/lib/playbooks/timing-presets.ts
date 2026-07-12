@@ -34,7 +34,7 @@ export function resolveTimingPresetId(eventType: EventType | null): TimingPreset
 
 const BOOK_FAIR_STEPS: TimingPresetStep[] = [
   { relativeDay: -30, title: "Save the Date", channel: "newsletter" },
-  { relativeDay: -14, title: "Two-Week Reminder", channel: "facebook" },
+  { relativeDay: -14, title: "Two-Week Push", channel: "facebook" },
   { relativeDay: -7, title: "One-Week Push", channel: "email" },
   { relativeDay: -3, title: "Final Reminder", channel: "instagram" },
   { relativeDay: -1, title: "Day Before", channel: "morning_announcements" },
@@ -45,7 +45,7 @@ const BOOK_FAIR_STEPS: TimingPresetStep[] = [
 const FULL_EVENT_STEPS: TimingPresetStep[] = [
   { relativeDay: -30, title: "Save the Date", channel: "newsletter" },
   { relativeDay: -21, title: "Volunteer Drive", channel: "email" },
-  { relativeDay: -14, title: "Two-Week Reminder", channel: "facebook" },
+  { relativeDay: -14, title: "Two-Week Push", channel: "facebook" },
   { relativeDay: -7, title: "One-Week Push", channel: "instagram" },
   { relativeDay: -3, title: "Final Details", channel: "morning_announcements" },
   { relativeDay: -1, title: "Day Before", channel: "facebook" },

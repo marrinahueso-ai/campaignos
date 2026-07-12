@@ -61,7 +61,7 @@ const META_FORMATS: {
 
 const BOOK_FAIR_MILESTONES: MetaArtworkMilestone[] = [
   { relativeDay: -30, title: "Save the Date" },
-  { relativeDay: -14, title: "Two-Week Reminder" },
+  { relativeDay: -14, title: "Two-Week Push" },
   { relativeDay: -7, title: "One-Week Push" },
   { relativeDay: -3, title: "Final Reminder" },
   { relativeDay: -1, title: "Day Before" },
@@ -72,7 +72,7 @@ const BOOK_FAIR_MILESTONES: MetaArtworkMilestone[] = [
 const FULL_EVENT_MILESTONES: MetaArtworkMilestone[] = [
   { relativeDay: -30, title: "Save the Date" },
   { relativeDay: -21, title: "Volunteer Drive" },
-  { relativeDay: -14, title: "Two-Week Reminder" },
+  { relativeDay: -14, title: "Two-Week Push" },
   { relativeDay: -7, title: "One-Week Push" },
   { relativeDay: -3, title: "Final Details" },
   { relativeDay: -1, title: "Day Before" },

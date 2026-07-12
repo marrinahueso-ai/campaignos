@@ -1,4 +1,4 @@
-import { defaultEnabledFormats, emptyMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
+import { defaultEnabledFormats, emptyMilestoneArtwork } from "./platform-utils.ts";
 import type {
   ApprovalWorkflowStep,
   BrandKitOption,
@@ -7,7 +7,7 @@ import type {
   CampaignBuilderSession,
   MilestonePreviewContent,
   PlaybookOption,
-} from "@/lib/campaign-builder-v2/types";
+} from "./types.ts";
 
 export const DEFAULT_PLAYBOOK_OPTIONS: PlaybookOption[] = [
   { id: "school-6-week", name: "School Event – 6 Week Playbook" },
@@ -128,12 +128,12 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
       id: "ms-thank-you",
       name: "Thank You / Recap",
       category: "recap",
-      purpose: "Share photos, thank volunteers, and celebrate success",
+      purpose: "Share photos and celebrate event success",
       suggestedDate: offset(2),
       platforms: ["facebook", "instagram"],
       platformFormats: defaultEnabledFormats(),
       artworkNotes: "Photo collage style recap",
-      captionNotes: "Thank volunteers and families",
+      captionNotes: "Warm gratitude tone for families",
       statusTag: "not-started",
     },
   ];
@@ -144,113 +144,44 @@ export function buildDefaultMilestones(eventDate: string): CampaignBuilderMilest
   }));
 }
 
-function buildPreviewContent(
+function buildEmptyPreviewContent(
   milestone: CampaignBuilderMilestone,
-  index: number,
 ): MilestonePreviewContent {
-  const statuses: MilestonePreviewContent["status"][] = [
-    "ready",
-    "needs-review",
-    "ready",
-    "needs-review",
-    "draft",
-    "ready",
-  ];
-
-  const captions: Record<string, { facebook: string; instagram: string }> = {
-    "ms-save-the-date": {
-      facebook:
-        "Mark your calendars! Our Back to School Fair is coming up on August 15. Join us for food, fun, and community connection. See you there!",
-      instagram:
-        "Save the date! Back to School Fair — Aug 15. Food, fun & community. Link in bio for details.",
-    },
-    "ms-two-week": {
-      facebook:
-        "Two weeks until our Back to School Fair! Mark your calendar and get ready for food, fun, and community connection.",
-      instagram:
-        "2 weeks to go! Back to School Fair — save the date and spread the word.",
-    },
-    "ms-one-week": {
-      facebook:
-        "One week away! Here's what to expect: welcome stations, classroom visits, PTO info booth, and treats for the kids. August 15 — don't miss it!",
-      instagram:
-        "1 week countdown! Welcome stations, treats & PTO info. Aug 15.",
-    },
-    "ms-day-before": {
-      facebook:
-        "Tomorrow is the day! We're excited to see our families at the Back to School Fair. See you there!",
-      instagram:
-        "TOMORROW! Back to School Fair — see you soon!",
-    },
-    "ms-event-day": {
-      facebook:
-        "We're LIVE at the Back to School Fair! Stop by the PTO booth for your welcome packet and say hi to our volunteers.",
-      instagram:
-        "We're here! Back to School Fair is happening NOW. Come say hi!",
-    },
-    "ms-thank-you": {
-      facebook:
-        "What a wonderful Back to School Fair! Thank you to every volunteer and family who made it special. Swipe through for highlights from the night.",
-      instagram:
-        "Thank you, EES families! Back to School Fair recap — swipe for the best moments.",
-    },
-  };
-
-  const text = captions[milestone.id] ?? {
-    facebook: `Facebook caption for ${milestone.name}`,
-    instagram: `Instagram caption for ${milestone.name}`,
-  };
-
-  const deliveryMethods: MilestonePreviewContent["deliveryMethod"][] = [
-    "auto-publish",
-    "schedule",
-    "manual-email",
-    "auto-publish",
-    "draft-only",
-    "schedule",
-  ];
-
-  const scheduleTime = index % 2 === 0 ? "09:00" : "17:30";
-  const deliveryMethod = deliveryMethods[index] ?? "auto-publish";
-
-  const approvalStatuses: MilestonePreviewContent["approvalStatuses"] = [
-    {
-      role: "creator",
-      label: "Creator",
-      status: index === 2 ? "approved" : index < 2 ? "approved" : "not-started",
-      timestamp:
-        index <= 2 ? "2026-05-15T10:12:00" : null,
-    },
-    {
-      role: "committee-chair",
-      label: "Committee Chair",
-      status: index === 2 ? "pending" : "not-started",
-      timestamp: null,
-    },
-    {
-      role: "vp-comms",
-      label: "VP Communications",
-      status: "not-started",
-      timestamp: null,
-    },
-  ];
-
   return {
     milestoneId: milestone.id,
-    status: statuses[index] ?? "draft",
+    status: "draft",
     artwork: emptyMilestoneArtwork(),
     captions: [
-      { platform: "facebook", text: text.facebook },
-      { platform: "instagram", text: text.instagram },
+      { platform: "facebook", text: "" },
+      { platform: "instagram", text: "" },
     ],
     enabledFormats: milestone.platformFormats,
-    deliveryMethod,
+    deliveryMethod: "auto-publish",
     scheduleDate: milestone.suggestedDate,
-    scheduleTime,
+    scheduleTime: "09:00",
     emailSendDate: milestone.suggestedDate,
-    emailSendTime: scheduleTime,
+    emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
-    approvalStatuses,
+    approvalStatuses: [
+      {
+        role: "creator",
+        label: "Creator",
+        status: "not-started",
+        timestamp: null,
+      },
+      {
+        role: "committee-chair",
+        label: "Committee Chair",
+        status: "not-started",
+        timestamp: null,
+      },
+      {
+        role: "vp-comms",
+        label: "VP Communications",
+        status: "not-started",
+        timestamp: null,
+      },
+    ],
   };
 }
 
@@ -300,7 +231,7 @@ export function buildDefaultSession(
     currentStep: "inspiration",
     inspiration,
     milestones,
-    previewContents: milestones.map(buildPreviewContent),
+    previewContents: milestones.map(buildEmptyPreviewContent),
     approvalWorkflow: buildDefaultApprovalWorkflow(),
     reviewFilter: "all",
     selectedMilestoneId: milestones[0]?.id ?? null,

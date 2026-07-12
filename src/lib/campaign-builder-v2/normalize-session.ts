@@ -9,6 +9,11 @@ import {
   milestoneHasArtwork,
 } from "./milestone-status.ts";
 import { buildDefaultSession } from "./seed-data.ts";
+import {
+  isStaleDemoCaption,
+  sanitizeSeedNotes,
+  sanitizeSeedPurpose,
+} from "./stale-seed-migration.ts";
 import type {
   CampaignBuilderMilestone,
   CampaignBuilderSession,
@@ -245,17 +250,6 @@ function alignPreviewContentsWithMilestones(
       return reconcilePreviewContent(existing, milestone, defaultApprovalStatuses);
     }
 
-    const defaultPreview = defaults.previewContents.find(
-      (content) => content.milestoneId === milestone.id,
-    );
-    if (defaultPreview) {
-      return reconcilePreviewContent(
-        defaultPreview,
-        milestone,
-        defaultApprovalStatuses,
-      );
-    }
-
     return reconcilePreviewContent(
       buildEmptyPreviewContent(milestone),
       milestone,
@@ -311,8 +305,9 @@ export function normalizeCampaignBuilderSession(
     campaignId: raw.inspiration?.campaignId ?? eventId,
     selectedLogoId: raw.inspiration?.selectedLogoId ?? defaults.inspiration.selectedLogoId,
     includeLogoInArtwork:
-      raw.inspiration?.includeLogoInArtwork ??
-      defaults.inspiration.includeLogoInArtwork,
+      raw.inspiration?.includeLogoInArtworkUserSet === true
+        ? Boolean(raw.inspiration?.includeLogoInArtwork)
+        : defaults.inspiration.includeLogoInArtwork,
     useSchoolColors:
       raw.inspiration?.useSchoolColors ?? defaults.inspiration.useSchoolColors,
     primarySchoolColor:
@@ -322,23 +317,37 @@ export function normalizeCampaignBuilderSession(
   };
 
   const milestones = [...(raw.milestones ?? defaults.milestones)]
-    .map((milestone, index) => ({
-      ...milestone,
-      name: normalizeMilestoneName(milestone.name),
-      platformFormats:
-        milestone.platformFormats ?? defaultEnabledFormats(),
-      artworkNotes: milestone.artworkNotes ?? "",
-      captionNotes: milestone.captionNotes ?? "",
-      statusTag: milestone.statusTag ?? "not-started",
-      sortOrder: milestone.sortOrder ?? index,
-    }))
+    .map((milestone, index) => {
+      const name = normalizeMilestoneName(milestone.name);
+      return {
+        ...milestone,
+        name,
+        platformFormats:
+          milestone.platformFormats ?? defaultEnabledFormats(),
+        artworkNotes: sanitizeSeedNotes(milestone.artworkNotes),
+        captionNotes: sanitizeSeedNotes(milestone.captionNotes),
+        purpose: sanitizeSeedPurpose(milestone.purpose, name),
+        statusTag: milestone.statusTag ?? "not-started",
+        sortOrder: milestone.sortOrder ?? index,
+      };
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((milestone, index) => ({ ...milestone, sortOrder: index }));
 
   const rawMilestones = raw.milestones ?? defaults.milestones;
+  const rawPreviews = (raw.previewContents ?? defaults.previewContents).map(
+    (content) => ({
+      ...content,
+      captions: (content.captions ?? []).map((caption) =>
+        isStaleDemoCaption(caption.text)
+          ? { ...caption, text: "" }
+          : caption,
+      ),
+    }),
+  );
   const previewContents = alignPreviewContentsWithMilestones(
     milestones,
-    raw.previewContents ?? defaults.previewContents,
+    rawPreviews,
     rawMilestones,
     defaults,
   );

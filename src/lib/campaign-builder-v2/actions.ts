@@ -416,11 +416,11 @@ export async function generateAllContentAction(
     };
   }
 
-  if (!input.milestoneIds?.length) {
+  if (!input.milestoneIds?.length || input.milestoneIds.length !== 1) {
     return {
       success: false,
       results: [],
-      message: "Select a milestone to generate content.",
+      message: "Select exactly one milestone to generate content.",
     };
   }
 

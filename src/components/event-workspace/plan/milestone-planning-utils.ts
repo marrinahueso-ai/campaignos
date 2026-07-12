@@ -514,8 +514,8 @@ export function suggestTimeline(
     return [
       {
         relativeDay: -14,
-        title: "Two-Week Reminder",
-        description: defaultDescription("Two-Week Reminder", -14),
+        title: "Two-Week Push",
+        description: defaultDescription("Two-Week Push", -14),
         internalNotes: "",
         dueDate: toLocalDateString(
           (() => {

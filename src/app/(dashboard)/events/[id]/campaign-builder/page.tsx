@@ -89,7 +89,6 @@ export default async function CampaignBuilderPage({
 
   if (!initialSession.inspiration.selectedLogoId && logoOptions[0]) {
     initialSession.inspiration.selectedLogoId = logoOptions[0].id;
-    initialSession.inspiration.includeLogoInArtwork = true;
   }
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;

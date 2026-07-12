@@ -80,6 +80,8 @@ export interface CampaignBuilderInspiration {
   voiceTone: string;
   selectedLogoId: string | null;
   includeLogoInArtwork: boolean;
+  /** Set when the user toggles logo inclusion in Inspiration — not auto-defaulted on page load. */
+  includeLogoInArtworkUserSet?: boolean;
   useSchoolColors: boolean;
   primarySchoolColor: string | null;
   secondarySchoolColor: string | null;

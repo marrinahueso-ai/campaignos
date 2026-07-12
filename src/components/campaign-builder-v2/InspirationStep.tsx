@@ -254,6 +254,7 @@ export function InspirationStep() {
                     onChange={(event) =>
                       updateInspiration({
                         includeLogoInArtwork: event.target.checked,
+                        includeLogoInArtworkUserSet: true,
                         selectedLogoId:
                           event.target.checked && !inspiration.selectedLogoId
                             ? (logoOptions[0]?.id ?? null)
@@ -278,6 +279,7 @@ export function InspirationStep() {
                           updateInspiration({
                             selectedLogoId: selected ? null : logo.id,
                             includeLogoInArtwork: true,
+                            includeLogoInArtworkUserSet: true,
                           })
                         }
                         className={cn(

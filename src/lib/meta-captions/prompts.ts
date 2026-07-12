@@ -85,7 +85,7 @@ export function buildMetaCaptionUserPrompt(input: {
             : null,
           "Light emoji is fine if it feels natural — not every sentence.",
           input.feedCtaGuide?.trim() ??
-            "End with a soft call to join in, save the date, or come celebrate — not corporate CTAs.",
+            "End with a warm save-the-date or excitement-building close — not corporate CTAs or volunteer asks.",
         ]
           .filter(Boolean)
           .join(" ")
