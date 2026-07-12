@@ -2,8 +2,18 @@ import {
   defaultEnabledFormats,
   normalizeMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/platform-utils";
+import {
+  generationStatusAfterContent,
+  inferGenerationStatus,
+  isStaleGeneration,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import { buildDefaultSession } from "@/lib/campaign-builder-v2/seed-data";
-import type { CampaignBuilderSession, PreviewTabId } from "@/lib/campaign-builder-v2/types";
+import type {
+  CampaignBuilderSession,
+  MilestoneGenerationStatus,
+  MilestonePreviewContent,
+  PreviewTabId,
+} from "@/lib/campaign-builder-v2/types";
 
 const STALE_MILESTONE_NAME_FIXES: Record<string, string> = {
   "Two-Week Reminder": "Two-Week Push",
@@ -74,17 +84,44 @@ export function normalizeCampaignBuilderSession(
     .map((milestone, index) => ({ ...milestone, sortOrder: index }));
 
   const previewContents = (raw.previewContents ?? defaults.previewContents).map(
-    (content) => ({
-      ...content,
-      artwork: normalizeMilestoneArtwork(content.artwork),
-      enabledFormats:
-        content.enabledFormats ?? defaultEnabledFormats(),
-      emailSendDate: content.emailSendDate ?? content.scheduleDate,
-      emailSendTime: content.emailSendTime ?? content.scheduleTime,
-      manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",
-      approvalStatuses:
-        content.approvalStatuses ?? defaults.previewContents[0]?.approvalStatuses ?? [],
-    }),
+    (content) => {
+      const normalized: MilestonePreviewContent = {
+        ...content,
+        artwork: normalizeMilestoneArtwork(content.artwork),
+        enabledFormats:
+          content.enabledFormats ?? defaultEnabledFormats(),
+        emailSendDate: content.emailSendDate ?? content.scheduleDate,
+        emailSendTime: content.emailSendTime ?? content.scheduleTime,
+        manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",
+        approvalStatuses:
+          content.approvalStatuses ?? defaults.previewContents[0]?.approvalStatuses ?? [],
+        generationStartedAt: content.generationStartedAt ?? null,
+      };
+
+      let generationStatus: MilestoneGenerationStatus =
+        content.generationStatus ??
+        generationStatusAfterContent(normalized, normalized.enabledFormats);
+
+      if (
+        generationStatus === "generating" &&
+        isStaleGeneration(normalized.generationStartedAt)
+      ) {
+        generationStatus = generationStatusAfterContent(
+          normalized,
+          normalized.enabledFormats,
+        );
+        if (generationStatus === "ready_to_generate") {
+          generationStatus = "failed";
+        }
+      }
+
+      normalized.generationStatus = inferGenerationStatus(
+        { ...normalized, generationStatus },
+        normalized.enabledFormats,
+      );
+
+      return normalized;
+    },
   );
 
   return {

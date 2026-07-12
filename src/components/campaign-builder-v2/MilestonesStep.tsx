@@ -47,15 +47,11 @@ export function MilestonesStep() {
     removeMilestone,
     duplicateMilestone,
     suggestMilestones,
-    generateAllContent,
-    isGeneratingContent,
-    generationProgress,
   } = useCampaignBuilder();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const milestones = useMemo(
     () => [...session.milestones].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -85,46 +81,6 @@ export function MilestonesStep() {
     }
   }
 
-  async function handleGenerateContent() {
-    setGenerateError(null);
-
-    try {
-      if (editingMilestone) {
-        const form = document.getElementById(
-          "milestone-editor-form",
-        ) as HTMLFormElement | null;
-        if (form) {
-          const { readMilestoneEditorPatch } = await import(
-            "@/components/campaign-builder-v2/MilestoneEditorModal"
-          );
-          const patch = readMilestoneEditorPatch(form);
-          const result = await generateAllContent({
-            milestonePatch: {
-              id: editingMilestone.id,
-              ...patch,
-            },
-          });
-          setEditingId(null);
-          if (!result.success) {
-            setGenerateError(result.message);
-          }
-          return;
-        }
-      }
-
-      const result = await generateAllContent();
-      if (!result.success) {
-        setGenerateError(result.message);
-      }
-    } catch (error) {
-      setGenerateError(
-        error instanceof Error
-          ? error.message
-          : "Could not generate artwork and captions.",
-      );
-    }
-  }
-
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) {
@@ -145,7 +101,13 @@ export function MilestonesStep() {
       <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-8">
         <div className="studio-page space-y-6">
           <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="font-display text-4xl text-cos-text">Milestones</h1>
+            <div>
+              <h1 className="font-display text-4xl text-cos-text">Milestones</h1>
+              <p className="mt-1 text-sm text-cos-muted">
+                Plan your campaign milestones, then generate content one at a time in
+                Preview.
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
@@ -234,64 +196,18 @@ export function MilestonesStep() {
             </h2>
             <p className="text-sm text-cos-muted">
               Add specific instructions for the AI for each milestone. Use the
-              pencil icon to edit artwork and caption notes.
+              pencil icon to edit artwork and caption notes. Content is generated
+              one milestone at a time on the Preview step.
             </p>
           </section>
-
-          {generateError && (
-            <div
-              className="rounded border border-cos-warning/40 bg-cos-warning/10 px-4 py-3 text-sm text-cos-warning-text"
-              role="alert"
-            >
-              <p>{generateError}</p>
-              <button
-                type="button"
-                onClick={() => void handleGenerateContent()}
-                disabled={isGeneratingContent}
-                className="mt-2 font-medium underline hover:no-underline"
-              >
-                Retry generation
-              </button>
-            </div>
-          )}
-
-          {isGeneratingContent && (
-            <div className="rounded border border-cos-border bg-cos-bg/40 px-4 py-4 text-center text-sm text-cos-muted">
-              <p className="font-medium text-cos-text">
-                {generationProgress
-                  ? `Generating milestone ${generationProgress.current} of ${generationProgress.total}: ${generationProgress.milestoneName}`
-                  : "Generating artwork and captions…"}
-              </p>
-              <p className="mt-1">
-                Each milestone is generated separately to avoid timeouts. Keep this tab
-                open until generation finishes — your campaign setup is saved, but
-                in-progress AI generation will stop if you navigate away.
-              </p>
-              {generationProgress && generationProgress.total > 1 && (
-                <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-cos-border">
-                  <div
-                    className="h-full bg-cos-accent transition-all"
-                    style={{
-                      width: `${(generationProgress.current / generationProgress.total) * 100}%`,
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
       <CampaignBuilderFooter
         onBack={() => goToStep("inspiration")}
-        onContinue={handleGenerateContent}
-        continueLabel={
-          isGeneratingContent
-            ? "Generating artwork and captions…"
-            : "Generate Content"
-        }
-        continueDisabled={milestones.length === 0 || isGeneratingContent}
-        continueLoading={isGeneratingContent}
+        onContinue={() => goToStep("preview")}
+        continueLabel="Continue to Preview"
+        continueDisabled={milestones.length === 0}
       />
 
       {editingMilestone && (

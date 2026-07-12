@@ -42,6 +42,11 @@ import {
 } from "@/lib/campaign-builder-v2/seed-data";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import {
+  findNextMilestoneToGenerate,
+  inferGenerationStatus,
+  isStaleGeneration,
+} from "@/lib/campaign-builder-v2/milestone-status";
+import {
   isValidCampaignBuilderStep,
   stepFromHash,
 } from "@/lib/campaign-builder-v2/navigation";
@@ -98,6 +103,7 @@ interface CampaignBuilderContextValue {
   schoolColors: CampaignBuilderSchoolColors;
   isSaving: boolean;
   isGeneratingContent: boolean;
+  generatingMilestoneId: string | null;
   generationProgress: ContentGenerationProgress | null;
   goToStep: (step: CampaignBuilderStepId) => void;
   updateInspiration: (patch: Partial<CampaignBuilderInspiration>) => void;
@@ -113,6 +119,14 @@ interface CampaignBuilderContextValue {
   duplicateMilestone: (id: string) => void;
   suggestMilestones: () => Promise<void>;
   flushSave: () => Promise<void>;
+  generateMilestoneContent: (
+    milestoneId: string,
+    options?: {
+      milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+    },
+  ) => Promise<{ success: boolean; message: string }>;
+  generateNextMilestone: () => Promise<{ success: boolean; message: string }>;
+  /** @deprecated Use generateMilestoneContent with a milestoneId instead. */
   generateAllContent: (options?: {
     milestoneId?: string;
     milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
@@ -180,6 +194,8 @@ function buildNewMilestone(
   const preview: MilestonePreviewContent = {
     milestoneId: id,
     status: "draft",
+    generationStatus: "ready_to_generate",
+    generationStartedAt: null,
     artwork: emptyMilestoneArtwork(),
     captions: [
       { platform: "facebook", text: "" },
@@ -269,8 +285,12 @@ export function CampaignBuilderProvider({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [generatingMilestoneId, setGeneratingMilestoneId] = useState<string | null>(
+    null,
+  );
   const [generationProgress, setGenerationProgress] =
     useState<ContentGenerationProgress | null>(null);
+  const generationInFlightRef = useRef<Set<string>>(new Set());
   const [inspirationUploadError, setInspirationUploadError] = useState<string | null>(
     null,
   );
@@ -632,6 +652,8 @@ export function CampaignBuilderProvider({
           ...sourcePreview,
           milestoneId: newId,
           status: "draft",
+          generationStatus: "ready_to_generate",
+          generationStartedAt: null,
         };
         return {
           ...prev,
@@ -668,16 +690,27 @@ export function CampaignBuilderProvider({
     setInspirationUploadError(null);
   }, []);
 
-  const generateAllContent = useCallback(
-    async (options?: {
-      milestoneId?: string;
-      milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
-    }): Promise<{ success: boolean; message: string }> => {
+  const runMilestoneGeneration = useCallback(
+    async (
+      milestoneId: string,
+      options?: {
+        milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+      },
+    ): Promise<{ success: boolean; message: string }> => {
+      if (generationInFlightRef.current.has(milestoneId)) {
+        return {
+          success: false,
+          message: "Generation is already in progress for this milestone.",
+        };
+      }
+
+      generationInFlightRef.current.add(milestoneId);
+      setGeneratingMilestoneId(milestoneId);
       setIsGeneratingContent(true);
+
       try {
         let base = sessionRef.current;
         const milestonePatch = options?.milestonePatch;
-        const targetMilestoneId = options?.milestoneId ?? milestonePatch?.id;
 
         if (milestonePatch) {
           const { id, ...patch } = milestonePatch;
@@ -703,127 +736,230 @@ export function CampaignBuilderProvider({
           setSession(base);
         }
 
-        await flushSave();
+        const startedAt = new Date().toISOString();
+        const generatingBase: CampaignBuilderSession = {
+          ...base,
+          selectedMilestoneId: milestoneId,
+          previewContents: base.previewContents.map((content) =>
+            content.milestoneId === milestoneId
+              ? {
+                  ...content,
+                  generationStatus: "generating",
+                  generationStartedAt: startedAt,
+                }
+              : content,
+          ),
+        };
+        sessionRef.current = generatingBase;
+        setSession(generatingBase);
+        persistLocalSession(generatingBase);
+        await persistSession(generatingBase);
 
-        const brandKitId = brandKitIdForAi(base.inspiration.brandKitId);
+        const brandKitId = brandKitIdForAi(generatingBase.inspiration.brandKitId);
         const resolvedPlaybooks =
           playbooks.length > 0 ? playbooks : DEFAULT_PLAYBOOK_OPTIONS;
         const playbookName =
           resolvedPlaybooks.find(
-            (option) => option.id === base.inspiration.playbookId,
+            (option) => option.id === generatingBase.inspiration.playbookId,
           )?.name ?? null;
         const inspirationImages = await prepareInspirationImagesForServer(
-          base.inspiration.inspirationImages,
+          generatingBase.inspiration.inspirationImages,
         );
 
-        const milestoneIdsToGenerate = targetMilestoneId
-          ? [targetMilestoneId]
-          : base.milestones.map((milestone) => milestone.id);
+        const milestone = generatingBase.milestones.find(
+          (entry) => entry.id === milestoneId,
+        );
 
-        const failures: string[] = [];
-        let workingBase = base;
+        setGenerationProgress({
+          current: 1,
+          total: 1,
+          milestoneName: milestone?.name ?? "Milestone",
+        });
 
-        for (let index = 0; index < milestoneIdsToGenerate.length; index += 1) {
-          const milestoneId = milestoneIdsToGenerate[index]!;
-          const milestone = workingBase.milestones.find(
-            (entry) => entry.id === milestoneId,
-          );
+        const result = await generateAllContentAction({
+          eventId: generatingBase.eventId,
+          inspiration: generatingBase.inspiration,
+          inspirationImages,
+          milestones: generatingBase.milestones,
+          previewContents: generatingBase.previewContents,
+          brandKitId,
+          useBrandKit: brandKitId !== null,
+          milestoneIds: [milestoneId],
+          playbookName,
+        });
 
-          setGenerationProgress({
-            current: index + 1,
-            total: milestoneIdsToGenerate.length,
-            milestoneName: milestone?.name ?? `Milestone ${index + 1}`,
-          });
-
-          const result = await generateAllContentAction({
-            eventId: workingBase.eventId,
-            inspiration: workingBase.inspiration,
-            inspirationImages,
-            milestones: workingBase.milestones,
-            previewContents: workingBase.previewContents,
-            brandKitId,
-            useBrandKit: brandKitId !== null,
-            milestoneIds: [milestoneId],
-            playbookName,
-          });
-
-          if (result.updatedInspiration) {
-            workingBase = {
-              ...workingBase,
-              inspiration: result.updatedInspiration,
-            };
-          }
-
-          if (!result.success) {
-            failures.push(result.message);
-            continue;
-          }
-
+        let workingBase = generatingBase;
+        if (result.updatedInspiration) {
           workingBase = {
             ...workingBase,
-            inspiration: result.updatedInspiration ?? workingBase.inspiration,
-            previewContents: workingBase.previewContents.map((content) => {
-              const generated = result.results.find(
-                (entry) => entry.milestoneId === content.milestoneId,
-              );
-              if (!generated) {
-                return content;
-              }
-              return {
-                ...content,
-                artwork: generated.artwork,
-                captions: generated.captions,
-                status: generated.status,
-              };
-            }),
-            selectedMilestoneId:
-              targetMilestoneId ??
-              workingBase.selectedMilestoneId ??
-              workingBase.milestones[0]?.id ??
-              null,
+            inspiration: result.updatedInspiration,
           };
-
-          sessionRef.current = workingBase;
-          setSession(workingBase);
-          persistLocalSession(workingBase);
         }
 
-        setGenerationProgress(null);
-
-        if (failures.length === milestoneIdsToGenerate.length) {
-          return { success: false, message: failures[0] ?? "Content generation failed." };
+        if (!result.success) {
+          const failedBase: CampaignBuilderSession = {
+            ...workingBase,
+            previewContents: workingBase.previewContents.map((content) =>
+              content.milestoneId === milestoneId
+                ? {
+                    ...content,
+                    generationStatus: "failed",
+                    generationStartedAt: null,
+                  }
+                : content,
+            ),
+          };
+          sessionRef.current = failedBase;
+          setSession(failedBase);
+          await persistSession(failedBase);
+          return { success: false, message: result.message };
         }
 
-        await persistSession(workingBase);
+        const updatedBase: CampaignBuilderSession = {
+          ...workingBase,
+          previewContents: workingBase.previewContents.map((content) => {
+            const generated = result.results.find(
+              (entry) => entry.milestoneId === content.milestoneId,
+            );
+            if (!generated) {
+              return content;
+            }
+            return {
+              ...content,
+              artwork: generated.artwork,
+              captions: generated.captions,
+              status: generated.status,
+              generationStatus: generated.generationStatus,
+              generationStartedAt: null,
+            };
+          }),
+        };
+
+        sessionRef.current = updatedBase;
+        setSession(updatedBase);
+        await persistSession(updatedBase);
         router.refresh();
-        goToStep("preview");
-
-        if (failures.length > 0) {
-          const generatedCount = milestoneIdsToGenerate.length - failures.length;
-          return {
-            success: false,
-            message: `Generated ${generatedCount} of ${milestoneIdsToGenerate.length} milestones. ${failures[failures.length - 1]}`,
-          };
-        }
 
         return {
           success: true,
-          message: `Artwork and captions generated for ${milestoneIdsToGenerate.length === 1 ? "this milestone" : "all milestones"}.`,
+          message: `Artwork and captions generated for ${milestone?.name ?? "this milestone"}.`,
         };
       } catch (error) {
-        setGenerationProgress(null);
         const message =
           error instanceof Error
             ? error.message
             : "Could not generate artwork and captions.";
+
+        const failedBase: CampaignBuilderSession = {
+          ...sessionRef.current,
+          previewContents: sessionRef.current.previewContents.map((content) =>
+            content.milestoneId === milestoneId
+              ? {
+                  ...content,
+                  generationStatus: "failed",
+                  generationStartedAt: null,
+                }
+              : content,
+          ),
+        };
+        sessionRef.current = failedBase;
+        setSession(failedBase);
+        await persistSession(failedBase);
+
         return { success: false, message };
       } finally {
-        setIsGeneratingContent(false);
+        generationInFlightRef.current.delete(milestoneId);
+        setGeneratingMilestoneId((current) =>
+          current === milestoneId ? null : current,
+        );
+        setIsGeneratingContent(generationInFlightRef.current.size > 0);
         setGenerationProgress(null);
       }
     },
-    [flushSave, goToStep, persistSession, playbooks, router],
+    [persistSession, playbooks, router],
   );
+
+  const generateMilestoneContent = useCallback(
+    async (
+      milestoneId: string,
+      options?: {
+        milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+      },
+    ): Promise<{ success: boolean; message: string }> => {
+      await flushSave();
+      return runMilestoneGeneration(milestoneId, options);
+    },
+    [flushSave, runMilestoneGeneration],
+  );
+
+  const generateNextMilestone = useCallback(async (): Promise<{
+    success: boolean;
+    message: string;
+  }> => {
+    const next = findNextMilestoneToGenerate(
+      sessionRef.current.milestones,
+      sessionRef.current.previewContents,
+    );
+    if (!next) {
+      return {
+        success: false,
+        message: "All milestones already have generated content.",
+      };
+    }
+    updateSession((prev) => ({ ...prev, selectedMilestoneId: next.id }));
+    return generateMilestoneContent(next.id);
+  }, [generateMilestoneContent, updateSession]);
+
+  const generateAllContent = useCallback(
+    async (options?: {
+      milestoneId?: string;
+      milestonePatch?: Partial<CampaignBuilderMilestone> & { id: string };
+    }): Promise<{ success: boolean; message: string }> => {
+      const targetMilestoneId = options?.milestoneId ?? options?.milestonePatch?.id;
+      if (!targetMilestoneId) {
+        return {
+          success: false,
+          message: "Select a milestone to generate content.",
+        };
+      }
+      return generateMilestoneContent(targetMilestoneId, {
+        milestonePatch: options?.milestonePatch,
+      });
+    },
+    [generateMilestoneContent],
+  );
+
+  useEffect(() => {
+    const staleIds = session.previewContents
+      .filter(
+        (content) =>
+          content.generationStatus === "generating" &&
+          isStaleGeneration(content.generationStartedAt),
+      )
+      .map((content) => content.milestoneId);
+
+    if (staleIds.length === 0) {
+      return;
+    }
+
+    updateSession((prev) => ({
+      ...prev,
+      previewContents: prev.previewContents.map((content) =>
+        staleIds.includes(content.milestoneId)
+          ? {
+              ...content,
+              generationStatus: inferGenerationStatus(
+                { ...content, generationStatus: "failed" },
+                content.enabledFormats,
+              ),
+              generationStartedAt: null,
+            }
+          : content,
+      ),
+    }));
+    // Recover stale persisted generation flags once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
 
   const setSelectedMilestoneId = useCallback(
     (id: string | null) => {
@@ -954,6 +1090,7 @@ export function CampaignBuilderProvider({
       schoolColors,
       isSaving,
       isGeneratingContent,
+      generatingMilestoneId,
       generationProgress,
       goToStep,
       updateInspiration,
@@ -969,6 +1106,8 @@ export function CampaignBuilderProvider({
       duplicateMilestone,
       suggestMilestones,
       flushSave,
+      generateMilestoneContent,
+      generateNextMilestone,
       generateAllContent,
       inspirationUploadError,
       clearInspirationUploadError,
@@ -992,6 +1131,7 @@ export function CampaignBuilderProvider({
       schoolColors,
       isSaving,
       isGeneratingContent,
+      generatingMilestoneId,
       generationProgress,
       goToStep,
       updateInspiration,
@@ -1007,6 +1147,8 @@ export function CampaignBuilderProvider({
       duplicateMilestone,
       suggestMilestones,
       flushSave,
+      generateMilestoneContent,
+      generateNextMilestone,
       generateAllContent,
       inspirationUploadError,
       clearInspirationUploadError,

@@ -3,10 +3,11 @@ import type { CampaignBuilderStepId } from "@/lib/campaign-builder-v2/types";
 export const CAMPAIGN_BUILDER_STEPS: Array<{
   id: CampaignBuilderStepId;
   label: string;
+  subtitle?: string;
 }> = [
   { id: "inspiration", label: "Inspiration & Input" },
   { id: "milestones", label: "Milestones" },
-  { id: "preview", label: "Preview Campaign" },
+  { id: "preview", label: "Preview Campaign", subtitle: "Create content one milestone at a time" },
   { id: "review", label: "Review & Approve" },
   { id: "published", label: "Published" },
 ];

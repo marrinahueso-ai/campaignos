@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Clock, Copy, Sparkles, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, Trash2 } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
-import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
+import { CompletionBanner } from "@/components/campaign-builder-v2/CompletionBanner";
+import { MilestoneEmptyState } from "@/components/campaign-builder-v2/MilestoneEmptyState";
+import { MilestoneRail } from "@/components/campaign-builder-v2/MilestoneRail";
+import { PreviewSettingsPanel } from "@/components/campaign-builder-v2/PreviewSettingsPanel";
+import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
 import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
 import {
@@ -16,18 +19,22 @@ import {
   syncCaptionsToPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
 import {
+  allMilestonesGenerated,
+  countCompleteMilestones,
+  findMilestoneAfter,
+  findNextMilestoneToGenerate,
+  inferGenerationStatus,
+  isMilestoneContentComplete,
+} from "@/lib/campaign-builder-v2/milestone-status";
+import {
   ARTWORK_VIEW_OPTIONS,
-  PLATFORM_FORMAT_OPTIONS,
   artworkKeyForView,
   aspectClassForView,
   enabledArtworkViews,
-  isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
 import { cn } from "@/lib/utils/cn";
 import type {
   ArtworkView,
-  MilestonePreviewContent,
-  MilestonePreviewStatus,
   PlatformFormat,
   PreviewTabId,
 } from "@/lib/campaign-builder-v2/types";
@@ -49,46 +56,12 @@ const EditCaptionModal = dynamic(
 );
 
 const PREVIEW_TABS: Array<{ id: PreviewTabId; label: string }> = [
-  { id: "all", label: "All Milestones" },
+  { id: "all", label: "All Content" },
   { id: "feed", label: "Feed" },
   { id: "story", label: "Story" },
   { id: "captions", label: "Captions" },
   { id: "schedule", label: "Schedule" },
 ];
-
-const STATUS_ICONS: Record<
-  MilestonePreviewStatus,
-  { icon: typeof Check; className: string }
-> = {
-  ready: { icon: Check, className: "bg-cos-success text-white" },
-  "needs-review": {
-    icon: Clock,
-    className: "bg-cos-warning text-cos-warning-text",
-  },
-  draft: { icon: Clock, className: "bg-cos-border text-cos-muted" },
-};
-
-const DELIVERY_OPTIONS = [
-  ["auto-publish", "Publish automatically"],
-  ["schedule", "Schedule to publish"],
-  ["manual-email", "Email me for manual upload"],
-  ["draft-only", "Save as draft only"],
-] as const;
-
-function formatScheduleDate(dateStr: string, timeStr: string): string {
-  try {
-    const date = new Date(`${dateStr}T${timeStr || "09:00"}:00`);
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return `${dateStr} ${timeStr}`;
-  }
-}
 
 function artworkViewsForTab(
   tab: PreviewTabId,
@@ -106,18 +79,6 @@ function artworkViewsForTab(
   return enabledArtworkViews(enabledFormats);
 }
 
-function milestoneHasGeneratedContent(
-  preview: MilestonePreviewContent,
-  artworkViews: ArtworkView[],
-): boolean {
-  const hasArtwork = artworkViews.some((view) => {
-    const url = preview.artwork[artworkKeyForView(view)];
-    return Boolean(url) && !isPlaceholderArtworkUrl(url);
-  });
-  const hasCaptions = preview.captions.some((caption) => caption.text.trim());
-  return hasArtwork || hasCaptions;
-}
-
 export function PreviewStep() {
   const {
     session,
@@ -128,11 +89,16 @@ export function PreviewStep() {
     duplicateMilestone,
     removeMilestone,
     playbookOptions,
+    generateMilestoneContent,
+    generateNextMilestone,
+    generatingMilestoneId,
+    isGeneratingContent,
   } = useCampaignBuilder();
 
   const router = useRouter();
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const selectedId =
     session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
@@ -141,11 +107,39 @@ export function PreviewStep() {
     (c) => c.milestoneId === selectedId,
   );
 
+  const progress = useMemo(
+    () => countCompleteMilestones(session.milestones, session.previewContents),
+    [session.milestones, session.previewContents],
+  );
+
+  const allGenerated = useMemo(
+    () => allMilestonesGenerated(session.milestones, session.previewContents),
+    [session.milestones, session.previewContents],
+  );
+
+  const nextToGenerate = useMemo(
+    () => findNextMilestoneToGenerate(session.milestones, session.previewContents),
+    [session.milestones, session.previewContents],
+  );
+
+  const selectedIsGenerating =
+    generatingMilestoneId === selectedId ||
+    selectedPreview?.generationStatus === "generating";
+
+  const selectedStatus = selectedPreview
+    ? inferGenerationStatus(selectedPreview, selectedPreview.enabledFormats)
+    : "ready_to_generate";
+
+  const hasGeneratedContent =
+    selectedPreview && selectedMilestone
+      ? isMilestoneContentComplete(selectedPreview, selectedPreview.enabledFormats)
+      : false;
+
   const showArtwork =
     session.previewTab !== "captions" && session.previewTab !== "schedule";
   const showCaptions =
     session.previewTab === "all" || session.previewTab === "captions";
-  const showSchedule =
+  const showScheduleTab =
     session.previewTab === "all" || session.previewTab === "schedule";
 
   const visibleArtworkViews =
@@ -156,84 +150,81 @@ export function PreviewStep() {
         ) ?? [])
       : [];
 
-  const allArtworkViews =
-    selectedPreview && selectedMilestone
-      ? enabledArtworkViews(selectedPreview.enabledFormats)
-      : [];
-
-  const hasGeneratedContent =
-    selectedPreview && selectedMilestone
-      ? milestoneHasGeneratedContent(selectedPreview, allArtworkViews)
-      : false;
-
-  const hasManualIgStory = selectedPreview?.enabledFormats.includes(
-    "instagram-story-manual",
-  );
-
-  function toggleFormat(format: PlatformFormat, enabled: boolean) {
-    if (!selectedPreview) {
-      return;
-    }
-    const enabledFormats = enabled
-      ? [...selectedPreview.enabledFormats, format]
-      : selectedPreview.enabledFormats.filter((f) => f !== format);
-    updatePreviewContent(selectedPreview.milestoneId, { enabledFormats });
-  }
-
   const sharedCaptionText = selectedPreview
     ? getSharedCaptionText(selectedPreview.captions)
     : "";
 
+  const nextAfterSelected = selectedId
+    ? findMilestoneAfter(session.milestones, selectedId)
+    : null;
+
+  const showCompletionBanner =
+    hasGeneratedContent &&
+    !selectedIsGenerating &&
+    nextAfterSelected &&
+    (nextToGenerate?.id === nextAfterSelected.id ||
+      selectedStatus === "needs_review" ||
+      selectedStatus === "generated");
+
+  async function handleGenerateSelected() {
+    if (!selectedId) {
+      return;
+    }
+    setGenerateError(null);
+    const result = await generateMilestoneContent(selectedId);
+    if (!result.success) {
+      setGenerateError(result.message);
+    }
+  }
+
+  async function handleGenerateNext() {
+    setGenerateError(null);
+    const result = await generateNextMilestone();
+    if (!result.success) {
+      setGenerateError(result.message);
+    }
+  }
+
+  const generatingName = generatingMilestoneId
+    ? session.milestones.find((m) => m.id === generatingMilestoneId)?.name
+    : null;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-end border-b border-cos-border bg-cos-card px-4 py-3 lg:px-8">
-        <Button size="sm" onClick={() => goToStep("review")}>
-          Next: Review & Approve
-          <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-        </Button>
+      <div className="flex flex-col gap-3 border-b border-cos-border bg-cos-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+        <p className="text-sm text-cos-muted">
+          <span className="font-medium text-cos-text">
+            {progress.complete} of {progress.total}
+          </span>{" "}
+          milestones complete
+        </p>
+        {allGenerated ? (
+          <Button size="sm" onClick={() => goToStep("review")}>
+            Next: Review & Approve
+            <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={handleGenerateNext}
+            disabled={isGeneratingContent || !nextToGenerate}
+          >
+            {generatingName
+              ? `Generating ${generatingName}…`
+              : "Generate Next Milestone"}
+            <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+          </Button>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-cos-border bg-cos-card lg:block">
-          <ul className="divide-y divide-cos-border">
-            {session.milestones
-              .slice()
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((milestone) => {
-                const preview = session.previewContents.find(
-                  (c) => c.milestoneId === milestone.id,
-                );
-                const status = preview?.status ?? "draft";
-                const StatusIcon = STATUS_ICONS[status].icon;
-                const isSelected = milestone.id === selectedId;
-
-                return (
-                  <li key={milestone.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedMilestoneId(milestone.id)}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors",
-                        isSelected
-                          ? "bg-cos-accent-soft/60 text-cos-text"
-                          : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                          STATUS_ICONS[status].className,
-                        )}
-                      >
-                        <StatusIcon className="h-3.5 w-3.5" strokeWidth={2} />
-                      </span>
-                      <span className="truncate font-medium">{milestone.name}</span>
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
-        </aside>
+        <MilestoneRail
+          milestones={session.milestones}
+          previewContents={session.previewContents}
+          selectedMilestoneId={selectedId}
+          generatingMilestoneId={generatingMilestoneId}
+          onSelect={setSelectedMilestoneId}
+        />
 
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
           <div className="border-b border-cos-border bg-cos-card px-4 lg:px-8">
@@ -257,24 +248,14 @@ export function PreviewStep() {
           </div>
 
           {selectedMilestone && selectedPreview && !hasGeneratedContent ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-16">
-              <div className="w-full max-w-md">
-                <ArtworkPlaceholder aspectClassName="aspect-square" />
-              </div>
-              <div className="max-w-sm text-center">
-                <p className="font-display text-xl text-cos-text">
-                  No content yet
-                </p>
-                <p className="mt-2 text-sm text-cos-muted">
-                  Generate artwork and captions from the Milestones page, then
-                  review each milestone here.
-                </p>
-              </div>
-              <Button onClick={() => goToStep("milestones")}>
-                <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-                Generate Content
-              </Button>
-            </div>
+            <MilestoneEmptyState
+              milestoneName={selectedMilestone.name}
+              isGenerating={selectedIsGenerating}
+              isFailed={selectedStatus === "failed"}
+              errorMessage={generateError}
+              onGenerate={() => void handleGenerateSelected()}
+              onGoToInspiration={() => goToStep("inspiration")}
+            />
           ) : selectedMilestone && selectedPreview ? (
             <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
               <div className="space-y-6">
@@ -360,135 +341,26 @@ export function PreviewStep() {
                     </div>
                   </section>
                 )}
+
+                {showScheduleTab && session.previewTab === "schedule" && (
+                  <section className="cos-card lg:hidden">
+                    <PreviewSettingsPanel
+                      preview={selectedPreview}
+                      onUpdate={(patch) =>
+                        updatePreviewContent(selectedPreview.milestoneId, patch)
+                      }
+                    />
+                  </section>
+                )}
               </div>
 
-              {showSchedule && (
-                <aside className="cos-card h-fit space-y-5">
-                  <h2 className="font-display text-xl text-cos-text">Settings</h2>
-
-                  <fieldset className="space-y-2">
-                    <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                      Platforms
-                    </legend>
-                    {PLATFORM_FORMAT_OPTIONS.map((option) => (
-                      <label
-                        key={option.id}
-                        className="flex items-center gap-2 text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedPreview.enabledFormats.includes(
-                            option.id,
-                          )}
-                          onChange={(e) =>
-                            toggleFormat(option.id, e.target.checked)
-                          }
-                          className="h-4 w-4 accent-cos-text"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </fieldset>
-
-                  <fieldset className="space-y-2">
-                    <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                      Delivery method
-                    </legend>
-                    {DELIVERY_OPTIONS.map(([value, label]) => (
-                      <label key={value} className="flex items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="delivery"
-                          checked={selectedPreview.deliveryMethod === value}
-                          onChange={() =>
-                            updatePreviewContent(selectedPreview.milestoneId, {
-                              deliveryMethod: value,
-                            })
-                          }
-                          className="h-4 w-4 accent-cos-text"
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </fieldset>
-
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                      Schedule
-                    </p>
-                    <Input
-                      type="date"
-                      value={selectedPreview.scheduleDate}
-                      onChange={(e) =>
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          scheduleDate: e.target.value,
-                        })
-                      }
-                    />
-                    <Input
-                      type="time"
-                      value={selectedPreview.scheduleTime}
-                      onChange={(e) =>
-                        updatePreviewContent(selectedPreview.milestoneId, {
-                          scheduleTime: e.target.value,
-                        })
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="flex items-center gap-1.5 text-xs font-medium text-cos-accent transition-colors hover:text-cos-text"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      Auto-suggest best time
-                    </button>
-                    <p className="text-xs text-cos-muted">
-                      {formatScheduleDate(
-                        selectedPreview.scheduleDate,
-                        selectedPreview.scheduleTime,
-                      )}
-                    </p>
-                  </div>
-
-                  {(hasManualIgStory ||
-                    selectedPreview.deliveryMethod === "manual-email") && (
-                    <div className="space-y-2 border-t border-cos-border pt-4">
-                      <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                        Email send time (manual upload)
-                      </p>
-                      <p className="text-xs text-cos-muted">
-                        Defaults to publish time. Updates when publish schedule
-                        changes.
-                      </p>
-                      <Input
-                        type="date"
-                        value={selectedPreview.emailSendDate}
-                        onChange={(e) =>
-                          updatePreviewContent(selectedPreview.milestoneId, {
-                            emailSendDate: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        type="time"
-                        value={selectedPreview.emailSendTime}
-                        onChange={(e) =>
-                          updatePreviewContent(selectedPreview.milestoneId, {
-                            emailSendTime: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        label="Send to"
-                        value={selectedPreview.manualEmailTo}
-                        onChange={(e) =>
-                          updatePreviewContent(selectedPreview.milestoneId, {
-                            manualEmailTo: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  )}
-                </aside>
+              {session.previewTab !== "schedule" && (
+                <PreviewSettingsPanel
+                  preview={selectedPreview}
+                  onUpdate={(patch) =>
+                    updatePreviewContent(selectedPreview.milestoneId, patch)
+                  }
+                />
               )}
             </div>
           ) : (
@@ -498,6 +370,15 @@ export function PreviewStep() {
           )}
         </div>
       </div>
+
+      {showCompletionBanner && selectedMilestone && nextAfterSelected && (
+        <CompletionBanner
+          completedMilestoneName={selectedMilestone.name}
+          nextMilestoneName={nextAfterSelected.name}
+          onGenerateNext={() => void handleGenerateNext()}
+          isGenerating={isGeneratingContent}
+        />
+      )}
 
       <CampaignBuilderFooter
         onBack={() => goToStep("milestones")}
@@ -543,6 +424,7 @@ export function PreviewStep() {
             updatePreviewContent(selectedPreview.milestoneId, {
               artwork,
               status: "needs-review",
+              generationStatus: "needs_review",
             });
             setArtworkModalOpen(false);
             void syncAppliedMilestoneArtworkAction({
@@ -577,6 +459,7 @@ export function PreviewStep() {
             updatePreviewContent(selectedPreview.milestoneId, {
               captions: syncCaptionsToPlatforms(text, selectedMilestone.platforms),
               status: "needs-review",
+              generationStatus: "needs_review",
             });
             setCaptionModalOpen(false);
           }}

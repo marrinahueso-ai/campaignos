@@ -9,6 +9,19 @@ export type MilestoneCategory = "awareness" | "reminder" | "event-day" | "recap"
 
 export type MilestonePreviewStatus = "ready" | "needs-review" | "draft";
 
+export type MilestoneGenerationStatus =
+  | "ready_to_generate"
+  | "queued"
+  | "generating"
+  | "generated"
+  | "needs_review"
+  | "changes_requested"
+  | "awaiting_approval"
+  | "approved"
+  | "scheduled"
+  | "published"
+  | "failed";
+
 export type MilestoneStatusTag =
   | "complete"
   | "in-progress"
@@ -110,6 +123,8 @@ export interface MilestoneApprovalStatus {
 export interface MilestonePreviewContent {
   milestoneId: string;
   status: MilestonePreviewStatus;
+  generationStatus?: MilestoneGenerationStatus;
+  generationStartedAt?: string | null;
   artwork: MilestoneArtwork;
   captions: PlatformCaption[];
   enabledFormats: PlatformFormat[];

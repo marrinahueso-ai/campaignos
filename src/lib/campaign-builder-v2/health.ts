@@ -5,6 +5,8 @@ import type {
   MilestonePreviewContent,
   StepWarning,
 } from "@/lib/campaign-builder-v2/types";
+import { countCompleteMilestones } from "@/lib/campaign-builder-v2/milestone-status";
+import { CAMPAIGN_BUILDER_STEPS } from "@/lib/campaign-builder-v2/navigation";
 
 export function computeCampaignHealthPercent(
   milestones: CampaignBuilderMilestone[],
@@ -59,6 +61,10 @@ export function computeStepperStates(
   const configuredCount = previewContents.filter(
     (c) => c.status !== "draft",
   ).length;
+
+  const { complete: generatedComplete, total: milestoneTotal } =
+    countCompleteMilestones(milestones, previewContents);
+  const previewStepMeta = CAMPAIGN_BUILDER_STEPS.find((step) => step.id === "preview");
 
   const inspirationComplete =
     Boolean(inspiration.campaignName) &&
@@ -148,13 +154,9 @@ export function computeStepperStates(
       previewComplete,
       currentStep === "preview",
       needsReviewCount > 0,
-      needsReviewCount > 0
-        ? `${needsReviewCount} need review`
-        : readyCount > 0
-          ? `${readyCount} ready`
-          : draftCount > 0
-            ? `${draftCount} drafts`
-            : "Not started",
+      generatedComplete > 0
+        ? `${generatedComplete} of ${milestoneTotal} milestones complete`
+        : (previewStepMeta?.subtitle ?? "Create content one milestone at a time"),
     ),
     review: statusForStep(
       "review",

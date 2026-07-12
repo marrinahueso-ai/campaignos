@@ -31,6 +31,7 @@ import type {
   CampaignBuilderMilestone,
   InspirationImagePayload,
   MilestoneArtwork,
+  MilestoneGenerationStatus,
   MilestonePreviewContent,
   PlatformCaption,
 } from "@/lib/campaign-builder-v2/types";
@@ -92,6 +93,7 @@ export interface GenerateAllContentMilestoneResult {
   artwork: MilestoneArtwork;
   captions: PlatformCaption[];
   status: MilestonePreviewContent["status"];
+  generationStatus: MilestoneGenerationStatus;
 }
 
 export interface GenerateAllContentResult {
@@ -452,7 +454,7 @@ export async function generateAllContentAction(
         brandKitId: input.brandKitId,
         useBrandKit: input.useBrandKit,
         existingArtwork: preview?.artwork,
-        forceRegenerate: true,
+        forceRegenerate: false,
       });
 
       if (!artworkGeneration.success) {
@@ -471,30 +473,38 @@ export async function generateAllContentAction(
 
       const feedArtworkUrl = artwork.feedUrl ?? artwork.storyUrl;
 
-      const captionResult = await generateCampaignBuilderCaption({
-        eventId: input.eventId,
-        inspiration: resolved.inspiration,
-        milestone,
-        platform: milestone.platforms[0] ?? "facebook",
-        artworkImageUrl: feedArtworkUrl,
-        playbookName: input.playbookName ?? null,
-      });
-
-      if (!captionResult.success) {
-        return {
-          success: false,
-          results: [],
-          message:
-            captionResult.message ||
-            `Could not generate caption for "${milestone.name}".`,
-          updatedInspiration: resolved.inspiration,
-        };
-      }
-
-      const captions = syncCaptionsToPlatforms(
-        captionResult.caption,
-        milestone.platforms,
+      const hasExistingCaptions = (preview?.captions ?? []).some((caption) =>
+        caption.text.trim(),
       );
+
+      let captions = preview?.captions ?? syncCaptionsToPlatforms("", milestone.platforms);
+
+      if (!hasExistingCaptions) {
+        const captionResult = await generateCampaignBuilderCaption({
+          eventId: input.eventId,
+          inspiration: resolved.inspiration,
+          milestone,
+          platform: milestone.platforms[0] ?? "facebook",
+          artworkImageUrl: feedArtworkUrl,
+          playbookName: input.playbookName ?? null,
+        });
+
+        if (!captionResult.success) {
+          return {
+            success: false,
+            results: [],
+            message:
+              captionResult.message ||
+              `Could not generate caption for "${milestone.name}".`,
+            updatedInspiration: resolved.inspiration,
+          };
+        }
+
+        captions = syncCaptionsToPlatforms(
+          captionResult.caption,
+          milestone.platforms,
+        );
+      }
 
       const hasArtwork = artworkViews.some((view) => artwork[artworkKeyForView(view)]);
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
@@ -504,6 +514,7 @@ export async function generateAllContentAction(
         artwork,
         captions,
         status: hasArtwork || hasCaptions ? "needs-review" : "draft",
+        generationStatus: hasArtwork || hasCaptions ? "needs_review" : "ready_to_generate",
       });
     }
 
