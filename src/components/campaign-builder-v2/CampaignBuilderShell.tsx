@@ -83,6 +83,7 @@ function renderActiveStep(step: CampaignBuilderStepId) {
 
 function CampaignBuilderContent({ eventTitle }: { eventTitle: string }) {
   const {
+    session,
     currentStep,
     healthPercent,
     stepperStates,
@@ -91,6 +92,9 @@ function CampaignBuilderContent({ eventTitle }: { eventTitle: string }) {
     navigateToWarning,
     isSaving,
   } = useCampaignBuilder();
+
+  const headerTitle =
+    session.inspiration.campaignName.trim() || eventTitle;
 
   return (
     <div className="-mx-4 -my-8 flex min-h-[calc(100vh-var(--cos-dashboard-header-height))] flex-col lg:-mx-8 lg:-my-10">
@@ -105,9 +109,9 @@ function CampaignBuilderContent({ eventTitle }: { eventTitle: string }) {
         <div className="flex min-w-0 items-center gap-4 lg:gap-6">
           <h2
             className="font-display line-clamp-2 min-w-0 max-w-[10rem] text-right text-xl leading-tight text-cos-text sm:max-w-xs sm:text-2xl lg:max-w-md lg:text-3xl"
-            title={eventTitle}
+            title={headerTitle}
           >
-            {eventTitle}
+            {headerTitle}
           </h2>
           <CampaignHealthGauge percent={healthPercent} className="shrink-0" />
         </div>

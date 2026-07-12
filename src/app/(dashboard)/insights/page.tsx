@@ -1,35 +1,38 @@
-import { BarChart3 } from "lucide-react";
-import { LifecycleHubPage } from "@/components/layout/LifecycleHubPage";
+import { InsightsHub } from "@/components/insights/InsightsHub";
+import { getInsightsPageData } from "@/lib/insights/queries";
 
 export const metadata = {
-  title: "Insights",
+  title: "Insights & Analytics",
 };
 
-const sections = [
-  {
-    id: "campaign-analytics",
-    title: "Campaign Analytics",
-    description: "Track reach, completion, and readiness across campaigns.",
-  },
-  {
-    id: "engagement",
-    title: "Engagement",
-    description: "See how families respond to your communications.",
-  },
-  {
-    id: "ai-recommendations",
-    title: "AI Recommendations",
-    description: "Suggestions to improve timing, tone, and channel mix.",
-  },
-];
+interface InsightsPageProps {
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    range?: string;
+  }>;
+}
 
-export default function InsightsPage() {
-  return (
-    <LifecycleHubPage
-      title="Insights"
-      description="Understand what is working and where to focus next."
-      icon={BarChart3}
-      sections={sections}
-    />
-  );
+export default async function InsightsPage({ searchParams }: InsightsPageProps) {
+  const params = await searchParams;
+  const data = await getInsightsPageData({
+    from: params.from,
+    to: params.to,
+    range: params.range,
+  });
+
+  if (!data) {
+    return (
+      <div className="studio-page pb-12">
+        <div className="cos-card px-6 py-12 text-center">
+          <h1 className="font-display text-3xl text-cos-text">Insights &amp; Analytics</h1>
+          <p className="mt-3 text-sm text-cos-muted">
+            Set up your organization to start tracking social performance.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <InsightsHub data={data} />;
 }
