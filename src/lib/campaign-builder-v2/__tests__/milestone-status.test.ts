@@ -7,6 +7,7 @@ import {
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isMilestoneContentComplete,
+  milestoneHasArtwork,
 } from "../milestone-status.ts";
 import { emptyMilestoneArtwork } from "../platform-utils.ts";
 import type {
@@ -63,7 +64,7 @@ describe("milestone-status", () => {
     assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
   });
 
-  it("detects needs_review when artwork exists", () => {
+  it("detects generated when artwork exists", () => {
     const preview = buildPreview({
       artwork: {
         feedUrl: "https://example.com/feed.png",
@@ -77,9 +78,75 @@ describe("milestone-status", () => {
     });
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
-      "needs_review",
+      "generated",
     );
     assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), true);
+    assert.equal(milestoneHasArtwork(preview), true);
+  });
+
+  it("detects generated when artwork exists but enabled formats are empty", () => {
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: "https://example.com/story.png",
+      },
+      enabledFormats: [],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "generated",
+    );
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), true);
+  });
+
+  it("ignores placeholder artwork URLs", () => {
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "/api/placeholder-artwork",
+        storyUrl: "https://placehold.co/600x600",
+      },
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "ready_to_generate",
+    );
+    assert.equal(milestoneHasArtwork(preview), false);
+  });
+
+  it("upgrades stale ready_to_generate when story artwork exists", () => {
+    const preview = buildPreview({
+      milestoneId: "ms-2",
+      artwork: {
+        feedUrl: null,
+        storyUrl: "https://example.com/story.png",
+      },
+      captions: [],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "generated",
+    );
+  });
+
+  it("detects needs_review when only captions exist", () => {
+    const preview = buildPreview({
+      captions: [
+        { platform: "facebook", text: "Caption only" },
+        { platform: "instagram", text: "Caption only" },
+      ],
+      status: "draft",
+      generationStatus: "ready_to_generate",
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "needs_review",
+    );
   });
 
   it("finds next milestone to generate by sort order", () => {
@@ -98,8 +165,8 @@ describe("milestone-status", () => {
           { platform: "facebook", text: "Done" },
           { platform: "instagram", text: "Done" },
         ],
-        generationStatus: "needs_review",
-        status: "needs-review",
+        generationStatus: "generated",
+        status: "ready",
       }),
       buildPreview({ milestoneId: "ms-2" }),
     ];
@@ -125,8 +192,8 @@ describe("milestone-status", () => {
           { platform: "facebook", text: "Done" },
           { platform: "instagram", text: "Done" },
         ],
-        generationStatus: "needs_review",
-        status: "needs-review",
+        generationStatus: "generated",
+        status: "ready",
       }),
     ];
 

@@ -506,15 +506,22 @@ export async function generateAllContentAction(
         );
       }
 
-      const hasArtwork = artworkViews.some((view) => artwork[artworkKeyForView(view)]);
+      const hasArtwork =
+        (Boolean(artwork.feedUrl) && !isPlaceholderArtworkUrl(artwork.feedUrl)) ||
+        (Boolean(artwork.storyUrl) && !isPlaceholderArtworkUrl(artwork.storyUrl));
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
+      const hasContent = hasArtwork || hasCaptions;
 
       results.push({
         milestoneId: milestone.id,
         artwork,
         captions,
-        status: hasArtwork || hasCaptions ? "needs-review" : "draft",
-        generationStatus: hasArtwork || hasCaptions ? "needs_review" : "ready_to_generate",
+        status: hasArtwork ? "ready" : hasCaptions ? "needs-review" : "draft",
+        generationStatus: hasArtwork
+          ? "generated"
+          : hasContent
+            ? "needs_review"
+            : "ready_to_generate",
       });
     }
 

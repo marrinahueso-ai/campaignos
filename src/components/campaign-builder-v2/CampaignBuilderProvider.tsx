@@ -32,7 +32,7 @@ import {
   uploadInspirationImageAction,
 } from "@/lib/campaign-builder-v2/actions";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
-import { defaultEnabledFormats, emptyMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
+import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
 import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
 import {
   DEFAULT_BRAND_KIT_OPTIONS,
@@ -824,13 +824,20 @@ export function CampaignBuilderProvider({
             if (!generated) {
               return content;
             }
-            return {
+            const merged = {
               ...content,
               artwork: generated.artwork,
               captions: generated.captions,
               status: generated.status,
               generationStatus: generated.generationStatus,
               generationStartedAt: null,
+            };
+            return {
+              ...merged,
+              generationStatus: inferGenerationStatus(
+                merged,
+                merged.enabledFormats,
+              ),
             };
           }),
         };
@@ -949,7 +956,7 @@ export function CampaignBuilderProvider({
           ? {
               ...content,
               generationStatus: inferGenerationStatus(
-                { ...content, generationStatus: "failed" },
+                { ...content, generationStartedAt: null },
                 content.enabledFormats,
               ),
               generationStartedAt: null,
@@ -984,6 +991,9 @@ export function CampaignBuilderProvider({
             return content;
           }
           const next = { ...content, ...patch };
+          if (patch.artwork) {
+            next.artwork = normalizeMilestoneArtwork(patch.artwork);
+          }
           if (patch.scheduleDate || patch.scheduleTime) {
             const hasManual =
               next.enabledFormats.includes("instagram-story-manual") ||
@@ -992,6 +1002,17 @@ export function CampaignBuilderProvider({
               next.emailSendDate = next.scheduleDate;
               next.emailSendTime = next.scheduleTime;
             }
+          }
+          if (
+            patch.artwork ||
+            patch.captions ||
+            patch.status ||
+            patch.enabledFormats
+          ) {
+            next.generationStatus = inferGenerationStatus(
+              next,
+              next.enabledFormats,
+            );
           }
           return next;
         }),

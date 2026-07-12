@@ -16,7 +16,7 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneGenerationStatus, string> 
   ready_to_generate: "Ready to generate",
   queued: "Queued",
   generating: "Generating",
-  generated: "Generated",
+  generated: "Complete",
   needs_review: "Needs review",
   changes_requested: "Changes requested",
   awaiting_approval: "Awaiting approval",
@@ -32,16 +32,24 @@ export function sortedMilestones(
   return [...milestones].sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+export function milestoneHasArtwork(preview: MilestonePreviewContent): boolean {
+  const { feedUrl, storyUrl } = preview.artwork;
+  return (
+    (Boolean(feedUrl) && !isPlaceholderArtworkUrl(feedUrl)) ||
+    (Boolean(storyUrl) && !isPlaceholderArtworkUrl(storyUrl))
+  );
+}
+
 export function milestoneHasGeneratedContent(
   preview: MilestonePreviewContent,
   artworkViews: ArtworkView[],
 ): boolean {
-  const hasArtwork = artworkViews.some((view) => {
+  const hasEnabledArtwork = artworkViews.some((view) => {
     const url = preview.artwork[artworkKeyForView(view)];
     return Boolean(url) && !isPlaceholderArtworkUrl(url);
   });
   const hasCaptions = preview.captions.some((caption) => caption.text.trim());
-  return hasArtwork || hasCaptions;
+  return milestoneHasArtwork(preview) || hasEnabledArtwork || hasCaptions;
 }
 
 export function isMilestoneContentComplete(
@@ -52,21 +60,45 @@ export function isMilestoneContentComplete(
   return milestoneHasGeneratedContent(preview, views);
 }
 
+const PRESERVED_GENERATION_STATUSES = new Set<MilestoneGenerationStatus>([
+  "queued",
+  "changes_requested",
+  "awaiting_approval",
+  "approved",
+  "scheduled",
+  "published",
+]);
+
+function contentGenerationStatus(
+  preview: MilestonePreviewContent,
+  enabledFormats: MilestonePreviewContent["enabledFormats"],
+): MilestoneGenerationStatus {
+  if (!isMilestoneContentComplete(preview, enabledFormats)) {
+    return "ready_to_generate";
+  }
+  if (milestoneHasArtwork(preview)) {
+    return "generated";
+  }
+  return "needs_review";
+}
+
 export function inferGenerationStatus(
   preview: MilestonePreviewContent,
   enabledFormats: MilestonePreviewContent["enabledFormats"],
 ): MilestoneGenerationStatus {
-  if (preview.generationStatus && preview.generationStatus !== "ready_to_generate") {
-    if (preview.generationStatus === "generating") {
-      if (isStaleGeneration(preview.generationStartedAt)) {
-        return isMilestoneContentComplete(preview, enabledFormats)
-          ? preview.status === "ready"
-            ? "generated"
-            : "needs_review"
-          : "failed";
-      }
-      return "generating";
+  const hasContent = isMilestoneContentComplete(preview, enabledFormats);
+
+  if (preview.generationStatus === "generating") {
+    if (isStaleGeneration(preview.generationStartedAt)) {
+      return hasContent ? contentGenerationStatus(preview, enabledFormats) : "failed";
     }
+    return "generating";
+  }
+
+  if (
+    preview.generationStatus &&
+    PRESERVED_GENERATION_STATUSES.has(preview.generationStatus)
+  ) {
     return preview.generationStatus;
   }
 
@@ -83,17 +115,20 @@ export function inferGenerationStatus(
   if (allApproved && preview.status === "ready") {
     return "approved";
   }
-  if (pendingApproval) {
+  if (pendingApproval && hasContent) {
     return "awaiting_approval";
   }
-  if (preview.status === "ready") {
+  if (preview.status === "ready" && hasContent) {
     return "generated";
   }
-  if (preview.status === "needs-review") {
-    return "needs_review";
+  if (preview.status === "needs-review" && hasContent) {
+    return milestoneHasArtwork(preview) ? "generated" : "needs_review";
   }
-  if (isMilestoneContentComplete(preview, enabledFormats)) {
-    return "needs_review";
+  if (hasContent) {
+    return contentGenerationStatus(preview, enabledFormats);
+  }
+  if (preview.generationStatus === "failed") {
+    return "failed";
   }
   return "ready_to_generate";
 }
@@ -184,7 +219,5 @@ export function generationStatusAfterContent(
   preview: MilestonePreviewContent,
   enabledFormats: MilestonePreviewContent["enabledFormats"],
 ): MilestoneGenerationStatus {
-  return isMilestoneContentComplete(preview, enabledFormats)
-    ? "needs_review"
-    : "ready_to_generate";
+  return contentGenerationStatus(preview, enabledFormats);
 }
