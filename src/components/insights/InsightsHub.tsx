@@ -23,8 +23,11 @@ import { PlatformComparison } from "@/components/insights/PlatformComparison";
 import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
-import { getPreviousPeriod } from "@/lib/insights/date-range";
-import { formatDateRangeLabel } from "@/lib/insights/date-range";
+import {
+  formatDateRangeLabel,
+  getPreviousPeriod,
+} from "@/lib/insights/date-range";
+import { formatInsightsNumber } from "@/lib/insights/format";
 import type { InsightsPageData, InsightsPlatform } from "@/lib/insights/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -178,16 +181,19 @@ export function InsightsHub({ data }: InsightsHubProps) {
             <LiveActivityFeed events={data.activity} />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <InsightsSectionCard title="Audience Overview">
-              <div className="flex min-h-[12rem] flex-col items-center justify-center text-center">
-                <p className="text-sm font-medium text-cos-text">Not available yet</p>
-                <p className="mt-2 max-w-xs text-xs leading-relaxed text-cos-muted">
-                  Meta demographic insights require additional API access and are not
-                  synced in this release.
+          <div
+            className={cn(
+              "grid gap-6",
+              data.audienceAvailable ? "lg:grid-cols-3" : "lg:grid-cols-2",
+            )}
+          >
+            {data.audienceAvailable ? (
+              <InsightsSectionCard title="Audience Overview">
+                <p className="text-sm text-cos-muted">
+                  Audience demographics are not available for this account.
                 </p>
-              </div>
-            </InsightsSectionCard>
+              </InsightsSectionCard>
+            ) : null}
 
             <InsightsSectionCard title="Content Breakdown">
               {data.contentBreakdown.length > 0 ? (
@@ -197,7 +203,8 @@ export function InsightsHub({ data }: InsightsHubProps) {
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-cos-text">{item.label}</span>
                         <span className="text-cos-muted">
-                          {item.count} · {item.percent}%
+                          {item.count} post{item.count === 1 ? "" : "s"} ·{" "}
+                          {formatInsightsNumber(item.engagement)} eng · {item.percent}%
                         </span>
                       </div>
                       <div className="h-2 bg-cos-bg">
@@ -209,12 +216,12 @@ export function InsightsHub({ data }: InsightsHubProps) {
                     </div>
                   ))}
                   <p className="pt-2 text-[11px] text-cos-muted">
-                    Based on published Meta slots in this date range.
+                    Based on synced post insights in this date range.
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-cos-muted">
-                  No published posts in this period.
+                  No post-level insights stored for this period.
                 </p>
               )}
             </InsightsSectionCard>
@@ -222,10 +229,7 @@ export function InsightsHub({ data }: InsightsHubProps) {
             <PlatformComparison platforms={data.platformComparison} />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-            <div />
-            <TopPerformingPosts posts={data.topPosts} />
-          </div>
+          <TopPerformingPosts posts={data.topPosts} />
 
           {!showSyncEmpty ? (
             <div className="flex justify-end">

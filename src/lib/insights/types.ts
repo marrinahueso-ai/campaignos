@@ -64,7 +64,18 @@ export type InsightsPlatformTotals = {
 export type InsightsContentBreakdownItem = {
   label: string;
   count: number;
+  engagement: number;
   percent: number;
+};
+
+export type InsightsRecommendationItem = {
+  title: string;
+  body: string;
+};
+
+export type InsightsRecommendation = {
+  summary: string;
+  items: InsightsRecommendationItem[];
 };
 
 export type InsightsConnectionHealth = {
@@ -92,7 +103,7 @@ export type InsightsPageData = {
   platformComparison: InsightsPlatformTotals[];
   contentBreakdown: InsightsContentBreakdownItem[];
   audienceAvailable: boolean;
-  recommendation: string | null;
+  recommendation: InsightsRecommendation | null;
   hasAnyMetrics: boolean;
   syncInProgress: boolean;
 };

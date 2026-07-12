@@ -1,19 +1,17 @@
 import "server-only";
 
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
-import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import {
   formatDateRangeLabel,
   getPreviousPeriod,
   resolveInsightsDateRange,
 } from "@/lib/insights/date-range";
 import { formatRelativeTime } from "@/lib/insights/format";
-import { buildInsightsRecommendation } from "@/lib/insights/recommendations";
+import { buildContentBreakdownFromPosts, buildInsightsRecommendation } from "@/lib/insights/recommendations";
 import { missingInsightsScopes } from "@/lib/insights/scopes";
 import type {
   InsightsActivityEvent,
   InsightsConnectionHealth,
-  InsightsContentBreakdownItem,
   InsightsDateRange,
   InsightsKpi,
   InsightsKpiKey,
@@ -60,11 +58,6 @@ type ActivityRow = {
   title: string;
   body: string | null;
   occurred_at: string;
-};
-
-type SlotRow = {
-  platform: "facebook" | "instagram";
-  placement: "feed" | "story";
 };
 
 function sumMetric(
@@ -185,34 +178,6 @@ function buildPlatformComparison(input: {
   });
 }
 
-function buildContentBreakdown(slots: SlotRow[]): InsightsContentBreakdownItem[] {
-  const labels: Record<string, string> = {
-    "facebook:feed": "Facebook feed",
-    "facebook:story": "Facebook stories",
-    "instagram:feed": "Instagram feed",
-    "instagram:story": "Instagram stories",
-  };
-
-  const counts = new Map<string, number>();
-  for (const slot of slots) {
-    const key = `${slot.platform}:${slot.placement}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  const total = [...counts.values()].reduce((sum, count) => sum + count, 0);
-  if (total === 0) {
-    return [];
-  }
-
-  return [...counts.entries()]
-    .map(([key, count]) => ({
-      label: labels[key] ?? key,
-      count,
-      percent: Math.round((count / total) * 100),
-    }))
-    .sort((a, b) => b.count - a.count);
-}
-
 async function fetchAccountInsights(input: {
   organizationId: string;
   from: string;
@@ -329,42 +294,6 @@ async function fetchActivityEvents(
   });
 }
 
-async function fetchPublishedSlotsForBreakdown(
-  organizationId: string,
-  from: string,
-  to: string,
-): Promise<SlotRow[]> {
-  const supabase = await createClient();
-  const schoolYearIds = await getOrganizationSchoolYearIds(organizationId);
-  if (schoolYearIds.length === 0) {
-    return [];
-  }
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id")
-    .in("school_year_id", schoolYearIds);
-
-  const eventIds = (events ?? []).map((row) => row.id as string);
-  if (eventIds.length === 0) {
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("meta_publication_slots")
-    .select("platform, placement")
-    .in("event_id", eventIds)
-    .eq("status", "published")
-    .gte("published_at", `${from}T00:00:00.000Z`)
-    .lte("published_at", `${to}T23:59:59.999Z`);
-
-  if (error) {
-    return [];
-  }
-
-  return (data ?? []) as SlotRow[];
-}
-
 async function fetchLatestSyncRun(organizationId: string): Promise<{
   status: "completed" | "failed" | "running" | null;
   completedAt: string | null;
@@ -468,7 +397,7 @@ export async function getInsightsPageData(input?: {
   const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to);
   const connection = await buildConnectionHealth(organization.id);
 
-  const [currentAccount, previousAccount, postInsights, activity, publishedSlots] =
+  const [currentAccount, previousAccount, postInsights, activity] =
     await Promise.all([
       fetchAccountInsights({
         organizationId: organization.id,
@@ -486,11 +415,6 @@ export async function getInsightsPageData(input?: {
         to: dateRange.to,
       }),
       fetchActivityEvents(organization.id),
-      fetchPublishedSlotsForBreakdown(
-        organization.id,
-        dateRange.from,
-        dateRange.to,
-      ),
     ]);
 
   const hasAccountData = currentAccount.length > 0;
@@ -527,9 +451,8 @@ export async function getInsightsPageData(input?: {
     unavailableReason,
   });
 
-  const contentBreakdown = buildContentBreakdown(publishedSlots);
-  const hasAnyMetrics =
-    hasAccountData || postInsights.length > 0 || publishedSlots.length > 0;
+  const contentBreakdown = buildContentBreakdownFromPosts(postInsights);
+  const hasAnyMetrics = hasAccountData || postInsights.length > 0;
 
   return {
     organizationId: organization.id,
@@ -546,6 +469,8 @@ export async function getInsightsPageData(input?: {
     recommendation: buildInsightsRecommendation({
       kpis,
       contentBreakdown,
+      platformComparison,
+      topPosts,
       hasAnyMetrics,
     }),
     hasAnyMetrics,
@@ -581,6 +506,21 @@ export function buildInsightsExportRows(data: InsightsPageData): string[][] {
       post.title,
       `reach=${post.reach ?? 0}; engagement=${post.engagement ?? 0}`,
     ]);
+  }
+
+  for (const item of data.contentBreakdown) {
+    rows.push([
+      "Content breakdown",
+      item.label,
+      `posts=${item.count}; engagement=${item.engagement}; share=${item.percent}%`,
+    ]);
+  }
+
+  if (data.recommendation) {
+    rows.push(["Recommendation", "Summary", data.recommendation.summary]);
+    for (const item of data.recommendation.items) {
+      rows.push(["Recommendation", item.title, item.body]);
+    }
   }
 
   return rows;

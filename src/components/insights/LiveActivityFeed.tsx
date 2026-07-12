@@ -9,18 +9,10 @@ interface LiveActivityFeedProps {
 
 export function LiveActivityFeed({ events }: LiveActivityFeedProps) {
   return (
-    <InsightsSectionCard
-      title="Live Activity"
-      action={
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-cos-success-text">
-          <span className="h-2 w-2 rounded-full bg-cos-success" />
-          Live
-        </span>
-      }
-    >
+    <InsightsSectionCard title="Recent Activity">
       {events.length === 0 ? (
         <p className="text-sm text-cos-muted">
-          No recent inbox or webhook activity synced yet.
+          No recent social activity synced yet.
         </p>
       ) : (
         <ul className="space-y-4">
