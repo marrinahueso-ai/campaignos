@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Megaphone,
+  Store,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -202,6 +203,7 @@ const navItems: {
     : []),
   { label: "Tasks", href: "/tasks", icon: ListChecks },
   { label: "Files", href: "/files", icon: FolderOpen },
+  { label: "Vendors", href: "/vendors", icon: Store },
   { label: "Calendar", href: "/calendar", icon: CalendarRange },
   { label: "Communications Hub", href: "/communications", icon: Inbox, isActive: isCommunicationsHubActive },
   { label: "Approvals", href: "/approvals", icon: CheckCircle2 },

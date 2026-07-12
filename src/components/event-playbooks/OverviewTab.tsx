@@ -28,6 +28,12 @@ interface OverviewTabProps {
   aiStatus: AiAssistantStatus;
   pastLessonCount: number;
   onNavigateTab: (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => void;
+  eventVendorsData?: import("@/types/vendors").EventVendorsData;
+  vendorDirectoryData?: {
+    categories: import("@/types/vendors").VendorCategory[];
+    events: Array<{ id: string; title: string; date: string }>;
+    availableVendors: Array<{ id: string; name: string }>;
+  };
 }
 
 export function OverviewTab({
@@ -47,6 +53,8 @@ export function OverviewTab({
   aiStatus,
   pastLessonCount,
   onNavigateTab,
+  eventVendorsData,
+  vendorDirectoryData,
 }: OverviewTabProps) {
   return (
     <PlanningHubDashboard
@@ -66,6 +74,8 @@ export function OverviewTab({
       pastLessonCount={pastLessonCount}
       tablesAvailable={tablesAvailable}
       onNavigateTab={onNavigateTab}
+      eventVendorsData={eventVendorsData}
+      vendorDirectoryData={vendorDirectoryData}
     />
   );
 }

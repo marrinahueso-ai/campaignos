@@ -53,6 +53,10 @@ import {
   getPastEventLessonsForType,
 } from "@/lib/event-playbooks/queries";
 import { getFilesPageData } from "@/lib/campaign-files/queries";
+import {
+  getEventVendorsData,
+  getVendorDirectoryPageData,
+} from "@/lib/vendors/queries";
 import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
 import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
@@ -133,13 +137,15 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
 
   const aiStatus = getAiAssistantStatus();
 
-  const [hubData, pastEventLessons, orgWorkspace, filesPageData] = await Promise.all([
+  const [hubData, pastEventLessons, orgWorkspace, filesPageData, eventVendorsData, vendorDirectoryData] = await Promise.all([
     getEventPlaybookHubData(event.id),
     getPastEventLessonsForType(event.eventType, event.id),
     organization
       ? getOrganizationWorkspaceData(organization.id)
       : Promise.resolve(null),
     getFilesPageData(event.id),
+    getEventVendorsData(event.id),
+    getVendorDirectoryPageData(),
   ]);
 
   const pastLessonCount = pastEventLessons.reduce(
@@ -199,6 +205,15 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     notificationCount,
     userEmail: authUser?.email ?? null,
     filesPageData,
+    eventVendorsData,
+    vendorDirectoryData: {
+      categories: vendorDirectoryData.categories,
+      events: vendorDirectoryData.events,
+      availableVendors: vendorDirectoryData.vendors.map((row) => ({
+        id: row.vendor.id,
+        name: row.vendor.name,
+      })),
+    },
   };
 
   if (!hasCampaign) {

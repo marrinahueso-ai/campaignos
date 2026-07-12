@@ -43,6 +43,12 @@ interface EventPlaybookHubShellProps {
   campaignEvents: Event[];
   notificationCount: number;
   userEmail?: string | null;
+  eventVendorsData?: import("@/types/vendors").EventVendorsData;
+  vendorDirectoryData?: {
+    categories: import("@/types/vendors").VendorCategory[];
+    events: Array<{ id: string; title: string; date: string }>;
+    availableVendors: Array<{ id: string; name: string }>;
+  };
 }
 
 export function EventPlaybookHubShell({
@@ -69,6 +75,8 @@ export function EventPlaybookHubShell({
   campaignEvents,
   notificationCount,
   userEmail,
+  eventVendorsData,
+  vendorDirectoryData,
 }: EventPlaybookHubShellProps) {
   const lessonCount = hubData.notes.filter((note) => note.noteType === "lesson").length;
   const planningNoteCount = hubData.notes.filter((note) => note.noteType === "note").length;
@@ -98,6 +106,8 @@ export function EventPlaybookHubShell({
           aiStatus={aiStatus}
           pastLessonCount={pastLessonCount}
           onNavigateTab={navigateToTab}
+          eventVendorsData={eventVendorsData}
+          vendorDirectoryData={vendorDirectoryData}
         />
       )}
       tasks={

@@ -9,6 +9,7 @@ import { PlanningHubMyTasks } from "@/components/event-playbooks/planning-hub/Pl
 import { PlanningHubQuickLinks } from "@/components/event-playbooks/planning-hub/PlanningHubQuickLinks";
 import { PlanningHubSocialCenter } from "@/components/event-playbooks/planning-hub/PlanningHubSocialCenter";
 import { PlanningHubVolunteerInfo } from "@/components/event-playbooks/planning-hub/PlanningHubVolunteerInfo";
+import { EventVendorsSection } from "@/components/vendors/EventVendorsSection";
 import { PlanningHubPage } from "@/components/event-playbooks/planning-hub/PlanningHubPrimitives";
 import type { EventPlaybookTab } from "@/components/event-playbooks/EventPlaybookTabs";
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
@@ -36,6 +37,12 @@ interface PlanningHubDashboardProps {
   pastLessonCount: number;
   tablesAvailable: boolean;
   onNavigateTab: (tab: EventPlaybookTab, step?: CampaignWorkflowStep) => void;
+  eventVendorsData?: import("@/types/vendors").EventVendorsData;
+  vendorDirectoryData?: {
+    categories: import("@/types/vendors").VendorCategory[];
+    events: Array<{ id: string; title: string; date: string }>;
+    availableVendors: Array<{ id: string; name: string }>;
+  };
 }
 
 export function PlanningHubDashboard({
@@ -55,6 +62,8 @@ export function PlanningHubDashboard({
   pastLessonCount,
   tablesAvailable,
   onNavigateTab,
+  eventVendorsData,
+  vendorDirectoryData,
 }: PlanningHubDashboardProps) {
   const totalTaskCount = hubData.tasks.length;
   const doneTaskCount = hubData.tasks.filter((task) => task.status === "done").length;
@@ -127,6 +136,16 @@ export function PlanningHubDashboard({
           onNavigateTab={onNavigateTab}
         />
       </div>
+
+      {eventVendorsData && vendorDirectoryData && (
+        <EventVendorsSection
+          eventId={event.id}
+          data={eventVendorsData}
+          categories={vendorDirectoryData.categories}
+          events={vendorDirectoryData.events}
+          availableVendors={vendorDirectoryData.availableVendors}
+        />
+      )}
     </PlanningHubPage>
   );
 }

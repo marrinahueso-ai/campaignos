@@ -30,6 +30,7 @@ import type { ApprovalRoleOption } from "@/components/event-workspace/CampaignCo
 import type { EventPlaybookHubData } from "@/types/event-playbooks";
 import type { FilesPageData } from "@/types/campaign-files";
 import type { EventPlanningOverviewData } from "@/types/planning-overview";
+import type { EventVendorsData } from "@/types/vendors";
 
 interface CampaignWorkspaceBundle {
   organizationName: string | null;
@@ -85,6 +86,12 @@ interface EventPlanningHubProps {
   campaignEvents: Event[];
   notificationCount: number;
   userEmail?: string | null;
+  eventVendorsData?: EventVendorsData;
+  vendorDirectoryData?: {
+    categories: import("@/types/vendors").VendorCategory[];
+    events: Array<{ id: string; title: string; date: string }>;
+    availableVendors: Array<{ id: string; name: string }>;
+  };
 }
 
 export function EventPlanningHub({
@@ -108,6 +115,8 @@ export function EventPlanningHub({
   campaignEvents,
   notificationCount,
   userEmail,
+  eventVendorsData,
+  vendorDirectoryData,
 }: EventPlanningHubProps) {
   const [campaignStep, setCampaignStep] = useState<CampaignWorkflowStep>("plan");
 
@@ -201,6 +210,8 @@ export function EventPlanningHub({
       campaignEvents={campaignEvents}
       notificationCount={notificationCount}
       userEmail={userEmail}
+      eventVendorsData={eventVendorsData}
+      vendorDirectoryData={vendorDirectoryData}
     />
   );
 }
