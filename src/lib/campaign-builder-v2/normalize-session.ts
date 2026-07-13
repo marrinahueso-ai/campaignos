@@ -80,13 +80,16 @@ function previewContentRichness(content: MilestonePreviewContent): number {
   if (content.captions.some((caption) => caption.text.trim())) {
     score += 1;
   }
-  if (content.generationStatus === "generated") {
-    score += 2;
-  }
-  if (content.generationStatus === "needs_review") {
-    score += 1;
-  }
+  // Do NOT score generationStatus alone. Stale "generated" flags on empty
+  // server previews were outranking real local artwork and causing hydrate to
+  // prefer the server milestone list, then persistLocalSession wiped local.
   return score;
+}
+
+function sessionArtworkCount(session: Partial<CampaignBuilderSession>): number {
+  return (session.previewContents ?? []).filter((content) =>
+    milestoneHasArtwork(content),
+  ).length;
 }
 
 function sessionPreviewRichness(
@@ -127,10 +130,16 @@ export function mergeCampaignBuilderSessions(
   const secondaryPreviews = secondary.previewContents ?? [];
   const primaryRichness = sessionPreviewRichness(primary);
   const secondaryRichness = sessionPreviewRichness(secondary);
+  const primaryArtwork = sessionArtworkCount(primary);
+  const secondaryArtwork = sessionArtworkCount(secondary);
 
+  // Artwork always wins over a larger empty server milestone list.
   const preferSecondaryMilestones =
     Boolean(secondary.milestones?.length) &&
-    (!primary.milestones?.length || secondaryRichness > primaryRichness);
+    (!primary.milestones?.length ||
+      secondaryArtwork > primaryArtwork ||
+      (secondaryArtwork === primaryArtwork &&
+        secondaryRichness > primaryRichness));
 
   const resultMilestones = preferSecondaryMilestones
     ? secondary.milestones
@@ -195,10 +204,11 @@ export function mergeCampaignBuilderSessions(
     return existing ?? buildEmptyPreviewContent(milestone);
   });
 
-  // Prefer the richer side's playbook tracking so a remount does not revert
-  // milestonesPlaybookId to a stale server null/old value.
+  // Prefer the side that actually carries artwork / richer content for
+  // playbook tracking so a remount does not revert milestonesPlaybookId.
   const milestonesPlaybookId =
-    secondaryRichness > primaryRichness
+    secondaryArtwork > primaryArtwork ||
+    (secondaryArtwork === primaryArtwork && secondaryRichness > primaryRichness)
       ? (secondary.milestonesPlaybookId ?? primary.milestonesPlaybookId ?? null)
       : (primary.milestonesPlaybookId ?? secondary.milestonesPlaybookId ?? null);
 
@@ -348,15 +358,27 @@ export function hydrateCampaignBuilderSession(
   // may reflect real, unsaved edits like deletions) must win instead, or a
   // failed read on any fresh page load would silently resurrect deleted
   // milestones and discard other local-only edits.
+  //
+  // Even when the server read succeeds, local wins the merge if it has more
+  // generated artwork. Server upserts often lag or fail, and a stale server
+  // snapshot must never wipe freshly generated Preview artwork on remount.
   serverLoadSucceeded: boolean = true,
 ): CampaignBuilderSession {
   if (!local) {
     return normalizeCampaignBuilderSession(base, eventId, eventTitle, eventDate);
   }
 
-  const merged = serverLoadSucceeded
-    ? mergeCampaignBuilderSessions(base, local)
-    : mergeCampaignBuilderSessions(local, base);
+  const localHasMoreArtwork =
+    sessionArtworkCount(local) > sessionArtworkCount(base);
+  const localHasRicherContent =
+    sessionArtworkCount(local) === sessionArtworkCount(base) &&
+    sessionPreviewRichness(local) > sessionPreviewRichness(base);
+  const preferLocal =
+    !serverLoadSucceeded || localHasMoreArtwork || localHasRicherContent;
+
+  const merged = preferLocal
+    ? mergeCampaignBuilderSessions(local, base)
+    : mergeCampaignBuilderSessions(base, local);
 
   return normalizeCampaignBuilderSession(merged, eventId, eventTitle, eventDate);
 }

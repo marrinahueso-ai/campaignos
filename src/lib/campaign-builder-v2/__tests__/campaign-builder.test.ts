@@ -14,6 +14,7 @@ import {
   sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
+  stripStaleClearedArtwork,
 } from "../stale-seed-migration.ts";
 import {
   CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
@@ -542,6 +543,60 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
     assert.equal(hydrated.milestones.length, 2);
   });
 
+  it("preserves local generated artwork when a stale server session loads successfully on remount", () => {
+    const eventId = "723f85ce-e44f-43f6-97b5-723aa33ba7f8";
+    const server = buildDefaultSession(eventId, "Back to School Fair", "2026-08-17");
+    // Stale server rows often keep empty previews marked as if generated.
+    const staleServer = {
+      ...server,
+      previewContents: server.previewContents.map((content) => ({
+        ...content,
+        generationStatus: "generated" as const,
+        artwork: { feedUrl: null, storyUrl: null },
+      })),
+    };
+
+    const localMilestone = {
+      ...server.milestones[0],
+      id: "playbook-14-days",
+      name: "14 Days Out",
+      sortOrder: 0,
+    };
+    const feedUrl =
+      `https://example.supabase.co/storage/v1/object/public/event-assets/` +
+      `${eventId}/campaign-builder-v2/generated/14-days.png`;
+    const local = {
+      ...server,
+      milestones: [localMilestone],
+      milestonesPlaybookId: "pb-back-to-school",
+      previewContents: [
+        {
+          ...server.previewContents[0],
+          milestoneId: "playbook-14-days",
+          generationStatus: "generated" as const,
+          artwork: { feedUrl, storyUrl: null },
+          captions: [
+            { platform: "facebook" as const, text: "Fair in 14 days!" },
+            { platform: "instagram" as const, text: "Fair in 14 days!" },
+          ],
+        },
+      ],
+    };
+
+    const hydrated = hydrateCampaignBuilderSession(
+      staleServer,
+      local,
+      eventId,
+      "Back to School Fair",
+      "2026-08-17",
+      true,
+    );
+
+    assert.equal(hydrated.milestones[0]?.id, "playbook-14-days");
+    assert.equal(hydrated.previewContents[0]?.artwork.feedUrl, feedUrl);
+    assert.equal(hydrated.previewContents[0]?.generationStatus, "generated");
+  });
+
   it("trusts the server copy over local when the server read succeeded", () => {
     const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
     const serverCopy = {
@@ -647,6 +702,50 @@ describe("mergeCampaignBuilderSessions", () => {
     assert.equal(merged.milestones?.[0]?.id, "playbook-14-days");
     assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/14-days.png");
     assert.equal(merged.milestonesPlaybookId, "pb-back-to-school");
+  });
+});
+
+describe("stripStaleClearedArtwork — must not delete new generations", () => {
+  it("preserves newly generated campaign-builder-v2 artwork URLs on hydrate", () => {
+    // Event id that was part of the one-off storage purge. New generations
+    // still write under /campaign-builder-v2/generated/ and must survive.
+    const eventId = "723f85ce-e44f-43f6-97b5-723aa33ba7f8";
+    const feedUrl =
+      "https://example.supabase.co/storage/v1/object/public/event-assets/" +
+      `${eventId}/campaign-builder-v2/generated/feed-new.png`;
+    const storyUrl =
+      "https://example.supabase.co/storage/v1/object/public/event-assets/" +
+      `${eventId}/campaign-builder-v2/generated/story-new.png`;
+
+    const content = {
+      ...buildDefaultSession(eventId, "Back to School Fair", "2026-08-17")
+        .previewContents[0],
+      generationStatus: "generated" as const,
+      artwork: { feedUrl, storyUrl },
+    };
+
+    const stripped = stripStaleClearedArtwork(eventId, content);
+    assert.equal(stripped.artwork.feedUrl, feedUrl);
+    assert.equal(stripped.artwork.storyUrl, storyUrl);
+    assert.equal(stripped.generationStatus, "generated");
+
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        previewContents: [content],
+        milestones: [
+          {
+            ...buildDefaultSession(eventId, "Back to School Fair", "2026-08-17")
+              .milestones[0],
+            id: content.milestoneId,
+          },
+        ],
+      },
+      eventId,
+      "Back to School Fair",
+      "2026-08-17",
+    );
+    assert.equal(normalized.previewContents[0]?.artwork.feedUrl, feedUrl);
+    assert.equal(normalized.previewContents[0]?.generationStatus, "generated");
   });
 });
 

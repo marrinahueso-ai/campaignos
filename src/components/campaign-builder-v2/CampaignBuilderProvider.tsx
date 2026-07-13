@@ -245,14 +245,67 @@ function buildNewMilestone(
   return { milestone, preview };
 }
 
-function persistLocalSession(session: CampaignBuilderSession): void {
+function slimSessionForLocalStorage(
+  session: CampaignBuilderSession,
+): CampaignBuilderSession {
+  // data: URLs blow past localStorage quotas and cause silent save failures.
+  // Keep http(s) inspiration URLs; drop inline payloads (already uploaded or
+  // re-selectable from Creative Setup).
+  const inspirationImages = session.inspiration.inspirationImages.map((image) => {
+    const url = image.url?.trim() ?? "";
+    const keepUrl = url.startsWith("http://") || url.startsWith("https://") ? url : "";
+    return {
+      ...image,
+      url: keepUrl,
+      previewUrl:
+        image.previewUrl?.startsWith("http://") ||
+        image.previewUrl?.startsWith("https://")
+          ? image.previewUrl
+          : keepUrl || undefined,
+    };
+  });
+
+  return {
+    ...session,
+    inspiration: {
+      ...session.inspiration,
+      inspirationImages,
+      uploadedLogoUrl:
+        session.inspiration.uploadedLogoUrl?.startsWith("data:")
+          ? null
+          : session.inspiration.uploadedLogoUrl,
+    },
+  };
+}
+
+function persistLocalSession(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
-    return;
+    return false;
   }
   try {
-    localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(session));
+    const slimmed = slimSessionForLocalStorage(session);
+    localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(slimmed));
+    return true;
   } catch {
-    // ignore quota errors
+    // Quota or private mode — try a minimal artwork+milestones backup so
+    // Preview generations survive navigation even when the full session won't.
+    try {
+      const slimmed = slimSessionForLocalStorage(session);
+      const minimal: CampaignBuilderSession = {
+        ...slimmed,
+        inspiration: {
+          ...slimmed.inspiration,
+          inspirationImages: [],
+        },
+      };
+      localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(minimal));
+      return true;
+    } catch {
+      console.error(
+        "Campaign builder: could not persist session to localStorage. Artwork may be lost on navigation.",
+      );
+      return false;
+    }
   }
 }
 
@@ -294,9 +347,6 @@ function previewSessionRichness(session: CampaignBuilderSession): number {
     }
     if (content.captions.some((caption) => caption.text.trim())) {
       score += 1;
-    }
-    if (content.generationStatus === "generated") {
-      score += 2;
     }
     return sum + score;
   }, 0);
@@ -504,11 +554,31 @@ export function CampaignBuilderProvider({
     );
 
     setSession((prev) => {
-      // Never let a remount hydrate overwrite richer in-memory artwork with a
-      // stale server/default snapshot (this was deleting just-generated images).
-      if (previewSessionRichness(prev) > previewSessionRichness(hydrated)) {
+      const prevRichness = previewSessionRichness(prev);
+      const hydratedRichness = previewSessionRichness(hydrated);
+      const localRichness = localForHydrate
+        ? previewSessionRichness(localForHydrate)
+        : 0;
+
+      // Never let a remount hydrate overwrite richer in-memory OR localStorage
+      // artwork with a stale server/default snapshot.
+      if (prevRichness > hydratedRichness) {
         persistLocalSession(prev);
         return prev;
+      }
+
+      if (localRichness > hydratedRichness && localForHydrate) {
+        const keepLocal = hydrateCampaignBuilderSession(
+          localForHydrate,
+          null,
+          eventId,
+          eventTitle,
+          eventDate,
+          false,
+        );
+        sessionRef.current = keepLocal;
+        persistLocalSession(keepLocal);
+        return keepLocal;
       }
 
       const changed = hydrated.previewContents.some((content) => {
@@ -530,7 +600,11 @@ export function CampaignBuilderProvider({
       }
 
       sessionRef.current = hydrated;
-      persistLocalSession(hydrated);
+      // Only write back when hydrated is at least as rich as what we already
+      // have locally — never clobber a good local cache with an empty merge.
+      if (hydratedRichness >= localRichness) {
+        persistLocalSession(hydrated);
+      }
       return hydrated;
     });
     // Reconcile persisted milestone statuses once per mount after hydration.
