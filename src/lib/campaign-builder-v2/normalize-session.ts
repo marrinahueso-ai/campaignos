@@ -18,6 +18,7 @@ import {
   sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
+  stripStaleClearedArtwork,
 } from "./stale-seed-migration.ts";
 import type {
   CampaignBuilderMilestone,
@@ -360,14 +361,17 @@ export function normalizeCampaignBuilderSession(
 
   const rawMilestones = raw.milestones ?? defaults.milestones;
   const rawPreviews = (raw.previewContents ?? defaults.previewContents).map(
-    (content) => ({
-      ...content,
-      captions: (content.captions ?? []).map((caption) =>
-        isStaleDemoCaption(caption.text)
-          ? { ...caption, text: "" }
-          : caption,
-      ),
-    }),
+    (content) => {
+      const withoutStaleArtwork = stripStaleClearedArtwork(eventId, content);
+      return {
+        ...withoutStaleArtwork,
+        captions: (withoutStaleArtwork.captions ?? []).map((caption) =>
+          isStaleDemoCaption(caption.text)
+            ? { ...caption, text: "" }
+            : caption,
+        ),
+      };
+    },
   );
   const previewContents = alignPreviewContentsWithMilestones(
     milestones,

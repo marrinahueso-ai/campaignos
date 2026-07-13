@@ -67,6 +67,9 @@ export function suggestMilestonesFromContext(input: {
   milestones: CampaignBuilderMilestone[];
   previewContents: MilestonePreviewContent[];
 } {
+  // #region agent log
+  fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H5',location:'suggest-milestones.ts:suggestMilestonesFromContext',message:'called with playbookId',data:{playbookId:input.playbookId},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion agent log
   void input.playbookId;
   void input.globalAiGuidance;
   void input.brandKitId;
@@ -84,6 +87,10 @@ export function suggestMilestonesFromContext(input: {
       sortOrder: index,
     }),
   );
+
+  // #region agent log
+  fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H5',location:'suggest-milestones.ts:suggestMilestonesFromContext',message:'milestones returned (ignores playbookId)',data:{playbookId:input.playbookId,milestoneNames:milestones.map(m=>m.name)},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion agent log
 
   return {
     milestones,

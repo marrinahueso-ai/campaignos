@@ -28,9 +28,14 @@ import {
 } from "@/lib/campaign-builder-v2/session";
 import {
   generateAllContentAction,
+  getPlaybookMilestoneStepsAction,
   suggestMilestonesAction,
   uploadInspirationImageAction,
 } from "@/lib/campaign-builder-v2/actions";
+import {
+  milestonesLostOnPlaybookSwitch,
+  reconcileMilestonesWithPlaybookSteps,
+} from "@/lib/campaign-builder-v2/playbook-milestones";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
 import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
 import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
@@ -372,11 +377,65 @@ export function CampaignBuilderProvider({
     const normalizedInspiration = normalizeCreativeSelections(
       sessionRef.current.inspiration,
     );
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',runId:'post-fix',hypothesisId:'H4',location:'CampaignBuilderProvider.tsx:saveCreativeSetupAndContinue',message:'before continue - selected playbook vs current milestones',data:{selectedPlaybookId:normalizedInspiration.playbookId,milestonesPlaybookId:sessionRef.current.milestonesPlaybookId,currentMilestones:sessionRef.current.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
+
+    const selectedPlaybookId = normalizedInspiration.playbookId;
+    let milestones = sessionRef.current.milestones;
+    let previewContents = sessionRef.current.previewContents;
+    let milestonesPlaybookId = sessionRef.current.milestonesPlaybookId ?? null;
+
+    if (selectedPlaybookId && selectedPlaybookId !== milestonesPlaybookId) {
+      const stepsResult = await getPlaybookMilestoneStepsAction(selectedPlaybookId);
+      // #region agent log
+      fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',runId:'post-fix',hypothesisId:'H4',location:'CampaignBuilderProvider.tsx:saveCreativeSetupAndContinue',message:'fetched playbook steps for rebuild',data:{selectedPlaybookId,success:stepsResult.success,stepCount:stepsResult.steps.length,stepTitles:stepsResult.steps.map(s=>s.title)},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion agent log
+
+      if (stepsResult.success && stepsResult.steps.length > 0) {
+        const atRisk = milestonesLostOnPlaybookSwitch(
+          stepsResult.steps,
+          milestones,
+          previewContents,
+        );
+        if (atRisk.length > 0) {
+          const confirmed = window.confirm(
+            `Switching playbooks will remove ${atRisk.length} milestone${atRisk.length === 1 ? "" : "s"} that ${atRisk.length === 1 ? "doesn't" : "don't"} belong to the new playbook, along with their existing notes/artwork/captions: ${atRisk.map((m) => m.name).join(", ")}.\n\nContinue?`,
+          );
+          if (!confirmed) {
+            return {
+              success: false,
+              message: "Playbook change canceled — milestones unchanged.",
+            };
+          }
+        }
+
+        const rebuilt = reconcileMilestonesWithPlaybookSteps(
+          stepsResult.steps,
+          normalizedInspiration.eventDate,
+          milestones,
+          previewContents,
+        );
+        milestones = rebuilt.milestones;
+        previewContents = rebuilt.previewContents;
+        milestonesPlaybookId = selectedPlaybookId;
+      }
+      // If the playbook has no steps in the DB (e.g. a demo/legacy playbook
+      // id that was never a real row), keep the existing milestones rather
+      // than wiping them out.
+    }
+
     const next = {
       ...sessionRef.current,
       inspiration: normalizedInspiration,
+      milestones,
+      previewContents,
+      milestonesPlaybookId,
       currentStep: "milestones" as const,
     };
+    // #region agent log
+    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',runId:'post-fix',hypothesisId:'H4',location:'CampaignBuilderProvider.tsx:saveCreativeSetupAndContinue',message:'after building next - milestones now match selected playbook?',data:{selectedPlaybookId:next.inspiration.playbookId,milestonesPlaybookId:next.milestonesPlaybookId,nextMilestones:next.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     sessionRef.current = next;
     setSession(next);
     setLocationHash("milestones");

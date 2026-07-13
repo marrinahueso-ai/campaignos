@@ -7,6 +7,8 @@
 
 import { revalidatePath } from "next/cache";
 import { suggestMilestonesFromContext } from "@/lib/campaign-builder-v2/suggest-milestones";
+import { getPlaybookSteps } from "@/lib/playbooks/queries";
+import type { PlaybookMilestoneStep } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
 import {
   resolveSingleGenerationTarget,
@@ -677,6 +679,37 @@ export async function suggestMilestonesAction(input: {
     ...result,
     message: "Milestones suggested from playbook and campaign date (demo stub).",
   };
+}
+
+/**
+ * Loads the ordered steps for a real playbook (from
+ * communication_playbook_steps) for use by the Save & Continue →
+ * Milestones flow. Returns an empty list (not an error) for demo/legacy
+ * playbook ids that don't exist in the DB, so callers can fall back to
+ * keeping the existing milestone set rather than wiping it out.
+ */
+export async function getPlaybookMilestoneStepsAction(
+  playbookId: string,
+): Promise<{ success: boolean; steps: PlaybookMilestoneStep[] }> {
+  if (!playbookId) {
+    return { success: true, steps: [] };
+  }
+
+  try {
+    const steps = await getPlaybookSteps(playbookId);
+    return {
+      success: true,
+      steps: steps.map((step) => ({
+        title: step.title,
+        channel: step.channel,
+        relativeDay: step.relativeDay,
+        sortOrder: step.sortOrder,
+      })),
+    };
+  } catch (error) {
+    console.error("Failed to load playbook steps:", error);
+    return { success: false, steps: [] };
+  }
 }
 
 export async function sendForApprovalAction(input: {

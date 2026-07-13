@@ -3,6 +3,72 @@
  * Older seeds baked volunteer CTAs and demo captions into milestones and previews.
  */
 
+import type { MilestonePreviewContent } from "./types.ts";
+
+/**
+ * One-time data cleanup migration. `campaign_builder_sessions` is not
+ * reachable via the Supabase Data API on this project (PGRST205 — the table
+ * does not exist in PostgREST's schema cache for any role), so every real
+ * Campaign Builder V2 session currently lives only in browser localStorage
+ * (see `hydrateCampaignBuilderSession`'s `serverLoadSucceeded=false` branch,
+ * which always lets local win when there is no server row).
+ *
+ * A one-off cleanup deleted all AI-generated artwork files under
+ * `campaign-builder-v2/generated/` in Storage for the events below (see the
+ * timestamped campaign-builder-artwork-cleanup backup folder under
+ * backups/ in the repo root for the full record). Because
+ * there is no reachable server copy to correct a stale local cache, any
+ * artwork URL still cached in a returning user's localStorage for these
+ * events now points at a deleted file. Strip it on hydrate instead of
+ * displaying/treating it as generated content.
+ */
+const CLEARED_ARTWORK_EVENT_IDS = new Set([
+  "19e5f8d8-6f5f-4446-a043-fbe7b4718e79",
+  "1bdb2018-11ce-4610-9375-a1e382325d08",
+  "1c3542db-3278-474a-8d7e-cc5445e4f2f0",
+  "49112d75-208f-4730-b704-d27c968d6548",
+  "57e72be6-a47f-4bdd-ae3c-aad0c0d58efc",
+  "651efc5c-cf40-40c3-9d94-c1d16172f6cd",
+  "723f85ce-e44f-43f6-97b5-723aa33ba7f8",
+  "7db16be2-6a19-4e8c-a621-34546e362fc6",
+]);
+
+function isClearedGeneratedArtworkUrl(url: string | null | undefined): boolean {
+  return typeof url === "string" && url.includes("/campaign-builder-v2/generated/");
+}
+
+/** Drops dangling artwork references left over from the cleanup above; captions/notes/schedule are untouched. */
+export function stripStaleClearedArtwork(
+  eventId: string,
+  content: MilestonePreviewContent,
+): MilestonePreviewContent {
+  if (!CLEARED_ARTWORK_EVENT_IDS.has(eventId)) {
+    return content;
+  }
+
+  const feedStale = isClearedGeneratedArtworkUrl(content.artwork.feedUrl);
+  const storyStale = isClearedGeneratedArtworkUrl(content.artwork.storyUrl);
+  if (!feedStale && !storyStale) {
+    return content;
+  }
+
+  return {
+    ...content,
+    artwork: {
+      feedUrl: feedStale ? null : content.artwork.feedUrl,
+      storyUrl: storyStale ? null : content.artwork.storyUrl,
+    },
+    status: "draft",
+    generationStatus: undefined,
+    generationStartedAt: null,
+    approvalStatuses: content.approvalStatuses.map((entry) => ({
+      ...entry,
+      status: "not-started",
+      timestamp: null,
+    })),
+  };
+}
+
 const KNOWN_STALE_CAPTION_NOTES = new Set(
   [
     "Mention volunteer sign-up link",

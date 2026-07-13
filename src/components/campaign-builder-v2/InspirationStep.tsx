@@ -221,7 +221,12 @@ export function InspirationStep() {
             <Select
               label="Playbook"
               value={inspiration.playbookId}
-              onChange={(e) => updateInspiration({ playbookId: e.target.value })}
+              onChange={(e) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H3',location:'InspirationStep.tsx:playbookSelect',message:'playbook selection changed',data:{previousPlaybookId:inspiration.playbookId,newPlaybookId:e.target.value},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion agent log
+                updateInspiration({ playbookId: e.target.value });
+              }}
             >
               {playbookOptions.map((option) => (
                 <option key={option.id} value={option.id}>

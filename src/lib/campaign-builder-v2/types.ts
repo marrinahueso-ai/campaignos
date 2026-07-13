@@ -236,6 +236,11 @@ export interface CampaignBuilderSession {
   currentStep: CampaignBuilderStepId;
   inspiration: CampaignBuilderInspiration;
   milestones: CampaignBuilderMilestone[];
+  /** playbookId the current `milestones` were built from, or null if they
+   * were never sourced from a real playbook (e.g. still the generic seed
+   * template). Used to detect when the user has selected a different
+   * playbook than the one milestones currently reflect. */
+  milestonesPlaybookId: string | null;
   previewContents: MilestonePreviewContent[];
   approvalWorkflow: ApprovalWorkflowStep[];
   reviewFilter: "all" | "needs-review" | "approved" | "changes-requested";

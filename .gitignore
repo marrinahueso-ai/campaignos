@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-dev/
 /out/
 
 # production
@@ -33,6 +34,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+
+# one-off data ops backups / scratch scripts (never commit — may contain PII/URLs)
+/backups/
+/tmp/
 
 # vercel
 .vercel

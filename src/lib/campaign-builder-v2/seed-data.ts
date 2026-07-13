@@ -247,6 +247,7 @@ export function buildDefaultSession(
     currentStep: "inspiration",
     inspiration,
     milestones,
+    milestonesPlaybookId: null,
     previewContents: milestones.map(buildEmptyPreviewContent),
     approvalWorkflow: buildDefaultApprovalWorkflow(),
     reviewFilter: "all",

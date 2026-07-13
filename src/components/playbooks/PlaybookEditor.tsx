@@ -156,7 +156,16 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form
+      action={formAction}
+      className="space-y-6"
+      onSubmit={(e) => {
+        // #region agent log
+        const fd = new FormData(e.currentTarget);
+        fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H1',location:'PlaybookEditor.tsx:onSubmit',message:'form submit captured',data:{eventTypeInFormData:fd.get('eventType'),name:fd.get('name'),isSystem:playbook?.isSystem ?? null,playbookEventType:playbook?.eventType ?? null},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion agent log
+      }}
+    >
       <input type="hidden" name="steps" value={JSON.stringify(steps)} />
 
       {state.error && (
@@ -199,6 +208,12 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
               </option>
             ))}
           </Select>
+          {playbook?.isSystem && (
+            // Disabled <select> values are excluded from native FormData
+            // submission. Mirror the existing (already-correct) Event Type
+            // in a hidden input so system-playbook edits still submit it.
+            <input type="hidden" name="eventType" value={playbook.eventType} />
+          )}
         </div>
       </Card>
 
