@@ -70,14 +70,28 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.voiceTone.trim()
       ? `Voice / tone: ${input.inspiration.voiceTone.trim()}`
       : null,
-    input.inspiration.useSchoolColors && input.inspiration.primarySchoolColor
-      ? `Primary school color: ${input.inspiration.primarySchoolColor}`
+    input.inspiration.colorMode === "organization_palette" &&
+      input.inspiration.primarySchoolColor
+      ? `Primary organization color: ${input.inspiration.primarySchoolColor}`
       : null,
-    input.inspiration.useSchoolColors && input.inspiration.secondarySchoolColor
-      ? `Secondary school color: ${input.inspiration.secondarySchoolColor}`
+    input.inspiration.colorMode === "organization_palette" &&
+      input.inspiration.secondarySchoolColor
+      ? `Secondary organization color: ${input.inspiration.secondarySchoolColor}`
+      : null,
+    input.inspiration.colorMode === "inspiration_palette" &&
+      input.hasInspirationImages
+      ? "Color palette: derive colors from the attached inspiration images."
+      : null,
+    input.inspiration.colorMode === "custom_palette" &&
+      (input.inspiration.customPaletteColors?.length ?? 0) > 0
+      ? `Custom palette colors: ${input.inspiration.customPaletteColors.join(", ")}`
       : null,
     input.inspiration.includeLogoInArtwork && input.hasAttachedLogo
       ? "Include the attached logo image as a visual brand element in the design."
+      : null,
+    input.inspiration.inspirationOverallComment?.trim() &&
+      input.hasInspirationImages
+      ? `Inspiration notes (interpret — do not paste on graphic): ${input.inspiration.inspirationOverallComment.trim()}`
       : null,
   ].filter((line): line is string => Boolean(line));
 
@@ -118,6 +132,23 @@ export function buildCampaignBuilderArtworkPrompt(input: {
         ? "Keep the same visual style, colors, and branding as the attached feed design. Adapt layout for vertical story safe zones."
         : "Use the attached inspiration images for style, color palette, and visual mood. Do not copy them literally — create original campaign artwork in that style.",
     );
+
+    const imageComments = input.inspiration.inspirationImages
+      .map((image, index) => {
+        const comment = image.comment?.trim();
+        if (!comment) {
+          return null;
+        }
+        return `Image ${index + 1} (${image.label}): ${comment}`;
+      })
+      .filter((line): line is string => Boolean(line));
+
+    if (imageComments.length > 0) {
+      lines.push(
+        "Per-image inspiration notes (interpret — do not paste on graphic):",
+        ...imageComments,
+      );
+    }
   }
 
   if (input.styleStrength != null) {

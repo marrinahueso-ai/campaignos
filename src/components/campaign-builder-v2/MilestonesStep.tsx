@@ -37,6 +37,11 @@ const ROW_GRID =
   "grid items-center gap-x-4 gap-y-2 px-4 py-4 sm:grid-cols-[2rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_7rem]";
 
 export function MilestonesStep() {
+  // Campaign Creative Setup (session.inspiration) is the authoritative default for
+  // downstream AI. This step does not auto-generate artwork/captions on load.
+  // Per-milestone logo/colors overrides support inherit | none today (edit via the
+  // milestone editor modal); a per-milestone "selected" value different from the
+  // campaign's is supported at the data/resolver level but not exposed in the UI yet.
   const {
     session,
     addMilestone,

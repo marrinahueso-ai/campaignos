@@ -66,11 +66,18 @@ export function summarizeArtworkPromptSections(input: {
   if (input.inspiration.voiceTone.trim()) {
     sections.push("voice_tone");
   }
-  if (input.inspiration.useSchoolColors) {
-    sections.push("school_colors");
+  if (
+    input.inspiration.colorMode === "organization_palette" ||
+    input.inspiration.colorMode === "inspiration_palette" ||
+    input.inspiration.colorMode === "custom_palette"
+  ) {
+    sections.push("color_palette");
   }
   if (input.inspiration.includeLogoInArtwork && input.hasAttachedLogo) {
     sections.push("logo_attachment");
+  }
+  if (input.inspiration.inspirationOverallComment?.trim()) {
+    sections.push("inspiration_overall_comment");
   }
   if (input.inspiration.globalAiGuidance.trim()) {
     sections.push("global_ai_guidance");
@@ -139,11 +146,14 @@ export function logArtworkGenerationDebug(input: {
   storyFromFeed: boolean;
   success: boolean;
   message?: string;
+  generationRequestId?: string;
+  milestoneOverrideApplied?: boolean;
 }): void {
   logCampaignBuilderDebug("artwork", {
     eventId: input.eventId,
     milestoneId: input.milestone.id,
     milestoneName: input.milestone.name,
+    generationRequestId: input.generationRequestId,
     view: input.view,
     promptSections: input.promptSections,
     promptLength: input.userPrompt.length,
@@ -153,6 +163,7 @@ export function logArtworkGenerationDebug(input: {
     hasAttachedLogo: input.hasAttachedLogo,
     inspirationImageCount: input.inspirationImageCount,
     storyFromFeed: input.storyFromFeed,
+    milestoneOverrideApplied: input.milestoneOverrideApplied,
     success: input.success,
     message: input.message,
   });

@@ -12,6 +12,7 @@ import {
   resolveBrandContextForGeneration,
   resolveSelectedLogoForGeneration,
 } from "@/lib/campaign-builder-v2/brand-context";
+import { resolveMilestoneInspiration } from "@/lib/campaign-builder-v2/creative-config";
 import { mergeInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
 import { generateArtworkV2ImageNative } from "@/lib/artwork-v2/orchestrator";
 import { resolveArtworkGenerationProfile } from "@/lib/artwork-v2/generation-mode";
@@ -62,18 +63,20 @@ async function generateArtworkVariations(input: {
   previousImageUrl?: string | null;
   adjustmentComments?: string | null;
   versionCount: number;
-}): Promise<{ success: boolean; urls: string[]; error?: string }> {
+}): Promise<{ success: boolean; urls: string[]; error?: string; batchId: string }> {
+  const batchId = createConceptBatchId();
+
   if (!isArtworkGenerationConfigured()) {
     return {
       success: false,
       urls: [],
       error: "AI artwork generation is not configured.",
+      batchId,
     };
   }
 
   const imageSizePreset = imageSizePresetForView(input.view);
   const size = resolveOpenAiImageSize(imageSizePreset);
-  const batchId = createConceptBatchId();
   const profile = resolveArtworkGenerationProfile("quick");
   const urls: string[] = [];
 
@@ -109,6 +112,7 @@ async function generateArtworkVariations(input: {
           success: false,
           urls: [],
           error: result.error ?? "Unable to generate artwork.",
+          batchId,
         };
       }
       break;
@@ -130,6 +134,7 @@ async function generateArtworkVariations(input: {
           success: false,
           urls: [],
           error: uploaded.error ?? "Could not save generated artwork.",
+          batchId,
         };
       }
       break;
@@ -138,7 +143,7 @@ async function generateArtworkVariations(input: {
     urls.push(uploaded.publicUrl);
   }
 
-  return { success: urls.length > 0, urls };
+  return { success: urls.length > 0, urls, batchId };
 }
 
 export async function generateCampaignBuilderArtwork(input: {
@@ -165,10 +170,20 @@ export async function generateCampaignBuilderArtwork(input: {
     };
   }
 
+  // Resolve this milestone's explicit logo/colors overrides on top of the
+  // campaign Creative Setup — never mutates input.inspiration and never
+  // touches any other milestone's overrides.
+  const resolvedInspiration = resolveMilestoneInspiration(
+    input.inspiration,
+    input.milestone.creativeOverrides,
+  );
+
   const brandContext = await resolveBrandContextForGeneration(input.useBrandKit);
   const selectedLogo = await resolveSelectedLogoForGeneration({
-    selectedLogoId: input.inspiration.selectedLogoId,
-    includeLogoInArtwork: input.inspiration.includeLogoInArtwork,
+    selectedLogoId: resolvedInspiration.selectedLogoId,
+    includeLogoInArtwork: resolvedInspiration.includeLogoInArtwork,
+    uploadedLogoUrl: resolvedInspiration.uploadedLogoUrl,
+    uploadedLogoLabel: resolvedInspiration.uploadedLogoLabel,
   });
   const logoUrls = selectedLogo.url ? [selectedLogo.url] : [];
   const baseInspirationUrls = mergeInspirationImageUrls(
@@ -181,7 +196,7 @@ export async function generateCampaignBuilderArtwork(input: {
       : baseInspirationUrls;
 
   const userPrompt = buildCampaignBuilderArtworkPrompt({
-    inspiration: input.inspiration,
+    inspiration: resolvedInspiration,
     milestone: input.milestone,
     view: input.view,
     brandGuidance: brandContext.guidance,
@@ -193,7 +208,7 @@ export async function generateCampaignBuilderArtwork(input: {
   });
 
   const promptSections = summarizeArtworkPromptSections({
-    inspiration: input.inspiration,
+    inspiration: resolvedInspiration,
     milestone: input.milestone,
     brandGuidance: brandContext.guidance,
     extraInstructions: input.adjustmentComments ? null : input.extraInstructions,
@@ -220,12 +235,14 @@ export async function generateCampaignBuilderArtwork(input: {
     view: input.view,
     promptSections,
     userPrompt,
-    includeLogoInArtwork: input.inspiration.includeLogoInArtwork,
+    includeLogoInArtwork: resolvedInspiration.includeLogoInArtwork,
     hasAttachedLogo: Boolean(selectedLogo.url),
     inspirationImageCount: inspirationUrls.length,
     storyFromFeed: Boolean(input.storyFromFeed),
     success: generation.success,
     message: generation.error,
+    generationRequestId: generation.batchId,
+    milestoneOverrideApplied: Boolean(input.milestone.creativeOverrides),
   });
 
   if (!generation.success) {

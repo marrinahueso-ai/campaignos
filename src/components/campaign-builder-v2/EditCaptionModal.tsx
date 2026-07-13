@@ -121,7 +121,9 @@ export function EditCaptionModal({
             value={tone}
             onChange={(e) => setTone(e.target.value)}
           >
-            <option value={voiceTone}>{voiceTone}</option>
+            <option value={voiceTone || "Campaign default"}>
+              {voiceTone || "Campaign default (None)"}
+            </option>
             <option value="Friendly, Exciting, Welcoming">
               Friendly, Exciting, Welcoming
             </option>

@@ -10,6 +10,10 @@ import {
 } from "./milestone-status.ts";
 import { buildDefaultSession } from "./seed-data.ts";
 import {
+  migrateLegacyCreativeFields,
+  normalizeMilestoneCreativeOverrides,
+} from "./creative-config.ts";
+import {
   isStaleDemoCaption,
   sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
@@ -127,12 +131,6 @@ export function mergeCampaignBuilderSessions(
   }
 
   const resultMilestones = primary.milestones ?? secondary.milestones;
-
-  if (typeof fetch === "function") {
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H3',location:'normalize-session.ts:mergeCampaignBuilderSessions',message:'merge primary/secondary milestones',data:{primaryMilestoneIds:(primary.milestones??[]).map(m=>({id:m.id,name:m.name})),secondaryMilestoneIds:(secondary.milestones??[]).map(m=>({id:m.id,name:m.name})),primaryMilestonesWasUndefined:primary.milestones===undefined,resultMilestoneIds:(resultMilestones??[]).map(m=>({id:m.id,name:m.name}))},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
-  }
 
   return {
     ...primary,
@@ -289,12 +287,6 @@ export function hydrateCampaignBuilderSession(
     ? mergeCampaignBuilderSessions(base, local)
     : mergeCampaignBuilderSessions(local, base);
 
-  if (typeof fetch === "function") {
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',runId:'post-fix',hypothesisId:'H3',location:'normalize-session.ts:hydrateCampaignBuilderSession',message:'hydrate merge direction chosen',data:{serverLoadSucceeded,baseMilestoneIds:(base.milestones??[]).map(m=>({id:m.id,name:m.name})),localMilestoneIds:(local.milestones??[]).map(m=>({id:m.id,name:m.name})),mergedMilestoneIds:(merged.milestones??[]).map(m=>({id:m.id,name:m.name}))},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
-  }
-
   return normalizeCampaignBuilderSession(merged, eventId, eventTitle, eventDate);
 }
 
@@ -328,27 +320,22 @@ export function normalizeCampaignBuilderSession(
 ): CampaignBuilderSession {
   const defaults = buildDefaultSession(eventId, eventTitle, eventDate);
 
-  const inspiration = {
-    ...defaults.inspiration,
-    ...raw.inspiration,
-    campaignId: raw.inspiration?.campaignId ?? eventId,
-    selectedLogoId: raw.inspiration?.selectedLogoId ?? defaults.inspiration.selectedLogoId,
-    includeLogoInArtwork:
-      raw.inspiration?.includeLogoInArtworkUserSet === true
-        ? Boolean(raw.inspiration?.includeLogoInArtwork)
-        : defaults.inspiration.includeLogoInArtwork,
-    useSchoolColors:
-      raw.inspiration?.useSchoolColors ?? defaults.inspiration.useSchoolColors,
-    primarySchoolColor:
-      raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
-    secondarySchoolColor:
-      raw.inspiration?.secondarySchoolColor ?? defaults.inspiration.secondarySchoolColor,
-    // Strip demo/example AI guidance so it never masquerades as a real,
-    // user-authored campaign instruction fed into generation prompts.
-    globalAiGuidance: sanitizeGlobalAiGuidance(
-      raw.inspiration?.globalAiGuidance ?? defaults.inspiration.globalAiGuidance,
-    ),
-  };
+  const inspiration = migrateLegacyCreativeFields(
+    {
+      ...raw.inspiration,
+      campaignId: raw.inspiration?.campaignId ?? eventId,
+      primarySchoolColor:
+        raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
+      secondarySchoolColor:
+        raw.inspiration?.secondarySchoolColor ?? defaults.inspiration.secondarySchoolColor,
+      // Strip demo/example AI guidance so it never masquerades as a real,
+      // user-authored campaign instruction fed into generation prompts.
+      globalAiGuidance: sanitizeGlobalAiGuidance(
+        raw.inspiration?.globalAiGuidance ?? defaults.inspiration.globalAiGuidance,
+      ),
+    },
+    defaults.inspiration,
+  );
 
   const milestones = [...(raw.milestones ?? defaults.milestones)]
     .map((milestone, index) => {
@@ -363,6 +350,9 @@ export function normalizeCampaignBuilderSession(
         purpose: sanitizeSeedPurpose(milestone.purpose, name),
         statusTag: milestone.statusTag ?? "not-started",
         sortOrder: milestone.sortOrder ?? index,
+        creativeOverrides: normalizeMilestoneCreativeOverrides(
+          milestone.creativeOverrides,
+        ),
       };
     })
     .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -385,12 +375,6 @@ export function normalizeCampaignBuilderSession(
     rawMilestones,
     defaults,
   );
-
-  if (typeof fetch === "function") {
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H4',location:'normalize-session.ts:normalizeCampaignBuilderSession',message:'normalize raw -> final milestones',data:{rawMilestonesWasProvided:raw.milestones!==undefined,rawMilestoneIds:(raw.milestones??[]).map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),finalMilestoneIds:milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
-  }
 
   return {
     ...defaults,

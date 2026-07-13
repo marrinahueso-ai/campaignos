@@ -128,9 +128,18 @@ async function resolveBrandContextForGenerationUncached(
 export async function resolveSelectedLogoForGeneration(input: {
   selectedLogoId: string | null;
   includeLogoInArtwork: boolean;
+  uploadedLogoUrl?: string | null;
+  uploadedLogoLabel?: string | null;
 }): Promise<{ url: string | null; label: string | null }> {
   if (!input.includeLogoInArtwork || !input.selectedLogoId) {
     return { url: null, label: null };
+  }
+
+  if (input.uploadedLogoUrl?.trim()) {
+    return {
+      url: input.uploadedLogoUrl.trim(),
+      label: input.uploadedLogoLabel?.trim() || "Uploaded logo",
+    };
   }
 
   const [organization, schoolProfile] = await Promise.all([

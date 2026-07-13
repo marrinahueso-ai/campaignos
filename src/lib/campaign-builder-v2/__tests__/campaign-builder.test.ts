@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { playbookRelativeDay } from "../campaign-timing.ts";
-import { normalizeCampaignBuilderSession } from "../normalize-session.ts";
-import { buildDefaultSession } from "../seed-data.ts";
+import {
+  hydrateCampaignBuilderSession,
+  mergeCampaignBuilderSessions,
+  normalizeCampaignBuilderSession,
+} from "../normalize-session.ts";
+import { buildDefaultSession, localSessionKey } from "../seed-data.ts";
+import { toCreativeConfiguration } from "../creative-config.ts";
 import {
   isStaleSeedNote,
   sanitizeGlobalAiGuidance,
@@ -36,11 +41,17 @@ const baseInspiration: CampaignBuilderInspiration = {
   eventDate: "2026-08-17",
   playbookId: "school-6-week",
   inspirationImages: [],
+  inspirationOverallComment: "",
   brandKitId: "ees-pto",
   voiceTone: "Friendly, Exciting, Welcoming",
+  voiceToneValues: ["Friendly", "Exciting", "Welcoming"],
   globalAiGuidance: "Vintage school look",
   selectedLogoId: null,
   includeLogoInArtwork: false,
+  uploadedLogoUrl: null,
+  uploadedLogoLabel: null,
+  colorMode: "none",
+  customPaletteColors: [],
   useSchoolColors: false,
   primarySchoolColor: null,
   secondarySchoolColor: null,
@@ -343,6 +354,12 @@ describe("normalizeCampaignBuilderSession", () => {
     );
 
     assert.equal(normalized.inspiration.globalAiGuidance, "");
+    assert.equal(normalized.inspiration.colorMode, "none");
+    assert.equal(normalized.inspiration.voiceTone, "");
+    assert.deepEqual(normalized.inspiration.voiceToneValues, []);
+    assert.equal(normalized.inspiration.includeLogoInArtwork, false);
+    assert.equal(normalized.inspiration.selectedLogoId, null);
+    assert.equal(normalized.inspiration.useSchoolColors, false);
     for (const milestone of normalized.milestones) {
       assert.equal(
         milestone.artworkNotes,
@@ -411,6 +428,191 @@ describe("sanitizeGlobalAiGuidance", () => {
     assert.equal(sanitizeGlobalAiGuidance("   "), "");
     assert.equal(sanitizeGlobalAiGuidance(null), "");
     assert.equal(sanitizeGlobalAiGuidance(undefined), "");
+  });
+});
+
+describe("localSessionKey — per-campaign isolation", () => {
+  it("keys local storage by eventId so two campaigns never share a slot", () => {
+    const keyA = localSessionKey("event-aaa");
+    const keyB = localSessionKey("event-bbb");
+    assert.notEqual(keyA, keyB);
+    assert.match(keyA, /event-aaa$/);
+    assert.match(keyB, /event-bbb$/);
+  });
+});
+
+describe("hydrateCampaignBuilderSession — persistence, reload, and isolation", () => {
+  it("save + reload survives explicit None, comments, custom colors, tone, and empty notes", () => {
+    const saved = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          inspirationImages: [
+            { id: "img-1", label: "poster", url: "https://x/a.png", comment: "Keep the sunset colors" },
+          ],
+          inspirationOverallComment: "Bright and playful",
+          selectedLogoId: null,
+          includeLogoInArtwork: false,
+          includeLogoInArtworkUserSet: true,
+          colorMode: "custom_palette",
+          customPaletteColors: ["#ff00aa", "#00aaff"],
+          voiceToneValues: [],
+          voiceTone: "",
+          globalAiGuidance: "",
+        },
+      },
+      "evt-reload",
+      "Fall Festival",
+      "2026-10-10",
+    );
+
+    // Simulate a page reload: re-hydrate the exact same saved shape again.
+    const reloaded = hydrateCampaignBuilderSession(
+      saved,
+      null,
+      "evt-reload",
+      "Fall Festival",
+      "2026-10-10",
+      true,
+    );
+
+    assert.equal(
+      reloaded.inspiration.inspirationImages[0]?.comment,
+      "Keep the sunset colors",
+    );
+    assert.equal(reloaded.inspiration.inspirationOverallComment, "Bright and playful");
+    assert.equal(reloaded.inspiration.includeLogoInArtwork, false);
+    assert.equal(reloaded.inspiration.selectedLogoId, null);
+    assert.equal(reloaded.inspiration.colorMode, "custom_palette");
+    assert.deepEqual(reloaded.inspiration.customPaletteColors, ["#ff00aa", "#00aaff"]);
+    assert.deepEqual(reloaded.inspiration.voiceToneValues, []);
+    assert.equal(reloaded.inspiration.globalAiGuidance, "");
+
+    const config = toCreativeConfiguration(reloaded.inspiration);
+    assert.equal(config.logo.enabled, false);
+    assert.equal(config.voiceTone.enabled, false);
+    assert.equal(config.notesToAI, null);
+  });
+
+  it("two campaigns never leak inspiration/logo/color selections into each other", () => {
+    const campaignA = normalizeCampaignBuilderSession(
+      {
+        inspiration: {
+          selectedLogoId: "logo-a",
+          includeLogoInArtwork: true,
+          includeLogoInArtworkUserSet: true,
+          colorMode: "organization_palette",
+        },
+      },
+      "evt-a",
+      "Campaign A",
+      "2026-09-01",
+    );
+    const campaignB = normalizeCampaignBuilderSession(
+      {},
+      "evt-b",
+      "Campaign B",
+      "2026-09-15",
+    );
+
+    assert.equal(campaignA.inspiration.includeLogoInArtwork, true);
+    assert.equal(campaignB.inspiration.includeLogoInArtwork, false);
+    assert.equal(campaignB.inspiration.selectedLogoId, null);
+    assert.equal(campaignB.inspiration.colorMode, "none");
+    assert.notEqual(campaignA.eventId, campaignB.eventId);
+  });
+
+  it("falls back to the local copy (not seed defaults) when the server read fails, so a failed read never resurrects deleted milestones", () => {
+    const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const localOnly = {
+      ...defaults,
+      milestones: defaults.milestones.slice(0, 2),
+      previewContents: defaults.previewContents.slice(0, 2),
+    };
+
+    // base === {} simulates a failed/empty server read (serverLoadSucceeded=false).
+    const hydrated = hydrateCampaignBuilderSession(
+      {},
+      localOnly,
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+      false,
+    );
+
+    assert.equal(hydrated.milestones.length, 2);
+  });
+
+  it("trusts the server copy over local when the server read succeeded", () => {
+    const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const serverCopy = {
+      ...defaults,
+      milestones: defaults.milestones.slice(0, 3),
+      previewContents: defaults.previewContents.slice(0, 3),
+    };
+    const staleLocal = {
+      ...defaults,
+      milestones: defaults.milestones.slice(0, 1),
+      previewContents: defaults.previewContents.slice(0, 1),
+    };
+
+    const hydrated = hydrateCampaignBuilderSession(
+      serverCopy,
+      staleLocal,
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+      true,
+    );
+
+    assert.equal(hydrated.milestones.length, 3);
+  });
+
+  it("legacy campaign migration: a saved session predating Creative Setup fields normalizes to explicit None, not invented defaults", () => {
+    const legacyRaw = {
+      inspiration: {
+        campaignId: "evt-legacy",
+        campaignName: "Legacy Campaign",
+        eventDate: "2026-08-17",
+        playbookId: "school-6-week",
+        inspirationImages: [],
+        brandKitId: "ees-pto",
+        // Legacy shape: only the old single checkbox + string tone existed.
+        useSchoolColors: true,
+        voiceTone: "Friendly, Exciting, Welcoming",
+      },
+    };
+
+    const migrated = normalizeCampaignBuilderSession(
+      legacyRaw,
+      "evt-legacy",
+      "Legacy Campaign",
+      "2026-08-17",
+    );
+
+    assert.equal(migrated.inspiration.colorMode, "none");
+    assert.equal(migrated.inspiration.useSchoolColors, false);
+    assert.deepEqual(migrated.inspiration.voiceToneValues, []);
+    const config = toCreativeConfiguration(migrated.inspiration);
+    assert.equal(config.colors.mode, "none");
+    assert.equal(config.voiceTone.enabled, false);
+  });
+});
+
+describe("mergeCampaignBuilderSessions", () => {
+  it("prefers the richer (artwork-bearing) preview content between two copies", () => {
+    const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const withArtwork = {
+      ...defaults,
+      previewContents: defaults.previewContents.map((content, index) =>
+        index === 0
+          ? { ...content, artwork: { feedUrl: "https://x/feed.png", storyUrl: null } }
+          : content,
+      ),
+    };
+    const withoutArtwork = defaults;
+
+    const merged = mergeCampaignBuilderSessions(withoutArtwork, withArtwork);
+    assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/feed.png");
   });
 });
 

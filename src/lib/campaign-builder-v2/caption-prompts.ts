@@ -17,6 +17,9 @@ import type {
 } from "@/lib/campaign-builder-v2/types";
 
 function mapVoiceToneToMetaTone(voiceTone: string): MetaCaptionTone {
+  if (!voiceTone.trim()) {
+    return "Friendly";
+  }
   const normalized = voiceTone.toLowerCase();
   if (normalized.includes("professional") || normalized.includes("informative")) {
     return "Professional";
@@ -144,7 +147,9 @@ export function buildCampaignBuilderCaptionPrompts(input: {
     input.inspiration.globalAiGuidance.trim()
       ? `Global creative direction (interpret intent): ${input.inspiration.globalAiGuidance.trim()}`
       : null,
-    `Voice / tone setting: ${input.inspiration.voiceTone}`,
+    input.inspiration.voiceTone.trim()
+      ? `Voice / tone setting: ${input.inspiration.voiceTone}`
+      : null,
     "",
     CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
     CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,

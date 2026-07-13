@@ -134,6 +134,11 @@ export async function persistInspirationImages(
       label: image.label,
       url,
       previewUrl: url ?? image.previewUrl ?? null,
+      // Preserve the per-image AI comment through persistence — without this,
+      // resolving inspiration for generation (and writing the result back
+      // into session state) silently wiped every inspiration image comment
+      // the user had typed after the very first generation call.
+      comment: image.comment?.trim() ? image.comment.trim() : undefined,
     });
   }
 

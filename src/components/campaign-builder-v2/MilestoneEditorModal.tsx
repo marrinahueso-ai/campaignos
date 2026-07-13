@@ -8,9 +8,39 @@ import { Textarea } from "@/components/ui/Textarea";
 import { PLATFORM_FORMAT_OPTIONS } from "@/lib/campaign-builder-v2/platform-utils";
 import type {
   CampaignBuilderMilestone,
+  MilestoneCreativeOverrides,
   MilestoneStatusTag,
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
+
+type OverrideMode = "inherit" | "none";
+
+function readOverrideMode(
+  formData: FormData,
+  field: string,
+): OverrideMode {
+  return formData.get(field) === "none" ? "none" : "inherit";
+}
+
+/** Only logo/colors are supported here — "selected" per-milestone values (e.g. a
+ * different logo than the campaign default) are not exposed in this minimal UI yet. */
+function buildCreativeOverridesPatch(formData: FormData): MilestoneCreativeOverrides | undefined {
+  const logoMode = readOverrideMode(formData, "logoOverrideMode");
+  const colorsMode = readOverrideMode(formData, "colorsOverrideMode");
+
+  if (logoMode === "inherit" && colorsMode === "inherit") {
+    return undefined;
+  }
+
+  const overrides: MilestoneCreativeOverrides = {};
+  if (logoMode === "none") {
+    overrides.logo = { mode: "none" };
+  }
+  if (colorsMode === "none") {
+    overrides.colors = { mode: "none" };
+  }
+  return overrides;
+}
 
 export function readMilestoneEditorPatch(
   form: HTMLFormElement,
@@ -28,6 +58,7 @@ export function readMilestoneEditorPatch(
     captionNotes: String(formData.get("captionNotes") ?? ""),
     statusTag: String(formData.get("statusTag") ?? "not-started") as MilestoneStatusTag,
     platformFormats,
+    creativeOverrides: buildCreativeOverridesPatch(formData),
   };
 }
 
@@ -140,6 +171,43 @@ export function MilestoneEditorModal({
           rows={3}
           placeholder="Tone, CTA, and messaging notes for captions..."
         />
+
+        <fieldset className="space-y-2">
+          <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+            Creative overrides for this milestone
+          </legend>
+          <p className="text-xs text-cos-muted">
+            By default this milestone inherits the campaign&apos;s logo and
+            color settings from Your Creative Setup. Choose None to opt this
+            milestone out — it will never fall back to the campaign setting.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              label="Logo"
+              name="logoOverrideMode"
+              defaultValue={
+                milestone.creativeOverrides?.logo?.mode === "none"
+                  ? "none"
+                  : "inherit"
+              }
+            >
+              <option value="inherit">Inherit from campaign</option>
+              <option value="none">None for this milestone</option>
+            </Select>
+            <Select
+              label="Colors"
+              name="colorsOverrideMode"
+              defaultValue={
+                milestone.creativeOverrides?.colors?.mode === "none"
+                  ? "none"
+                  : "inherit"
+              }
+            >
+              <option value="inherit">Inherit from campaign</option>
+              <option value="none">None for this milestone</option>
+            </Select>
+          </div>
+        </fieldset>
 
         <Select
           label="Status tag"

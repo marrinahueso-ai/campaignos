@@ -1,3 +1,4 @@
+import { NO_BRAND_KIT_ID } from "./brand-kit.ts";
 import { defaultEnabledFormats, emptyMilestoneArtwork } from "./platform-utils.ts";
 import type {
   ApprovalWorkflowStep,
@@ -16,12 +17,13 @@ export const DEFAULT_PLAYBOOK_OPTIONS: PlaybookOption[] = [
 ];
 
 export const DEFAULT_BRAND_KIT_OPTIONS: BrandKitOption[] = [
-  { id: "none", name: "No brand kit" },
+  { id: NO_BRAND_KIT_ID, name: "No brand kit" },
   { id: "ees-pto", name: "EES PTO Brand Kit" },
   { id: "district", name: "District Brand Kit" },
   { id: "custom", name: "Custom Brand Kit" },
 ];
 
+/** Legacy single-select labels kept for older caption modal fallbacks. */
 export const DEFAULT_VOICE_TONE_OPTIONS = [
   "Friendly, Exciting, Welcoming",
   "Professional, Informative",
@@ -40,11 +42,19 @@ export function buildDefaultInspiration(
     eventDate: eventDate || "2026-08-15",
     playbookId: "school-6-week",
     inspirationImages: [],
-    brandKitId: "ees-pto",
-    voiceTone: DEFAULT_VOICE_TONE_OPTIONS[0],
+    inspirationOverallComment: "",
+    brandKitId: NO_BRAND_KIT_ID,
+    // Explicit None — never auto-select a tone for new campaigns.
+    voiceTone: "",
+    voiceToneValues: [],
     selectedLogoId: null,
     includeLogoInArtwork: false,
-    useSchoolColors: true,
+    uploadedLogoUrl: null,
+    uploadedLogoLabel: null,
+    colorMode: "none",
+    customPaletteColors: [],
+    // Explicit None — do not auto-apply organization colors.
+    useSchoolColors: false,
     primarySchoolColor: null,
     secondarySchoolColor: null,
     // Never pre-fill AI guidance with example/demo copy — it must stay

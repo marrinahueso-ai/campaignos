@@ -34,6 +34,7 @@ import {
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
 import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
 import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
+import { normalizeCreativeSelections } from "@/lib/campaign-builder-v2/creative-config";
 import {
   DEFAULT_BRAND_KIT_OPTIONS,
   DEFAULT_PLAYBOOK_OPTIONS,
@@ -110,6 +111,11 @@ interface CampaignBuilderContextValue {
   selectCampaign: (campaignId: string) => void;
   addInspirationImage: (file: File) => void;
   removeInspirationImage: (imageId: string) => void;
+  updateInspirationImage: (
+    imageId: string,
+    patch: Partial<CampaignBuilderInspiration["inspirationImages"][number]>,
+  ) => void;
+  uploadCampaignLogo: (file: File) => Promise<void>;
   setMilestones: (milestones: CampaignBuilderMilestone[]) => void;
   reorderMilestones: (fromIndex: number, toIndex: number) => void;
   moveMilestone: (id: string, direction: "up" | "down") => void;
@@ -119,6 +125,8 @@ interface CampaignBuilderContextValue {
   duplicateMilestone: (id: string) => void;
   suggestMilestones: () => Promise<void>;
   flushSave: () => Promise<void>;
+  /** Normalize creative None/empty, persist session, go to milestones — never generates. */
+  saveCreativeSetupAndContinue: () => Promise<{ success: boolean; message?: string }>;
   generateMilestoneContent: (
     milestoneId: string,
     options?: {
@@ -340,6 +348,43 @@ export function CampaignBuilderProvider({
     await persistSession(sessionRef.current);
   }, [persistSession]);
 
+  /**
+   * Creative Setup primary CTA: normalize None/empty, save session, navigate
+   * to milestones. Never generates artwork/captions or marks milestones complete.
+   */
+  const saveCreativeSetupAndContinue = useCallback(async () => {
+    const pendingUpload = sessionRef.current.inspiration.inspirationImages.some(
+      (image) => !image.url && image.previewUrl?.startsWith("blob:"),
+    );
+    if (pendingUpload) {
+      return {
+        success: false,
+        message:
+          "Wait for inspiration image uploads to finish before continuing.",
+      };
+    }
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    const normalizedInspiration = normalizeCreativeSelections(
+      sessionRef.current.inspiration,
+    );
+    const next = {
+      ...sessionRef.current,
+      inspiration: normalizedInspiration,
+      currentStep: "milestones" as const,
+    };
+    sessionRef.current = next;
+    setSession(next);
+    setLocationHash("milestones");
+    setCurrentStep("milestones");
+    await persistSession(next);
+    return { success: true };
+  }, [persistSession]);
+
   const updateSession = useCallback(
     (updater: (prev: CampaignBuilderSession) => CampaignBuilderSession) => {
       setSession((prev) => {
@@ -376,10 +421,6 @@ export function CampaignBuilderProvider({
         );
       });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H2',location:'CampaignBuilderProvider.tsx:mountEffect',message:'mount hydration effect fired',data:{initialSessionMilestoneIds:(initialSession.milestones??[]).map(m=>({id:m.id,name:m.name})),prevMilestoneIds:prev.milestones.map(m=>({id:m.id,name:m.name})),hydratedMilestoneIds:hydrated.milestones.map(m=>({id:m.id,name:m.name})),willReplacePrev:changed||hydrated.previewContents.length!==prev.previewContents.length},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion agent log
-
       if (!changed && hydrated.previewContents.length === prev.previewContents.length) {
         return prev;
       }
@@ -411,10 +452,6 @@ export function CampaignBuilderProvider({
         }
         return previous.generationStatus !== content.generationStatus;
       });
-
-      // #region agent log
-      fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H3',location:'CampaignBuilderProvider.tsx:reconcilePreviewStatuses',message:'reconcilePreviewStatuses ran (Preview step mount)',data:{prevMilestoneIds:prev.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),nextMilestoneIds:next.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),localStorageMilestoneIds:(loadLocalSession(eventId)?.milestones??[]).map(m=>({id:m.id,name:m.name})),changed},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion agent log
 
       if (!changed) {
         return prev;
@@ -558,18 +595,76 @@ export function CampaignBuilderProvider({
         if (removed?.previewUrl?.startsWith("blob:")) {
           URL.revokeObjectURL(removed.previewUrl);
         }
+        const inspirationImages = prev.inspiration.inspirationImages.filter(
+          (image) => image.id !== imageId,
+        );
+        const dropInspirationPalette =
+          inspirationImages.length === 0 &&
+          prev.inspiration.colorMode === "inspiration_palette";
         return {
           ...prev,
           inspiration: {
             ...prev.inspiration,
-            inspirationImages: prev.inspiration.inspirationImages.filter(
-              (image) => image.id !== imageId,
-            ),
+            inspirationImages,
+            ...(dropInspirationPalette
+              ? {
+                  colorMode: "none" as const,
+                  useSchoolColors: false,
+                }
+              : {}),
           },
         };
       });
     },
     [updateSession],
+  );
+
+  const updateInspirationImage = useCallback(
+    (
+      imageId: string,
+      patch: Partial<CampaignBuilderInspiration["inspirationImages"][number]>,
+    ) => {
+      updateSession((prev) => ({
+        ...prev,
+        inspiration: {
+          ...prev.inspiration,
+          inspirationImages: prev.inspiration.inspirationImages.map((image) =>
+            image.id === imageId ? { ...image, ...patch } : image,
+          ),
+        },
+      }));
+    },
+    [updateSession],
+  );
+
+  const uploadCampaignLogo = useCallback(
+    async (file: File) => {
+      const imageId = `logo-upload-${Date.now()}`;
+      setInspirationUploadError(null);
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("label", file.name);
+      formData.set("id", imageId);
+      const result = await uploadInspirationImageAction(eventId, formData);
+      if (!result.success || !result.image?.url) {
+        setInspirationUploadError(
+          result.message || "Could not upload logo.",
+        );
+        return;
+      }
+      updateSession((prev) => ({
+        ...prev,
+        inspiration: {
+          ...prev.inspiration,
+          selectedLogoId: imageId,
+          includeLogoInArtwork: true,
+          includeLogoInArtworkUserSet: true,
+          uploadedLogoUrl: result.image!.url,
+          uploadedLogoLabel: file.name,
+        },
+      }));
+    },
+    [eventId, updateSession],
   );
 
   const setMilestones = useCallback(
@@ -683,9 +778,6 @@ export function CampaignBuilderProvider({
             ? (milestones[0]?.id ?? null)
             : prev.selectedMilestoneId;
         const sorted = sortMilestones(milestones);
-        // #region agent log
-        fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H1',location:'CampaignBuilderProvider.tsx:removeMilestone',message:'removeMilestone called',data:{removedId:id,beforeIds:prev.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),afterIds:sorted.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder}))},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion agent log
         return {
           ...prev,
           milestones: sorted,
@@ -978,9 +1070,6 @@ export function CampaignBuilderProvider({
       sessionRef.current.milestones,
       sessionRef.current.previewContents,
     );
-    // #region agent log
-    fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H5',location:'CampaignBuilderProvider.tsx:generateNextMilestone',message:'generateNextMilestone picked target',data:{allMilestones:sessionRef.current.milestones.map(m=>({id:m.id,name:m.name,sortOrder:m.sortOrder})),chosenNext:next?{id:next.id,name:next.name,sortOrder:next.sortOrder}:null},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     if (!next) {
       return {
         success: false,
@@ -1192,6 +1281,8 @@ export function CampaignBuilderProvider({
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,
+      updateInspirationImage,
+      uploadCampaignLogo,
       setMilestones,
       reorderMilestones,
       moveMilestone,
@@ -1201,6 +1292,7 @@ export function CampaignBuilderProvider({
       duplicateMilestone,
       suggestMilestones,
       flushSave,
+      saveCreativeSetupAndContinue,
       generateMilestoneContent,
       generateNextMilestone,
       generateAllContent,
@@ -1234,6 +1326,8 @@ export function CampaignBuilderProvider({
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,
+      updateInspirationImage,
+      uploadCampaignLogo,
       setMilestones,
       reorderMilestones,
       moveMilestone,
@@ -1243,6 +1337,7 @@ export function CampaignBuilderProvider({
       duplicateMilestone,
       suggestMilestones,
       flushSave,
+      saveCreativeSetupAndContinue,
       generateMilestoneContent,
       generateNextMilestone,
       generateAllContent,

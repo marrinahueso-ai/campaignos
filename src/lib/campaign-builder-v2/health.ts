@@ -146,7 +146,7 @@ export function computeStepperStates(
       inspirationComplete,
       currentStep === "inspiration",
       false,
-      inspirationComplete ? "Complete" : "Add campaign details",
+      inspirationComplete ? "Complete" : "Optional — guide AI or skip",
     ),
     milestones: statusForStep(
       "milestones",

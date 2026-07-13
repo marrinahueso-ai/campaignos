@@ -90,9 +90,8 @@ export default async function CampaignBuilderPage({
     event.date,
   );
 
-  if (!initialSession.inspiration.selectedLogoId && logoOptions[0]) {
-    initialSession.inspiration.selectedLogoId = logoOptions[0].id;
-  }
+  // Keep org colors available for the organization_palette mode, but do not
+  // auto-select logo, colors, or tone — Creative Setup starts at explicit None.
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
 

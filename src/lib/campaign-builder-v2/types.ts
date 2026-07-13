@@ -54,6 +54,8 @@ export interface InspirationImage {
   label: string;
   url: string | null;
   previewUrl?: string | null;
+  /** Optional per-image note for AI (Creative Setup). */
+  comment?: string;
 }
 
 /** Client-to-server payload — includes base64 for blob previews pending upload. */
@@ -70,22 +72,77 @@ export interface CampaignOption {
   description: string;
 }
 
+/** Mutually exclusive color modes for Creative Setup. */
+export type CreativeColorMode =
+  | "none"
+  | "organization_palette"
+  | "inspiration_palette"
+  | "custom_palette";
+
+/**
+ * Campaign foundation + Creative Setup selections.
+ * Creative fields default to explicit None — never auto-select org logo/colors/tone.
+ */
 export interface CampaignBuilderInspiration {
   campaignId: string;
   campaignName: string;
   eventDate: string;
   playbookId: string;
   inspirationImages: InspirationImage[];
+  /** Overall note applied when inspiration images are present. */
+  inspirationOverallComment: string;
   brandKitId: string;
+  /** Joined voice tones for prompts; empty string = None. */
   voiceTone: string;
+  /** Multi-select voice/tone chips; empty = None. */
+  voiceToneValues: string[];
   selectedLogoId: string | null;
   includeLogoInArtwork: boolean;
-  /** Set when the user toggles logo inclusion in Inspiration — not auto-defaulted on page load. */
+  /** Set when the user toggles logo inclusion — not auto-defaulted on page load. */
   includeLogoInArtworkUserSet?: boolean;
+  /** Session-uploaded logo (not from org brand kit). */
+  uploadedLogoUrl?: string | null;
+  uploadedLogoLabel?: string | null;
+  /** Authoritative color selection mode (None by default). */
+  colorMode: CreativeColorMode;
+  /** Custom swatches when colorMode === "custom_palette". */
+  customPaletteColors: string[];
+  /** Derived from colorMode === "organization_palette" for legacy prompt paths. */
   useSchoolColors: boolean;
   primarySchoolColor: string | null;
   secondarySchoolColor: string | null;
+  /** Notes to AI — blank means null/unused downstream. */
   globalAiGuidance: string;
+}
+
+/**
+ * Explicit per-milestone override of a campaign-level creative setting.
+ * "inherit" (the default / absent) means use the campaign Creative Setup
+ * value as-is. "none" is a real, explicit opt-out for this milestone only —
+ * it must never fall back to the campaign value. "selected" carries a
+ * milestone-specific value that replaces the campaign value for this
+ * milestone only.
+ */
+export type CreativeOverride<T> =
+  | { mode: "inherit" }
+  | { mode: "none" }
+  | { mode: "selected"; value: T };
+
+export interface MilestoneLogoOverrideValue {
+  logoId: string;
+  logoUrl?: string | null;
+  logoName?: string | null;
+}
+
+export interface MilestoneColorsOverrideValue {
+  mode: CreativeColorMode;
+  colors?: string[];
+}
+
+/** Optional per-milestone overrides of the campaign Creative Setup. Absent = inherit. */
+export interface MilestoneCreativeOverrides {
+  logo?: CreativeOverride<MilestoneLogoOverrideValue>;
+  colors?: CreativeOverride<MilestoneColorsOverrideValue>;
 }
 
 export interface CampaignBuilderMilestone {
@@ -100,6 +157,8 @@ export interface CampaignBuilderMilestone {
   captionNotes: string;
   statusTag: MilestoneStatusTag;
   sortOrder: number;
+  /** Explicit inherit/selected/none overrides of campaign logo + colors. Absent = inherit everything. */
+  creativeOverrides?: MilestoneCreativeOverrides;
 }
 
 export interface PlatformCaption {
