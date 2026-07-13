@@ -38,10 +38,6 @@ function parsePlaybookInput(formData: FormData): PlaybookEditorInput | { error: 
   const description = formData.get("description")?.toString().trim() || null;
   const eventType = formData.get("eventType")?.toString() as EventType;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7710/ingest/65b4eb47-1dbb-4922-9af8-eb0ebff6bcb2',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'311bfb'},body:JSON.stringify({sessionId:'311bfb',hypothesisId:'H1',location:'actions.ts:parsePlaybookInput',message:'parsed form input on server',data:{rawEventType:formData.get('eventType'),eventType:eventType ?? null,name:name ?? null},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion agent log
-
   if (!name) {
     return { error: "Playbook name is required." };
   }
