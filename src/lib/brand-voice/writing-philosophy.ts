@@ -68,6 +68,7 @@ const EVENT_EMOTION_KEYWORDS: Array<{ keywords: string[]; target: string }> = [
 
 const STAGE_EMOTION_FALLBACK: Record<CampaignStageId, string> = {
   announcement: "Curiosity and welcome",
+  push: "Momentum and excitement",
   reminder: "Anticipation and belonging",
   day_before: "Excitement and readiness",
   today: "Energy and celebration",

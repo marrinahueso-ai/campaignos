@@ -16,6 +16,10 @@ const STAGE_PRIMARY_CTAS: Record<
     text: "Make room on the family calendar",
     action: "encourage families to note the verified event date in a warm, human way",
   },
+  push: {
+    text: "Two weeks to go — let's build the excitement",
+    action: "build momentum with a fresh reason to get involved, using verified event details",
+  },
   reminder: {
     text: "We'd love to see you there",
     action: "prompt families to participate using verified event details only — no corporate reminder tone",

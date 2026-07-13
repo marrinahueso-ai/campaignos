@@ -11,6 +11,11 @@ const STAGE_INTENTS: Record<CampaignStageId, Omit<CommunicationIntent, "messagin
     focus: "the most warm or meaningful part of the event, then verified when/where",
     desiredEmotion: "curious, welcomed, and looking forward to it",
   },
+  push: {
+    goal: "build momentum toward the event — keep it top of mind with fresh energy, not a repeat of the announcement",
+    focus: "a new angle on why this event matters, plus a verified detail that helps families plan ahead",
+    desiredEmotion: "excited and motivated to get involved",
+  },
   reminder: {
     goal: "re-ignite anticipation — families should feel the moment approaching",
     focus: "fresh emotional angle plus one verified detail not yet emphasized",
