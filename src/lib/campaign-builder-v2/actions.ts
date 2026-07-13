@@ -491,6 +491,12 @@ export async function generateAllContentAction(
     );
 
     if (resolved.error) {
+      const { reportFailedAction } = await import("@/lib/monitoring/report-error");
+      reportFailedAction("ai", {
+        action: "generateAllContentAction.resolveInspiration",
+        eventId: input.eventId,
+        message: resolved.error,
+      });
       return {
         success: false,
         results: [],
@@ -545,6 +551,16 @@ export async function generateAllContentAction(
           generationStatusBefore: preview?.generationStatus ?? null,
           generationStatusAfter: "failed",
           phase: "failed",
+          message:
+            artworkGeneration.message ||
+            `Could not generate artwork for "${milestone.name}".`,
+        });
+
+        const { reportFailedAction } = await import("@/lib/monitoring/report-error");
+        reportFailedAction("ai", {
+          action: "generateAllContentAction.artwork",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
           message:
             artworkGeneration.message ||
             `Could not generate artwork for "${milestone.name}".`,
@@ -653,6 +669,10 @@ export async function generateAllContentAction(
       updatedInspiration: resolved.inspiration,
     };
   } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("ai", error, { action: "generateAllContentAction" });
     const message =
       error instanceof Error ? error.message : "Content generation failed.";
     return {

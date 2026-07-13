@@ -1214,6 +1214,15 @@ export function CampaignBuilderProvider({
           sessionRef.current = failedBase;
           setSession(failedBase);
           await persistSession(failedBase);
+          const { reportFailedAction } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          reportFailedAction("ai", {
+            action: "generateMilestoneContent",
+            eventId: workingBase.eventId,
+            milestoneId,
+            message: result.message || "Artwork generation failed.",
+          });
           return { success: false, message: result.message };
         }
 
@@ -1273,6 +1282,16 @@ export function CampaignBuilderProvider({
         sessionRef.current = failedBase;
         setSession(failedBase);
         await persistSession(failedBase);
+
+        const { reportIntegrationError } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportIntegrationError("ai", error, {
+          action: "generateMilestoneContent",
+          eventId: sessionRef.current.eventId,
+          milestoneId,
+          message,
+        });
 
         return { success: false, message };
       } finally {

@@ -23,6 +23,8 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/sitemap.xml",
   "/api/cron",
+  "/api/sentry-verify",
+  "/dev/sentry-verify",
   "/api/monday/oauth/callback",
   "/api/canva/oauth/callback",
   "/api/meta/oauth/callback",

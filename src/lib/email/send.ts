@@ -65,6 +65,14 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   });
 
   if (error) {
+    const { reportIntegrationError, reportFailedAction } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("resend", error, { action: "sendEmail" });
+    reportFailedAction("resend", {
+      action: "sendEmail",
+      message: error.message,
+    });
     return {
       success: false,
       error: error.message,

@@ -151,6 +151,16 @@ export async function sendCampaignBuilderForApproval(
 
       if (error) {
         console.error("Failed to update approval scheduling item:", error.message);
+        const { reportFailedAction } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportFailedAction("approvals", {
+          action: "sendCampaignBuilderForApproval.update",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          organizationId: organization.id,
+          message: error.message,
+        });
         continue;
       }
 
@@ -173,6 +183,16 @@ export async function sendCampaignBuilderForApproval(
 
       if (error || !inserted?.id) {
         console.error("Failed to create approval scheduling item:", error?.message);
+        const { reportFailedAction } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportFailedAction("approvals", {
+          action: "sendCampaignBuilderForApproval.insert",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          organizationId: organization.id,
+          message: error?.message || "Unable to create approval scheduling item.",
+        });
         continue;
       }
 

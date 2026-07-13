@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 import { MAX_EVENT_ASSET_BYTES } from "./src/lib/event-workspace/storage";
 
 const nextConfig: NextConfig = {
@@ -39,4 +40,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const sentryEnabled = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()) &&
+  process.env.SENTRY_ENABLED !== "false";
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Only upload source maps when an auth token is present (CI / Vercel).
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  automaticVercelMonitors: false,
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN || !sentryEnabled,
+  },
+  telemetry: false,
+});

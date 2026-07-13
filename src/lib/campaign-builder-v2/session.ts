@@ -27,6 +27,12 @@ export async function saveCampaignBuilderSessionAction(
 
   if (error) {
     console.error("Failed to save campaign builder session:", error.message);
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("supabase", error, {
+      action: "saveCampaignBuilderSessionAction",
+    });
     return {
       success: false,
       message: "Could not save to database — using local backup.",

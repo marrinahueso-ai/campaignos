@@ -17,12 +17,15 @@
     "verify": "bash scripts/verify.sh",
     "test:webhook": "node scripts/test-meta-webhook.mjs",
     "capture:features": "node scripts/capture-feature-screenshots.mjs",
-    "capture:features-videos": "node scripts/capture-feature-videos.mjs"
+    "capture:features-videos": "node scripts/capture-feature-videos.mjs",
+    "test:hey-ralli": "bash scripts/hey-ralli-test.sh",
+    "test:hey-ralli:ui": "bash scripts/hey-ralli-test.sh ui"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@sentry/nextjs": "^10.65.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "clsx": "^2.1.1",
@@ -39,6 +42,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
