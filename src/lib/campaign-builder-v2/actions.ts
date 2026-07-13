@@ -27,7 +27,6 @@ import {
 import { logGenerateAllContentDebug } from "@/lib/campaign-builder-v2/debug";
 import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
 import {
-  syncHeroFromAllMilestoneArtwork,
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
@@ -259,15 +258,6 @@ export async function generateMilestoneArtworkAction(
     existingArtwork: input.previewContent.artwork,
     forceRegenerate: true,
   });
-
-  if (generation.success) {
-    await syncHeroFromMilestoneArtwork({
-      eventId: input.eventId,
-      milestones: input.milestones,
-      milestoneId: input.milestoneId,
-      artwork: generation.artwork,
-    });
-  }
 
   return {
     success: generation.success,
@@ -586,11 +576,11 @@ export async function generateAllContentAction(
       });
     }
 
-    await syncHeroFromAllMilestoneArtwork({
-      eventId: input.eventId,
-      milestones: input.milestones,
-      results,
-    });
+    // Intentionally do NOT sync hero / revalidateEventPaths here.
+    // revalidatePath during generation remounts the campaign builder, strips
+    // the URL hash (resetting to Inspiration), and can overwrite freshly
+    // generated artwork with a stale server session. Hero sync runs later
+    // when the user leaves Preview or publishes.
 
     return {
       success: true,

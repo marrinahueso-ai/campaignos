@@ -89,8 +89,35 @@ function previewContentRichness(content: MilestonePreviewContent): number {
   return score;
 }
 
+function sessionPreviewRichness(
+  session: Partial<CampaignBuilderSession>,
+): number {
+  return (session.previewContents ?? []).reduce(
+    (sum, content) => sum + previewContentRichness(content),
+    0,
+  );
+}
+
+function pickRicherPreview(
+  left: MilestonePreviewContent | undefined,
+  right: MilestonePreviewContent | undefined,
+): MilestonePreviewContent | undefined {
+  if (!left) {
+    return right;
+  }
+  if (!right) {
+    return left;
+  }
+  return previewContentRichness(right) > previewContentRichness(left)
+    ? right
+    : left;
+}
+
 /**
  * Prefer preview rows that carry generated artwork when server and local diverge.
+ * When one side has richer generated content, also prefer that side's milestone
+ * list — otherwise a stale server milestone list (different IDs after a playbook
+ * rebuild) silently orphans local artwork and the next hydrate writes it away.
  */
 export function mergeCampaignBuilderSessions(
   primary: Partial<CampaignBuilderSession>,
@@ -98,45 +125,88 @@ export function mergeCampaignBuilderSessions(
 ): Partial<CampaignBuilderSession> {
   const primaryPreviews = primary.previewContents ?? [];
   const secondaryPreviews = secondary.previewContents ?? [];
-  const secondaryById = new Map(
-    secondaryPreviews.map((content) => [content.milestoneId, content]),
-  );
-  const mergedIds = new Set<string>();
+  const primaryRichness = sessionPreviewRichness(primary);
+  const secondaryRichness = sessionPreviewRichness(secondary);
 
-  const previewContents = primaryPreviews.map((primaryPreview) => {
-    mergedIds.add(primaryPreview.milestoneId);
-    const secondaryPreview = secondaryById.get(primaryPreview.milestoneId);
-    if (!secondaryPreview) {
-      return primaryPreview;
-    }
+  const preferSecondaryMilestones =
+    Boolean(secondary.milestones?.length) &&
+    (!primary.milestones?.length || secondaryRichness > primaryRichness);
 
-    return previewContentRichness(secondaryPreview) >
-      previewContentRichness(primaryPreview)
-      ? secondaryPreview
-      : primaryPreview;
-  });
+  const resultMilestones = preferSecondaryMilestones
+    ? secondary.milestones
+    : (primary.milestones ?? secondary.milestones);
 
   const milestoneIds = new Set(
-    (primary.milestones ?? []).map((milestone) => milestone.id),
+    (resultMilestones ?? []).map((milestone) => milestone.id),
+  );
+  const milestoneNameById = new Map(
+    (resultMilestones ?? []).map((milestone) => [
+      milestone.id,
+      normalizeMilestoneName(milestone.name),
+    ]),
+  );
+  const milestoneIdByName = new Map(
+    (resultMilestones ?? []).map((milestone) => [
+      normalizeMilestoneName(milestone.name),
+      milestone.id,
+    ]),
   );
 
-  for (const secondaryPreview of secondaryPreviews) {
-    if (
-      mergedIds.has(secondaryPreview.milestoneId) ||
-      !milestoneIds.has(secondaryPreview.milestoneId)
-    ) {
-      continue;
+  const previewByMilestoneId = new Map<string, MilestonePreviewContent>();
+
+  const absorbPreview = (preview: MilestonePreviewContent) => {
+    let targetId = preview.milestoneId;
+    if (!milestoneIds.has(targetId)) {
+      // Match by name when IDs churned (playbook rebuild / remount).
+      const name =
+        milestoneNameById.get(preview.milestoneId) ??
+        normalizeMilestoneName(
+          [...(primary.milestones ?? []), ...(secondary.milestones ?? [])].find(
+            (milestone) => milestone.id === preview.milestoneId,
+          )?.name ?? "",
+        );
+      const remappedId = name ? milestoneIdByName.get(name) : undefined;
+      if (!remappedId) {
+        return;
+      }
+      targetId = remappedId;
     }
-    previewContents.push(secondaryPreview);
-    mergedIds.add(secondaryPreview.milestoneId);
+
+    const nextPreview =
+      targetId === preview.milestoneId
+        ? preview
+        : { ...preview, milestoneId: targetId };
+    const existing = previewByMilestoneId.get(targetId);
+    const richer = pickRicherPreview(existing, nextPreview);
+    if (richer) {
+      previewByMilestoneId.set(targetId, richer);
+    }
+  };
+
+  for (const preview of primaryPreviews) {
+    absorbPreview(preview);
+  }
+  for (const preview of secondaryPreviews) {
+    absorbPreview(preview);
   }
 
-  const resultMilestones = primary.milestones ?? secondary.milestones;
+  const previewContents = (resultMilestones ?? []).map((milestone) => {
+    const existing = previewByMilestoneId.get(milestone.id);
+    return existing ?? buildEmptyPreviewContent(milestone);
+  });
+
+  // Prefer the richer side's playbook tracking so a remount does not revert
+  // milestonesPlaybookId to a stale server null/old value.
+  const milestonesPlaybookId =
+    secondaryRichness > primaryRichness
+      ? (secondary.milestonesPlaybookId ?? primary.milestonesPlaybookId ?? null)
+      : (primary.milestonesPlaybookId ?? secondary.milestonesPlaybookId ?? null);
 
   return {
     ...primary,
     ...secondary,
     milestones: resultMilestones,
+    milestonesPlaybookId,
     previewContents,
     selectedMilestoneId:
       primary.selectedMilestoneId ?? secondary.selectedMilestoneId ?? null,
@@ -386,6 +456,7 @@ export function normalizeCampaignBuilderSession(
     eventId,
     inspiration,
     milestones,
+    milestonesPlaybookId: raw.milestonesPlaybookId ?? defaults.milestonesPlaybookId ?? null,
     previewContents,
     expandedReviewMilestoneIds: raw.expandedReviewMilestoneIds ?? [],
     previewTab: normalizePreviewTab(raw.previewTab),

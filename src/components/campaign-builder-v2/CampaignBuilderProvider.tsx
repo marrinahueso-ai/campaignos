@@ -10,7 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import {
   getLocationHash,
   normalizeLocationHash,
@@ -272,6 +271,37 @@ function loadLocalSession(eventId: string): CampaignBuilderSession | null {
   }
 }
 
+function stepSessionKey(eventId: string): string {
+  return `campaign-builder-v2-step:${eventId}`;
+}
+
+function persistBuilderStep(eventId: string, step: CampaignBuilderStepId): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.sessionStorage.setItem(stepSessionKey(eventId), step);
+  } catch {
+    // ignore quota / private mode errors
+  }
+}
+
+function previewSessionRichness(session: CampaignBuilderSession): number {
+  return session.previewContents.reduce((sum, content) => {
+    let score = 0;
+    if (content.artwork.feedUrl || content.artwork.storyUrl) {
+      score += 10;
+    }
+    if (content.captions.some((caption) => caption.text.trim())) {
+      score += 1;
+    }
+    if (content.generationStatus === "generated") {
+      score += 2;
+    }
+    return sum + score;
+  }, 0);
+}
+
 export function CampaignBuilderProvider({
   eventId,
   eventTitle,
@@ -285,7 +315,6 @@ export function CampaignBuilderProvider({
   restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
-  const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
     hydrateCampaignBuilderSession(
       initialSession,
@@ -296,9 +325,25 @@ export function CampaignBuilderProvider({
       restoredFromServer,
     ),
   );
-  const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() =>
-    stepFromHash(typeof window !== "undefined" ? getLocationHash() : ""),
-  );
+  const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() => {
+    const fromHash = stepFromHash(
+      typeof window !== "undefined" ? getLocationHash() : "",
+    );
+    if (typeof window === "undefined") {
+      return fromHash;
+    }
+    const hash = normalizeLocationHash(getLocationHash());
+    if (isValidCampaignBuilderStep(hash)) {
+      return hash;
+    }
+    // Soft remounts (revalidatePath / router.refresh) often strip the hash.
+    // Restore the last step for this event so we don't bounce to Inspiration.
+    const saved = window.sessionStorage.getItem(stepSessionKey(eventId));
+    if (saved && isValidCampaignBuilderStep(saved)) {
+      return saved;
+    }
+    return fromHash;
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [generatingMilestoneId, setGeneratingMilestoneId] = useState<string | null>(
@@ -320,7 +365,8 @@ export function CampaignBuilderProvider({
 
   useEffect(() => {
     currentStepRef.current = currentStep;
-  }, [currentStep]);
+    persistBuilderStep(eventId, currentStep);
+  }, [currentStep, eventId]);
 
   const persistSession = useCallback(async (next: CampaignBuilderSession) => {
     persistLocalSession(next);
@@ -447,9 +493,10 @@ export function CampaignBuilderProvider({
   );
 
   useEffect(() => {
+    const localForHydrate = loadLocalSession(eventId);
     const hydrated = hydrateCampaignBuilderSession(
       initialSession,
-      loadLocalSession(eventId),
+      localForHydrate,
       eventId,
       eventTitle,
       eventDate,
@@ -457,6 +504,13 @@ export function CampaignBuilderProvider({
     );
 
     setSession((prev) => {
+      // Never let a remount hydrate overwrite richer in-memory artwork with a
+      // stale server/default snapshot (this was deleting just-generated images).
+      if (previewSessionRichness(prev) > previewSessionRichness(hydrated)) {
+        persistLocalSession(prev);
+        return prev;
+      }
+
       const changed = hydrated.previewContents.some((content) => {
         const previous = prev.previewContents.find(
           (entry) => entry.milestoneId === content.milestoneId,
@@ -521,14 +575,23 @@ export function CampaignBuilderProvider({
     // reset the builder to the default inspiration step.
     if (!isValidCampaignBuilderStep(normalized)) {
       const lastStep = currentStepRef.current;
-      if (isValidCampaignBuilderStep(lastStep)) {
+      if (isValidCampaignBuilderStep(lastStep) && lastStep !== "inspiration") {
         setLocationHash(lastStep);
+        return;
+      }
+      const saved =
+        typeof window !== "undefined"
+          ? window.sessionStorage.getItem(stepSessionKey(eventId))
+          : null;
+      if (saved && isValidCampaignBuilderStep(saved)) {
+        setLocationHash(saved);
+        setCurrentStep(saved);
         return;
       }
     }
 
     setCurrentStep(stepFromHash(getLocationHash()));
-  }, []);
+  }, [eventId]);
 
   useEffect(() => {
     syncStepFromLocationHash();
@@ -539,11 +602,18 @@ export function CampaignBuilderProvider({
     if (typeof window === "undefined") {
       return;
     }
-    const hash = getLocationHash().replace(/^#/, "");
-    if (!hash) {
-      setLocationHash("inspiration");
+    const hash = normalizeLocationHash(getLocationHash());
+    if (isValidCampaignBuilderStep(hash)) {
+      persistBuilderStep(eventId, hash);
+      return;
     }
-  }, []);
+    const saved = window.sessionStorage.getItem(stepSessionKey(eventId));
+    if (saved && isValidCampaignBuilderStep(saved)) {
+      setLocationHash(saved);
+      return;
+    }
+    setLocationHash("inspiration");
+  }, [eventId]);
 
   const goToStep = useCallback(
     (step: CampaignBuilderStepId) => {
@@ -1060,7 +1130,6 @@ export function CampaignBuilderProvider({
         sessionRef.current = updatedBase;
         setSession(updatedBase);
         await persistSession(updatedBase);
-        router.refresh();
 
         return {
           success: true,
@@ -1098,7 +1167,7 @@ export function CampaignBuilderProvider({
         setGenerationProgress(null);
       }
     },
-    [flushSave, persistSession, playbooks, router],
+    [flushSave, persistSession, playbooks],
   );
 
   const generateMilestoneContent = useCallback(

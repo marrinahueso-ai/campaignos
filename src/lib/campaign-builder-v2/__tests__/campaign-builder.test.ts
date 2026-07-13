@@ -614,6 +614,40 @@ describe("mergeCampaignBuilderSessions", () => {
     const merged = mergeCampaignBuilderSessions(withoutArtwork, withArtwork);
     assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/feed.png");
   });
+
+  it("keeps local playbook milestones + artwork when server list has different ids", () => {
+    const server = buildDefaultSession("evt-2", "Back to School Fair", "2026-08-17");
+    const localMilestone = {
+      ...server.milestones[0],
+      id: "playbook-14-days",
+      name: "14 Days Out",
+      sortOrder: 0,
+    };
+    const local = {
+      ...server,
+      milestones: [localMilestone],
+      milestonesPlaybookId: "pb-back-to-school",
+      previewContents: [
+        {
+          ...server.previewContents[0],
+          milestoneId: "playbook-14-days",
+          generationStatus: "generated" as const,
+          artwork: { feedUrl: "https://x/14-days.png", storyUrl: null },
+          captions: [
+            { platform: "facebook" as const, text: "See you at the fair!" },
+            { platform: "instagram" as const, text: "See you at the fair!" },
+          ],
+        },
+      ],
+    };
+
+    // Server is primary (restoredFromServer=true hydrate path) but stale.
+    const merged = mergeCampaignBuilderSessions(server, local);
+    assert.equal(merged.milestones?.length, 1);
+    assert.equal(merged.milestones?.[0]?.id, "playbook-14-days");
+    assert.equal(merged.previewContents?.[0]?.artwork.feedUrl, "https://x/14-days.png");
+    assert.equal(merged.milestonesPlaybookId, "pb-back-to-school");
+  });
 });
 
 describe("prompt guardrails for artwork generation", () => {
