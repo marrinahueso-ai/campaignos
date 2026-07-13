@@ -51,6 +51,7 @@ import {
   loadArtworkBackup,
   persistArtworkBackup,
 } from "@/lib/campaign-builder-v2/artwork-backup";
+import { mergeInspirationAfterGeneration, slimInspirationImagesForStorage } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
   findNextMilestoneToGenerate,
   inferGenerationStatus,
@@ -253,28 +254,31 @@ function buildNewMilestone(
 function slimSessionForLocalStorage(
   session: CampaignBuilderSession,
 ): CampaignBuilderSession {
-  // data: URLs blow past localStorage quotas and cause silent save failures.
-  // Keep http(s) inspiration URLs; drop inline payloads (already uploaded or
-  // re-selectable from Creative Setup).
-  const inspirationImages = session.inspiration.inspirationImages.map((image) => {
-    const url = image.url?.trim() ?? "";
-    const keepUrl = url.startsWith("http://") || url.startsWith("https://") ? url : "";
-    return {
-      ...image,
-      url: keepUrl,
-      previewUrl:
-        image.previewUrl?.startsWith("http://") ||
-        image.previewUrl?.startsWith("https://")
-          ? image.previewUrl
-          : keepUrl || undefined,
-    };
-  });
+  // Persist http(s) inspiration URLs only. Never replace a real inspiration
+  // set with [] — that made milestone 2+ generate without the visual base.
+  const inspirationImages = slimInspirationImagesForStorage(
+    session.inspiration.inspirationImages,
+  ).filter(
+    (image) =>
+      Boolean(image.url?.startsWith("http://") || image.url?.startsWith("https://")),
+  );
 
   return {
     ...session,
     inspiration: {
       ...session.inspiration,
-      inspirationImages,
+      // If we only had blob previews (not yet uploaded), keep the previous
+      // http set from session rather than writing empty shells.
+      inspirationImages:
+        inspirationImages.length > 0
+          ? inspirationImages
+          : session.inspiration.inspirationImages.filter(
+              (image) =>
+                Boolean(
+                  image.url?.startsWith("http://") ||
+                    image.url?.startsWith("https://"),
+                ),
+            ),
       uploadedLogoUrl:
         session.inspiration.uploadedLogoUrl?.startsWith("data:")
           ? null
@@ -295,16 +299,19 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
     localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(slimmed));
     return true;
   } catch {
-    // Quota or private mode — try a minimal artwork+milestones backup so
-    // Preview generations survive navigation even when the full session won't.
+    // Quota or private mode — shrink captions/notes, but NEVER clear inspiration
+    // http URLs. Wiping inspiration mid-campaign made later milestones diverge.
     try {
       const slimmed = slimSessionForLocalStorage(session);
       const minimal: CampaignBuilderSession = {
         ...slimmed,
-        inspiration: {
-          ...slimmed.inspiration,
-          inspirationImages: [],
-        },
+        previewContents: slimmed.previewContents.map((content) => ({
+          ...content,
+          captions: content.captions.map((caption) => ({
+            ...caption,
+            text: caption.text.slice(0, 500),
+          })),
+        })),
       };
       localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(minimal));
       return true;
@@ -1184,7 +1191,10 @@ export function CampaignBuilderProvider({
         if (result.updatedInspiration) {
           workingBase = {
             ...workingBase,
-            inspiration: result.updatedInspiration,
+            inspiration: mergeInspirationAfterGeneration(
+              workingBase.inspiration,
+              result.updatedInspiration,
+            ),
           };
         }
 

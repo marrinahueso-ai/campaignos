@@ -108,6 +108,33 @@ export interface GenerateAllContentResult {
   updatedInspiration?: CampaignBuilderInspiration;
 }
 
+function firstCampaignStyleReferenceUrl(input: {
+  milestones: CampaignBuilderMilestone[];
+  previewContents: MilestonePreviewContent[];
+  excludeMilestoneId: string;
+}): string | null {
+  const sorted = [...input.milestones].sort(
+    (left, right) => left.sortOrder - right.sortOrder,
+  );
+
+  for (const milestone of sorted) {
+    if (milestone.id === input.excludeMilestoneId) {
+      continue;
+    }
+    const preview = input.previewContents.find(
+      (content) => content.milestoneId === milestone.id,
+    );
+    const feedUrl = preview?.artwork.feedUrl?.trim() || null;
+    const storyUrl = preview?.artwork.storyUrl?.trim() || null;
+    const candidate = feedUrl || storyUrl;
+    if (candidate && !isPlaceholderArtworkUrl(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 async function resolveInspirationForGeneration(
   eventId: string,
   inspiration: CampaignBuilderInspiration,
@@ -117,7 +144,23 @@ async function resolveInspirationForGeneration(
   inspirationImageUrls: string[];
   error?: string;
 }> {
-  const images = inspirationImages ?? inspiration.inspirationImages;
+  const incoming = inspirationImages ?? inspiration.inspirationImages ?? [];
+  // If the client accidentally sent an empty list but the session still has
+  // http inspiration, prefer the session copy so later milestones do not
+  // silently generate without a visual base.
+  const images =
+    incoming.length > 0
+      ? incoming
+      : (inspiration.inspirationImages ?? []).filter(
+          (image) =>
+            Boolean(
+              image.url?.startsWith("http://") ||
+                image.url?.startsWith("https://") ||
+                image.previewUrl?.startsWith("http://") ||
+                image.previewUrl?.startsWith("https://"),
+            ),
+        );
+
   const persisted = await persistInspirationImages(eventId, images);
 
   if (persisted.error) {
@@ -128,12 +171,22 @@ async function resolveInspirationForGeneration(
     };
   }
 
+  const updatedImages =
+    persisted.updatedImages.some((image) => Boolean(image.url?.trim()))
+      ? persisted.updatedImages
+      : inspiration.inspirationImages;
+
   return {
     inspiration: {
       ...inspiration,
-      inspirationImages: persisted.updatedImages,
+      inspirationImages: updatedImages,
     },
-    inspirationImageUrls: persisted.urls,
+    inspirationImageUrls:
+      persisted.urls.length > 0
+        ? persisted.urls
+        : updatedImages
+            .map((image) => image.url?.trim() || image.previewUrl?.trim() || "")
+            .filter((url) => url.startsWith("http://") || url.startsWith("https://")),
   };
 }
 
@@ -461,12 +514,23 @@ export async function generateAllContentAction(
         phase: "start",
       });
 
+      const styleReferenceUrl = firstCampaignStyleReferenceUrl({
+        milestones: input.milestones,
+        previewContents: input.previewContents,
+        excludeMilestoneId: milestone.id,
+      });
+      const inspirationImageUrls = styleReferenceUrl
+        ? Array.from(
+            new Set([styleReferenceUrl, ...resolved.inspirationImageUrls]),
+          ).slice(0, 4)
+        : resolved.inspirationImageUrls;
+
       const artworkGeneration = await generateArtworkForMilestone({
         eventId: input.eventId,
         milestone,
         enabledFormats,
         inspiration: resolved.inspiration,
-        inspirationImageUrls: resolved.inspirationImageUrls,
+        inspirationImageUrls,
         brandKitId: input.brandKitId,
         useBrandKit: input.useBrandKit,
         existingArtwork: preview?.artwork,
