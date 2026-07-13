@@ -47,6 +47,11 @@ import {
 } from "@/lib/campaign-builder-v2/seed-data";
 import { hydrateCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import {
+  applyArtworkBackup,
+  loadArtworkBackup,
+  persistArtworkBackup,
+} from "@/lib/campaign-builder-v2/artwork-backup";
+import {
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isStaleGeneration,
@@ -282,6 +287,9 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
     return false;
   }
+  // Always try the compact artwork backup first — it must survive even when
+  // the full session JSON is too large for localStorage.
+  persistArtworkBackup(session);
   try {
     const slimmed = slimSessionForLocalStorage(session);
     localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(slimmed));
@@ -302,7 +310,7 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
       return true;
     } catch {
       console.error(
-        "Campaign builder: could not persist session to localStorage. Artwork may be lost on navigation.",
+        "Campaign builder: could not persist session to localStorage. Artwork backup may still be available.",
       );
       return false;
     }
@@ -318,10 +326,30 @@ function loadLocalSession(eventId: string): CampaignBuilderSession | null {
     if (!raw) {
       return null;
     }
-    return JSON.parse(raw) as CampaignBuilderSession;
+    const parsed = JSON.parse(raw) as CampaignBuilderSession;
+    return applyArtworkBackup(parsed, loadArtworkBackup(eventId));
   } catch {
     return null;
   }
+}
+
+function hydrateWithArtworkBackup(
+  base: CampaignBuilderSession | Partial<CampaignBuilderSession>,
+  local: CampaignBuilderSession | null,
+  eventId: string,
+  eventTitle: string,
+  eventDate: string,
+  restoredFromServer: boolean,
+): CampaignBuilderSession {
+  const hydrated = hydrateCampaignBuilderSession(
+    base,
+    local,
+    eventId,
+    eventTitle,
+    eventDate,
+    restoredFromServer,
+  );
+  return applyArtworkBackup(hydrated, loadArtworkBackup(eventId));
 }
 
 function stepSessionKey(eventId: string): string {
@@ -366,7 +394,7 @@ export function CampaignBuilderProvider({
   children,
 }: CampaignBuilderProviderProps) {
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
-    hydrateCampaignBuilderSession(
+    hydrateWithArtworkBackup(
       initialSession,
       loadLocalSession(eventId),
       eventId,
@@ -544,7 +572,7 @@ export function CampaignBuilderProvider({
 
   useEffect(() => {
     const localForHydrate = loadLocalSession(eventId);
-    const hydrated = hydrateCampaignBuilderSession(
+    const hydrated = hydrateWithArtworkBackup(
       initialSession,
       localForHydrate,
       eventId,
@@ -568,7 +596,7 @@ export function CampaignBuilderProvider({
       }
 
       if (localRichness > hydratedRichness && localForHydrate) {
-        const keepLocal = hydrateCampaignBuilderSession(
+        const keepLocal = hydrateWithArtworkBackup(
           localForHydrate,
           null,
           eventId,
@@ -613,13 +641,18 @@ export function CampaignBuilderProvider({
 
   const reconcilePreviewStatuses = useCallback(() => {
     setSession((prev) => {
-      const next = hydrateCampaignBuilderSession(
+      const next = hydrateWithArtworkBackup(
         prev,
         loadLocalSession(eventId),
         eventId,
         eventTitle,
         eventDate,
+        true,
       );
+
+      if (previewSessionRichness(prev) > previewSessionRichness(next)) {
+        return prev;
+      }
 
       const changed = next.previewContents.some((content) => {
         const previous = prev.previewContents.find(

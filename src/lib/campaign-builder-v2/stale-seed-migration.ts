@@ -6,22 +6,11 @@
 import type { MilestonePreviewContent } from "./types.ts";
 
 /**
- * One-time data cleanup migration. `campaign_builder_sessions` is not
- * reachable via the Supabase Data API on this project (PGRST205 — the table
- * does not exist in PostgREST's schema cache for any role), so every real
- * Campaign Builder V2 session currently lives only in browser localStorage
- * (see `hydrateCampaignBuilderSession`'s `serverLoadSucceeded=false` branch,
- * which always lets local win when there is no server row).
- *
- * A one-off cleanup deleted all AI-generated artwork files under
- * `campaign-builder-v2/generated/` in Storage for a set of events. We briefly
- * stripped matching URLs from localStorage on hydrate so the UI would not
- * show dangling broken images.
- *
- * That strip MUST NOT keep running: new generation writes to the same
- * `/campaign-builder-v2/generated/` path, so an always-on strip deleted
- * freshly generated Preview artwork on the next normalize/hydrate (flash →
- * blank). The purge is done; leave new artwork alone.
+ * @deprecated The one-off AI artwork storage purge used to strip every
+ * `/campaign-builder-v2/generated/` URL on hydrate for a fixed event-id list.
+ * That ran after EVERY generation/remount (not once), deleting new artwork.
+ * Kept as a no-op export so old imports/tests do not break. Do not restore
+ * the strip behavior.
  */
 export function stripStaleClearedArtwork(
   _eventId: string,
