@@ -1,5 +1,8 @@
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
-import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
+import {
+  describeAudienceFacingTiming,
+  playbookRelativeDay,
+} from "@/lib/campaign-builder-v2/campaign-timing";
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
@@ -50,6 +53,8 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     eventDate: input.inspiration.eventDate,
   });
 
+  const timing = describeAudienceFacingTiming(relativeDay);
+
   const userArtDirection = [
     input.milestone.artworkNotes.trim(),
     input.extraInstructions?.trim() ?? "",
@@ -63,7 +68,13 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     `Campaign / event: ${input.inspiration.campaignName}`,
     `Event date: ${input.inspiration.eventDate}`,
     `Internal scheduled post date (never render on graphic): ${input.milestone.suggestedDate}`,
+    `Internal milestone label (never render on graphic): ${input.milestone.name}`,
     `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
+    `Timing for this post: ${timing.scheduleSummary}`,
+    timing.onGraphicExamples.length > 0
+      ? `Audience-facing timing to express on the graphic (pick one short phrase, do not invent logistics): ${timing.onGraphicExamples.join(" / ")}`
+      : null,
+    timing.guidance,
     input.milestone.purpose.trim()
       ? `Creative intent (internal — interpret, do not paste on graphic): ${input.milestone.purpose.trim()}`
       : null,

@@ -5,7 +5,10 @@ import {
   shouldIncludeOrganizationName,
 } from "@/lib/campaign-builder-v2/prompt-guardrails";
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
-import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
+import {
+  describeAudienceFacingTiming,
+  playbookRelativeDay,
+} from "@/lib/campaign-builder-v2/campaign-timing";
 import {
   buildMetaCaptionSystemPrompt,
   buildMetaCaptionUserPrompt,
@@ -52,6 +55,7 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
     stepTitle: input.milestone.name,
     eventDate: input.inspiration.eventDate,
   });
+  const timing = describeAudienceFacingTiming(relativeDay);
 
   const includeOrgName = shouldIncludeOrganizationName(
     input.organizationName,
@@ -67,6 +71,12 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
     `Event date: ${input.inspiration.eventDate}`,
     input.playbookName ? `Playbook: ${input.playbookName}` : null,
     `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
+    `Timing for this post: ${timing.scheduleSummary}`,
+    timing.onGraphicExamples.length > 0
+      ? `Audience-facing timing phrases to weave into the caption (natural language, not milestone labels): ${timing.onGraphicExamples.join(" / ")}`
+      : null,
+    timing.guidance,
+    `Internal milestone label (do not paste): ${input.milestone.name}`,
     `Internal scheduled post date (never include in caption unless user notes ask): ${input.milestone.suggestedDate}`,
     includeOrgName && input.organizationName
       ? `School/PTO: ${input.organizationName}`

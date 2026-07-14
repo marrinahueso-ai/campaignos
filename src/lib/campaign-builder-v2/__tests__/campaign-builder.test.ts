@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { playbookRelativeDay } from "../campaign-timing.ts";
+import { describeAudienceFacingTiming, playbookRelativeDay } from "../campaign-timing.ts";
 import {
   hydrateCampaignBuilderSession,
   mergeCampaignBuilderSessions,
@@ -235,6 +235,23 @@ describe("campaign timing", () => {
       playbookRelativeDay("2026-08-17", "2026-08-03"),
       -14,
     );
+  });
+
+  it("describes audience-facing countdown language for common milestones", () => {
+    const twoWeeks = describeAudienceFacingTiming(-14);
+    assert.match(twoWeeks.scheduleSummary, /2 weeks away/i);
+    assert.ok(twoWeeks.onGraphicExamples.some((phrase) => /2 weeks/i.test(phrase)));
+    assert.match(twoWeeks.guidance, /2 weeks away/i);
+    assert.match(twoWeeks.guidance, /not .*Two-Week/i);
+
+    const oneWeek = describeAudienceFacingTiming(-7);
+    assert.ok(oneWeek.onGraphicExamples.some((phrase) => /1 week/i.test(phrase)));
+
+    const dayBefore = describeAudienceFacingTiming(-1);
+    assert.ok(dayBefore.onGraphicExamples.some((phrase) => /Tomorrow/i.test(phrase)));
+
+    const today = describeAudienceFacingTiming(0);
+    assert.ok(today.onGraphicExamples.some((phrase) => /Today/i.test(phrase)));
   });
 });
 
@@ -768,7 +785,15 @@ describe("prompt guardrails for artwork generation", () => {
   it("forbids reminder milestone copy on artwork", () => {
     assert.match(
       CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
-      /Never use the words reminder, two-week reminder, or milestone on the graphic/,
+      /Never paste milestone names/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+      /2 weeks away/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+      /Never use internal jargon like reminder/,
     );
   });
 
