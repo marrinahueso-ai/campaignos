@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Hey Ralli",
   },
   description:
-    "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+    "Plan PTO campaigns, create artwork, draft captions, and publish to Facebook and Instagram — one calm workspace for busy school teams.",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     siteName: "Hey Ralli",
     title: "Hey Ralli",
     description:
-      "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+      "Plan PTO campaigns, create artwork, draft captions, and publish to Facebook and Instagram — one calm workspace for busy school teams.",
   },
   alternates: {
     canonical: "/",

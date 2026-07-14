@@ -34,7 +34,7 @@ export function StudioMarketingShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+                className="text-sm tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
               >
                 {link.label}
               </Link>
@@ -46,7 +46,7 @@ export function StudioMarketingShell({
             {isSignedIn && (
               <Link
                 href={workspaceHref}
-                className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+                className="text-sm tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
               >
                 Workspace
               </Link>
@@ -59,7 +59,7 @@ export function StudioMarketingShell({
             <Link
               key={link.href}
               href={link.href}
-              className="shrink-0 text-xs tracking-wide text-cos-muted uppercase"
+              className="shrink-0 text-xs tracking-wide text-cos-text/70 uppercase"
             >
               {link.label}
             </Link>
@@ -71,7 +71,7 @@ export function StudioMarketingShell({
 
       <footer className="border-t border-cos-border bg-cos-bg px-6 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-xs tracking-wide text-cos-muted">
+          <p className="text-xs tracking-wide text-cos-text/70">
             Hey Ralli · ORGANIZE. CREATE. CONNECT.
           </p>
           <div className="flex gap-6">
@@ -79,7 +79,7 @@ export function StudioMarketingShell({
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+                className="text-xs tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
               >
                 {link.label}
               </Link>

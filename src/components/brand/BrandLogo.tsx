@@ -33,9 +33,23 @@ const FULL_FRAME = {
   sidebar: "h-14 max-h-14 w-auto max-w-[12rem]",
 } as const;
 
+/** Match displayed CSS size so next/image does not request a 1920w asset. */
+const FULL_SIZES = {
+  sm: "120px",
+  md: "180px",
+  lg: "220px",
+  nav: "160px",
+  sidebar: "192px",
+} as const;
+
 const MARK_FRAME = {
   sm: "h-8 w-8",
   md: "h-10 w-10",
+} as const;
+
+const MARK_SIZES = {
+  sm: "32px",
+  md: "40px",
 } as const;
 
 export function BrandLogo({
@@ -50,6 +64,7 @@ export function BrandLogo({
   const markSize =
     size === "lg" || size === "nav" || size === "sidebar" ? "md" : size;
   const frameClass = isFull ? FULL_FRAME[size] : MARK_FRAME[markSize];
+  const isPriority = size === "nav" || size === "lg";
 
   const image = isFull ? (
     <span className={cn("relative inline-flex shrink-0 items-center", frameClass)}>
@@ -58,8 +73,11 @@ export function BrandLogo({
         alt={LOGO_ALT}
         width={FULL_WIDTH}
         height={FULL_HEIGHT}
+        sizes={FULL_SIZES[size]}
+        quality={75}
         className={cn("h-full w-auto", imageClassName)}
-        priority={size !== "sm"}
+        priority={isPriority}
+        fetchPriority={isPriority ? "high" : "auto"}
       />
     </span>
   ) : (
@@ -71,6 +89,8 @@ export function BrandLogo({
         alt={LOGO_ALT}
         width={MARK_WIDTH}
         height={MARK_HEIGHT}
+        sizes={MARK_SIZES[markSize]}
+        quality={75}
         className={cn("h-full w-full object-cover", imageClassName)}
       />
     </span>

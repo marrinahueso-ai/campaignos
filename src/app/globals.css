@@ -7,7 +7,8 @@
   --cos-bg-alt: #ebe4d9;
   --cos-card: #fffcf7;
   --cos-text: #2a2622;
-  --cos-muted: #7a7268;
+  /* Dark enough for ~4.5:1+ on cream backgrounds (#f6f2eb / #fffcf7). */
+  --cos-muted: #5c554c;
   --cos-border: #ddd4c8;
   --cos-primary: #2a2622;
   --cos-primary-hover: #1a1714;

@@ -69,6 +69,9 @@ export function StudioHomePage({
             alt=""
             fill
             priority
+            fetchPriority="high"
+            loading="eager"
+            quality={75}
             sizes="(max-width: 1024px) 100vw, 58vw"
             className="object-cover object-[center_40%]"
           />
@@ -81,7 +84,7 @@ export function StudioHomePage({
           <h1 className="font-display mt-5 max-w-xl text-[2.75rem] leading-[1.05] text-cos-text sm:text-6xl lg:text-[4.25rem]">
             Your campaign workspace, designed like a studio.
           </h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-cos-muted sm:text-lg">
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-cos-text/75 sm:text-lg">
             Plan events, create artwork, draft captions, and publish — all in one
             warm, focused space built for busy PTO teams.
           </p>
@@ -101,7 +104,7 @@ export function StudioHomePage({
             )}
             <Link
               href="/pricing"
-              className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+              className="text-sm tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
             >
               Pricing from $29
             </Link>
@@ -131,7 +134,7 @@ export function StudioHomePage({
                 </div>
                 <div>
                   <p className="font-display text-xl text-cos-text">{title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-cos-muted">{description}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-cos-text/70">{description}</p>
                 </div>
               </li>
             ))}
