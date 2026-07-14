@@ -37,6 +37,12 @@ export function scrubSentryEvent(event: unknown): unknown {
 
   const next = { ...(event as Record<string, unknown>) };
 
+  // Safari often aborts Next.js RSC prefetches as "Load failed" when leaving a
+  // heavy page (e.g. Create with AI → dashboard). That is noise, not an app bug.
+  if (isBenignNavigationNetworkError(next)) {
+    return null;
+  }
+
   if (next.request && typeof next.request === "object") {
     const request = { ...(next.request as Record<string, unknown>) };
     if (request.cookies) {
@@ -75,6 +81,49 @@ export function scrubSentryEvent(event: unknown): unknown {
   }
 
   return next;
+}
+
+function isBenignNavigationNetworkError(
+  event: Record<string, unknown>,
+): boolean {
+  const exceptionValues =
+    event.exception &&
+    typeof event.exception === "object" &&
+    Array.isArray((event.exception as { values?: unknown }).values)
+      ? ((event.exception as { values: Array<{ type?: string; value?: string }> })
+          .values ?? [])
+      : [];
+
+  const messages = [
+    typeof event.message === "string" ? event.message : "",
+    ...exceptionValues.map(
+      (entry) => `${entry.type ?? ""} ${entry.value ?? ""}`.trim(),
+    ),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (!messages) {
+    return false;
+  }
+
+  const isLoadFailed =
+    messages.includes("load failed") ||
+    messages.includes("failed to fetch") ||
+    messages.includes("networkerror");
+
+  if (!isLoadFailed) {
+    return false;
+  }
+
+  // Only drop the empty-stack / navigation aborts — keep real app exceptions.
+  const hasFrames = exceptionValues.some((entry) => {
+    const stacktrace = (entry as { stacktrace?: { frames?: unknown[] } })
+      .stacktrace;
+    return Boolean(stacktrace?.frames && stacktrace.frames.length > 0);
+  });
+
+  return !hasFrames;
 }
 
 export function getSentryEnvironment(): string {

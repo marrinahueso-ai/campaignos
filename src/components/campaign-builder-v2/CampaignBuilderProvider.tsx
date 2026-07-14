@@ -1284,23 +1284,22 @@ export function CampaignBuilderProvider({
           (generatedArtwork.feedUrl || generatedArtwork.storyUrl)
         ) {
           try {
+            // Generation already synced assets server-side (no revalidate).
+            // This pass refreshes cached dashboard/campaign routes if the
+            // builder is still open; safe if the user already navigated away.
             const { syncAppliedMilestoneArtworkAction } = await import(
               "@/lib/campaign-builder-v2/actions"
             );
-            // Do not revalidate while the builder is open — that remounts the
-            // page and can wipe freshly generated preview state.
             await syncAppliedMilestoneArtworkAction({
               eventId: updatedBase.eventId,
               milestones: updatedBase.milestones,
               milestoneId,
               artwork: generatedArtwork,
-              // Session is already persisted above, so a soft remount is safe
-              // and other event surfaces need fresh cache.
               revalidate: true,
             });
           } catch (syncError) {
             console.error(
-              "Failed to sync generated artwork to event surfaces:",
+              "Failed to revalidate event surfaces after artwork sync:",
               syncError,
             );
           }

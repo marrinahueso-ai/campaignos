@@ -646,6 +646,34 @@ export async function generateAllContentAction(
         generationStatus,
       });
 
+      // Sync inside this server action (no revalidate) so dashboard/campaign
+      // cards update even if the browser navigates away before a follow-up
+      // client sync POST completes — Safari often aborts those as "Load failed".
+      if (hasArtwork) {
+        try {
+          await syncHeroFromMilestoneArtwork({
+            eventId: input.eventId,
+            milestones: input.milestones,
+            milestoneId: milestone.id,
+            artwork,
+            options: { revalidate: false },
+          });
+        } catch (syncError) {
+          console.error(
+            "Failed to sync generated artwork during generateAllContentAction:",
+            syncError,
+          );
+          const { reportIntegrationError } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          reportIntegrationError("app", syncError, {
+            action: "generateAllContentAction.syncArtwork",
+            eventId: input.eventId,
+            milestoneId: milestone.id,
+          });
+        }
+      }
+
       logGenerateAllContentDebug({
         eventId: input.eventId,
         milestoneId: milestone.id,
@@ -655,10 +683,6 @@ export async function generateAllContentAction(
         phase: "complete",
       });
     }
-
-    // Hero / event_assets sync runs on the client after generation succeeds
-    // (see CampaignBuilderProvider.runMilestoneGeneration). Doing it here with
-    // revalidatePath remounts the builder and can wipe fresh preview state.
 
     return {
       success: true,
