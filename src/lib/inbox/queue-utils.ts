@@ -9,7 +9,8 @@ export type CommunicationsQueueFilter =
   | "waiting_on_ai"
   | "ready_to_send"
   | "assigned_to_me"
-  | "completed";
+  | "completed"
+  | "archived";
 
 export interface CommunicationsQueueCounts {
   needsReply: number;
@@ -18,6 +19,7 @@ export interface CommunicationsQueueCounts {
   readyToSend: number;
   assignedToMe: number;
   completed: number;
+  archived: number;
 }
 
 export interface ThreadQueueState {
@@ -61,10 +63,12 @@ export function classifyThreadQueueState(
     };
   }
 
+  // Prefer message-level completion. Do not keep a thread "completed" after
+  // send just because thread.status is still "sent" when a newer inbound is pending.
   const completed =
+    thread.status === "archived" ||
     replyTarget.status === "sent" ||
-    replyTarget.status === "archived" ||
-    thread.status === "sent";
+    replyTarget.status === "archived";
 
   const needsReply = !completed && replyTarget.status === "pending";
   const waitingOnAi =
@@ -91,9 +95,14 @@ export function computeQueueCounts(
     readyToSend: 0,
     assignedToMe: 0,
     completed: 0,
+    archived: 0,
   };
 
   for (const thread of threads) {
+    if (thread.status === "archived") {
+      counts.archived += 1;
+      continue;
+    }
     const messages = messagesByThreadId[thread.id] ?? [];
     const state = classifyThreadQueueState(thread, messages);
     if (state.needsReply) counts.needsReply += 1;
@@ -154,19 +163,22 @@ export function filterThreadsForCommunicationsHub(input: {
 
     switch (input.queueFilter) {
       case "all":
-        return true;
+        // Active inbox only — archived conversations live under Archived.
+        return thread.status !== "archived";
       case "needs_reply":
-        return state.needsReply;
+        return thread.status !== "archived" && state.needsReply;
       case "unread":
-        return state.unread;
+        return thread.status !== "archived" && state.unread;
       case "waiting_on_ai":
-        return state.waitingOnAi;
+        return thread.status !== "archived" && state.waitingOnAi;
       case "ready_to_send":
-        return state.readyToSend;
+        return thread.status !== "archived" && state.readyToSend;
       case "assigned_to_me":
         return false;
       case "completed":
-        return state.completed;
+        return thread.status !== "archived" && state.completed;
+      case "archived":
+        return thread.status === "archived";
     }
   });
 }

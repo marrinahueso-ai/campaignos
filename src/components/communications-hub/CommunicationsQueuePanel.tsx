@@ -20,6 +20,7 @@ const QUEUE_ITEMS: Array<{
   { id: "ready_to_send", label: "Ready to Send", countKey: "readyToSend" },
   { id: "assigned_to_me", label: "Assigned to Me", countKey: "assignedToMe", shell: true },
   { id: "completed", label: "Completed", countKey: "completed" },
+  { id: "archived", label: "Archived", countKey: "archived" },
 ];
 
 function formatRelativeUpdated(iso: string | null): string {
@@ -60,6 +61,9 @@ function threadStatusLabel(
   thread: InboxThread,
   messages: InboxMessage[],
 ): string | null {
+  if (thread.status === "archived") {
+    return "Archived";
+  }
   const state = classifyThreadQueueState(thread, messages);
   if (state.readyToSend) {
     return "Ready to Send";

@@ -578,3 +578,82 @@ export async function markInboxThreadReadAction(input: {
   revalidateInboxRoutes();
   return { success: true };
 }
+
+export async function archiveInboxThreadAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  if (thread.status === "archived") {
+    return { success: true };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      status: "archived",
+      unread_count: 0,
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not archive conversation." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+export async function unarchiveInboxThreadAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  if (thread.status !== "archived") {
+    return { success: true };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      status: "pending",
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not move conversation out of archive." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}

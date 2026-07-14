@@ -223,7 +223,9 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
           <div className="flex min-h-[min(760px,calc(100vh-13rem))] flex-col xl:flex-row">
             <CommunicationsQueuePanel
               threads={filteredThreads}
-              totalThreadCount={threads.length}
+              totalThreadCount={
+                threads.filter((thread) => thread.status !== "archived").length
+              }
               messagesByThreadId={messagesByThreadId}
               selectedThreadId={selectedThreadId}
               queueFilter={queueFilter}
@@ -255,6 +257,11 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                   }
                   showBack
                   onBack={() => {
+                    setMobileShowDetail(false);
+                    setMobileShowAiPanel(false);
+                  }}
+                  onArchived={() => {
+                    setSelectedThreadId(null);
                     setMobileShowDetail(false);
                     setMobileShowAiPanel(false);
                   }}

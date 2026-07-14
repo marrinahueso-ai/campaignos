@@ -1,11 +1,17 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, UserPlus } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Archive, ArchiveRestore, ArrowLeft, ChevronDown, UserPlus } from "lucide-react";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
 import { INBOX_CHANNEL_LABELS, isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
 import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
+import {
+  archiveInboxThreadAction,
+  unarchiveInboxThreadAction,
+} from "@/lib/inbox/actions";
 import { classifyThreadQueueState } from "@/lib/inbox/queue-utils";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
@@ -118,6 +124,7 @@ interface CommunicationsWorkspaceProps {
   showBack?: boolean;
   onBack?: () => void;
   showAiPanel?: boolean;
+  onArchived?: () => void;
   className?: string;
 }
 
@@ -127,8 +134,37 @@ export function CommunicationsWorkspace({
   showBack,
   onBack,
   showAiPanel = true,
+  onArchived,
   className,
 }: CommunicationsWorkspaceProps) {
+  const router = useRouter();
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [isArchiving, startArchiveTransition] = useTransition();
+
+  const isArchived = thread?.status === "archived";
+
+  function handleArchiveToggle() {
+    if (!thread) {
+      return;
+    }
+    setArchiveError(null);
+    startArchiveTransition(async () => {
+      const result = isArchived
+        ? await unarchiveInboxThreadAction({ threadId: thread.id })
+        : await archiveInboxThreadAction({ threadId: thread.id });
+
+      if (!result.success) {
+        setArchiveError(result.error ?? "Could not update archive status.");
+        return;
+      }
+
+      if (!isArchived) {
+        onArchived?.();
+      }
+      router.refresh();
+    });
+  }
+
   if (!thread) {
     return (
       <div
@@ -148,15 +184,17 @@ export function CommunicationsWorkspace({
   const displayName =
     thread.participantName ?? INBOX_CHANNEL_LABELS[thread.channelType];
   const queueState = classifyThreadQueueState(thread, messages);
-  const statusLabel = queueState.readyToSend
-    ? "Ready to Send"
-    : queueState.waitingOnAi
-      ? "Waiting on AI"
-      : queueState.needsReply
-        ? "Needs Reply"
-        : queueState.completed
-          ? "Completed"
-          : "Open";
+  const statusLabel = isArchived
+    ? "Archived"
+    : queueState.readyToSend
+      ? "Ready to Send"
+      : queueState.waitingOnAi
+        ? "Waiting on AI"
+        : queueState.needsReply
+          ? "Needs Reply"
+          : queueState.completed
+            ? "Completed"
+            : "Open";
 
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-1", className)}>
@@ -201,6 +239,32 @@ export function CommunicationsWorkspace({
             </span>
             <button
               type="button"
+              onClick={handleArchiveToggle}
+              disabled={isArchiving}
+              title={
+                isArchived
+                  ? "Move back to All conversations"
+                  : "Archive this conversation"
+              }
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-cos-border px-3 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-60"
+            >
+              {isArchived ? (
+                <ArchiveRestore className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <Archive className="h-3.5 w-3.5" aria-hidden />
+              )}
+              <span className="hidden sm:inline">
+                {isArchiving
+                  ? isArchived
+                    ? "Restoring…"
+                    : "Archiving…"
+                  : isArchived
+                    ? "Unarchive"
+                    : "Archive"}
+              </span>
+            </button>
+            <button
+              type="button"
               disabled
               title="Assignment coming soon"
               className="hidden h-9 items-center gap-1.5 rounded-full border border-cos-border px-3 text-xs font-medium text-cos-muted opacity-60 sm:inline-flex"
@@ -215,6 +279,12 @@ export function CommunicationsWorkspace({
           </div>
         </div>
 
+        {archiveError ? (
+          <p className="border-b border-red-200 bg-red-50 px-5 py-2 text-xs text-red-700" role="alert">
+            {archiveError}
+          </p>
+        ) : null}
+
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
           <ThreadMessageTimeline messages={messages} />
 
@@ -225,7 +295,7 @@ export function CommunicationsWorkspace({
           ) : null}
         </div>
 
-        {isReplyChannel(thread.channelType) ? (
+        {isReplyChannel(thread.channelType) && !isArchived ? (
           <CommunicationsReplySection thread={thread} messages={messages} />
         ) : null}
       </div>
