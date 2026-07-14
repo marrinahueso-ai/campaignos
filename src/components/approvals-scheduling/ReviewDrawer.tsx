@@ -105,6 +105,15 @@ export function ReviewDrawer({
                 placeholder="Story"
               />
             ) : null}
+            {!item.preview.feedArtworkUrl && !item.preview.storyArtworkUrl ? (
+              <div className="col-span-full rounded-xl border border-dashed border-cos-border bg-cos-bg/40 px-4 py-8 text-center">
+                <p className="text-sm font-medium text-cos-text">No artwork attached</p>
+                <p className="mt-1 text-xs text-cos-muted">
+                  Open Create with AI, generate artwork for this milestone, then send for
+                  approval again.
+                </p>
+              </div>
+            ) : null}
           </div>
 
           {item.preview.captionText ? (

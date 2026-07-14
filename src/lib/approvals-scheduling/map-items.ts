@@ -16,6 +16,7 @@ import type {
   UnifiedDeliveryMethod,
   UnifiedPlatform,
 } from "@/lib/approvals-scheduling/types";
+import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -248,7 +249,7 @@ export function mapSchedulingItemRow(
     eventId: row.event_id,
     eventTitle,
     campaignName: row.campaign_name ?? eventTitle,
-    milestoneName: row.milestone_name,
+    milestoneName: normalizeMilestoneName(row.milestone_name),
     thumbnailUrl: row.feed_artwork_url,
     workflowStatus,
     statusDetail: statusDetailForItem(

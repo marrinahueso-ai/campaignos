@@ -19,6 +19,7 @@ import {
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
 } from "./stale-seed-migration.ts";
+import { normalizeMilestoneName } from "./milestone-names.ts";
 import type {
   CampaignBuilderMilestone,
   CampaignBuilderSession,
@@ -26,26 +27,6 @@ import type {
   MilestonePreviewContent,
   PreviewTabId,
 } from "./types.ts";
-
-const STALE_MILESTONE_NAME_FIXES: Record<string, string> = {
-  "Two-Week Reminder": "Two-Week Push",
-  "Two Week Reminder": "Two-Week Push",
-  "two-week reminder": "Two-Week Push",
-};
-
-function normalizeMilestoneName(name: string): string {
-  const trimmed = name.trim();
-  if (STALE_MILESTONE_NAME_FIXES[trimmed]) {
-    return STALE_MILESTONE_NAME_FIXES[trimmed];
-  }
-
-  const lower = trimmed.toLowerCase();
-  if (lower.includes("two") && lower.includes("week") && lower.includes("reminder")) {
-    return "Two-Week Push";
-  }
-
-  return trimmed;
-}
 
 function buildEmptyPreviewContent(
   milestone: CampaignBuilderMilestone,

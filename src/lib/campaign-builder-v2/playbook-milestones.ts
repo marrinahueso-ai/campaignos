@@ -1,4 +1,5 @@
 import { defaultEnabledFormats, emptyMilestoneArtwork } from "./platform-utils.ts";
+import { milestoneNameMatchKey, normalizeMilestoneName } from "./milestone-names.ts";
 import type {
   CampaignBuilderMilestone,
   MilestoneCategory,
@@ -93,7 +94,7 @@ function buildMilestoneFromPlaybookStep(
   const platforms = platformsForChannel(step.channel);
   return {
     id: createMilestoneId(),
-    name: step.title,
+    name: normalizeMilestoneName(step.title),
     category: categoryForRelativeDay(step.relativeDay),
     // Playbook steps don't carry a description/prompt field today — leave
     // purpose blank rather than inventing one; the user can add notes.
@@ -134,14 +135,14 @@ export function milestonesLostOnPlaybookSwitch(
   existingPreviewContents: MilestonePreviewContent[],
 ): CampaignBuilderMilestone[] {
   const newTitles = new Set(
-    newSteps.map((step) => step.title.trim().toLowerCase()),
+    newSteps.map((step) => milestoneNameMatchKey(step.title)),
   );
   const previewByMilestoneId = new Map(
     existingPreviewContents.map((preview) => [preview.milestoneId, preview]),
   );
 
   return existingMilestones.filter((milestone) => {
-    if (newTitles.has(milestone.name.trim().toLowerCase())) {
+    if (newTitles.has(milestoneNameMatchKey(milestone.name))) {
       return false;
     }
     return hasMeaningfulMilestoneWork(
@@ -171,7 +172,7 @@ export function reconcileMilestonesWithPlaybookSteps(
 } {
   const existingByName = new Map(
     existingMilestones.map((milestone) => [
-      milestone.name.trim().toLowerCase(),
+      milestoneNameMatchKey(milestone.name),
       milestone,
     ]),
   );
@@ -185,12 +186,12 @@ export function reconcileMilestonesWithPlaybookSteps(
   const sortedSteps = [...steps].sort((a, b) => a.sortOrder - b.sortOrder);
 
   sortedSteps.forEach((step, index) => {
-    const matched = existingByName.get(step.title.trim().toLowerCase());
+    const matched = existingByName.get(milestoneNameMatchKey(step.title));
 
     if (matched) {
       const milestone: CampaignBuilderMilestone = {
         ...matched,
-        name: step.title,
+        name: normalizeMilestoneName(step.title),
         category: categoryForRelativeDay(step.relativeDay),
         suggestedDate: dateForRelativeDay(eventDate, step.relativeDay),
         sortOrder: index,

@@ -27,16 +27,18 @@ export function canActOnUnifiedItem(
   item: UnifiedApprovalItem,
   role: CampaignRole,
 ): boolean {
+  // Presidents / VPs / admins can approve from the queue even before an
+  // individual assignee is set (in_queue). Non-approvers still need assignment.
+  if (canApproveDraft(role)) {
+    return true;
+  }
+
   if (
     item.source === "campaign_builder" &&
     !item.hasAssignedUser &&
     (item.workflowStatus === "in_queue" || item.workflowStatus === "assigned_to_me")
   ) {
     return false;
-  }
-
-  if (canApproveDraft(role)) {
-    return true;
   }
 
   return item.assignedToMe;
