@@ -11,6 +11,7 @@ import type {
   MilestoneArtwork,
 } from "@/lib/campaign-builder-v2/types";
 import { ensurePlanAssetRow } from "@/lib/creative-director/mutations";
+import { updateEventPlanningFields } from "@/lib/event-playbooks/planning-mutations";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import {
   EVENT_ASSETS_BUCKET,
@@ -197,6 +198,13 @@ export async function syncCampaignBuilderMilestoneArtwork(input: {
       generationPrompt: `Campaign Builder V2 — ${milestone.name}`,
       uploadedBy,
       replaceExistingHero: true,
+    });
+
+    // Campaign at a Glance + settings "approved square" read this column first.
+    // Without updating it, Create with AI leaves the old glance/upcoming thumbnail.
+    await updateEventPlanningFields(input.eventId, {
+      approved_square_image_url: feedUrl,
+      approved_square_image_status: "filled",
     });
   }
 
