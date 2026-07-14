@@ -32,6 +32,8 @@ export async function saveCampaignBuilderSessionAction(
     );
     reportIntegrationError("supabase", error, {
       action: "saveCampaignBuilderSessionAction",
+      eventId: session.eventId,
+      message: error.message,
     });
     return {
       success: false,
