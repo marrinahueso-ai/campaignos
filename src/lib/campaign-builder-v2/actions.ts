@@ -656,11 +656,9 @@ export async function generateAllContentAction(
       });
     }
 
-    // Intentionally do NOT sync hero / revalidateEventPaths here.
-    // revalidatePath during generation remounts the campaign builder, strips
-    // the URL hash (resetting to Inspiration), and can overwrite freshly
-    // generated artwork with a stale server session. Hero sync runs later
-    // when the user leaves Preview or publishes.
+    // Hero / event_assets sync runs on the client after generation succeeds
+    // (see CampaignBuilderProvider.runMilestoneGeneration). Doing it here with
+    // revalidatePath remounts the builder and can wipe fresh preview state.
 
     return {
       success: true,
@@ -874,6 +872,33 @@ export async function syncAppliedMilestoneArtworkAction(input: {
   milestones: CampaignBuilderMilestone[];
   milestoneId: string;
   artwork: MilestoneArtwork;
-}): Promise<void> {
-  await syncHeroFromMilestoneArtwork(input);
+  /** When false, skips path revalidation (use while Create with AI is open). */
+  revalidate?: boolean;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    await syncHeroFromMilestoneArtwork({
+      eventId: input.eventId,
+      milestones: input.milestones,
+      milestoneId: input.milestoneId,
+      artwork: input.artwork,
+      options: { revalidate: input.revalidate },
+    });
+    return { success: true };
+  } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("app", error, {
+      action: "syncAppliedMilestoneArtworkAction",
+      eventId: input.eventId,
+      milestoneId: input.milestoneId,
+    });
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not sync artwork to the event.",
+    };
+  }
 }

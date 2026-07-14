@@ -1257,6 +1257,36 @@ export function CampaignBuilderProvider({
         setSession(updatedBase);
         await persistSession(updatedBase);
 
+        const generatedArtwork =
+          result.results.find((entry) => entry.milestoneId === milestoneId)
+            ?.artwork ?? null;
+        if (
+          generatedArtwork &&
+          (generatedArtwork.feedUrl || generatedArtwork.storyUrl)
+        ) {
+          try {
+            const { syncAppliedMilestoneArtworkAction } = await import(
+              "@/lib/campaign-builder-v2/actions"
+            );
+            // Do not revalidate while the builder is open — that remounts the
+            // page and can wipe freshly generated preview state.
+            await syncAppliedMilestoneArtworkAction({
+              eventId: updatedBase.eventId,
+              milestones: updatedBase.milestones,
+              milestoneId,
+              artwork: generatedArtwork,
+              // Session is already persisted above, so a soft remount is safe
+              // and other event surfaces need fresh cache.
+              revalidate: true,
+            });
+          } catch (syncError) {
+            console.error(
+              "Failed to sync generated artwork to event surfaces:",
+              syncError,
+            );
+          }
+        }
+
         return {
           success: true,
           message: `Artwork and captions generated for ${milestone?.name ?? "this milestone"}.`,
