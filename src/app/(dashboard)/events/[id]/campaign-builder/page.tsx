@@ -1,18 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { CampaignBuilderShell } from "@/components/campaign-builder-v2/CampaignBuilderShell";
 import {
+  getCachedCampaignBuilderBrandSetup,
   getCachedCampaignBuilderCampaignOptions,
-  getCachedPlaybooksForOrganization,
+  getCachedCampaignBuilderPlaybookOptions,
 } from "@/lib/campaign-builder-v2/page-queries";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { getEventById } from "@/lib/events/queries";
-import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
+import { getLatestOrganization } from "@/lib/organizations/queries";
 import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
-import type { BrandKitOption, PlaybookOption } from "@/lib/campaign-builder-v2/types";
-import { getBrandKitItems } from "@/lib/creative-assets/queries";
+import type { BrandKitOption } from "@/lib/campaign-builder-v2/types";
 
 interface CampaignBuilderPageProps {
   params: Promise<{ id: string }>;
@@ -47,29 +47,47 @@ export default async function CampaignBuilderPage({
 
   const { id } = await params;
 
-  const [event, organization, schoolProfile, savedSession] = await Promise.all([
-    getEventById(id),
-    getLatestOrganization(),
-    getSchoolProfile(),
-    loadCampaignBuilderSession(id),
+  // Kick off org early so brand/playbook/options can overlap with event+session.
+  const organizationPromise = getLatestOrganization();
+  const eventPromise = getEventById(id);
+  const sessionPromise = loadCampaignBuilderSession(id);
+  const brandPromise = getCachedCampaignBuilderBrandSetup();
+
+  const playbooksPromise = organizationPromise.then((organization) =>
+    getCachedCampaignBuilderPlaybookOptions(organization?.id ?? null),
+  );
+  const campaignOptionsPromise = Promise.all([
+    organizationPromise,
+    eventPromise,
+  ]).then(([organization, event]) =>
+    event
+      ? getCachedCampaignBuilderCampaignOptions(
+          organization?.id ?? null,
+          event,
+        )
+      : Promise.resolve([]),
+  );
+
+  const [
+    event,
+    savedSession,
+    brandSetup,
+    playbookOptions,
+    campaignOptions,
+  ] = await Promise.all([
+    eventPromise,
+    sessionPromise,
+    brandPromise,
+    playbooksPromise,
+    campaignOptionsPromise,
   ]);
+
+  // Ensure org resolution finished (brand/playbooks already awaited it).
+  await organizationPromise;
 
   if (!event) {
     notFound();
   }
-
-  const [playbooks, campaignOptions, brandKitItems] = await Promise.all([
-    getCachedPlaybooksForOrganization(organization?.id ?? null),
-    getCachedCampaignBuilderCampaignOptions(organization?.id ?? null, event),
-    organization?.id
-      ? getBrandKitItems(organization.id)
-      : Promise.resolve([]),
-  ]);
-
-  const playbookOptions: PlaybookOption[] = playbooks.map((playbook) => ({
-    id: playbook.id,
-    name: playbook.name,
-  }));
 
   const brandKits: BrandKitOption[] = [
     { id: NO_BRAND_KIT_ID, name: "No brand kit" },
@@ -77,13 +95,10 @@ export default async function CampaignBuilderPage({
   ];
 
   const logoOptions = buildCampaignBuilderLogoOptions(
-    schoolProfile?.brandAssets,
-    brandKitItems,
+    brandSetup.brandAssets,
+    brandSetup.brandKitItems,
   );
-  const schoolColors = {
-    primary: schoolProfile?.brandAssets?.primaryColor ?? null,
-    secondary: schoolProfile?.brandAssets?.secondaryColor ?? null,
-  };
+  const schoolColors = brandSetup.schoolColors;
 
   const restoredFromServer = savedSession !== null;
   // Always normalize — even for a brand-new campaign with no saved session —

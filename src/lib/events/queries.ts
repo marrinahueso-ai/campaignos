@@ -159,17 +159,18 @@ export async function getAllEvents(
 export const getEventById = cache(async (id: string): Promise<Event | null> => {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .single();
+  // Overlap event fetch with school-year scope — sequential was adding a
+  // full round-trip on every event page (including Create with AI).
+  const [eventResult, schoolYearIds] = await Promise.all([
+    supabase.from("events").select("*").eq("id", id).single(),
+    scopedSchoolYearIds(undefined),
+  ]);
 
+  const { data, error } = eventResult;
   if (error || !data) {
     return null;
   }
 
-  const schoolYearIds = await scopedSchoolYearIds(undefined);
   if (!schoolYearIds?.length) {
     return null;
   }
