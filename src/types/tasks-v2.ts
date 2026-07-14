@@ -34,6 +34,8 @@ export interface TasksV2EventGroup {
 export interface TasksV2PageData extends TaskHubPageData {
   eventGroups: TasksV2EventGroup[];
   summary: TasksV2SummaryStats;
+  aiAvailable: boolean;
+  aiUnavailableReason: string | null;
 }
 
 export interface TasksV2AiInsight {

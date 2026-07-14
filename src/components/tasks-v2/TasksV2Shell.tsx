@@ -128,7 +128,14 @@ export function TasksV2Shell({ data }: TasksV2ShellProps) {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">{mainContent}</div>
-        <TasksV2Sidebar eventGroups={data.eventGroups} />
+        <TasksV2Sidebar
+          eventGroups={data.eventGroups}
+          events={data.events}
+          canEdit={data.canEdit}
+          aiAvailable={data.aiAvailable}
+          aiUnavailableReason={data.aiUnavailableReason}
+          preferredEventId={eventFilter}
+        />
       </div>
 
       <TasksV2FooterLegend />
