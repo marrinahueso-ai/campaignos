@@ -64,7 +64,9 @@ async function activateArtworkSurface(input: {
     return null;
   }
 
-  const storagePath = publicUrlToStoragePath(input.publicUrl);
+  // Prefer a bucket-relative path; fall back to the public URL (selectors accept both).
+  const storagePath =
+    publicUrlToStoragePath(input.publicUrl) ?? input.publicUrl.trim();
   if (!storagePath) {
     return null;
   }
@@ -93,7 +95,16 @@ async function activateArtworkSurface(input: {
     generationPrompt,
   });
 
-  return activated ? storagePath : null;
+  if (!activated) {
+    console.error("Failed to activate campaign-builder artwork on event asset", {
+      eventId: input.eventId,
+      assetType: input.assetType,
+      planLabel: input.planLabel,
+    });
+    return null;
+  }
+
+  return storagePath;
 }
 
 async function updateApprovalArtworkUrls(input: {
@@ -143,10 +154,6 @@ export async function syncCampaignBuilderMilestoneArtwork(input: {
 
   const role = await getCurrentCampaignRole();
   const uploadedBy = campaignRoleLabel(role);
-  const firstMilestone = [...input.milestones].sort(
-    (left, right) => left.sortOrder - right.sortOrder,
-  )[0];
-  const isFirstMilestone = firstMilestone?.id === milestone.id;
 
   const feedUrl = input.artwork.feedUrl?.trim() || null;
   const storyUrl = input.artwork.storyUrl?.trim() || null;
@@ -189,19 +196,22 @@ export async function syncCampaignBuilderMilestoneArtwork(input: {
     });
   }
 
-  if (isFirstMilestone && feedStoragePath && feedUrl) {
+  // Dashboard / campaigns / glance cards all resolve from hero + approved square.
+  // Always refresh them when Create with AI applies a feed so thumbnails stay current.
+  if (feedUrl && !isPlaceholderArtworkUrl(feedUrl)) {
+    const heroStoragePath =
+      feedStoragePath ?? publicUrlToStoragePath(feedUrl) ?? feedUrl;
+
     await maybePromoteApprovedArtworkToHero({
       eventId: input.eventId,
       assetType: "instagram_graphic",
-      storagePath: feedStoragePath,
+      storagePath: heroStoragePath,
       filename: sanitizeEventAssetFilename(`${milestone.name}-feed.png`),
       generationPrompt: `Campaign Builder V2 — ${milestone.name}`,
       uploadedBy,
       replaceExistingHero: true,
     });
 
-    // Campaign at a Glance + settings "approved square" read this column first.
-    // Without updating it, Create with AI leaves the old glance/upcoming thumbnail.
     await updateEventPlanningFields(input.eventId, {
       approved_square_image_url: feedUrl,
       approved_square_image_status: "filled",
