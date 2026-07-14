@@ -54,6 +54,8 @@ import {
 import { mergeInspirationAfterGeneration, slimInspirationImagesForStorage } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
   findNextMilestoneToGenerate,
+  GENERATION_STALL_TIMEOUT_MS,
+  GENERATION_STALL_WARNING_MS,
   inferGenerationStatus,
   isStaleGeneration,
 } from "@/lib/campaign-builder-v2/milestone-status";
@@ -1175,17 +1177,34 @@ export function CampaignBuilderProvider({
           milestoneName: milestone?.name ?? "Milestone",
         });
 
-        const result = await generateAllContentAction({
-          eventId: generatingBase.eventId,
-          inspiration: generatingBase.inspiration,
-          inspirationImages,
-          milestones: generatingBase.milestones,
-          previewContents: generatingBase.previewContents,
-          brandKitId,
-          useBrandKit: brandKitId !== null,
-          milestoneIds: [milestoneId],
-          playbookName,
-        });
+        const result = await (async () => {
+          const { withStallWatchdog } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          return withStallWatchdog(
+            "ai",
+            generateAllContentAction({
+              eventId: generatingBase.eventId,
+              inspiration: generatingBase.inspiration,
+              inspirationImages,
+              milestones: generatingBase.milestones,
+              previewContents: generatingBase.previewContents,
+              brandKitId,
+              useBrandKit: brandKitId !== null,
+              milestoneIds: [milestoneId],
+              playbookName,
+            }),
+            {
+              action: "generateMilestoneContent",
+              eventId: generatingBase.eventId,
+              milestoneId,
+              timeoutMs: GENERATION_STALL_TIMEOUT_MS,
+              warningMs: GENERATION_STALL_WARNING_MS,
+              stallMessage:
+                "Artwork generation stalled — no response after several minutes.",
+            },
+          );
+        })();
 
         let workingBase = generatingBase;
         if (result.updatedInspiration) {
@@ -1396,6 +1415,28 @@ export function CampaignBuilderProvider({
     if (staleIds.length === 0) {
       return;
     }
+
+    void import("@/lib/monitoring/report-error").then(({ reportStalledOperation }) => {
+      for (const milestoneId of staleIds) {
+        const preview = session.previewContents.find(
+          (content) => content.milestoneId === milestoneId,
+        );
+        const startedAt = preview?.generationStartedAt
+          ? Date.parse(preview.generationStartedAt)
+          : NaN;
+        reportStalledOperation("ai", {
+          action: "generateMilestoneContent.staleRecovery",
+          eventId,
+          milestoneId,
+          message:
+            "Recovered a stalled artwork generation that never finished.",
+          durationMs: Number.isNaN(startedAt)
+            ? null
+            : Date.now() - startedAt,
+          level: "error",
+        });
+      }
+    });
 
     updateSession((prev) => ({
       ...prev,

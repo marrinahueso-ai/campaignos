@@ -13,6 +13,14 @@ import type {
 
 const STALE_GENERATION_MS = 5 * 60 * 1000;
 
+/** Soft warning before hard stall timeout (Create with AI generation). */
+export const GENERATION_STALL_WARNING_MS = 2 * 60 * 1000;
+
+/** Hard stall timeout — matches stale generation recovery. */
+export const GENERATION_STALL_TIMEOUT_MS = STALE_GENERATION_MS;
+
+export { STALE_GENERATION_MS };
+
 export const MILESTONE_STATUS_LABELS: Record<MilestoneGenerationStatus, string> = {
   ready_to_generate: "Ready to generate",
   queued: "Queued",

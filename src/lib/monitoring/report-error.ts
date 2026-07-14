@@ -161,3 +161,108 @@ export function reportFailedAction(
     );
   });
 }
+
+/**
+ * Report a hung / stalled operation that never threw.
+ * Use for long-running AI generation, saves, or publishes that exceed a watchdog.
+ */
+export function reportStalledOperation(
+  area: IntegrationArea,
+  context: SafeActionContext & {
+    message: string;
+    durationMs?: number | null;
+    level?: "warning" | "error";
+  },
+): void {
+  if (!isSentryEnabled()) {
+    return;
+  }
+
+  Sentry.withScope((scope) => {
+    scope.setTag("integration", area);
+    scope.setTag("failure_type", "stall");
+    scope.setLevel(context.level ?? "error");
+    if (context.action) {
+      scope.setTag("action", context.action);
+    }
+    scope.setContext("integration_context", {
+      action: context.action,
+      route: context.route,
+      eventId: context.eventId,
+      campaignId: context.campaignId,
+      milestoneId: context.milestoneId,
+      organizationId: context.organizationId,
+      statusCode: context.statusCode,
+      message: context.message,
+      durationMs: context.durationMs ?? null,
+    });
+    Sentry.captureMessage(
+      `[${area}] stall: ${context.action || "operation"} — ${context.message}`,
+      context.level ?? "error",
+    );
+  });
+}
+
+/**
+ * Race a promise against a stall timeout. Does not cancel the underlying work.
+ * Reports to Sentry when the timeout wins.
+ */
+export async function withStallWatchdog<T>(
+  area: IntegrationArea,
+  work: Promise<T>,
+  context: SafeActionContext & {
+    timeoutMs: number;
+    warningMs?: number;
+    stallMessage: string;
+  },
+): Promise<T> {
+  const started = Date.now();
+  let warningTimer: ReturnType<typeof setTimeout> | null = null;
+  let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  let settled = false;
+
+  addActionBreadcrumb(area, `${context.action || "operation"} started`, context);
+
+  if (context.warningMs && context.warningMs > 0) {
+    warningTimer = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      reportStalledOperation(area, {
+        ...context,
+        message: `${context.stallMessage} (still running after ${context.warningMs}ms)`,
+        durationMs: Date.now() - started,
+        level: "warning",
+      });
+    }, context.warningMs);
+  }
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutTimer = setTimeout(() => {
+      reportStalledOperation(area, {
+        ...context,
+        message: context.stallMessage,
+        durationMs: Date.now() - started,
+        level: "error",
+      });
+      reject(
+        new Error(
+          context.stallMessage ||
+            "This is taking longer than expected. Please try again.",
+        ),
+      );
+    }, context.timeoutMs);
+  });
+
+  try {
+    return await Promise.race([work, timeoutPromise]);
+  } finally {
+    settled = true;
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+    }
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer);
+    }
+  }
+}
