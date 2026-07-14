@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { ImagePlus, Upload, X } from "lucide-react";
@@ -17,6 +18,52 @@ import {
 } from "@/lib/campaign-builder-v2/creative-config";
 import type { CreativeColorMode } from "@/lib/campaign-builder-v2/types";
 import { cn } from "@/lib/utils/cn";
+
+function isOptimizableImageUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
+function InspirationPreviewImage({
+  src,
+  alt,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+}) {
+  if (isOptimizableImageUrl(src)) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 640px) 45vw, 240px"
+        quality={75}
+        priority={priority}
+        fetchPriority={priority ? "high" : "auto"}
+        className="object-cover"
+      />
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      width={480}
+      height={360}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+      className="h-full w-full object-cover"
+    />
+  );
+}
 
 function SectionHeader({
   number,
@@ -244,6 +291,7 @@ export function InspirationStep() {
                 <div className="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
                   <button
                     type="button"
+                    aria-label="Upload inspiration images"
                     onClick={() => inspirationInputRef.current?.click()}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
@@ -276,6 +324,7 @@ export function InspirationStep() {
                     type="file"
                     accept="image/*"
                     multiple
+                    aria-label="Choose inspiration images"
                     className="hidden"
                     onChange={(event) => {
                       const files = Array.from(event.target.files ?? []);
@@ -293,7 +342,7 @@ export function InspirationStep() {
                       </div>
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-2">
-                        {inspirationImages.map((image) => (
+                        {inspirationImages.map((image, index) => (
                           <div
                             key={image.id}
                             className="space-y-2 border border-cos-border bg-cos-bg/20 p-2"
@@ -308,11 +357,10 @@ export function InspirationStep() {
                                 <X className="h-3.5 w-3.5" strokeWidth={2} />
                               </button>
                               {image.previewUrl || image.url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
+                                <InspirationPreviewImage
                                   src={image.previewUrl || image.url || ""}
                                   alt={image.label}
-                                  className="h-full w-full object-cover"
+                                  priority={index < 2}
                                 />
                               ) : (
                                 <div className="flex h-full items-center justify-center text-[10px] text-cos-muted">
@@ -456,6 +504,7 @@ export function InspirationStep() {
                     ref={logoInputRef}
                     type="file"
                     accept="image/*"
+                    aria-label="Upload campaign logo"
                     className="hidden"
                     onChange={(event) => {
                       const file = event.target.files?.[0];

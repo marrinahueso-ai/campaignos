@@ -41,6 +41,16 @@ export const metadata: Metadata = {
   },
 };
 
+const supabaseOrigin = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+})();
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +61,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} h-full antialiased`}
     >
+      {supabaseOrigin ? (
+        <>
+          <link rel="preconnect" href={supabaseOrigin} />
+          <link rel="dns-prefetch" href={supabaseOrigin} />
+        </>
+      ) : null}
       <body className="min-h-full bg-cos-bg font-sans text-cos-text">{children}</body>
     </html>
   );

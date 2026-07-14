@@ -26,6 +26,15 @@ export async function generateMetadata({ params }: CampaignBuilderPageProps) {
     title: event
       ? `${event.title} — Create with AI`
       : "Create with AI",
+    description:
+      "Set creative direction for AI campaign artwork and captions — inspiration, logo, colors, and voice.",
+    alternates: {
+      canonical: `/events/${id}/campaign-builder`,
+    },
+    robots: {
+      index: false,
+      follow: false,
+    },
   };
 }
 
