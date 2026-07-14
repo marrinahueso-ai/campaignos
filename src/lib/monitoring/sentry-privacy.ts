@@ -83,6 +83,31 @@ export function scrubSentryEvent(event: unknown): unknown {
   return next;
 }
 
+type ExceptionValue = {
+  type?: string;
+  value?: string;
+  stacktrace?: {
+    frames?: Array<{ filename?: string; abs_path?: string; module?: string }>;
+  };
+};
+
+function exceptionFrames(entry: ExceptionValue) {
+  return entry.stacktrace?.frames ?? [];
+}
+
+/** True when every frame is a minified Next chunk (no app source). */
+function isOpaqueBundlerOnlyStack(exceptionValues: ExceptionValue[]): boolean {
+  const frames = exceptionValues.flatMap(exceptionFrames);
+  if (frames.length === 0) {
+    return false;
+  }
+
+  return frames.every((frame) => {
+    const path = `${frame.filename ?? ""} ${frame.abs_path ?? ""} ${frame.module ?? ""}`.toLowerCase();
+    return path.includes("/_next/static/") || path.includes("app:///_next/");
+  });
+}
+
 function isBenignNavigationNetworkError(
   event: Record<string, unknown>,
 ): boolean {
@@ -90,8 +115,7 @@ function isBenignNavigationNetworkError(
     event.exception &&
     typeof event.exception === "object" &&
     Array.isArray((event.exception as { values?: unknown }).values)
-      ? ((event.exception as { values: Array<{ type?: string; value?: string }> })
-          .values ?? [])
+      ? ((event.exception as { values: ExceptionValue[] }).values ?? [])
       : [];
 
   const messages = [
@@ -116,14 +140,17 @@ function isBenignNavigationNetworkError(
     return false;
   }
 
-  // Only drop the empty-stack / navigation aborts — keep real app exceptions.
-  const hasFrames = exceptionValues.some((entry) => {
-    const stacktrace = (entry as { stacktrace?: { frames?: unknown[] } })
-      .stacktrace;
-    return Boolean(stacktrace?.frames && stacktrace.frames.length > 0);
-  });
+  // Drop empty-stack navigation aborts (classic Safari RSC cancel).
+  const hasFrames = exceptionValues.some(
+    (entry) => exceptionFrames(entry).length > 0,
+  );
+  if (!hasFrames) {
+    return true;
+  }
 
-  return !hasFrames;
+  // Safari sometimes attaches a single minified Next chunk frame
+  // (e.g. "Load failed (heyralli.com)") — still not an app bug.
+  return isOpaqueBundlerOnlyStack(exceptionValues);
 }
 
 export function getSentryEnvironment(): string {
