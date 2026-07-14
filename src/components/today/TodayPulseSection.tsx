@@ -54,7 +54,7 @@ export function TodayPulseSection({
           <div className="space-y-1">
             <p className="text-sm text-cos-muted">Nothing needs your sign-off right now.</p>
             {teamPendingCount > 0 && (
-              <p className="text-xs text-cos-muted/80">
+              <p className="text-xs text-cos-muted">
                 {teamPendingCount === 1
                   ? "1 item is with someone else on your team."
                   : `${teamPendingCount} items are with your team.`}

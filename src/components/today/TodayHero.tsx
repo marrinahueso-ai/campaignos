@@ -32,7 +32,7 @@ export function TodayHero({
       ) : (
         <div className="max-w-xl space-y-1 text-base leading-relaxed text-cos-muted">
           <p>{teammateNote ?? "You're all caught up for now."}</p>
-          <p className="text-sm text-cos-muted/80">We&apos;ll nudge you when something needs you.</p>
+          <p className="text-sm text-cos-muted">We&apos;ll nudge you when something needs you.</p>
         </div>
       )}
     </header>

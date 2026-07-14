@@ -10,7 +10,7 @@ export function WeekAheadStrip({ entries, today }: WeekAheadStripProps) {
   const upcoming = entries.filter((entry) => entry.date >= today);
   if (upcoming.length === 0) {
     return (
-      <p className="text-xs leading-relaxed text-cos-muted/80">A quiet week ahead.</p>
+      <p className="text-xs leading-relaxed text-cos-muted">A quiet week ahead.</p>
     );
   }
 
@@ -20,7 +20,7 @@ export function WeekAheadStrip({ entries, today }: WeekAheadStripProps) {
     <div className="space-y-3">
       {grouped.map((group) => (
         <div key={group.date}>
-          <p className="mb-1 text-[11px] font-medium tracking-wide text-cos-muted/80">
+          <p className="mb-1 text-[11px] font-medium tracking-wide text-cos-muted">
             {relativeDayLabel(group.date, today)}
           </p>
           <ul className="space-y-1">
@@ -29,12 +29,12 @@ export function WeekAheadStrip({ entries, today }: WeekAheadStripProps) {
                 {entry.href ? (
                   <Link
                     href={entry.href}
-                    className="block text-sm leading-snug text-cos-text/90 transition-colors hover:text-cos-primary"
+                    className="block min-h-11 py-2.5 text-sm leading-snug text-cos-text/90 transition-colors hover:text-cos-primary"
                   >
                     {entryLabel(entry)}
                   </Link>
                 ) : (
-                  <p className="text-sm leading-snug text-cos-text/90">{entryLabel(entry)}</p>
+                  <p className="py-2.5 text-sm leading-snug text-cos-text/90">{entryLabel(entry)}</p>
                 )}
               </li>
             ))}

@@ -42,7 +42,7 @@ export function TodaySnapshot({
           <span className="font-display text-2xl">{Math.round(resolved.weather.temperatureF)}°</span>
         </p>
         <p className="text-xs text-cos-muted">{resolved.location.label}</p>
-        <p className="text-xs leading-relaxed text-cos-muted/80">{helperLine}</p>
+        <p className="text-xs leading-relaxed text-cos-muted">{helperLine}</p>
       </div>
 
       <hr className="cos-divider" />

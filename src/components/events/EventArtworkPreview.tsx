@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { cn } from "@/lib/utils/cn";
@@ -12,6 +13,8 @@ interface EventArtworkPreviewProps {
   caption?: string | null;
   /** Frame aspect ratio for cover/default variants */
   frameAspect?: "four-three" | "square";
+  /** Prefer for above-the-fold LCP images (e.g. dashboard Next up card). */
+  priority?: boolean;
 }
 
 function getPlaceholderGradient(title: string): string {
@@ -26,11 +29,68 @@ function getPlaceholderGradient(title: string): string {
   return palette[index];
 }
 
+function isOptimizableImageUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
+function ArtworkImg({
+  src,
+  alt,
+  className,
+  width,
+  height,
+  sizes,
+  priority = false,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  width: number;
+  height: number;
+  sizes: string;
+  priority?: boolean;
+}) {
+  if (isOptimizableImageUrl(src)) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        sizes={sizes}
+        quality={75}
+        priority={priority}
+        fetchPriority={priority ? "high" : "auto"}
+        loading={priority ? "eager" : "lazy"}
+        className={className}
+      />
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+      className={className}
+    />
+  );
+}
+
 interface ArtworkImageFrameProps {
   artwork: HeroArtworkSelection;
   eventTitle: string;
   frameClassName?: string;
   tightFrame?: boolean;
+  priority?: boolean;
 }
 
 function ArtworkImageFrame({
@@ -38,24 +98,26 @@ function ArtworkImageFrame({
   eventTitle,
   frameClassName,
   tightFrame = false,
+  priority = false,
 }: ArtworkImageFrameProps) {
   return (
     <div
       className={cn(
-        "flex items-center justify-center overflow-hidden",
+        "relative flex items-center justify-center overflow-hidden",
         tightFrame ? "p-1" : "p-2.5",
         frameClassName,
       )}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <ArtworkImg
         src={artwork.imageUrl!}
         alt={`${eventTitle} artwork`}
+        width={680}
+        height={680}
+        sizes="(max-width: 1024px) 90vw, 340px"
+        priority={priority}
         className={cn(
           "block object-contain object-center",
-          tightFrame
-            ? "max-h-[95%] max-w-[95%]"
-            : "max-h-full max-w-full",
+          tightFrame ? "max-h-[95%] max-w-[95%]" : "max-h-full max-w-full",
         )}
       />
     </div>
@@ -69,6 +131,7 @@ export function EventArtworkPreview({
   variant = "cover",
   caption = null,
   frameAspect = "four-three",
+  priority = false,
 }: EventArtworkPreviewProps) {
   if (!hasDisplayableArtwork(artwork)) {
     return null;
@@ -85,10 +148,12 @@ export function EventArtworkPreview({
         )}
       >
         {hasImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <ArtworkImg
             src={artwork.imageUrl!}
             alt=""
+            width={128}
+            height={128}
+            sizes="64px"
             className="max-h-full max-w-full object-contain object-center"
           />
         ) : (
@@ -114,11 +179,14 @@ export function EventArtworkPreview({
           className,
         )}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <ArtworkImg
           src={artwork.imageUrl!}
           alt={`${eventTitle} artwork`}
-          className="block max-h-[192px] w-[90%] max-w-[280px] rounded-[22px] object-contain object-center shadow-sm shadow-slate-200/35"
+          width={560}
+          height={560}
+          sizes="(max-width: 1024px) 90vw, 280px"
+          priority={priority}
+          className="block h-auto max-h-[192px] w-[90%] max-w-[280px] rounded-[22px] object-contain object-center shadow-sm shadow-slate-200/35"
         />
         {caption && (
           <figcaption className="mt-1.5 w-[90%] max-w-[280px] text-right text-xs text-cos-muted">
@@ -146,6 +214,7 @@ export function EventArtworkPreview({
           artwork={artwork}
           eventTitle={eventTitle}
           tightFrame={false}
+          priority={priority}
           frameClassName={cn(
             isCover &&
               `${aspectClassName} w-full max-h-[200px] sm:max-h-[228px] lg:max-h-[252px]`,

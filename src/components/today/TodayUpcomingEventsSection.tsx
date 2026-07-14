@@ -31,7 +31,7 @@ export function TodayUpcomingEventsSection({
                     </p>
                     <p className="text-sm text-cos-muted">{event.statusLine}</p>
                     {event.progressLabel && (
-                      <p className="text-sm text-cos-muted/80">
+                      <p className="text-sm text-cos-muted">
                         {event.progressLabel}
                       </p>
                     )}
