@@ -38,7 +38,10 @@ export function isSentryVerifySecretValid(provided: string | null | undefined): 
   return provided.trim() === secret;
 }
 
-export function captureSentryServerTestError(): { ok: boolean; reason?: string } {
+export async function captureSentryServerTestError(): Promise<{
+  ok: boolean;
+  reason?: string;
+}> {
   if (!isSentryEnabled()) {
     return {
       ok: false,
@@ -53,6 +56,9 @@ export function captureSentryServerTestError(): { ok: boolean; reason?: string }
       new Error("Hey Ralli Sentry server verification error (safe test)"),
     );
   });
+
+  // Serverless functions can exit before the SDK finishes sending.
+  await Sentry.flush(5000);
 
   return { ok: true };
 }

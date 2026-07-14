@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   }
 
   if (side === "server") {
-    const result = captureSentryServerTestError();
+    const result = await captureSentryServerTestError();
     if (!result.ok) {
       return NextResponse.json(result, { status: 503 });
     }
