@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { ReportProblemHost } from "@/components/monitoring/ReportProblemHost";
 import { getAssignedApprovalsSchedulingCount, getChangeRequestsSchedulingCount } from "@/lib/approvals-scheduling/queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
@@ -36,6 +37,7 @@ export default async function DashboardLayout({
       inboxUnreadCount={inboxUnreadCount}
     >
       {children}
+      <ReportProblemHost />
     </DashboardShell>
   );
 }

@@ -1,29 +1,36 @@
 import { feedbackIntegration } from "@sentry/react";
 import type { Integration } from "@sentry/core";
-import { getSentryEnvironment } from "@/lib/monitoring/sentry-privacy";
 
-/** User Feedback widget — staging/preview only, never forced on production. */
-export function createStagingFeedbackIntegration(): Integration | null {
-  const environment = getSentryEnvironment();
-  const enabled =
-    process.env.NEXT_PUBLIC_SENTRY_USER_FEEDBACK === "true" ||
-    process.env.SENTRY_USER_FEEDBACK === "true" ||
-    environment === "preview" ||
-    environment === "staging";
-
-  if (!enabled) {
-    return null;
-  }
-
+/**
+ * Registers Sentry User Feedback (required for captureFeedback / screenshots).
+ * autoInject is always false — Hey Ralli shows a custom gated "Report a Problem"
+ * button from the authenticated dashboard layout instead.
+ */
+export function createReportProblemFeedbackIntegration(): Integration {
   return feedbackIntegration({
-    colorScheme: "system",
+    autoInject: false,
+    colorScheme: "light",
     showBranding: false,
-    triggerLabel: "Report a problem",
-    formTitle: "Report a problem to Hey Ralli",
+    enableScreenshot: true,
+    showName: false,
+    showEmail: false,
+    triggerLabel: "Report a Problem",
+    formTitle: "Report a Problem",
     submitButtonLabel: "Send report",
+    successMessageText: "Problem reported successfully",
     messagePlaceholder:
-      "What went wrong? Please avoid passwords, private family details, or payment info.",
-    isNameRequired: false,
-    isEmailRequired: false,
+      "Describe the problem. Avoid passwords, private family details, or payment info.",
+    themeLight: {
+      background: "#fffcf7",
+      foreground: "#2a2622",
+      accentBackground: "#2a2622",
+      accentForeground: "#fffcf7",
+      outline: "1px solid #ddd4c8",
+    },
   });
+}
+
+/** @deprecated Use createReportProblemFeedbackIntegration */
+export function createStagingFeedbackIntegration(): Integration | null {
+  return createReportProblemFeedbackIntegration();
 }

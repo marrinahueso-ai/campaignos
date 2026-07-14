@@ -4,9 +4,7 @@ import {
   isSentryEnabled,
   scrubSentryEvent,
 } from "@/lib/monitoring/sentry-privacy";
-import { createStagingFeedbackIntegration } from "@/lib/monitoring/feedback";
-
-const feedback = createStagingFeedbackIntegration();
+import { createReportProblemFeedbackIntegration } from "@/lib/monitoring/feedback";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -16,7 +14,7 @@ Sentry.init({
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 0,
   // Privacy-first: no session replay, no default PII
   sendDefaultPii: false,
-  integrations: feedback ? [feedback] : [],
+  integrations: [createReportProblemFeedbackIntegration()],
   beforeSend(event) {
     return scrubSentryEvent(event) as typeof event;
   },
