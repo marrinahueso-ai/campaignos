@@ -48,6 +48,7 @@ function buildEmptyPreviewContent(
     emailSendDate: milestone.suggestedDate,
     emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
+    manualUploadLink: "",
     approvalStatuses: [],
   };
 }
@@ -258,6 +259,7 @@ export function reconcilePreviewContent(
     emailSendDate: content.emailSendDate ?? content.scheduleDate,
     emailSendTime: content.emailSendTime ?? content.scheduleTime,
     manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",
+    manualUploadLink: content.manualUploadLink ?? "",
     approvalStatuses: content.approvalStatuses ?? defaultApprovalStatuses,
     generationStartedAt: content.generationStartedAt ?? null,
   };

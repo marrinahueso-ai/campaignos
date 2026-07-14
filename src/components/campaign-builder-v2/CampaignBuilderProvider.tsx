@@ -229,6 +229,7 @@ function buildNewMilestone(
     emailSendDate: inspiration.eventDate,
     emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
+    manualUploadLink: "",
     approvalStatuses: [
       {
         role: "creator",

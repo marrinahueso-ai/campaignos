@@ -14,6 +14,10 @@ export interface SendEmailInput {
   html: string;
   text?: string;
   attachments?: EmailAttachment[];
+  /** ISO 8601 or natural language — Resend schedules delivery (no attachments). */
+  scheduledAt?: string;
+  /** Override From (defaults to RESEND_FROM_EMAIL). */
+  from?: string;
 }
 
 export interface SendEmailResult {
@@ -22,10 +26,18 @@ export interface SendEmailResult {
   error?: string;
 }
 
-function resolveFromAddress(): string {
+export function resolveFromAddress(): string {
   return (
     process.env.RESEND_FROM_EMAIL?.trim() ||
     "Hey Ralli <onboarding@resend.dev>"
+  );
+}
+
+/** From address for Socials / manual-upload kits. */
+export function resolveSocialsFromAddress(): string {
+  return (
+    process.env.RESEND_SOCIALS_FROM_EMAIL?.trim() ||
+    "Hey Ralli Socials <Socials@heyralli.com>"
   );
 }
 
@@ -50,18 +62,25 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   const resend = new Resend(apiKey);
+  const isScheduled = Boolean(input.scheduledAt?.trim());
 
   const { data, error } = await resend.emails.send({
-    from: resolveFromAddress(),
+    from: input.from?.trim() || resolveFromAddress(),
     to: input.to,
     subject: input.subject,
     html: input.html,
     text: input.text,
-    attachments: input.attachments?.map((attachment) => ({
-      filename: attachment.filename,
-      content: attachment.content,
-      contentType: attachment.contentType,
-    })),
+    ...(isScheduled ? { scheduledAt: input.scheduledAt!.trim() } : {}),
+    // Resend does not allow attachments on scheduled emails.
+    ...(!isScheduled && input.attachments?.length
+      ? {
+          attachments: input.attachments.map((attachment) => ({
+            filename: attachment.filename,
+            content: attachment.content,
+            contentType: attachment.contentType,
+          })),
+        }
+      : {}),
   });
 
   if (error) {

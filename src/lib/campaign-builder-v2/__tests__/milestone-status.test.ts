@@ -50,6 +50,7 @@ function buildPreview(
     emailSendDate: "2026-07-01",
     emailSendTime: "09:00",
     manualEmailTo: "test@example.com",
+    manualUploadLink: "",
     approvalStatuses: [],
     ...overrides,
   };

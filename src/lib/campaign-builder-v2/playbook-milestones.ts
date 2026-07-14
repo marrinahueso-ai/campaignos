@@ -68,6 +68,7 @@ function buildPreviewForMilestone(
     emailSendDate: milestone.suggestedDate,
     emailSendTime: "09:00",
     manualEmailTo: "",
+    manualUploadLink: "",
     approvalStatuses: [
       { role: "creator", label: "Creator", status: "not-started", timestamp: null },
       {

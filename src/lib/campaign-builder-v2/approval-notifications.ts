@@ -1,6 +1,8 @@
 import "server-only";
 
-import { isEmailConfigured, sendEmail } from "@/lib/email/send";
+import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
+import type { EmailAttachment } from "@/lib/email/send";
+import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
 import { createClient } from "@/lib/supabase/server";
 
 export interface CampaignApprovalNotificationInput {
@@ -27,6 +29,13 @@ export interface CampaignManualUploadEmailInput {
   recipientEmail: string;
   scheduleLabel: string;
   schedulingItemId?: string | null;
+  storyArtworkUrl?: string | null;
+  storyCaption?: string | null;
+  feedCaption?: string | null;
+  uploadLink?: string | null;
+  organizationName?: string | null;
+  /** When set (ISO), Resend queues delivery for that time. */
+  scheduledAt?: string | null;
 }
 
 type NotificationType =
@@ -104,6 +113,9 @@ async function dispatchApprovalEmail(input: {
   text: string;
   schedulingItemId?: string | null;
   approvalRequestId?: string | null;
+  attachments?: EmailAttachment[];
+  scheduledAt?: string | null;
+  from?: string | null;
 }): Promise<CampaignApprovalNotificationResult> {
   if (!isEmailConfigured()) {
     await logApprovalNotification({
@@ -129,6 +141,9 @@ async function dispatchApprovalEmail(input: {
     subject: input.subject,
     html: input.html,
     text: input.text,
+    attachments: input.scheduledAt ? undefined : input.attachments,
+    scheduledAt: input.scheduledAt ?? undefined,
+    from: input.from ?? undefined,
   });
 
   await logApprovalNotification({
@@ -153,7 +168,9 @@ async function dispatchApprovalEmail(input: {
   return {
     success: true,
     wired: true,
-    message: "Email notification sent.",
+    message: input.scheduledAt
+      ? "Manual upload email scheduled with Resend."
+      : "Email notification sent.",
   };
 }
 
@@ -274,12 +291,31 @@ export async function sendCampaignApprovalNotification(
 export async function sendCampaignManualUploadEmail(
   input: CampaignManualUploadEmailInput,
 ): Promise<CampaignApprovalNotificationResult> {
-  return sendScheduledDeliveryEmail({
+  const content = await buildSocialsManualUploadEmail({
+    eventTitle: input.campaignName,
+    milestoneTitle: input.milestoneName,
+    scheduledLabel: input.scheduleLabel,
+    storyCaption: input.storyCaption ?? null,
+    feedCaption: input.feedCaption ?? null,
+    eventLink: input.uploadLink ?? null,
+    postKitUrl: approvalsPageUrl(input.eventId),
+    storyArtworkUrl: input.storyArtworkUrl ?? null,
+    organizationName: input.organizationName?.trim() || "Hey Ralli",
+  });
+
+  const scheduledAt = input.scheduledAt?.trim() || null;
+
+  return dispatchApprovalEmail({
     eventId: input.eventId,
-    campaignName: input.campaignName,
-    milestoneName: input.milestoneName,
+    notificationType: "scheduled_delivery",
     recipientEmail: input.recipientEmail,
-    scheduleLabel: input.scheduleLabel,
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
     schedulingItemId: input.schedulingItemId,
+    // Attachments only for immediate sends — Resend blocks them when scheduled.
+    attachments: scheduledAt ? undefined : content.attachments,
+    scheduledAt,
+    from: resolveSocialsFromAddress(),
   });
 }

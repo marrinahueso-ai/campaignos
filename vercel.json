@@ -13,6 +13,10 @@
       "schedule": "0 13 * * *"
     },
     {
+      "path": "/api/cron/manual-upload-emails",
+      "schedule": "30 13 * * *"
+    },
+    {
       "path": "/api/cron/inbox-sync",
       "schedule": "0 9 * * *"
     },

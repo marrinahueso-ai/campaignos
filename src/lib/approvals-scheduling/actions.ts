@@ -8,6 +8,7 @@ import {
   sendScheduledDeliveryEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { canApproveDraft } from "@/lib/auth/campaign-roles";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   approveCommunicationAction,
@@ -109,8 +110,10 @@ export async function approveUnifiedItemAction(input: {
       return { success: false, error: "Scheduling item not found." };
     }
 
+    const role = await getCurrentCampaignRole();
     if (
       !row.assigned_user_id &&
+      !canApproveDraft(role) &&
       (row.workflow_status === "in_queue" ||
         row.workflow_status === "assigned_to_me")
     ) {
@@ -137,27 +140,67 @@ export async function approveUnifiedItemAction(input: {
       input.recipientEmail ??
       null;
 
-    if (creatorEmail && input.campaignName && input.milestoneName) {
-      await sendContentApprovedEmail({
-        eventId: input.eventId,
-        campaignName: input.campaignName,
-        milestoneName: input.milestoneName,
-        recipientEmail: creatorEmail,
-        schedulingItemId: input.schedulingItemId,
-      });
+    const manualRecipient =
+      row.manual_email_to?.trim() || creatorEmail || null;
 
-      if (row.delivery_method === "manual-email") {
-        await sendCampaignManualUploadEmail({
+    if (input.campaignName && input.milestoneName) {
+      if (creatorEmail) {
+        await sendContentApprovedEmail({
           eventId: input.eventId,
           campaignName: input.campaignName,
           milestoneName: input.milestoneName,
           recipientEmail: creatorEmail,
-          scheduleLabel: row.schedule_at
-            ? formatDateTime(row.schedule_at)
-            : "Manual upload",
           schedulingItemId: input.schedulingItemId,
         });
-      } else if (row.schedule_at && nextStatus === "scheduled") {
+      }
+
+      if (row.delivery_method === "manual-email" && manualRecipient) {
+        const scheduleAtMs = row.schedule_at
+          ? new Date(row.schedule_at).getTime()
+          : NaN;
+        const dueNow =
+          !row.schedule_at ||
+          Number.isNaN(scheduleAtMs) ||
+          scheduleAtMs <= Date.now();
+        // Resend allows scheduling up to 30 days ahead.
+        const withinResendWindow =
+          !dueNow &&
+          scheduleAtMs - Date.now() <= 30 * 24 * 60 * 60 * 1000;
+
+        if (dueNow || withinResendWindow) {
+          const sendResult = await sendCampaignManualUploadEmail({
+            eventId: input.eventId,
+            campaignName: input.campaignName,
+            milestoneName: input.milestoneName,
+            recipientEmail: manualRecipient,
+            scheduleLabel: row.schedule_at
+              ? formatDateTime(row.schedule_at)
+              : "Manual upload",
+            schedulingItemId: input.schedulingItemId,
+            storyArtworkUrl: row.story_artwork_url,
+            storyCaption: row.story_caption,
+            feedCaption: row.caption_text,
+            uploadLink: row.manual_upload_link,
+            scheduledAt: dueNow ? null : row.schedule_at,
+          });
+
+          if (sendResult.success) {
+            const supabase = await createClient();
+            await supabase
+              .from("approval_scheduling_items")
+              .update({
+                manual_upload_email_sent_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", input.schedulingItemId);
+          }
+        }
+        // Beyond 30 days → daily cron /api/cron/manual-upload-emails
+      } else if (
+        creatorEmail &&
+        row.schedule_at &&
+        nextStatus === "scheduled"
+      ) {
         await sendScheduledDeliveryEmail({
           eventId: input.eventId,
           campaignName: input.campaignName,

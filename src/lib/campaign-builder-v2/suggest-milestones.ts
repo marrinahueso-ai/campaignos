@@ -30,6 +30,7 @@ function buildPreviewForMilestone(
     emailSendDate: milestone.suggestedDate,
     emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
+    manualUploadLink: "",
     approvalStatuses: [
       {
         role: "creator",

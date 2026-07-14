@@ -124,7 +124,9 @@ export function PreviewSettingsPanel({
             Email send time (manual upload)
           </p>
           <p className="text-xs text-cos-muted">
-            Defaults to publish time. Updates when publish schedule changes.
+            After approval, Resend queues the story kit (image link, caption, and
+            Instagram link) to arrive at this send time — no separate Resend
+            setup needed.
           </p>
           <Input
             type="date"
@@ -138,9 +140,20 @@ export function PreviewSettingsPanel({
           />
           <Input
             label="Send to"
+            type="email"
             value={preview.manualEmailTo}
             onChange={(e) => onUpdate({ manualEmailTo: e.target.value })}
           />
+          <Input
+            label="Link for Instagram"
+            type="url"
+            placeholder="https://…"
+            value={preview.manualUploadLink}
+            onChange={(e) => onUpdate({ manualUploadLink: e.target.value })}
+          />
+          <p className="text-xs text-cos-muted">
+            Optional. Included in the manual-upload email for link stickers.
+          </p>
         </div>
       )}
     </aside>
