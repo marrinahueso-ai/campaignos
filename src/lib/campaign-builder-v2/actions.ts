@@ -11,6 +11,7 @@ import { getPlaybookSteps } from "@/lib/playbooks/queries";
 import type { PlaybookMilestoneStep } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
 import {
+  ensurePurposesForGeneration,
   resolveSingleGenerationTarget,
   validateBeforeGeneration,
 } from "@/lib/campaign-builder-v2/validation";
@@ -451,9 +452,14 @@ export async function regenerateCaptionAction(
 export async function generateAllContentAction(
   input: GenerateAllContentInput,
 ): Promise<GenerateAllContentResult> {
+  const milestones = ensurePurposesForGeneration(
+    input.milestones,
+    input.inspiration.eventDate,
+  );
+
   const validation = validateBeforeGeneration({
     inspiration: input.inspiration,
-    milestones: input.milestones,
+    milestones,
     milestoneIds: input.milestoneIds,
   });
 
@@ -466,7 +472,7 @@ export async function generateAllContentAction(
   }
 
   const target = resolveSingleGenerationTarget({
-    milestones: input.milestones,
+    milestones,
     milestoneIds: input.milestoneIds,
   });
 
@@ -521,7 +527,7 @@ export async function generateAllContentAction(
       });
 
       const styleReferenceUrl = firstCampaignStyleReferenceUrl({
-        milestones: input.milestones,
+        milestones,
         previewContents: input.previewContents,
         excludeMilestoneId: milestone.id,
       });
@@ -653,7 +659,7 @@ export async function generateAllContentAction(
         try {
           await syncHeroFromMilestoneArtwork({
             eventId: input.eventId,
-            milestones: input.milestones,
+            milestones,
             milestoneId: milestone.id,
             artwork,
             options: { revalidate: false },

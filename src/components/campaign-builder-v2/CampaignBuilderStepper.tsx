@@ -15,12 +15,6 @@ interface CampaignBuilderStepperProps {
   onWarningClick?: (warning: StepWarning) => void;
 }
 
-const STEP_ORDER = CAMPAIGN_BUILDER_STEPS.map((s) => s.id);
-
-function stepIndex(step: CampaignBuilderStepId): number {
-  return STEP_ORDER.indexOf(step);
-}
-
 export function CampaignBuilderStepper({
   currentStep,
   stepStates,
@@ -28,7 +22,6 @@ export function CampaignBuilderStepper({
   onStepClick,
   onWarningClick,
 }: CampaignBuilderStepperProps) {
-  const currentIndex = stepIndex(currentStep);
   const warningCount = warnings.length;
 
   return (
@@ -58,9 +51,10 @@ export function CampaignBuilderStepper({
       <ol className="flex flex-wrap items-start gap-x-2 gap-y-3 lg:gap-x-0">
         {CAMPAIGN_BUILDER_STEPS.map((step, index) => {
           const state = stepStates[step.id];
-          const isComplete =
-            state?.statusLabel === "Complete" && index < currentIndex;
           const isCurrent = step.id === currentStep;
+          // Checkmark for completed work; keep current-step styling when on that step
+          const isComplete =
+            state?.statusLabel === "Complete" && !isCurrent;
 
           return (
             <li key={step.id} className="flex min-w-0 flex-1 items-start">

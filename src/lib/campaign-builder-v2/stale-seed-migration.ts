@@ -3,7 +3,8 @@
  * Older seeds baked volunteer CTAs and demo captions into milestones and previews.
  */
 
-import type { MilestonePreviewContent } from "./types.ts";
+import { defaultPurposeForMilestone } from "./milestone-purpose.ts";
+import type { MilestoneCategory, MilestonePreviewContent } from "./types.ts";
 
 /**
  * @deprecated The one-off AI artwork storage purge used to strip every
@@ -136,10 +137,18 @@ export function sanitizeGlobalAiGuidance(value: string | null | undefined): stri
 export function sanitizeSeedPurpose(
   purpose: string | null | undefined,
   milestoneName: string,
+  options?: {
+    relativeDay?: number | null;
+    category?: MilestoneCategory | null;
+  },
 ): string {
   const trimmed = purpose?.trim() ?? "";
   if (!trimmed) {
-    return trimmed;
+    return defaultPurposeForMilestone({
+      name: milestoneName,
+      relativeDay: options?.relativeDay ?? null,
+      category: options?.category ?? null,
+    });
   }
 
   const mapped = KNOWN_STALE_PURPOSES[normalizeComparable(trimmed)];

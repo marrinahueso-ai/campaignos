@@ -275,7 +275,13 @@ export function isApprovedArtworkAsset(asset: EventAsset | null): boolean {
     return false;
   }
 
-  if (asset.planStatus === "in_progress" || asset.planStatus === "generated") {
+  // Explicit non-approved plan states must never count as publish-ready,
+  // even when the file row is still status=uploaded (legacy concepts).
+  if (
+    asset.planStatus === "in_progress" ||
+    asset.planStatus === "generated" ||
+    asset.planStatus === "needed"
+  ) {
     return false;
   }
 

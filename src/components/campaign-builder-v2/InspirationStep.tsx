@@ -123,6 +123,7 @@ export function InspirationStep() {
   const {
     session,
     updateInspiration,
+    setPlaybookId,
     selectCampaign,
     addInspirationImage,
     removeInspirationImage,
@@ -143,6 +144,8 @@ export function InspirationStep() {
   const [continueError, setContinueError] = useState<string | null>(null);
   const [isContinuing, setIsContinuing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [playbookError, setPlaybookError] = useState<string | null>(null);
+  const [isUpdatingPlaybook, setIsUpdatingPlaybook] = useState(false);
 
   const { inspiration } = session;
   const config = useMemo(
@@ -268,7 +271,25 @@ export function InspirationStep() {
             <Select
               label="Playbook"
               value={inspiration.playbookId}
-              onChange={(e) => updateInspiration({ playbookId: e.target.value })}
+              disabled={isUpdatingPlaybook}
+              onChange={(e) => {
+                const nextId = e.target.value;
+                setPlaybookError(null);
+                setIsUpdatingPlaybook(true);
+                void (async () => {
+                  try {
+                    const result = await setPlaybookId(nextId);
+                    if (!result.success) {
+                      setPlaybookError(
+                        result.message ??
+                          "Could not update playbook milestones.",
+                      );
+                    }
+                  } finally {
+                    setIsUpdatingPlaybook(false);
+                  }
+                })();
+              }}
             >
               {playbookOptions.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -277,6 +298,15 @@ export function InspirationStep() {
               ))}
             </Select>
           </div>
+
+          {playbookError && (
+            <p
+              className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              role="alert"
+            >
+              {playbookError}
+            </p>
+          )}
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="space-y-8">

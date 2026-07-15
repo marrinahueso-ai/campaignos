@@ -9,6 +9,8 @@ import {
   inferGenerationStatus,
   isMilestoneContentComplete,
   milestoneHasArtwork,
+  MILESTONE_STATUS_LABELS,
+  resolveMilestoneGenerationStatus,
 } from "../milestone-status.ts";
 import { emptyMilestoneArtwork, normalizeMilestoneArtwork } from "../platform-utils.ts";
 import type {
@@ -294,5 +296,80 @@ describe("milestone-status", () => {
 
     assert.equal(findNextMilestoneToGenerate(milestones, previewContents), null);
     assert.equal(allMilestonesGenerated(milestones, previewContents), true);
+  });
+});
+
+describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () => {
+  it("shows Not started when there is no preview content", () => {
+    const status = resolveMilestoneGenerationStatus(null, [
+      "facebook-feed",
+      "instagram-feed",
+    ]);
+    assert.equal(status, "ready_to_generate");
+    assert.equal(MILESTONE_STATUS_LABELS[status], "Not started");
+  });
+
+  it("does not show Not started for a completed milestone even when statusTag is stale", () => {
+    // Simulate the regression: milestone.statusTag stayed "not-started" after
+    // generation, but preview content is complete.
+    assert.equal(baseMilestone.statusTag, "not-started");
+
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: null,
+      },
+      captions: [
+        { platform: "facebook", text: "See you at the fair!" },
+        { platform: "instagram", text: "See you at the fair!" },
+      ],
+      generationStatus: "generated",
+      status: "needs-review",
+      // Empty approvalStatuses would make Array.every() true — keep an
+      // explicit non-approved entry so this case stays content-complete.
+      approvalStatuses: [
+        {
+          role: "creator",
+          label: "Creator",
+          status: "not-started",
+          timestamp: null,
+        },
+      ],
+    });
+
+    const status = resolveMilestoneGenerationStatus(
+      preview,
+      baseMilestone.platformFormats,
+    );
+    assert.equal(status, "generated");
+    assert.equal(MILESTONE_STATUS_LABELS[status], "Complete");
+    assert.notEqual(MILESTONE_STATUS_LABELS[status], "Not started");
+  });
+
+  it("matches rail and editor for awaiting approval", () => {
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: null,
+      },
+      captions: [
+        { platform: "facebook", text: "Hello" },
+        { platform: "instagram", text: "Hello" },
+      ],
+      generationStatus: "generated",
+      status: "ready",
+      approvalStatuses: [
+        {
+          role: "creator",
+          label: "Creator",
+          status: "pending",
+          timestamp: null,
+        },
+      ],
+    });
+
+    const status = resolveMilestoneGenerationStatus(preview);
+    assert.equal(status, "awaiting_approval");
+    assert.equal(MILESTONE_STATUS_LABELS[status], "Needs approval");
   });
 });

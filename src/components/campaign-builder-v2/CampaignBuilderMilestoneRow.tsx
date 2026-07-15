@@ -10,10 +10,15 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import {
+  MILESTONE_STATUS_LABELS,
+  resolveMilestoneGenerationStatus,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import type {
   CampaignBuilderMilestone,
   MilestoneCategory,
-  MilestoneStatusTag,
+  MilestoneGenerationStatus,
+  MilestonePreviewContent,
 } from "@/lib/campaign-builder-v2/types";
 
 const ROW_GRID =
@@ -26,12 +31,18 @@ const CATEGORY_LABELS: Record<MilestoneCategory, string> = {
   recap: "Recap",
 };
 
-const STATUS_TAG_STYLES: Record<MilestoneStatusTag, string> = {
-  complete: "bg-cos-success-bg text-cos-success-text",
-  "in-progress": "bg-cos-info text-cos-info-text",
-  "needs-review": "bg-cos-warning text-cos-warning-text",
-  pending: "bg-cos-accent-soft text-cos-text",
-  "not-started": "bg-cos-bg text-cos-muted border border-cos-border",
+const STATUS_STYLES: Record<MilestoneGenerationStatus, string> = {
+  ready_to_generate: "bg-cos-bg text-cos-muted border border-cos-border",
+  queued: "bg-cos-info text-cos-info-text",
+  generating: "bg-cos-info text-cos-info-text",
+  generated: "bg-cos-success-bg text-cos-success-text",
+  needs_review: "bg-cos-warning text-cos-warning-text",
+  changes_requested: "bg-cos-warning text-cos-warning-text",
+  awaiting_approval: "bg-cos-accent-soft text-cos-text",
+  approved: "bg-cos-success-bg text-cos-success-text",
+  scheduled: "bg-cos-success-bg text-cos-success-text",
+  published: "bg-cos-success-bg text-cos-success-text",
+  failed: "bg-cos-warning/20 text-cos-warning-text border border-cos-warning/40",
 };
 
 function PlatformIcons() {
@@ -62,6 +73,7 @@ function formatDate(dateStr: string): string {
 
 interface CampaignBuilderMilestoneRowProps {
   milestone: CampaignBuilderMilestone;
+  preview?: MilestonePreviewContent | null;
   index: number;
   menuOpenId: string | null;
   isGenerating?: boolean;
@@ -76,6 +88,7 @@ interface CampaignBuilderMilestoneRowProps {
 
 export function CampaignBuilderMilestoneRow({
   milestone,
+  preview = null,
   index,
   menuOpenId,
   isGenerating = false,
@@ -101,6 +114,10 @@ export function CampaignBuilderMilestoneRow({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  const status: MilestoneGenerationStatus = isGenerating
+    ? "generating"
+    : resolveMilestoneGenerationStatus(preview, milestone.platformFormats);
 
   return (
     <div
@@ -130,10 +147,10 @@ export function CampaignBuilderMilestoneRow({
         <span
           className={cn(
             "inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-            STATUS_TAG_STYLES[milestone.statusTag],
+            STATUS_STYLES[status],
           )}
         >
-          {milestone.statusTag.replace("-", " ")}
+          {MILESTONE_STATUS_LABELS[status]}
         </span>
         <span
           className={cn(

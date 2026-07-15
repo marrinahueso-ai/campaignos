@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   getLocationHash,
   normalizeLocationHash,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/campaign-builder-v2/actions";
 import {
   milestonesLostOnPlaybookSwitch,
+  playbookSwitchConfirmMessage,
   reconcileMilestonesWithPlaybookSteps,
 } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
@@ -60,9 +62,11 @@ import {
   isStaleGeneration,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
+  campaignBuilderHref,
   isValidCampaignBuilderStep,
   stepFromHash,
 } from "@/lib/campaign-builder-v2/navigation";
+import { shouldRetainInMemorySessionOnHydrate } from "@/lib/campaign-builder-v2/session-identity";
 import type {
   BrandKitOption,
   CampaignBuilderInspiration,
@@ -120,6 +124,9 @@ interface CampaignBuilderContextValue {
   generationProgress: ContentGenerationProgress | null;
   goToStep: (step: CampaignBuilderStepId) => void;
   updateInspiration: (patch: Partial<CampaignBuilderInspiration>) => void;
+  setPlaybookId: (
+    playbookId: string,
+  ) => Promise<{ success: boolean; message?: string }>;
   selectCampaign: (campaignId: string) => void;
   addInspirationImage: (file: File) => void;
   removeInspirationImage: (imageId: string) => void;
@@ -403,6 +410,7 @@ export function CampaignBuilderProvider({
   restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
+  const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
     hydrateWithArtworkBackup(
       initialSession,
@@ -487,6 +495,87 @@ export function CampaignBuilderProvider({
     await persistSession(sessionRef.current);
   }, [persistSession]);
 
+  const syncMilestonesToSelectedPlaybook = useCallback(
+    async (options?: {
+      playbookId?: string;
+      eventDate?: string;
+      confirm?: boolean;
+    }): Promise<{ success: boolean; changed: boolean; message?: string }> => {
+      const current = sessionRef.current;
+      const playbookId =
+        options?.playbookId ?? current.inspiration.playbookId;
+      const resolvedEventDate =
+        options?.eventDate ?? current.inspiration.eventDate ?? eventDate;
+      const milestonesPlaybookId = current.milestonesPlaybookId ?? null;
+
+      if (!playbookId || playbookId === milestonesPlaybookId) {
+        return { success: true, changed: false };
+      }
+
+      const stepsResult = await getPlaybookMilestoneStepsAction(playbookId);
+      if (!stepsResult.success) {
+        return {
+          success: false,
+          changed: false,
+          message: "Could not load playbook milestones.",
+        };
+      }
+
+      // Keep existing milestones when the playbook has no steps in the DB
+      // (e.g. a demo/legacy playbook id that was never a real row).
+      if (stepsResult.steps.length === 0) {
+        return { success: true, changed: false };
+      }
+
+      const atRisk = milestonesLostOnPlaybookSwitch(
+        stepsResult.steps,
+        current.milestones,
+        current.previewContents,
+      );
+      if (atRisk.length > 0 && options?.confirm !== false) {
+        const confirmed = window.confirm(
+          playbookSwitchConfirmMessage(atRisk),
+        );
+        if (!confirmed) {
+          return {
+            success: false,
+            changed: false,
+            message: "Playbook change canceled — milestones unchanged.",
+          };
+        }
+      }
+
+      const rebuilt = reconcileMilestonesWithPlaybookSteps(
+        stepsResult.steps,
+        resolvedEventDate,
+        current.milestones,
+        current.previewContents,
+      );
+
+      const selectedStillPresent = rebuilt.milestones.some(
+        (milestone) => milestone.id === current.selectedMilestoneId,
+      );
+
+      const next: CampaignBuilderSession = {
+        ...current,
+        inspiration: {
+          ...current.inspiration,
+          playbookId,
+        },
+        milestones: rebuilt.milestones,
+        previewContents: rebuilt.previewContents,
+        milestonesPlaybookId: playbookId,
+        selectedMilestoneId: selectedStillPresent
+          ? current.selectedMilestoneId
+          : (rebuilt.milestones[0]?.id ?? null),
+      };
+      sessionRef.current = next;
+      setSession(next);
+      return { success: true, changed: true };
+    },
+    [eventDate],
+  );
+
   /**
    * Creative Setup primary CTA: normalize None/empty, save session, navigate
    * to milestones. Never generates artwork/captions or marks milestones complete.
@@ -512,54 +601,27 @@ export function CampaignBuilderProvider({
       sessionRef.current.inspiration,
     );
 
-    const selectedPlaybookId = normalizedInspiration.playbookId;
-    let milestones = sessionRef.current.milestones;
-    let previewContents = sessionRef.current.previewContents;
-    let milestonesPlaybookId = sessionRef.current.milestonesPlaybookId ?? null;
-
-    if (selectedPlaybookId && selectedPlaybookId !== milestonesPlaybookId) {
-      const stepsResult = await getPlaybookMilestoneStepsAction(selectedPlaybookId);
-
-      if (stepsResult.success && stepsResult.steps.length > 0) {
-        const atRisk = milestonesLostOnPlaybookSwitch(
-          stepsResult.steps,
-          milestones,
-          previewContents,
-        );
-        if (atRisk.length > 0) {
-          const confirmed = window.confirm(
-            `Switching playbooks will remove ${atRisk.length} milestone${atRisk.length === 1 ? "" : "s"} that ${atRisk.length === 1 ? "doesn't" : "don't"} belong to the new playbook, along with their existing notes/artwork/captions: ${atRisk.map((m) => m.name).join(", ")}.\n\nContinue?`,
-          );
-          if (!confirmed) {
-            return {
-              success: false,
-              message: "Playbook change canceled — milestones unchanged.",
-            };
-          }
-        }
-
-        const rebuilt = reconcileMilestonesWithPlaybookSteps(
-          stepsResult.steps,
-          normalizedInspiration.eventDate,
-          milestones,
-          previewContents,
-        );
-        milestones = rebuilt.milestones;
-        previewContents = rebuilt.previewContents;
-        milestonesPlaybookId = selectedPlaybookId;
-      }
-      // If the playbook has no steps in the DB (e.g. a demo/legacy playbook
-      // id that was never a real row), keep the existing milestones rather
-      // than wiping them out.
-    }
-
-    const next = {
+    const withNormalized: CampaignBuilderSession = {
       ...sessionRef.current,
       inspiration: normalizedInspiration,
-      milestones,
-      previewContents,
-      milestonesPlaybookId,
-      currentStep: "milestones" as const,
+    };
+    sessionRef.current = withNormalized;
+    setSession(withNormalized);
+
+    const syncResult = await syncMilestonesToSelectedPlaybook({
+      playbookId: normalizedInspiration.playbookId,
+      eventDate: normalizedInspiration.eventDate,
+    });
+    if (!syncResult.success) {
+      return {
+        success: false,
+        message: syncResult.message,
+      };
+    }
+
+    const next: CampaignBuilderSession = {
+      ...sessionRef.current,
+      currentStep: "milestones",
     };
     sessionRef.current = next;
     setSession(next);
@@ -567,7 +629,7 @@ export function CampaignBuilderProvider({
     setCurrentStep("milestones");
     await persistSession(next);
     return { success: true };
-  }, [persistSession]);
+  }, [persistSession, syncMilestonesToSelectedPlaybook]);
 
   const updateSession = useCallback(
     (updater: (prev: CampaignBuilderSession) => CampaignBuilderSession) => {
@@ -598,14 +660,26 @@ export function CampaignBuilderProvider({
         ? previewSessionRichness(localForHydrate)
         : 0;
 
-      // Never let a remount hydrate overwrite richer in-memory OR localStorage
-      // artwork with a stale server/default snapshot.
-      if (prevRichness > hydratedRichness) {
+      // Never let a remount hydrate overwrite richer in-memory artwork with a
+      // stale server/default snapshot — but only for the SAME campaign.
+      // Switching eventId must drop the previous campaign's previews.
+      if (
+        shouldRetainInMemorySessionOnHydrate({
+          previousEventId: prev.eventId,
+          routeEventId: eventId,
+          previousRichness: prevRichness,
+          hydratedRichness,
+        })
+      ) {
         persistLocalSession(prev);
         return prev;
       }
 
-      if (localRichness > hydratedRichness && localForHydrate) {
+      if (
+        localRichness > hydratedRichness &&
+        localForHydrate &&
+        localForHydrate.eventId === eventId
+      ) {
         const keepLocal = hydrateWithArtworkBackup(
           localForHydrate,
           null,
@@ -734,10 +808,24 @@ export function CampaignBuilderProvider({
 
   const goToStep = useCallback(
     (step: CampaignBuilderStepId) => {
-      setLocationHash(step);
-      updateSession((prev) => ({ ...prev, currentStep: step }));
+      void (async () => {
+        const leavingInspiration = currentStepRef.current === "inspiration";
+        const enteringMilestoneFlow =
+          step === "milestones" || step === "preview" || step === "review";
+        if (leavingInspiration || enteringMilestoneFlow) {
+          const syncResult = await syncMilestonesToSelectedPlaybook();
+          if (!syncResult.success) {
+            return;
+          }
+          if (syncResult.changed) {
+            await persistSession(sessionRef.current);
+          }
+        }
+        setLocationHash(step);
+        updateSession((prev) => ({ ...prev, currentStep: step }));
+      })();
     },
-    [updateSession],
+    [persistSession, syncMilestonesToSelectedPlaybook, updateSession],
   );
 
   const updateInspiration = useCallback(
@@ -750,14 +838,72 @@ export function CampaignBuilderProvider({
     [updateSession],
   );
 
+  const setPlaybookId = useCallback(
+    async (
+      playbookId: string,
+    ): Promise<{ success: boolean; message?: string }> => {
+      const previous = sessionRef.current;
+      const optimistic: CampaignBuilderSession = {
+        ...previous,
+        inspiration: {
+          ...previous.inspiration,
+          playbookId,
+        },
+      };
+      sessionRef.current = optimistic;
+      setSession(optimistic);
+
+      const syncResult = await syncMilestonesToSelectedPlaybook({
+        playbookId,
+      });
+      if (!syncResult.success) {
+        const reverted: CampaignBuilderSession = {
+          ...sessionRef.current,
+          inspiration: {
+            ...sessionRef.current.inspiration,
+            playbookId: previous.inspiration.playbookId,
+          },
+          milestones: previous.milestones,
+          previewContents: previous.previewContents,
+          milestonesPlaybookId: previous.milestonesPlaybookId,
+          selectedMilestoneId: previous.selectedMilestoneId,
+        };
+        sessionRef.current = reverted;
+        setSession(reverted);
+        return {
+          success: false,
+          message:
+            syncResult.message ??
+            "Playbook change canceled — milestones unchanged.",
+        };
+      }
+
+      await persistSession(sessionRef.current);
+      return { success: true };
+    },
+    [persistSession, syncMilestonesToSelectedPlaybook],
+  );
+
   const selectCampaign = useCallback(
     (campaignId: string) => {
       const campaign = campaignOptions.find((option) => option.id === campaignId);
       if (!campaign) {
         return;
       }
+
+      // The campaign dropdown lists other events. Switching must open that
+      // event's Create with AI workspace — never rename the current session
+      // while keeping another campaign's artwork/captions.
+      if (campaign.id !== eventId) {
+        void flushSave().finally(() => {
+          router.push(campaignBuilderHref(campaign.id, currentStepRef.current));
+        });
+        return;
+      }
+
       updateSession((prev) => ({
         ...prev,
+        eventId: campaign.id,
         inspiration: {
           ...prev.inspiration,
           campaignId: campaign.id,
@@ -766,7 +912,7 @@ export function CampaignBuilderProvider({
         },
       }));
     },
-    [campaignOptions, updateSession],
+    [campaignOptions, eventId, flushSave, router, updateSession],
   );
 
   const addInspirationImage = useCallback(
@@ -1202,7 +1348,7 @@ export function CampaignBuilderProvider({
               timeoutMs: GENERATION_STALL_TIMEOUT_MS,
               warningMs: GENERATION_STALL_WARNING_MS,
               stallMessage:
-                "Artwork generation stalled — no response after several minutes.",
+                "Artwork generation is taking longer than expected. Feed and story images are created one after another and can take a few minutes.",
             },
           );
         })();
@@ -1604,6 +1750,7 @@ export function CampaignBuilderProvider({
       generationProgress,
       goToStep,
       updateInspiration,
+      setPlaybookId,
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,
@@ -1649,6 +1796,7 @@ export function CampaignBuilderProvider({
       generationProgress,
       goToStep,
       updateInspiration,
+      setPlaybookId,
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,

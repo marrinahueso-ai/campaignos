@@ -111,6 +111,15 @@ describe("validateMilestonesForGeneration", () => {
     assert.equal(result.valid, false);
     assert.match(result.message ?? "", /purpose/i);
   });
+
+  it("auto-fills blank purpose before generation", () => {
+    const result = validateBeforeGeneration({
+      inspiration: baseInspiration,
+      milestones: [{ ...baseMilestone, purpose: "" }],
+      milestoneIds: ["ms-1"],
+    });
+    assert.equal(result.valid, true);
+  });
 });
 
 describe("validateBeforeGeneration", () => {

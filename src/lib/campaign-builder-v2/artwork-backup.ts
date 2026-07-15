@@ -38,10 +38,6 @@ export function artworkBackupKey(eventId: string): string {
   return `campaign-builder-v2-artwork:${eventId}`;
 }
 
-function normalizeName(name: string): string {
-  return name.trim().toLowerCase();
-}
-
 export function buildArtworkBackup(
   session: CampaignBuilderSession,
 ): ArtworkBackupMap {
@@ -120,23 +116,11 @@ function backupEntryForMilestone(
   backup: ArtworkBackupMap,
   milestone: CampaignBuilderMilestone,
 ): ArtworkBackupEntry | null {
+  // Exact milestoneId only — never match by name. Shared playbook titles
+  // across campaigns must not pull another milestone's artwork/captions.
   const byId = backup[milestone.id];
   if (byId && (byId.artwork.feedUrl || byId.artwork.storyUrl)) {
     return byId;
-  }
-
-  const targetName = normalizeName(milestone.name);
-  if (!targetName) {
-    return null;
-  }
-
-  for (const entry of Object.values(backup)) {
-    if (
-      normalizeName(entry.milestoneName) === targetName &&
-      (entry.artwork.feedUrl || entry.artwork.storyUrl)
-    ) {
-      return entry;
-    }
   }
 
   return null;

@@ -32,7 +32,7 @@ export function MilestoneEmptyState({
         </p>
         <p className="mt-2 text-sm text-cos-muted">
           {isGenerating
-            ? "Artwork and captions are being created. You can work on other milestones while this finishes."
+            ? "Creating feed and story artwork one after another, then captions. This often takes a few minutes — you can keep working on other milestones."
             : `Generate feed, story, and caption content for ${milestoneName}.`}
         </p>
       </div>

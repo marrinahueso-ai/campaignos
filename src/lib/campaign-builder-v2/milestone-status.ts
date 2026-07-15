@@ -11,10 +11,14 @@ import type {
   MilestonePreviewStatus,
 } from "./types.ts";
 
-const STALE_GENERATION_MS = 5 * 60 * 1000;
+const STALE_GENERATION_MS = 6 * 60 * 1000;
 
-/** Soft warning before hard stall timeout (Create with AI generation). */
-export const GENERATION_STALL_WARNING_MS = 2 * 60 * 1000;
+/**
+ * Soft warning before hard stall timeout.
+ * Feed + story are generated sequentially (story often uses the feed as reference),
+ * so a healthy dual-image run commonly exceeds 2 minutes.
+ */
+export const GENERATION_STALL_WARNING_MS = 4 * 60 * 1000;
 
 /** Hard stall timeout — matches stale generation recovery. */
 export const GENERATION_STALL_TIMEOUT_MS = STALE_GENERATION_MS;
@@ -22,18 +26,36 @@ export const GENERATION_STALL_TIMEOUT_MS = STALE_GENERATION_MS;
 export { STALE_GENERATION_MS };
 
 export const MILESTONE_STATUS_LABELS: Record<MilestoneGenerationStatus, string> = {
-  ready_to_generate: "Ready to generate",
-  queued: "Queued",
-  generating: "Generating",
+  ready_to_generate: "Not started",
+  queued: "In progress",
+  generating: "In progress",
   generated: "Complete",
   needs_review: "Needs review",
   changes_requested: "Changes requested",
-  awaiting_approval: "Awaiting approval",
+  awaiting_approval: "Needs approval",
   approved: "Approved",
   scheduled: "Scheduled",
   published: "Published",
   failed: "Failed",
 };
+
+/**
+ * Shared milestone status for timeline rows, preview rail, and edit modal.
+ * Always derive from preview content via inferGenerationStatus — never trust
+ * the persisted milestone.statusTag field alone (it stays "not-started" until
+ * manually edited and does not update when artwork/captions are generated).
+ */
+export function resolveMilestoneGenerationStatus(
+  preview: MilestonePreviewContent | null | undefined,
+  fallbackFormats: MilestonePreviewContent["enabledFormats"] = [],
+): MilestoneGenerationStatus {
+  if (!preview) {
+    return "ready_to_generate";
+  }
+  const formats =
+    preview.enabledFormats.length > 0 ? preview.enabledFormats : fallbackFormats;
+  return inferGenerationStatus(preview, formats);
+}
 
 export function sortedMilestones(
   milestones: CampaignBuilderMilestone[],

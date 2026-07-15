@@ -97,18 +97,20 @@ export function PreviewSettingsPanel({
           Schedule
         </p>
         <Input
+          label="Publish date"
           type="date"
           value={preview.scheduleDate}
           onChange={(e) => onUpdate({ scheduleDate: e.target.value })}
         />
         <Input
+          label="Publish time"
           type="time"
           value={preview.scheduleTime}
           onChange={(e) => onUpdate({ scheduleTime: e.target.value })}
         />
         <button
           type="button"
-          className="flex items-center gap-1.5 text-xs font-medium text-cos-accent transition-colors hover:text-cos-text"
+          className="flex items-center gap-1.5 text-xs font-medium text-cos-text transition-colors hover:text-cos-muted"
         >
           <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
           Auto-suggest best time

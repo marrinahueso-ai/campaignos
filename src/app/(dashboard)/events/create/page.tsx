@@ -1,10 +1,20 @@
 import { CreateEventForm } from "@/components/events/CreateEventForm";
+import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 
 export const metadata = {
   title: "Create campaign",
 };
 
-export default function CreateEventPage() {
+export default async function CreateEventPage() {
+  const organization = await getLatestOrganization();
+  const playbooks = await getPlaybooksForOrganization(organization?.id ?? null);
+  const playbookOptions = playbooks.map((playbook) => ({
+    id: playbook.id,
+    name: playbook.name,
+    eventType: playbook.eventType,
+  }));
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
@@ -14,7 +24,7 @@ export default function CreateEventPage() {
         </p>
       </div>
 
-      <CreateEventForm />
+      <CreateEventForm playbookOptions={playbookOptions} />
     </div>
   );
 }

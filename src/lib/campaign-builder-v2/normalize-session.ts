@@ -428,7 +428,10 @@ export function normalizeCampaignBuilderSession(
   const inspiration = migrateLegacyCreativeFields(
     {
       ...raw.inspiration,
-      campaignId: raw.inspiration?.campaignId ?? eventId,
+      // Bind identity to the route event — never keep another campaign's id/title
+      // from a corrupted local/server snapshot (e.g. old Inspiration dropdown rename).
+      campaignId: eventId,
+      campaignName: eventTitle || defaults.inspiration.campaignName,
       primarySchoolColor:
         raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
       secondarySchoolColor:
@@ -452,7 +455,9 @@ export function normalizeCampaignBuilderSession(
           milestone.platformFormats ?? defaultEnabledFormats(),
         artworkNotes: sanitizeSeedNotes(milestone.artworkNotes),
         captionNotes: sanitizeSeedNotes(milestone.captionNotes),
-        purpose: sanitizeSeedPurpose(milestone.purpose, name),
+        purpose: sanitizeSeedPurpose(milestone.purpose, name, {
+          category: milestone.category,
+        }),
         statusTag: milestone.statusTag ?? "not-started",
         sortOrder: milestone.sortOrder ?? index,
         creativeOverrides: normalizeMilestoneCreativeOverrides(

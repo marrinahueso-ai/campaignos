@@ -299,6 +299,8 @@ export function PreviewStep() {
                             <ArtworkPlaceholder
                               aspectClassName={aspectClassForView(view)}
                               imageUrl={imageUrl}
+                              alt={`${option?.label ?? view} artwork`}
+                              priority={view === "feed"}
                               className={
                                 view === "story" ? "max-h-64" : undefined
                               }

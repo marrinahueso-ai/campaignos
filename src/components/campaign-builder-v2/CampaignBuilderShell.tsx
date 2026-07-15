@@ -150,6 +150,7 @@ export function CampaignBuilderShell({
 }: CampaignBuilderShellProps) {
   return (
     <CampaignBuilderProvider
+      key={eventId}
       eventId={eventId}
       eventTitle={eventTitle}
       eventDate={eventDate}

@@ -4,12 +4,12 @@ import type {
   CampaignBuilderStepId,
   MilestonePreviewContent,
   StepWarning,
-} from "@/lib/campaign-builder-v2/types";
+} from "./types.ts";
 import {
   countCompleteMilestones,
   derivedPreviewStatus,
-} from "@/lib/campaign-builder-v2/milestone-status";
-import { CAMPAIGN_BUILDER_STEPS } from "@/lib/campaign-builder-v2/navigation";
+} from "./milestone-status.ts";
+import { CAMPAIGN_BUILDER_STEPS } from "./navigation.ts";
 
 export function computeCampaignHealthPercent(
   milestones: CampaignBuilderMilestone[],
@@ -109,7 +109,10 @@ export function computeStepperStates(
     pendingLabel: string,
   ): StepperStepState {
     const stepIndex = stepOrder.indexOf(step);
-    if (complete && stepIndex < currentIndex) {
+    // Completion is based on actual work done, not whether the user has
+    // navigated past this step — otherwise complete steps ahead of the
+    // current page incorrectly show "Not started".
+    if (complete) {
       return { subtitle: "Complete", statusLabel: "Complete", isWarning: false };
     }
     if (warning) {
