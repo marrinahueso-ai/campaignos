@@ -4,6 +4,9 @@ import { getInboxPageData } from "@/lib/inbox/queries";
 export const metadata = {
   title: "Communications Hub",
   description: "AI-Powered Inbox for Social Media",
+  alternates: {
+    canonical: "/communications",
+  },
 };
 
 export default async function CommunicationsPage() {

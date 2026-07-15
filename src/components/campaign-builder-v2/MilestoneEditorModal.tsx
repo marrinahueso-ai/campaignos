@@ -60,8 +60,8 @@ function statusTagFromGeneration(
       return "complete";
     case "queued":
     case "generating":
-      return "in-progress";
     case "needs_review":
+      return "in-progress";
     case "changes_requested":
       return "needs-review";
     case "awaiting_approval":

@@ -89,7 +89,7 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
     >
       <span className="h-1.5 w-1.5 rounded-full bg-[#1a6b4a]" aria-hidden />
       {label}
-      <span className="text-[#1a6b4a]/70">
+      <span className="text-[#145a3e]">
         • Updated {formatRelativeUpdated(connection.lastSyncedAt)}
       </span>
     </Link>
@@ -112,6 +112,7 @@ export function CommunicationsTopBar({
     <div className="flex flex-col gap-4 border-b border-cos-border pb-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         <label className="relative min-w-[12rem] flex-1">
+          <span className="sr-only">Search conversations</span>
           <Search
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
             aria-hidden

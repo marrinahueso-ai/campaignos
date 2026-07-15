@@ -310,7 +310,9 @@ export function ExpandedMilestoneReview({
                       type="email"
                       value={preview.manualEmailTo}
                       onChange={(e) =>
-                        onUpdatePreview({ manualEmailTo: e.target.value })
+                        onUpdatePreview({
+                          manualEmailTo: e.target.value,
+                        })
                       }
                     />
                   </dd>
