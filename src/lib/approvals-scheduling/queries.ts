@@ -1,12 +1,18 @@
 import "server-only";
 
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { canApproveDraft } from "@/lib/auth/campaign-roles";
 import { getPlanningCalendarData } from "@/lib/communications-calendar/planning-queries";
 import {
   mapClassicApprovalItem,
   mapPlanningPublishingItem,
   mapSchedulingItemRow,
 } from "@/lib/approvals-scheduling/map-items";
+import {
+  dedupeUnifiedApprovalItems,
+  isPendingSchedulingRow,
+  isSchedulingRowAssignedToActor,
+} from "@/lib/approvals-scheduling/approval-visibility";
 import { canViewAllApprovals } from "@/lib/approvals-scheduling/permissions";
 import { summarizeCounts } from "@/lib/approvals-scheduling/status";
 import type {
@@ -14,9 +20,12 @@ import type {
   UnifiedApprovalsPageData,
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
+import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
 import { getApprovalQueueOverviewForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import type { ApprovalActor } from "@/lib/event-workspace/approval-permissions";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
+import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { cache } from "react";
@@ -27,30 +36,73 @@ function isPublishedPlanningItem(
   return item.publishStatus === "published" || item.status === "published";
 }
 
-function dedupeUnifiedItems(items: UnifiedApprovalItem[]): UnifiedApprovalItem[] {
-  const seenCommunicationIds = new Set<string>();
-  const seenSchedulingIds = new Set<string>();
-  const result: UnifiedApprovalItem[] = [];
+function relativeDayFromPlanningSourceId(
+  sourceId: string,
+  eventId: string,
+): number | null {
+  const prefix = `${eventId}-`;
+  if (!sourceId.startsWith(prefix)) {
+    return null;
+  }
+  const day = Number(sourceId.slice(prefix.length));
+  return Number.isFinite(day) ? day : null;
+}
 
-  for (const item of items) {
-    if (item.communicationItemId) {
-      if (seenCommunicationIds.has(item.communicationItemId)) {
-        continue;
-      }
-      seenCommunicationIds.add(item.communicationItemId);
-    }
-
-    if (item.schedulingItemId) {
-      if (seenSchedulingIds.has(item.schedulingItemId)) {
-        continue;
-      }
-      seenSchedulingIds.add(item.schedulingItemId);
-    }
-
-    result.push(item);
+async function loadMetaBundlesByEvent(
+  eventIds: string[],
+): Promise<Map<string, MetaPublishBundle[]>> {
+  const uniqueIds = [...new Set(eventIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return new Map();
   }
 
-  return result;
+  const lists = await Promise.all(
+    uniqueIds.map(async (eventId) => getMetaPublishBundles(eventId)),
+  );
+
+  return new Map(
+    uniqueIds.map((eventId, index) => [eventId, lists[index] ?? []]),
+  );
+}
+
+function previewAssetsFromBundle(
+  bundle: MetaPublishBundle | null | undefined,
+): {
+  captionText: string | null;
+  storyCaptionSnippet: string | null;
+  feedArtworkUrl: string | null;
+  storyArtworkUrl: string | null;
+} | undefined {
+  if (!bundle) {
+    return undefined;
+  }
+
+  return {
+    captionText: bundle.captionPreview,
+    storyCaptionSnippet: bundle.storyCaptionPreview,
+    feedArtworkUrl: bundle.feedArtworkUrl,
+    storyArtworkUrl: bundle.storyArtworkUrl,
+  };
+}
+
+function previewAssetsFromSchedulingRow(
+  row: ApprovalSchedulingItemRow | undefined,
+): {
+  captionText: string | null;
+  storyCaptionSnippet: string | null;
+  feedArtworkUrl: string | null;
+  storyArtworkUrl: string | null;
+} | undefined {
+  if (!row) {
+    return undefined;
+  }
+
+  return {
+    captionText: row.caption_text,
+    storyCaptionSnippet: row.story_caption,
+    feedArtworkUrl: row.feed_artwork_url,
+    storyArtworkUrl: row.story_artwork_url,
+  };
 }
 
 /** Org-scoped scheduling rows (request-deduped). Shared by badge counts + Approvals hub. */
@@ -143,17 +195,6 @@ async function resolveAssigneeForSchedulingRow(
   return { name: "System", role: "System" };
 }
 
-function isAssignedToActor(
-  row: ApprovalSchedulingItemRow,
-  actor: ApprovalActor | null,
-): boolean {
-  if (!actor?.organizationUserId) {
-    return false;
-  }
-
-  return row.assigned_user_id === actor.organizationUserId;
-}
-
 function isSubmittedByActor(
   row: ApprovalSchedulingItemRow,
   actor: ApprovalActor | null,
@@ -194,16 +235,53 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     (item) => item.communicationType === "meta_milestone",
   );
 
-  const publishingItems = metaItems
-    .filter(
-      (item) =>
-        isPublishedPlanningItem(item) ||
-        item.publishStatus === "scheduled" ||
-        item.status === "scheduled" ||
-        item.publishStatus === "posting" ||
-        (!isPublishedPlanningItem(item) && item.scheduledDate <= today),
-    )
-    .map((item) => mapPlanningPublishingItem(item, today));
+  const publishingCandidates = metaItems.filter(
+    (item) =>
+      isPublishedPlanningItem(item) ||
+      item.publishStatus === "scheduled" ||
+      item.status === "scheduled" ||
+      item.publishStatus === "posting" ||
+      (!isPublishedPlanningItem(item) && item.scheduledDate <= today),
+  );
+
+  const schedulingByEventMilestone = new Map<string, ApprovalSchedulingItemRow>();
+  for (const row of schedulingRows) {
+    schedulingByEventMilestone.set(
+      `${row.event_id}:${milestoneNameMatchKey(row.milestone_name)}`,
+      row,
+    );
+  }
+
+  const bundlesByEvent = await loadMetaBundlesByEvent(
+    publishingCandidates.map((item) => item.eventId),
+  );
+
+  const publishingItems = publishingCandidates.map((item) => {
+    const milestoneName = item.timelineStepTitle ?? item.title;
+    const cb2Row = schedulingByEventMilestone.get(
+      `${item.eventId}:${milestoneNameMatchKey(milestoneName)}`,
+    );
+    const relativeDay = relativeDayFromPlanningSourceId(
+      item.sourceId,
+      item.eventId,
+    );
+    const bundles = bundlesByEvent.get(item.eventId) ?? [];
+    const bundle =
+      (relativeDay === null
+        ? null
+        : bundles.find((entry) => entry.relativeDay === relativeDay)) ??
+      bundles.find(
+        (entry) =>
+          milestoneNameMatchKey(entry.title) ===
+          milestoneNameMatchKey(milestoneName),
+      );
+
+    const assets =
+      previewAssetsFromSchedulingRow(cb2Row) ??
+      previewAssetsFromBundle(bundle);
+
+    return mapPlanningPublishingItem(item, today, new Date(), assets);
+  });
 
   const eventTitleById = new Map<string, string>();
   for (const item of classicItems) {
@@ -211,6 +289,11 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
   }
   for (const item of publishingItems) {
     eventTitleById.set(item.eventId, item.eventTitle);
+  }
+  for (const row of schedulingRows) {
+    if (row.campaign_name) {
+      eventTitleById.set(row.event_id, row.campaign_name);
+    }
   }
 
   const cb2Items: UnifiedApprovalItem[] = [];
@@ -222,13 +305,13 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
         eventTitleById.get(row.event_id) ?? row.campaign_name ?? "Campaign",
         assignee.name,
         assignee.role,
-        isAssignedToActor(row, actor),
+        isSchedulingRowAssignedToActor(row, actor),
         isSubmittedByActor(row, actor),
       ),
     );
   }
 
-  const items = dedupeUnifiedItems([
+  const items = dedupeUnifiedApprovalItems([
     ...classicItems,
     ...cb2Items,
     ...publishingItems,
@@ -287,7 +370,10 @@ export async function getChangeRequestsSchedulingCount(): Promise<number> {
 }
 
 export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
-  const membership = await getActiveMembership();
+  const [membership, role] = await Promise.all([
+    getActiveMembership(),
+    getCurrentCampaignRole(),
+  ]);
   const actor: ApprovalActor | null = membership
     ? {
         organizationUserId: membership.user.id,
@@ -301,11 +387,20 @@ export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
   }
 
   const rows = await fetchCampaignBuilderSchedulingItems();
-  return rows.filter(
-    (row) =>
-      row.workflow_status === "assigned_to_me" &&
-      row.assigned_user_id === actor.organizationUserId,
-  ).length;
+  const canApprove = canApproveDraft(role);
+
+  return rows.filter((row) => {
+    if (!isPendingSchedulingRow(row)) {
+      return false;
+    }
+
+    // Approvers should see the nav badge for anything still waiting in Approvals.
+    if (canApprove) {
+      return true;
+    }
+
+    return isSchedulingRowAssignedToActor(row, actor);
+  }).length;
 }
 
 /**

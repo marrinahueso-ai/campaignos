@@ -834,6 +834,7 @@ export async function sendForApprovalAction(input: {
 
     if (result.success) {
       revalidatePath("/approvals");
+      revalidatePath("/", "layout");
     }
 
     return {
@@ -852,6 +853,7 @@ export async function sendForApprovalAction(input: {
 
   if (result.success) {
     revalidatePath("/approvals");
+    revalidatePath("/", "layout");
   }
 
   return {
@@ -864,11 +866,24 @@ export async function approveAllAndScheduleAction(eventId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  void eventId;
+  const { repairCampaignBuilderMetaSchedulesForEvent } = await import(
+    "@/lib/campaign-builder-v2/schedule-meta-from-approval"
+  );
+  const result = await repairCampaignBuilderMetaSchedulesForEvent(eventId);
+
+  if (result.errors.length > 0 && result.repaired === 0) {
+    return {
+      success: false,
+      message: result.errors[0] ?? "Unable to schedule Meta feeds.",
+    };
+  }
 
   return {
     success: true,
-    message: "All milestones approved and scheduled (demo stub).",
+    message:
+      result.repaired > 0
+        ? `Scheduled ${result.repaired} Meta feed milestone${result.repaired === 1 ? "" : "s"} from Create with AI.`
+        : "No Meta feed milestones needed scheduling.",
   };
 }
 

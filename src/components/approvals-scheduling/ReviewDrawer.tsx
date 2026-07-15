@@ -7,7 +7,7 @@ import {
   User,
 } from "lucide-react";
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
-import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
+import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
@@ -82,70 +82,13 @@ export function ReviewDrawer({
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {item.preview.feedArtworkUrl ? (
-              <ArtworkLightboxThumbnail
-                src={item.preview.feedArtworkUrl}
-                alt={`${item.milestoneName} feed artwork`}
-                label="Feed 1:1"
-                variant="feed"
-                wrapperClassName="w-full"
-                frameClassName="aspect-square"
-                placeholder="Feed"
-              />
-            ) : null}
-            {item.preview.storyArtworkUrl ? (
-              <ArtworkLightboxThumbnail
-                src={item.preview.storyArtworkUrl}
-                alt={`${item.milestoneName} story artwork`}
-                label="Story 9:16"
-                variant="story"
-                wrapperClassName="w-full"
-                frameClassName="aspect-[9/16]"
-                placeholder="Story"
-              />
-            ) : null}
-            {!item.preview.feedArtworkUrl && !item.preview.storyArtworkUrl ? (
-              <div className="col-span-full rounded-xl border border-dashed border-cos-border bg-cos-bg/40 px-4 py-8 text-center">
-                <p className="text-sm font-medium text-cos-text">No artwork attached</p>
-                <p className="mt-1 text-xs text-cos-muted">
-                  Open Create with AI, generate artwork for this milestone, then send for
-                  approval again.
-                </p>
-              </div>
-            ) : null}
-          </div>
-
-          {item.preview.captionText ? (
-            <div>
-              <p className="cos-section-title">Shared caption</p>
-              <p className="mt-2 text-sm leading-relaxed text-cos-text">
-                {item.preview.captionText}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="cos-section-title">Platforms</p>
-              <p className="mt-2 text-sm text-cos-text">
-                {item.platforms.join(", ")}
-              </p>
-            </div>
-            <div>
-              <p className="cos-section-title">Delivery</p>
-              <p className="mt-2 text-sm text-cos-text">
-                {item.deliveryMethod ?? "auto-publish"}
-              </p>
-            </div>
-          </div>
-
-          {item.scheduleLabel ? (
-            <div>
-              <p className="cos-section-title">Schedule</p>
-              <p className="mt-2 text-sm text-cos-text">{item.scheduleLabel}</p>
-            </div>
-          ) : null}
+          <MilestoneContentPreview
+            milestoneName={item.milestoneName}
+            preview={item.preview}
+            scheduleLabel={item.scheduleLabel}
+            platforms={item.platforms}
+            deliveryMethod={item.deliveryMethod}
+          />
 
           <div>
             <p className="cos-section-title">Approval history</p>

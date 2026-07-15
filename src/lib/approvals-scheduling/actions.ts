@@ -7,6 +7,12 @@ import {
   sendCampaignManualUploadEmail,
   sendScheduledDeliveryEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
+import {
+  previewWantsMetaFeedSchedule,
+  resolveFeedScheduleIso,
+  scheduleMetaFeedFromCampaignBuilderApproval,
+} from "@/lib/campaign-builder-v2/schedule-meta-from-approval";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canApproveDraft } from "@/lib/auth/campaign-roles";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
@@ -16,11 +22,19 @@ import {
 } from "@/lib/event-workspace/actions";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
+import {
+  deliveryMethodPatchAfterManualKitSend,
+  resolveRowManualEmailSendAt,
+  resolveRowMetaScheduleIntent,
+} from "@/lib/approvals-scheduling/approval-visibility";
 import type { UnifiedWorkflowStatus } from "@/lib/approvals-scheduling/types";
+import type { ApprovalSchedulingItemRow } from "@/lib/approvals-scheduling/types";
 
 export type UnifiedApprovalActionResult = {
   success: boolean;
   error?: string;
+  /** Non-fatal notice (e.g. Meta schedule failed after approval already saved). */
+  warning?: string;
 };
 
 async function updateSchedulingItemStatus(
@@ -68,6 +82,35 @@ async function loadSchedulingItem(schedulingItemId: string) {
   return data;
 }
 
+function resolveManualEmailSendAt(row: ApprovalSchedulingItemRow): string | null {
+  return resolveRowManualEmailSendAt(row);
+}
+
+async function resolveMetaScheduleIntent(row: ApprovalSchedulingItemRow): Promise<{
+  wantsMetaFeedSchedule: boolean;
+  storyManual: boolean;
+  feedScheduleAt: string | null;
+}> {
+  const session = await loadCampaignBuilderSession(row.event_id);
+  const preview =
+    session?.previewContents.find(
+      (entry) => entry.milestoneId === row.campaign_milestone_id,
+    ) ?? null;
+
+  if (preview) {
+    return {
+      wantsMetaFeedSchedule: previewWantsMetaFeedSchedule(preview),
+      storyManual:
+        preview.enabledFormats.includes("instagram-story-manual") ||
+        Boolean(preview.manualEmailTo.trim()) ||
+        preview.deliveryMethod === "manual-email",
+      feedScheduleAt: resolveFeedScheduleIso(preview) ?? row.schedule_at,
+    };
+  }
+
+  return resolveRowMetaScheduleIntent(row);
+}
+
 async function resolveSchedulingCreatorEmail(
   schedulingItemId: string,
 ): Promise<string | null> {
@@ -94,6 +137,8 @@ export async function approveUnifiedItemAction(input: {
   milestoneName?: string | null;
   recipientEmail?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  let metaWarning: string | undefined;
+
   if (input.communicationItemId) {
     const result = await approveCommunicationAction(
       input.eventId,
@@ -142,6 +187,32 @@ export async function approveUnifiedItemAction(input: {
 
     const manualRecipient =
       row.manual_email_to?.trim() || creatorEmail || null;
+    const isManualUploadKit =
+      row.delivery_method === "manual-email" ||
+      Boolean(row.manual_email_to?.trim());
+
+    const metaIntent = await resolveMetaScheduleIntent(row);
+    if (metaIntent.wantsMetaFeedSchedule) {
+      const metaResult = await scheduleMetaFeedFromCampaignBuilderApproval({
+        eventId: input.eventId,
+        milestoneName: row.milestone_name,
+        campaignMilestoneId: row.campaign_milestone_id,
+        feedArtworkUrl: row.feed_artwork_url,
+        storyArtworkUrl: row.story_artwork_url,
+        captionText: row.caption_text,
+        storyCaption: row.story_caption,
+        feedScheduleAt: metaIntent.feedScheduleAt,
+        wantsMetaFeedSchedule: true,
+        storyManual: metaIntent.storyManual,
+      });
+      if (metaResult.error) {
+        metaWarning = `Approved, but Meta feed scheduling failed: ${metaResult.error}`;
+        console.error(
+          "Meta feed schedule after CB2 approve failed:",
+          metaResult.error,
+        );
+      }
+    }
 
     if (input.campaignName && input.milestoneName) {
       if (creatorEmail) {
@@ -154,12 +225,11 @@ export async function approveUnifiedItemAction(input: {
         });
       }
 
-      if (row.delivery_method === "manual-email" && manualRecipient) {
-        const scheduleAtMs = row.schedule_at
-          ? new Date(row.schedule_at).getTime()
-          : NaN;
+      if (isManualUploadKit && manualRecipient) {
+        const emailSendAt = resolveManualEmailSendAt(row);
+        const scheduleAtMs = emailSendAt ? new Date(emailSendAt).getTime() : NaN;
         const dueNow =
-          !row.schedule_at ||
+          !emailSendAt ||
           Number.isNaN(scheduleAtMs) ||
           scheduleAtMs <= Date.now();
         // Resend allows scheduling up to 30 days ahead.
@@ -173,15 +243,15 @@ export async function approveUnifiedItemAction(input: {
             campaignName: input.campaignName,
             milestoneName: input.milestoneName,
             recipientEmail: manualRecipient,
-            scheduleLabel: row.schedule_at
-              ? formatDateTime(row.schedule_at)
+            scheduleLabel: emailSendAt
+              ? formatDateTime(emailSendAt)
               : "Manual upload",
             schedulingItemId: input.schedulingItemId,
             storyArtworkUrl: row.story_artwork_url,
             storyCaption: row.story_caption,
             feedCaption: row.caption_text,
             uploadLink: row.manual_upload_link,
-            scheduledAt: dueNow ? null : row.schedule_at,
+            scheduledAt: dueNow ? null : emailSendAt,
           });
 
           if (sendResult.success) {
@@ -189,6 +259,10 @@ export async function approveUnifiedItemAction(input: {
             await supabase
               .from("approval_scheduling_items")
               .update({
+                // Keep schedule/auto-publish when Meta feed was also scheduled.
+                ...deliveryMethodPatchAfterManualKitSend(
+                  metaIntent.wantsMetaFeedSchedule,
+                ),
                 manual_upload_email_sent_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               })
@@ -214,7 +288,7 @@ export async function approveUnifiedItemAction(input: {
   }
 
   revalidatePath("/approvals");
-  return { success: true };
+  return { success: true, warning: metaWarning };
 }
 
 export async function requestUnifiedChangesAction(input: {
