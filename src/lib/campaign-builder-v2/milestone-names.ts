@@ -48,3 +48,24 @@ export function normalizeMilestoneName(name: string): string {
 export function milestoneNameMatchKey(name: string): string {
   return milestoneTextMatchKey(normalizeMilestoneName(name));
 }
+
+/** Same-milestone title aliases only — never pool unrelated titles at a day. */
+export function sameMilestoneTitleAliases(
+  primaryTitle: string,
+  alternateTitles: string[],
+): string[] {
+  const primaryKey = milestoneNameMatchKey(primaryTitle);
+  const aliases = [primaryTitle];
+
+  for (const title of alternateTitles) {
+    if (!title || title === primaryTitle) {
+      continue;
+    }
+    if (!primaryKey || milestoneNameMatchKey(title) !== primaryKey) {
+      continue;
+    }
+    aliases.push(title);
+  }
+
+  return aliases;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { ArtworkV2ReviewLightbox } from "@/components/artwork-v2/ArtworkV2ReviewLightbox";
 import { cn } from "@/lib/utils/cn";
@@ -36,15 +37,21 @@ export function ArtworkLightboxThumbnail({
               setOpen(true);
             }}
             className={cn(
-              "overflow-hidden rounded-xl border border-cos-border bg-[#f7f6f3]",
+              "relative overflow-hidden rounded-xl border border-cos-border bg-[#f7f6f3]",
               "cursor-zoom-in transition-opacity hover:opacity-90",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-primary/40",
               frameClassName,
             )}
             aria-label={`View ${alt} full size`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="" className="h-full w-full object-cover" />
+            <Image
+              src={src}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 45vw, 220px"
+              className="object-cover"
+              unoptimized
+            />
           </button>
           {open && (
             <ArtworkV2ReviewLightbox

@@ -10,6 +10,7 @@ import {
 } from "@/lib/creative-studio/artwork-workflow";
 import type { ImageSizePreset } from "@/lib/ai-artwork/types";
 import { resolveArtworkV2ImageSizePreset } from "@/lib/artwork-v2/image-size";
+import { sameMilestoneTitleAliases } from "@/lib/campaign-builder-v2/milestone-names";
 import type { EventAsset } from "@/types/event-workspace";
 
 function buildPhasePlanLabel(title: string, formatLabel: string): string {
@@ -31,10 +32,8 @@ export function resolveMilestonePhaseAsset(
     return null;
   }
 
-  const titles = [
-    item.label,
-    ...alternateTitles.filter((title) => title !== item.label),
-  ];
+  // Only rename aliases of this milestone — never pool other milestones at the same day.
+  const titles = sameMilestoneTitleAliases(item.label, alternateTitles);
 
   const candidates: EventAsset[] = [];
 

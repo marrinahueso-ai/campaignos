@@ -26,11 +26,10 @@ const SOCIAL_CENTER_BORDER = "#006B5D";
 const socialCenterCardClass =
   "flex h-full flex-col border-2 p-5 shadow-[0_1px_2px_rgba(42,38,34,0.04)]";
 
-const TABS: { id: SocialPostFilter | "calendar"; label: string }[] = [
+const TABS: { id: SocialPostFilter; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
-  { id: "recent", label: "Recent" },
   { id: "drafts", label: "Drafts" },
-  { id: "calendar", label: "Calendar" },
+  { id: "recent", label: "Recent" },
 ];
 
 interface PlanningHubSocialCenterProps {
@@ -44,14 +43,12 @@ export function PlanningHubSocialCenter({
   bundles,
   hasCampaign,
 }: PlanningHubSocialCenterProps) {
-  const [activeTab, setActiveTab] = useState<SocialPostFilter | "calendar">("upcoming");
+  const [activeTab, setActiveTab] = useState<SocialPostFilter>("upcoming");
 
-  const posts = useMemo(() => {
-    if (activeTab === "calendar") {
-      return filterSocialBundles(bundles, "upcoming");
-    }
-    return filterSocialBundles(bundles, activeTab);
-  }, [activeTab, bundles]);
+  const posts = useMemo(
+    () => filterSocialBundles(bundles, activeTab),
+    [activeTab, bundles],
+  );
 
   if (!hasCampaign) {
     return (
@@ -91,13 +88,7 @@ export function PlanningHubSocialCenter({
             <button
               key={tab.id}
               type="button"
-              onClick={() => {
-                if (tab.id === "calendar") {
-                  window.location.href = "/calendar";
-                  return;
-                }
-                setActiveTab(tab.id);
-              }}
+              onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "-mb-px pb-2 text-xs font-medium transition-colors",
                 isActive
