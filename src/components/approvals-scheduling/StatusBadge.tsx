@@ -34,21 +34,33 @@ const STATUS_STYLES: Record<
 interface StatusBadgeProps {
   status: UnifiedWorkflowStatus;
   detail: string;
+  needsRegeneration?: boolean;
 }
 
-export function StatusBadge({ status, detail }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  detail,
+  needsRegeneration = false,
+}: StatusBadgeProps) {
   const config = STATUS_STYLES[status];
 
   return (
     <div className="space-y-1">
-      <span
-        className={cn(
-          "inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em]",
-          config.className,
-        )}
-      >
-        {config.label}
-      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span
+          className={cn(
+            "inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em]",
+            config.className,
+          )}
+        >
+          {config.label}
+        </span>
+        {needsRegeneration ? (
+          <span className="inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f]">
+            NEEDS REGENERATION
+          </span>
+        ) : null}
+      </div>
       <p className="text-xs text-cos-muted">{detail}</p>
     </div>
   );

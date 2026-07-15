@@ -11,6 +11,7 @@ import { MilestoneEmptyState } from "@/components/campaign-builder-v2/MilestoneE
 import { MilestoneRail } from "@/components/campaign-builder-v2/MilestoneRail";
 import { PreviewSettingsPanel } from "@/components/campaign-builder-v2/PreviewSettingsPanel";
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
+import { ClearGeneratedContentModal } from "@/components/dev-tools/ClearGeneratedContentModal";
 import { Button } from "@/components/ui/Button";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
 import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
@@ -95,6 +96,8 @@ export function PreviewStep() {
     generatingMilestoneId,
     isGeneratingContent,
     reconcilePreviewStatuses,
+    canUseDeveloperTools,
+    clearMilestoneGeneratedContent,
   } = useCampaignBuilder();
 
   useEffect(() => {
@@ -105,6 +108,10 @@ export function PreviewStep() {
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearSubmitting, setClearSubmitting] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [clearMessage, setClearMessage] = useState<string | null>(null);
 
   const selectedId =
     session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
@@ -196,8 +203,46 @@ export function PreviewStep() {
     }
   }
 
+  async function handleClearMilestone() {
+    if (!selectedId) {
+      return;
+    }
+    setClearSubmitting(true);
+    setClearError(null);
+    try {
+      const result = await clearMilestoneGeneratedContent(selectedId);
+      if (!result.success) {
+        setClearError(result.message);
+        return;
+      }
+      setClearMessage(
+        `Cleared ${result.artworkCleared} artwork reference(s) and ${result.captionsCleared} caption(s).`,
+      );
+      setClearModalOpen(false);
+      router.refresh();
+    } finally {
+      setClearSubmitting(false);
+    }
+  }
+
   const generatingName = generatingMilestoneId
     ? session.milestones.find((m) => m.id === generatingMilestoneId)?.name
+    : null;
+
+  const settingsPanelProps = selectedPreview
+    ? {
+        preview: selectedPreview,
+        onUpdate: (patch: Parameters<typeof updatePreviewContent>[1]) =>
+          updatePreviewContent(selectedPreview.milestoneId, patch),
+        canUseDeveloperTools,
+        onClearGeneratedContent: canUseDeveloperTools
+          ? () => {
+              setClearError(null);
+              setClearModalOpen(true);
+            }
+          : undefined,
+        clearMessage,
+      }
     : null;
 
   return (
@@ -259,14 +304,19 @@ export function PreviewStep() {
           </div>
 
           {selectedMilestone && selectedPreview && !hasPreviewableContent ? (
-            <MilestoneEmptyState
-              milestoneName={selectedMilestone.name}
-              isGenerating={selectedIsGenerating}
-              isFailed={selectedStatus === "failed"}
-              errorMessage={generateError}
-              onGenerate={() => void handleGenerateSelected()}
-              onGoToInspiration={() => goToStep("inspiration")}
-            />
+            <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
+              <MilestoneEmptyState
+                milestoneName={selectedMilestone.name}
+                isGenerating={selectedIsGenerating}
+                isFailed={selectedStatus === "failed"}
+                errorMessage={generateError}
+                onGenerate={() => void handleGenerateSelected()}
+                onGoToInspiration={() => goToStep("inspiration")}
+              />
+              {settingsPanelProps ? (
+                <PreviewSettingsPanel {...settingsPanelProps} />
+              ) : null}
+            </div>
           ) : selectedMilestone && selectedPreview ? (
             <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
               <div className="space-y-6">
@@ -355,25 +405,15 @@ export function PreviewStep() {
                   </section>
                 )}
 
-                {showScheduleTab && session.previewTab === "schedule" && (
+                {showScheduleTab && session.previewTab === "schedule" && settingsPanelProps && (
                   <section className="cos-card lg:hidden">
-                    <PreviewSettingsPanel
-                      preview={selectedPreview}
-                      onUpdate={(patch) =>
-                        updatePreviewContent(selectedPreview.milestoneId, patch)
-                      }
-                    />
+                    <PreviewSettingsPanel {...settingsPanelProps} />
                   </section>
                 )}
               </div>
 
-              {session.previewTab !== "schedule" && (
-                <PreviewSettingsPanel
-                  preview={selectedPreview}
-                  onUpdate={(patch) =>
-                    updatePreviewContent(selectedPreview.milestoneId, patch)
-                  }
-                />
+              {session.previewTab !== "schedule" && settingsPanelProps && (
+                <PreviewSettingsPanel {...settingsPanelProps} />
               )}
             </div>
           ) : (
@@ -483,6 +523,17 @@ export function PreviewStep() {
           }}
         />
       )}
+
+      <ClearGeneratedContentModal
+        open={clearModalOpen}
+        title="Clear This Milestone"
+        isSubmitting={clearSubmitting}
+        errorMessage={clearError}
+        onClose={() => setClearModalOpen(false)}
+        onConfirm={() => {
+          void handleClearMilestone();
+        }}
+      />
     </div>
   );
 }

@@ -59,6 +59,8 @@ interface CampaignBuilderShellProps {
   eventId: string;
   eventTitle: string;
   eventDate: string;
+  organizationId: string;
+  canUseDeveloperTools?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -140,6 +142,8 @@ export function CampaignBuilderShell({
   eventId,
   eventTitle,
   eventDate,
+  organizationId,
+  canUseDeveloperTools = false,
   playbooks,
   brandKits,
   campaignOptions,
@@ -154,6 +158,8 @@ export function CampaignBuilderShell({
       eventId={eventId}
       eventTitle={eventTitle}
       eventDate={eventDate}
+      organizationId={organizationId}
+      canUseDeveloperTools={canUseDeveloperTools}
       playbooks={playbooks}
       brandKits={brandKits}
       campaignOptions={campaignOptions}

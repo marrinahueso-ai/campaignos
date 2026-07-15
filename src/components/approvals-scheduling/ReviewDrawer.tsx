@@ -9,6 +9,7 @@ import {
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
 import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Button } from "@/components/ui/Button";
+import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 
@@ -75,6 +76,11 @@ export function ReviewDrawer({
             <p className="mt-1 text-sm text-cos-muted">
               {item.campaignName} · Campaign
             </p>
+            {hasStaleContentNote(item.notes) ? (
+              <p className="mt-2 inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f]">
+                NEEDS REGENERATION
+              </p>
+            ) : null}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             Close

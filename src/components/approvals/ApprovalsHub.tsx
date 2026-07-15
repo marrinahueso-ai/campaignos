@@ -20,6 +20,7 @@ import {
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
 import { CHANGE_REQUEST_NOTE_SEPARATOR } from "@/lib/event-workspace/approval-notes";
+import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { formatDateTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -281,6 +282,13 @@ function ApprovalQueueList({
                     ? ` · Assigned to ${item.assigneeDisplayName}`
                     : null}
                 </p>
+                {hasStaleContentNote(item.notes) ? (
+                  <p className="pl-5 pt-1">
+                    <span className="inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f]">
+                      NEEDS REGENERATION
+                    </span>
+                  </p>
+                ) : null}
                 {item.notes && item.communicationStatus === "changes_requested" && (
                   <ChangeRequestNotes notes={item.notes} />
                 )}

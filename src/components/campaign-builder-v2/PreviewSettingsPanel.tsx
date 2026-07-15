@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PLATFORM_FORMAT_OPTIONS } from "@/lib/campaign-builder-v2/platform-utils";
 import type {
@@ -34,11 +35,17 @@ function formatScheduleDate(dateStr: string, timeStr: string): string {
 interface PreviewSettingsPanelProps {
   preview: MilestonePreviewContent;
   onUpdate: (patch: Partial<MilestonePreviewContent>) => void;
+  canUseDeveloperTools?: boolean;
+  onClearGeneratedContent?: () => void;
+  clearMessage?: string | null;
 }
 
 export function PreviewSettingsPanel({
   preview,
   onUpdate,
+  canUseDeveloperTools = false,
+  onClearGeneratedContent,
+  clearMessage,
 }: PreviewSettingsPanelProps) {
   const hasManualIgStory = preview.enabledFormats.includes(
     "instagram-story-manual",
@@ -165,6 +172,25 @@ export function PreviewSettingsPanel({
           </p>
         </div>
       )}
+
+      {canUseDeveloperTools && onClearGeneratedContent ? (
+        <div className="space-y-2 border-t border-cos-border pt-4">
+          <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+            Developer tools
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={onClearGeneratedContent}
+          >
+            Clear This Milestone
+          </Button>
+          {clearMessage ? (
+            <p className="text-xs text-cos-success-text">{clearMessage}</p>
+          ) : null}
+        </div>
+      ) : null}
     </aside>
   );
 }

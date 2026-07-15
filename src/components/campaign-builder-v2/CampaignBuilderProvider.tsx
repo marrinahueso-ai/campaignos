@@ -96,6 +96,8 @@ interface CampaignBuilderProviderProps {
   eventId: string;
   eventTitle: string;
   eventDate: string;
+  organizationId: string;
+  canUseDeveloperTools?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -170,6 +172,16 @@ interface CampaignBuilderContextValue {
   toggleExpandedReview: (milestoneId: string) => void;
   reconcilePreviewStatuses: () => void;
   navigateToWarning: (warning: StepWarning) => void;
+  organizationId: string;
+  canUseDeveloperTools: boolean;
+  clearMilestoneGeneratedContent: (
+    milestoneId: string,
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    artworkCleared: number;
+    captionsCleared: number;
+  }>;
 }
 
 const CampaignBuilderContext = createContext<CampaignBuilderContextValue | null>(
@@ -401,6 +413,8 @@ export function CampaignBuilderProvider({
   eventId,
   eventTitle,
   eventDate,
+  organizationId,
+  canUseDeveloperTools = false,
   playbooks,
   brandKits,
   campaignOptions,
@@ -1701,6 +1715,56 @@ export function CampaignBuilderProvider({
     [goToStep, updateSession],
   );
 
+  const clearMilestoneGeneratedContent = useCallback(
+    async (
+      milestoneId: string,
+    ): Promise<{
+      success: boolean;
+      message: string;
+      artworkCleared: number;
+      captionsCleared: number;
+    }> => {
+      const { clearMilestoneGeneratedContentAction } = await import(
+        "@/lib/dev-tools/actions"
+      );
+      const { clearLocalGeneratedContent } = await import(
+        "@/lib/dev-tools/clear-local-generated-content"
+      );
+      const { clearSessionGeneratedContent } = await import(
+        "@/lib/dev-tools/clear-generated-content"
+      );
+
+      const result = await clearMilestoneGeneratedContentAction({
+        organizationId,
+        eventId,
+        milestoneId,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message,
+          artworkCleared: 0,
+          captionsCleared: 0,
+        };
+      }
+
+      clearLocalGeneratedContent(eventId, [milestoneId]);
+      updateSession((prev) => {
+        const cleared = clearSessionGeneratedContent(prev, [milestoneId]);
+        return cleared.next;
+      });
+
+      return {
+        success: true,
+        message: result.message,
+        artworkCleared: result.artworkCleared,
+        captionsCleared: result.captionsCleared,
+      };
+    },
+    [eventId, organizationId, updateSession],
+  );
+
   const healthPercent = useMemo(
     () => computeCampaignHealthPercent(session.milestones, session.previewContents),
     [session.milestones, session.previewContents],
@@ -1782,6 +1846,9 @@ export function CampaignBuilderProvider({
       toggleExpandedReview,
       reconcilePreviewStatuses,
       navigateToWarning,
+      organizationId,
+      canUseDeveloperTools,
+      clearMilestoneGeneratedContent,
     }),
     [
       session,
@@ -1828,6 +1895,9 @@ export function CampaignBuilderProvider({
       toggleExpandedReview,
       reconcilePreviewStatuses,
       navigateToWarning,
+      organizationId,
+      canUseDeveloperTools,
+      clearMilestoneGeneratedContent,
     ],
   );
 

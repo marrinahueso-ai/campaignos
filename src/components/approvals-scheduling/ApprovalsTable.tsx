@@ -16,6 +16,7 @@ import {
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { cn } from "@/lib/utils/cn";
 
 interface ApprovalsTableProps {
@@ -132,7 +133,11 @@ export function ApprovalsTable({
                   </div>
                 </td>
                 <td className="px-4 py-4 align-top">
-                  <StatusBadge status={item.workflowStatus} detail={item.statusDetail} />
+                  <StatusBadge
+                    status={item.workflowStatus}
+                    detail={item.statusDetail}
+                    needsRegeneration={hasStaleContentNote(item.notes)}
+                  />
                 </td>
                 <td className="px-4 py-4 align-top">
                   <AssigneeAvatar

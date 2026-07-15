@@ -8,6 +8,7 @@ import {
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { canUseDeveloperClearTools } from "@/lib/dev-tools/access";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
@@ -74,16 +75,17 @@ export default async function CampaignBuilderPage({
     brandSetup,
     playbookOptions,
     campaignOptions,
+    organization,
+    canUseDeveloperTools,
   ] = await Promise.all([
     eventPromise,
     sessionPromise,
     brandPromise,
     playbooksPromise,
     campaignOptionsPromise,
+    organizationPromise,
+    canUseDeveloperClearTools(),
   ]);
-
-  // Ensure org resolution finished (brand/playbooks already awaited it).
-  await organizationPromise;
 
   if (!event) {
     notFound();
@@ -124,6 +126,8 @@ export default async function CampaignBuilderPage({
       eventId={event.id}
       eventTitle={event.title}
       eventDate={event.date}
+      organizationId={organization?.id ?? ""}
+      canUseDeveloperTools={canUseDeveloperTools}
       playbooks={playbookOptions}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
