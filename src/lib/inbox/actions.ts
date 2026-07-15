@@ -657,3 +657,24 @@ export async function unarchiveInboxThreadAction(input: {
   revalidateInboxRoutes();
   return { success: true };
 }
+
+export async function refreshInboxConnectionStatusAction(): Promise<{
+  success: boolean;
+  connection: import("@/lib/inbox/types").InboxConnectionStatus | null;
+  error?: string | null;
+}> {
+  try {
+    const { getLiveInboxConnectionStatus } = await import("@/lib/inbox/queries");
+    const connection = await getLiveInboxConnectionStatus();
+    return { success: true, connection };
+  } catch (error) {
+    return {
+      success: false,
+      connection: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not refresh Meta connection status.",
+    };
+  }
+}

@@ -371,12 +371,23 @@ export function Sidebar({
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/communications";
           const isCampaignBuilder = label === "Create with AI";
+          // Heavy hubs: skip automatic prefetch so navigating elsewhere
+          // does not trigger nested full RSC work for unused destinations.
+          const isHeavyPrefetchRoute =
+            href === "/communications" ||
+            href === "/calendar" ||
+            href === "/tasks" ||
+            href === "/events" ||
+            href === "/approvals" ||
+            href === "/files" ||
+            href === "/insights" ||
+            href === "/vendors";
 
           return (
             <Link
               key={label}
               href={linkHref}
-              prefetch={!isCampaignBuilder}
+              prefetch={isCampaignBuilder || isHeavyPrefetchRoute ? false : undefined}
               title={showLabels ? undefined : label}
               onClick={(event) => {
                 if (isCampaignBuilder) {

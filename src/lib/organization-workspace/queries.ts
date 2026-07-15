@@ -29,12 +29,13 @@ import type {
   ResponsibilityMatrixEntry,
   ResponsibilityMatrixRow,
 } from "@/types/organization-workspace";
+import { cache } from "react";
 
 function buildRoleNameMap(roles: OrganizationRole[]): Map<string, string> {
   return new Map(roles.map((role) => [role.id, role.name]));
 }
 
-export async function getOrganizationWorkspaceData(
+async function loadOrganizationWorkspaceData(
   organizationId: string,
 ): Promise<OrganizationWorkspaceData | null> {
   const supabase = await createClient();
@@ -146,6 +147,14 @@ export async function getOrganizationWorkspaceData(
     committees,
   };
 }
+
+export const getOrganizationWorkspaceData = cache(
+  async function getOrganizationWorkspaceData(
+    organizationId: string,
+  ): Promise<OrganizationWorkspaceData | null> {
+    return loadOrganizationWorkspaceData(organizationId);
+  },
+);
 
 export async function getEventOrganizationDefaults(
   organizationId: string,

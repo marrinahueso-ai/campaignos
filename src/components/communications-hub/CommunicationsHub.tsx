@@ -9,8 +9,8 @@ import { CommunicationsTopBar } from "@/components/communications-hub/Communicat
 import { CommunicationsWorkspace } from "@/components/communications-hub/CommunicationsWorkspace";
 import { CommunicationsAiPanel } from "@/components/communications-hub/CommunicationsWorkspacePanels";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { markInboxThreadReadAction } from "@/lib/inbox/actions";
-import type { InboxChannelType, InboxPageData } from "@/lib/inbox/types";
+import { markInboxThreadReadAction, refreshInboxConnectionStatusAction } from "@/lib/inbox/actions";
+import type { InboxChannelType, InboxConnectionStatus, InboxPageData } from "@/lib/inbox/types";
 import {
   computeQueueCounts,
   filterThreadsForCommunicationsHub,
@@ -26,7 +26,26 @@ interface CommunicationsHubProps {
 
 export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const router = useRouter();
-  const { connection, threads, messagesByThreadId } = data;
+  const [connection, setConnection] = useState<InboxConnectionStatus>(data.connection);
+  const { threads, messagesByThreadId } = data;
+
+  useEffect(() => {
+    setConnection(data.connection);
+  }, [data.connection]);
+
+  // Defer Meta Graph health + page pictures until after first paint.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await refreshInboxConnectionStatusAction();
+      if (!cancelled && result.success && result.connection) {
+        setConnection(result.connection);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const defaultQueueFilter = useMemo(
     () => pickDefaultQueueFilter(threads.length, computeQueueCounts(threads, messagesByThreadId)),

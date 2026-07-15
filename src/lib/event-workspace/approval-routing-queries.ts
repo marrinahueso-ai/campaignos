@@ -1,12 +1,8 @@
 import { displayDraftContent } from "@/lib/ai/content";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
-import {
-  dedupePendingApprovalQueueRows,
-  resolveStalePendingApprovalRequestsForApprovedItems,
-} from "@/lib/event-workspace/approval-request-dedupe";
+import { dedupePendingApprovalQueueRows } from "@/lib/event-workspace/approval-request-dedupe";
 import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
-import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
 import {
   type ApprovalActor,
 } from "@/lib/event-workspace/approval-permissions";
@@ -321,6 +317,10 @@ async function enrichApprovalQueuePreviews(
   });
 }
 
+/**
+ * Read-only approval queue base. Never runs write-side sync/backfill —
+ * mutations and cron own that work so layout/badge GETs stay cheap.
+ */
 const resolveApprovalQueueBase = cache(async function resolveApprovalQueueBase(
   eventId?: string,
 ): Promise<{
@@ -341,25 +341,12 @@ const resolveApprovalQueueBase = cache(async function resolveApprovalQueueBase(
       }
     : null;
 
-  if (actor) {
-    const synced = await backfillMetaApprovalRequests(actor);
-    if (synced > 0) {
-      console.info(
-        `Backfilled ${synced} meta milestone approval request(s) for approvals inbox.`,
-      );
-    }
-  } else {
-    await resolveStalePendingApprovalRequestsForApprovedItems();
-  }
-
-  const refreshedRows = dedupePendingApprovalQueueRows(
-    actor ? await fetchApprovalQueueRows(eventId) : rows,
-  );
-  const items = refreshedRows
+  const dedupedRows = dedupePendingApprovalQueueRows(rows);
+  const items = dedupedRows
     .map((row) => mapQueueRow(row, actor))
     .filter((item): item is ApprovalQueueItem => item !== null);
 
-  return { actor, rows: refreshedRows, items };
+  return { actor, rows: dedupedRows, items };
 });
 
 function filterPendingAssignedToMe(items: ApprovalQueueItem[]): ApprovalQueueItem[] {
@@ -390,16 +377,22 @@ export async function getChangeRequestsCountForCurrentUser(): Promise<number> {
   return filterChangeRequestsForSubmitter(items).length;
 }
 
-export async function getApprovalSidebarCountsForCurrentUser(): Promise<{
-  assignedApprovalsCount: number;
-  changeRequestsCount: number;
-}> {
-  const { items } = await resolveApprovalQueueBase();
-  return {
-    assignedApprovalsCount: filterPendingAssignedToMe(items).length,
-    changeRequestsCount: filterChangeRequestsForSubmitter(items).length,
-  };
-}
+/**
+ * Sidebar badge totals only — no preview enrichment, no Meta bundles,
+ * no write-side backfill. Safe for dashboard layout on every navigation.
+ */
+export const getApprovalSidebarCountsForCurrentUser = cache(
+  async function getApprovalSidebarCountsForCurrentUser(): Promise<{
+    assignedApprovalsCount: number;
+    changeRequestsCount: number;
+  }> {
+    const { items } = await resolveApprovalQueueBase();
+    return {
+      assignedApprovalsCount: filterPendingAssignedToMe(items).length,
+      changeRequestsCount: filterChangeRequestsForSubmitter(items).length,
+    };
+  },
+);
 
 export async function getApprovalQueueForCurrentUser(): Promise<{
   assignedToMe: ApprovalQueueItem[];

@@ -53,54 +53,56 @@ function dedupeUnifiedItems(items: UnifiedApprovalItem[]): UnifiedApprovalItem[]
   return result;
 }
 
-async function fetchCampaignBuilderSchedulingItems(
-  actor: ApprovalActor | null,
-): Promise<ApprovalSchedulingItemRow[]> {
-  const { resolveScopedOrganizationId, getOrganizationSchoolYearIds } =
-    await import("@/lib/events/org-scope");
-  const scopedOrgId = await resolveScopedOrganizationId(undefined);
-  if (!scopedOrgId) {
-    return [];
-  }
+/** Org-scoped scheduling rows (request-deduped). Shared by badge counts + Approvals hub. */
+const fetchCampaignBuilderSchedulingItems = cache(
+  async function fetchCampaignBuilderSchedulingItems(): Promise<
+    ApprovalSchedulingItemRow[]
+  > {
+    const { resolveScopedOrganizationId, getOrganizationSchoolYearIds } =
+      await import("@/lib/events/org-scope");
+    const scopedOrgId = await resolveScopedOrganizationId(undefined);
+    if (!scopedOrgId) {
+      return [];
+    }
 
-  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
-  if (!schoolYearIds.length) {
-    return [];
-  }
+    const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
+    if (!schoolYearIds.length) {
+      return [];
+    }
 
-  const supabase = await createClient();
-  const { data: events, error: eventsError } = await supabase
-    .from("events")
-    .select("id")
-    .in("school_year_id", schoolYearIds);
+    const supabase = await createClient();
+    const { data: events, error: eventsError } = await supabase
+      .from("events")
+      .select("id")
+      .in("school_year_id", schoolYearIds);
 
-  if (eventsError?.code === "42P01" || eventsError) {
-    return [];
-  }
+    if (eventsError?.code === "42P01" || eventsError) {
+      return [];
+    }
 
-  const eventIds = (events ?? []).map((row) => row.id as string);
-  if (eventIds.length === 0) {
-    return [];
-  }
+    const eventIds = (events ?? []).map((row) => row.id as string);
+    if (eventIds.length === 0) {
+      return [];
+    }
 
-  const { data, error } = await supabase
-    .from("approval_scheduling_items")
-    .select("*")
-    .in("event_id", eventIds)
-    .order("requested_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("approval_scheduling_items")
+      .select("*")
+      .in("event_id", eventIds)
+      .order("requested_at", { ascending: false });
 
-  if (error?.code === "42P01") {
-    return [];
-  }
+    if (error?.code === "42P01") {
+      return [];
+    }
 
-  if (error) {
-    console.error("Failed to fetch approval scheduling items:", error.message);
-    return [];
-  }
+    if (error) {
+      console.error("Failed to fetch approval scheduling items:", error.message);
+      return [];
+    }
 
-  void actor;
-  return (data ?? []) as ApprovalSchedulingItemRow[];
-}
+    return (data ?? []) as ApprovalSchedulingItemRow[];
+  },
+);
 
 async function resolveAssigneeForSchedulingRow(
   row: ApprovalSchedulingItemRow,
@@ -170,7 +172,7 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     getActiveMembership(),
     getApprovalQueueOverviewForCurrentUser(),
     getPlanningCalendarData(),
-    fetchCampaignBuilderSchedulingItems(null),
+    fetchCampaignBuilderSchedulingItems(),
   ]);
 
   const actor: ApprovalActor | null = membership
@@ -276,7 +278,7 @@ export async function getChangeRequestsSchedulingCount(): Promise<number> {
     return 0;
   }
 
-  const rows = await fetchCampaignBuilderSchedulingItems(actor);
+  const rows = await fetchCampaignBuilderSchedulingItems();
   return rows.filter(
     (row) =>
       row.workflow_status === "changes_requested" &&
@@ -298,10 +300,26 @@ export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
     return 0;
   }
 
-  const rows = await fetchCampaignBuilderSchedulingItems(actor);
+  const rows = await fetchCampaignBuilderSchedulingItems();
   return rows.filter(
     (row) =>
       row.workflow_status === "assigned_to_me" &&
       row.assigned_user_id === actor.organizationUserId,
   ).length;
 }
+
+/**
+ * Combined sidebar scheduling badge totals — one shared fetch for both counts.
+ */
+export const getSidebarSchedulingBadgeCounts = cache(
+  async function getSidebarSchedulingBadgeCounts(): Promise<{
+    assignedApprovalsCount: number;
+    changeRequestsCount: number;
+  }> {
+    const [assignedApprovalsCount, changeRequestsCount] = await Promise.all([
+      getAssignedApprovalsSchedulingCount(),
+      getChangeRequestsSchedulingCount(),
+    ]);
+    return { assignedApprovalsCount, changeRequestsCount };
+  },
+);
