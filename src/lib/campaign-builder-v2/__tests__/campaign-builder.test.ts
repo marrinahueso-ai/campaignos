@@ -600,6 +600,7 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
           ...server.previewContents[0],
           milestoneId: "playbook-14-days",
           generationStatus: "generated" as const,
+          enabledFormats: ["facebook-feed", "instagram-feed"] as const,
           artwork: { feedUrl, storyUrl: null },
           captions: [
             { platform: "facebook" as const, text: "Fair in 14 days!" },
@@ -747,6 +748,16 @@ describe("stripStaleClearedArtwork — must not delete new generations", () => {
       ...buildDefaultSession(eventId, "Back to School Fair", "2026-08-17")
         .previewContents[0],
       generationStatus: "generated" as const,
+      enabledFormats: [
+        "facebook-feed",
+        "facebook-story",
+        "instagram-feed",
+        "instagram-story",
+      ] as const,
+      captions: [
+        { platform: "facebook" as const, text: "See you at the fair!" },
+        { platform: "instagram" as const, text: "See you at the fair!" },
+      ],
       artwork: { feedUrl, storyUrl },
     };
 

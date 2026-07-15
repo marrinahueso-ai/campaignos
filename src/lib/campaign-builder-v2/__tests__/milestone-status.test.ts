@@ -9,6 +9,7 @@ import {
   inferGenerationStatus,
   isMilestoneContentComplete,
   milestoneHasArtwork,
+  milestoneHasPartialContent,
   MILESTONE_STATUS_LABELS,
   resolveMilestoneGenerationStatus,
 } from "../milestone-status.ts";
@@ -53,9 +54,35 @@ function buildPreview(
     emailSendTime: "09:00",
     manualEmailTo: "test@example.com",
     manualUploadLink: "",
-    approvalStatuses: [],
+    approvalStatuses: [
+      {
+        role: "creator",
+        label: "Creator",
+        status: "not-started",
+        timestamp: null,
+      },
+    ],
     ...overrides,
   };
+}
+
+function completeFeedPreview(
+  overrides: Partial<MilestonePreviewContent> = {},
+): MilestonePreviewContent {
+  return buildPreview({
+    artwork: {
+      feedUrl: "https://example.com/feed.png",
+      storyUrl: null,
+    },
+    captions: [
+      { platform: "facebook", text: "Hello" },
+      { platform: "instagram", text: "Hello" },
+    ],
+    enabledFormats: ["facebook-feed", "instagram-feed"],
+    status: "ready",
+    generationStatus: "generated",
+    ...overrides,
+  });
 }
 
 describe("milestone-status", () => {
@@ -66,9 +93,81 @@ describe("milestone-status", () => {
       "ready_to_generate",
     );
     assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+    assert.equal(MILESTONE_STATUS_LABELS.ready_to_generate, "Not started");
   });
 
-  it("detects generated when artwork exists", () => {
+  it("marks artwork-only as In progress, not Complete", () => {
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: null,
+      },
+      captions: [
+        { platform: "facebook", text: "" },
+        { platform: "instagram", text: "" },
+      ],
+    });
+    assert.equal(milestoneHasPartialContent(preview), true);
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "needs_review",
+    );
+    assert.equal(MILESTONE_STATUS_LABELS.needs_review, "In progress");
+  });
+
+  it("requires captions for every platform implied by enabledFormats", () => {
+    const preview = buildPreview({
+      artwork: {
+        feedUrl: "https://example.com/feed.png",
+        storyUrl: "https://example.com/story.png",
+      },
+      captions: [{ platform: "facebook", text: "FB only" }],
+      enabledFormats: [
+        "facebook-feed",
+        "instagram-feed",
+        "instagram-story-manual",
+      ],
+    });
+    assert.equal(milestoneHasPartialContent(preview), true);
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "needs_review",
+    );
+
+    const withIgCaption = buildPreview({
+      ...preview,
+      captions: [
+        { platform: "facebook", text: "Shared" },
+        { platform: "instagram", text: "Shared" },
+      ],
+    });
+    assert.equal(
+      isMilestoneContentComplete(withIgCaption, withIgCaption.enabledFormats),
+      true,
+    );
+    assert.equal(
+      inferGenerationStatus(withIgCaption, withIgCaption.enabledFormats),
+      "generated",
+    );
+  });
+
+  it("marks captions-only as In progress, not Complete", () => {
+    const preview = buildPreview({
+      captions: [
+        { platform: "facebook", text: "Caption only" },
+        { platform: "instagram", text: "Caption only" },
+      ],
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "needs_review",
+    );
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+  });
+
+  it("marks feed-only incomplete when story is also required", () => {
     const preview = buildPreview({
       artwork: {
         feedUrl: "https://example.com/feed.png",
@@ -78,31 +177,29 @@ describe("milestone-status", () => {
         { platform: "facebook", text: "Hello" },
         { platform: "instagram", text: "Hello" },
       ],
-      status: "needs-review",
+      enabledFormats: [
+        "facebook-feed",
+        "facebook-story",
+        "instagram-feed",
+        "instagram-story",
+      ],
     });
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "needs_review",
+    );
+  });
+
+  it("detects generated only when all required artwork and captions exist", () => {
+    const preview = completeFeedPreview();
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
       "generated",
     );
     assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), true);
     assert.equal(milestoneHasArtwork(preview), true);
-  });
-
-  it("detects generated when artwork exists but enabled formats are empty", () => {
-    const preview = buildPreview({
-      artwork: {
-        feedUrl: "https://example.com/feed.png",
-        storyUrl: "https://example.com/story.png",
-      },
-      enabledFormats: [],
-      status: "draft",
-      generationStatus: "ready_to_generate",
-    });
-    assert.equal(
-      inferGenerationStatus(preview, preview.enabledFormats),
-      "generated",
-    );
-    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), true);
+    assert.equal(MILESTONE_STATUS_LABELS.generated, "Complete");
   });
 
   it("ignores placeholder artwork URLs", () => {
@@ -111,8 +208,6 @@ describe("milestone-status", () => {
         feedUrl: "/api/placeholder-artwork",
         storyUrl: "https://placehold.co/600x600",
       },
-      status: "draft",
-      generationStatus: "ready_to_generate",
     });
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
@@ -121,24 +216,26 @@ describe("milestone-status", () => {
     assert.equal(milestoneHasArtwork(preview), false);
   });
 
-  it("upgrades stale ready_to_generate when story artwork exists", () => {
+  it("treats empty enabled formats as incomplete", () => {
     const preview = buildPreview({
-      milestoneId: "ms-2",
       artwork: {
-        feedUrl: null,
+        feedUrl: "https://example.com/feed.png",
         storyUrl: "https://example.com/story.png",
       },
-      captions: [],
-      status: "draft",
-      generationStatus: "ready_to_generate",
+      captions: [
+        { platform: "facebook", text: "Hello" },
+        { platform: "instagram", text: "Hello" },
+      ],
+      enabledFormats: [],
     });
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
-      "generated",
+      "needs_review",
     );
   });
 
-  it("detects generated from legacy artwork slot keys after normalization", () => {
+  it("detects complete from legacy artwork slot keys after normalization", () => {
     const artwork = normalizeMilestoneArtwork({
       feedUrl: null,
       storyUrl: null,
@@ -149,9 +246,17 @@ describe("milestone-status", () => {
     });
     const preview = buildPreview({
       artwork,
-      captions: [],
-      status: "draft",
-      generationStatus: "ready_to_generate",
+      captions: [
+        { platform: "facebook", text: "Hello" },
+        { platform: "instagram", text: "Hello" },
+      ],
+      enabledFormats: [
+        "facebook-feed",
+        "instagram-feed",
+        "facebook-story",
+        "instagram-story",
+      ],
+      status: "ready",
     });
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
@@ -160,58 +265,20 @@ describe("milestone-status", () => {
     assert.equal(milestoneHasArtwork(preview), true);
   });
 
-  it("detects generated from relative storage artwork paths", () => {
-    const artwork = normalizeMilestoneArtwork({
-      feedUrl: "/storage/v1/object/public/event-assets/evt-1/feed.png",
-      storyUrl: null,
-    });
-    const preview = buildPreview({
-      artwork,
-      captions: [],
-      status: "draft",
-      generationStatus: "ready_to_generate",
-    });
-    assert.equal(
-      inferGenerationStatus(preview, preview.enabledFormats),
-      "generated",
-    );
-  });
-
-  it("detects needs_review when only captions exist", () => {
-    const preview = buildPreview({
-      captions: [
-        { platform: "facebook", text: "Caption only" },
-        { platform: "instagram", text: "Caption only" },
-      ],
-      status: "draft",
-      generationStatus: "ready_to_generate",
-    });
-    assert.equal(
-      inferGenerationStatus(preview, preview.enabledFormats),
-      "needs_review",
-    );
-  });
-
-  it("finds next milestone to generate by sort order", () => {
+  it("finds next milestone to generate including partial In progress items", () => {
     const milestones: CampaignBuilderMilestone[] = [
       baseMilestone,
       { ...baseMilestone, id: "ms-2", name: "Reminder", sortOrder: 1 },
     ];
     const previewContents: MilestonePreviewContent[] = [
+      completeFeedPreview({ milestoneId: "ms-1" }),
       buildPreview({
-        milestoneId: "ms-1",
+        milestoneId: "ms-2",
         artwork: {
-          feedUrl: "https://example.com/feed.png",
+          feedUrl: "https://example.com/partial.png",
           storyUrl: null,
         },
-        captions: [
-          { platform: "facebook", text: "Done" },
-          { platform: "instagram", text: "Done" },
-        ],
-        generationStatus: "generated",
-        status: "ready",
       }),
-      buildPreview({ milestoneId: "ms-2" }),
     ];
 
     const next = findNextMilestoneToGenerate(milestones, previewContents);
@@ -223,20 +290,17 @@ describe("milestone-status", () => {
     assert.equal(progress.total, 2);
   });
 
-  it("derives ready from content even when the raw status field says needs-review (Edit artwork/caption apply)", () => {
-    // Reproduces the exact scenario from EditArtworkModal/EditCaptionModal's
-    // onApply handlers, which set status: "needs-review" whenever the user
-    // applies an edit — even when full content already exists. Every
-    // consumer must treat this milestone as complete/"ready", not just the
-    // rail's inferGenerationStatus.
-    const preview = buildPreview({
+  it("derives ready from full content even when raw status says needs-review", () => {
+    const preview = completeFeedPreview({
       artwork: {
         feedUrl: "https://example.com/feed.png",
         storyUrl: "https://example.com/story.png",
       },
-      captions: [
-        { platform: "facebook", text: "Hello" },
-        { platform: "instagram", text: "Hello" },
+      enabledFormats: [
+        "facebook-feed",
+        "facebook-story",
+        "instagram-feed",
+        "instagram-story",
       ],
       status: "needs-review",
       generationStatus: "needs_review",
@@ -249,13 +313,8 @@ describe("milestone-status", () => {
     );
   });
 
-  it("derives draft from content even when the raw status field is stale ready", () => {
+  it("derives draft from empty content even when raw status is stale ready", () => {
     const preview = buildPreview({
-      artwork: emptyMilestoneArtwork(),
-      captions: [
-        { platform: "facebook", text: "" },
-        { platform: "instagram", text: "" },
-      ],
       status: "ready",
       generationStatus: "ready_to_generate",
     });
@@ -263,35 +322,21 @@ describe("milestone-status", () => {
     assert.equal(derivedPreviewStatus(preview), "draft");
   });
 
-  it("derives needs-review when only captions exist regardless of raw status", () => {
+  it("derives needs-review tri-state for partial content", () => {
     const preview = buildPreview({
-      artwork: emptyMilestoneArtwork(),
       captions: [
         { platform: "facebook", text: "Caption only" },
         { platform: "instagram", text: "Caption only" },
       ],
-      status: "draft",
-      generationStatus: "ready_to_generate",
     });
 
     assert.equal(derivedPreviewStatus(preview), "needs-review");
   });
 
-  it("reports all generated when every milestone has content", () => {
+  it("reports all generated when every milestone is fully complete", () => {
     const milestones: CampaignBuilderMilestone[] = [baseMilestone];
     const previewContents: MilestonePreviewContent[] = [
-      buildPreview({
-        artwork: {
-          feedUrl: "https://example.com/feed.png",
-          storyUrl: null,
-        },
-        captions: [
-          { platform: "facebook", text: "Done" },
-          { platform: "instagram", text: "Done" },
-        ],
-        generationStatus: "generated",
-        status: "ready",
-      }),
+      completeFeedPreview(),
     ];
 
     assert.equal(findNextMilestoneToGenerate(milestones, previewContents), null);
@@ -310,31 +355,10 @@ describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () =>
   });
 
   it("does not show Not started for a completed milestone even when statusTag is stale", () => {
-    // Simulate the regression: milestone.statusTag stayed "not-started" after
-    // generation, but preview content is complete.
     assert.equal(baseMilestone.statusTag, "not-started");
 
-    const preview = buildPreview({
-      artwork: {
-        feedUrl: "https://example.com/feed.png",
-        storyUrl: null,
-      },
-      captions: [
-        { platform: "facebook", text: "See you at the fair!" },
-        { platform: "instagram", text: "See you at the fair!" },
-      ],
-      generationStatus: "generated",
+    const preview = completeFeedPreview({
       status: "needs-review",
-      // Empty approvalStatuses would make Array.every() true — keep an
-      // explicit non-approved entry so this case stays content-complete.
-      approvalStatuses: [
-        {
-          role: "creator",
-          label: "Creator",
-          status: "not-started",
-          timestamp: null,
-        },
-      ],
     });
 
     const status = resolveMilestoneGenerationStatus(
@@ -347,23 +371,20 @@ describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () =>
   });
 
   it("matches rail and editor for awaiting approval", () => {
-    const preview = buildPreview({
-      artwork: {
-        feedUrl: "https://example.com/feed.png",
-        storyUrl: null,
-      },
-      captions: [
-        { platform: "facebook", text: "Hello" },
-        { platform: "instagram", text: "Hello" },
-      ],
+    const preview = completeFeedPreview({
       generationStatus: "generated",
-      status: "ready",
       approvalStatuses: [
         {
           role: "creator",
           label: "Creator",
-          status: "pending",
+          status: "not-started",
           timestamp: null,
+        },
+        {
+          role: "committee-chair",
+          label: "Committee Chair",
+          status: "pending",
+          timestamp: "2026-07-01T00:00:00.000Z",
         },
       ],
     });
@@ -371,5 +392,23 @@ describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () =>
     const status = resolveMilestoneGenerationStatus(preview);
     assert.equal(status, "awaiting_approval");
     assert.equal(MILESTONE_STATUS_LABELS[status], "Needs approval");
+  });
+
+  it("preserves awaiting_approval generationStatus after send for approval", () => {
+    const preview = completeFeedPreview({
+      generationStatus: "awaiting_approval",
+      approvalStatuses: [
+        {
+          role: "committee-chair",
+          label: "Committee Chair",
+          status: "pending",
+          timestamp: "2026-07-01T00:00:00.000Z",
+        },
+      ],
+    });
+    assert.equal(
+      inferGenerationStatus(preview, preview.enabledFormats),
+      "awaiting_approval",
+    );
   });
 });

@@ -822,6 +822,7 @@ export function CampaignBuilderProvider({
           }
         }
         setLocationHash(step);
+        setCurrentStep(step);
         updateSession((prev) => ({ ...prev, currentStep: step }));
       })();
     },
@@ -1638,11 +1639,14 @@ export function CampaignBuilderProvider({
               next.emailSendTime = next.scheduleTime;
             }
           }
+          // Honor an explicit generationStatus (e.g. awaiting_approval after
+          // Send for approval). Only re-infer when status wasn't provided.
           if (
-            patch.artwork ||
-            patch.captions ||
-            patch.status ||
-            patch.enabledFormats
+            patch.generationStatus == null &&
+            (patch.artwork ||
+              patch.captions ||
+              patch.status ||
+              patch.enabledFormats)
           ) {
             next.generationStatus = inferGenerationStatus(
               next,

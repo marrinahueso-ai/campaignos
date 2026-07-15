@@ -28,6 +28,10 @@ import {
 import { logGenerateAllContentDebug } from "@/lib/campaign-builder-v2/debug";
 import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
 import {
+  captionPlatformsForFormats,
+  generationStatusAfterContent,
+} from "@/lib/campaign-builder-v2/milestone-status";
+import {
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
@@ -583,66 +587,106 @@ export async function generateAllContentAction(
       }
 
       const artwork = artworkGeneration.artwork;
-      const artworkViews = enabledArtworkViews(enabledFormats);
 
       const feedArtworkUrl = artwork.feedUrl ?? artwork.storyUrl;
 
-      const hasExistingCaptions = (preview?.captions ?? []).some((caption) =>
-        caption.text.trim(),
+      // Completeness is judged against enabledFormats (not milestone.platforms).
+      // Keep caption slots in sync with that same set so generation can finish.
+      const captionPlatforms = (() => {
+        const fromFormats = captionPlatformsForFormats(enabledFormats);
+        if (fromFormats.length > 0) {
+          return fromFormats;
+        }
+        return milestone.platforms.length > 0
+          ? milestone.platforms
+          : (["facebook"] as Array<"facebook" | "instagram">);
+      })();
+
+      let captions =
+        preview?.captions ?? syncCaptionsToPlatforms("", captionPlatforms);
+
+      const hasAllRequiredCaptions = captionPlatforms.every((platform) =>
+        captions.some(
+          (caption) =>
+            caption.platform === platform && caption.text.trim().length > 0,
+        ),
       );
+      const existingCaptionText =
+        captions.find((caption) => caption.text.trim())?.text.trim() ?? "";
 
-      let captions = preview?.captions ?? syncCaptionsToPlatforms("", milestone.platforms);
+      if (!hasAllRequiredCaptions) {
+        let captionText = existingCaptionText;
 
-      if (!hasExistingCaptions) {
-        const captionResult = await generateCampaignBuilderCaption({
-          eventId: input.eventId,
-          inspiration: resolved.inspiration,
-          milestone,
-          platform: milestone.platforms[0] ?? "facebook",
-          artworkImageUrl: feedArtworkUrl,
-          playbookName: input.playbookName ?? null,
-        });
-
-        if (!captionResult.success) {
-          logGenerateAllContentDebug({
+        if (!captionText) {
+          const captionResult = await generateCampaignBuilderCaption({
             eventId: input.eventId,
-            milestoneId: milestone.id,
-            milestoneName: milestone.name,
-            generationStatusBefore: preview?.generationStatus ?? null,
-            generationStatusAfter: "failed",
-            phase: "failed",
-            message:
-              captionResult.message ||
-              `Could not generate caption for "${milestone.name}".`,
+            inspiration: resolved.inspiration,
+            milestone,
+            platform: captionPlatforms[0] ?? "facebook",
+            artworkImageUrl: feedArtworkUrl,
+            playbookName: input.playbookName ?? null,
           });
 
-          return {
-            success: false,
-            results: [],
-            message:
-              captionResult.message ||
-              `Could not generate caption for "${milestone.name}".`,
-            updatedInspiration: resolved.inspiration,
-          };
+          if (!captionResult.success) {
+            logGenerateAllContentDebug({
+              eventId: input.eventId,
+              milestoneId: milestone.id,
+              milestoneName: milestone.name,
+              generationStatusBefore: preview?.generationStatus ?? null,
+              generationStatusAfter: "failed",
+              phase: "failed",
+              message:
+                captionResult.message ||
+                `Could not generate caption for "${milestone.name}".`,
+            });
+
+            return {
+              success: false,
+              results: [],
+              message:
+                captionResult.message ||
+                `Could not generate caption for "${milestone.name}".`,
+              updatedInspiration: resolved.inspiration,
+            };
+          }
+
+          captionText = captionResult.caption;
         }
 
-        captions = syncCaptionsToPlatforms(
-          captionResult.caption,
-          milestone.platforms,
-        );
+        captions = syncCaptionsToPlatforms(captionText, captionPlatforms);
       }
 
       const hasArtwork =
         (Boolean(artwork.feedUrl) && !isPlaceholderArtworkUrl(artwork.feedUrl)) ||
         (Boolean(artwork.storyUrl) && !isPlaceholderArtworkUrl(artwork.storyUrl));
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
-      const hasContent = hasArtwork || hasCaptions;
 
-      const generationStatus = hasArtwork
-        ? "generated"
-        : hasContent
-          ? "needs_review"
-          : "ready_to_generate";
+      const previewForStatus: MilestonePreviewContent = {
+        ...(preview ?? {
+          milestoneId: milestone.id,
+          status: "draft",
+          generationStatus: "ready_to_generate",
+          generationStartedAt: null,
+          artwork: emptyMilestoneArtwork(),
+          captions: [],
+          enabledFormats,
+          deliveryMethod: "auto-publish",
+          scheduleDate: milestone.suggestedDate,
+          scheduleTime: "09:00",
+          emailSendDate: milestone.suggestedDate,
+          emailSendTime: "09:00",
+          manualEmailTo: "",
+          manualUploadLink: "",
+          approvalStatuses: [],
+        }),
+        artwork,
+        captions,
+        enabledFormats,
+      };
+      const generationStatus = generationStatusAfterContent(
+        previewForStatus,
+        enabledFormats,
+      );
 
       results.push({
         milestoneId: milestone.id,
@@ -833,8 +877,12 @@ export async function sendForApprovalAction(input: {
     });
 
     if (result.success) {
+      // Do not revalidatePath("/", "layout") — that soft-remounts the app and
+      // strips the campaign-builder hash, bouncing the UI back to Inspiration
+      // before the client can navigate to Published.
       revalidatePath("/approvals");
-      revalidatePath("/", "layout");
+      revalidatePath(`/events/${input.eventId}`);
+      revalidatePath(`/events/${input.eventId}/campaign-builder`);
     }
 
     return {
@@ -853,7 +901,8 @@ export async function sendForApprovalAction(input: {
 
   if (result.success) {
     revalidatePath("/approvals");
-    revalidatePath("/", "layout");
+    revalidatePath(`/events/${input.eventId}`);
+    revalidatePath(`/events/${input.eventId}/campaign-builder`);
   }
 
   return {

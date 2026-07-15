@@ -113,6 +113,9 @@ export function ApprovalsSchedulingHub({
       if (result.success) {
         setReviewItem(null);
         setComment("");
+        if (result.warning) {
+          setActionError(result.warning);
+        }
         router.refresh();
         return;
       }

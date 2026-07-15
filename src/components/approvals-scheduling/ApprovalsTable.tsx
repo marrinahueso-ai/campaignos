@@ -39,12 +39,15 @@ export function ApprovalsTable({
 
   async function runAction(
     item: UnifiedApprovalItem,
-    action: () => Promise<{ success: boolean; error?: string }>,
+    action: () => Promise<{ success: boolean; error?: string; warning?: string }>,
   ) {
     setPendingId(item.id);
     try {
       const result = await action();
       if (result.success) {
+        if (result.warning) {
+          onActionError(result.warning);
+        }
         router.refresh();
         return;
       }

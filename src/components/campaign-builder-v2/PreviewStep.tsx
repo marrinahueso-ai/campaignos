@@ -25,6 +25,7 @@ import {
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isMilestoneContentComplete,
+  milestoneHasPartialContent,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
   ARTWORK_VIEW_OPTIONS,
@@ -135,10 +136,15 @@ export function PreviewStep() {
     ? inferGenerationStatus(selectedPreview, selectedPreview.enabledFormats)
     : "ready_to_generate";
 
-  const hasGeneratedContent =
+  const hasCompleteContent =
     selectedPreview && selectedMilestone
       ? isMilestoneContentComplete(selectedPreview, selectedPreview.enabledFormats)
       : false;
+  // Show the preview grid whenever any real artwork/caption exists. Gating on
+  // full completeness hid saved feed/story images behind "No artwork yet"
+  // whenever a required platform caption was missing.
+  const hasPreviewableContent =
+    selectedPreview != null && milestoneHasPartialContent(selectedPreview);
 
   const showArtwork =
     session.previewTab !== "captions" && session.previewTab !== "schedule";
@@ -164,7 +170,7 @@ export function PreviewStep() {
     : null;
 
   const showCompletionBanner =
-    hasGeneratedContent &&
+    hasCompleteContent &&
     !selectedIsGenerating &&
     nextAfterSelected &&
     (nextToGenerate?.id === nextAfterSelected.id ||
@@ -252,7 +258,7 @@ export function PreviewStep() {
             </div>
           </div>
 
-          {selectedMilestone && selectedPreview && !hasGeneratedContent ? (
+          {selectedMilestone && selectedPreview && !hasPreviewableContent ? (
             <MilestoneEmptyState
               milestoneName={selectedMilestone.name}
               isGenerating={selectedIsGenerating}

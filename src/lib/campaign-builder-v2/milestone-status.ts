@@ -30,7 +30,7 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneGenerationStatus, string> 
   queued: "In progress",
   generating: "In progress",
   generated: "Complete",
-  needs_review: "Needs review",
+  needs_review: "In progress",
   changes_requested: "Changes requested",
   awaiting_approval: "Needs approval",
   approved: "Approved",
@@ -71,24 +71,86 @@ export function milestoneHasArtwork(preview: MilestonePreviewContent): boolean {
   );
 }
 
-export function milestoneHasGeneratedContent(
-  preview: MilestonePreviewContent,
-  artworkViews: ArtworkView[],
-): boolean {
-  const hasEnabledArtwork = artworkViews.some((view) => {
-    const url = preview.artwork[artworkKeyForView(view)];
-    return Boolean(url) && !isPlaceholderArtworkUrl(url);
-  });
-  const hasCaptions = preview.captions.some((caption) => caption.text.trim());
-  return milestoneHasArtwork(preview) || hasEnabledArtwork || hasCaptions;
+/**
+ * Caption platforms required for completeness — derived from enabled formats,
+ * not milestone.platforms. Generation must write captions for this set or
+ * Preview stays incomplete ("In progress") even when artwork exists.
+ */
+export function captionPlatformsForFormats(
+  enabledFormats: MilestonePreviewContent["enabledFormats"],
+): Array<"facebook" | "instagram"> {
+  const platforms = new Set<"facebook" | "instagram">();
+  for (const format of enabledFormats) {
+    if (format.startsWith("facebook")) {
+      platforms.add("facebook");
+    }
+    if (format.startsWith("instagram")) {
+      platforms.add("instagram");
+    }
+  }
+  return [...platforms];
 }
 
+/** @deprecated Use captionPlatformsForFormats */
+function requiredCaptionPlatforms(
+  enabledFormats: MilestonePreviewContent["enabledFormats"],
+): Array<"facebook" | "instagram"> {
+  return captionPlatformsForFormats(enabledFormats);
+}
+
+/** True when the milestone has any real artwork or caption (not yet necessarily complete). */
+export function milestoneHasPartialContent(
+  preview: MilestonePreviewContent,
+): boolean {
+  if (milestoneHasArtwork(preview)) {
+    return true;
+  }
+  return preview.captions.some((caption) => caption.text.trim().length > 0);
+}
+
+/**
+ * @deprecated Prefer milestoneHasPartialContent / isMilestoneContentComplete.
+ * Kept for callers that mean "any generated content exists".
+ */
+export function milestoneHasGeneratedContent(
+  preview: MilestonePreviewContent,
+  _artworkViews: ArtworkView[],
+): boolean {
+  void _artworkViews;
+  return milestoneHasPartialContent(preview);
+}
+
+/**
+ * Complete only when every enabled artwork view and every required platform
+ * caption is present. Partial artwork or captions alone are not complete.
+ */
 export function isMilestoneContentComplete(
   preview: MilestonePreviewContent,
   enabledFormats: MilestonePreviewContent["enabledFormats"],
 ): boolean {
   const views = enabledArtworkViews(enabledFormats);
-  return milestoneHasGeneratedContent(preview, views);
+  if (views.length === 0) {
+    return false;
+  }
+
+  const hasAllArtwork = views.every((view) => {
+    const url = preview.artwork[artworkKeyForView(view)];
+    return Boolean(url) && !isPlaceholderArtworkUrl(url);
+  });
+  if (!hasAllArtwork) {
+    return false;
+  }
+
+  const platforms = requiredCaptionPlatforms(enabledFormats);
+  if (platforms.length === 0) {
+    return false;
+  }
+
+  return platforms.every((platform) =>
+    preview.captions.some(
+      (caption) => caption.platform === platform && caption.text.trim().length > 0,
+    ),
+  );
 }
 
 const PRESERVED_GENERATION_STATUSES = new Set<MilestoneGenerationStatus>([
@@ -104,13 +166,13 @@ function contentGenerationStatus(
   preview: MilestonePreviewContent,
   enabledFormats: MilestonePreviewContent["enabledFormats"],
 ): MilestoneGenerationStatus {
-  if (!isMilestoneContentComplete(preview, enabledFormats)) {
-    return "ready_to_generate";
-  }
-  if (milestoneHasArtwork(preview)) {
+  if (isMilestoneContentComplete(preview, enabledFormats)) {
     return "generated";
   }
-  return "needs_review";
+  if (milestoneHasPartialContent(preview)) {
+    return "needs_review";
+  }
+  return "ready_to_generate";
 }
 
 export function inferGenerationStatus(
@@ -143,20 +205,17 @@ export function inferGenerationStatus(
   if (preview.deliveryMethod === "schedule" && allApproved) {
     return "scheduled";
   }
-  if (allApproved && preview.status === "ready") {
+  if (allApproved && preview.status === "ready" && hasContent) {
     return "approved";
   }
   if (pendingApproval && hasContent) {
     return "awaiting_approval";
   }
-  if (preview.status === "ready" && hasContent) {
-    return "generated";
-  }
-  if (preview.status === "needs-review" && hasContent) {
-    return milestoneHasArtwork(preview) ? "generated" : "needs_review";
-  }
   if (hasContent) {
     return contentGenerationStatus(preview, enabledFormats);
+  }
+  if (milestoneHasPartialContent(preview)) {
+    return "needs_review";
   }
   if (preview.generationStatus === "failed") {
     return "failed";
@@ -192,7 +251,6 @@ export function countCompleteMilestones(
     const status = inferGenerationStatus(preview, preview.enabledFormats);
     if (
       status === "generated" ||
-      status === "needs_review" ||
       status === "awaiting_approval" ||
       status === "approved" ||
       status === "scheduled" ||
@@ -219,7 +277,11 @@ export function findNextMilestoneToGenerate(
       return milestone;
     }
     const status = inferGenerationStatus(preview, preview.enabledFormats);
-    if (status === "ready_to_generate" || status === "failed") {
+    if (
+      status === "ready_to_generate" ||
+      status === "needs_review" ||
+      status === "failed"
+    ) {
       return milestone;
     }
   }

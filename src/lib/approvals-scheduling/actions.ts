@@ -267,6 +267,15 @@ export async function approveUnifiedItemAction(input: {
                 updated_at: new Date().toISOString(),
               })
               .eq("id", input.schedulingItemId);
+          } else {
+            const emailWarning = `Approved, but manual upload email did not send: ${sendResult.message}`;
+            metaWarning = metaWarning
+              ? `${metaWarning} ${emailWarning}`
+              : emailWarning;
+            console.error(
+              "Manual upload email after approve failed:",
+              sendResult.message,
+            );
           }
         }
         // Beyond 30 days → daily cron /api/cron/manual-upload-emails
