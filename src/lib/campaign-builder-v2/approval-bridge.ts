@@ -17,6 +17,7 @@ import type {
   CampaignBuilderMilestone,
   MilestonePreviewContent,
 } from "@/lib/campaign-builder-v2/types";
+import { buildManualEmailPersistenceFields } from "@/lib/campaign-builder-v2/manual-email-scheduling";
 import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
@@ -36,6 +37,7 @@ export interface SendCampaignBuilderForApprovalResult {
   createdCount: number;
 }
 
+/** Meta / publish schedule_at — unchanged from pre–Manual Email Commit 4 behavior. */
 function resolveScheduleIso(preview: MilestonePreviewContent): string | null {
   if (preview.deliveryMethod === "manual-email") {
     return combineLocalDateAndTimeToIso(
@@ -119,6 +121,7 @@ export async function sendCampaignBuilderForApproval(
 
     const captionText = getSharedCaptionText(preview.captions);
     const scheduleAt = resolveScheduleIso(preview);
+    const manualEmailFields = buildManualEmailPersistenceFields(preview);
     const workflowStatus = assignee.assignedUserId ? "assigned_to_me" : "in_queue";
     const milestoneName = normalizeMilestoneName(milestone.name);
 
@@ -154,7 +157,8 @@ export async function sendCampaignBuilderForApproval(
       feed_artwork_url: preview.artwork.feedUrl,
       story_artwork_url: preview.artwork.storyUrl,
       manual_upload_link: preview.manualUploadLink.trim() || null,
-      manual_email_to: preview.manualEmailTo.trim() || null,
+      manual_email_to: manualEmailFields.manual_email_to,
+      manual_email_send_at: manualEmailFields.manual_email_send_at,
       notes: null,
       resolved_at: null,
       requested_at: now,
@@ -240,7 +244,8 @@ export async function sendCampaignBuilderForApproval(
           feed_artwork_url: preview.artwork.feedUrl,
           story_artwork_url: preview.artwork.storyUrl,
           manual_upload_link: preview.manualUploadLink.trim() || null,
-          manual_email_to: preview.manualEmailTo.trim() || null,
+          manual_email_to: manualEmailFields.manual_email_to,
+          manual_email_send_at: manualEmailFields.manual_email_send_at,
           schedule_at: scheduleAt,
           delivery_method: preview.deliveryMethod,
           platforms: milestone.platforms,

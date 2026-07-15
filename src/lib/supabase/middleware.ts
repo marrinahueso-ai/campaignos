@@ -29,6 +29,8 @@ const PUBLIC_PATHS = [
   "/api/canva/oauth/callback",
   "/api/meta/oauth/callback",
   "/api/meta/webhook",
+  "/go/instagram-post",
+  "/go/email-primary",
 ];
 
 function isPublicPath(pathname: string): boolean {

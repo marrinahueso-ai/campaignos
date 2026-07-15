@@ -3,6 +3,7 @@ import "server-only";
 import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
 import type { EmailAttachment } from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
+import { resolveSiteOrigin } from "@/lib/site/url";
 import { createClient } from "@/lib/supabase/server";
 
 export interface CampaignApprovalNotificationInput {
@@ -88,6 +89,7 @@ function buildApprovalEmailHtml(input: {
   ctaLabel: string;
   ctaHref: string;
 }): string {
+  const emailPrimaryUrl = `${resolveSiteOrigin()}/go/email-primary`;
   return `
     <div style="font-family: Georgia, serif; color: #2a2622; background: #f6f2eb; padding: 24px;">
       <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 12px;">${input.heading}</h1>
@@ -95,6 +97,10 @@ function buildApprovalEmailHtml(input: {
       <a href="${input.ctaHref}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px;">
         ${input.ctaLabel}
       </a>
+      <p style="margin: 28px 0 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; line-height: 1.5; color: #5c554c;">
+        <a href="${emailPrimaryUrl}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
+        — one-time Gmail setup so approvals, reminders, and Socials kits aren’t filed under Promotions.
+      </p>
     </div>
   `;
 }

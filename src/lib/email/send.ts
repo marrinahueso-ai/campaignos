@@ -29,7 +29,7 @@ export interface SendEmailResult {
 export function resolveFromAddress(): string {
   return (
     process.env.RESEND_FROM_EMAIL?.trim() ||
-    "Hey Ralli <onboarding@resend.dev>"
+    "Hey Ralli <notifications@heyralli.com>"
   );
 }
 

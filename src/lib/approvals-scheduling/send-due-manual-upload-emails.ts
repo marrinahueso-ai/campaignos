@@ -3,6 +3,10 @@ import "server-only";
 import {
   sendCampaignManualUploadEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
+import {
+  isManualUploadEmailDue,
+  resolveManualUploadEmailDueAt,
+} from "@/lib/campaign-builder-v2/manual-email-scheduling";
 import { isEmailConfigured } from "@/lib/email/send";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/utils/dates";
@@ -14,27 +18,6 @@ export interface ManualUploadEmailCronResult {
   skippedNotConfigured: number;
   skippedNoRecipient: number;
   errors: string[];
-}
-
-const CATCHUP_HOURS = 48;
-
-function isDueForSend(scheduleAt: string | null, now: Date): boolean {
-  if (!scheduleAt) {
-    return true;
-  }
-
-  const scheduled = new Date(scheduleAt);
-  if (Number.isNaN(scheduled.getTime())) {
-    return true;
-  }
-
-  const msUntil = scheduled.getTime() - now.getTime();
-  if (msUntil > 0) {
-    return false;
-  }
-
-  const hoursLate = Math.abs(msUntil) / 3_600_000;
-  return hoursLate <= CATCHUP_HOURS;
 }
 
 async function resolveRecipient(
@@ -61,6 +44,9 @@ async function resolveRecipient(
 /**
  * Sends due Create with AI "Email me for manual upload" kits via Resend.
  * Items must already be approved (workflow_status = scheduled).
+ *
+ * Selects pure manual-email rows and hybrid rows (recipient set via Send-to).
+ * Marks sent only after a successful send so failures stay retryable.
  */
 export async function sendDueManualUploadEmails(): Promise<ManualUploadEmailCronResult> {
   const result: ManualUploadEmailCronResult = {
@@ -81,9 +67,9 @@ export async function sendDueManualUploadEmails(): Promise<ManualUploadEmailCron
   const { data, error } = await supabase
     .from("approval_scheduling_items")
     .select("*")
-    .eq("delivery_method", "manual-email")
     .eq("workflow_status", "scheduled")
-    .is("manual_upload_email_sent_at", null);
+    .is("manual_upload_email_sent_at", null)
+    .or("delivery_method.eq.manual-email,manual_email_to.not.is.null");
 
   if (error) {
     result.errors.push(error.message);
@@ -95,7 +81,8 @@ export async function sendDueManualUploadEmails(): Promise<ManualUploadEmailCron
   const now = new Date();
 
   for (const row of rows) {
-    if (!isDueForSend(row.schedule_at, now)) {
+    const emailSendAt = resolveManualUploadEmailDueAt(row);
+    if (!isManualUploadEmailDue(emailSendAt, now)) {
       continue;
     }
 
@@ -110,8 +97,8 @@ export async function sendDueManualUploadEmails(): Promise<ManualUploadEmailCron
       campaignName: row.campaign_name ?? "Campaign",
       milestoneName: row.milestone_name,
       recipientEmail: recipient,
-      scheduleLabel: row.schedule_at
-        ? formatDateTime(row.schedule_at)
+      scheduleLabel: emailSendAt
+        ? formatDateTime(emailSendAt)
         : "Manual upload",
       schedulingItemId: row.id,
       storyArtworkUrl: row.story_artwork_url,

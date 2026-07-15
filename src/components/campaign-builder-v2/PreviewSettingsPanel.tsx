@@ -127,15 +127,18 @@ export function PreviewSettingsPanel({
           </p>
           <p className="text-xs text-cos-muted">
             After approval, Resend queues the story kit (image link, caption, and
-            Instagram link) to arrive at this send time — no separate Resend
-            setup needed.
+            Instagram link) to arrive at this send time. Keep Delivery as
+            &quot;Schedule to publish&quot; when feed should still auto-post to
+            Meta — Send-to alone does not cancel feed scheduling.
           </p>
           <Input
+            label="Email send date"
             type="date"
             value={preview.emailSendDate}
             onChange={(e) => onUpdate({ emailSendDate: e.target.value })}
           />
           <Input
+            label="Email send time"
             type="time"
             value={preview.emailSendTime}
             onChange={(e) => onUpdate({ emailSendTime: e.target.value })}
@@ -144,7 +147,11 @@ export function PreviewSettingsPanel({
             label="Send to"
             type="email"
             value={preview.manualEmailTo}
-            onChange={(e) => onUpdate({ manualEmailTo: e.target.value })}
+            onChange={(e) =>
+              onUpdate({
+                manualEmailTo: e.target.value,
+              })
+            }
           />
           <Input
             label="Link for Instagram"

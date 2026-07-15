@@ -2,6 +2,7 @@ import "server-only";
 
 import { escapeHtml } from "@/lib/utils/html";
 import type { EmailAttachment } from "@/lib/email/send";
+import { resolveStoryKitCaption } from "@/lib/campaign-builder-v2/manual-email-scheduling";
 import { resolveSiteOrigin } from "@/lib/site/url";
 
 export interface SocialsManualUploadEmailContent {
@@ -25,6 +26,11 @@ export interface SocialsManualUploadEmailInput {
 
 function instagramPostBridgeUrl(): string {
   return `${resolveSiteOrigin()}/go/instagram-post`;
+}
+
+/** Helps Gmail users create a filter so Hey Ralli kits stay out of Promotions. */
+function gmailPrimaryFilterUrl(): string {
+  return `${resolveSiteOrigin()}/go/email-primary`;
 }
 
 function buildFilename(eventTitle: string, milestoneTitle: string): string {
@@ -74,6 +80,7 @@ export async function buildSocialsManualUploadEmail(
 ): Promise<SocialsManualUploadEmailContent> {
   const subject = `Ready to post: ${input.eventTitle} — ${input.milestoneTitle}`;
   const instagramUrl = instagramPostBridgeUrl();
+  const emailPrimaryUrl = gmailPrimaryFilterUrl();
 
   const previewImg = input.storyArtworkUrl
     ? `<tr>
@@ -93,20 +100,14 @@ export async function buildSocialsManualUploadEmail(
       </tr>`
     : "";
 
-  const storyCaptionBlock = input.storyCaption?.trim()
-    ? `<tr>
-        <td style="padding:0 32px 20px;">
-          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Story caption</p>
-          <div style="background:#fffcf7;border:1px solid #ddd4c8;border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.55;color:#2a2622;white-space:pre-wrap;">${escapeHtml(input.storyCaption.trim())}</div>
-        </td>
-      </tr>`
-    : "";
+  // One caption with the artwork — prefer Instagram/story, else shared feed text.
+  const caption = resolveStoryKitCaption(input.storyCaption, input.feedCaption);
 
-  const feedCaptionBlock = input.feedCaption?.trim()
+  const captionBlock = caption
     ? `<tr>
         <td style="padding:0 32px 20px;">
-          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Feed caption</p>
-          <div style="background:#fffcf7;border:1px solid #ddd4c8;border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.55;color:#2a2622;white-space:pre-wrap;">${escapeHtml(input.feedCaption.trim())}</div>
+          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Caption</p>
+          <div style="background:#fffcf7;border:1px solid #ddd4c8;border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.55;color:#2a2622;white-space:pre-wrap;">${escapeHtml(caption)}</div>
         </td>
       </tr>`
     : "";
@@ -136,7 +137,7 @@ export async function buildSocialsManualUploadEmail(
           <tr>
             <td style="background:#2a2622;padding:22px 32px;">
               <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f6f2eb;letter-spacing:0.02em;">Hey Ralli Socials</p>
-              <p style="margin:6px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#a89f94;letter-spacing:0.08em;text-transform:uppercase;">Manual upload kit</p>
+              <p style="margin:6px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#a89f94;letter-spacing:0.08em;text-transform:uppercase;">Story post kit</p>
             </td>
           </tr>
           <tr>
@@ -157,8 +158,7 @@ export async function buildSocialsManualUploadEmail(
             </td>
           </tr>
           ${previewImg}
-          ${storyCaptionBlock}
-          ${feedCaptionBlock}
+          ${captionBlock}
           ${eventLinkBlock}
           <tr>
             <td style="padding:0 32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
@@ -170,6 +170,16 @@ export async function buildSocialsManualUploadEmail(
               </a>
               <p style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#5c554c;">
                 Opens Instagram on your phone when possible. Meta doesn’t allow preloading Stories from email — use the downloaded image from your camera roll.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+              <a href="${escapeHtml(emailPrimaryUrl)}" style="display:inline-block;background:#e8dfd2;color:#2a2622;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600;">
+                Keep Hey Ralli in Primary
+              </a>
+              <p style="margin:10px 0 0;font-size:12px;line-height:1.45;color:#5c554c;">
+                One-time Gmail setup so approvals, reminders, and Socials kits stay in Primary — not Promotions.
               </p>
             </td>
           </tr>
@@ -187,7 +197,7 @@ export async function buildSocialsManualUploadEmail(
   `.trim();
 
   const textParts = [
-    "Hey Ralli Socials — Manual upload kit",
+    "Hey Ralli Socials — Story post kit",
     "",
     `${input.eventTitle} · ${input.milestoneTitle}`,
     `Post by: ${input.scheduledLabel}`,
@@ -197,16 +207,16 @@ export async function buildSocialsManualUploadEmail(
     "",
     "Open in Hey Ralli:",
     input.postKitUrl,
+    "",
+    "Keep all Hey Ralli mail in Primary:",
+    emailPrimaryUrl,
   ];
 
   if (input.storyArtworkUrl) {
     textParts.push("", "Story image:", input.storyArtworkUrl);
   }
-  if (input.storyCaption?.trim()) {
-    textParts.push("", "Story caption:", input.storyCaption.trim());
-  }
-  if (input.feedCaption?.trim()) {
-    textParts.push("", "Feed caption:", input.feedCaption.trim());
+  if (caption) {
+    textParts.push("", "Caption:", caption);
   }
   if (input.eventLink?.trim()) {
     textParts.push("", "Link for Instagram sticker:", input.eventLink.trim());
