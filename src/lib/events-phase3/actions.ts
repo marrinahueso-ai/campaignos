@@ -1,9 +1,17 @@
 "use server";
 
+import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getEventById } from "@/lib/events/queries";
+import type { EventDetailTabContext } from "@/lib/events-phase3/tab-context";
 import {
+  elapsedMs,
+  logTabTiming,
+  startTabTimer,
+} from "@/lib/events-phase3/tab-timing";
+import {
+  areEventPlaybookTablesAvailable,
   loadEventDetailTabData,
   type EventDetailLazyTab,
   type EventDetailTabData,
@@ -29,12 +37,20 @@ export async function loadEventDetailTabAction(
     return { success: false, error: "Unsupported tab." };
   }
 
-  const user = await getAuthUser();
+  const totalStarted = startTabTimer();
+  const authStarted = startTabTimer();
+
+  const [user, membership, campaignRole, tablesAvailable] = await Promise.all([
+    getAuthUser(),
+    getActiveMembership(),
+    getCurrentCampaignRole(),
+    areEventPlaybookTablesAvailable(),
+  ]);
+
   if (!user) {
     return { success: false, error: "Not authenticated." };
   }
 
-  const membership = await getActiveMembership();
   if (!membership) {
     return { success: false, error: "No active organization membership." };
   }
@@ -44,13 +60,28 @@ export async function loadEventDetailTabAction(
     return { success: false, error: "Event not found." };
   }
 
+  const authContextMs = elapsedMs(authStarted);
+
+  const context: EventDetailTabContext = {
+    user,
+    membership,
+    organizationId: membership.organizationId,
+    event,
+    campaignRole,
+    tablesAvailable,
+  };
+
   try {
+    const loaderStarted = startTabTimer();
     const data = await loadEventDetailTabData(
-      eventId,
       tab as EventDetailLazyTab,
-      event,
-      membership.organizationId,
+      context,
     );
+    logTabTiming(tab, eventId, {
+      totalMs: elapsedMs(totalStarted),
+      authContextMs,
+      primaryQueryMs: elapsedMs(loaderStarted),
+    });
     return { success: true, data };
   } catch (error) {
     console.error("Failed to load event detail tab:", error);

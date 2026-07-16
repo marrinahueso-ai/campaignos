@@ -214,92 +214,102 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
   };
 }
 
+export type EventTaskHubContext = {
+  campaignRole: Awaited<ReturnType<typeof getCurrentCampaignRole>>;
+  tablesAvailable: boolean;
+};
+
 /**
  * Event Detail Tasks tab — exact eventId tasks only.
- * Skips org-wide event fan-out and Monday board loads.
+ * No org workspace, org users, unrelated events, or Monday board.
  */
 export async function getTaskHubPageDataForEvent(
   eventId: string,
   eventMeta: { title: string; date: string },
+  context?: EventTaskHubContext,
 ): Promise<TaskHubPageData> {
-  const [organization, authUser, membership, campaignRole, tablesAvailable] =
-    await Promise.all([
-      getLatestOrganization(),
-      getAuthUser(),
-      getActiveMembership(),
-      getCurrentCampaignRole(),
-      areEventPlaybookTablesAvailable(),
-    ]);
+  const [campaignRole, tablesAvailable] = await Promise.all([
+    context?.campaignRole
+      ? Promise.resolve(context.campaignRole)
+      : getCurrentCampaignRole(),
+    context?.tablesAvailable !== undefined
+      ? Promise.resolve(context.tablesAvailable)
+      : areEventPlaybookTablesAvailable(),
+  ]);
 
   const scope = resolveTaskHubViewScope(campaignRole);
   const scopeLabel = taskHubScopeLabel(scope);
 
-  if (!organization || !tablesAvailable) {
-    return emptyTaskHubPage(scopeLabel, tablesAvailable);
+  if (!tablesAvailable) {
+    return emptyTaskHubPage(scopeLabel, false);
   }
 
-  const workspace = await getOrganizationWorkspaceData(organization.id);
-  if (!workspace) {
-    return emptyTaskHubPage(scopeLabel, tablesAvailable);
-  }
+  const taskRows = await getEventPlaybookTasksForEvents([eventId]);
+  const { mapEventPlaybookTaskRow } = await import(
+    "@/lib/event-playbooks/mappers"
+  );
+  const { deriveInitials } = await import("@/lib/task-hub/org-members");
 
-  const user = buildUserContext(authUser, membership, campaignRole);
-  const visibleCommittees = resolveVisibleCommittees(workspace.committees, user);
-  const eventStub = {
-    id: eventId,
-    title: eventMeta.title,
-    description: "",
-    date: eventMeta.date,
-    time: null,
-    location: null,
-    audience: null,
-    theme: null,
-    status: "scheduled" as const,
-    category: null,
-    eventType: null,
-    communicationStrategy: "full_campaign" as const,
-    calendarImportId: null,
-    eventOwner: null,
-    approvalOrganizationRoleId: null,
-    budget: null,
-    volunteerNeeds: null,
-    goal: null,
-    expectedAttendance: null,
-    planningQuickLinks: {},
-    planningVendors: [],
-    approvedSquareImageUrl: null,
-    approvedSquareImageStatus: "open" as const,
-    schoolYearId: null,
-    createdAt: "",
-    updatedAt: null,
+  const eventContext = {
+    eventId,
+    eventTitle: eventMeta.title,
+    eventDate: eventMeta.date,
+    eventHref: `/events/${eventId}?tab=tasks`,
   };
 
-  const [taskRows, orgUsers] = await Promise.all([
-    getEventPlaybookTasksForEvents([eventId]),
-    getOrganizationUsers(organization.id),
-  ]);
+  const tasks = taskRows.map((row) => ({
+    ...mapEventPlaybookTaskRow(row),
+    event: eventContext,
+    monday: null,
+  }));
 
-  const committees = groupTasksByCommittee({
-    events: [eventStub],
-    taskRows,
-    workspace,
-    visibleCommittees,
-  });
-
-  const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
-  const totalTasks = committees.reduce((sum, group) => sum + group.totalCount, 0);
-  const openTasks = committees.reduce(
-    (sum, group) =>
-      sum + group.tasks.filter((task) => isOpenTaskStatus(task.status)).length,
-    0,
+  const assigneeMap = new Map<string, { id: string; displayName: string; initials: string }>();
+  for (const task of tasks) {
+    const name = task.assigneeName?.trim();
+    if (!name) {
+      continue;
+    }
+    const key = name.toLowerCase();
+    if (!assigneeMap.has(key)) {
+      assigneeMap.set(key, {
+        id: key,
+        displayName: name,
+        initials: task.assigneeInitials?.trim() || deriveInitials(name),
+      });
+    }
+  }
+  const orgMembers = [...assigneeMap.values()].sort((left, right) =>
+    left.displayName.localeCompare(right.displayName),
   );
+
+  const doneCount = tasks.filter((task) => task.status === "done").length;
+  const openTasks = tasks.filter((task) => isOpenTaskStatus(task.status)).length;
+
+  const committees = [
+    {
+      committeeId: null,
+      committeeName: "Event tasks",
+      chairName: null,
+      sortOrder: 0,
+      tasks,
+      events: [
+        {
+          eventId,
+          eventTitle: eventMeta.title,
+          eventDate: eventMeta.date,
+        },
+      ],
+      doneCount,
+      totalCount: tasks.length,
+    },
+  ];
 
   return {
     scope,
     scopeLabel,
     committees,
     tablesAvailable,
-    totalTasks,
+    totalTasks: tasks.length,
     openTasks,
     mondaySyncEnabled: false,
     mondayBoard: null,

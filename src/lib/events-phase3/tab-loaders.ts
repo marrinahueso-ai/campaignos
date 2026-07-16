@@ -7,6 +7,12 @@ import {
   getEventPlaybookActivityForEvent,
   getEventPlaybookNotesForEvent,
 } from "@/lib/event-playbooks/queries";
+import type { EventDetailTabContext } from "@/lib/events-phase3/tab-context";
+import {
+  elapsedMs,
+  logTabTiming,
+  startTabTimer,
+} from "@/lib/events-phase3/tab-timing";
 import { getEventActivityLogForEvent } from "@/lib/event-workspace/queries";
 import { getPlaybookById } from "@/lib/playbooks/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +26,6 @@ import type {
 } from "@/types/event-playbooks";
 import type { ActivityLogEntry } from "@/types/event-workspace";
 import type { TasksV2PageData } from "@/types/tasks-v2";
-import type { Event } from "@/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 
 export type EventDetailLazyTab =
@@ -97,52 +102,76 @@ export async function getEventPlaybookName(
 
 export async function loadEventApprovalsTab(
   eventId: string,
-  _organizationId: string,
+  context: EventDetailTabContext,
 ): Promise<EventDetailApprovalsTabData> {
-  void _organizationId;
-  const approvalsData = await getUnifiedApprovalsSchedulingDataForEvent(eventId);
+  const approvalsData = await getUnifiedApprovalsSchedulingDataForEvent(
+    eventId,
+    {
+      campaignRole: context.campaignRole,
+      membership: context.membership,
+    },
+  );
   return { tab: "approvals", approvalsData };
 }
 
 export async function loadEventTasksTab(
   eventId: string,
-  _organizationId: string,
-  eventMeta: { title: string; date: string },
+  context: EventDetailTabContext,
 ): Promise<EventDetailTasksTabData> {
-  void _organizationId;
-  const tasksV2Data = await getTasksV2PageDataForEvent(eventId, eventMeta);
+  const totalStarted = startTabTimer();
+  const primaryStarted = startTabTimer();
+  const tasksV2Data = await getTasksV2PageDataForEvent(
+    eventId,
+    { title: context.event.title, date: context.event.date },
+    {
+      campaignRole: context.campaignRole,
+      tablesAvailable: context.tablesAvailable,
+    },
+  );
+  logTabTiming("tasks", eventId, {
+    totalMs: elapsedMs(totalStarted),
+    authContextMs: 0,
+    primaryQueryMs: elapsedMs(primaryStarted),
+    dtoMappingMs: 0,
+  });
   return { tab: "tasks", tasksV2Data };
 }
 
 export async function loadEventFilesTab(
   eventId: string,
-  _organizationId: string,
-  event: Event,
+  context: EventDetailTabContext,
 ): Promise<EventDetailFilesTabData> {
   void eventId;
-  void _organizationId;
-  const filesPageData = await getFilesPageDataForEvent(event);
+  const filesPageData = await getFilesPageDataForEvent(context.event);
   return { tab: "files", filesPageData };
 }
 
 export async function loadEventNotesTab(
   eventId: string,
-  _organizationId: string,
+  context: EventDetailTabContext,
 ): Promise<EventDetailNotesTabData> {
-  void _organizationId;
-  const [tablesAvailable, notes] = await Promise.all([
-    areEventPlaybookTablesAvailable(),
-    getEventPlaybookNotesForEvent(eventId),
-  ]);
-  return { tab: "notes", notes, tablesAvailable };
+  const notes = await getEventPlaybookNotesForEvent(eventId);
+  return {
+    tab: "notes",
+    notes,
+    tablesAvailable: context.tablesAvailable,
+  };
 }
 
 export async function loadEventVendorsTab(
   eventId: string,
-  _organizationId: string,
+  context: EventDetailTabContext,
 ): Promise<EventDetailVendorsTabData> {
-  void _organizationId;
-  const eventVendorsData = await getEventVendorsData(eventId);
+  const totalStarted = startTabTimer();
+  const primaryStarted = startTabTimer();
+  const eventVendorsData = await getEventVendorsData(eventId, {
+    organizationId: context.organizationId,
+    campaignRole: context.campaignRole,
+  });
+  logTabTiming("vendors", eventId, {
+    totalMs: elapsedMs(totalStarted),
+    primaryQueryMs: elapsedMs(primaryStarted),
+  });
   return {
     tab: "vendors",
     eventVendorsData,
@@ -156,9 +185,9 @@ export async function loadEventVendorsTab(
 
 export async function loadEventActivityTab(
   eventId: string,
-  _organizationId: string,
+  _context: EventDetailTabContext,
 ): Promise<EventDetailActivityTabData> {
-  void _organizationId;
+  void _context;
   const [playbookActivity, workspaceTimeline] = await Promise.all([
     getEventPlaybookActivityForEvent(eventId),
     getEventActivityLogForEvent(eventId),
@@ -167,29 +196,30 @@ export async function loadEventActivityTab(
 }
 
 export async function loadEventDetailTabData(
-  eventId: string,
   tab: EventDetailLazyTab,
-  event: Event,
-  organizationId: string,
+  context: EventDetailTabContext,
 ): Promise<EventDetailTabData> {
-  const meta = { title: event.title, date: event.date };
+  const eventId = context.event.id;
 
   switch (tab) {
     case "approvals":
-      return loadEventApprovalsTab(eventId, organizationId);
+      return loadEventApprovalsTab(eventId, context);
     case "tasks":
-      return loadEventTasksTab(eventId, organizationId, meta);
+      return loadEventTasksTab(eventId, context);
     case "files":
-      return loadEventFilesTab(eventId, organizationId, event);
+      return loadEventFilesTab(eventId, context);
     case "notes":
-      return loadEventNotesTab(eventId, organizationId);
+      return loadEventNotesTab(eventId, context);
     case "vendors":
-      return loadEventVendorsTab(eventId, organizationId);
+      return loadEventVendorsTab(eventId, context);
     case "activity":
-      return loadEventActivityTab(eventId, organizationId);
+      return loadEventActivityTab(eventId, context);
     default: {
       const exhaustive: never = tab;
       throw new Error(`Unsupported tab: ${exhaustive}`);
     }
   }
 }
+
+/** Kept for schema probe reuse from action context building. */
+export { areEventPlaybookTablesAvailable };

@@ -1,7 +1,9 @@
 import "server-only";
 
+import { cache } from "react";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import {
@@ -34,11 +36,11 @@ import type {
   VendorRow,
 } from "@/types/vendors";
 
-export async function areVendorTablesAvailable(): Promise<boolean> {
+export const areVendorTablesAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase.from("vendors").select("id").limit(1);
   return !error || !isMissingSchemaError(error);
-}
+});
 
 export async function getVendorCategories(
   organizationId: string,
@@ -415,9 +417,21 @@ export async function getVendorDetailData(
   };
 }
 
-export async function getEventVendorsData(eventId: string): Promise<EventVendorsData> {
-  const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+export async function getEventVendorsData(
+  eventId: string,
+  context?: {
+    organizationId?: string;
+    campaignRole?: CampaignRole;
+  },
+): Promise<EventVendorsData> {
+  const [organization, role] = await Promise.all([
+    context?.organizationId
+      ? Promise.resolve({ id: context.organizationId })
+      : getCurrentOrganization(),
+    context?.campaignRole
+      ? Promise.resolve(context.campaignRole)
+      : getCurrentCampaignRole(),
+  ]);
 
   if (!organization || !(await areVendorTablesAvailable())) {
     return { vendors: [], canWrite: canWriteVendors(role) };
@@ -491,23 +505,34 @@ export async function getEventVendorsData(eventId: string): Promise<EventVendors
     .filter((value): value is EventVendorRow => value !== null)
     .sort((left, right) => left.vendor.name.localeCompare(right.vendor.name));
 
-  const withLogos = await Promise.all(
-    vendors.map(async (row) => {
-      if (!row.vendor.logoPath) {
-        return row;
-      }
+  const logoPaths = vendors
+    .map((row) => row.vendor.logoPath)
+    .filter((path): path is string => Boolean(path));
 
-      const { data, error: signError } = await supabase.storage
-        .from(VENDOR_DOCUMENTS_BUCKET)
-        .createSignedUrl(row.vendor.logoPath, 3600);
+  let signedByPath = new Map<string, string>();
+  if (logoPaths.length > 0) {
+    const { data: signedRows, error: signError } = await supabase.storage
+      .from(VENDOR_DOCUMENTS_BUCKET)
+      .createSignedUrls(logoPaths, 3600);
 
-      if (signError || !data?.signedUrl) {
-        return row;
-      }
+    if (!signError && signedRows) {
+      signedByPath = new Map(
+        signedRows
+          .filter((row) => row.path && row.signedUrl && !row.error)
+          .map((row) => [row.path as string, row.signedUrl as string]),
+      );
+    }
+  }
 
-      return { ...row, logoUrl: data.signedUrl };
-    }),
-  );
+  const withLogos = vendors.map((row) => {
+    if (!row.vendor.logoPath) {
+      return row;
+    }
+    return {
+      ...row,
+      logoUrl: signedByPath.get(row.vendor.logoPath) ?? null,
+    };
+  });
 
   return { vendors: withLogos, canWrite: canWriteVendors(role) };
 }

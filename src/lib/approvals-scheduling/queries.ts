@@ -21,14 +21,27 @@ import type {
   UnifiedApprovalItem,
 } from "@/lib/approvals-scheduling/types";
 import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
-import { getApprovalQueueOverviewForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
+import {
+  classicQueueNeedsPreviewEnrichment,
+  enrichApprovalQueuePreviewsForItems,
+  getApprovalQueueOverviewForCurrentUser,
+  resolveApprovalQueueBaseForEvent,
+} from "@/lib/event-workspace/approval-routing-queries";
 import type { ApprovalActor } from "@/lib/event-workspace/approval-permissions";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
+import type { EventDetailTabContext } from "@/lib/events-phase3/tab-context";
+import {
+  elapsedMs,
+  logTabTiming,
+  startTabTimer,
+} from "@/lib/events-phase3/tab-timing";
 import { createClient } from "@/lib/supabase/server";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { cache } from "react";
+import type { ApprovalQueueItem } from "@/types/event-workspace";
+import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
 
 function isPublishedPlanningItem(
   item: import("@/types/communications-calendar").PlanningCalendarItem,
@@ -85,6 +98,12 @@ function previewAssetsFromBundle(
   };
 }
 
+function schedulingRowHasDisplayPreview(row: ApprovalSchedulingItemRow): boolean {
+  const hasArtwork = Boolean(row.feed_artwork_url || row.story_artwork_url);
+  const hasCaption = Boolean(row.caption_text || row.story_caption);
+  return hasArtwork && hasCaption;
+}
+
 function previewAssetsFromSchedulingRow(
   row: ApprovalSchedulingItemRow | undefined,
 ): {
@@ -94,6 +113,12 @@ function previewAssetsFromSchedulingRow(
   storyArtworkUrl: string | null;
 } | undefined {
   if (!row) {
+    return undefined;
+  }
+
+  const hasArtwork = Boolean(row.feed_artwork_url || row.story_artwork_url);
+  const hasCaption = Boolean(row.caption_text || row.story_caption);
+  if (!hasArtwork && !hasCaption) {
     return undefined;
   }
 
@@ -507,20 +532,52 @@ async function fetchSchedulingItemsForEvent(
   return (data ?? []) as ApprovalSchedulingItemRow[];
 }
 
+function splitQueueOverview(
+  enriched: ApprovalQueueItem[],
+  actor: ApprovalActor | null,
+) {
+  const pending = enriched.filter(
+    (item) =>
+      item.status === "pending" &&
+      isCommunicationApprovable(item.communicationStatus),
+  );
+  return {
+    assignedToMe: pending.filter((item) => item.assignedToMe),
+    allPending: pending,
+    changesRequested: enriched.filter(
+      (item) => item.communicationStatus === "changes_requested",
+    ),
+    recentlyApproved: enriched.filter((item) => item.status === "approved"),
+    actor,
+  };
+}
+
 /**
  * Event Detail Approvals tab — exact eventId only.
- * No planning calendar, no unrelated events, Meta only for this event when needed.
+ * No planning calendar, no unrelated events.
+ * Meta/version/step enrichment only when preview fields are missing.
  */
 export async function getUnifiedApprovalsSchedulingDataForEvent(
   eventId: string,
+  context?: Pick<EventDetailTabContext, "campaignRole" | "membership">,
 ): Promise<UnifiedApprovalsPageData> {
+  const totalStarted = startTabTimer();
   const today = getTodayDateString();
-  const [role, membership, queue, schedulingRows] = await Promise.all([
-    getCurrentCampaignRole(),
-    getActiveMembership(),
-    getApprovalQueueOverviewForCurrentUser(eventId),
+
+  const authStarted = startTabTimer();
+  const primaryStarted = startTabTimer();
+  const [role, membership, queueBase, schedulingRows] = await Promise.all([
+    context?.campaignRole
+      ? Promise.resolve(context.campaignRole)
+      : getCurrentCampaignRole(),
+    context?.membership
+      ? Promise.resolve(context.membership)
+      : getActiveMembership(),
+    resolveApprovalQueueBaseForEvent(eventId),
     fetchSchedulingItemsForEvent(eventId),
   ]);
+  const authContextMs = elapsedMs(authStarted);
+  const primaryQueryMs = elapsedMs(primaryStarted);
 
   const actor: ApprovalActor | null = membership
     ? {
@@ -529,6 +586,51 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
         email: membership.user.email,
       }
     : null;
+
+  const coveredCommunicationIds = new Set(
+    schedulingRows
+      .filter(schedulingRowHasDisplayPreview)
+      .map((row) => row.communication_item_id)
+      .filter((value): value is string => Boolean(value)),
+  );
+
+  const classicCandidates = queueBase.items.filter((item) => {
+    if (item.eventId !== eventId) {
+      return false;
+    }
+    if (
+      item.communicationItemId &&
+      coveredCommunicationIds.has(item.communicationItemId)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  let previewEnrichmentMs = 0;
+  let queueItems = queueBase.items;
+  if (
+    classicCandidates.length > 0 &&
+    classicQueueNeedsPreviewEnrichment(classicCandidates)
+  ) {
+    const previewStarted = startTabTimer();
+    const classicIds = new Set(classicCandidates.map((item) => item.id));
+    const rowsToEnrich = queueBase.rows.filter((row) => classicIds.has(row.id));
+    const itemsToEnrich = queueBase.items.filter((item) =>
+      classicIds.has(item.id),
+    );
+    const enrichedSubset = await enrichApprovalQueuePreviewsForItems(
+      rowsToEnrich,
+      itemsToEnrich,
+    );
+    const enrichedById = new Map(enrichedSubset.map((item) => [item.id, item]));
+    queueItems = queueBase.items.map(
+      (item) => enrichedById.get(item.id) ?? item,
+    );
+    previewEnrichmentMs = elapsedMs(previewStarted);
+  }
+
+  const queue = splitQueueOverview(queueItems, actor);
 
   const classicItems = [
     ...queue.assignedToMe,
@@ -540,12 +642,17 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     .map((item) => mapClassicApprovalItem(item, today));
 
   const needsMetaPreview = schedulingRows.some(
-    (row) => !row.feed_artwork_url && !row.story_artwork_url,
+    (row) => !schedulingRowHasDisplayPreview(row),
   );
-  const bundlesByEvent = needsMetaPreview
-    ? await loadMetaBundlesByEvent([eventId])
-    : new Map<string, MetaPublishBundle[]>();
-  const bundles = bundlesByEvent.get(eventId) ?? [];
+  let metaPreviewMs = 0;
+  let bundles: MetaPublishBundle[] = [];
+  if (needsMetaPreview) {
+    const metaStarted = startTabTimer();
+    const bundlesByEvent = await loadMetaBundlesByEvent([eventId]);
+    bundles = bundlesByEvent.get(eventId) ?? [];
+    metaPreviewMs = elapsedMs(metaStarted);
+    previewEnrichmentMs += metaPreviewMs;
+  }
 
   const eventTitleById = new Map<string, string>();
   for (const item of classicItems) {
@@ -557,7 +664,11 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     }
   }
 
+  const assigneeStarted = startTabTimer();
   const assigneeLookups = await loadAssigneeLookups(schedulingRows);
+  const assigneeEnrichmentMs = elapsedMs(assigneeStarted);
+
+  const dtoStarted = startTabTimer();
   const cb2Items: UnifiedApprovalItem[] = [];
   for (const row of schedulingRows) {
     const assignee = resolveAssigneeFromLookups(row, assigneeLookups);
@@ -567,8 +678,22 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
           milestoneNameMatchKey(entry.title) ===
           milestoneNameMatchKey(row.milestone_name),
       ) ?? null;
+    const fromRow = previewAssetsFromSchedulingRow(row);
+    const fromBundle = previewAssetsFromBundle(bundle);
     const assets =
-      previewAssetsFromSchedulingRow(row) ?? previewAssetsFromBundle(bundle);
+      fromRow || fromBundle
+        ? {
+            captionText: fromRow?.captionText ?? fromBundle?.captionText ?? null,
+            storyCaptionSnippet:
+              fromRow?.storyCaptionSnippet ??
+              fromBundle?.storyCaptionSnippet ??
+              null,
+            feedArtworkUrl:
+              fromRow?.feedArtworkUrl ?? fromBundle?.feedArtworkUrl ?? null,
+            storyArtworkUrl:
+              fromRow?.storyArtworkUrl ?? fromBundle?.storyArtworkUrl ?? null,
+          }
+        : undefined;
 
     const mapped = mapSchedulingItemRow(
       row,
@@ -601,6 +726,16 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
       items.map((item) => [item.eventId, { id: item.eventId, title: item.eventTitle }]),
     ).values(),
   ].sort((left, right) => left.title.localeCompare(right.title));
+  const dtoMappingMs = elapsedMs(dtoStarted);
+
+  logTabTiming("approvals", eventId, {
+    totalMs: elapsedMs(totalStarted),
+    authContextMs,
+    primaryQueryMs,
+    assigneeEnrichmentMs,
+    previewEnrichmentMs,
+    dtoMappingMs,
+  });
 
   return {
     items,

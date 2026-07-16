@@ -387,19 +387,26 @@ export function EventDetailShell({
     });
   }, []);
 
-  // Isolate cache when navigating to a different event.
+  const workspaceRef = useRef(workspace);
+  workspaceRef.current = workspace;
+  const loadedTabsRef = useRef(loadedTabs);
+  loadedTabsRef.current = loadedTabs;
+  const fetchInFlightRef = useRef<Set<string>>(new Set());
+
+  // Isolate cache when navigating to a different event only.
   useEffect(() => {
     if (cacheEventIdRef.current === event.id) {
       if (tabCacheRef.current.size === 0) {
-        seedTabCache(event.id, workspace, tabCacheRef.current);
+        seedTabCache(event.id, workspaceRef.current, tabCacheRef.current);
       }
       return;
     }
     cacheEventIdRef.current = event.id;
     tabCacheRef.current = new Map();
-    seedTabCache(event.id, workspace, tabCacheRef.current);
-    setPanelData(workspace);
-    setLoadedTabs(loadedTabsFromWorkspace(workspace));
+    fetchInFlightRef.current = new Set();
+    seedTabCache(event.id, workspaceRef.current, tabCacheRef.current);
+    setPanelData(workspaceRef.current);
+    setLoadedTabs(loadedTabsFromWorkspace(workspaceRef.current));
     setTabError(null);
     if (initialTab === "create-with-ai") {
       setTab("create-with-ai");
@@ -408,7 +415,7 @@ export function EventDetailShell({
     } else {
       setTab("responsibilities");
     }
-  }, [event.id, workspace, initialTab]);
+  }, [event.id, initialTab]);
 
   useEffect(() => {
     if (initialTab === "create-with-ai") {
@@ -422,37 +429,92 @@ export function EventDetailShell({
         return;
       }
 
+      if (loadedTabsRef.current.has(nextTab)) {
+        return;
+      }
+
       const cacheKey = eventTabCacheKey(event.id, nextTab);
       const cached = tabCacheRef.current.get(cacheKey);
       if (cached) {
         applyTabData(cached);
-        setLoadedTabs((prev) => new Set(prev).add(nextTab));
+        setLoadedTabs((prev) => {
+          if (prev.has(nextTab)) {
+            return prev;
+          }
+          return new Set(prev).add(nextTab);
+        });
         setTabError(null);
         return;
       }
 
-      if (loadedTabs.has(nextTab)) {
+      if (fetchInFlightRef.current.has(cacheKey)) {
         return;
       }
+      fetchInFlightRef.current.add(cacheKey);
 
       setTabError(null);
       startTransition(async () => {
-        const result = await loadEventDetailTabAction(event.id, nextTab);
-        if (!result.success) {
-          setTabError(result.error);
-          return;
+        try {
+          const result = await loadEventDetailTabAction(event.id, nextTab);
+          if (!result.success) {
+            setTabError(result.error);
+            return;
+          }
+          tabCacheRef.current.set(cacheKey, result.data);
+          applyTabData(result.data);
+          setLoadedTabs((prev) => {
+            if (prev.has(nextTab)) {
+              return prev;
+            }
+            return new Set(prev).add(nextTab);
+          });
+        } finally {
+          fetchInFlightRef.current.delete(cacheKey);
         }
-        tabCacheRef.current.set(cacheKey, result.data);
-        applyTabData(result.data);
-        setLoadedTabs((prev) => new Set(prev).add(nextTab));
       });
     },
-    [event.id, loadedTabs, applyTabData],
+    [event.id, applyTabData],
   );
 
   useEffect(() => {
     ensureTabLoaded(tab);
   }, [tab, ensureTabLoaded]);
+
+  // Warm Approvals/Tasks JS chunks only — do not prefetch tab data.
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) {
+        return;
+      }
+      void import("@/components/approvals-scheduling/ApprovalsSchedulingHub");
+      void import("@/components/tasks-v2/TasksV2Shell");
+    };
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => number;
+        cancelIdleCallback?: (id: number) => void;
+      }
+    ).requestIdleCallback;
+    if (ric) {
+      const id = ric(warm, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback?.(id);
+      };
+    }
+    const timeoutId = window.setTimeout(warm, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [event.id]);
 
   const orderedResponsibilities = useMemo(() => {
     const order = [

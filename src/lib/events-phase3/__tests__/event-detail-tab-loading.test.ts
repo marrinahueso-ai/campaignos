@@ -60,7 +60,10 @@ describe("event-scoped tab loaders (source contract)", () => {
 
   it("approvals loader uses exact-event query helper only", () => {
     assert.match(loaders, /export async function loadEventApprovalsTab/);
-    assert.match(loaders, /getUnifiedApprovalsSchedulingDataForEvent\(eventId\)/);
+    assert.match(
+      loaders,
+      /getUnifiedApprovalsSchedulingDataForEvent\(\s*eventId/,
+    );
     assert.doesNotMatch(
       loaders,
       /getUnifiedApprovalsSchedulingData\(\)/,
@@ -75,7 +78,7 @@ describe("event-scoped tab loaders (source contract)", () => {
     );
     assert.match(
       approvalsQueries,
-      /getApprovalQueueOverviewForCurrentUser\(eventId\)/,
+      /resolveApprovalQueueBaseForEvent\(eventId\)/,
     );
     assert.doesNotMatch(
       approvalsQueries,
@@ -85,7 +88,7 @@ describe("event-scoped tab loaders (source contract)", () => {
 
   it("tasks loader uses exact-event tasks helper and skips Monday", () => {
     assert.match(loaders, /export async function loadEventTasksTab/);
-    assert.match(loaders, /getTasksV2PageDataForEvent\(eventId/);
+    assert.match(loaders, /getTasksV2PageDataForEvent\(/);
     assert.doesNotMatch(loaders, /getTasksV2PageData\(\)/);
     assert.match(taskHubQueries, /getEventPlaybookTasksForEvents\(\[eventId\]\)/);
     assert.match(taskHubQueries, /mondayBoard: null/);
@@ -93,7 +96,7 @@ describe("event-scoped tab loaders (source contract)", () => {
 
   it("files loader uses exact-event files helper without org event list", () => {
     assert.match(loaders, /export async function loadEventFilesTab/);
-    assert.match(loaders, /getFilesPageDataForEvent\(event\)/);
+    assert.match(loaders, /getFilesPageDataForEvent\(context\.event\)/);
     assert.doesNotMatch(loaders, /getFilesPageData\(eventId\)/);
     assert.match(
       filesQueries,
@@ -115,7 +118,7 @@ describe("event-scoped tab loaders (source contract)", () => {
 
   it("vendors initial load excludes full directory", () => {
     assert.match(loaders, /export async function loadEventVendorsTab/);
-    assert.match(loaders, /getEventVendorsData\(eventId\)/);
+    assert.match(loaders, /getEventVendorsData\(eventId/);
     assert.doesNotMatch(loaders, /getVendorDirectoryPageData/);
     assert.match(
       loaders,

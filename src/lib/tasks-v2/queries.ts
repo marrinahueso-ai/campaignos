@@ -30,10 +30,12 @@ export async function getTasksV2PageData(): Promise<TasksV2PageData> {
 export async function getTasksV2PageDataForEvent(
   eventId: string,
   eventMeta: { title: string; date: string },
+  context?: import("@/lib/task-hub/queries").EventTaskHubContext,
 ): Promise<TasksV2PageData> {
-  const hubData = await getTaskHubPageDataForEvent(eventId, eventMeta);
+  const hubData = await getTaskHubPageDataForEvent(eventId, eventMeta, context);
   const allTasks = flattenCommitteeTasks(hubData.committees);
   const eventGroups = groupTasksByEvent(allTasks);
+  // Keep summary shape for type compatibility; embedded shell may hide the cards.
   const summary = computeTasksV2SummaryStats(allTasks);
   const aiStatus = getAiAssistantStatus();
 

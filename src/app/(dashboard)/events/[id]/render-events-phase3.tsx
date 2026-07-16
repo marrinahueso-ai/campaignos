@@ -1,6 +1,8 @@
 import { EventDetailPhase3Client } from "@/components/events-phase3/EventDetailPhase3Client";
 import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getAuthUser } from "@/lib/auth/queries";
 import {
   resolveEventResponsibilities,
   type CommitteeAssignmentInput,
@@ -142,41 +144,58 @@ export async function renderEventsPhase3Detail(
       ? initialTab
       : null;
 
-  const initialWorkspace =
-    lazyInitial != null && organization
-      ? await loadEventDetailTabData(
-          event.id,
-          lazyInitial,
-          event,
-          organization.id,
-        ).then((data) => {
-          switch (data.tab) {
-            case "approvals":
-              return { approvalsData: data.approvalsData };
-            case "tasks":
-              return { tasksV2Data: data.tasksV2Data };
-            case "files":
-              return { filesPageData: data.filesPageData };
-            case "notes":
-              return {
-                notes: data.notes,
-                tablesAvailable: data.tablesAvailable,
-              };
-            case "vendors":
-              return {
-                eventVendorsData: data.eventVendorsData,
-                vendorDirectory: data.vendorDirectory,
-              };
-            case "activity":
-              return {
-                playbookActivity: data.playbookActivity,
-                workspaceTimeline: data.workspaceTimeline,
-              };
-            default:
-              return {};
-          }
-        })
-      : {};
+  let initialWorkspace: import("@/components/events-phase3/EventDetailShell").EventDetailWorkspacePanels =
+    {};
+
+  if (lazyInitial != null && organization) {
+    const [user, membership, campaignRole, tablesAvailable] = await Promise.all([
+      getAuthUser(),
+      getActiveMembership(),
+      getCurrentCampaignRole(),
+      areEventPlaybookTablesAvailable(),
+    ]);
+
+    if (user && membership) {
+      const data = await loadEventDetailTabData(lazyInitial, {
+        user,
+        membership,
+        organizationId: organization.id,
+        event,
+        campaignRole,
+        tablesAvailable,
+      });
+
+      switch (data.tab) {
+        case "approvals":
+          initialWorkspace = { approvalsData: data.approvalsData };
+          break;
+        case "tasks":
+          initialWorkspace = { tasksV2Data: data.tasksV2Data };
+          break;
+        case "files":
+          initialWorkspace = { filesPageData: data.filesPageData };
+          break;
+        case "notes":
+          initialWorkspace = {
+            notes: data.notes,
+            tablesAvailable: data.tablesAvailable,
+          };
+          break;
+        case "vendors":
+          initialWorkspace = {
+            eventVendorsData: data.eventVendorsData,
+            vendorDirectory: data.vendorDirectory,
+          };
+          break;
+        case "activity":
+          initialWorkspace = {
+            playbookActivity: data.playbookActivity,
+            workspaceTimeline: data.workspaceTimeline,
+          };
+          break;
+      }
+    }
+  }
 
   return (
     <EventDetailPhase3Client

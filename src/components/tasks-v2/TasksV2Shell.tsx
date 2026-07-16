@@ -257,9 +257,11 @@ export function TasksV2Shell({
             </div>
           )}
         </div>
-        <div className="w-full lg:max-w-md lg:shrink-0">
-          <TasksV2SummaryCards summary={scopedSummary} />
-        </div>
+        {!embedded ? (
+          <div className="w-full lg:max-w-md lg:shrink-0">
+            <TasksV2SummaryCards summary={scopedSummary} />
+          </div>
+        ) : null}
       </header>
 
       {!embedded ? (

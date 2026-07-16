@@ -54,7 +54,7 @@ export function ApprovalsSchedulingHub({
   const lockedId = lockedEventId?.trim() || null;
   const [activeTab, setActiveTab] = useState<UnifiedTabId>("all");
   const [viewScope, setViewScope] = useState<UnifiedViewScope>(
-    lockedId && canViewAll ? "all" : "assigned_to_me",
+    (lockedId || embedded) && canViewAll ? "all" : "assigned_to_me",
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [eventFilter, setEventFilter] = useState(
@@ -235,7 +235,7 @@ export function ApprovalsSchedulingHub({
               </>
             ) : null}
 
-            {canViewAll ? (
+            {canViewAll && !embedded ? (
               <select
                 value={viewScope}
                 onChange={(event) =>
