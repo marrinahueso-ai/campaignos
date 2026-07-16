@@ -25,9 +25,12 @@ export type AudienceFacingTiming = {
 /**
  * Translate playbook relative-day offsets into audience-facing countdown language.
  * Milestone names like "Two-Week Push" stay internal — this is what families should see.
+ *
+ * First campaign milestone (sortOrder 0) is a first-time flyer: no countdown copy.
  */
 export function describeAudienceFacingTiming(
   relativeDay: number,
+  options?: { isFirstMilestone?: boolean },
 ): AudienceFacingTiming {
   if (!Number.isFinite(relativeDay)) {
     return {
@@ -36,6 +39,17 @@ export function describeAudienceFacingTiming(
       onGraphicExamples: [],
       guidance:
         "Do not invent countdown wording if timing is unknown. Focus on the event name and mood.",
+    };
+  }
+
+  if (options?.isFirstMilestone) {
+    return {
+      relativeDay,
+      scheduleSummary:
+        "first campaign post — introduce the event (not a countdown)",
+      onGraphicExamples: [],
+      guidance:
+        "This is the audience's first look at the event. Create first-time flyer / announcement energy. Do not use countdown wording (no \"one week to go\", \"X days away\", \"coming soon\" as a countdown, etc.). Lead with the event name, date, and inviting intro copy.",
     };
   }
 

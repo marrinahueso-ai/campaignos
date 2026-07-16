@@ -140,6 +140,7 @@ export function sanitizeSeedPurpose(
   options?: {
     relativeDay?: number | null;
     category?: MilestoneCategory | null;
+    isFirstMilestone?: boolean;
   },
 ): string {
   const trimmed = purpose?.trim() ?? "";
@@ -148,6 +149,7 @@ export function sanitizeSeedPurpose(
       name: milestoneName,
       relativeDay: options?.relativeDay ?? null,
       category: options?.category ?? null,
+      isFirstMilestone: options?.isFirstMilestone,
     });
   }
 

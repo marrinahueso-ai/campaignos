@@ -1,3 +1,4 @@
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { defaultEnabledFormats, emptyMilestoneArtwork } from "./platform-utils.ts";
 import { milestoneNameMatchKey, normalizeMilestoneName } from "./milestone-names.ts";
 import { defaultPurposeForMilestone } from "./milestone-purpose.ts";
@@ -21,7 +22,14 @@ function createMilestoneId(): string {
   return `ms-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function categoryForRelativeDay(relativeDay: number): MilestoneCategory {
+function categoryForRelativeDay(
+  relativeDay: number,
+  sortOrder: number,
+): MilestoneCategory {
+  // First campaign milestone is always a first-time flyer / announcement.
+  if (isFirstCampaignMilestone(sortOrder)) {
+    return "awareness";
+  }
   if (relativeDay < -14) return "awareness";
   if (relativeDay < 0) return "reminder";
   if (relativeDay === 0) return "event-day";
@@ -95,7 +103,8 @@ function buildMilestoneFromPlaybookStep(
 ): CampaignBuilderMilestone {
   const platforms = platformsForChannel(step.channel);
   const name = normalizeMilestoneName(step.title);
-  const category = categoryForRelativeDay(step.relativeDay);
+  const isFirstMilestone = isFirstCampaignMilestone(sortOrder);
+  const category = categoryForRelativeDay(step.relativeDay, sortOrder);
   return {
     id: createMilestoneId(),
     name,
@@ -104,6 +113,7 @@ function buildMilestoneFromPlaybookStep(
       name,
       category,
       relativeDay: step.relativeDay,
+      isFirstMilestone,
     }),
     suggestedDate: dateForRelativeDay(eventDate, step.relativeDay),
     platforms,
@@ -196,7 +206,8 @@ export function reconcileMilestonesWithPlaybookSteps(
 
     if (matched) {
       const name = normalizeMilestoneName(step.title);
-      const category = categoryForRelativeDay(step.relativeDay);
+      const isFirstMilestone = isFirstCampaignMilestone(index);
+      const category = categoryForRelativeDay(step.relativeDay, index);
       const platforms = platformsForChannel(step.channel);
       const platformFormats = platformFormatsForPlatforms(platforms);
       const milestone: CampaignBuilderMilestone = {
@@ -207,6 +218,7 @@ export function reconcileMilestonesWithPlaybookSteps(
           name,
           category,
           relativeDay: step.relativeDay,
+          isFirstMilestone,
         }),
         suggestedDate: dateForRelativeDay(eventDate, step.relativeDay),
         platforms,

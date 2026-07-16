@@ -306,7 +306,7 @@ export function EventDetailHeroSummary({ event }: EventDetailHeroSummaryProps) {
             ref={summaryTextRef}
             className={cn(
               "text-sm leading-relaxed text-cos-text",
-              !summaryExpanded && "line-clamp-3",
+              !summaryExpanded && "line-clamp-2",
             )}
           >
             {savedDescription || (
@@ -317,7 +317,7 @@ export function EventDetailHeroSummary({ event }: EventDetailHeroSummaryProps) {
             <button
               type="button"
               onClick={() => setSummaryExpanded((open) => !open)}
-              className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-cos-muted transition-colors hover:text-cos-text"
+              className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-cos-muted transition-colors hover:text-cos-text"
               aria-expanded={summaryExpanded}
             >
               {summaryExpanded ? (

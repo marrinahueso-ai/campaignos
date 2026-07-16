@@ -1,8 +1,10 @@
+import { ensureSharedCaptionsForPlatforms } from "./caption-utils.ts";
 import {
   defaultEnabledFormats,
   normalizeMilestoneArtwork,
 } from "./platform-utils.ts";
 import {
+  captionPlatformsForFormats,
   generationStatusAfterContent,
   inferGenerationStatus,
   isStaleGeneration,
@@ -19,6 +21,7 @@ import {
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
 } from "./stale-seed-migration.ts";
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { normalizeMilestoneName } from "./milestone-names.ts";
 import type {
   CampaignBuilderMilestone,
@@ -248,14 +251,21 @@ export function reconcilePreviewContent(
         ? milestone.platformFormats
         : defaultEnabledFormats();
 
+  const rawCaptions = content.captions ?? [
+    { platform: "facebook", text: "" },
+    { platform: "instagram", text: "" },
+  ];
+  const captionPlatforms = captionPlatformsForFormats(enabledFormats);
+  const captions =
+    captionPlatforms.length > 0
+      ? ensureSharedCaptionsForPlatforms(rawCaptions, captionPlatforms)
+      : rawCaptions;
+
   const normalized: MilestonePreviewContent = {
     ...content,
     artwork: normalizeMilestoneArtwork(content.artwork),
     enabledFormats,
-    captions: content.captions ?? [
-      { platform: "facebook", text: "" },
-      { platform: "instagram", text: "" },
-    ],
+    captions,
     emailSendDate: content.emailSendDate ?? content.scheduleDate,
     emailSendTime: content.emailSendTime ?? content.scheduleTime,
     manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",
@@ -455,9 +465,6 @@ export function normalizeCampaignBuilderSession(
           milestone.platformFormats ?? defaultEnabledFormats(),
         artworkNotes: sanitizeSeedNotes(milestone.artworkNotes),
         captionNotes: sanitizeSeedNotes(milestone.captionNotes),
-        purpose: sanitizeSeedPurpose(milestone.purpose, name, {
-          category: milestone.category,
-        }),
         statusTag: milestone.statusTag ?? "not-started",
         sortOrder: milestone.sortOrder ?? index,
         creativeOverrides: normalizeMilestoneCreativeOverrides(
@@ -466,7 +473,19 @@ export function normalizeCampaignBuilderSession(
       };
     })
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((milestone, index) => ({ ...milestone, sortOrder: index }));
+    .map((milestone, index) => {
+      const isFirstMilestone = isFirstCampaignMilestone(index);
+      const category = isFirstMilestone ? "awareness" : milestone.category;
+      return {
+        ...milestone,
+        sortOrder: index,
+        category,
+        purpose: sanitizeSeedPurpose(milestone.purpose, milestone.name, {
+          category,
+          isFirstMilestone,
+        }),
+      };
+    });
 
   const rawMilestones = raw.milestones ?? defaults.milestones;
   const rawPreviews = (raw.previewContents ?? defaults.previewContents).map(

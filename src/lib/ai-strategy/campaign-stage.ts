@@ -92,7 +92,16 @@ export function resolveCampaignStage(input: {
   stepTitle?: string | null;
   eventDate?: string | null;
   referenceDate?: Date;
+  /** First campaign milestone (sortOrder 0) — always Announcement / first-time flyer. */
+  isFirstMilestone?: boolean;
 }): CampaignStage {
+  if (input.isFirstMilestone) {
+    return {
+      ...STAGE_DEFINITIONS.announcement,
+      relativeDay: input.relativeDay ?? null,
+    };
+  }
+
   const titleStage = input.stepTitle ? stageFromTitle(input.stepTitle) : null;
 
   if (input.relativeDay != null) {

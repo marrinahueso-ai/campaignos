@@ -1,3 +1,4 @@
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { milestoneNameMatchKey } from "./milestone-names.ts";
 import type { MilestoneCategory } from "./types.ts";
 
@@ -9,10 +10,16 @@ export function defaultPurposeForMilestone(input: {
   name: string;
   relativeDay?: number | null;
   category?: MilestoneCategory | null;
+  /** First campaign milestone — first-time flyer, not a countdown/reminder. */
+  isFirstMilestone?: boolean;
 }): string {
   const name = input.name.trim();
   const key = milestoneNameMatchKey(name);
   const relativeDay = input.relativeDay ?? null;
+
+  if (input.isFirstMilestone) {
+    return "Announce the event and build early awareness";
+  }
 
   if (key.includes("save the date")) {
     return "Announce the event and build early awareness";
@@ -82,11 +89,12 @@ export function ensureMilestonePurposes(
     purpose: string;
     category?: MilestoneCategory | null;
     suggestedDate?: string;
+    sortOrder?: number;
   }>,
   eventDate?: string | null,
 ): boolean {
   let changed = false;
-  for (const milestone of milestones) {
+  for (const [index, milestone] of milestones.entries()) {
     if (milestone.purpose.trim()) {
       continue;
     }
@@ -94,10 +102,12 @@ export function ensureMilestonePurposes(
       eventDate && milestone.suggestedDate
         ? relativeDayBetween(eventDate, milestone.suggestedDate)
         : null;
+    const sortOrder = milestone.sortOrder ?? index;
     milestone.purpose = defaultPurposeForMilestone({
       name: milestone.name,
       category: milestone.category ?? null,
       relativeDay,
+      isFirstMilestone: isFirstCampaignMilestone(sortOrder),
     });
     changed = true;
   }

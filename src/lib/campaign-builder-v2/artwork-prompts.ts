@@ -3,6 +3,7 @@ import {
   describeAudienceFacingTiming,
   playbookRelativeDay,
 } from "@/lib/campaign-builder-v2/campaign-timing";
+import { isFirstCampaignMilestone } from "@/lib/campaign-builder-v2/first-milestone";
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
@@ -46,14 +47,16 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
+  const isFirstMilestone = isFirstCampaignMilestone(input.milestone.sortOrder);
 
   const campaignMoment = resolveCampaignStage({
     relativeDay,
     stepTitle: input.milestone.name,
     eventDate: input.inspiration.eventDate,
+    isFirstMilestone,
   });
 
-  const timing = describeAudienceFacingTiming(relativeDay);
+  const timing = describeAudienceFacingTiming(relativeDay, { isFirstMilestone });
 
   const userArtDirection = [
     input.milestone.artworkNotes.trim(),

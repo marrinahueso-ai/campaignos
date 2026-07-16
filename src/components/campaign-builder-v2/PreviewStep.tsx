@@ -21,9 +21,11 @@ import {
 } from "@/lib/campaign-builder-v2/caption-utils";
 import {
   allMilestonesGenerated,
+  captionPlatformsForFormats,
   countCompleteMilestones,
   findMilestoneAfter,
   findNextMilestoneToGenerate,
+  generationStatusAfterContent,
   inferGenerationStatus,
   isMilestoneContentComplete,
   milestoneHasPartialContent,
@@ -514,10 +516,25 @@ export function PreviewStep() {
           }
           onClose={() => setCaptionModalOpen(false)}
           onApply={(text) => {
+            const captionPlatforms = (() => {
+              const fromFormats = captionPlatformsForFormats(
+                selectedPreview.enabledFormats,
+              );
+              if (fromFormats.length > 0) {
+                return fromFormats;
+              }
+              return selectedMilestone.platforms.length > 0
+                ? selectedMilestone.platforms
+                : (["facebook", "instagram"] as const);
+            })();
+            const captions = syncCaptionsToPlatforms(text, [...captionPlatforms]);
             updatePreviewContent(selectedPreview.milestoneId, {
-              captions: syncCaptionsToPlatforms(text, selectedMilestone.platforms),
-              status: "needs-review",
-              generationStatus: "needs_review",
+              captions,
+              status: "ready",
+              generationStatus: generationStatusAfterContent(
+                { ...selectedPreview, captions },
+                selectedPreview.enabledFormats,
+              ),
             });
             setCaptionModalOpen(false);
           }}

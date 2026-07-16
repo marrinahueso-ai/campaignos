@@ -85,17 +85,17 @@ export function EventDetailHeroCountdown({
       </p>
 
       {parts == null ? (
-        <div className="mt-3 h-14 animate-pulse rounded-lg bg-cos-bg" aria-hidden />
+        <div className="mt-2 h-10 animate-pulse rounded-lg bg-cos-bg" aria-hidden />
       ) : parts.isPast ? (
-        <p className="mt-3 font-display text-2xl text-cos-text">Event completed</p>
+        <p className="mt-2 font-display text-xl text-cos-text">Event completed</p>
       ) : (
-        <div className="mt-3 flex min-w-0 items-end gap-1.5 sm:gap-2">
+        <div className="mt-2 flex min-w-0 items-end gap-1 sm:gap-1.5">
           <CountdownUnit value={String(parts.days)} label="Days" />
-          <span className="pb-5 font-display text-2xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
           <CountdownUnit value={pad(parts.hours)} label="Hrs" />
-          <span className="pb-5 font-display text-2xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
           <CountdownUnit value={pad(parts.minutes)} label="Mins" />
-          <span className="pb-5 font-display text-2xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
           <CountdownUnit value={pad(parts.seconds)} label="Secs" />
         </div>
       )}
@@ -105,11 +105,11 @@ export function EventDetailHeroCountdown({
 
 function CountdownUnit({ value, label }: { value: string; label: string }) {
   return (
-    <div className="min-w-[2.25rem] text-center sm:min-w-[2.75rem]">
-      <p className="font-display text-2xl leading-none text-cos-text tabular-nums sm:text-3xl">
+    <div className="min-w-[2rem] text-center sm:min-w-[2.25rem]">
+      <p className="font-display text-xl leading-none text-cos-text tabular-nums sm:text-2xl">
         {value}
       </p>
-      <p className="mt-1.5 text-[10px] font-medium tracking-wide text-cos-muted uppercase">
+      <p className="mt-1 text-[10px] font-medium tracking-wide text-cos-muted uppercase">
         {label}
       </p>
     </div>

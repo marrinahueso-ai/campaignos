@@ -9,6 +9,7 @@ import {
   describeAudienceFacingTiming,
   playbookRelativeDay,
 } from "@/lib/campaign-builder-v2/campaign-timing";
+import { isFirstCampaignMilestone } from "@/lib/campaign-builder-v2/first-milestone";
 import {
   buildMetaCaptionSystemPrompt,
   buildMetaCaptionUserPrompt,
@@ -50,12 +51,14 @@ export function buildCampaignBuilderCaptionFactsBlock(input: {
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
+  const isFirstMilestone = isFirstCampaignMilestone(input.milestone.sortOrder);
   const campaignMoment = resolveCampaignStage({
     relativeDay,
     stepTitle: input.milestone.name,
     eventDate: input.inspiration.eventDate,
+    isFirstMilestone,
   });
-  const timing = describeAudienceFacingTiming(relativeDay);
+  const timing = describeAudienceFacingTiming(relativeDay, { isFirstMilestone });
 
   const includeOrgName = shouldIncludeOrganizationName(
     input.organizationName,
@@ -103,10 +106,12 @@ export function buildCampaignBuilderCaptionPrompts(input: {
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
+  const isFirstMilestone = isFirstCampaignMilestone(input.milestone.sortOrder);
   const campaignMoment = resolveCampaignStage({
     relativeDay,
     stepTitle: input.milestone.name,
     eventDate: input.inspiration.eventDate,
+    isFirstMilestone,
   });
   const hasArtworkImage = Boolean(input.artworkImageUrl?.trim());
   const factsBlock = buildCampaignBuilderCaptionFactsBlock(input);

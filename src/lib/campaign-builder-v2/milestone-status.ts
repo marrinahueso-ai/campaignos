@@ -1,3 +1,4 @@
+import { ensureSharedCaptionsForPlatforms } from "./caption-utils.ts";
 import {
   artworkKeyForView,
   enabledArtworkViews,
@@ -146,8 +147,10 @@ export function isMilestoneContentComplete(
     return false;
   }
 
+  // Shared caption model: one non-empty caption satisfies every required platform.
+  const captions = ensureSharedCaptionsForPlatforms(preview.captions, platforms);
   return platforms.every((platform) =>
-    preview.captions.some(
+    captions.some(
       (caption) => caption.platform === platform && caption.text.trim().length > 0,
     ),
   );

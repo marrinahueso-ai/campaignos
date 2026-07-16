@@ -30,38 +30,36 @@ export function EventDetailHero({
 }: EventDetailHeroProps) {
   return (
     <section
-      className="grid w-full grid-cols-1 items-stretch gap-5 lg:grid-cols-[minmax(240px,260px)_minmax(0,1fr)] xl:grid-cols-[minmax(240px,300px)_minmax(0,1fr)_minmax(250px,300px)]"
+      className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] xl:grid-cols-[minmax(160px,200px)_minmax(0,1fr)_minmax(220px,260px)]"
       aria-label="Event hero"
     >
-      <div className="flex min-h-[240px] min-w-0 w-full">
+      <div className="min-w-0 w-full">
         <EventDetailHeroArtwork
           artwork={artwork}
           eventTitle={event.title}
           createWithAiHref={createWithAiHref}
-          className="h-full min-h-[240px] flex-1"
         />
       </div>
 
-      <div className="flex min-h-[240px] min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-5 sm:p-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-5">
+      <div className="flex min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-4 sm:p-5">
+        <div className="flex min-w-0 flex-col gap-3">
           <EventDetailHeroCountdown
             eventDate={event.date}
             eventTime={event.time}
           />
-          <div className="min-w-0 border-t border-cos-border pt-5">
+          <div className="min-w-0 border-t border-cos-border pt-3">
             <EventDetailHeroSummary event={event} />
           </div>
         </div>
-        <EventDetailHeroStatsStrip stats={stats} className="mt-5" />
+        <EventDetailHeroStatsStrip stats={stats} className="mt-4" />
       </div>
 
-      <div className="flex min-h-[240px] min-w-0 w-full lg:col-span-2 xl:col-span-1">
+      <div className="min-w-0 w-full lg:col-span-2 xl:col-span-1">
         <EventDetailHeroOverview
           event={event}
           playbookName={playbookName}
           eventTypeLabel={eventTypeLabel}
           eventLeadName={eventLeadName}
-          className="h-full min-h-[240px] flex-1"
         />
       </div>
     </section>

@@ -38,6 +38,9 @@ import {
   reconcileMilestonesWithPlaybookSteps,
 } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
+import {
+  ensureSharedCaptionsForPlatforms,
+} from "@/lib/campaign-builder-v2/caption-utils";
 import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
 import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
 import { normalizeCreativeSelections } from "@/lib/campaign-builder-v2/creative-config";
@@ -55,6 +58,7 @@ import {
 } from "@/lib/campaign-builder-v2/artwork-backup";
 import { mergeInspirationAfterGeneration, slimInspirationImagesForStorage } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
+  captionPlatformsForFormats,
   findNextMilestoneToGenerate,
   GENERATION_STALL_TIMEOUT_MS,
   GENERATION_STALL_WARNING_MS,
@@ -1651,6 +1655,17 @@ export function CampaignBuilderProvider({
             if (hasManual && !patch.emailSendDate && !patch.emailSendTime) {
               next.emailSendDate = next.scheduleDate;
               next.emailSendTime = next.scheduleTime;
+            }
+          }
+          // Shared caption model: keep Facebook & Instagram rows in sync whenever
+          // captions or enabled formats change.
+          if (patch.captions || patch.enabledFormats) {
+            const captionPlatforms = captionPlatformsForFormats(next.enabledFormats);
+            if (captionPlatforms.length > 0) {
+              next.captions = ensureSharedCaptionsForPlatforms(
+                next.captions,
+                captionPlatforms,
+              );
             }
           }
           // Honor an explicit generationStatus (e.g. awaiting_approval after

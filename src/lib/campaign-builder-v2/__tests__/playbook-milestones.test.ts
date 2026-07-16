@@ -78,6 +78,38 @@ const playbookB: PlaybookMilestoneStep[] = [
 ];
 
 describe("playbook milestone reconcile", () => {
+  it("treats the first milestone as awareness even when timed like a reminder", () => {
+    const seeded = reconcileMilestonesWithPlaybookSteps(
+      [step({ title: "One-Week Push", relativeDay: -7, sortOrder: 0 })],
+      "2026-08-17",
+      [],
+      [],
+    );
+    assert.equal(seeded.milestones[0]?.category, "awareness");
+    assert.equal(
+      seeded.milestones[0]?.purpose,
+      "Announce the event and build early awareness",
+    );
+  });
+
+  it("keeps later milestones as reminders when timed inside two weeks", () => {
+    const seeded = reconcileMilestonesWithPlaybookSteps(
+      [
+        step({ title: "Save the Date", relativeDay: -30, sortOrder: 0 }),
+        step({ title: "One-Week Push", relativeDay: -7, sortOrder: 1 }),
+      ],
+      "2026-08-17",
+      [],
+      [],
+    );
+    assert.equal(seeded.milestones[0]?.category, "awareness");
+    assert.equal(seeded.milestones[1]?.category, "reminder");
+    assert.equal(
+      seeded.milestones[1]?.purpose,
+      "Drive attendance with schedule highlights",
+    );
+  });
+
   it("replaces timeline when switching from playbook A to playbook B", () => {
     const seeded = reconcileMilestonesWithPlaybookSteps(
       playbookA,

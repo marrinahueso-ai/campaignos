@@ -116,13 +116,13 @@ describe("milestone-status", () => {
     assert.equal(MILESTONE_STATUS_LABELS.needs_review, "In progress");
   });
 
-  it("requires captions for every platform implied by enabledFormats", () => {
+  it("treats a shared caption on one platform as complete for Facebook and Instagram", () => {
     const preview = buildPreview({
       artwork: {
         feedUrl: "https://example.com/feed.png",
         storyUrl: "https://example.com/story.png",
       },
-      captions: [{ platform: "facebook", text: "FB only" }],
+      captions: [{ platform: "facebook", text: "Shared caption" }],
       enabledFormats: [
         "facebook-feed",
         "instagram-feed",
@@ -130,13 +130,13 @@ describe("milestone-status", () => {
       ],
     });
     assert.equal(milestoneHasPartialContent(preview), true);
-    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), false);
+    assert.equal(isMilestoneContentComplete(preview, preview.enabledFormats), true);
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
-      "needs_review",
+      "generated",
     );
 
-    const withIgCaption = buildPreview({
+    const withBoth = buildPreview({
       ...preview,
       captions: [
         { platform: "facebook", text: "Shared" },
@@ -144,12 +144,8 @@ describe("milestone-status", () => {
       ],
     });
     assert.equal(
-      isMilestoneContentComplete(withIgCaption, withIgCaption.enabledFormats),
+      isMilestoneContentComplete(withBoth, withBoth.enabledFormats),
       true,
-    );
-    assert.equal(
-      inferGenerationStatus(withIgCaption, withIgCaption.enabledFormats),
-      "generated",
     );
   });
 

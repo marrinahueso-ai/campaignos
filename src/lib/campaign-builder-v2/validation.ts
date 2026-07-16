@@ -2,6 +2,7 @@ import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
 } from "@/lib/campaign-builder-v2/types";
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { defaultPurposeForMilestone } from "./milestone-purpose.ts";
 
 export interface ValidationResult {
@@ -65,6 +66,7 @@ export function ensurePurposesForGeneration(
         name: milestone.name,
         category: milestone.category,
         relativeDay,
+        isFirstMilestone: isFirstCampaignMilestone(milestone.sortOrder),
       }),
     };
   });

@@ -39,22 +39,24 @@ export function EventDetailHeroStatsStrip({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-3 border-t border-cos-border pt-4 sm:grid-cols-3 xl:grid-cols-5",
+        "grid grid-cols-2 gap-2.5 border-t border-cos-border pt-3 sm:grid-cols-3 xl:grid-cols-5",
         className,
       )}
     >
       {STATS.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.key} className="flex min-w-0 items-start gap-2.5">
-            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cos-bg text-cos-muted">
+          <div key={stat.key} className="flex min-w-0 items-start gap-2">
+            <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cos-bg text-cos-muted">
               <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
             </span>
             <div className="min-w-0">
-              <p className="font-display text-xl leading-none text-cos-text tabular-nums">
+              <p className="font-display text-lg leading-none text-cos-text tabular-nums">
                 {stats[stat.key]}
               </p>
-              <p className="mt-1 text-xs leading-snug text-cos-muted">{stat.label}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-cos-muted">
+                {stat.label}
+              </p>
             </div>
           </div>
         );

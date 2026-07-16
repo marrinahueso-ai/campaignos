@@ -21,12 +21,12 @@ export function EventDetailHeroOverview({
   return (
     <div
       className={cn(
-        "flex h-full min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-5 sm:p-6",
+        "flex min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-4 sm:p-5",
         className,
       )}
     >
-      <h2 className="font-display text-lg text-cos-text">Event Overview</h2>
-      <dl className="mt-4 space-y-3 text-sm">
+      <h2 className="font-display text-base text-cos-text">Event Overview</h2>
+      <dl className="mt-3 space-y-2.5 text-sm">
         <OverviewRow label="Status">
           <EventStatusBadge status={event.status} />
         </OverviewRow>
@@ -64,7 +64,7 @@ export function EventDetailHeroOverview({
           </OverviewRow>
         ) : null}
       </dl>
-      <div className="mt-auto pt-5">
+      <div className="mt-4 pt-1">
         <EditEventDetailsButton event={event} size="sm" />
       </div>
     </div>
