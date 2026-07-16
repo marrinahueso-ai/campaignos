@@ -120,7 +120,7 @@ export function buildCampaignBuilderCaptionPrompts(input: {
       ? [
           "",
           "Revise the draft below per the user's instructions.",
-          "Improve clarity and tone — do not preserve invented logistics, volunteer asks, hashtags, or wording the user did not intend.",
+          "Improve clarity and tone — do not preserve invented logistics, hashtags, or wording the user did not intend.",
           `User instructions: ${userRevisionInstructions}`,
           `Draft to revise:\n"${existingCaptionDraft}"`,
         ].join("\n")
@@ -147,7 +147,7 @@ export function buildCampaignBuilderCaptionPrompts(input: {
       tone,
       length: "Medium",
       feedCtaGuide:
-        "End warmly — save the date or build excitement. Do not ask for volunteers or sign-ups unless user notes explicitly request it.",
+        "End warmly — save the date or build excitement.",
     }),
     "",
     platformGuide,

@@ -60,19 +60,23 @@ export interface OrganizationMember {
   id: string;
   organizationId: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   organizationRoleId: string | null;
   roleName: string | null;
   active: boolean;
   campaignRole: CampaignRole | null;
   createdAt: string;
+  /** Assigned campaign/event ids (roster-first; synced to login when linked). */
+  assignedEventIds: string[];
 }
 
 export interface OrganizationMemberRow {
   id: string;
   organization_id: string;
   name: string;
-  email: string;
+  email: string | null;
+  phone?: string | null;
   organization_role_id: string | null;
   active: boolean;
   campaign_role: CampaignRole | null;
@@ -129,6 +133,7 @@ export interface OrganizationCommittee {
   communicationStrategy: CommunicationStrategy;
   playbookSlug: string | null;
   eventMatchKey: string | null;
+  assignedEventId: string | null;
   sortOrder: number;
   archivedAt: string | null;
   campaignRole: CampaignRole | null;
@@ -146,6 +151,7 @@ export interface OrganizationCommitteeRow {
   communication_strategy: CommunicationStrategy;
   playbook_slug: string | null;
   event_match_key: string | null;
+  assigned_event_id?: string | null;
   sort_order: number;
   archived_at: string | null;
   campaign_role: CampaignRole | null;

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { mapEventRows } from "@/lib/events/mappers";
@@ -22,7 +23,7 @@ import type {
   EventPlaybookTaskRow,
 } from "@/types/event-playbooks";
 
-export async function areEventPlaybookTablesAvailable(): Promise<boolean> {
+export const areEventPlaybookTablesAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase
     .from("event_playbook_tasks")
@@ -30,11 +31,11 @@ export async function areEventPlaybookTablesAvailable(): Promise<boolean> {
     .limit(1);
 
   return !error || !isMissingSchemaError(error);
-}
+});
 
 export { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
 
-export async function areEventPlaybookTaskGroupsAvailable(): Promise<boolean> {
+export const areEventPlaybookTaskGroupsAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase
     .from("event_playbook_task_groups")
@@ -42,7 +43,7 @@ export async function areEventPlaybookTaskGroupsAvailable(): Promise<boolean> {
     .limit(1);
 
   return !error || !isMissingSchemaError(error);
-}
+});
 
 /** Events eligible for Event Playbooks — non calendar-only, active school year when set. */
 export async function getEventPlaybookEvents(

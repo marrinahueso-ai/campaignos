@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { EventPlanningHub } from "@/components/event-playbooks/EventPlanningHub";
+import { EventDetailPhase3Client } from "@/components/events-phase3/EventDetailPhase3Client";
 import { getCampaignIntelligenceFromWorkspace } from "@/lib/campaign-intelligence/from-workspace";
 import { getStepDraftsForEvent } from "@/lib/communications-brain/queries";
 import {
@@ -10,17 +11,24 @@ import { buildCampaignProgress } from "@/lib/campaign-progress/build";
 import { shouldAssignPlaybook } from "@/lib/events/communication-strategy";
 import { getPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-queries";
 import { buildPlanningHubSwitcherEvents } from "@/lib/events/campaign-page-utils";
+import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
+import {
+  resolveEventResponsibilities,
+  type CommitteeAssignmentInput,
+} from "@/lib/events/event-responsibility";
 import { initializeEventWorkspace } from "@/lib/event-workspace/mutations";
 import { getEventNextStep } from "@/lib/event-workspace/get-next-helpful-action";
 import { buildFallbackWorkspaceData } from "@/lib/event-workspace/mock-data";
 import { getEventWorkspaceData } from "@/lib/event-workspace/queries";
 import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
+import { getEventArtwork } from "@/lib/event-workspace/get-event-artwork";
 import { selectHeroArtwork } from "@/lib/event-workspace/select-hero-artwork";
 import { getEventById } from "@/lib/events/queries";
 import { getEventMemory } from "@/lib/memory";
 import { getAiAssistantStatus } from "@/lib/ai";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getAssetVersionsForEvent } from "@/lib/creative-assets/queries";
 import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
 import { buildMetaSocialCaptionMilestones } from "@/lib/meta-captions/generation";
@@ -34,6 +42,8 @@ import {
   getEventOrganizationDefaults,
   getOrganizationWorkspaceData,
 } from "@/lib/organization-workspace/queries";
+import { listCommitteeAssignmentsByOrg } from "@/lib/organization-workspace/roster-assignments";
+import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { resolveEventRosterOwnership } from "@/lib/organization-workspace/resolve-event-roster-ownership";
 import {
   buildCommitteePersonOptions,
@@ -61,9 +71,15 @@ import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
 import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
+import { getEventDetailHeroStats } from "@/lib/events-phase3/hero-stats";
+import {
+  getEventPlaybookName,
+  loadEventDetailTabData,
+} from "@/lib/events-phase3/tab-loaders";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
 export async function generateMetadata({ params }: EventWorkspacePageProps) {
@@ -71,16 +87,30 @@ export async function generateMetadata({ params }: EventWorkspacePageProps) {
   const event = await getEventById(id);
 
   return {
-    title: event ? `${event.title} — Planning hub` : "Planning hub",
+    title: event
+      ? isEventsPhase3UiEnabled()
+        ? `${event.title} — Event`
+        : `${event.title} — Planning hub`
+      : isEventsPhase3UiEnabled()
+        ? "Event"
+        : "Planning hub",
   };
 }
 
-export default async function EventWorkspacePage({ params }: EventWorkspacePageProps) {
+export default async function EventWorkspacePage({
+  params,
+  searchParams,
+}: EventWorkspacePageProps) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const event = await getEventById(id);
 
   if (!event) {
     notFound();
+  }
+
+  if (isEventsPhase3UiEnabled()) {
+    return renderEventsPhase3Detail(event, tab ?? null);
   }
 
   const hasCampaign = shouldAssignPlaybook(event.communicationStrategy);
@@ -358,3 +388,181 @@ export default async function EventWorkspacePage({ params }: EventWorkspacePageP
     </div>
   );
 }
+
+async function renderEventsPhase3Detail(
+  event: import("@/types").Event,
+  initialTab: string | null,
+) {
+  const organization = await getLatestOrganization();
+  const tablesAvailable = await areEventPlaybookTablesAvailable();
+  if (tablesAvailable) {
+    await seedDefaultPlaybookTasks(event.id);
+  }
+
+  const [
+    userRole,
+    artwork,
+    orgWorkspace,
+    committeeAssignments,
+    playbookName,
+    heroStats,
+    approvalAssignee,
+    orgDefaults,
+  ] = await Promise.all([
+    getCurrentCampaignRole(),
+    getEventArtwork(event.id),
+    organization
+      ? getOrganizationWorkspaceData(organization.id)
+      : Promise.resolve(null),
+    organization
+      ? listCommitteeAssignmentsByOrg(organization.id)
+      : Promise.resolve([]),
+    getEventPlaybookName(event.id),
+    getEventDetailHeroStats(event.id),
+    organization
+      ? resolveApprovalAssignee(
+          organization.id,
+          event.approvalOrganizationRoleId,
+        )
+      : Promise.resolve(null),
+    organization
+      ? getEventOrganizationDefaults(organization.id, event)
+      : Promise.resolve(null),
+  ]);
+
+  const publishingDefault = orgDefaults?.responsibilities.find(
+    (entry) => entry.label === "Publishing",
+  );
+  const publishingRoleName =
+    publishingDefault?.roleName &&
+    publishingDefault.roleName !== "Not set"
+      ? publishingDefault.roleName
+      : null;
+
+  const assignmentInputs: CommitteeAssignmentInput[] = committeeAssignments.map(
+    (row) => ({
+      organizationMemberId: row.organizationMemberId,
+      committeeId: row.committeeId,
+      role: row.role,
+    }),
+  );
+
+  const linkedCommittee =
+    orgWorkspace?.committees.find(
+      (committee) => committee.assignedEventId === event.id,
+    ) ?? null;
+
+  const responsibilities = resolveEventResponsibilities({
+    eventId: event.id,
+    event,
+    committees: orgWorkspace?.committees ?? [],
+    members: orgWorkspace?.members ?? [],
+    committeeAssignments: assignmentInputs,
+    finalApproval: approvalAssignee
+      ? {
+          displayName: approvalAssignee.assigneeDisplayName,
+          organizationTitle: approvalAssignee.organizationRoleName,
+        }
+      : null,
+    publisher: publishingRoleName
+      ? { displayName: publishingRoleName }
+      : null,
+  });
+
+  const lead =
+    responsibilities.find((row) => row.responsibility === "Event Lead")
+      ?.displayName ?? "Not assigned";
+  const supervisor =
+    responsibilities.find((row) => row.responsibility === "Supervisor")
+      ?.displayName ?? "Not assigned";
+  const finalApproval =
+    responsibilities.find((row) => row.responsibility === "Final Approval")
+      ?.displayName ?? "Not assigned";
+  const publisher =
+    responsibilities.find((row) => row.responsibility === "Publisher")
+      ?.displayName ?? "Not assigned";
+
+  const approvalFlow = [
+    { label: "Event Lead", value: lead },
+    { label: "Supervisor", value: supervisor },
+    { label: "Final Approval", value: finalApproval },
+    { label: "Publishing", value: publisher },
+  ];
+
+  const currentAssignments = assignmentInputs
+    .filter((row) =>
+      linkedCommittee ? row.committeeId === linkedCommittee.id : false,
+    )
+    .map((row) => ({
+      organizationMemberId: row.organizationMemberId,
+      role: row.role,
+    }));
+
+  // Deep-link: preload only the requested lazy tab (not all tabs).
+  const lazyInitial =
+    initialTab === "approvals" ||
+    initialTab === "tasks" ||
+    initialTab === "files" ||
+    initialTab === "notes" ||
+    initialTab === "vendors" ||
+    initialTab === "activity"
+      ? initialTab
+      : null;
+
+  const initialWorkspace =
+    lazyInitial != null
+      ? await loadEventDetailTabData(event.id, lazyInitial, {
+          title: event.title,
+          date: event.date,
+        }).then((data) => {
+          switch (data.tab) {
+            case "approvals":
+              return { approvalsData: data.approvalsData };
+            case "tasks":
+              return { tasksV2Data: data.tasksV2Data };
+            case "files":
+              return { filesPageData: data.filesPageData };
+            case "notes":
+              return {
+                notes: data.notes,
+                tablesAvailable: data.tablesAvailable,
+              };
+            case "vendors":
+              return {
+                eventVendorsData: data.eventVendorsData,
+                vendorDirectory: data.vendorDirectory,
+              };
+            case "activity":
+              return {
+                playbookActivity: data.playbookActivity,
+                workspaceTimeline: data.workspaceTimeline,
+              };
+            default:
+              return {};
+          }
+        })
+      : {};
+
+  return (
+    <EventDetailPhase3Client
+      event={event}
+      artwork={artwork}
+      playbookName={playbookName}
+      responsibilities={responsibilities}
+      approvalFlow={approvalFlow}
+      heroStats={heroStats}
+      canManageAssignments={canManageTeam(userRole)}
+      workspace={initialWorkspace}
+      initialTab={initialTab}
+      committeeId={linkedCommittee?.id ?? null}
+      committeeName={linkedCommittee?.name ?? null}
+      members={(orgWorkspace?.members ?? []).map((member) => ({
+        id: member.id,
+        name: member.name,
+        assignedEventIds: member.assignedEventIds,
+      }))}
+      currentAssignments={currentAssignments}
+    />
+  );
+}
+

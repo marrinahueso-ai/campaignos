@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import { listOrganizationUserEventAssignmentsByOrg } from "@/lib/auth/event-assignments";
 import { mapOrganizationUserRow } from "@/lib/auth/mappers";
 import { getAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -91,6 +92,9 @@ export async function getOrganizationUsers(
     return [];
   }
 
+  const assignmentsByUser =
+    await listOrganizationUserEventAssignmentsByOrg(organizationId);
+
   return (data ?? []).map((row) => {
     const userRow = row as OrganizationUserRow & {
       organization_roles: { name: string } | null;
@@ -98,6 +102,7 @@ export async function getOrganizationUsers(
     return mapOrganizationUserRow(
       userRow,
       userRow.organization_roles?.name ?? null,
+      assignmentsByUser[userRow.id] ?? [],
     );
   });
 }

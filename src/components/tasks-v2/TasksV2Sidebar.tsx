@@ -50,6 +50,9 @@ interface TasksV2SidebarProps {
   aiAvailable: boolean;
   aiUnavailableReason: string | null;
   preferredEventId?: string | null;
+  /** When set, source is fixed to this event and the select is locked. */
+  lockedEventId?: string | null;
+  hideMyViews?: boolean;
   onViewSelect?: (viewId: string) => void;
 }
 
@@ -60,9 +63,12 @@ export function TasksV2Sidebar({
   aiAvailable,
   aiUnavailableReason,
   preferredEventId,
+  lockedEventId = null,
+  hideMyViews = false,
   onViewSelect,
 }: TasksV2SidebarProps) {
   const router = useRouter();
+  const lockedId = lockedEventId?.trim() || null;
   const sourceOptions = useMemo(() => {
     const byId = new Map<string, TaskHubEventOption>();
     for (const event of events) {
@@ -84,9 +90,12 @@ export function TasksV2Sidebar({
     );
   }, [eventGroups, events]);
 
+  const resolvedPreferredId = lockedId ?? preferredEventId ?? null;
+
   const [sourceEventId, setSourceEventId] = useState(
-    preferredEventId && sourceOptions.some((event) => event.eventId === preferredEventId)
-      ? preferredEventId
+    resolvedPreferredId &&
+      sourceOptions.some((event) => event.eventId === resolvedPreferredId)
+      ? resolvedPreferredId
       : (sourceOptions[0]?.eventId ?? ""),
   );
   const [prompt, setPrompt] = useState("");
@@ -106,12 +115,12 @@ export function TasksV2Sidebar({
 
   useEffect(() => {
     if (
-      preferredEventId &&
-      sourceOptions.some((event) => event.eventId === preferredEventId)
+      resolvedPreferredId &&
+      sourceOptions.some((event) => event.eventId === resolvedPreferredId)
     ) {
-      setSourceEventId(preferredEventId);
+      setSourceEventId(resolvedPreferredId);
     }
-  }, [preferredEventId, sourceOptions]);
+  }, [resolvedPreferredId, sourceOptions]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
@@ -264,8 +273,9 @@ export function TasksV2Sidebar({
           </span>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-cos-muted">
-          Pick a campaign/event, describe what you’re working on (or use voice), then
-          generate tasks grounded in that event.
+          {lockedId
+            ? "Describe what you’re working on (or use voice), then generate tasks grounded in this event."
+            : "Pick a campaign/event, describe what you’re working on (or use voice), then generate tasks grounded in that event."}
         </p>
 
         {!aiAvailable && (
@@ -276,12 +286,12 @@ export function TasksV2Sidebar({
         )}
 
         <label className="mt-3 block text-xs text-cos-muted">
-          Select source
+          {lockedId ? "Source event" : "Select source"}
           <select
-            className="mt-1 w-full rounded-md border border-cos-border bg-cos-bg px-2 py-1.5 text-sm text-cos-text"
+            className="mt-1 w-full rounded-md border border-cos-border bg-cos-bg px-2 py-1.5 text-sm text-cos-text disabled:cursor-not-allowed disabled:opacity-80"
             value={sourceEventId}
             onChange={(event) => setSourceEventId(event.target.value)}
-            disabled={sourceOptions.length === 0}
+            disabled={Boolean(lockedId) || sourceOptions.length === 0}
           >
             {sourceOptions.length === 0 ? (
               <option value="">No campaigns available</option>
@@ -391,34 +401,36 @@ export function TasksV2Sidebar({
         )}
       </section>
 
-      <section className="border border-cos-border bg-cos-card p-4">
-        <h2 className="font-display text-base text-cos-text">My Views</h2>
-        <ul className="mt-3 space-y-1">
-          {MY_VIEWS.map((view) => (
-            <li key={view.id}>
+      {!hideMyViews ? (
+        <section className="border border-cos-border bg-cos-card p-4">
+          <h2 className="font-display text-base text-cos-text">My Views</h2>
+          <ul className="mt-3 space-y-1">
+            {MY_VIEWS.map((view) => (
+              <li key={view.id}>
+                <button
+                  type="button"
+                  onClick={() => onViewSelect?.(view.id)}
+                  className={cn(
+                    "flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                    "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                  )}
+                >
+                  {view.label}
+                </button>
+              </li>
+            ))}
+            <li>
               <button
                 type="button"
-                onClick={() => onViewSelect?.(view.id)}
-                className={cn(
-                  "flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-                  "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
-                )}
+                className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-sm text-cos-accent hover:bg-cos-bg"
               >
-                {view.label}
+                <Plus className="h-3.5 w-3.5" />
+                Create new view
               </button>
             </li>
-          ))}
-          <li>
-            <button
-              type="button"
-              className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-sm text-cos-accent hover:bg-cos-bg"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create new view
-            </button>
-          </li>
-        </ul>
-      </section>
+          </ul>
+        </section>
+      ) : null}
     </aside>
   );
 }

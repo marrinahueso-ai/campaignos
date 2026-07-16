@@ -1,8 +1,12 @@
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
-import { APPROVER_ROLES } from "@/lib/auth/campaign-roles";
+import {
+  APPROVER_ROLES,
+  canPublishCampaignContent,
+} from "@/lib/auth/campaign-roles";
 
 export function canManageCampaignAssets(role: CampaignRole): boolean {
-  return role !== "view_only";
+  // Testers may draft/review content but not publish/upload campaign assets by default.
+  return canPublishCampaignContent(role);
 }
 
 export function canUploadCampaignAssets(role: CampaignRole): boolean {

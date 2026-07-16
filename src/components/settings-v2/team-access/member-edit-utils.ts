@@ -14,7 +14,7 @@ export type MemberEditSource =
   | {
       kind: "committee";
       committeeId: string;
-      committeeRole: "chair" | "co_chair" | "member";
+      committeeRole: "chair" | "co_chair" | "member" | "supervising_vp";
     };
 
 export interface MemberEditContext {
@@ -29,7 +29,7 @@ export interface MemberEditContext {
   canEditCommittee: boolean;
   defaultVpPortfolioId: string | null;
   defaultCommitteeId: string | null;
-  defaultCommitteeRole: "chair" | "co_chair" | "member" | null;
+  defaultCommitteeRole: "chair" | "co_chair" | "member" | "supervising_vp" | null;
   rosterMemberId: string | null;
 }
 
@@ -37,6 +37,15 @@ function findRosterMember(
   member: UnifiedTeamMember,
   workspace: OrganizationWorkspaceData,
 ) {
+  if (member.organizationMemberId) {
+    const byId = workspace.members.find(
+      (entry) => entry.id === member.organizationMemberId,
+    );
+    if (byId) {
+      return byId;
+    }
+  }
+
   const emailLower = member.email?.trim().toLowerCase();
   const nameToken = normalizePersonToken(member.displayName);
 
@@ -53,7 +62,8 @@ function primaryCommitteeAssignment(member: UnifiedTeamMember) {
     (assignment) =>
       assignment.roleOnCommittee === "chair" ||
       assignment.roleOnCommittee === "co_chair" ||
-      assignment.roleOnCommittee === "member",
+      assignment.roleOnCommittee === "member" ||
+      assignment.roleOnCommittee === "supervising_vp",
   );
   if (direct.length === 0) {
     return null;
@@ -63,10 +73,12 @@ function primaryCommitteeAssignment(member: UnifiedTeamMember) {
     const priority = (role: typeof current.roleOnCommittee) => {
       switch (role) {
         case "chair":
-          return 3;
+          return 4;
         case "co_chair":
-          return 2;
+          return 3;
         case "member":
+          return 2;
+        case "supervising_vp":
           return 1;
         default:
           return 0;
@@ -80,15 +92,16 @@ function primaryCommitteeAssignment(member: UnifiedTeamMember) {
 
 function committeeAssignmentRole(
   role: MemberCommitteeAssignment["roleOnCommittee"] | undefined,
-): "chair" | "co_chair" | "member" | null {
-  if (role === "chair" || role === "co_chair" || role === "member") {
+): "chair" | "co_chair" | "member" | "supervising_vp" | null {
+  if (
+    role === "chair" ||
+    role === "co_chair" ||
+    role === "member" ||
+    role === "supervising_vp"
+  ) {
     return role;
   }
   return null;
-}
-
-function rosterCanSetAccessLevel(): boolean {
-  return true;
 }
 
 export function resolveMemberEditContext(
@@ -97,6 +110,28 @@ export function resolveMemberEditContext(
 ): MemberEditContext {
   const rosterMember = findRosterMember(member, workspace);
   const primaryCommittee = primaryCommitteeAssignment(member);
+  const rosterMemberId = rosterMember?.id ?? member.organizationMemberId ?? null;
+
+  // Prefer org_member when a roster row exists (contact edits + committee).
+  if (rosterMemberId) {
+    return {
+      source: { kind: "org_member", memberId: rosterMemberId },
+      canEditName: true,
+      canEditEmail: true,
+      canEditPhone: true,
+      canEditRole: true,
+      // Roster-only people gain app access only via Give App Access.
+      canEditAccess: !member.isRosterOnly && Boolean(member.raw),
+      canEditStatus: Boolean(member.raw),
+      canEditVpPortfolio: true,
+      canEditCommittee: true,
+      defaultVpPortfolioId:
+        rosterMember?.organizationRoleId ?? member.vpPortfolioId,
+      defaultCommitteeId: primaryCommittee?.committee.id ?? null,
+      defaultCommitteeRole: committeeAssignmentRole(primaryCommittee?.roleOnCommittee),
+      rosterMemberId,
+    };
+  }
 
   if (member.raw) {
     return {
@@ -112,7 +147,7 @@ export function resolveMemberEditContext(
       defaultVpPortfolioId: member.vpPortfolioId,
       defaultCommitteeId: primaryCommittee?.committee.id ?? null,
       defaultCommitteeRole: committeeAssignmentRole(primaryCommittee?.roleOnCommittee),
-      rosterMemberId: rosterMember?.id ?? null,
+      rosterMemberId: null,
     };
   }
 
@@ -125,34 +160,16 @@ export function resolveMemberEditContext(
         canEditEmail: true,
         canEditPhone: true,
         canEditRole: false,
-        canEditAccess: rosterCanSetAccessLevel(),
+        canEditAccess: false,
         canEditStatus: false,
         canEditVpPortfolio: true,
         canEditCommittee: false,
         defaultVpPortfolioId: roleId,
         defaultCommitteeId: null,
         defaultCommitteeRole: null,
-        rosterMemberId: rosterMember?.id ?? null,
+        rosterMemberId: null,
       };
     }
-  }
-
-  if (rosterMember) {
-    return {
-      source: { kind: "org_member", memberId: rosterMember.id },
-      canEditName: true,
-      canEditEmail: true,
-      canEditPhone: false,
-      canEditRole: true,
-      canEditAccess: rosterCanSetAccessLevel(),
-      canEditStatus: true,
-      canEditVpPortfolio: true,
-      canEditCommittee: true,
-      defaultVpPortfolioId: rosterMember.organizationRoleId,
-      defaultCommitteeId: primaryCommittee?.committee.id ?? null,
-      defaultCommitteeRole: committeeAssignmentRole(primaryCommittee?.roleOnCommittee),
-      rosterMemberId: rosterMember.id,
-    };
   }
 
   if (primaryCommittee) {
@@ -185,7 +202,7 @@ export function resolveMemberEditContext(
       canEditEmail: true,
       canEditPhone: true,
       canEditRole: false,
-      canEditAccess: rosterCanSetAccessLevel(),
+      canEditAccess: false,
       canEditStatus: false,
       canEditVpPortfolio: true,
       canEditCommittee: true,
@@ -216,8 +233,12 @@ export function resolveMemberEditContext(
 export function updateCommitteeChairNames(
   committee: OrganizationCommittee,
   memberName: string,
-  role: "chair" | "co_chair" | "member",
+  role: "chair" | "co_chair" | "member" | "supervising_vp",
 ): string {
+  if (role === "supervising_vp") {
+    return committee.contactName?.trim() ?? "";
+  }
+
   const chairs = parseCommitteeChairNames(committee.contactName);
   const normalizedName = memberName.trim();
   const filtered = chairs.filter(

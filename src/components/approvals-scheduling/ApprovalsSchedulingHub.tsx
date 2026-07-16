@@ -30,9 +30,14 @@ import type {
   UnifiedTabId,
   UnifiedViewScope,
 } from "@/lib/approvals-scheduling/types";
+import { cn } from "@/lib/utils/cn";
 
 interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
   initialEventFilter?: string | null;
+  /** When set, locks the hub to one event and hides the campaign filter. */
+  lockedEventId?: string | null;
+  /** Compact chrome for embedding inside Event Detail. */
+  embedded?: boolean;
 }
 
 export function ApprovalsSchedulingHub({
@@ -42,26 +47,40 @@ export function ApprovalsSchedulingHub({
   role,
   canViewAll,
   initialEventFilter = null,
+  lockedEventId = null,
+  embedded = false,
 }: ApprovalsSchedulingHubProps) {
   const router = useRouter();
+  const lockedId = lockedEventId?.trim() || null;
   const [activeTab, setActiveTab] = useState<UnifiedTabId>("all");
-  const [viewScope, setViewScope] = useState<UnifiedViewScope>("assigned_to_me");
+  const [viewScope, setViewScope] = useState<UnifiedViewScope>(
+    lockedId && canViewAll ? "all" : "assigned_to_me",
+  );
   const [searchQuery, setSearchQuery] = useState("");
-  const [eventFilter, setEventFilter] = useState(initialEventFilter ?? "all");
+  const [eventFilter, setEventFilter] = useState(
+    lockedId ?? initialEventFilter ?? "all",
+  );
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const eventScopedItems = useMemo(() => {
+    if (!lockedId) {
+      return items;
+    }
+    return items.filter((item) => item.eventId === lockedId);
+  }, [items, lockedId]);
+
   const viewScopedItems = useMemo(
-    () => filterItemsByViewScope(items, viewScope, canViewAll),
-    [items, viewScope, canViewAll],
+    () => filterItemsByViewScope(eventScopedItems, viewScope, canViewAll),
+    [eventScopedItems, viewScope, canViewAll],
   );
 
   const scopedItems = useMemo(() => {
     let next = viewScopedItems;
 
-    if (eventFilter !== "all") {
+    if (!lockedId && eventFilter !== "all") {
       next = next.filter((item) => item.eventId === eventFilter);
     }
 
@@ -74,7 +93,7 @@ export function ApprovalsSchedulingHub({
     }
 
     return next;
-  }, [viewScopedItems, eventFilter, searchQuery, activeTab]);
+  }, [viewScopedItems, eventFilter, searchQuery, activeTab, lockedId]);
 
   const tabCounts = useMemo(() => summarizeCounts(viewScopedItems), [viewScopedItems]);
 
@@ -162,41 +181,59 @@ export function ApprovalsSchedulingHub({
   }
 
   return (
-    <div className="studio-page space-y-8 pb-12">
+    <div className={cn(embedded ? "space-y-4" : "studio-page space-y-8 pb-12")}>
       <CalendarActionToast
         message={actionError}
         onDismiss={() => setActionError(null)}
       />
 
-      <header className="space-y-6 border-b border-cos-border pb-8">
-        <div>
-          <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
-            Approvals & Scheduling
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-cos-muted">
-            Review, approve, and schedule campaigns. Track status, request changes,
-            and see what&apos;s published.
-          </p>
-        </div>
+      <header
+        className={cn(
+          "space-y-6",
+          embedded ? "pb-2" : "border-b border-cos-border pb-8",
+        )}
+      >
+        {!embedded ? (
+          <div>
+            <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
+              Approvals & Scheduling
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-cos-muted">
+              Review, approve, and schedule campaigns. Track status, request changes,
+              and see what&apos;s published.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <h2 className="font-display text-xl text-cos-text">Approvals</h2>
+            <p className="mt-1 text-sm text-cos-muted">
+              Approval and scheduling items for this event only.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2">
-            <label className="sr-only" htmlFor="campaign-filter">
-              Campaign filter
-            </label>
-            <select
-              id="campaign-filter"
-              value={eventFilter}
-              onChange={(event) => setEventFilter(event.target.value)}
-              className="min-w-[180px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-            >
-              <option value="all">All campaigns</option>
-              {campaigns.map((campaign) => (
-                <option key={campaign.id} value={campaign.id}>
-                  {campaign.title}
-                </option>
-              ))}
-            </select>
+            {!lockedId ? (
+              <>
+                <label className="sr-only" htmlFor="campaign-filter">
+                  Campaign filter
+                </label>
+                <select
+                  id="campaign-filter"
+                  value={eventFilter}
+                  onChange={(event) => setEventFilter(event.target.value)}
+                  className="min-w-[180px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                >
+                  <option value="all">All campaigns</option>
+                  {campaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.title}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : null}
 
             {canViewAll ? (
               <select
@@ -212,10 +249,12 @@ export function ApprovalsSchedulingHub({
               </select>
             ) : null}
 
-            <Button type="button" variant="secondary" size="sm">
-              <Filter className="h-4 w-4" />
-              Filters
-            </Button>
+            {!embedded ? (
+              <Button type="button" variant="secondary" size="sm">
+                <Filter className="h-4 w-4" />
+                Filters
+              </Button>
+            ) : null}
           </div>
 
           <label className="relative block w-full max-w-sm">
@@ -231,7 +270,7 @@ export function ApprovalsSchedulingHub({
         </div>
       </header>
 
-      <SummaryCards summary={scopedSummary} />
+      {!embedded ? <SummaryCards summary={scopedSummary} /> : null}
 
       <div className="space-y-4">
         <ApprovalTabs
@@ -252,7 +291,7 @@ export function ApprovalsSchedulingHub({
         />
       </div>
 
-      <ApprovalFlowGuide />
+      {!embedded ? <ApprovalFlowGuide /> : null}
 
       <ReviewDrawer
         item={reviewItem}

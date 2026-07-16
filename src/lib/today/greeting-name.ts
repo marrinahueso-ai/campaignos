@@ -28,7 +28,7 @@ const BLOCKED_GREETING_PATTERNS = [
 
 export interface GreetingMemberCandidate {
   name: string;
-  email: string;
+  email: string | null;
   roleName: string | null;
 }
 
@@ -106,8 +106,8 @@ function resolveMemberGreetingName(
   return resolveFromFullName(member.name, context);
 }
 
-function looksLikeTestMember(name: string, email: string): boolean {
-  const normalizedEmail = email.trim().toLowerCase();
+function looksLikeTestMember(name: string, email: string | null): boolean {
+  const normalizedEmail = email?.trim().toLowerCase() ?? "";
 
   if (normalizedEmail.endsWith("@campaignos.test")) {
     return true;
@@ -201,10 +201,12 @@ export function resolveTodayGreetingName(
       }
     }
 
-    const matchingMember = input.memberCandidates.find(
-      (member) =>
-        normalizeEmail(member.email) === normalizeEmail(currentUser.email),
-    );
+    const matchingMember = input.memberCandidates.find((member) => {
+      if (!member.email) {
+        return false;
+      }
+      return normalizeEmail(member.email) === normalizeEmail(currentUser.email);
+    });
     if (matchingMember) {
       const greetingName = resolveMemberGreetingName(matchingMember, context);
       if (greetingName) {

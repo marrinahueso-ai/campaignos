@@ -146,7 +146,8 @@ export async function createOrganizationMemberAction(
   }
 
   const name = formData.get("name")?.toString() ?? "";
-  const email = formData.get("email")?.toString() ?? "";
+  const email = formData.get("email")?.toString()?.trim() || null;
+  const phone = formData.get("phone")?.toString()?.trim() || null;
   const organizationRoleId =
     formData.get("organizationRoleId")?.toString() || null;
   const active = formData.get("active")?.toString() !== "false";
@@ -154,6 +155,7 @@ export async function createOrganizationMemberAction(
   const result = await createOrganizationMember(org.organizationId, {
     name,
     email,
+    phone,
     organizationRoleId,
     active,
   });
@@ -170,7 +172,8 @@ export async function updateOrganizationMemberAction(
   memberId: string,
   input: {
     name?: string;
-    email?: string;
+    email?: string | null;
+    phone?: string | null;
     organizationRoleId?: string | null;
     active?: boolean;
     campaignRole?: CampaignRole | null;
@@ -182,6 +185,123 @@ export async function updateOrganizationMemberAction(
   }
 
   const result = await updateOrganizationMember(memberId, input);
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidateOrganizationWorkspace();
+  return { error: null, success: true };
+}
+
+export async function createRosterPersonAction(input: {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  organizationRoleId?: string | null;
+  committeeId?: string | null;
+  committeeRole?: "chair" | "co_chair" | "member" | "supervising_vp" | null;
+  eventIds?: string[];
+}): Promise<OrganizationActionState & { memberId?: string }> {
+  const org = await requireOrganizationId();
+  if ("error" in org) {
+    return { error: org.error, success: false };
+  }
+
+  const name = input.name.trim();
+  if (!name) {
+    return { error: "Name is required.", success: false };
+  }
+
+  const created = await createOrganizationMember(org.organizationId, {
+    name,
+    email: input.email?.trim() || null,
+    phone: input.phone?.trim() || null,
+    organizationRoleId: input.organizationRoleId ?? null,
+    active: true,
+  });
+
+  if ("error" in created) {
+    return { error: created.error, success: false };
+  }
+
+  if (input.committeeId && input.committeeRole) {
+    const { upsertMemberCommitteeAssignment } = await import(
+      "@/lib/organization-workspace/roster-assignments"
+    );
+    const assignment = await upsertMemberCommitteeAssignment({
+      organizationId: org.organizationId,
+      organizationMemberId: created.id,
+      committeeId: input.committeeId,
+      role: input.committeeRole,
+    });
+    if ("error" in assignment) {
+      return { error: assignment.error, success: false, memberId: created.id };
+    }
+  }
+
+  if (input.eventIds && input.eventIds.length > 0) {
+    const { replaceOrganizationMemberEventAssignments } = await import(
+      "@/lib/organization-workspace/roster-assignments"
+    );
+    const events = await replaceOrganizationMemberEventAssignments({
+      organizationId: org.organizationId,
+      organizationMemberId: created.id,
+      eventIds: input.eventIds,
+    });
+    if ("error" in events) {
+      return { error: events.error, success: false, memberId: created.id };
+    }
+  }
+
+  revalidateOrganizationWorkspace();
+  return { error: null, success: true, memberId: created.id };
+}
+
+export async function saveRosterCommitteeAssignmentAction(input: {
+  organizationMemberId: string;
+  committeeId: string | null;
+  committeeRole: "chair" | "co_chair" | "member" | "supervising_vp";
+}): Promise<OrganizationActionState> {
+  const org = await requireOrganizationId();
+  if ("error" in org) {
+    return { error: org.error, success: false };
+  }
+
+  if (!input.organizationMemberId) {
+    return { error: "Roster person is required.", success: false };
+  }
+
+  const {
+    replaceMemberCommitteeAssignments,
+    listCommitteeAssignmentsForMember,
+    upsertMemberCommitteeAssignment,
+  } = await import("@/lib/organization-workspace/roster-assignments");
+
+  if (!input.committeeId) {
+    const existing = await listCommitteeAssignmentsForMember(
+      input.organizationMemberId,
+    );
+    const result = await replaceMemberCommitteeAssignments({
+      organizationId: org.organizationId,
+      organizationMemberId: input.organizationMemberId,
+      assignments: existing
+        .filter((row) => row.role === "supervising_vp")
+        .map((row) => ({ committeeId: row.committeeId, role: row.role })),
+    });
+    if ("error" in result) {
+      return { error: result.error, success: false };
+    }
+    revalidateOrganizationWorkspace();
+    return { error: null, success: true };
+  }
+
+  const result = await upsertMemberCommitteeAssignment({
+    organizationId: org.organizationId,
+    organizationMemberId: input.organizationMemberId,
+    committeeId: input.committeeId,
+    role: input.committeeRole,
+  });
 
   if ("error" in result) {
     return { error: result.error, success: false };
@@ -335,6 +455,7 @@ export async function createOrganizationCommitteeAction(
     contactEmail: formData.get("contactEmail")?.toString() ?? null,
     contactPhone: formData.get("contactPhone")?.toString() ?? null,
     contactName: formData.get("contactName")?.toString() ?? null,
+    assignedEventId: formData.get("assignedEventId")?.toString() || null,
   });
 
   if ("error" in result) {
@@ -356,6 +477,7 @@ export async function updateOrganizationCommitteeAction(
     communicationStrategy?: CommunicationStrategy;
     playbookSlug?: string | null;
     campaignRole?: CampaignRole | null;
+    assignedEventId?: string | null;
   },
 ): Promise<OrganizationActionState> {
   const org = await requireOrganizationId();

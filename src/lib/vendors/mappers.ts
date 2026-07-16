@@ -63,6 +63,7 @@ export function mapVendorRow(row: VendorRow): Vendor {
     status,
     isFavorite: row.is_favorite,
     notesSummary: row.notes_summary,
+    logoPath: row.logo_path ?? null,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

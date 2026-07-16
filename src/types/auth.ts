@@ -7,14 +7,20 @@ export interface OrganizationUser {
   organizationId: string;
   userId: string | null;
   email: string;
+  displayName: string | null;
   organizationRoleId: string | null;
   organizationRoleName: string | null;
+  organizationMemberId: string | null;
+  committeeId: string | null;
+  inviteMessage: string | null;
   campaignRole: CampaignRole;
   status: OrganizationUserStatus;
   inviteToken: string | null;
   invitedAt: string | null;
   joinedAt: string | null;
   createdAt: string;
+  /** Assigned campaign/event ids for this membership. */
+  assignedEventIds: string[];
 }
 
 export interface OrganizationUserRow {
@@ -22,7 +28,11 @@ export interface OrganizationUserRow {
   organization_id: string;
   user_id: string | null;
   email: string;
+  display_name?: string | null;
   organization_role_id: string | null;
+  organization_member_id?: string | null;
+  committee_id?: string | null;
+  invite_message?: string | null;
   campaign_role: CampaignRole;
   status: OrganizationUserStatus;
   invite_token: string | null;

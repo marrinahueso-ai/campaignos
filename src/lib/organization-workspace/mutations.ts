@@ -176,21 +176,19 @@ export async function createOrganizationMember(
   organizationId: string,
   input: {
     name: string;
-    email: string;
-    organizationRoleId: string | null;
+    email?: string | null;
+    phone?: string | null;
+    organizationRoleId?: string | null;
     active?: boolean;
   },
 ): Promise<{ id: string } | { error: string }> {
   const supabase = await createClient();
   const name = input.name.trim();
-  const email = input.email.trim();
+  const email = normalizeEmail(input.email);
+  const phone = normalizePhone(input.phone);
 
   if (!name) {
     return { error: "Name is required." };
-  }
-
-  if (!email) {
-    return { error: "Email is required." };
   }
 
   const { data, error } = await supabase
@@ -199,13 +197,17 @@ export async function createOrganizationMember(
       organization_id: organizationId,
       name,
       email,
-      organization_role_id: input.organizationRoleId,
+      phone,
+      organization_role_id: input.organizationRoleId ?? null,
       active: input.active ?? true,
     })
     .select("id")
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "A roster person with this email already exists." };
+    }
     return { error: error.message };
   }
 
@@ -216,7 +218,8 @@ export async function updateOrganizationMember(
   memberId: string,
   input: {
     name?: string;
-    email?: string;
+    email?: string | null;
+    phone?: string | null;
     organizationRoleId?: string | null;
     active?: boolean;
     campaignRole?: CampaignRole | null;
@@ -234,11 +237,11 @@ export async function updateOrganizationMember(
   }
 
   if (input.email !== undefined) {
-    const email = input.email.trim();
-    if (!email) {
-      return { error: "Email is required." };
-    }
-    updates.email = email;
+    updates.email = normalizeEmail(input.email);
+  }
+
+  if (input.phone !== undefined) {
+    updates.phone = normalizePhone(input.phone);
   }
 
   if (input.organizationRoleId !== undefined) {
@@ -263,6 +266,9 @@ export async function updateOrganizationMember(
     .eq("id", memberId);
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "A roster person with this email already exists." };
+    }
     return { error: error.message };
   }
 

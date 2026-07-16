@@ -14,12 +14,14 @@ import {
 import {
   acceptPendingInvitesForUser,
 } from "@/lib/auth/membership-queries";
+import { replaceOrganizationUserEventAssignments } from "@/lib/auth/event-assignments";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getAuthUser, requireAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
   type CampaignRole,
+  campaignRoleLabel,
   isCampaignRole,
 } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole, SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
@@ -28,6 +30,9 @@ import {
   resolveAuthSiteOrigin,
 } from "@/lib/auth/invite-url";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
+import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
+import { isEmailConfigured, sendEmail } from "@/lib/email/send";
+import { getOrganizationById } from "@/lib/organizations/queries";
 import type { MemberEditSource } from "@/components/settings-v2/team-access/member-edit-utils";
 import {
   updateOrganizationCommittee,
@@ -52,13 +57,107 @@ import {
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 
+function parseEventIdsFromForm(formData: FormData): string[] {
+  const multi = formData
+    .getAll("eventIds")
+    .map((value) => value.toString().trim())
+    .filter(Boolean);
+  if (multi.length > 0) {
+    return Array.from(new Set(multi));
+  }
+  const csv = formData.get("eventIdsCsv")?.toString() ?? "";
+  return Array.from(
+    new Set(
+      csv
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+async function maybeSendTeamInviteEmail(input: {
+  sendEmailRequested: boolean;
+  toEmail: string;
+  inviteUrl: string;
+  organizationName: string;
+  inviteeName: string | null;
+  accessLevel: CampaignRole;
+  personalMessage: string | null;
+  inviterEmail: string | null;
+}): Promise<string | null> {
+  if (!input.sendEmailRequested) {
+    return null;
+  }
+
+  if (!isEmailConfigured()) {
+    return "Invite created, but email was not sent (RESEND_API_KEY is not configured). Copy the invite link below.";
+  }
+
+  const content = buildTeamInviteEmail({
+    organizationName: input.organizationName,
+    inviteeName: input.inviteeName,
+    inviteeEmail: input.toEmail,
+    accessLevelLabel: campaignRoleLabel(input.accessLevel),
+    inviteUrl: input.inviteUrl,
+    personalMessage: input.personalMessage,
+    inviterEmail: input.inviterEmail,
+  });
+
+  const result = await sendEmail({
+    to: [input.toEmail],
+    subject: content.subject,
+    html: content.html,
+    text: content.text,
+  });
+
+  if (!result.success) {
+    return `Invite created, but email failed to send: ${result.error ?? "unknown error"}. Copy the invite link below.`;
+  }
+
+  return null;
+}
+
 export interface AuthActionState {
   error: string | null;
   success: boolean;
   message?: string | null;
+  warning?: string | null;
   inviteUrl?: string | null;
   provisionedEmail?: string | null;
   provisionedPassword?: string | null;
+}
+
+export async function setOrganizationUserEventAssignmentsAction(input: {
+  organizationUserId: string;
+  eventIds: string[];
+}): Promise<AuthActionState> {
+  const organization = await getCurrentOrganization();
+  const campaignRole = await getCurrentCampaignRole();
+
+  if (!organization) {
+    return { error: "Sign in and set up your organization first.", success: false };
+  }
+  if (!canManageTeam(campaignRole)) {
+    return { error: "You do not have permission to update event assignments.", success: false };
+  }
+
+  const result = await replaceOrganizationUserEventAssignments({
+    organizationId: organization.id,
+    organizationUserId: input.organizationUserId,
+    eventIds: input.eventIds,
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return {
+    error: null,
+    success: true,
+    message: "Event assignments updated.",
+  };
 }
 
 export async function getOAuthSignInUrl(
@@ -358,8 +457,15 @@ export async function inviteTeamMemberAction(
   }
 
   const email = formData.get("email")?.toString()?.trim() ?? "";
+  const displayName = formData.get("fullName")?.toString()?.trim() || null;
   const organizationRoleId = formData.get("organizationRoleId")?.toString() || null;
+  const committeeId = formData.get("committeeId")?.toString() || null;
+  const inviteMessage = formData.get("message")?.toString()?.trim() || null;
   const accessRoleRaw = formData.get("campaignRole")?.toString() ?? "";
+  const sendEmailRequested =
+    formData.get("sendEmail")?.toString() === "true" ||
+    formData.get("sendEmail")?.toString() === "on";
+  const eventIds = parseEventIdsFromForm(formData);
 
   if (!email) {
     return { error: "Email is required.", success: false };
@@ -376,17 +482,35 @@ export async function inviteTeamMemberAction(
     roleKind = (data?.role_kind as typeof roleKind) ?? null;
   }
 
+  const resolvedCampaignRole = resolveCampaignRoleForInvite(
+    accessRoleRaw,
+    roleKind,
+  );
+
   const result = await inviteOrganizationUser({
     organizationId: organization.id,
     email,
+    displayName,
     organizationRoleId,
-    campaignRole: resolveCampaignRoleForInvite(accessRoleRaw, roleKind),
+    committeeId,
+    inviteMessage,
+    campaignRole: resolvedCampaignRole,
     invitedByUserId: user.id,
   });
 
   if ("error" in result) {
     return { error: result.error, success: false };
   }
+
+  const assignmentResult = await replaceOrganizationUserEventAssignments({
+    organizationId: organization.id,
+    organizationUserId: result.id,
+    eventIds,
+  });
+  const assignmentWarning =
+    "error" in assignmentResult
+      ? `Event assignment failed: ${assignmentResult.error}`
+      : null;
 
   const headersList = await headers();
   const inviteUrl = buildInviteLoginUrl(
@@ -398,12 +522,31 @@ export async function inviteTeamMemberAction(
     ),
   );
 
+  const orgRecord = await getOrganizationById(organization.id);
+  const emailWarning = await maybeSendTeamInviteEmail({
+    sendEmailRequested,
+    toEmail: email,
+    inviteUrl,
+    organizationName: orgRecord?.name ?? "your PTO",
+    inviteeName: displayName,
+    accessLevel: resolvedCampaignRole,
+    personalMessage: inviteMessage,
+    inviterEmail: user.email ?? null,
+  });
+
+  const warning = [assignmentWarning, emailWarning].filter(Boolean).join(" ") || null;
+
   revalidatePath("/settings/team-access");
   return {
     error: null,
     success: true,
     inviteUrl,
-    message: `Added ${email} to your team. Share the invite link below — Hey Ralli does not email invites automatically yet.`,
+    warning,
+    message: warning
+      ? `Added ${email} to your team.`
+      : sendEmailRequested
+        ? `Invite email sent to ${email}. You can also copy the link below.`
+        : `Added ${email} to your team. Share the invite link below.`,
   };
 }
 
@@ -477,7 +620,7 @@ export async function setTeamMemberAccessLevelAction(input: {
     .ilike("email", email)
     .maybeSingle();
 
-  if (existing?.status === "active") {
+  if (existing) {
     const result = await updateOrganizationMembership(existing.id, {
       campaignRole: input.campaignRole,
       organizationRoleId: input.organizationRoleId,
@@ -490,20 +633,11 @@ export async function setTeamMemberAccessLevelAction(input: {
     return { error: null, success: true };
   }
 
-  const result = await inviteOrganizationUser({
-    organizationId: organization.id,
-    email,
-    organizationRoleId: input.organizationRoleId ?? null,
-    campaignRole: input.campaignRole,
-    invitedByUserId: user.id,
-  });
-
-  if ("error" in result) {
-    return { error: result.error, success: false };
-  }
-
-  revalidatePath("/settings/team-access");
-  return { error: null, success: true };
+  return {
+    error:
+      "This person does not have app access yet. Use Give App Access to create an invite.",
+    success: false,
+  };
 }
 
 export async function setRosterMemberAccessLevelAction(input: {
@@ -584,7 +718,10 @@ export async function removeTeamMemberAction(
 
 export async function resendTeamInviteAction(
   membershipId: string,
+  options?: { sendEmail?: boolean },
 ): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  const organization = await getCurrentOrganization();
   const campaignRole = await getCurrentCampaignRole();
   if (!canManageTeam(campaignRole)) {
     return { error: "You do not have permission to resend invites.", success: false };
@@ -594,6 +731,13 @@ export async function resendTeamInviteAction(
   if ("error" in result) {
     return { error: result.error, success: false };
   }
+
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from("organization_users")
+    .select("email, display_name, campaign_role, invite_message")
+    .eq("id", membershipId)
+    .maybeSingle();
 
   const headersList = await headers();
   const inviteUrl = buildInviteLoginUrl(
@@ -605,12 +749,33 @@ export async function resendTeamInviteAction(
     ),
   );
 
+  let emailWarning: string | null = null;
+  if (options?.sendEmail !== false && membership?.email && organization) {
+    const orgRecord = await getOrganizationById(organization.id);
+    const accessLevel = isCampaignRole(membership.campaign_role as string)
+      ? (membership.campaign_role as CampaignRole)
+      : "contributor";
+    emailWarning = await maybeSendTeamInviteEmail({
+      sendEmailRequested: true,
+      toEmail: membership.email as string,
+      inviteUrl,
+      organizationName: orgRecord?.name ?? "your PTO",
+      inviteeName: (membership.display_name as string | null) ?? null,
+      accessLevel,
+      personalMessage: (membership.invite_message as string | null) ?? null,
+      inviterEmail: user?.email ?? null,
+    });
+  }
+
   revalidatePath("/settings/team-access");
   return {
     error: null,
     success: true,
     inviteUrl,
-    message: "Invite link refreshed. Share the new link below.",
+    warning: emailWarning,
+    message: emailWarning
+      ? "Invite link refreshed."
+      : "Invite link refreshed. Share the new link below.",
   };
 }
 
@@ -666,4 +831,157 @@ export async function setSimulatedRoleAction(
   }
 
   return { success: true };
+}
+
+/**
+ * Grant app login access to an existing roster person (organization_members row).
+ * Does not re-collect committee/event assignments — those stay on the roster record.
+ */
+export async function giveAppAccessAction(input: {
+  organizationMemberId: string;
+  email: string;
+  campaignRole: CampaignRole;
+  sendEmail?: boolean;
+}): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  const organization = await getCurrentOrganization();
+  const currentRole = await getCurrentCampaignRole();
+
+  if (!user || !organization) {
+    return { error: "Sign in and set up your organization first.", success: false };
+  }
+
+  if (!canManageTeam(currentRole)) {
+    return { error: "You do not have permission to grant app access.", success: false };
+  }
+
+  const organizationMemberId = input.organizationMemberId.trim();
+  const email = input.email.trim();
+  if (!organizationMemberId) {
+    return { error: "Roster person is required.", success: false };
+  }
+  if (!email) {
+    return { error: "Email is required to grant app access.", success: false };
+  }
+  if (!isCampaignRole(input.campaignRole)) {
+    return { error: "Invalid access role.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { data: rosterMember, error: rosterError } = await supabase
+    .from("organization_members")
+    .select("id, name, email, organization_role_id")
+    .eq("id", organizationMemberId)
+    .eq("organization_id", organization.id)
+    .maybeSingle();
+
+  if (rosterError || !rosterMember) {
+    return { error: "Roster person not found.", success: false };
+  }
+
+  const result = await inviteOrganizationUser({
+    organizationId: organization.id,
+    email,
+    displayName: (rosterMember.name as string | null) ?? null,
+    organizationRoleId:
+      (rosterMember.organization_role_id as string | null) ?? null,
+    organizationMemberId,
+    campaignRole: input.campaignRole,
+    invitedByUserId: user.id,
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  // Sync roster event assignments onto the new login membership when present.
+  const { listOrganizationMemberEventIds } = await import(
+    "@/lib/organization-workspace/roster-assignments"
+  );
+  const rosterEventIds = await listOrganizationMemberEventIds(organizationMemberId);
+  if (rosterEventIds.length > 0) {
+    await replaceOrganizationUserEventAssignments({
+      organizationId: organization.id,
+      organizationUserId: result.id,
+      eventIds: rosterEventIds,
+      syncLinkedMember: false,
+    });
+  }
+
+  if (rosterMember.email !== email) {
+    await updateOrganizationMember(organizationMemberId, { email });
+  }
+
+  const headersList = await headers();
+  const inviteUrl = buildInviteLoginUrl(
+    result.inviteToken,
+    resolveAuthSiteOrigin(
+      headersList.get("origin"),
+      headersList.get("x-forwarded-host") ?? headersList.get("host"),
+      headersList.get("x-forwarded-proto"),
+    ),
+  );
+
+  const orgRecord = await getOrganizationById(organization.id);
+  const emailWarning = await maybeSendTeamInviteEmail({
+    sendEmailRequested: input.sendEmail !== false,
+    toEmail: email,
+    inviteUrl,
+    organizationName: orgRecord?.name ?? "your PTO",
+    inviteeName: (rosterMember.name as string | null) ?? null,
+    accessLevel: input.campaignRole,
+    personalMessage: null,
+    inviterEmail: user.email ?? null,
+  });
+
+  revalidatePath("/settings/team-access");
+  return {
+    error: null,
+    success: true,
+    inviteUrl,
+    warning: emailWarning,
+    message: emailWarning
+      ? `Granted app access to ${email}.`
+      : input.sendEmail !== false
+        ? `Invite email sent to ${email}. You can also copy the link below.`
+        : `Granted app access to ${email}. Share the invite link below.`,
+  };
+}
+
+export async function replaceMemberEventAssignmentsAction(input: {
+  organizationMemberId: string;
+  eventIds: string[];
+}): Promise<AuthActionState> {
+  const organization = await getCurrentOrganization();
+  const campaignRole = await getCurrentCampaignRole();
+
+  if (!organization) {
+    return { error: "Sign in and set up your organization first.", success: false };
+  }
+  if (!canManageTeam(campaignRole)) {
+    return { error: "You do not have permission to update event assignments.", success: false };
+  }
+  if (!input.organizationMemberId.trim()) {
+    return { error: "Roster person is required.", success: false };
+  }
+
+  const { replaceOrganizationMemberEventAssignments } = await import(
+    "@/lib/organization-workspace/roster-assignments"
+  );
+  const result = await replaceOrganizationMemberEventAssignments({
+    organizationId: organization.id,
+    organizationMemberId: input.organizationMemberId,
+    eventIds: input.eventIds,
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidatePath("/settings/team-access");
+  return {
+    error: null,
+    success: true,
+    message: "Event assignments updated.",
+  };
 }

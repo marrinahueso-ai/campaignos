@@ -141,7 +141,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
       "",
       input.storyFromFeed
         ? "Keep the same visual style, colors, and branding as the attached feed design. Adapt layout for vertical story safe zones."
-        : "Use the attached inspiration images for style, color palette, and visual mood. Do not copy them literally — create original campaign artwork in that style.",
+        : "Use the attached inspiration images for composition, layout, visual hierarchy, style, color palette, and visual mood.",
     );
 
     const imageComments = input.inspiration.inspirationImages

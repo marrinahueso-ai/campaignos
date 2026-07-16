@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -16,17 +16,24 @@ import {
 } from "@/lib/auth/campaign-roles";
 import type { OrganizationCommittee, OrganizationRole } from "@/types/organization-workspace";
 
+interface EventOption {
+  id: string;
+  title: string;
+}
+
 interface TeamAccessInviteModalProps {
   open: boolean;
   onClose: () => void;
   roles: OrganizationRole[];
   committees: OrganizationCommittee[];
+  events?: EventOption[];
   canProvisionAccounts: boolean;
   prefill?: {
     email?: string;
     name?: string;
     committeeId?: string;
     organizationRoleId?: string;
+    eventIds?: string[];
   } | null;
 }
 
@@ -35,15 +42,28 @@ export function TeamAccessInviteModal({
   onClose,
   roles,
   committees,
+  events = [],
   prefill,
 }: TeamAccessInviteModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [sendEmail, setSendEmail] = useState(true);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>(
+    prefill?.eventIds ?? [],
+  );
+
+  const eventIdsCsv = useMemo(
+    () => selectedEventIds.join(","),
+    [selectedEventIds],
+  );
 
   async function handleSubmit(formData: FormData) {
+    formData.set("sendEmail", sendEmail ? "true" : "false");
+    formData.set("eventIdsCsv", eventIdsCsv);
     startTransition(async () => {
       const result = await inviteTeamMemberAction(
         { error: null, success: false },
@@ -51,9 +71,12 @@ export function TeamAccessInviteModal({
       );
       if (result.error) {
         setError(result.error);
+        setWarning(null);
         return;
       }
       setError(null);
+      setWarning(result.warning ?? null);
+      setMessage(result.message ?? null);
       setInviteUrl(result.inviteUrl ?? null);
       router.refresh();
     });
@@ -70,8 +93,19 @@ export function TeamAccessInviteModal({
 
   function handleClose() {
     setError(null);
+    setWarning(null);
+    setMessage(null);
     setInviteUrl(null);
+    setSelectedEventIds(prefill?.eventIds ?? []);
     onClose();
+  }
+
+  function toggleEvent(eventId: string) {
+    setSelectedEventIds((current) =>
+      current.includes(eventId)
+        ? current.filter((id) => id !== eventId)
+        : [...current, eventId],
+    );
   }
 
   return (
@@ -79,7 +113,7 @@ export function TeamAccessInviteModal({
       open={open}
       onClose={handleClose}
       title="Invite team member"
-      subtitle="Send an invite link or share credentials."
+      subtitle="Send an invite email and always keep a copyable link."
       footer={
         inviteUrl ? (
           <div className="flex justify-end">
@@ -93,7 +127,7 @@ export function TeamAccessInviteModal({
               Cancel
             </Button>
             <Button type="submit" form="invite-member-form" disabled={isPending}>
-              Send invite
+              {isPending ? "Sending…" : "Send invite"}
             </Button>
           </div>
         )
@@ -101,8 +135,16 @@ export function TeamAccessInviteModal({
     >
       {inviteUrl ? (
         <div className="space-y-3">
+          {message ? (
+            <p className="text-sm font-medium text-cos-text">{message}</p>
+          ) : null}
+          {warning ? (
+            <p className="text-sm text-amber-800" role="alert">
+              {warning}
+            </p>
+          ) : null}
           <p className="text-sm text-cos-muted">
-            Share this invite link. They sign in with Google using the invited email.
+            Copyable invite link — they must sign in with the invited email.
           </p>
           <p className="break-all text-sm font-medium text-cos-text">{inviteUrl}</p>
           <Button type="button" variant="secondary" size="sm" onClick={copyInviteLink}>
@@ -122,13 +164,13 @@ export function TeamAccessInviteModal({
           />
           <Input
             name="fullName"
-            label="Full name (optional)"
+            label="Full name"
             placeholder="Jamie Smith"
             defaultValue={prefill?.name ?? ""}
           />
           <Select
             name="organizationRoleId"
-            label="Role"
+            label="Board role (optional)"
             defaultValue={prefill?.organizationRoleId ?? ""}
           >
             <option value="">Select role (optional)</option>
@@ -138,7 +180,7 @@ export function TeamAccessInviteModal({
               </option>
             ))}
           </Select>
-          <Select name="campaignRole" label="Access level" defaultValue="contributor">
+          <Select name="campaignRole" label="App access level" defaultValue="contributor">
             {CAMPAIGN_ROLES.map((role) => (
               <option key={role} value={role}>
                 {campaignRoleLabel(role as CampaignRole)}
@@ -157,6 +199,37 @@ export function TeamAccessInviteModal({
               </option>
             ))}
           </Select>
+
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+              Event assignments (optional)
+            </legend>
+            <p className="text-xs text-cos-muted">
+              Assign one or more campaigns/events. Editable later from the member record.
+            </p>
+            <div className="max-h-40 space-y-2 overflow-y-auto border border-cos-border p-3">
+              {events.length === 0 ? (
+                <p className="text-sm text-cos-muted">No events available yet.</p>
+              ) : (
+                events.map((event) => (
+                  <label
+                    key={event.id}
+                    className="flex items-center gap-2 text-sm text-cos-text"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedEventIds.includes(event.id)}
+                      onChange={() => toggleEvent(event.id)}
+                      className="rounded border-cos-border"
+                    />
+                    {event.title}
+                  </label>
+                ))
+              )}
+            </div>
+            <input type="hidden" name="eventIdsCsv" value={eventIdsCsv} />
+          </fieldset>
+
           <Textarea
             label="Message (optional)"
             name="message"

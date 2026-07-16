@@ -58,7 +58,7 @@ export function TeamAccessMoreActionsMenu({
     { id: "approvals", label: "View approvals" },
     { id: "message", label: "Send message" },
     ...(member.isRosterOnly || member.emailMissing
-      ? [{ id: "invite", label: "Invite" }]
+      ? [{ id: "invite", label: "Give App Access" }]
       : []),
     ...(member.raw
       ? [{ id: "deactivate", label: "Deactivate" }]

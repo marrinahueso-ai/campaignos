@@ -12,11 +12,7 @@ import {
 } from "@/components/settings-v2/team-access/member-edit-utils";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
 import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
-import {
-  setRosterMemberAccessLevelAction,
-  setTeamMemberAccessLevelAction,
-  updateTeamMemberAction,
-} from "@/lib/auth/actions";
+import { updateTeamMemberAction } from "@/lib/auth/actions";
 import {
   CAMPAIGN_ROLES,
   campaignRoleLabel,
@@ -24,6 +20,7 @@ import {
 } from "@/lib/auth/campaign-roles";
 import {
   createOrganizationMemberAction,
+  saveRosterCommitteeAssignmentAction,
   updateOrganizationCommitteeAction,
   updateOrganizationMemberAction,
   updateOrganizationRoleAction,
@@ -79,20 +76,36 @@ export function TeamAccessEditMemberModal({
 
     const formData = new FormData(event.currentTarget);
     const fullName = formData.get("fullName")?.toString()?.trim() ?? activeMember.displayName;
-    const email = formData.get("email")?.toString()?.trim() ?? activeMember.email;
+    const emailRaw = formData.get("email")?.toString()?.trim() ?? "";
+    const email = emailRaw || null;
     const phone = formData.get("phone")?.toString()?.trim() || null;
     const organizationRoleId = (formData.get("organizationRoleId") as string) || null;
     const campaignRole = formData.get("campaignRole") as CampaignRole;
     const status = formData.get("status") as "active" | "deactivated" | "archived";
     const committeeId = (formData.get("committeeId") as string) || null;
     const committeeRole =
-      (formData.get("committeeRole") as "chair" | "co_chair" | "member") || "member";
+      (formData.get("committeeRole") as
+        | "chair"
+        | "co_chair"
+        | "member"
+        | "supervising_vp") || "member";
     const notes = formData.get("notes")?.toString()?.trim() || null;
 
     startTransition(async () => {
       const { source } = activeEditContext;
 
-      if (source.kind === "org_user") {
+      // App-access members: update login membership when present.
+      if (activeMember.raw && activeEditContext.canEditAccess) {
+        const result = await updateTeamMemberAction(activeMember.raw.id, {
+          organizationRoleId: organizationRoleId || null,
+          campaignRole,
+          status: status === "deactivated" ? "deactivated" : "active",
+        });
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+      } else if (source.kind === "org_user") {
         const result = await updateTeamMemberAction(source.membershipId, {
           organizationRoleId: organizationRoleId || null,
           campaignRole,
@@ -104,31 +117,12 @@ export function TeamAccessEditMemberModal({
         }
       }
 
-      if (
-        activeEditContext.canEditAccess &&
-        !activeMember.raw &&
-        source.kind !== "org_user"
-      ) {
-        const accessResult = email
-          ? await setTeamMemberAccessLevelAction({
-              email,
-              organizationRoleId: organizationRoleId || activeMember.organizationRoleId,
-              campaignRole,
-            })
-          : await setRosterMemberAccessLevelAction({
-              source,
-              campaignRole,
-            });
-        if (accessResult.error) {
-          setError(accessResult.error);
-          return;
-        }
-      }
+      // Do NOT auto-invite roster-only people via setTeamMemberAccessLevelAction.
 
       if (source.kind === "org_role") {
         const result = await updateOrganizationRoleAction(source.roleId, {
           contactName: fullName,
-          contactEmail: email || null,
+          contactEmail: email,
           contactPhone: phone,
           description: notes,
         });
@@ -141,13 +135,51 @@ export function TeamAccessEditMemberModal({
       if (source.kind === "org_member") {
         const result = await updateOrganizationMemberAction(source.memberId, {
           name: fullName,
-          email: email || activeMember.email,
+          email,
+          phone,
           organizationRoleId: organizationRoleId || null,
           active: status !== "archived" && status !== "deactivated",
         });
         if (result.error) {
           setError(result.error);
           return;
+        }
+
+        if (
+          activeEditContext.canEditCommittee &&
+          (committeeId !== activeEditContext.defaultCommitteeId ||
+            committeeRole !== activeEditContext.defaultCommitteeRole)
+        ) {
+          const committeeResult = await saveRosterCommitteeAssignmentAction({
+            organizationMemberId: source.memberId,
+            committeeId,
+            committeeRole,
+          });
+          if (committeeResult.error) {
+            // Fall back to legacy packed contact_name when assignment table missing.
+            if (committeeId && committeeResult.error.includes("missing")) {
+              const committee = committees.find((entry) => entry.id === committeeId);
+              if (committee) {
+                const contactName = updateCommitteeChairNames(
+                  committee,
+                  fullName,
+                  committeeRole,
+                );
+                const legacy = await updateOrganizationCommitteeAction(committeeId, {
+                  contactName,
+                  contactEmail: email,
+                  contactPhone: phone,
+                });
+                if (legacy.error) {
+                  setError(legacy.error);
+                  return;
+                }
+              }
+            } else {
+              setError(committeeResult.error);
+              return;
+            }
+          }
         }
       }
 
@@ -166,7 +198,7 @@ export function TeamAccessEditMemberModal({
 
         const result = await updateOrganizationCommitteeAction(source.committeeId, {
           contactName,
-          contactEmail: email || null,
+          contactEmail: email,
           contactPhone: phone,
           parentRoleId: organizationRoleId,
         });
@@ -176,7 +208,11 @@ export function TeamAccessEditMemberModal({
         }
       }
 
-      if (committeeId && committeeId !== activeEditContext.defaultCommitteeId) {
+      if (
+        source.kind !== "org_member" &&
+        committeeId &&
+        committeeId !== activeEditContext.defaultCommitteeId
+      ) {
         const committee = committees.find((entry) => entry.id === committeeId);
         if (committee) {
           const contactName = updateCommitteeChairNames(
@@ -186,7 +222,7 @@ export function TeamAccessEditMemberModal({
           );
           const result = await updateOrganizationCommitteeAction(committeeId, {
             contactName,
-            contactEmail: email || null,
+            contactEmail: email,
             contactPhone: phone,
           });
           if (result.error) {
@@ -277,7 +313,7 @@ export function TeamAccessEditMemberModal({
         {activeEditContext.canEditAccess ? (
           <Select
             name="campaignRole"
-            label="Access level"
+            label="App access"
             defaultValue={activeMember.accessLevel}
           >
             {CAMPAIGN_ROLES.map((role) => (
@@ -325,6 +361,7 @@ export function TeamAccessEditMemberModal({
               <option value="chair">Chair</option>
               <option value="co_chair">Co-chair</option>
               <option value="member">Member</option>
+              <option value="supervising_vp">Supervising VP</option>
             </Select>
           </>
         ) : null}

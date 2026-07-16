@@ -185,7 +185,7 @@ const navItems: {
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
-    label: "Campaigns",
+    label: "Events",
     href: "/events",
     icon: Megaphone,
     isActive: isCampaignsActive,

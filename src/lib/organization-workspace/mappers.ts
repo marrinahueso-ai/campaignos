@@ -30,17 +30,20 @@ export function mapOrganizationRoleRow(row: OrganizationRoleRow): OrganizationRo
 export function mapOrganizationMemberRow(
   row: OrganizationMemberRow,
   roleName: string | null = null,
+  assignedEventIds: string[] = [],
 ): OrganizationMember {
   return {
     id: row.id,
     organizationId: row.organization_id,
     name: row.name,
-    email: row.email,
+    email: row.email ?? null,
+    phone: row.phone ?? null,
     organizationRoleId: row.organization_role_id,
     roleName,
     active: row.active,
     campaignRole: row.campaign_role ?? null,
     createdAt: row.created_at,
+    assignedEventIds,
   };
 }
 

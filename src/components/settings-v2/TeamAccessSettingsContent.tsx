@@ -12,6 +12,12 @@ interface TeamAccessSettingsContentProps {
   currentUserEmail: string | null;
   siteOrigin: string;
   canProvisionAccounts: boolean;
+  events: Array<{
+    id: string;
+    title: string;
+    date?: string | null;
+    status?: string | null;
+  }>;
 }
 
 export function TeamAccessSettingsContent({
@@ -23,6 +29,7 @@ export function TeamAccessSettingsContent({
   currentUserEmail,
   siteOrigin,
   canProvisionAccounts,
+  events,
 }: TeamAccessSettingsContentProps) {
   return (
     <TeamAccessShell
@@ -34,6 +41,7 @@ export function TeamAccessSettingsContent({
       currentUserEmail={currentUserEmail}
       siteOrigin={siteOrigin}
       canProvisionAccounts={canProvisionAccounts}
+      events={events}
     />
   );
 }

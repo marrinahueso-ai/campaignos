@@ -9,7 +9,6 @@ export const CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES = [
 export const CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES = [
   "Use only verified facts and user-provided direction.",
   "Never invent times, gate hours, parking lots, balloon colors, locations, schedules, sponsors, or logistics.",
-  "Never ask for volunteers or include sign-up CTAs unless user notes explicitly request it.",
   "Do not use the school, PTO, organization, or campaign name as on-graphic text unless user notes explicitly request it.",
   "Never render logo labels, brand kit names, or attached logo filenames as text.",
 ].join(" ");
@@ -29,7 +28,6 @@ export const CAMPAIGN_BUILDER_LOGO_RULES = [
 
 export const CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES = [
   "On-graphic text must be short headline-style copy you write — not milestone labels, purpose fields, or user note dumps.",
-  "Do not copy logistics, volunteer asks, or scheduling jargon onto the graphic.",
   "Never render scheduled post dates, milestone dates, or labels like Milestone:, Post date:, or Suggested date: on the graphic.",
   "The event date may appear when it fits the design and user direction — never the internal post or milestone schedule date.",
 ].join(" ");

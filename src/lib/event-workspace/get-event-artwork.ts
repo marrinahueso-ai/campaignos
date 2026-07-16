@@ -114,7 +114,7 @@ async function getLatestContentMap(
   const supabase = await createClient();
   const { data } = await supabase
     .from("communication_versions")
-    .select("*")
+    .select("communication_item_id, version_number, content")
     .in("communication_item_id", itemIds)
     .order("version_number", { ascending: false });
 

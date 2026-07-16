@@ -105,12 +105,22 @@ async function loadOrganizationWorkspaceData(
   );
   const roleNames = buildRoleNameMap(roles);
 
+  const { listOrganizationMemberEventAssignmentsByOrg } = await import(
+    "@/lib/organization-workspace/roster-assignments"
+  );
+  const memberEventAssignments =
+    await listOrganizationMemberEventAssignmentsByOrg(organizationId);
+
   const members = (memberRows ?? []).map((row) => {
     const memberRow = row as OrganizationMemberRow;
     const roleName = memberRow.organization_role_id
       ? roleNames.get(memberRow.organization_role_id) ?? null
       : null;
-    return mapOrganizationMemberRow(memberRow, roleName);
+    return mapOrganizationMemberRow(
+      memberRow,
+      roleName,
+      memberEventAssignments[memberRow.id] ?? [],
+    );
   });
 
   const responsibilityMatrix = (matrixRows ?? []).map((row) => {
@@ -274,6 +284,7 @@ export function buildFallbackOrganizationWorkspaceData(): OrganizationWorkspaceD
       communicationStrategy: committee.defaultStrategy,
       playbookSlug: committee.defaultPlaybookSlug,
       eventMatchKey: committee.value,
+      assignedEventId: null,
       sortOrder: (index + 1) * 10,
       archivedAt: null,
       campaignRole: null,

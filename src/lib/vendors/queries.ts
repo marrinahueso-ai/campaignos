@@ -18,6 +18,7 @@ import {
   mapVendorRow,
 } from "@/lib/vendors/mappers";
 import { canManageVendors, canWriteVendors } from "@/lib/vendors/permissions";
+import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/storage";
 import { createClient } from "@/lib/supabase/server";
 import type {
   EventVendorRow,
@@ -457,12 +458,31 @@ export async function getEventVendorsData(eventId: string): Promise<EventVendors
         category: vendor.categoryId ? categoryMap.get(vendor.categoryId) ?? null : null,
         primaryContact,
         assignmentStatus: assignment.assignmentStatus,
+        logoUrl: null,
       };
     })
     .filter((value): value is EventVendorRow => value !== null)
     .sort((left, right) => left.vendor.name.localeCompare(right.vendor.name));
 
-  return { vendors, canWrite: canWriteVendors(role) };
+  const withLogos = await Promise.all(
+    vendors.map(async (row) => {
+      if (!row.vendor.logoPath) {
+        return row;
+      }
+
+      const { data, error: signError } = await supabase.storage
+        .from(VENDOR_DOCUMENTS_BUCKET)
+        .createSignedUrl(row.vendor.logoPath, 3600);
+
+      if (signError || !data?.signedUrl) {
+        return row;
+      }
+
+      return { ...row, logoUrl: data.signedUrl };
+    }),
+  );
+
+  return { vendors: withLogos, canWrite: canWriteVendors(role) };
 }
 
 export async function getAllOrgVendorsForDedup(organizationId: string) {

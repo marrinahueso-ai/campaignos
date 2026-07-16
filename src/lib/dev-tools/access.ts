@@ -22,7 +22,7 @@ function parseEmailList(raw: string | undefined): Set<string> {
  */
 export async function canUseDeveloperClearTools(): Promise<boolean> {
   const role = await getCurrentCampaignRole();
-  if (role === "admin") {
+  if (role === "admin" || role === "developer") {
     return true;
   }
 

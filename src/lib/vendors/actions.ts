@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
-import { MAX_VENDOR_DOCUMENT_BYTES } from "@/lib/vendors/constants";
+import { MAX_VENDOR_DOCUMENT_BYTES, MAX_VENDOR_LOGO_BYTES } from "@/lib/vendors/constants";
 import {
   addVendorNote,
   archiveVendor,
@@ -16,6 +16,7 @@ import {
   setVendorFavorite,
   updateVendor,
   uploadVendorDocument,
+  uploadVendorLogo,
 } from "@/lib/vendors/mutations";
 import { canManageVendors, canWriteVendors } from "@/lib/vendors/permissions";
 import type {
@@ -67,7 +68,12 @@ async function requireWritableOrg(): Promise<
 
 export async function createVendorAction(
   input: CreateVendorInput,
-): Promise<{ success: boolean; vendorId: string | null; error: string | null }> {
+): Promise<{
+  success: boolean;
+  vendorId: string | null;
+  error: string | null;
+  existingVendorId?: string | null;
+}> {
   const access = await requireWritableOrg();
   if ("error" in access) {
     return { success: false, vendorId: null, error: access.error };
@@ -79,7 +85,12 @@ export async function createVendorAction(
 
   const result = await createVendor(access.organizationId, input);
   if (!result.id) {
-    return { success: false, vendorId: null, error: result.error };
+    return {
+      success: false,
+      vendorId: null,
+      error: result.error,
+      existingVendorId: result.existingVendorId ?? null,
+    };
   }
 
   revalidateVendorPaths(result.id, input.eventId);
@@ -281,6 +292,49 @@ export async function uploadVendorDocumentAction(
   });
 
   if (!result.id) {
+    return { success: false, error: result.error };
+  }
+
+  revalidateVendorPaths(vendorId, eventId);
+  return { success: true, error: null };
+}
+
+export async function uploadVendorLogoAction(
+  formData: FormData,
+): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireWritableOrg();
+  if ("error" in access) {
+    return { success: false, error: access.error };
+  }
+
+  const vendorId = String(formData.get("vendorId") ?? "").trim();
+  const eventId = String(formData.get("eventId") ?? "").trim() || null;
+  const file = formData.get("file");
+
+  if (!vendorId) {
+    return { success: false, error: "Vendor is required." };
+  }
+
+  const vendor = await getVendorRowById(vendorId);
+  if (!vendor || vendor.organizationId !== access.organizationId) {
+    return { success: false, error: "Vendor not found." };
+  }
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false, error: "Choose a logo image to upload." };
+  }
+
+  if (file.size > MAX_VENDOR_LOGO_BYTES) {
+    return { success: false, error: "Logo must be 5 MB or smaller." };
+  }
+
+  const result = await uploadVendorLogo({
+    organizationId: access.organizationId,
+    vendorId,
+    file,
+  });
+
+  if (!result.success) {
     return { success: false, error: result.error };
   }
 

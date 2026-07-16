@@ -16,10 +16,11 @@ import {
 import { getTeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import { resolveAuthSiteOrigin } from "@/lib/auth/invite-url";
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { headers } from "next/headers";
 
 export const metadata = {
-  title: "Team & Access",
+  title: "People & Responsibilities",
 };
 
 export default async function TeamAccessSettingsPage() {
@@ -33,40 +34,12 @@ export default async function TeamAccessSettingsPage() {
     ? await getOrganizationById(membership.organizationId)
     : null;
 
-  const workspace = organization
-    ? (await getOrganizationWorkspaceData(organization.id)) ??
-      buildFallbackOrganizationWorkspaceData()
-    : buildFallbackOrganizationWorkspaceData();
-
-  const members = organization
-    ? await getOrganizationUsers(organization.id)
-    : [];
-
-  const workload = organization
-    ? await getTeamAccessWorkloadIndex(organization.id)
-    : { byCommitteeId: {} };
-
-  const activeCount = organization
-    ? await countActiveOrganizationUsers(organization.id)
-    : 0;
-
-  const showClaimBanner = Boolean(
-    user && !membership && organization && activeCount === 0,
-  );
-
-  const headersList = await headers();
-  const siteOrigin = resolveAuthSiteOrigin(
-    headersList.get("origin"),
-    headersList.get("x-forwarded-host") ?? headersList.get("host"),
-    headersList.get("x-forwarded-proto"),
-  );
-
   if (!organization) {
     return (
       <div className="space-y-6">
         <SettingsV2PageHeader
-          title="Team & Access"
-          description="Manage members, roles, permissions, and committee responsibilities in one place."
+          title="People & Responsibilities"
+          description="Manage people and assign responsibilities to events. Hey Ralli automatically manages permissions."
         />
         <p className="text-sm leading-relaxed text-cos-muted">
           Complete School Setup first, then return here to invite your board.
@@ -74,6 +47,29 @@ export default async function TeamAccessSettingsPage() {
       </div>
     );
   }
+
+  const [workspaceResult, members, workload, events, activeCount, headersList] =
+    await Promise.all([
+      getOrganizationWorkspaceData(organization.id),
+      getOrganizationUsers(organization.id),
+      getTeamAccessWorkloadIndex(organization.id),
+      getCampaignPageEvents(organization.id),
+      countActiveOrganizationUsers(organization.id),
+      headers(),
+    ]);
+
+  const workspace =
+    workspaceResult ?? buildFallbackOrganizationWorkspaceData();
+
+  const showClaimBanner = Boolean(
+    user && !membership && organization && activeCount === 0,
+  );
+
+  const siteOrigin = resolveAuthSiteOrigin(
+    headersList.get("origin"),
+    headersList.get("x-forwarded-host") ?? headersList.get("host"),
+    headersList.get("x-forwarded-proto"),
+  );
 
   return (
     <TeamAccessSettingsContent
@@ -85,6 +81,12 @@ export default async function TeamAccessSettingsPage() {
       currentUserEmail={user?.email ?? null}
       siteOrigin={siteOrigin}
       canProvisionAccounts={isSupabaseAdminConfigured()}
+      events={events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        date: event.date,
+        status: event.status,
+      }))}
     />
   );
 }

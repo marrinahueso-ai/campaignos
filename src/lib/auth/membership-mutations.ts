@@ -51,7 +51,11 @@ export async function createOrganizationMembership(input: {
 export async function inviteOrganizationUser(input: {
   organizationId: string;
   email: string;
+  displayName?: string | null;
   organizationRoleId?: string | null;
+  organizationMemberId?: string | null;
+  committeeId?: string | null;
+  inviteMessage?: string | null;
   campaignRole?: CampaignRole;
   invitedByUserId: string;
 }): Promise<{ id: string; inviteToken: string } | { error: string }> {
@@ -59,30 +63,87 @@ export async function inviteOrganizationUser(input: {
   const email = normalizeEmail(input.email);
   const inviteToken = randomUUID();
   const now = new Date().toISOString();
+  const displayName = input.displayName?.trim() || null;
+  const inviteMessage = input.inviteMessage?.trim() || null;
+  const organizationMemberId = input.organizationMemberId ?? null;
+
+  if (organizationMemberId) {
+    const { data: linkedElsewhere } = await supabase
+      .from("organization_users")
+      .select("id")
+      .eq("organization_member_id", organizationMemberId)
+      .neq("email", email)
+      .maybeSingle();
+
+    if (linkedElsewhere) {
+      return {
+        error: "This roster person is already linked to another login member.",
+      };
+    }
+  }
 
   const { data: existing } = await supabase
     .from("organization_users")
-    .select("id, status")
+    .select("id, status, organization_member_id")
     .eq("organization_id", input.organizationId)
     .ilike("email", email)
     .maybeSingle();
 
   if (existing?.status === "active") {
+    if (
+      organizationMemberId &&
+      !existing.organization_member_id
+    ) {
+      const { error: linkError } = await supabase
+        .from("organization_users")
+        .update({
+          organization_member_id: organizationMemberId,
+          display_name: displayName ?? undefined,
+          organization_role_id: input.organizationRoleId ?? undefined,
+          committee_id: input.committeeId ?? undefined,
+          campaign_role: input.campaignRole ?? undefined,
+        })
+        .eq("id", existing.id);
+      if (linkError) {
+        return { error: linkError.message };
+      }
+      return { error: "This person is already an active team member." };
+    }
     return { error: "This person is already an active team member." };
   }
+
+  if (
+    existing?.organization_member_id &&
+    organizationMemberId &&
+    existing.organization_member_id !== organizationMemberId
+  ) {
+    return {
+      error: "This email is already linked to a different roster person.",
+    };
+  }
+
+  const payload = {
+    organization_role_id: input.organizationRoleId ?? null,
+    organization_member_id: organizationMemberId,
+    committee_id: input.committeeId ?? null,
+    display_name: displayName,
+    invite_message: inviteMessage,
+    campaign_role: input.campaignRole ?? "contributor",
+    status: "invited" as const,
+    invite_token: inviteToken,
+    invited_by_user_id: input.invitedByUserId,
+    invited_at: now,
+    user_id: null,
+    joined_at: null,
+  };
 
   if (existing) {
     const { error } = await supabase
       .from("organization_users")
       .update({
-        organization_role_id: input.organizationRoleId ?? null,
-        campaign_role: input.campaignRole ?? "contributor",
-        status: "invited",
-        invite_token: inviteToken,
-        invited_by_user_id: input.invitedByUserId,
-        invited_at: now,
-        user_id: null,
-        joined_at: null,
+        ...payload,
+        organization_member_id:
+          organizationMemberId ?? existing.organization_member_id ?? null,
       })
       .eq("id", existing.id);
 
@@ -98,12 +159,7 @@ export async function inviteOrganizationUser(input: {
     .insert({
       organization_id: input.organizationId,
       email,
-      organization_role_id: input.organizationRoleId ?? null,
-      campaign_role: input.campaignRole ?? "contributor",
-      status: "invited",
-      invite_token: inviteToken,
-      invited_by_user_id: input.invitedByUserId,
-      invited_at: now,
+      ...payload,
     })
     .select("id")
     .single();
@@ -159,6 +215,9 @@ export async function updateOrganizationMembership(
     organizationRoleId?: string | null;
     campaignRole?: CampaignRole;
     status?: "active" | "invited" | "deactivated";
+    displayName?: string | null;
+    committeeId?: string | null;
+    inviteMessage?: string | null;
   },
 ): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
@@ -177,6 +236,18 @@ export async function updateOrganizationMembership(
 
   if (input.status !== undefined) {
     updates.status = input.status;
+  }
+
+  if (input.displayName !== undefined) {
+    updates.display_name = input.displayName?.trim() || null;
+  }
+
+  if (input.committeeId !== undefined) {
+    updates.committee_id = input.committeeId;
+  }
+
+  if (input.inviteMessage !== undefined) {
+    updates.invite_message = input.inviteMessage?.trim() || null;
   }
 
   if (Object.keys(updates).length === 0) {
