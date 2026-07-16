@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TasksV2AddTaskRow } from "@/components/tasks-v2/TasksV2AddTaskRow";
 import { TasksV2TaskRow } from "@/components/tasks-v2/TasksV2TaskRow";
 import { readTasksV2DragPayload } from "@/components/tasks-v2/tasks-v2-dnd";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import {
   createTaskHubTaskAction,
   reorderTaskHubTasksAction,
@@ -34,7 +34,7 @@ export function TasksV2EventGroupSection({
   sortMode,
   personFilter,
 }: TasksV2EventGroupSectionProps) {
-  const router = useRouter();
+  const refreshTasksTab = useEventTabMutationRefresh("tasks");
   const [pending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(false);
   const [tasks, setTasks] = useState(initialGroup.tasks);
@@ -43,6 +43,16 @@ export function TasksV2EventGroupSection({
     Record<string, EventPlaybookTaskStatus>
   >({});
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+
+  const tasksSyncKey = initialGroup.tasks
+    .map((task) => `${task.id}:${task.status}:${task.sortOrder}:${task.title}`)
+    .join("|");
+
+  useEffect(() => {
+    setTasks(initialGroup.tasks);
+    setTaskStatuses({});
+    setPendingTaskIds(new Set());
+  }, [tasksSyncKey, initialGroup.tasks]);
 
   const filteredTasks = useMemo(() => {
     let result = filterAndSortTasks(tasks, {
@@ -97,7 +107,7 @@ export function TasksV2EventGroupSection({
             item.id === task.id ? { ...item, status } : item,
           ),
         );
-        router.refresh();
+        await refreshTasksTab();
       }
     });
   }
@@ -106,7 +116,7 @@ export function TasksV2EventGroupSection({
     startTransition(async () => {
       const result = await createTaskHubTaskAction(initialGroup.eventId, { title });
       if (result.success) {
-        router.refresh();
+        await refreshTasksTab();
       }
     });
   }
@@ -132,7 +142,7 @@ export function TasksV2EventGroupSection({
           eventId: task.event.eventId,
         })),
       );
-      router.refresh();
+      await refreshTasksTab();
     });
   }
 

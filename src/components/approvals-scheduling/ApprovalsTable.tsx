@@ -2,13 +2,13 @@
 
 import Image from "next/image";
 import { Loader2, MoreHorizontal } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   AssigneeAvatar,
   DeliveryIcons,
 } from "@/components/approvals-scheduling/ReviewDrawer";
 import { StatusBadge } from "@/components/approvals-scheduling/StatusBadge";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
 import {
   approveUnifiedItemAction,
@@ -34,7 +34,7 @@ export function ApprovalsTable({
   onReview,
   onActionError,
 }: ApprovalsTableProps) {
-  const router = useRouter();
+  const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [expandedActionsId, setExpandedActionsId] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export function ApprovalsTable({
         if (result.warning) {
           onActionError(result.warning);
         }
-        router.refresh();
+        await refreshApprovalsTab();
         return;
       }
       onActionError(result.error ?? "Unable to complete that action.");

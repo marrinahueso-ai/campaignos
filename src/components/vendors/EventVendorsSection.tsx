@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Camera, ExternalLink, Mail, Phone, Plus, Store } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -235,7 +235,7 @@ export function EventVendorsSection({
   directoryHref,
   deferDirectoryLoad = false,
 }: EventVendorsSectionProps) {
-  const router = useRouter();
+  const refreshVendorsTab = useEventTabMutationRefresh("vendors");
   const [addOpen, setAddOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState("");
@@ -297,14 +297,14 @@ export function EventVendorsSection({
       }
       setLinkOpen(false);
       setSelectedVendorId("");
-      router.refresh();
+      await refreshVendorsTab();
     });
   }
 
   function handleRemove(assignmentId: string) {
     startTransition(async () => {
       await removeVendorFromEventAction(assignmentId, eventId);
-      router.refresh();
+      await refreshVendorsTab();
     });
   }
 
@@ -373,7 +373,9 @@ export function EventVendorsSection({
               canWrite={data.canWrite}
               pending={pending}
               onRemove={handleRemove}
-              onLogoUploaded={() => router.refresh()}
+              onLogoUploaded={() => {
+                void refreshVendorsTab();
+              }}
             />
           ))}
         </div>
@@ -422,7 +424,9 @@ export function EventVendorsSection({
         categories={categories}
         events={events}
         defaultEventId={eventId}
-        onCreated={() => router.refresh()}
+        onCreated={() => {
+          void refreshVendorsTab();
+        }}
       />
     </div>
   );

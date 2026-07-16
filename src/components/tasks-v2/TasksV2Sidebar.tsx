@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronRight, Mic, MicOff, Plus, Sparkles } from "lucide-react";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { cn } from "@/lib/utils/cn";
 import {
   addGeneratedTasksV2Action,
@@ -67,7 +67,7 @@ export function TasksV2Sidebar({
   hideMyViews = false,
   onViewSelect,
 }: TasksV2SidebarProps) {
-  const router = useRouter();
+  const refreshTasksTab = useEventTabMutationRefresh("tasks");
   const lockedId = lockedEventId?.trim() || null;
   const sourceOptions = useMemo(() => {
     const byId = new Map<string, TaskHubEventOption>();
@@ -244,7 +244,7 @@ export function TasksV2Sidebar({
       );
       setSuggestions((prev) => prev.filter((title) => !selected.has(title)));
       setSelected(new Set());
-      router.refresh();
+      await refreshTasksTab();
     } finally {
       setIsAdding(false);
     }

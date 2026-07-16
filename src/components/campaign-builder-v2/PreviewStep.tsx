@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Copy, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, Download, Trash2 } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { CompletionBanner } from "@/components/campaign-builder-v2/CompletionBanner";
@@ -13,6 +13,10 @@ import { PreviewSettingsPanel } from "@/components/campaign-builder-v2/PreviewSe
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
 import { ClearGeneratedContentModal } from "@/components/dev-tools/ClearGeneratedContentModal";
 import { Button } from "@/components/ui/Button";
+import {
+  buildArtworkDownloadFilename,
+  downloadArtworkImage,
+} from "@/lib/artwork-v2/download";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
 import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
 import {
@@ -35,6 +39,7 @@ import {
   artworkKeyForView,
   aspectClassForView,
   enabledArtworkViews,
+  isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -114,6 +119,27 @@ export function PreviewStep() {
   const [clearSubmitting, setClearSubmitting] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
   const [clearMessage, setClearMessage] = useState<string | null>(null);
+  const [downloadingView, setDownloadingView] = useState<ArtworkView | null>(
+    null,
+  );
+
+  async function handleDownloadArtwork(
+    view: ArtworkView,
+    imageUrl: string,
+    label: string,
+  ) {
+    setDownloadingView(view);
+    try {
+      const filename = buildArtworkDownloadFilename(
+        `${selectedMilestone?.name ?? "artwork"} ${label}`,
+      );
+      await downloadArtworkImage(imageUrl, filename);
+    } catch {
+      // Allow retry from the same icon.
+    } finally {
+      setDownloadingView(null);
+    }
+  }
 
   const selectedId =
     session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
@@ -341,12 +367,16 @@ export function PreviewStep() {
                         );
                         const artworkKey = artworkKeyForView(view);
                         const imageUrl = selectedPreview.artwork[artworkKey];
+                        const canDownload =
+                          Boolean(imageUrl) &&
+                          !isPlaceholderArtworkUrl(imageUrl!);
+                        const viewLabel = option?.label ?? view;
 
                         return (
                           <div key={view} className="space-y-2">
                             <div>
                               <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                                {option?.label ?? view}
+                                {viewLabel}
                               </p>
                               {option?.subtitle && (
                                 <p className="text-[11px] text-cos-muted">
@@ -354,15 +384,36 @@ export function PreviewStep() {
                                 </p>
                               )}
                             </div>
-                            <ArtworkPlaceholder
-                              aspectClassName={aspectClassForView(view)}
-                              imageUrl={imageUrl}
-                              alt={`${option?.label ?? view} artwork`}
-                              priority={view === "feed"}
-                              className={
-                                view === "story" ? "max-h-64" : undefined
-                              }
-                            />
+                            <div className="relative">
+                              <ArtworkPlaceholder
+                                aspectClassName={aspectClassForView(view)}
+                                imageUrl={imageUrl}
+                                alt={`${viewLabel} artwork`}
+                                priority={view === "feed"}
+                                className={
+                                  view === "story" ? "max-h-64" : undefined
+                                }
+                              />
+                              {canDownload ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="absolute -right-1 -top-1 z-10 h-7 w-7 p-0"
+                                  disabled={downloadingView === view}
+                                  onClick={() =>
+                                    void handleDownloadArtwork(
+                                      view,
+                                      imageUrl!,
+                                      viewLabel,
+                                    )
+                                  }
+                                  aria-label={`Download ${viewLabel}`}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : null}
+                            </div>
                           </div>
                         );
                       })}

@@ -10,6 +10,7 @@ import {
   logTabTiming,
   startTabTimer,
 } from "@/lib/events-phase3/tab-timing";
+import { getEventDetailHeroStats } from "@/lib/events-phase3/hero-stats";
 import {
   areEventPlaybookTablesAvailable,
   loadEventDetailTabData,
@@ -17,6 +18,7 @@ import {
   type EventDetailTabData,
 } from "@/lib/events-phase3/tab-loaders";
 import { getVendorDirectoryPickerData } from "@/lib/vendors/queries";
+import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 
 const LAZY_TABS = new Set<EventDetailLazyTab>([
   "approvals",
@@ -88,6 +90,40 @@ export async function loadEventDetailTabAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unable to load tab.",
+    };
+  }
+}
+
+/** Refresh hero strip counts after Approvals/Tasks/Files mutations. */
+export async function refreshEventDetailHeroStatsAction(
+  eventId: string,
+): Promise<
+  | { success: true; data: EventDetailHeroStats }
+  | { success: false; error: string }
+> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated." };
+  }
+
+  const membership = await getActiveMembership();
+  if (!membership) {
+    return { success: false, error: "No active organization membership." };
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { success: false, error: "Event not found." };
+  }
+
+  try {
+    const data = await getEventDetailHeroStats(eventId);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to refresh event hero stats:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unable to refresh stats.",
     };
   }
 }

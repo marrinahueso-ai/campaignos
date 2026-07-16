@@ -21,6 +21,9 @@ import {
 import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
 import { EventDetailHero } from "@/components/events-phase3/EventDetailHero";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
+import {
+  EventDetailTabInvalidationProvider,
+} from "@/components/events-phase3/EventDetailTabInvalidation";
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { EditEventDetailsButton } from "@/components/event-workspace/EditEventDetailsButton";
 import { EventManageMenu } from "@/components/event-workspace/EventManageMenu";
@@ -33,9 +36,19 @@ import {
   eventVendorsHref,
   type EventResponsibilityPerson,
 } from "@/lib/events/event-responsibility";
-import { loadEventDetailTabAction } from "@/lib/events-phase3/actions";
-import { eventTabCacheKey } from "@/lib/events-phase3/tab-cache";
-import type { EventDetailTabData } from "@/lib/events-phase3/tab-loaders";
+import {
+  loadEventDetailTabAction,
+  refreshEventDetailHeroStatsAction,
+} from "@/lib/events-phase3/actions";
+import {
+  eventTabCacheKey,
+  invalidateEventTabCacheEntry,
+  tabAffectsHeroStats,
+} from "@/lib/events-phase3/tab-cache";
+import type {
+  EventDetailLazyTab,
+  EventDetailTabData,
+} from "@/lib/events-phase3/tab-loaders";
 import type { UnifiedApprovalsPageData } from "@/lib/approvals-scheduling/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 import type { TasksV2PageData } from "@/types/tasks-v2";
@@ -346,6 +359,11 @@ export function EventDetailShell({
   );
   const [tabError, setTabError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [liveHeroStats, setLiveHeroStats] = useState(heroStats);
+  const [refreshingTab, setRefreshingTab] = useState<EventDetailLazyTab | null>(
+    null,
+  );
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const tabCacheRef = useRef<Map<string, EventDetailTabData>>(new Map());
   const cacheEventIdRef = useRef(event.id);
 
@@ -353,6 +371,10 @@ export function EventDetailShell({
   const eventTypeLabel = event.eventType
     ? (EVENT_TYPE_LABELS[event.eventType] ?? null)
     : null;
+
+  useEffect(() => {
+    setLiveHeroStats(heroStats);
+  }, [event.id, heroStats]);
 
   const applyTabData = useCallback((data: EventDetailTabData) => {
     setPanelData((prev) => {
@@ -392,6 +414,7 @@ export function EventDetailShell({
   const loadedTabsRef = useRef(loadedTabs);
   loadedTabsRef.current = loadedTabs;
   const fetchInFlightRef = useRef<Set<string>>(new Set());
+  const invalidateInFlightRef = useRef<Set<string>>(new Set());
 
   // Isolate cache when navigating to a different event only.
   useEffect(() => {
@@ -404,10 +427,13 @@ export function EventDetailShell({
     cacheEventIdRef.current = event.id;
     tabCacheRef.current = new Map();
     fetchInFlightRef.current = new Set();
+    invalidateInFlightRef.current = new Set();
     seedTabCache(event.id, workspaceRef.current, tabCacheRef.current);
     setPanelData(workspaceRef.current);
     setLoadedTabs(loadedTabsFromWorkspace(workspaceRef.current));
     setTabError(null);
+    setRefreshError(null);
+    setRefreshingTab(null);
     if (initialTab === "create-with-ai") {
       setTab("create-with-ai");
     } else if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
@@ -479,6 +505,66 @@ export function EventDetailShell({
   useEffect(() => {
     ensureTabLoaded(tab);
   }, [tab, ensureTabLoaded]);
+
+  const invalidateEventTab = useCallback(
+    async (tabToRefresh: EventDetailLazyTab) => {
+      const cacheKey = eventTabCacheKey(event.id, tabToRefresh);
+      invalidateEventTabCacheEntry(tabCacheRef.current, event.id, tabToRefresh);
+      fetchInFlightRef.current.delete(cacheKey);
+
+      if (invalidateInFlightRef.current.has(cacheKey)) {
+        return { success: true as const };
+      }
+      invalidateInFlightRef.current.add(cacheKey);
+      setRefreshingTab(tabToRefresh);
+      setRefreshError(null);
+
+      try {
+        const result = await loadEventDetailTabAction(event.id, tabToRefresh);
+        if (!result.success) {
+          setRefreshError(result.error);
+          return { success: false as const, error: result.error };
+        }
+
+        tabCacheRef.current.set(cacheKey, result.data);
+        applyTabData(result.data);
+        setLoadedTabs((prev) => new Set(prev).add(tabToRefresh));
+
+        if (tabAffectsHeroStats(tabToRefresh)) {
+          const statsResult = await refreshEventDetailHeroStatsAction(event.id);
+          if (statsResult.success) {
+            setLiveHeroStats(statsResult.data);
+          }
+        }
+
+        setRefreshError(null);
+        return { success: true as const };
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unable to refresh this tab.";
+        setRefreshError(message);
+        return { success: false as const, error: message };
+      } finally {
+        invalidateInFlightRef.current.delete(cacheKey);
+        setRefreshingTab((current) =>
+          current === tabToRefresh ? null : current,
+        );
+      }
+    },
+    [event.id, applyTabData],
+  );
+
+  const invalidationValue = useMemo(
+    () => ({
+      eventId: event.id,
+      invalidateEventTab,
+      refreshingTab,
+      refreshError,
+    }),
+    [event.id, invalidateEventTab, refreshingTab, refreshError],
+  );
 
   // Warm Approvals/Tasks JS chunks only — do not prefetch tab data.
   useEffect(() => {
@@ -555,6 +641,7 @@ export function EventDetailShell({
     LAZY_TABS.has(tab) && !loadedTabs.has(tab) && (pending || !tabError);
 
   return (
+    <EventDetailTabInvalidationProvider value={invalidationValue}>
     <div className="studio-page space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -601,7 +688,7 @@ export function EventDetailShell({
             ?.displayName ?? "Not assigned"
         }
         createWithAiHref={createWithAiUrl}
-        stats={heroStats}
+        stats={liveHeroStats}
       />
 
       <div className="border-b border-cos-border">
@@ -642,6 +729,31 @@ export function EventDetailShell({
               Retry
             </Button>
           </div>
+        ) : null}
+
+        {refreshError && LAZY_TABS.has(tab) && loadedTabs.has(tab) ? (
+          <div className="mb-3 rounded-xl border border-cos-border bg-cos-card p-3">
+            <p className="text-sm text-red-600" role="alert">
+              Saved, but this tab could not refresh. {refreshError}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="mt-2"
+              onClick={() => {
+                void invalidateEventTab(tab as EventDetailLazyTab);
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
+        {refreshingTab === tab && LAZY_TABS.has(tab) ? (
+          <p className="mb-2 text-xs text-cos-muted" aria-live="polite">
+            Updating…
+          </p>
         ) : null}
 
         {showTabLoading ? <TabSkeleton tab={tab} /> : null}
@@ -901,6 +1013,7 @@ export function EventDetailShell({
           ) : null}
       </div>
     </div>
+    </EventDetailTabInvalidationProvider>
   );
 }
 

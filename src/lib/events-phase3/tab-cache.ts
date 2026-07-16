@@ -25,3 +25,31 @@ export function shouldReuseEventTabCache(
 ): boolean {
   return Boolean(cacheEventId && cacheEventId === nextEventId);
 }
+
+/** Remove one eventId::tab entry; leave all other keys untouched. */
+export function invalidateEventTabCacheEntry(
+  cache: Map<string, unknown>,
+  eventId: string,
+  tab: string,
+): boolean {
+  return cache.delete(eventTabCacheKey(eventId, tab));
+}
+
+/** Keys that remain after invalidating one tab (for regression tests). */
+export function listEventTabCacheKeys(cache: Map<string, unknown>): string[] {
+  return [...cache.keys()].sort();
+}
+
+export function eventTabCacheHas(
+  cache: Map<string, unknown>,
+  eventId: string,
+  tab: string,
+): boolean {
+  return cache.has(eventTabCacheKey(eventId, tab));
+}
+
+export type HeroStatsRefreshTab = "approvals" | "tasks" | "files";
+
+export function tabAffectsHeroStats(tab: string): tab is HeroStatsRefreshTab {
+  return tab === "approvals" || tab === "tasks" || tab === "files";
+}

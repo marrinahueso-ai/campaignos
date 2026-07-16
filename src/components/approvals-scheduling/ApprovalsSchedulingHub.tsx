@@ -2,7 +2,6 @@
 
 import { Filter, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   ApprovalFlowGuide,
   ReviewDrawer,
@@ -13,6 +12,7 @@ import {
 } from "@/components/approvals-scheduling/ApprovalsTable";
 import { SummaryCards } from "@/components/approvals-scheduling/SummaryCards";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
 import {
   approveUnifiedItemAction,
@@ -50,7 +50,7 @@ export function ApprovalsSchedulingHub({
   lockedEventId = null,
   embedded = false,
 }: ApprovalsSchedulingHubProps) {
-  const router = useRouter();
+  const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const lockedId = lockedEventId?.trim() || null;
   const [activeTab, setActiveTab] = useState<UnifiedTabId>("all");
   const [viewScope, setViewScope] = useState<UnifiedViewScope>(
@@ -135,7 +135,7 @@ export function ApprovalsSchedulingHub({
         if (result.warning) {
           setActionError(result.warning);
         }
-        router.refresh();
+        await refreshApprovalsTab();
         return;
       }
 
@@ -170,7 +170,7 @@ export function ApprovalsSchedulingHub({
       if (result.success) {
         setReviewItem(null);
         setComment("");
-        router.refresh();
+        await refreshApprovalsTab();
         return;
       }
 
