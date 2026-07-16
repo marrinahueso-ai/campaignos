@@ -897,6 +897,29 @@ export function buildUnifiedTeamMembers(
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
+/** Resolve one profile member without materializing the full unified roster. */
+export function findUnifiedTeamMemberById(
+  memberId: string,
+  members: OrganizationUser[],
+  workspace: OrganizationWorkspaceData,
+  workload?: TeamAccessWorkloadIndex,
+): UnifiedTeamMember | null {
+  const people = collectRosterPeople(members, workspace);
+
+  for (const person of people.values()) {
+    const id =
+      person.organizationUser?.id ??
+      (person.organizationMemberId
+        ? `roster-member:${person.organizationMemberId}`
+        : `roster:${person.dedupeKey}`);
+    if (id === memberId) {
+      return finalizeUnifiedMember(person, workspace, workload);
+    }
+  }
+
+  return null;
+}
+
 export function accessLevelLabel(
   role: CampaignRole,
   isRosterOnly = false,

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CategoryPill } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
+import { loadEventVendorDirectoryAction } from "@/lib/events-phase3/actions";
 import {
   assignVendorToEventAction,
   removeVendorFromEventAction,
@@ -25,6 +26,8 @@ interface EventVendorsSectionProps {
   events: Array<{ id: string; title: string; date: string }>;
   availableVendors: Array<{ id: string; name: string }>;
   directoryHref?: string;
+  /** When true, load directory picker only when Add Existing / Create New opens. */
+  deferDirectoryLoad?: boolean;
 }
 
 function formatAddress(vendor: EventVendorRow["vendor"]): string | null {
@@ -226,10 +229,11 @@ function EventVendorCard({
 export function EventVendorsSection({
   eventId,
   data,
-  categories,
-  events,
-  availableVendors,
+  categories: initialCategories,
+  events: initialEvents,
+  availableVendors: initialAvailableVendors,
   directoryHref,
+  deferDirectoryLoad = false,
 }: EventVendorsSectionProps) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -237,9 +241,46 @@ export function EventVendorsSection({
   const [selectedVendorId, setSelectedVendorId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [directory, setDirectory] = useState({
+    categories: initialCategories,
+    events: initialEvents,
+    availableVendors: initialAvailableVendors,
+  });
+  const [directoryLoaded, setDirectoryLoaded] = useState(
+    () =>
+      !deferDirectoryLoad ||
+      initialAvailableVendors.length > 0 ||
+      initialCategories.length > 0,
+  );
+  const [directoryLoading, setDirectoryLoading] = useState(false);
+
+  const categories = directory.categories;
+  const events = directory.events;
+  const availableVendors = directory.availableVendors;
 
   const linkedIds = new Set(data.vendors.map((row) => row.vendor.id));
   const linkOptions = availableVendors.filter((vendor) => !linkedIds.has(vendor.id));
+
+  function ensureDirectoryLoaded(onReady?: () => void) {
+    if (directoryLoaded) {
+      onReady?.();
+      return;
+    }
+
+    setDirectoryLoading(true);
+    setError(null);
+    startTransition(async () => {
+      const result = await loadEventVendorDirectoryAction();
+      setDirectoryLoading(false);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+      setDirectory(result.data);
+      setDirectoryLoaded(true);
+      onReady?.();
+    });
+  }
 
   function handleLinkExisting() {
     if (!selectedVendorId) {
@@ -292,11 +333,21 @@ export function EventVendorsSection({
                   type="button"
                   size="sm"
                   variant="secondary"
-                  onClick={() => setLinkOpen(true)}
+                  disabled={directoryLoading}
+                  onClick={() =>
+                    ensureDirectoryLoaded(() => setLinkOpen(true))
+                  }
                 >
-                  Add Existing
+                  {directoryLoading ? "Loading…" : "Add Existing"}
                 </Button>
-                <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={directoryLoading}
+                  onClick={() =>
+                    ensureDirectoryLoaded(() => setAddOpen(true))
+                  }
+                >
                   <Plus className="mr-1.5 h-4 w-4" />
                   Create New
                 </Button>

@@ -1,6 +1,7 @@
 import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageContent";
 import { EventsHomeContent } from "@/components/events-phase3/EventsHomeContent";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
+import { collectEventsHomeArtworkEventIds } from "@/lib/events/events-home-artwork-ids";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
 import {
   resolveResponsiblePersonForEvent,
@@ -53,9 +54,9 @@ export default async function EventsPage() {
     ]);
 
   const eventIds = events.map((event) => event.id);
-  const artworkByEventId = await getEventArtworkMap(eventIds);
 
   if (!phase3) {
+    const artworkByEventId = await getEventArtworkMap(eventIds);
     const [metaScheduledEventIds, eventIdsWithFiles] = await Promise.all([
       import("@/lib/events/campaign-page-queries").then((mod) =>
         mod.getMetaScheduledEventIds(eventIds),
@@ -96,6 +97,13 @@ export default async function EventsPage() {
       </div>
     );
   }
+
+  const artworkEventIds = collectEventsHomeArtworkEventIds(
+    events,
+    today,
+    activeSchoolYear?.id ?? null,
+  );
+  const artworkByEventId = await getEventArtworkMap(artworkEventIds);
 
   const assignmentInputs: CommitteeAssignmentInput[] = committeeAssignments.map(
     (row) => ({

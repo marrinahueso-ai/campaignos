@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   isStoryMilestoneDistinctlyApproved,
   resolveMilestonePhaseAsset,
@@ -271,7 +272,10 @@ function milestoneTitlesAtDay(
   return [...new Set(titles)];
 }
 
-export async function getMetaPublishBundles(eventId: string): Promise<MetaPublishBundle[]> {
+/** Request-cached per eventId so Approvals queue + publishing paths share one load. */
+export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
+  eventId: string,
+): Promise<MetaPublishBundle[]> {
   const event = await getEventById(eventId);
   if (!event) {
     return [];
@@ -486,7 +490,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     [];
 
   return filterBundlesForCb2Session(bundles, sessionMilestoneNames);
-}
+});
 
 export function countBundlesByStatus(
   bundles: MetaPublishBundle[],

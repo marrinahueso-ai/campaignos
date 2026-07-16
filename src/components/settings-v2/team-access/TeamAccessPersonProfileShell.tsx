@@ -48,6 +48,8 @@ function parseTab(value: string | null): PersonProfileTab {
 
 interface TeamAccessPersonProfileShellProps {
   memberId: string;
+  /** Server-resolved profile; skips rebuilding the full org roster when set. */
+  profileMember?: UnifiedTeamMember | null;
   members: OrganizationUser[];
   workspace: OrganizationWorkspaceData;
   workload: TeamAccessWorkloadIndex;
@@ -58,6 +60,7 @@ interface TeamAccessPersonProfileShellProps {
 
 export function TeamAccessPersonProfileShell({
   memberId,
+  profileMember = null,
   members,
   workspace,
   workload,
@@ -69,13 +72,17 @@ export function TeamAccessPersonProfileShell({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const unifiedMembers = useMemo(
-    () => buildUnifiedTeamMembers(members, workspace, workload),
-    [members, workspace, workload],
-  );
+  const unifiedMembers = useMemo(() => {
+    if (profileMember && profileMember.id === memberId) {
+      return [profileMember];
+    }
+    return buildUnifiedTeamMembers(members, workspace, workload);
+  }, [profileMember, memberId, members, workspace, workload]);
 
   const [member, setMember] = useState<UnifiedTeamMember | null>(() => {
-    return unifiedMembers.find((entry) => entry.id === memberId) ?? null;
+    return profileMember?.id === memberId
+      ? profileMember
+      : (unifiedMembers.find((entry) => entry.id === memberId) ?? null);
   });
 
   const [activeTab, setActiveTab] = useState<PersonProfileTab>(() =>

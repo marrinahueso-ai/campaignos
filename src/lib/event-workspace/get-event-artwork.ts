@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { displayDraftContent } from "@/lib/ai/content";
 import {
   selectHeroArtwork,
@@ -17,6 +18,40 @@ import type {
   EventAssetRow,
 } from "@/types/event-workspace";
 
+/** Columns required by selectHeroArtwork / mapEventAssetRow (no generation blobs). */
+const EVENT_ASSET_SELECT = [
+  "id",
+  "event_id",
+  "asset_type",
+  "filename",
+  "storage_path",
+  "status",
+  "ai_generated",
+  "plan_status",
+  "plan_label",
+  "created_at",
+  "updated_at",
+].join(", ");
+
+const COMMUNICATION_ITEM_SELECT = [
+  "id",
+  "event_id",
+  "channel",
+  "event_communication_step_id",
+  "status",
+  "last_updated",
+  "is_published",
+  "created_at",
+  "updated_at",
+].join(", ");
+
+const APPROVAL_REQUEST_SELECT = [
+  "id",
+  "event_id",
+  "communication_item_id",
+  "status",
+].join(", ");
+
 export async function getEventArtwork(
   eventId: string,
 ): Promise<HeroArtworkSelection | null> {
@@ -24,7 +59,25 @@ export async function getEventArtwork(
   return artworkMap.get(eventId) ?? null;
 }
 
+/**
+ * Batch hero artwork by exact eventId. Request-cached by sorted id key so
+ * Event Detail shell + Files tab do not double-fetch in the same render.
+ */
 export async function getEventArtworkMap(
+  eventIds: string[],
+): Promise<Map<string, HeroArtworkSelection | null>> {
+  const uniqueSorted = [...new Set(eventIds.filter(Boolean))].sort();
+  return getEventArtworkMapCached(uniqueSorted.join("\0"));
+}
+
+const getEventArtworkMapCached = cache(
+  async (cacheKey: string): Promise<Map<string, HeroArtworkSelection | null>> => {
+    const eventIds = cacheKey.length > 0 ? cacheKey.split("\0") : [];
+    return loadEventArtworkMap(eventIds);
+  },
+);
+
+async function loadEventArtworkMap(
   eventIds: string[],
 ): Promise<Map<string, HeroArtworkSelection | null>> {
   const map = new Map<string, HeroArtworkSelection | null>();
@@ -36,9 +89,18 @@ export async function getEventArtworkMap(
 
   const [assetsResult, communicationsResult, approvalsResult, eventsResult] =
     await Promise.all([
-      supabase.from("event_assets").select("*").in("event_id", eventIds),
-      supabase.from("communication_items").select("*").in("event_id", eventIds),
-      supabase.from("approval_requests").select("*").in("event_id", eventIds),
+      supabase
+        .from("event_assets")
+        .select(EVENT_ASSET_SELECT)
+        .in("event_id", eventIds),
+      supabase
+        .from("communication_items")
+        .select(COMMUNICATION_ITEM_SELECT)
+        .in("event_id", eventIds),
+      supabase
+        .from("approval_requests")
+        .select(APPROVAL_REQUEST_SELECT)
+        .in("event_id", eventIds),
       supabase
         .from("events")
         .select("id, approved_square_image_url, approved_square_image_status")
@@ -53,13 +115,15 @@ export async function getEventArtworkMap(
   }
 
   const communicationRows = (communicationsResult.data ??
-    []) as CommunicationItemRow[];
+    []) as unknown as CommunicationItemRow[];
   const contentMap = await getLatestContentMap(
     communicationRows.map((row) => row.id),
   );
 
   const assetsByEvent = groupByEventId(
-    mapEventAssetRows((assetsResult.data ?? []) as EventAssetRow[]),
+    mapEventAssetRows(
+      (assetsResult.data ?? []) as unknown as EventAssetRow[],
+    ),
   );
   const communicationsByEvent = groupByEventId(
     communicationRows.map((row) =>
@@ -70,8 +134,8 @@ export async function getEventArtworkMap(
     ),
   );
   const approvalsByEvent = groupByEventId(
-    ((approvalsResult.data ?? []) as ApprovalRequestRow[]).map((row) =>
-      mapApprovalRequestRow(row),
+    ((approvalsResult.data ?? []) as unknown as ApprovalRequestRow[]).map(
+      (row) => mapApprovalRequestRow(row),
     ),
   );
   const approvedSquareByEvent = new Map<string, string | null>();

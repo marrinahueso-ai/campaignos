@@ -10,12 +10,12 @@ export function mapEventRow(row: EventRow): Event {
   return {
     id: row.id,
     title: row.title,
-    description: row.description,
+    description: row.description ?? "",
     date: row.date,
     time: row.time,
     location: row.location,
-    audience: row.audience,
-    theme: row.theme,
+    audience: row.audience ?? null,
+    theme: row.theme ?? null,
     status: row.status,
     category: row.category ?? null,
     eventType: row.event_type ?? null,
@@ -24,7 +24,7 @@ export function mapEventRow(row: EventRow): Event {
     eventOwner: row.event_owner ?? null,
     approvalOrganizationRoleId: row.approval_organization_role_id ?? null,
     budget: row.budget ?? null,
-    volunteerNeeds: sanitizeVolunteerNeeds(row.volunteer_needs),
+    volunteerNeeds: sanitizeVolunteerNeeds(row.volunteer_needs ?? null),
     goal: row.goal ?? null,
     expectedAttendance: row.expected_attendance ?? null,
     planningQuickLinks: parsePlanningQuickLinks(row.planning_quick_links) as Event["planningQuickLinks"],
@@ -37,7 +37,6 @@ export function mapEventRow(row: EventRow): Event {
     updatedAt: row.updated_at ?? null,
   };
 }
-
 export function mapEventRows(rows: EventRow[]): Event[] {
   return rows.map(mapEventRow);
 }

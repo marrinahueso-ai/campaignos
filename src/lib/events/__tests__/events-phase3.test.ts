@@ -16,6 +16,7 @@ import {
   buildEventsHomeMonthFilterOptions,
   matchesEventsHomeMonth,
 } from "../events-home-summary.ts";
+import { collectEventsHomeArtworkEventIds } from "../events-home-artwork-ids.ts";
 import { isEventsPhase3UiEnabled } from "../events-phase3-flag.ts";
 import type { OrganizationCommittee, OrganizationMember } from "../../../types/organization-workspace.ts";
 import type { Event } from "../../../types/index.ts";
@@ -342,6 +343,48 @@ describe("artwork isolation contract", () => {
       byTitle.get("Spirit Afternoon"),
     );
   });
+
+  it("limits Events Home artwork ids to upcoming plus first page", () => {
+    const today = "2026-08-01";
+    const events: Event[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `evt-${index}`,
+      title: `Event ${index}`,
+      description: "",
+      // Mix past + future so upcoming is a subset of the full list.
+      date:
+        index < 8
+          ? `2026-07-${String(index + 1).padStart(2, "0")}`
+          : `2026-08-${String(index - 6).padStart(2, "0")}`,
+      time: null,
+      location: null,
+      audience: null,
+      theme: null,
+      status: "scheduled",
+      category: null,
+      eventType: null,
+      communicationStrategy: "full_campaign",
+      calendarImportId: null,
+      eventOwner: null,
+      approvalOrganizationRoleId: null,
+      budget: null,
+      volunteerNeeds: null,
+      goal: null,
+      expectedAttendance: null,
+      planningQuickLinks: {},
+      planningVendors: [],
+      approvedSquareImageUrl: null,
+      approvedSquareImageStatus: "open",
+      schoolYearId: "sy-1",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: null,
+    }));
+
+    const ids = collectEventsHomeArtworkEventIds(events, today, "sy-1");
+    assert.ok(ids.includes("evt-0")); // first page
+    assert.ok(ids.includes("evt-8")); // upcoming
+    assert.ok(ids.length < events.length);
+    assert.equal(new Set(ids).size, ids.length);
+  });
 });
 
 describe("fallback switch remains available", () => {
@@ -359,6 +402,12 @@ describe("fallback switch remains available", () => {
     );
     await access(
       join(here, "../../../components/event-playbooks/EventPlanningHub.tsx"),
+    );
+    await access(
+      join(here, "../../../app/(dashboard)/events/[id]/render-planning-hub.tsx"),
+    );
+    await access(
+      join(here, "../../../app/(dashboard)/events/[id]/render-events-phase3.tsx"),
     );
   });
 });

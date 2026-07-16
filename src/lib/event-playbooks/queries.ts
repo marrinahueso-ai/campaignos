@@ -100,6 +100,60 @@ export async function getEventPlaybookTasksForEvents(
   return (data ?? []) as EventPlaybookTaskRow[];
 }
 
+/** Exact-event notes only — Event Detail Notes tab. */
+export async function getEventPlaybookNotesForEvent(
+  eventId: string,
+): Promise<import("@/types/event-playbooks").EventPlaybookNote[]> {
+  if (!(await areEventPlaybookTablesAvailable())) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_notes")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to fetch event notes:", error.message);
+    }
+    return [];
+  }
+
+  return ((data ?? []) as EventPlaybookNoteRow[]).map(mapEventPlaybookNoteRow);
+}
+
+/** Exact-event playbook activity only — Event Detail Activity tab. */
+export async function getEventPlaybookActivityForEvent(
+  eventId: string,
+  limit = 40,
+): Promise<import("@/types/event-playbooks").EventPlaybookActivity[]> {
+  if (!(await areEventPlaybookTablesAvailable())) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_activity")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to fetch event activity:", error.message);
+    }
+    return [];
+  }
+
+  return ((data ?? []) as EventPlaybookActivityRow[]).map(
+    mapEventPlaybookActivityRow,
+  );
+}
+
 export async function getEventPlaybookHubData(
   eventId: string,
 ): Promise<EventPlaybookHubData> {

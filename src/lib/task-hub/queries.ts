@@ -213,3 +213,104 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     events: eventOptions,
   };
 }
+
+/**
+ * Event Detail Tasks tab — exact eventId tasks only.
+ * Skips org-wide event fan-out and Monday board loads.
+ */
+export async function getTaskHubPageDataForEvent(
+  eventId: string,
+  eventMeta: { title: string; date: string },
+): Promise<TaskHubPageData> {
+  const [organization, authUser, membership, campaignRole, tablesAvailable] =
+    await Promise.all([
+      getLatestOrganization(),
+      getAuthUser(),
+      getActiveMembership(),
+      getCurrentCampaignRole(),
+      areEventPlaybookTablesAvailable(),
+    ]);
+
+  const scope = resolveTaskHubViewScope(campaignRole);
+  const scopeLabel = taskHubScopeLabel(scope);
+
+  if (!organization || !tablesAvailable) {
+    return emptyTaskHubPage(scopeLabel, tablesAvailable);
+  }
+
+  const workspace = await getOrganizationWorkspaceData(organization.id);
+  if (!workspace) {
+    return emptyTaskHubPage(scopeLabel, tablesAvailable);
+  }
+
+  const user = buildUserContext(authUser, membership, campaignRole);
+  const visibleCommittees = resolveVisibleCommittees(workspace.committees, user);
+  const eventStub = {
+    id: eventId,
+    title: eventMeta.title,
+    description: "",
+    date: eventMeta.date,
+    time: null,
+    location: null,
+    audience: null,
+    theme: null,
+    status: "scheduled" as const,
+    category: null,
+    eventType: null,
+    communicationStrategy: "full_campaign" as const,
+    calendarImportId: null,
+    eventOwner: null,
+    approvalOrganizationRoleId: null,
+    budget: null,
+    volunteerNeeds: null,
+    goal: null,
+    expectedAttendance: null,
+    planningQuickLinks: {},
+    planningVendors: [],
+    approvedSquareImageUrl: null,
+    approvedSquareImageStatus: "open" as const,
+    schoolYearId: null,
+    createdAt: "",
+    updatedAt: null,
+  };
+
+  const [taskRows, orgUsers] = await Promise.all([
+    getEventPlaybookTasksForEvents([eventId]),
+    getOrganizationUsers(organization.id),
+  ]);
+
+  const committees = groupTasksByCommittee({
+    events: [eventStub],
+    taskRows,
+    workspace,
+    visibleCommittees,
+  });
+
+  const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
+  const totalTasks = committees.reduce((sum, group) => sum + group.totalCount, 0);
+  const openTasks = committees.reduce(
+    (sum, group) =>
+      sum + group.tasks.filter((task) => isOpenTaskStatus(task.status)).length,
+    0,
+  );
+
+  return {
+    scope,
+    scopeLabel,
+    committees,
+    tablesAvailable,
+    totalTasks,
+    openTasks,
+    mondaySyncEnabled: false,
+    mondayBoard: null,
+    canEdit: canEditTaskHub(scope),
+    orgMembers,
+    events: [
+      {
+        eventId,
+        eventTitle: eventMeta.title,
+        eventDate: eventMeta.date,
+      },
+    ],
+  };
+}

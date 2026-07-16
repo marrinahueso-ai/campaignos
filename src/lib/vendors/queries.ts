@@ -168,6 +168,33 @@ function buildAssignmentSummaries(
   return byVendor;
 }
 
+/** Lean picker data for Event Detail Add Vendor / link — no assignment matrix. */
+export async function getVendorDirectoryPickerData(): Promise<{
+  categories: VendorCategory[];
+  events: Array<{ id: string; title: string; date: string }>;
+  availableVendors: Array<{ id: string; name: string }>;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization || !(await areVendorTablesAvailable())) {
+    return { categories: [], events: [], availableVendors: [] };
+  }
+
+  const [vendors, categories, events] = await Promise.all([
+    getOrgVendors(organization.id),
+    getVendorCategories(organization.id),
+    getOrgEventsForVendors(organization.id),
+  ]);
+
+  return {
+    categories,
+    events,
+    availableVendors: vendors.map((vendor) => ({
+      id: vendor.id,
+      name: vendor.name,
+    })),
+  };
+}
+
 export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageData> {
   const organization = await getCurrentOrganization();
   const role = await getCurrentCampaignRole();

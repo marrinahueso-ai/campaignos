@@ -1,20 +1,17 @@
 import "server-only";
 
-import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
-import { getFilesPageData } from "@/lib/campaign-files/queries";
+import { getUnifiedApprovalsSchedulingDataForEvent } from "@/lib/approvals-scheduling/queries";
+import { getFilesPageDataForEvent } from "@/lib/campaign-files/queries";
 import {
   areEventPlaybookTablesAvailable,
-  areEventPlaybookTaskGroupsAvailable,
-  getEventPlaybookHubData,
+  getEventPlaybookActivityForEvent,
+  getEventPlaybookNotesForEvent,
 } from "@/lib/event-playbooks/queries";
-import { getEventWorkspaceData } from "@/lib/event-workspace/queries";
+import { getEventActivityLogForEvent } from "@/lib/event-workspace/queries";
 import { getPlaybookById } from "@/lib/playbooks/queries";
 import { createClient } from "@/lib/supabase/server";
-import { getTasksV2PageData } from "@/lib/tasks-v2/queries";
-import {
-  getEventVendorsData,
-  getVendorDirectoryPageData,
-} from "@/lib/vendors/queries";
+import { getTasksV2PageDataForEvent } from "@/lib/tasks-v2/queries";
+import { getEventVendorsData } from "@/lib/vendors/queries";
 import type { UnifiedApprovalsPageData } from "@/lib/approvals-scheduling/types";
 import type { FilesPageData } from "@/types/campaign-files";
 import type {
@@ -23,6 +20,7 @@ import type {
 } from "@/types/event-playbooks";
 import type { ActivityLogEntry } from "@/types/event-workspace";
 import type { TasksV2PageData } from "@/types/tasks-v2";
+import type { Event } from "@/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 
 export type EventDetailLazyTab =
@@ -57,6 +55,7 @@ export type EventDetailNotesTabData = {
 export type EventDetailVendorsTabData = {
   tab: "vendors";
   eventVendorsData: EventVendorsData;
+  /** Empty on initial load — filled when Add Vendor / link opens. */
   vendorDirectory: {
     categories: VendorCategory[];
     events: Array<{ id: string; title: string; date: string }>;
@@ -96,96 +95,101 @@ export async function getEventPlaybookName(
   return playbook?.name ?? null;
 }
 
+export async function loadEventApprovalsTab(
+  eventId: string,
+  _organizationId: string,
+): Promise<EventDetailApprovalsTabData> {
+  void _organizationId;
+  const approvalsData = await getUnifiedApprovalsSchedulingDataForEvent(eventId);
+  return { tab: "approvals", approvalsData };
+}
+
+export async function loadEventTasksTab(
+  eventId: string,
+  _organizationId: string,
+  eventMeta: { title: string; date: string },
+): Promise<EventDetailTasksTabData> {
+  void _organizationId;
+  const tasksV2Data = await getTasksV2PageDataForEvent(eventId, eventMeta);
+  return { tab: "tasks", tasksV2Data };
+}
+
+export async function loadEventFilesTab(
+  eventId: string,
+  _organizationId: string,
+  event: Event,
+): Promise<EventDetailFilesTabData> {
+  void eventId;
+  void _organizationId;
+  const filesPageData = await getFilesPageDataForEvent(event);
+  return { tab: "files", filesPageData };
+}
+
+export async function loadEventNotesTab(
+  eventId: string,
+  _organizationId: string,
+): Promise<EventDetailNotesTabData> {
+  void _organizationId;
+  const [tablesAvailable, notes] = await Promise.all([
+    areEventPlaybookTablesAvailable(),
+    getEventPlaybookNotesForEvent(eventId),
+  ]);
+  return { tab: "notes", notes, tablesAvailable };
+}
+
+export async function loadEventVendorsTab(
+  eventId: string,
+  _organizationId: string,
+): Promise<EventDetailVendorsTabData> {
+  void _organizationId;
+  const eventVendorsData = await getEventVendorsData(eventId);
+  return {
+    tab: "vendors",
+    eventVendorsData,
+    vendorDirectory: {
+      categories: [],
+      events: [],
+      availableVendors: [],
+    },
+  };
+}
+
+export async function loadEventActivityTab(
+  eventId: string,
+  _organizationId: string,
+): Promise<EventDetailActivityTabData> {
+  void _organizationId;
+  const [playbookActivity, workspaceTimeline] = await Promise.all([
+    getEventPlaybookActivityForEvent(eventId),
+    getEventActivityLogForEvent(eventId),
+  ]);
+  return { tab: "activity", playbookActivity, workspaceTimeline };
+}
+
 export async function loadEventDetailTabData(
   eventId: string,
   tab: EventDetailLazyTab,
-  eventMeta?: { title: string; date: string },
+  event: Event,
+  organizationId: string,
 ): Promise<EventDetailTabData> {
+  const meta = { title: event.title, date: event.date };
+
   switch (tab) {
-    case "approvals": {
-      const approvalsData = await getUnifiedApprovalsSchedulingData();
-      return { tab, approvalsData };
-    }
-    case "tasks": {
-      const tasksV2Data = await getTasksV2PageData();
-      const hasEvent = tasksV2Data.events.some(
-        (entry) => entry.eventId === eventId,
-      );
-      return {
-        tab,
-        tasksV2Data: hasEvent
-          ? tasksV2Data
-          : {
-              ...tasksV2Data,
-              events: [
-                ...tasksV2Data.events,
-                {
-                  eventId,
-                  eventTitle: eventMeta?.title ?? "Event",
-                  eventDate: eventMeta?.date ?? "",
-                },
-              ],
-            },
-      };
-    }
-    case "files": {
-      const filesPageData = await getFilesPageData(eventId);
-      return { tab, filesPageData };
-    }
-    case "notes": {
-      const [tablesAvailable, hubData] = await Promise.all([
-        areEventPlaybookTablesAvailable(),
-        getEventPlaybookHubData(eventId),
-      ]);
-      return {
-        tab,
-        notes: hubData.notes,
-        tablesAvailable,
-      };
-    }
-    case "vendors": {
-      const [eventVendorsData, vendorDirectoryData] = await Promise.all([
-        getEventVendorsData(eventId),
-        getVendorDirectoryPageData(),
-      ]);
-      return {
-        tab,
-        eventVendorsData,
-        vendorDirectory: {
-          categories: vendorDirectoryData.categories,
-          events: vendorDirectoryData.events,
-          availableVendors: vendorDirectoryData.vendors.map((row) => ({
-            id: row.vendor.id,
-            name: row.vendor.name,
-          })),
-        },
-      };
-    }
-    case "activity": {
-      const [hubData, workspaceData] = await Promise.all([
-        getEventPlaybookHubData(eventId),
-        getEventWorkspaceData(eventId),
-      ]);
-      return {
-        tab,
-        playbookActivity: hubData.activity,
-        workspaceTimeline: workspaceData?.timeline ?? [],
-      };
-    }
+    case "approvals":
+      return loadEventApprovalsTab(eventId, organizationId);
+    case "tasks":
+      return loadEventTasksTab(eventId, organizationId, meta);
+    case "files":
+      return loadEventFilesTab(eventId, organizationId, event);
+    case "notes":
+      return loadEventNotesTab(eventId, organizationId);
+    case "vendors":
+      return loadEventVendorsTab(eventId, organizationId);
+    case "activity":
+      return loadEventActivityTab(eventId, organizationId);
     default: {
       const exhaustive: never = tab;
       throw new Error(`Unsupported tab: ${exhaustive}`);
     }
   }
-}
-
-export async function getEventDetailSchemaFlags(): Promise<{
-  tablesAvailable: boolean;
-  taskGroupsAvailable: boolean;
-}> {
-  const [tablesAvailable, taskGroupsAvailable] = await Promise.all([
-    areEventPlaybookTablesAvailable(),
-    areEventPlaybookTaskGroupsAvailable(),
-  ]);
-  return { tablesAvailable, taskGroupsAvailable };
 }

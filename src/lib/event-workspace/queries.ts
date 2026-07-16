@@ -125,6 +125,29 @@ async function getLatestContentMap(
   return mapLatestContentByItemId(data as CommunicationVersionRow[]);
 }
 
+/** Exact-event activity_log only — Event Detail Activity tab. */
+export async function getEventActivityLogForEvent(
+  eventId: string,
+): Promise<import("@/types/event-workspace").ActivityLogEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("occurred_at", { ascending: false })
+    .limit(40);
+
+  if (error) {
+    if (error.code === "42P01") {
+      return [];
+    }
+    console.error("Failed to fetch event activity log:", error.message);
+    return [];
+  }
+
+  return mapActivityLogRows((data ?? []) as ActivityLogRow[]);
+}
+
 export async function getEventWorkspaceData(
   eventId: string,
 ): Promise<EventWorkspaceData | null> {

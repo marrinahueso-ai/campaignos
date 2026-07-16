@@ -5,11 +5,12 @@
   "scripts": {
     "dev": "bash scripts/dev.sh",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint src",
     "test:campaign-builder-v2": "node --experimental-strip-types --test 'src/lib/campaign-builder-v2/__tests__/*.test.ts'",
     "test:dev-tools": "node --experimental-strip-types --test 'src/lib/dev-tools/__tests__/*.test.ts'",
-    "test:events-phase3": "node --experimental-strip-types --test 'src/lib/events/__tests__/events-phase3.test.ts'",
+    "test:events-phase3": "node --experimental-strip-types --test 'src/lib/events/__tests__/events-phase3.test.ts' 'src/lib/events-phase3/__tests__/*.test.ts'",
     "test:team-access": "node --experimental-strip-types --test 'src/lib/auth/__tests__/team-access-phase1.test.ts' 'src/lib/organization-workspace/__tests__/committee-create-phase1.test.ts' 'src/lib/organization-workspace/__tests__/roster-first.test.ts' 'src/lib/organization-workspace/__tests__/roster-invite-link.test.ts' 'src/lib/organization-workspace/__tests__/roster-backfill.test.ts'",
     "test:approvals-scheduling": "node --experimental-strip-types --test 'src/lib/approvals-scheduling/__tests__/*.test.ts'",
     "test:insights": "node --experimental-strip-types --test 'src/lib/insights/__tests__/*.test.ts'",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@next/bundle-analyzer": "^15.5.19",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

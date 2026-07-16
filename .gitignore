@@ -21,6 +21,9 @@
 /.next/
 /.next-dev/
 /out/
+# opt-in @next/bundle-analyzer HTML reports
+/analyze/
+/*.analyzer.html
 
 # production
 /build

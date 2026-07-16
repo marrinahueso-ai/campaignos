@@ -156,40 +156,102 @@ const fetchCampaignBuilderSchedulingItems = cache(
   },
 );
 
-async function resolveAssigneeForSchedulingRow(
-  row: ApprovalSchedulingItemRow,
-): Promise<{ name: string; role: string }> {
+type AssigneeLookup = { name: string; role: string };
+
+async function loadAssigneeLookups(
+  rows: ApprovalSchedulingItemRow[],
+): Promise<{
+  byUserId: Map<string, AssigneeLookup>;
+  byRoleId: Map<string, AssigneeLookup>;
+}> {
+  const userIds = [
+    ...new Set(rows.map((row) => row.assigned_user_id).filter(Boolean)),
+  ] as string[];
+  const roleIds = [
+    ...new Set(
+      rows
+        .filter((row) => !row.assigned_user_id && row.assigned_organization_role_id)
+        .map((row) => row.assigned_organization_role_id)
+        .filter(Boolean),
+    ),
+  ] as string[];
+
   const supabase = await createClient();
+  const byUserId = new Map<string, AssigneeLookup>();
+  const byRoleId = new Map<string, AssigneeLookup>();
 
-  if (row.assigned_user_id) {
-    const { data } = await supabase
-      .from("organization_users")
-      .select("email, organization_roles ( name )")
-      .eq("id", row.assigned_user_id)
-      .maybeSingle();
+  const [usersResult, rolesResult] = await Promise.all([
+    userIds.length > 0
+      ? supabase
+          .from("organization_users")
+          .select("id, email, organization_roles ( name )")
+          .in("id", userIds)
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
+    roleIds.length > 0
+      ? supabase
+          .from("organization_roles")
+          .select("id, name, contact_name")
+          .in("id", roleIds)
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
+  ]);
 
-    const orgRole = data?.organization_roles;
-    const roleName = Array.isArray(orgRole)
-      ? (orgRole[0] as { name: string | null } | undefined)?.name
-      : (orgRole as { name: string | null } | null | undefined)?.name;
-
-    return {
-      name: data?.email ?? "Approver",
-      role: roleName ?? "Committee Chair",
+  for (const row of usersResult.data ?? []) {
+    const data = row as {
+      id: string;
+      email?: string | null;
+      organization_roles?:
+        | { name: string | null }
+        | Array<{ name: string | null }>
+        | null;
     };
+    const orgRole = data.organization_roles;
+    const roleName = Array.isArray(orgRole)
+      ? orgRole[0]?.name
+      : orgRole?.name;
+    byUserId.set(data.id, {
+      name: data.email ?? "Approver",
+      role: roleName ?? "Committee Chair",
+    });
+  }
+
+  for (const row of rolesResult.data ?? []) {
+    const data = row as {
+      id: string;
+      name?: string | null;
+      contact_name?: string | null;
+    };
+    byRoleId.set(data.id, {
+      name: data.contact_name?.trim() || data.name || "Board",
+      role: data.name ?? "Committee Chair",
+    });
+  }
+
+  return { byUserId, byRoleId };
+}
+
+function resolveAssigneeFromLookups(
+  row: ApprovalSchedulingItemRow,
+  lookups: {
+    byUserId: Map<string, AssigneeLookup>;
+    byRoleId: Map<string, AssigneeLookup>;
+  },
+): AssigneeLookup {
+  if (row.assigned_user_id) {
+    return (
+      lookups.byUserId.get(row.assigned_user_id) ?? {
+        name: "Approver",
+        role: "Committee Chair",
+      }
+    );
   }
 
   if (row.assigned_organization_role_id) {
-    const { data } = await supabase
-      .from("organization_roles")
-      .select("name, contact_name")
-      .eq("id", row.assigned_organization_role_id)
-      .maybeSingle();
-
-    return {
-      name: data?.contact_name?.trim() || data?.name || "Board",
-      role: data?.name ?? "Committee Chair",
-    };
+    return (
+      lookups.byRoleId.get(row.assigned_organization_role_id) ?? {
+        name: "Board",
+        role: "Committee Chair",
+      }
+    );
   }
 
   return { name: "System", role: "System" };
@@ -296,9 +358,10 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     }
   }
 
+  const assigneeLookups = await loadAssigneeLookups(schedulingRows);
   const cb2Items: UnifiedApprovalItem[] = [];
   for (const row of schedulingRows) {
-    const assignee = await resolveAssigneeForSchedulingRow(row);
+    const assignee = resolveAssigneeFromLookups(row, assigneeLookups);
     cb2Items.push(
       mapSchedulingItemRow(
         row,
@@ -418,3 +481,142 @@ export const getSidebarSchedulingBadgeCounts = cache(
     return { assignedApprovalsCount, changeRequestsCount };
   },
 );
+
+/** Exact-event scheduling rows — Event Detail Approvals tab. */
+async function fetchSchedulingItemsForEvent(
+  eventId: string,
+): Promise<ApprovalSchedulingItemRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_scheduling_items")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("requested_at", { ascending: false });
+
+  if (error?.code === "42P01") {
+    return [];
+  }
+  if (error) {
+    console.error(
+      "Failed to fetch event approval scheduling items:",
+      error.message,
+    );
+    return [];
+  }
+
+  return (data ?? []) as ApprovalSchedulingItemRow[];
+}
+
+/**
+ * Event Detail Approvals tab — exact eventId only.
+ * No planning calendar, no unrelated events, Meta only for this event when needed.
+ */
+export async function getUnifiedApprovalsSchedulingDataForEvent(
+  eventId: string,
+): Promise<UnifiedApprovalsPageData> {
+  const today = getTodayDateString();
+  const [role, membership, queue, schedulingRows] = await Promise.all([
+    getCurrentCampaignRole(),
+    getActiveMembership(),
+    getApprovalQueueOverviewForCurrentUser(eventId),
+    fetchSchedulingItemsForEvent(eventId),
+  ]);
+
+  const actor: ApprovalActor | null = membership
+    ? {
+        organizationUserId: membership.user.id,
+        organizationRoleId: membership.user.organizationRoleId,
+        email: membership.user.email,
+      }
+    : null;
+
+  const classicItems = [
+    ...queue.assignedToMe,
+    ...queue.allPending.filter((item) => !item.assignedToMe),
+    ...queue.changesRequested,
+    ...queue.recentlyApproved,
+  ]
+    .filter((item) => item.eventId === eventId)
+    .map((item) => mapClassicApprovalItem(item, today));
+
+  const needsMetaPreview = schedulingRows.some(
+    (row) => !row.feed_artwork_url && !row.story_artwork_url,
+  );
+  const bundlesByEvent = needsMetaPreview
+    ? await loadMetaBundlesByEvent([eventId])
+    : new Map<string, MetaPublishBundle[]>();
+  const bundles = bundlesByEvent.get(eventId) ?? [];
+
+  const eventTitleById = new Map<string, string>();
+  for (const item of classicItems) {
+    eventTitleById.set(item.eventId, item.eventTitle);
+  }
+  for (const row of schedulingRows) {
+    if (row.campaign_name) {
+      eventTitleById.set(row.event_id, row.campaign_name);
+    }
+  }
+
+  const assigneeLookups = await loadAssigneeLookups(schedulingRows);
+  const cb2Items: UnifiedApprovalItem[] = [];
+  for (const row of schedulingRows) {
+    const assignee = resolveAssigneeFromLookups(row, assigneeLookups);
+    const bundle =
+      bundles.find(
+        (entry) =>
+          milestoneNameMatchKey(entry.title) ===
+          milestoneNameMatchKey(row.milestone_name),
+      ) ?? null;
+    const assets =
+      previewAssetsFromSchedulingRow(row) ?? previewAssetsFromBundle(bundle);
+
+    const mapped = mapSchedulingItemRow(
+      row,
+      eventTitleById.get(row.event_id) ?? row.campaign_name ?? "Campaign",
+      assignee.name,
+      assignee.role,
+      isSchedulingRowAssignedToActor(row, actor),
+      isSubmittedByActor(row, actor),
+    );
+    cb2Items.push({
+      ...mapped,
+      preview: assets
+        ? {
+            captionText: assets.captionText,
+            storyCaptionSnippet: assets.storyCaptionSnippet,
+            feedArtworkUrl: assets.feedArtworkUrl,
+            storyArtworkUrl: assets.storyArtworkUrl,
+          }
+        : mapped.preview,
+    });
+  }
+
+  const items = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]).sort(
+    (left, right) => right.requestedAt.localeCompare(left.requestedAt),
+  );
+
+  const counts = summarizeCounts(items);
+  const campaigns = [
+    ...new Map(
+      items.map((item) => [item.eventId, { id: item.eventId, title: item.eventTitle }]),
+    ).values(),
+  ].sort((left, right) => left.title.localeCompare(right.title));
+
+  return {
+    items,
+    summary: {
+      inQueue: counts.in_queue,
+      assignedToMe: counts.assigned_to_me,
+      scheduled: counts.scheduled,
+      posted: counts.posted,
+      published: counts.published,
+      changesRequested: counts.changes_requested,
+    },
+    campaigns,
+    actorEmail: actor?.email ?? null,
+    actorUserId: actor?.organizationUserId ?? null,
+    actorRoleId: actor?.organizationRoleId ?? null,
+    role,
+    canViewAll: canViewAllApprovals(role),
+  };
+}

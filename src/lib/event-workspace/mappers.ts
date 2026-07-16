@@ -27,7 +27,8 @@ export function mapEventAssetRow(row: EventAssetRow): EventAsset {
     filename: row.filename,
     storagePath: row.storage_path,
     status: row.status,
-    aiGenerated: row.ai_generated,
+    aiGenerated: Boolean(row.ai_generated),
+
     uploadedBy: row.uploaded_by ?? null,
     currentVersion:
       typeof row.current_version === "number" && row.current_version > 0

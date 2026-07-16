@@ -3,7 +3,15 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -26,6 +34,7 @@ import {
   type EventResponsibilityPerson,
 } from "@/lib/events/event-responsibility";
 import { loadEventDetailTabAction } from "@/lib/events-phase3/actions";
+import { eventTabCacheKey } from "@/lib/events-phase3/tab-cache";
 import type { EventDetailTabData } from "@/lib/events-phase3/tab-loaders";
 import type { UnifiedApprovalsPageData } from "@/lib/approvals-scheduling/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
@@ -163,13 +172,150 @@ interface EventDetailShellProps {
   initialTab?: string | null;
 }
 
-function TabLoadingState({ label }: { label: string }) {
+function SkeletonBar({ className }: { className?: string }) {
   return (
-    <div className="rounded-xl border border-cos-border bg-cos-card p-6">
-      <div className="min-h-[12rem] animate-pulse rounded-lg bg-cos-bg/60" />
-      <p className="mt-3 text-sm text-cos-muted">Loading {label}…</p>
-    </div>
+    <div className={cn("animate-pulse rounded-md bg-cos-bg/70", className)} />
   );
+}
+
+function TabSkeleton({ tab }: { tab: EventDetailTab }) {
+  switch (tab) {
+    case "approvals":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <div className="flex flex-wrap gap-2">
+            <SkeletonBar className="h-8 w-24" />
+            <SkeletonBar className="h-8 w-28" />
+            <SkeletonBar className="h-8 w-20" />
+          </div>
+          <SkeletonBar className="h-16 w-full" />
+          <SkeletonBar className="h-16 w-full" />
+          <SkeletonBar className="h-16 w-3/4" />
+        </div>
+      );
+    case "tasks":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <SkeletonBar className="h-9 w-48" />
+          <SkeletonBar className="h-12 w-full" />
+          <SkeletonBar className="h-12 w-full" />
+          <SkeletonBar className="h-12 w-5/6" />
+        </div>
+      );
+    case "files":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+          </div>
+        </div>
+      );
+    case "notes":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <SkeletonBar className="h-8 w-40" />
+          <SkeletonBar className="h-20 w-full" />
+          <SkeletonBar className="h-20 w-full" />
+        </div>
+      );
+    case "vendors":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <div className="flex gap-3">
+            <SkeletonBar className="h-36 w-40" />
+            <SkeletonBar className="h-36 w-40" />
+          </div>
+        </div>
+      );
+    case "activity":
+      return (
+        <div className="space-y-3 rounded-xl border border-cos-border bg-cos-card p-4">
+          <SkeletonBar className="h-5 w-28" />
+          <SkeletonBar className="h-10 w-full" />
+          <SkeletonBar className="h-10 w-full" />
+          <SkeletonBar className="h-10 w-2/3" />
+        </div>
+      );
+    default:
+      return (
+        <div className="rounded-xl border border-cos-border bg-cos-card p-4">
+          <SkeletonBar className="h-24 w-full" />
+        </div>
+      );
+  }
+}
+
+function loadedTabsFromWorkspace(
+  workspace: EventDetailWorkspacePanels,
+): Set<EventDetailTab> {
+  const initial = new Set<EventDetailTab>();
+  if (workspace.approvalsData) initial.add("approvals");
+  if (workspace.tasksV2Data) initial.add("tasks");
+  if (workspace.filesPageData) initial.add("files");
+  if (workspace.notes !== undefined) initial.add("notes");
+  if (workspace.eventVendorsData !== undefined) initial.add("vendors");
+  if (
+    workspace.playbookActivity !== undefined ||
+    workspace.workspaceTimeline !== undefined
+  ) {
+    initial.add("activity");
+  }
+  return initial;
+}
+
+function seedTabCache(
+  eventId: string,
+  workspace: EventDetailWorkspacePanels,
+  cache: Map<string, EventDetailTabData>,
+) {
+  if (workspace.approvalsData) {
+    cache.set(eventTabCacheKey(eventId, "approvals"), {
+      tab: "approvals",
+      approvalsData: workspace.approvalsData,
+    });
+  }
+  if (workspace.tasksV2Data) {
+    cache.set(eventTabCacheKey(eventId, "tasks"), {
+      tab: "tasks",
+      tasksV2Data: workspace.tasksV2Data,
+    });
+  }
+  if (workspace.filesPageData) {
+    cache.set(eventTabCacheKey(eventId, "files"), {
+      tab: "files",
+      filesPageData: workspace.filesPageData,
+    });
+  }
+  if (workspace.notes !== undefined) {
+    cache.set(eventTabCacheKey(eventId, "notes"), {
+      tab: "notes",
+      notes: workspace.notes,
+      tablesAvailable: workspace.tablesAvailable ?? false,
+    });
+  }
+  if (workspace.eventVendorsData !== undefined) {
+    cache.set(eventTabCacheKey(eventId, "vendors"), {
+      tab: "vendors",
+      eventVendorsData: workspace.eventVendorsData,
+      vendorDirectory: workspace.vendorDirectory ?? {
+        categories: [],
+        events: [],
+        availableVendors: [],
+      },
+    });
+  }
+  if (
+    workspace.playbookActivity !== undefined ||
+    workspace.workspaceTimeline !== undefined
+  ) {
+    cache.set(eventTabCacheKey(eventId, "activity"), {
+      tab: "activity",
+      playbookActivity: workspace.playbookActivity ?? [],
+      workspaceTimeline: workspace.workspaceTimeline ?? [],
+    });
+  }
 }
 
 export function EventDetailShell({
@@ -195,55 +341,20 @@ export function EventDetailShell({
     return "responsibilities";
   });
   const [panelData, setPanelData] = useState<EventDetailWorkspacePanels>(workspace);
-  const [loadedTabs, setLoadedTabs] = useState<Set<EventDetailTab>>(() => {
-    const initial = new Set<EventDetailTab>();
-    if (workspace.approvalsData) initial.add("approvals");
-    if (workspace.tasksV2Data) initial.add("tasks");
-    if (workspace.filesPageData) initial.add("files");
-    if (workspace.notes) initial.add("notes");
-    if (workspace.eventVendorsData || workspace.vendorDirectory) {
-      initial.add("vendors");
-    }
-    if (workspace.playbookActivity || workspace.workspaceTimeline) {
-      initial.add("activity");
-    }
-    return initial;
-  });
+  const [loadedTabs, setLoadedTabs] = useState<Set<EventDetailTab>>(() =>
+    loadedTabsFromWorkspace(workspace),
+  );
   const [tabError, setTabError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const tabCacheRef = useRef<Map<string, EventDetailTabData>>(new Map());
+  const cacheEventIdRef = useRef(event.id);
 
   const createWithAiUrl = createWithAiHref(event.id);
   const eventTypeLabel = event.eventType
     ? (EVENT_TYPE_LABELS[event.eventType] ?? null)
     : null;
 
-  useEffect(() => {
-    if (initialTab === "create-with-ai") {
-      router.replace(createWithAiUrl);
-    }
-  }, [initialTab, event.id, router, createWithAiUrl]);
-
-  const ensureTabLoaded = useCallback(
-    (nextTab: EventDetailTab) => {
-      if (!LAZY_TABS.has(nextTab) || loadedTabs.has(nextTab)) {
-        return;
-      }
-
-      setTabError(null);
-      startTransition(async () => {
-        const result = await loadEventDetailTabAction(event.id, nextTab);
-        if (!result.success) {
-          setTabError(result.error);
-          return;
-        }
-        applyTabData(result.data);
-        setLoadedTabs((prev) => new Set(prev).add(nextTab));
-      });
-    },
-    [event.id, loadedTabs],
-  );
-
-  function applyTabData(data: EventDetailTabData) {
+  const applyTabData = useCallback((data: EventDetailTabData) => {
     setPanelData((prev) => {
       switch (data.tab) {
         case "approvals":
@@ -274,7 +385,70 @@ export function EventDetailShell({
           return prev;
       }
     });
-  }
+  }, []);
+
+  // Isolate cache when navigating to a different event.
+  useEffect(() => {
+    if (cacheEventIdRef.current === event.id) {
+      if (tabCacheRef.current.size === 0) {
+        seedTabCache(event.id, workspace, tabCacheRef.current);
+      }
+      return;
+    }
+    cacheEventIdRef.current = event.id;
+    tabCacheRef.current = new Map();
+    seedTabCache(event.id, workspace, tabCacheRef.current);
+    setPanelData(workspace);
+    setLoadedTabs(loadedTabsFromWorkspace(workspace));
+    setTabError(null);
+    if (initialTab === "create-with-ai") {
+      setTab("create-with-ai");
+    } else if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
+      setTab(initialTab as EventDetailTab);
+    } else {
+      setTab("responsibilities");
+    }
+  }, [event.id, workspace, initialTab]);
+
+  useEffect(() => {
+    if (initialTab === "create-with-ai") {
+      router.replace(createWithAiUrl);
+    }
+  }, [initialTab, event.id, router, createWithAiUrl]);
+
+  const ensureTabLoaded = useCallback(
+    (nextTab: EventDetailTab) => {
+      if (!LAZY_TABS.has(nextTab)) {
+        return;
+      }
+
+      const cacheKey = eventTabCacheKey(event.id, nextTab);
+      const cached = tabCacheRef.current.get(cacheKey);
+      if (cached) {
+        applyTabData(cached);
+        setLoadedTabs((prev) => new Set(prev).add(nextTab));
+        setTabError(null);
+        return;
+      }
+
+      if (loadedTabs.has(nextTab)) {
+        return;
+      }
+
+      setTabError(null);
+      startTransition(async () => {
+        const result = await loadEventDetailTabAction(event.id, nextTab);
+        if (!result.success) {
+          setTabError(result.error);
+          return;
+        }
+        tabCacheRef.current.set(cacheKey, result.data);
+        applyTabData(result.data);
+        setLoadedTabs((prev) => new Set(prev).add(nextTab));
+      });
+    },
+    [event.id, loadedTabs, applyTabData],
+  );
 
   useEffect(() => {
     ensureTabLoaded(tab);
@@ -392,7 +566,7 @@ export function EventDetailShell({
 
       <div>
         {tabError && LAZY_TABS.has(tab) && !loadedTabs.has(tab) ? (
-          <div className="rounded-xl border border-cos-border bg-cos-card p-6">
+          <div className="rounded-xl border border-cos-border bg-cos-card p-4">
             <p className="text-sm text-red-600" role="alert">
               {tabError}
             </p>
@@ -403,16 +577,12 @@ export function EventDetailShell({
               className="mt-3"
               onClick={() => ensureTabLoaded(tab)}
             >
-              Try again
+              Retry
             </Button>
           </div>
         ) : null}
 
-        {showTabLoading ? (
-          <TabLoadingState
-            label={TABS.find((entry) => entry.id === tab)?.label ?? "section"}
-          />
-        ) : null}
+        {showTabLoading ? <TabSkeleton tab={tab} /> : null}
 
           {tab === "responsibilities" ? (
             <section className="rounded-xl border border-cos-border bg-white p-4">
@@ -630,6 +800,7 @@ export function EventDetailShell({
                 panelData.vendorDirectory?.availableVendors ?? []
               }
               directoryHref={eventVendorsHref(event.id)}
+              deferDirectoryLoad
             />
           ) : null}
 
