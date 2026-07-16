@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Copy, Download, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, Trash2 } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { CompletionBanner } from "@/components/campaign-builder-v2/CompletionBanner";
@@ -369,7 +369,7 @@ export function PreviewStep() {
                         const imageUrl = selectedPreview.artwork[artworkKey];
                         const canDownload =
                           Boolean(imageUrl) &&
-                          !isPlaceholderArtworkUrl(imageUrl!);
+                          !isPlaceholderArtworkUrl(imageUrl);
                         const viewLabel = option?.label ?? view;
 
                         return (
@@ -384,36 +384,27 @@ export function PreviewStep() {
                                 </p>
                               )}
                             </div>
-                            <div className="relative">
-                              <ArtworkPlaceholder
-                                aspectClassName={aspectClassForView(view)}
-                                imageUrl={imageUrl}
-                                alt={`${viewLabel} artwork`}
-                                priority={view === "feed"}
-                                className={
-                                  view === "story" ? "max-h-64" : undefined
-                                }
-                              />
-                              {canDownload ? (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  className="absolute -right-1 -top-1 z-10 h-7 w-7 p-0"
-                                  disabled={downloadingView === view}
-                                  onClick={() =>
-                                    void handleDownloadArtwork(
-                                      view,
-                                      imageUrl!,
-                                      viewLabel,
-                                    )
-                                  }
-                                  aria-label={`Download ${viewLabel}`}
-                                >
-                                  <Download className="h-3.5 w-3.5" />
-                                </Button>
-                              ) : null}
-                            </div>
+                            <ArtworkPlaceholder
+                              aspectClassName={aspectClassForView(view)}
+                              imageUrl={imageUrl}
+                              alt={`${viewLabel} artwork`}
+                              priority={view === "feed"}
+                              className={
+                                view === "story" ? "max-h-64" : undefined
+                              }
+                              onDownload={
+                                canDownload
+                                  ? () =>
+                                      void handleDownloadArtwork(
+                                        view,
+                                        imageUrl!,
+                                        viewLabel,
+                                      )
+                                  : undefined
+                              }
+                              downloadDisabled={downloadingView === view}
+                              downloadLabel={`Download ${viewLabel}`}
+                            />
                           </div>
                         );
                       })}
