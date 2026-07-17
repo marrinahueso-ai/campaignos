@@ -12,7 +12,11 @@ export function mainContent(page: Page): Locator {
   return page.locator("main");
 }
 
-/** Staging user whose EffectiveAccess has upload_artwork: false (e.g. developer template). */
+/**
+ * Staging user with upload_artwork: false.
+ * Also used for Mode A smoke (view_all_events + access_assigned_events_only)
+ * when assigned to HEY_RALLI_TEST_EVENT_ID only.
+ */
 export function hasNoUploadCredentials(): boolean {
   return Boolean(
     process.env.HEY_RALLI_TEST_NO_UPLOAD_EMAIL?.trim() &&
