@@ -11,6 +11,7 @@ import { accessTemplateLabelMap } from "@/lib/access-templates/merge";
 import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import {
   accessHasPermission,
+  filterEventsByAccess,
   getEffectiveAccess,
 } from "@/lib/access-templates/effective-access";
 import {
@@ -134,14 +135,17 @@ export default async function TeamAccessPersonProfilePage({
   // Display: only events this person is tied to (keeps profile light).
   const relatedIds = peopleRelatedEventIds(person);
   // Manage picker: full catalog only when the viewer can edit assignments.
-  const [relatedEvents, manageCatalog] = await Promise.all([
+  const [relatedEventsRaw, manageCatalog] = await Promise.all([
     getCampaignEventsByIds(relatedIds),
     canManage ? getCampaignPageEvents(organization.id) : Promise.resolve([]),
   ]);
+  // Mode B (list-hide): do not expose unassigned event metadata on profiles.
+  const relatedEvents = filterEventsByAccess(access, relatedEventsRaw);
 
   const eventsSource =
     canManage && manageCatalog.length > 0 ? manageCatalog : relatedEvents;
-  const artworkByEventId = await getEventArtworkMap(relatedIds);
+  const visibleRelatedIds = relatedEvents.map((event) => event.id);
+  const artworkByEventId = await getEventArtworkMap(visibleRelatedIds);
 
   const eventsWithArtwork = eventsSource.map((event) => ({
     id: event.id,

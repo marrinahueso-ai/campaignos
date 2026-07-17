@@ -1,6 +1,5 @@
 import "server-only";
 
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 
@@ -19,9 +18,11 @@ function parseEmailList(raw: string | undefined): Set<string> {
 /**
  * Owner/Admin only for developer clear tools (smallest safe version).
  * Admin campaign role maps to Owner in Team & Access.
+ * Uses the real membership role — never the simulated-role cookie.
  */
 export async function canUseDeveloperClearTools(): Promise<boolean> {
-  const role = await getCurrentCampaignRole();
+  const membership = await getActiveMembership();
+  const role = membership?.user.campaignRole;
   if (role === "admin" || role === "developer") {
     return true;
   }

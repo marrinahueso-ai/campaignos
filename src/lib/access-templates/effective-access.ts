@@ -14,6 +14,7 @@ import { listOrganizationUserEventIds } from "@/lib/auth/event-assignments";
 import { isCampaignRole } from "@/lib/auth/campaign-roles";
 import { SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { canUseRoleSimulator } from "@/lib/auth/role-simulator-access";
 
 export type { EffectiveAccess };
 export {
@@ -32,11 +33,14 @@ export const getEffectiveAccess = cache(
 
     const cookieStore = await cookies();
     const simulated = cookieStore.get(SIMULATED_ROLE_COOKIE)?.value;
+    const honorSimulated =
+      !!simulated &&
+      isCampaignRole(simulated) &&
+      (await canUseRoleSimulator());
 
-    const templateId =
-      simulated && isCampaignRole(simulated)
-        ? simulated
-        : (membership.user.accessTemplateId ?? membership.user.campaignRole);
+    const templateId = honorSimulated
+      ? simulated
+      : (membership.user.accessTemplateId ?? membership.user.campaignRole);
 
     const templates = await getOrganizationAccessTemplates(
       membership.organizationId,
@@ -53,9 +57,16 @@ export const getEffectiveAccess = cache(
       template.baseRole,
     );
 
-    const assignedEventIds = await listOrganizationUserEventIds(
-      membership.user.id,
+    const viewAssignedEventsOnly = Boolean(
+      permissions.view_assigned_events_only,
     );
+    const accessAssignedEventsOnly = Boolean(
+      permissions.access_assigned_events_only,
+    );
+    const assignedEventIds =
+      viewAssignedEventsOnly || accessAssignedEventsOnly
+        ? await listOrganizationUserEventIds(membership.user.id)
+        : [];
 
     return {
       organizationId: membership.organizationId,
@@ -65,7 +76,8 @@ export const getEffectiveAccess = cache(
       baseRole: template.baseRole,
       permissions,
       assignedEventIds,
-      viewAssignedEventsOnly: permissions.view_assigned_events_only,
+      viewAssignedEventsOnly,
+      accessAssignedEventsOnly,
     };
   },
 );

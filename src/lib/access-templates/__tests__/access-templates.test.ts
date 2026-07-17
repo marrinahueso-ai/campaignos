@@ -38,13 +38,28 @@ describe("access templates defaults", () => {
     );
   });
 
-  it("makes view modes mutually exclusive", () => {
+  it("makes list view modes mutually exclusive and migrates to Mode B", () => {
     const next = normalizePermissions(
       { view_assigned_events_only: true, view_all_events: true },
       DEFAULT_ACCESS_TEMPLATES.find((t) => t.id === "view_only")!.permissions,
     );
     assert.equal(next.view_assigned_events_only, true);
     assert.equal(next.view_all_events, false);
+    assert.equal(next.access_assigned_events_only, true);
+  });
+
+  it("allows Mode A: see all while restricting work to assigned", () => {
+    const next = normalizePermissions(
+      {
+        view_all_events: true,
+        access_assigned_events_only: true,
+        view_assigned_events_only: false,
+      },
+      DEFAULT_ACCESS_TEMPLATES.find((t) => t.id === "view_only")!.permissions,
+    );
+    assert.equal(next.view_all_events, true);
+    assert.equal(next.view_assigned_events_only, false);
+    assert.equal(next.access_assigned_events_only, true);
   });
 
   it("preserves explicit false toggles over true fallbacks", () => {
@@ -106,6 +121,8 @@ describe("mergeAccessTemplates", () => {
     assert.equal(captain.displayName, "Team Captain");
     assert.equal(captain.permissions.view_assigned_events_only, true);
     assert.equal(captain.permissions.view_all_events, false);
+    // Legacy assigned-only row migrates to Mode B (access restrict too).
+    assert.equal(captain.permissions.access_assigned_events_only, true);
   });
 
   it("appends custom org roles", () => {

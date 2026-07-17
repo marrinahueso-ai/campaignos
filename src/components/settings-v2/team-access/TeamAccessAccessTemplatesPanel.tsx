@@ -11,6 +11,7 @@ import {
   saveOrganizationAccessTemplateAction,
 } from "@/lib/access-templates/actions";
 import {
+  ACCESS_PERMISSION_DESCRIPTIONS,
   ACCESS_PERMISSION_KEYS,
   ACCESS_PERMISSION_LABELS,
   type AccessPermissionKey,
@@ -116,11 +117,20 @@ export function TeamAccessAccessTemplatesPanel({
       return;
     }
     let permissions = { ...selected.permissions, [key]: enabled };
+    // List modes are mutually exclusive.
     if (key === "view_assigned_events_only" && enabled) {
       permissions.view_all_events = false;
+      // Mode B: list-hide always implies work restricted to assigned.
+      permissions.access_assigned_events_only = true;
     }
     if (key === "view_all_events" && enabled) {
       permissions.view_assigned_events_only = false;
+    }
+    // Turning off work-restriction while list-hide is on would leave an
+    // incoherent Mode B — clear list-hide and restore see-all.
+    if (key === "access_assigned_events_only" && !enabled) {
+      permissions.view_assigned_events_only = false;
+      permissions.view_all_events = true;
     }
     permissions = applySafetyLocks(
       selected.id,
@@ -407,6 +417,7 @@ export function TeamAccessAccessTemplatesPanel({
           <ul className="mt-3 divide-y divide-cos-border border-t border-cos-border">
             {ACCESS_PERMISSION_KEYS.map((key) => {
               const locked = key === "manage_people" && managePeopleLocked;
+              const description = ACCESS_PERMISSION_DESCRIPTIONS[key];
               return (
                 <li
                   key={key}
@@ -420,6 +431,10 @@ export function TeamAccessAccessTemplatesPanel({
                       <p className="mt-0.5 text-xs text-cos-muted">
                         Always on for Admin and President so you cannot lock
                         yourself out.
+                      </p>
+                    ) : description ? (
+                      <p className="mt-0.5 text-xs text-cos-muted">
+                        {description}
                       </p>
                     ) : null}
                   </div>
@@ -436,10 +451,11 @@ export function TeamAccessAccessTemplatesPanel({
         </div>
 
         <p className="mt-6 text-xs text-cos-muted">
-          Org-wide powers (people, billing, integrations) stay on leadership
-          seats by default. Event visibility toggles are saved for your org;
-          assigned-only event lists connect next without changing who can log
-          in.
+          Event access splits “see” from “work”: turn on both See all events and
+          Can only work on assigned events to show every card but limit edits to
+          assignments. Show only assigned events hides unassigned cards (and
+          always limits work). Org-wide powers (people, billing, integrations)
+          stay on leadership seats by default.
         </p>
 
         {message ? (

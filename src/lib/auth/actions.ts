@@ -28,6 +28,7 @@ import { requirePermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import { resolveAccessTemplateSelection } from "@/lib/access-templates/merge";
 import { SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
+import { canUseRoleSimulator } from "@/lib/auth/role-simulator-access";
 import {
   buildInviteLoginUrl,
   resolveAuthSiteOrigin,
@@ -89,6 +90,39 @@ function parseEventIdsFromForm(formData: FormData): string[] {
         .filter(Boolean),
     ),
   );
+}
+
+async function clearSimulatedRoleCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(SIMULATED_ROLE_COOKIE, "", {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 0,
+  });
+}
+
+/** Ensures a membership row belongs to the caller's current organization. */
+async function requireMembershipInCurrentOrg(
+  membershipId: string,
+): Promise<{ organizationId: string } | { error: string }> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Sign in and set up your organization first." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_users")
+    .select("id")
+    .eq("id", membershipId)
+    .eq("organization_id", organization.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return { error: "Team member not found in this organization." };
+  }
+
+  return { organizationId: organization.id };
 }
 
 async function maybeSendTeamInviteEmail(input: {
@@ -175,18 +209,20 @@ export async function setOrganizationUserEventAssignmentsAction(input: {
   organizationUserId: string;
   eventIds: string[];
 }): Promise<AuthActionState> {
-  const organization = await getCurrentOrganization();
-
-  if (!organization) {
-    return { error: "Sign in and set up your organization first.", success: false };
-  }
   const managePeople = await requirePermission("manage_people");
   if ("error" in managePeople) {
     return { error: "You do not have permission to update event assignments.", success: false };
   }
 
+  const orgMembership = await requireMembershipInCurrentOrg(
+    input.organizationUserId,
+  );
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
+  }
+
   const result = await replaceOrganizationUserEventAssignments({
-    organizationId: organization.id,
+    organizationId: orgMembership.organizationId,
     organizationUserId: input.organizationUserId,
     eventIds: input.eventIds,
   });
@@ -499,6 +535,7 @@ export async function signInWithEmailAction(
 }
 
 export async function signOutAction(): Promise<void> {
+  await clearSimulatedRoleCookie();
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
@@ -741,6 +778,11 @@ export async function updateTeamMemberAction(
     return { error: "You do not have permission to update team members.", success: false };
   }
 
+  const orgMembership = await requireMembershipInCurrentOrg(membershipId);
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
+  }
+
   const organization = await getCurrentOrganization();
   const resolvedInput: {
     organizationRoleId?: string | null;
@@ -813,6 +855,11 @@ export async function setTeamMemberAccessLevelAction(input: {
   }
 
   if (input.membershipId) {
+    const orgMembership = await requireMembershipInCurrentOrg(input.membershipId);
+    if ("error" in orgMembership) {
+      return { error: orgMembership.error, success: false };
+    }
+
     const result = await updateOrganizationMembership(input.membershipId, {
       campaignRole: input.campaignRole,
       organizationRoleId: input.organizationRoleId,
@@ -870,6 +917,11 @@ export async function setRosterMemberAccessLevelAction(input: {
   const { source } = input;
 
   if (source.kind === "org_user") {
+    const orgMembership = await requireMembershipInCurrentOrg(source.membershipId);
+    if ("error" in orgMembership) {
+      return { error: orgMembership.error, success: false };
+    }
+
     const result = await updateOrganizationMembership(source.membershipId, {
       campaignRole: input.campaignRole,
     });
@@ -920,6 +972,11 @@ export async function removeTeamMemberAction(
     return { error: "You do not have permission to remove team members.", success: false };
   }
 
+  const orgMembership = await requireMembershipInCurrentOrg(membershipId);
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
+  }
+
   const result = await deleteOrganizationMembership(membershipId);
   if ("error" in result) {
     return { error: result.error, success: false };
@@ -938,6 +995,11 @@ export async function resendTeamInviteAction(
   const managePeople = await requirePermission("manage_people");
   if ("error" in managePeople) {
     return { error: "You do not have permission to resend invites.", success: false };
+  }
+
+  const orgMembership = await requireMembershipInCurrentOrg(membershipId);
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
   }
 
   const result = await refreshOrganizationInviteToken(membershipId);
@@ -1009,6 +1071,11 @@ export async function cancelTeamInviteAction(
     return { error: "You do not have permission to cancel invites.", success: false };
   }
 
+  const orgMembership = await requireMembershipInCurrentOrg(membershipId);
+  if ("error" in orgMembership) {
+    return { error: orgMembership.error, success: false };
+  }
+
   const result = await cancelOrganizationInvite(membershipId);
   if ("error" in result) {
     return { error: result.error, success: false };
@@ -1038,6 +1105,10 @@ export async function setSimulatedRoleAction(
   eventPath?: string,
 ): Promise<{ success: boolean }> {
   if (!isCampaignRole(role)) {
+    return { success: false };
+  }
+
+  if (!(await canUseRoleSimulator())) {
     return { success: false };
   }
 

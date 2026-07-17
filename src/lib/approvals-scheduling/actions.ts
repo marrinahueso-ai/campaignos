@@ -375,6 +375,8 @@ export async function reassignUnifiedItemAction(input: {
   schedulingItemId: string;
   assignedUserId: string;
 }): Promise<UnifiedApprovalActionResult> {
+  // Intentional: maps the former admin/president/vp_communications gate.
+  // manage_people would drop VP Communications, who historically could reassign.
   if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "Only admins can reassign approvals." };
   }

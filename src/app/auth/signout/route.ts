@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
 
 /** Sign-out must be POST-only — GET prefetch previously logged users out accidentally. */
 export async function POST(request: NextRequest) {
@@ -27,6 +28,11 @@ export async function POST(request: NextRequest) {
   );
 
   await supabase.auth.signOut();
+  response.cookies.set(SIMULATED_ROLE_COOKIE, "", {
+    path: "/",
+    sameSite: "lax",
+    maxAge: 0,
+  });
   return response;
 }
 

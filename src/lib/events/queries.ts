@@ -1,6 +1,8 @@
 import {
+  canAccessEvent,
   filterEventsByAccess,
   getEffectiveAccess,
+  type EffectiveAccess,
 } from "@/lib/access-templates/effective-access";
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
@@ -170,9 +172,10 @@ export const getEventById = cache(async (id: string): Promise<Event | null> => {
 
   // Overlap event fetch with school-year scope — sequential was adding a
   // full round-trip on every event page (including Create with AI).
-  const [eventResult, schoolYearIds] = await Promise.all([
+  const [eventResult, schoolYearIds, access] = await Promise.all([
     supabase.from("events").select("*").eq("id", id).single(),
     scopedSchoolYearIds(undefined),
+    getEffectiveAccess(),
   ]);
 
   const { data, error } = eventResult;
@@ -189,5 +192,29 @@ export const getEventById = cache(async (id: string): Promise<Event | null> => {
     return null;
   }
 
+  // Assigned-only members must not load unassigned events by id (IDOR).
+  if (access && !canAccessEvent(access, id)) {
+    return null;
+  }
+
   return mapEventRow(row);
 });
+
+/**
+ * Event-scoped gate for mutations/pages that take eventId.
+ * Wraps getEventById (org scope + assigned-only EffectiveAccess).
+ */
+export async function requireEventAccess(
+  eventId: string,
+): Promise<{ event: Event; access: EffectiveAccess | null } | { error: string }> {
+  const [event, access] = await Promise.all([
+    getEventById(eventId),
+    getEffectiveAccess(),
+  ]);
+
+  if (!event) {
+    return { error: "Event not found or you do not have access." };
+  }
+
+  return { event, access };
+}

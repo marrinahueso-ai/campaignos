@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 
@@ -99,6 +100,18 @@ export async function replaceOrganizationUserEventAssignments(input: {
   syncLinkedMember?: boolean;
 }): Promise<{ error: string } | { success: true; eventIds: string[] }> {
   const supabase = await createClient();
+
+  const { data: targetUser, error: targetError } = await supabase
+    .from("organization_users")
+    .select("id")
+    .eq("id", input.organizationUserId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  if (targetError || !targetUser) {
+    return { error: "Team member not found in this organization." };
+  }
+
   const uniqueEventIds = Array.from(
     new Set(input.eventIds.map((id) => id.trim()).filter(Boolean)),
   );
@@ -174,25 +187,25 @@ export async function replaceOrganizationUserEventAssignmentsWithoutMemberSync(i
   });
 }
 
-export async function listOrganizationUserEventIds(
-  organizationUserId: string,
-): Promise<string[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("organization_user_event_assignments")
-    .select("event_id")
-    .eq("organization_user_id", organizationUserId);
+export const listOrganizationUserEventIds = cache(
+  async (organizationUserId: string): Promise<string[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("organization_user_event_assignments")
+      .select("event_id")
+      .eq("organization_user_id", organizationUserId);
 
-  if (error) {
-    if (error.code === "42P01") {
+    if (error) {
+      if (error.code === "42P01") {
+        return [];
+      }
+      console.error("Failed to load user event assignments:", error.message);
       return [];
     }
-    console.error("Failed to load user event assignments:", error.message);
-    return [];
-  }
 
-  return (data ?? []).map((row) => row.event_id as string);
-}
+    return (data ?? []).map((row) => row.event_id as string);
+  },
+);
 
 export async function listOrganizationUserEventAssignmentsByOrg(
   organizationId: string,

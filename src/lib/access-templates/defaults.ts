@@ -13,6 +13,7 @@ function perms(
   const base: AccessTemplatePermissions = {
     view_all_events: true,
     view_assigned_events_only: false,
+    access_assigned_events_only: false,
     draft_edit: false,
     submit_approval: false,
     approve_comms: false,
@@ -178,12 +179,17 @@ export function normalizePermissions(
       next[key] = input[key]!;
     }
   }
-  // Keep the two view modes coherent.
+
+  // List modes stay mutually exclusive. Mode B (list-hide) always restricts
+  // work access — also migrates legacy `view_assigned_events_only: true`
+  // (which previously implied both list-hide and access restrict).
   if (next.view_assigned_events_only) {
     next.view_all_events = false;
+    next.access_assigned_events_only = true;
   } else if (next.view_all_events) {
     next.view_assigned_events_only = false;
   }
+
   return next;
 }
 
