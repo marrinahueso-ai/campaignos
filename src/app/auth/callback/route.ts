@@ -66,7 +66,9 @@ export async function GET(request: NextRequest) {
 
   // New-school signup must not auto-join an existing invited org.
   if (user?.email && !setupIntent) {
-    await acceptPendingInvitesForUser(user.id, user.email);
+    await acceptPendingInvitesForUser(user.id, user.email, {
+      inviteToken: invite,
+    });
   }
 
   if (user) {
@@ -74,12 +76,16 @@ export async function GET(request: NextRequest) {
       supabase,
       user.id,
       requestedNext,
-      { setupIntent, pendingCode: pendingFoundingCode },
+      {
+        setupIntent,
+        pendingCode: pendingFoundingCode,
+        inviteToken: invite,
+      },
     );
   }
 
   const target = new URL(nextPath, origin);
-  if (invite) {
+  if (invite && !target.pathname.startsWith("/login")) {
     target.searchParams.set("joined", "1");
   }
 

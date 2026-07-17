@@ -151,12 +151,53 @@ export async function countActiveOrganizationUsers(
   return count ?? 0;
 }
 
+export type AcceptInviteResult = {
+  accepted: number;
+  /** Present when an invite token was supplied but the signed-in email does not match. */
+  emailMismatch?: string;
+};
+
+/**
+ * Activates pending invites for a signed-in user.
+ * Prefer claiming the invite token from the Accept link; fall back to email match.
+ */
 export async function acceptPendingInvitesForUser(
   userId: string,
   email: string,
-): Promise<number> {
+  options?: { inviteToken?: string | null },
+): Promise<AcceptInviteResult> {
   const supabase = await createClient();
   const now = new Date().toISOString();
+  const normalizedEmail = email.trim();
+  const inviteToken = options?.inviteToken?.trim() || null;
+
+  if (inviteToken) {
+    const invite = await getInviteByToken(inviteToken);
+    if (invite) {
+      if (invite.email.trim().toLowerCase() !== normalizedEmail.toLowerCase()) {
+        return { accepted: 0, emailMismatch: invite.email };
+      }
+
+      const { data, error } = await supabase
+        .from("organization_users")
+        .update({
+          user_id: userId,
+          status: "active",
+          joined_at: now,
+          invite_token: null,
+        })
+        .eq("invite_token", inviteToken)
+        .eq("status", "invited")
+        .select("id");
+
+      if (error) {
+        console.error("Failed to accept invite by token:", error.message);
+        return { accepted: 0 };
+      }
+
+      return { accepted: data?.length ?? 0 };
+    }
+  }
 
   const { data, error } = await supabase
     .from("organization_users")
@@ -167,15 +208,15 @@ export async function acceptPendingInvitesForUser(
       invite_token: null,
     })
     .eq("status", "invited")
-    .ilike("email", email.trim())
+    .ilike("email", normalizedEmail)
     .select("id");
 
   if (error) {
     console.error("Failed to accept invites:", error.message);
-    return 0;
+    return { accepted: 0 };
   }
 
-  return data?.length ?? 0;
+  return { accepted: data?.length ?? 0 };
 }
 
 /** Returns null when organization_users is unavailable (legacy local dev). */

@@ -17,6 +17,7 @@ export const LOGIN_PAGE_ERRORS = [
   "auth",
   "code_required",
   "org_required",
+  "invite_email",
 ] as const;
 
 export type LoginPageError = (typeof LOGIN_PAGE_ERRORS)[number];
@@ -85,9 +86,15 @@ export async function resolvePostAuthPathForUser(
   supabase: SupabaseClient,
   userId: string,
   next?: string | null,
-  options?: { setupIntent?: boolean; pendingCode?: string | null },
+  options?: {
+    setupIntent?: boolean;
+    pendingCode?: string | null;
+    /** Keep invitees on the invite login path instead of founding/school setup. */
+    inviteToken?: string | null;
+  },
 ): Promise<string> {
   const setupIntent = options?.setupIntent ?? false;
+  const inviteToken = options?.inviteToken?.trim() || null;
   const pendingCode = setupIntent
     ? options?.pendingCode !== undefined
       ? options.pendingCode
@@ -112,6 +119,14 @@ export async function resolvePostAuthPathForUser(
   }
 
   if (!hasMembership) {
+    // Invited teammates must not fall into new-school / founding-access UX.
+    if (inviteToken) {
+      const params = new URLSearchParams({
+        invite: inviteToken,
+        error: "invite_email",
+      });
+      return `/login?${params.toString()}`;
+    }
     return SCHOOL_SETUP_PATH;
   }
 

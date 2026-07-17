@@ -41,12 +41,12 @@ describe("campaign roles phase 1", () => {
 });
 
 describe("team invite email", () => {
-  it("includes invite link and optional message", () => {
+  it("includes invite link, role, and optional message in branded template", () => {
     const content = buildTeamInviteEmail({
       organizationName: "EES PTO",
       inviteeName: "Jamie",
       inviteeEmail: "jamie@example.com",
-      accessLevelLabel: "Tester",
+      accessLevelLabel: "Developer",
       inviteUrl: "https://heyralli.com/login?invite=abc",
       personalMessage: "Welcome aboard",
       inviterEmail: "admin@example.com",
@@ -54,7 +54,32 @@ describe("team invite email", () => {
 
     assert.match(content.subject, /EES PTO/);
     assert.match(content.text, /Welcome aboard/);
+    assert.match(content.text, /Developer/);
+    assert.match(content.text, /jamie@example.com/);
     assert.match(content.text, /https:\/\/heyralli.com\/login\?invite=abc/);
     assert.match(content.html, /Accept invite/);
+    assert.match(content.html, /Hey Ralli/);
+    assert.match(content.html, /Team invite/);
+    assert.match(content.html, /Your role/);
+    assert.match(content.html, /Developer/);
+    assert.doesNotMatch(content.html, /Temporary password/);
+  });
+
+  it("includes temporary password when provided for testing invites", () => {
+    const content = buildTeamInviteEmail({
+      organizationName: "EES PTO",
+      inviteeName: "Jamie",
+      inviteeEmail: "jamie@example.com",
+      accessLevelLabel: "Developer",
+      inviteUrl: "https://heyralli.com/login?invite=abc",
+      personalMessage: null,
+      inviterEmail: "admin@example.com",
+      temporaryPassword: "Hr-testpass1",
+    });
+
+    assert.match(content.text, /Temporary password: Hr-testpass1/);
+    assert.match(content.html, /Hr-testpass1/);
+    assert.match(content.html, /Your sign-in details/);
+    assert.match(content.html, /Email &amp; password/);
   });
 });

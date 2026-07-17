@@ -30,10 +30,20 @@ import { getCurrentCampaignRole, SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-cu
 import {
   buildInviteLoginUrl,
   resolveAuthSiteOrigin,
+  toPublicInviteUrl,
 } from "@/lib/auth/invite-url";
+import {
+  ensureInvitedAuthCredentials,
+  shouldIncludeTempPasswordInInvite,
+} from "@/lib/auth/invite-credentials";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
-import { isEmailConfigured, sendEmail } from "@/lib/email/send";
+import {
+  isEmailConfigured,
+  resolveTeamInviteTemplateId,
+  sendEmail,
+  sendTemplateEmail,
+} from "@/lib/email/send";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import type { MemberEditSource } from "@/components/settings-v2/team-access/member-edit-utils";
 import {
@@ -85,6 +95,8 @@ async function maybeSendTeamInviteEmail(input: {
   organizationName: string;
   inviteeName: string | null;
   accessLevel: CampaignRole;
+  /** Prefer Access template display name when available. */
+  accessLevelLabel?: string | null;
   personalMessage: string | null;
   inviterEmail: string | null;
 }): Promise<string | null> {
@@ -96,28 +108,68 @@ async function maybeSendTeamInviteEmail(input: {
     return "Invite created, but email was not sent (RESEND_API_KEY is not configured). Copy the invite link below.";
   }
 
+  let temporaryPassword: string | null = null;
+  let credentialWarning: string | null = null;
+  if (shouldIncludeTempPasswordInInvite()) {
+    const credentials = await ensureInvitedAuthCredentials(input.toEmail);
+    if ("error" in credentials) {
+      credentialWarning = credentials.error;
+    } else {
+      temporaryPassword = credentials.password;
+    }
+  }
+
+  const publicInviteUrl = toPublicInviteUrl(input.inviteUrl);
+  const roleLabel =
+    input.accessLevelLabel?.trim() || campaignRoleLabel(input.accessLevel);
   const content = buildTeamInviteEmail({
     organizationName: input.organizationName,
     inviteeName: input.inviteeName,
     inviteeEmail: input.toEmail,
-    accessLevelLabel: campaignRoleLabel(input.accessLevel),
-    inviteUrl: input.inviteUrl,
+    accessLevelLabel: roleLabel,
+    inviteUrl: publicInviteUrl,
     personalMessage: input.personalMessage,
     inviterEmail: input.inviterEmail,
+    temporaryPassword,
   });
 
-  const result = await sendEmail({
+  // When a temp password is included, prefer HTML so credentials always render.
+  // Template send is used when there is no password (or as a fallback attempt).
+  if (!temporaryPassword) {
+    const templateResult = await sendTemplateEmail({
+      to: [input.toEmail],
+      templateId: resolveTeamInviteTemplateId(),
+      subject: content.subject,
+      variables: {
+        ORGANIZATION_NAME: input.organizationName.trim() || "your PTO",
+        INVITEE_NAME: input.inviteeName?.trim() || "there",
+        ROLE_LABEL: roleLabel,
+        INVITE_URL: publicInviteUrl,
+        INVITEE_EMAIL: input.toEmail,
+        INVITER_EMAIL: input.inviterEmail?.trim() || "your team",
+        PERSONAL_MESSAGE:
+          input.personalMessage?.trim() || "Welcome to the team.",
+        TEMPORARY_PASSWORD: "Use Magic link or Google with your invited email.",
+      },
+    });
+
+    if (templateResult.success) {
+      return credentialWarning;
+    }
+  }
+
+  const htmlResult = await sendEmail({
     to: [input.toEmail],
     subject: content.subject,
     html: content.html,
     text: content.text,
   });
 
-  if (!result.success) {
-    return `Invite created, but email failed to send: ${result.error ?? "unknown error"}. Copy the invite link below.`;
+  if (!htmlResult.success) {
+    return `Invite created, but email failed to send: ${htmlResult.error ?? "unknown error"}. Copy the invite link below.`;
   }
 
-  return null;
+  return credentialWarning;
 }
 
 export interface AuthActionState {
@@ -233,6 +285,7 @@ export async function signInWithPasswordAction(
 ): Promise<AuthActionState> {
   const email = formData.get("email")?.toString()?.trim() ?? "";
   const password = formData.get("password")?.toString() ?? "";
+  const inviteToken = formData.get("inviteToken")?.toString()?.trim() || null;
 
   if (!email || !password) {
     return { error: "Enter your email and password.", success: false };
@@ -249,7 +302,17 @@ export async function signInWithPasswordAction(
   }
 
   if (data.user?.email) {
-    await acceptPendingInvitesForUser(data.user.id, data.user.email);
+    const claim = await acceptPendingInvitesForUser(
+      data.user.id,
+      data.user.email,
+      { inviteToken },
+    );
+    if (claim.emailMismatch) {
+      return {
+        error: `This invite is for ${claim.emailMismatch}. Sign in with that email.`,
+        success: false,
+      };
+    }
   }
 
   await clearPendingFoundingAccessCookie();
@@ -332,7 +395,9 @@ export async function signInWithEmailAction(
     success: true,
     message: isNewSchoolSignup
       ? "Check your email for a link to create your account and continue to school setup."
-      : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
+      : inviteToken
+        ? "Check your email for a sign-in link. Open it to join the team — use the same invited address."
+        : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
   };
 }
 
@@ -369,7 +434,7 @@ export async function submitFoundingAccessCodeAction(
 
 export async function completeAuthSessionAction(): Promise<void> {
   const user = await requireAuthUser();
-  await acceptPendingInvitesForUser(user.id, user.email);
+  await acceptPendingInvitesForUser(user.id, user.email ?? "");
 }
 
 export async function createTeamMemberAccountAction(
@@ -532,6 +597,9 @@ export async function inviteTeamMemberAction(
   );
 
   const orgRecord = await getOrganizationById(organization.id);
+  const accessLevelLabel =
+    accessTemplates.find((template) => template.id === accessTemplateId)
+      ?.displayName ?? campaignRoleLabel(resolvedCampaignRole);
   const emailWarning = await maybeSendTeamInviteEmail({
     sendEmailRequested,
     toEmail: email,
@@ -539,6 +607,7 @@ export async function inviteTeamMemberAction(
     organizationName: orgRecord?.name ?? "your PTO",
     inviteeName: displayName,
     accessLevel: resolvedCampaignRole,
+    accessLevelLabel,
     personalMessage: inviteMessage,
     inviterEmail: user.email ?? null,
   });
@@ -782,7 +851,9 @@ export async function resendTeamInviteAction(
   const supabase = await createClient();
   const { data: membership } = await supabase
     .from("organization_users")
-    .select("email, display_name, campaign_role, invite_message")
+    .select(
+      "email, display_name, campaign_role, access_template_id, invite_message",
+    )
     .eq("id", membershipId)
     .maybeSingle();
 
@@ -802,6 +873,12 @@ export async function resendTeamInviteAction(
     const accessLevel = isCampaignRole(membership.campaign_role as string)
       ? (membership.campaign_role as CampaignRole)
       : "contributor";
+    const templates = await getOrganizationAccessTemplates(organization.id);
+    const templateId =
+      (membership.access_template_id as string | null) ?? accessLevel;
+    const accessLevelLabel =
+      templates.find((template) => template.id === templateId)?.displayName ??
+      campaignRoleLabel(accessLevel);
     emailWarning = await maybeSendTeamInviteEmail({
       sendEmailRequested: true,
       toEmail: membership.email as string,
@@ -809,6 +886,7 @@ export async function resendTeamInviteAction(
       organizationName: orgRecord?.name ?? "your PTO",
       inviteeName: (membership.display_name as string | null) ?? null,
       accessLevel,
+      accessLevelLabel,
       personalMessage: (membership.invite_message as string | null) ?? null,
       inviterEmail: user?.email ?? null,
     });
@@ -979,6 +1057,9 @@ export async function giveAppAccessAction(input: {
   );
 
   const orgRecord = await getOrganizationById(organization.id);
+  const accessLevelLabel =
+    templates.find((template) => template.id === accessTemplateId)
+      ?.displayName ?? campaignRoleLabel(resolvedCampaignRole);
   const emailWarning = await maybeSendTeamInviteEmail({
     sendEmailRequested: input.sendEmail !== false,
     toEmail: email,
@@ -986,6 +1067,7 @@ export async function giveAppAccessAction(input: {
     organizationName: orgRecord?.name ?? "your PTO",
     inviteeName: (rosterMember.name as string | null) ?? null,
     accessLevel: resolvedCampaignRole,
+    accessLevelLabel,
     personalMessage: null,
     inviterEmail: user.email ?? null,
   });

@@ -310,6 +310,22 @@ export function StudioHomePage({
                   </p>
                 )}
 
+                {authError === "invite_email" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    Sign in with the invited email
+                    {invitePreview?.email ? (
+                      <>
+                        {" "}
+                        (<span className="font-medium text-white">
+                          {invitePreview.email}
+                        </span>
+                      </>
+                    ) : null}{" "}
+                    (Google or Magic link) to join this team. This is not a new
+                    school signup.
+                  </p>
+                )}
+
                 <div className="border border-cos-dark-muted/20 bg-[#f6f2eb] p-8">
                   <LoginForm
                     inviteToken={inviteToken}
