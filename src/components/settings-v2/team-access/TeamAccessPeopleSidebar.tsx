@@ -3,26 +3,30 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Building2,
   CalendarPlus,
   Mail,
   UserMinus,
   UserPlus,
+  UserRound,
   Users,
 } from "lucide-react";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
-import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
+import {
+  peopleRelatedEventIds,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
 import { cn } from "@/lib/utils/cn";
 
 interface TeamAccessPeopleSidebarProps {
   totalCount: number;
   activeCount: number;
   invitedCount: number;
+  notInvitedCount: number;
   inactiveCount: number;
   mostAssigned: UnifiedTeamMember[];
   canManage: boolean;
   onInvite: () => void;
-  onViewRoles: () => void;
+  onAddPerson: () => void;
   onSelectMember: (member: UnifiedTeamMember) => void;
 }
 
@@ -30,16 +34,17 @@ export function TeamAccessPeopleSidebar({
   totalCount,
   activeCount,
   invitedCount,
+  notInvitedCount,
   inactiveCount,
   mostAssigned,
   canManage,
   onInvite,
-  onViewRoles,
+  onAddPerson,
   onSelectMember,
 }: TeamAccessPeopleSidebarProps) {
   const glanceItems = [
     {
-      label: "People",
+      label: "Total People",
       value: totalCount,
       icon: Users,
       iconClass: "bg-[#ebe4f7] text-[#5b4a7a]",
@@ -55,6 +60,12 @@ export function TeamAccessPeopleSidebar({
       value: invitedCount,
       icon: UserPlus,
       iconClass: "bg-cos-warning text-cos-warning-text",
+    },
+    {
+      label: "Not Invited",
+      value: notInvitedCount,
+      icon: UserRound,
+      iconClass: "bg-[#ece8e1] text-cos-muted",
     },
     {
       label: "Inactive",
@@ -118,7 +129,7 @@ export function TeamAccessPeopleSidebar({
                   </p>
                 </div>
                 <span className="rounded-full border border-cos-border bg-cos-bg px-2 py-0.5 text-xs font-medium tabular-nums text-cos-text">
-                  {member.assignedEventIds.length}
+                  {peopleRelatedEventIds(member).length}
                 </span>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
               </button>
@@ -131,20 +142,38 @@ export function TeamAccessPeopleSidebar({
         <h3 className="font-display text-xl text-cos-text">Quick Actions</h3>
         <div className="mt-5 space-y-1.5">
           {canManage ? (
-            <button
-              type="button"
-              onClick={onInvite}
-              className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
-            >
-              <div className="rounded-lg bg-[#ebe4f7] p-2 text-[#5b4a7a]">
-                <Mail className="h-4 w-4" strokeWidth={1.75} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-cos-text">Invite Person</p>
-                <p className="text-xs text-cos-muted">Send a login invite</p>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onAddPerson}
+                className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
+              >
+                <div className="rounded-lg bg-[#ebe4f7] p-2 text-[#5b4a7a]">
+                  <UserPlus className="h-4 w-4" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-cos-text">Add Person</p>
+                  <p className="text-xs text-cos-muted">Add to the roster</p>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
+              </button>
+              <button
+                type="button"
+                onClick={onInvite}
+                className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
+              >
+                <div className="rounded-lg bg-cos-warning p-2 text-cos-warning-text">
+                  <Mail className="h-4 w-4" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-cos-text">
+                    Invite to Login
+                  </p>
+                  <p className="text-xs text-cos-muted">Send a login invite</p>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
+              </button>
+            </>
           ) : null}
 
           <Link
@@ -156,25 +185,10 @@ export function TeamAccessPeopleSidebar({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-cos-text">Create Event</p>
-              <p className="text-xs text-cos-muted">Assign responsibilities</p>
+              <p className="text-xs text-cos-muted">Assign people to events</p>
             </div>
             <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
           </Link>
-
-          <button
-            type="button"
-            onClick={onViewRoles}
-            className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
-          >
-            <div className="rounded-lg bg-[#f3e6d8] p-2 text-[#8a5a2b]">
-              <Building2 className="h-4 w-4" strokeWidth={1.75} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-cos-text">Organization Roles</p>
-              <p className="text-xs text-cos-muted">View roles & access</p>
-            </div>
-            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
-          </button>
         </div>
       </SettingsV2Card>
     </aside>

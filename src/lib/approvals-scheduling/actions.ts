@@ -222,6 +222,10 @@ export async function approveUnifiedItemAction(input: {
           milestoneName: input.milestoneName,
           recipientEmail: creatorEmail,
           schedulingItemId: input.schedulingItemId,
+          feedArtworkUrl: row.feed_artwork_url,
+          storyArtworkUrl: row.story_artwork_url,
+          captionText: row.caption_text,
+          storyCaption: row.story_caption,
         });
       }
 
@@ -291,6 +295,10 @@ export async function approveUnifiedItemAction(input: {
           recipientEmail: creatorEmail,
           scheduleLabel: formatDateTime(row.schedule_at),
           schedulingItemId: input.schedulingItemId,
+          feedArtworkUrl: row.feed_artwork_url,
+          storyArtworkUrl: row.story_artwork_url,
+          captionText: row.caption_text,
+          storyCaption: row.story_caption,
         });
       }
     }
@@ -325,7 +333,11 @@ export async function requestUnifiedChangesAction(input: {
     }
   }
 
+  let schedulingRow: ApprovalSchedulingItemRow | null = null;
   if (input.schedulingItemId) {
+    schedulingRow = (await loadSchedulingItem(
+      input.schedulingItemId,
+    )) as ApprovalSchedulingItemRow | null;
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
       "changes_requested",
@@ -350,6 +362,10 @@ export async function requestUnifiedChangesAction(input: {
       recipientEmail: creatorEmail,
       comment,
       schedulingItemId: input.schedulingItemId ?? null,
+      feedArtworkUrl: schedulingRow?.feed_artwork_url,
+      storyArtworkUrl: schedulingRow?.story_artwork_url,
+      captionText: schedulingRow?.caption_text,
+      storyCaption: schedulingRow?.story_caption,
     });
   }
 

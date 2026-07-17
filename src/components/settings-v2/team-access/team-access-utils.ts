@@ -5,7 +5,6 @@ import {
 import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
 import {
   appAccessLabel,
-  committeeAssignmentRoleLabel,
   ROSTER_ONLY_STATUS_LABEL,
   type CommitteeAssignmentRole,
 } from "@/lib/organization-workspace/roster-first";
@@ -38,6 +37,8 @@ export interface UnifiedTeamMember {
   roleLabel: string;
   accessLabel: string;
   accessLevel: CampaignRole;
+  /** Template id for display (custom_* or system); auth still uses accessLevel. */
+  accessTemplateId: string | null;
   vpPortfolio: string | null;
   vpPortfolioId: string | null;
   committeeCount: number;
@@ -126,6 +127,220 @@ interface PersonAccumulator {
 }
 
 export { ROSTER_ONLY_STATUS_LABEL };
+
+/** People UI login status — never show “Roster Only”. */
+export type PeopleLoginStatus =
+  | "not_invited"
+  | "invited"
+  | "active"
+  | "inactive";
+
+/** Responsibility labels for Team & Access (backend roles unchanged). */
+export function peopleResponsibilityLabel(
+  role: MemberCommitteeAssignment["roleOnCommittee"] | CommitteeAssignmentRole,
+): string {
+  switch (role) {
+    case "chair":
+      return "Event Lead";
+    case "co_chair":
+      return "Assistant Lead";
+    case "member":
+      return "Team Member";
+    case "supervising_vp":
+    case "vp":
+      return "Supervisor";
+    default:
+      return "Team Member";
+  }
+}
+
+export function peopleLoginStatus(
+  member: Pick<UnifiedTeamMember, "status" | "isRosterOnly">,
+): PeopleLoginStatus {
+  if (member.isRosterOnly || member.status === "roster") {
+    return "not_invited";
+  }
+  if (member.status === "invited") {
+    return "invited";
+  }
+  if (member.status === "deactivated") {
+    return "inactive";
+  }
+  return "active";
+}
+
+export function peopleLoginStatusLabel(status: PeopleLoginStatus): string {
+  switch (status) {
+    case "not_invited":
+      return "Not Invited";
+    case "invited":
+      return "Invited";
+    case "active":
+      return "Active";
+    case "inactive":
+      return "Inactive";
+  }
+}
+
+/** Secondary access badge under Active — not the primary Login Status. */
+export function peopleAccessBadgeLabel(
+  member: Pick<
+    UnifiedTeamMember,
+    "isRosterOnly" | "accessLevel" | "accessTemplateId" | "isPresident"
+  >,
+  customLabels?: Partial<Record<string, string>> | null,
+): string | null {
+  if (member.isRosterOnly) {
+    return null;
+  }
+  const templateKey = member.accessTemplateId ?? member.accessLevel;
+  const custom = customLabels?.[templateKey]?.trim();
+  if (custom) {
+    return custom;
+  }
+  if (member.isPresident || member.accessLevel === "president") {
+    return "President";
+  }
+  if (member.accessLevel === "admin") {
+    return "Admin";
+  }
+  if (member.accessLevel === "developer") {
+    return "Developer";
+  }
+  if (member.accessLevel === "tester") {
+    return "Tester";
+  }
+  if (member.accessLevel === "view_only") {
+    return "View Only";
+  }
+  if (
+    member.accessLevel === "contributor" ||
+    member.accessLevel === "committee_chair" ||
+    member.accessLevel === "vp_communications"
+  ) {
+    return "Contributor";
+  }
+  return null;
+}
+
+/** Unique events from direct assignment + roles/teams this person is responsible for. */
+export function peopleRelatedEventIds(member: UnifiedTeamMember): string[] {
+  const ids = new Set<string>(member.assignedEventIds);
+  for (const assignment of member.committees) {
+    const eventId = assignment.committee.assignedEventId;
+    if (eventId) {
+      ids.add(eventId);
+    }
+  }
+  return Array.from(ids);
+}
+
+export type PersonEventInvolvement = {
+  /** Null when the person has a team role that is not yet tied to an Event ID. */
+  eventId: string | null;
+  title: string;
+  roleLabel: string;
+  committeeId: string | null;
+  committeeName: string | null;
+  needsEventLink: boolean;
+};
+
+/**
+ * One involvement per Event ID (with role), plus unlinked team roles that still
+ * need an Event ID. Pure helper — no fetches.
+ */
+export function buildPersonEventInvolvements(
+  member: UnifiedTeamMember,
+  eventTitlesById: Map<string, string> = new Map(),
+): PersonEventInvolvement[] {
+  const byEventId = new Map<string, PersonEventInvolvement>();
+
+  for (const assignment of member.committees) {
+    const eventId = assignment.committee.assignedEventId;
+    const roleLabel = peopleResponsibilityLabel(assignment.roleOnCommittee);
+    if (eventId) {
+      byEventId.set(eventId, {
+        eventId,
+        title: eventTitlesById.get(eventId) ?? assignment.committee.name,
+        roleLabel,
+        committeeId: assignment.committee.id,
+        committeeName: assignment.committee.name,
+        needsEventLink: false,
+      });
+    }
+  }
+
+  for (const eventId of member.assignedEventIds) {
+    if (byEventId.has(eventId)) {
+      continue;
+    }
+    byEventId.set(eventId, {
+      eventId,
+      title: eventTitlesById.get(eventId) ?? "Assigned event",
+      roleLabel: "Team Member",
+      committeeId: null,
+      committeeName: null,
+      needsEventLink: false,
+    });
+  }
+
+  const linked = Array.from(byEventId.values()).sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  const unlinked = member.committees
+    .filter((assignment) => !assignment.committee.assignedEventId)
+    .map((assignment) => ({
+      eventId: null as string | null,
+      title: assignment.committee.name,
+      roleLabel: peopleResponsibilityLabel(assignment.roleOnCommittee),
+      committeeId: assignment.committee.id,
+      committeeName: assignment.committee.name,
+      needsEventLink: true,
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  return [...linked, ...unlinked];
+}
+
+export function memberMatchesPeopleSearch(
+  member: UnifiedTeamMember,
+  query: string,
+  eventTitlesById: Map<string, string>,
+): boolean {
+  const search = query.trim().toLowerCase();
+  if (!search) {
+    return true;
+  }
+
+  const loginLabel = peopleLoginStatusLabel(peopleLoginStatus(member)).toLowerCase();
+  const accessBadge = peopleAccessBadgeLabel(member)?.toLowerCase() ?? "";
+  const responsibilityLabels = member.committees.map((assignment) =>
+    peopleResponsibilityLabel(assignment.roleOnCommittee).toLowerCase(),
+  );
+  const eventTitles = peopleRelatedEventIds(member).map(
+    (eventId) => eventTitlesById.get(eventId)?.toLowerCase() ?? "",
+  );
+
+  const haystack = [
+    member.displayName,
+    member.email,
+    member.phone ?? "",
+    member.orgRoleLabel,
+    member.roleLabel,
+    member.organizationRoleName ?? "",
+    member.statusLabel,
+    loginLabel,
+    accessBadge,
+    member.accessLabel,
+    ...responsibilityLabels,
+    ...eventTitles,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(search);
+}
 
 function formatEmailAsName(email: string): string {
   const local = email.split("@")[0] ?? email;
@@ -377,23 +592,6 @@ function rolePriority(role: MemberCommitteeAssignment["roleOnCommittee"]): numbe
   }
 }
 
-function toCommitteeAssignmentRole(
-  role: MemberCommitteeAssignment["roleOnCommittee"],
-): CommitteeAssignmentRole | null {
-  if (
-    role === "chair" ||
-    role === "co_chair" ||
-    role === "member" ||
-    role === "supervising_vp"
-  ) {
-    return role;
-  }
-  if (role === "vp") {
-    return "supervising_vp";
-  }
-  return null;
-}
-
 function resolveCommitteeRoleOnIndex(index: number): MemberCommitteeAssignment["roleOnCommittee"] {
   if (index === 0) {
     return "chair";
@@ -432,7 +630,7 @@ function resolveOrgRoleLabel(input: {
   }
 
   if (input.hasAppAccess && input.campaignRole === "admin") {
-    return "Owner";
+    return "Administrator";
   }
 
   const committeeRole = input.committeeAssignments.reduce<
@@ -448,13 +646,7 @@ function resolveOrgRoleLabel(input: {
   }, null);
 
   if (committeeRole) {
-    const mapped = toCommitteeAssignmentRole(committeeRole.roleOnCommittee);
-    if (mapped) {
-      return committeeAssignmentRoleLabel(
-        mapped,
-        committeeRole.committee.name,
-      );
-    }
+    return peopleResponsibilityLabel(committeeRole.roleOnCommittee);
   }
 
   if (input.organizationRoleName) {
@@ -462,18 +654,26 @@ function resolveOrgRoleLabel(input: {
   }
 
   if (!input.hasAppAccess) {
-    return "Roster contact";
+    return "Team Member";
   }
 
   switch (input.campaignRole) {
     case "view_only":
-      return "Viewer";
+      return "View Only";
     case "contributor":
-      return "Volunteer";
+      return "Team Member";
     case "committee_chair":
-      return "Committee Chair";
+      return "Event Lead";
     case "vp_communications":
       return "VP Communications";
+    case "developer":
+      return "Developer";
+    case "tester":
+      return "Tester";
+    case "president":
+      return "President";
+    case "admin":
+      return "Administrator";
     default:
       return campaignRoleLabel(input.campaignRole);
   }
@@ -841,8 +1041,14 @@ function finalizeUnifiedMember(
     initials: deriveInitials(person.displayName),
     orgRoleLabel,
     roleLabel: orgRoleLabel,
-    accessLabel: accessLevelLabel(accessLevel, isRosterOnly),
+    accessLabel: accessLevelLabel(
+      person.organizationUser?.accessTemplateId ?? accessLevel,
+      isRosterOnly,
+    ),
     accessLevel,
+    accessTemplateId:
+      person.organizationUser?.accessTemplateId ??
+      (isRosterOnly ? null : accessLevel),
     vpPortfolio: person.isVp
       ? person.organizationRoleName
       : person.vpPortfolioName,
@@ -920,19 +1126,12 @@ export function findUnifiedTeamMemberById(
   return null;
 }
 
-export function accessLevelLabel(
-  role: CampaignRole,
-  isRosterOnly = false,
-): string {
-  return appAccessLabel(!isRosterOnly, role);
-}
-
 export function memberStatusLabel(
   status: UnifiedMemberStatus,
   isRosterOnly = false,
 ): string {
   if (isRosterOnly || status === "roster") {
-    return ROSTER_ONLY_STATUS_LABEL;
+    return "Not Invited";
   }
   switch (status) {
     case "active":
@@ -944,6 +1143,33 @@ export function memberStatusLabel(
     default:
       return status;
   }
+}
+
+export function accessLevelLabel(
+  role: CampaignRole | string,
+  isRosterOnly = false,
+  customLabels?: Partial<Record<string, string>> | null,
+): string {
+  if (isRosterOnly) {
+    return "No login yet";
+  }
+  const custom = customLabels?.[role]?.trim();
+  if (custom) {
+    return custom;
+  }
+  if (role === "view_only") {
+    return "View Only";
+  }
+  if (role === "president") {
+    return "President";
+  }
+  if (role === "committee_chair") {
+    return "Contributor";
+  }
+  if (typeof role === "string" && role.startsWith("custom_")) {
+    return "Custom role";
+  }
+  return appAccessLabel(true, role as CampaignRole);
 }
 
 export function accessBadgeVariant(

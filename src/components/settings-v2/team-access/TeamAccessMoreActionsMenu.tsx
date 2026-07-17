@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
+import {
+  peopleLoginStatus,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
 
 interface TeamAccessMoreActionsMenuProps {
   member: UnifiedTeamMember | null;
@@ -50,19 +53,26 @@ export function TeamAccessMoreActionsMenu({
     return null;
   }
 
+  const loginStatus = peopleLoginStatus(member);
+
+  const inviteItems =
+    loginStatus === "not_invited"
+      ? [{ id: "invite", label: "Invite to Login" }]
+      : loginStatus === "invited"
+        ? [{ id: "invite", label: "Resend Invite" }]
+        : loginStatus === "active"
+          ? [{ id: "invite", label: "Change Access" }]
+          : [];
+
   const items = [
-    { id: "profile", label: "View profile" },
-    { id: "edit", label: "Edit" },
-    { id: "assign", label: "Assign committee" },
+    { id: "profile", label: "View Profile" },
+    { id: "edit", label: "Edit Person" },
+    { id: "assign", label: "Manage Event Assignments" },
     { id: "tasks", label: "View tasks" },
     { id: "approvals", label: "View approvals" },
     { id: "message", label: "Send message" },
-    ...(member.isRosterOnly || member.emailMissing
-      ? [{ id: "invite", label: "Give App Access" }]
-      : []),
-    ...(member.raw
-      ? [{ id: "deactivate", label: "Deactivate" }]
-      : []),
+    ...inviteItems,
+    ...(member.raw ? [{ id: "deactivate", label: "Deactivate" }] : []),
     { id: "archive", label: "Archive" },
     ...(member.raw ? [{ id: "remove", label: "Remove", danger: true }] : []),
   ] as const;

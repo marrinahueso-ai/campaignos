@@ -1,4 +1,5 @@
 import { TeamAccessShell } from "@/components/settings-v2/team-access/TeamAccessShell";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationUser } from "@/types/auth";
 import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
@@ -8,6 +9,8 @@ interface TeamAccessSettingsContentProps {
   workspace: OrganizationWorkspaceData;
   workload: TeamAccessWorkloadIndex;
   canManage: boolean;
+  canEditAccessTemplates: boolean;
+  accessTemplates: AccessTemplate[];
   showClaimBanner: boolean;
   currentUserEmail: string | null;
   siteOrigin: string;
@@ -25,6 +28,8 @@ export function TeamAccessSettingsContent({
   workspace,
   workload,
   canManage,
+  canEditAccessTemplates,
+  accessTemplates,
   showClaimBanner,
   currentUserEmail,
   siteOrigin,
@@ -37,6 +42,8 @@ export function TeamAccessSettingsContent({
       workspace={workspace}
       workload={workload}
       canManage={canManage}
+      canEditAccessTemplates={canEditAccessTemplates}
+      accessTemplates={accessTemplates}
       showClaimBanner={showClaimBanner}
       currentUserEmail={currentUserEmail}
       siteOrigin={siteOrigin}

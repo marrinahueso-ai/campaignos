@@ -2,16 +2,23 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { TeamAccessPersonProfileShell } from "@/components/settings-v2/team-access/TeamAccessPersonProfileShell";
 import {
+  accessLevelLabel,
   buildUnifiedTeamMembers,
   findUnifiedTeamMemberById,
+  peopleRelatedEventIds,
 } from "@/components/settings-v2/team-access/team-access-utils";
+import { accessTemplateLabelMap } from "@/lib/access-templates/merge";
+import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import {
   getActiveMembership,
   getOrganizationUsers,
 } from "@/lib/auth/membership-queries";
-import { getCampaignEventsByIds } from "@/lib/events/campaign-page-queries";
+import {
+  getCampaignEventsByIds,
+  getCampaignPageEvents,
+} from "@/lib/events/campaign-page-queries";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import { getOrganizationById } from "@/lib/organizations/queries";
 import {
@@ -81,14 +88,17 @@ export default async function TeamAccessPersonProfilePage({
     notFound();
   }
 
-  const [workspaceResult, members, workload] = await Promise.all([
-    getOrganizationWorkspaceData(organization.id),
-    getOrganizationUsers(organization.id),
-    getTeamAccessWorkloadIndex(organization.id),
-  ]);
+  const [workspaceResult, members, workload, accessTemplates] =
+    await Promise.all([
+      getOrganizationWorkspaceData(organization.id),
+      getOrganizationUsers(organization.id),
+      getTeamAccessWorkloadIndex(organization.id),
+      getOrganizationAccessTemplates(organization.id),
+    ]);
 
   const workspace =
     workspaceResult ?? buildFallbackOrganizationWorkspaceData();
+  const accessLabels = accessTemplateLabelMap(accessTemplates);
 
   // Direct profile resolve; full roster only as fallback.
   let person = findUnifiedTeamMemberById(
@@ -107,10 +117,29 @@ export default async function TeamAccessPersonProfilePage({
     notFound();
   }
 
-  const assignedEvents = await getCampaignEventsByIds(person.assignedEventIds);
-  const artworkByEventId = await getEventArtworkMap(person.assignedEventIds);
+  person = {
+    ...person,
+    accessLabel: accessLevelLabel(
+      person.accessTemplateId ?? person.accessLevel,
+      person.isRosterOnly,
+      accessLabels,
+    ),
+  };
 
-  const eventsWithArtwork = assignedEvents.map((event) => ({
+  const canManage = canManageTeam(campaignRole);
+  // Display: only events this person is tied to (keeps profile light).
+  const relatedIds = peopleRelatedEventIds(person);
+  // Manage picker: full catalog only when the viewer can edit assignments.
+  const [relatedEvents, manageCatalog] = await Promise.all([
+    getCampaignEventsByIds(relatedIds),
+    canManage ? getCampaignPageEvents(organization.id) : Promise.resolve([]),
+  ]);
+
+  const eventsSource =
+    canManage && manageCatalog.length > 0 ? manageCatalog : relatedEvents;
+  const artworkByEventId = await getEventArtworkMap(relatedIds);
+
+  const eventsWithArtwork = eventsSource.map((event) => ({
     id: event.id,
     title: event.title,
     date: event.date,
@@ -126,9 +155,11 @@ export default async function TeamAccessPersonProfilePage({
         members={members}
         workspace={workspace}
         workload={workload}
-        canManage={canManageTeam(campaignRole)}
+        canManage={canManage}
         canProvisionAccounts={isSupabaseAdminConfigured()}
         events={eventsWithArtwork}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
     </Suspense>
   );

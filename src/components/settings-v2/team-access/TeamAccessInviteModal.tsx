@@ -14,6 +14,7 @@ import {
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import type { OrganizationCommittee, OrganizationRole } from "@/types/organization-workspace";
 
 interface EventOption {
@@ -28,6 +29,8 @@ interface TeamAccessInviteModalProps {
   committees: OrganizationCommittee[];
   events?: EventOption[];
   canProvisionAccounts: boolean;
+  accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: AccessTemplate[];
   prefill?: {
     email?: string;
     name?: string;
@@ -43,6 +46,8 @@ export function TeamAccessInviteModal({
   roles,
   committees,
   events = [],
+  accessLabels = null,
+  accessTemplates = [],
   prefill,
 }: TeamAccessInviteModalProps) {
   const router = useRouter();
@@ -181,15 +186,26 @@ export function TeamAccessInviteModal({
             ))}
           </Select>
           <Select name="campaignRole" label="App access level" defaultValue="contributor">
-            {CAMPAIGN_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {campaignRoleLabel(role as CampaignRole)}
+            {(accessTemplates.length > 0
+              ? accessTemplates.map((template) => ({
+                  id: template.id,
+                  label: template.displayName,
+                }))
+              : CAMPAIGN_ROLES.map((role) => ({
+                  id: role,
+                  label:
+                    accessLabels?.[role] ??
+                    campaignRoleLabel(role as CampaignRole),
+                }))
+            ).map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </Select>
           <Select
             name="committeeId"
-            label="Committee (optional)"
+            label="Team (optional)"
             defaultValue={prefill?.committeeId ?? ""}
           >
             <option value="">None</option>

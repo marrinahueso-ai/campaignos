@@ -123,7 +123,7 @@ export function TeamAccessAddRosterPersonModal({
             </option>
           ))}
         </Select>
-        <Select name="committeeId" label="Committee (optional)" defaultValue="">
+        <Select name="committeeId" label="Team (optional)" defaultValue="">
           <option value="">None</option>
           {committees.map((committee) => (
             <option key={committee.id} value={committee.id}>
@@ -131,11 +131,11 @@ export function TeamAccessAddRosterPersonModal({
             </option>
           ))}
         </Select>
-        <Select name="committeeRole" label="Committee role (optional)" defaultValue="member">
-          <option value="chair">Chair</option>
-          <option value="co_chair">Co-chair</option>
-          <option value="member">Member</option>
-          <option value="supervising_vp">Supervising VP</option>
+        <Select name="committeeRole" label="Event responsibility (optional)" defaultValue="member">
+          <option value="chair">Event Lead</option>
+          <option value="co_chair">Assistant Lead</option>
+          <option value="member">Team Member</option>
+          <option value="supervising_vp">Supervisor</option>
         </Select>
 
         <fieldset className="space-y-2">

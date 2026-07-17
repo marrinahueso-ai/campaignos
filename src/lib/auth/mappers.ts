@@ -20,6 +20,7 @@ export function mapOrganizationUserRow(
     committeeId: row.committee_id ?? null,
     inviteMessage: row.invite_message ?? null,
     campaignRole: row.campaign_role,
+    accessTemplateId: row.access_template_id ?? row.campaign_role ?? null,
     status: row.status,
     inviteToken: row.invite_token,
     invitedAt: row.invited_at,

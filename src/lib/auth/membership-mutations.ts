@@ -57,6 +57,8 @@ export async function inviteOrganizationUser(input: {
   committeeId?: string | null;
   inviteMessage?: string | null;
   campaignRole?: CampaignRole;
+  /** Custom or system template id shown on People; auth still uses campaignRole. */
+  accessTemplateId?: string | null;
   invitedByUserId: string;
 }): Promise<{ id: string; inviteToken: string } | { error: string }> {
   const supabase = await createClient();
@@ -129,6 +131,8 @@ export async function inviteOrganizationUser(input: {
     display_name: displayName,
     invite_message: inviteMessage,
     campaign_role: input.campaignRole ?? "contributor",
+    access_template_id:
+      input.accessTemplateId ?? input.campaignRole ?? "contributor",
     status: "invited" as const,
     invite_token: inviteToken,
     invited_by_user_id: input.invitedByUserId,
@@ -214,6 +218,7 @@ export async function updateOrganizationMembership(
   input: {
     organizationRoleId?: string | null;
     campaignRole?: CampaignRole;
+    accessTemplateId?: string | null;
     status?: "active" | "invited" | "deactivated";
     displayName?: string | null;
     committeeId?: string | null;
@@ -232,6 +237,10 @@ export async function updateOrganizationMembership(
       return { error: "Invalid access role." };
     }
     updates.campaign_role = input.campaignRole;
+  }
+
+  if (input.accessTemplateId !== undefined) {
+    updates.access_template_id = input.accessTemplateId;
   }
 
   if (input.status !== undefined) {

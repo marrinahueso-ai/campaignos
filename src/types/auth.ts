@@ -14,6 +14,8 @@ export interface OrganizationUser {
   committeeId: string | null;
   inviteMessage: string | null;
   campaignRole: CampaignRole;
+  /** Custom or system access template id; null means use campaignRole. */
+  accessTemplateId?: string | null;
   status: OrganizationUserStatus;
   inviteToken: string | null;
   invitedAt: string | null;
@@ -34,6 +36,7 @@ export interface OrganizationUserRow {
   committee_id?: string | null;
   invite_message?: string | null;
   campaign_role: CampaignRole;
+  access_template_id?: string | null;
   status: OrganizationUserStatus;
   invite_token: string | null;
   invited_by_user_id: string | null;

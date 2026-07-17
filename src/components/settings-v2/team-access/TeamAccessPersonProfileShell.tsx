@@ -26,7 +26,11 @@ import {
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
-import { updateOrganizationMemberAction } from "@/lib/organization-workspace/actions";
+import {
+  removeRosterCommitteeAssignmentAction,
+  updateOrganizationCommitteeAction,
+  updateOrganizationMemberAction,
+} from "@/lib/organization-workspace/actions";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationUser } from "@/types/auth";
 import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
@@ -34,12 +38,15 @@ import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
 const VALID_TABS: PersonProfileTab[] = [
   "overview",
   "events",
-  "responsibilities",
   "access",
   "activity",
 ];
 
+/** Legacy ?tab=responsibilities redirects into Events (roles live there now). */
 function parseTab(value: string | null): PersonProfileTab {
+  if (value === "responsibilities") {
+    return "events";
+  }
   if (value && VALID_TABS.includes(value as PersonProfileTab)) {
     return value as PersonProfileTab;
   }
@@ -56,6 +63,8 @@ interface TeamAccessPersonProfileShellProps {
   canManage: boolean;
   canProvisionAccounts: boolean;
   events: TeamAccessEventOption[];
+  accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: import("@/lib/access-templates/types").AccessTemplate[];
 }
 
 export function TeamAccessPersonProfileShell({
@@ -67,6 +76,8 @@ export function TeamAccessPersonProfileShell({
   canManage,
   canProvisionAccounts,
   events,
+  accessLabels = null,
+  accessTemplates = [],
 }: TeamAccessPersonProfileShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -112,8 +123,15 @@ export function TeamAccessPersonProfileShell({
   }, [unifiedMembers, memberId]);
 
   useEffect(() => {
-    setActiveTab(parseTab(searchParams.get("tab")));
-  }, [searchParams]);
+    const raw = searchParams.get("tab");
+    setActiveTab(parseTab(raw));
+    // Keep old bookmarks working without leaving a stale tab name in the URL.
+    if (raw === "responsibilities") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "events");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+  }, [searchParams, router]);
 
   if (!member) {
     return (
@@ -250,7 +268,7 @@ export function TeamAccessPersonProfileShell({
     campaignRole: CampaignRole,
   ): Promise<string | null> {
     if (target.isRosterOnly || !target.raw) {
-      return "Use Give App Access to grant login access for roster-only people.";
+      return "Use Invite to Login to grant login access for people who are not invited yet.";
     }
 
     const result = await updateTeamMemberAction(target.raw.id, { campaignRole });
@@ -264,7 +282,7 @@ export function TeamAccessPersonProfileShell({
         ? {
             ...current,
             accessLevel: campaignRole,
-            accessLabel: accessLevelLabel(campaignRole, false),
+            accessLabel: accessLevelLabel(campaignRole, false, accessLabels),
             status: current.raw?.status ?? current.status,
             isRosterOnly: false,
             raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
@@ -275,12 +293,13 @@ export function TeamAccessPersonProfileShell({
   }
 
   function handleTabChange(tab: PersonProfileTab) {
-    setActiveTab(tab);
+    const nextTab = tab === "responsibilities" ? "events" : tab;
+    setActiveTab(nextTab);
     const params = new URLSearchParams(searchParams.toString());
-    if (tab === "overview") {
+    if (nextTab === "overview") {
       params.delete("tab");
     } else {
-      params.set("tab", tab);
+      params.set("tab", nextTab);
     }
     const query = params.toString();
     router.replace(
@@ -336,9 +355,6 @@ export function TeamAccessPersonProfileShell({
         onArchive={() => handleArchive(member)}
         onRemove={() => handleRemove(member)}
         onViewTasks={() => setTasksOpen(true)}
-        onSelectCommittee={() => {
-          router.push("/settings/team-access");
-        }}
         onSaveAccessLevel={
           canManage && !member.isRosterOnly
             ? (campaignRole) => handleSaveAccessLevel(member, campaignRole)
@@ -385,8 +401,133 @@ export function TeamAccessPersonProfileShell({
               }
             : undefined
         }
+        onLinkCommitteeEvent={
+          canManage
+            ? async (committeeId, eventId) => {
+                const result = await updateOrganizationCommitteeAction(
+                  committeeId,
+                  { assignedEventId: eventId },
+                );
+                if (result.error) {
+                  return result.error;
+                }
+                router.refresh();
+                setMember((current) => {
+                  if (!current) {
+                    return current;
+                  }
+                  const nextAssigned = Array.from(
+                    new Set([...current.assignedEventIds, eventId]),
+                  );
+                  return {
+                    ...current,
+                    assignedEventIds: nextAssigned,
+                    committees: current.committees.map((assignment) =>
+                      assignment.committee.id === committeeId
+                        ? {
+                            ...assignment,
+                            committee: {
+                              ...assignment.committee,
+                              assignedEventId: eventId,
+                            },
+                          }
+                        : assignment,
+                    ),
+                    raw: current.raw
+                      ? {
+                          ...current.raw,
+                          assignedEventIds: nextAssigned,
+                        }
+                      : current.raw,
+                  };
+                });
+                return null;
+              }
+            : undefined
+        }
+        onRemoveEventInvolvement={
+          canManage && (member.organizationMemberId || member.raw)
+            ? async ({ eventId, committeeId }) => {
+                if (committeeId && member.organizationMemberId) {
+                  const roleResult = await removeRosterCommitteeAssignmentAction(
+                    {
+                      organizationMemberId: member.organizationMemberId,
+                      committeeId,
+                    },
+                  );
+                  if (roleResult.error) {
+                    return roleResult.error;
+                  }
+                }
+
+                if (eventId) {
+                  const nextIds = (
+                    member.assignedEventIds ??
+                    member.raw?.assignedEventIds ??
+                    []
+                  ).filter((id) => id !== eventId);
+
+                  if (member.organizationMemberId) {
+                    const result = await replaceMemberEventAssignmentsAction({
+                      organizationMemberId: member.organizationMemberId,
+                      eventIds: nextIds,
+                    });
+                    if (result.error) {
+                      return result.error;
+                    }
+                  } else if (member.raw) {
+                    const result =
+                      await setOrganizationUserEventAssignmentsAction({
+                        organizationUserId: member.raw.id,
+                        eventIds: nextIds,
+                      });
+                    if (result.error) {
+                      return result.error;
+                    }
+                  }
+
+                  setMember((current) =>
+                    current
+                      ? {
+                          ...current,
+                          assignedEventIds: nextIds,
+                          committees: committeeId
+                            ? current.committees.filter(
+                                (assignment) =>
+                                  assignment.committee.id !== committeeId,
+                              )
+                            : current.committees,
+                          raw: current.raw
+                            ? {
+                                ...current.raw,
+                                assignedEventIds: nextIds,
+                              }
+                            : current.raw,
+                        }
+                      : current,
+                  );
+                } else if (committeeId) {
+                  setMember((current) =>
+                    current
+                      ? {
+                          ...current,
+                          committees: current.committees.filter(
+                            (assignment) =>
+                              assignment.committee.id !== committeeId,
+                          ),
+                        }
+                      : current,
+                  );
+                }
+
+                router.refresh();
+                return null;
+              }
+            : undefined
+        }
         events={events}
         canManage={canManage}
+        accessLabels={accessLabels}
       />
 
       <TeamAccessInviteModal
@@ -400,12 +541,16 @@ export function TeamAccessPersonProfileShell({
         events={events}
         canProvisionAccounts={canProvisionAccounts}
         prefill={invitePrefill}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
       <TeamAccessGiveAppAccessModal
         open={giveAppAccessOpen}
         onClose={() => setGiveAppAccessOpen(false)}
         member={member}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
       <TeamAccessEditMemberModal
@@ -415,6 +560,8 @@ export function TeamAccessPersonProfileShell({
         roles={workspace.roles}
         committees={workspace.committees}
         workspace={workspace}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
       <TeamAccessSendMessageModal

@@ -92,11 +92,16 @@ export async function saveCalendarSubscribeUrlAction(
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/integrations");
+  revalidatePath("/settings/integrations/calendar");
+  revalidatePath("/calendar/import");
   return { error: null, success: true };
 }
 
 function revalidateCalendarSubscribePaths() {
   revalidatePath("/settings");
+  revalidatePath("/settings/integrations");
+  revalidatePath("/settings/integrations/calendar");
   revalidatePath("/calendar");
   revalidatePath("/calendar/review");
   revalidatePath("/calendar/import");

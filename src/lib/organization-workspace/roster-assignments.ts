@@ -243,6 +243,157 @@ export async function replaceMemberCommitteeAssignments(input: {
   return { success: true };
 }
 
+/**
+ * Additive: insert one person↔event row. Never delete-all/replace — that path
+ * can wipe other Event IDs if the existing list fails to load.
+ */
+export async function ensureOrganizationMemberHasEventAssignment(input: {
+  organizationId: string;
+  organizationMemberId: string;
+  eventId: string;
+}): Promise<{ error: string } | { success: true }> {
+  const eventId = input.eventId.trim();
+  if (!eventId) {
+    return { success: true };
+  }
+
+  const supabase = await createClient();
+  const schoolYearIds = await getOrganizationSchoolYearIds(input.organizationId);
+  if (schoolYearIds.length === 0) {
+    return { error: "No school year found for this organization." };
+  }
+
+  const { data: eventRow, error: eventError } = await supabase
+    .from("events")
+    .select("id, school_year_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError) {
+    return { error: eventError.message };
+  }
+  if (
+    !eventRow ||
+    !schoolYearIds.includes(eventRow.school_year_id as string)
+  ) {
+    return { error: "Event is not in this organization." };
+  }
+
+  const { error: insertError } = await supabase
+    .from("organization_member_event_assignments")
+    .upsert(
+      {
+        organization_id: input.organizationId,
+        organization_member_id: input.organizationMemberId,
+        event_id: eventId,
+      },
+      {
+        onConflict: "organization_member_id,event_id",
+        ignoreDuplicates: true,
+      },
+    );
+
+  if (insertError) {
+    if (insertError.code === "42P01") {
+      return {
+        error: "Event assignment table is missing. Apply migration 060.",
+      };
+    }
+    // Unique race: already tied — treat as success.
+    if (insertError.code === "23505") {
+      return { success: true };
+    }
+    return { error: insertError.message };
+  }
+
+  const { data: linkedUsers } = await supabase
+    .from("organization_users")
+    .select("id")
+    .eq("organization_member_id", input.organizationMemberId);
+
+  for (const user of linkedUsers ?? []) {
+    const { error: userInsertError } = await supabase
+      .from("organization_user_event_assignments")
+      .upsert(
+        {
+          organization_id: input.organizationId,
+          organization_user_id: user.id as string,
+          event_id: eventId,
+        },
+        {
+          onConflict: "organization_user_id,event_id",
+          ignoreDuplicates: true,
+        },
+      );
+    if (userInsertError && userInsertError.code !== "23505") {
+      if (userInsertError.code === "42P01") {
+        continue;
+      }
+      return { error: userInsertError.message };
+    }
+  }
+
+  return { success: true };
+}
+
+async function getCommitteeAssignedEventId(
+  committeeId: string,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_committees")
+    .select("assigned_event_id")
+    .eq("id", committeeId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+  return (data.assigned_event_id as string | null) ?? null;
+}
+
+/**
+ * When a team is linked to an event, every person with a role on that team
+ * should also be tied to that Event ID.
+ */
+export async function syncCommitteeAssigneesToLinkedEvent(input: {
+  organizationId: string;
+  committeeId: string;
+  eventId: string;
+}): Promise<{ error: string } | { success: true }> {
+  const eventId = input.eventId.trim();
+  if (!eventId) {
+    return { success: true };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_committee_assignments")
+    .select("organization_member_id")
+    .eq("committee_id", input.committeeId);
+
+  if (error) {
+    if (error.code === "42P01") {
+      return { success: true };
+    }
+    return { error: error.message };
+  }
+
+  for (const row of data ?? []) {
+    const organizationMemberId = row.organization_member_id as string;
+    const ensured = await ensureOrganizationMemberHasEventAssignment({
+      organizationId: input.organizationId,
+      organizationMemberId,
+      eventId,
+    });
+    if ("error" in ensured) {
+      return ensured;
+    }
+  }
+
+  return { success: true };
+}
+
 export async function upsertMemberCommitteeAssignment(input: {
   organizationId: string;
   organizationMemberId: string;
@@ -254,11 +405,29 @@ export async function upsertMemberCommitteeAssignment(input: {
     .filter((row) => row.committeeId !== input.committeeId)
     .map((row) => ({ committeeId: row.committeeId, role: row.role }));
   next.push({ committeeId: input.committeeId, role: input.role });
-  return replaceMemberCommitteeAssignments({
+  const result = await replaceMemberCommitteeAssignments({
     organizationId: input.organizationId,
     organizationMemberId: input.organizationMemberId,
     assignments: next,
   });
+  if ("error" in result) {
+    return result;
+  }
+
+  // Person ↔ Event ID: if this team is already linked to an event, tie the person.
+  const linkedEventId = await getCommitteeAssignedEventId(input.committeeId);
+  if (linkedEventId) {
+    const ensured = await ensureOrganizationMemberHasEventAssignment({
+      organizationId: input.organizationId,
+      organizationMemberId: input.organizationMemberId,
+      eventId: linkedEventId,
+    });
+    if ("error" in ensured) {
+      return ensured;
+    }
+  }
+
+  return { success: true };
 }
 
 export async function listOrganizationMemberEventIds(

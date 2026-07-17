@@ -1,12 +1,18 @@
 import "server-only";
 
+import {
+  buildApprovalContentPreviewHtml,
+  buildApprovalContentPreviewText,
+  type ApprovalEmailContentPreview,
+} from "@/lib/email/approval-content-preview";
 import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
 import type { EmailAttachment } from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
 import { resolveSiteOrigin } from "@/lib/site/url";
+import { escapeHtml } from "@/lib/utils/html";
 import { createClient } from "@/lib/supabase/server";
 
-export interface CampaignApprovalNotificationInput {
+export interface CampaignApprovalNotificationInput extends ApprovalEmailContentPreview {
   eventId: string;
   campaignName: string;
   recipientEmail: string;
@@ -88,21 +94,36 @@ function buildApprovalEmailHtml(input: {
   body: string;
   ctaLabel: string;
   ctaHref: string;
+  content?: ApprovalEmailContentPreview;
 }): string {
   const emailPrimaryUrl = `${resolveSiteOrigin()}/go/email-primary`;
+  const contentPreview = buildApprovalContentPreviewHtml(input.content ?? {});
   return `
-    <div style="font-family: Georgia, serif; color: #2a2622; background: #f6f2eb; padding: 24px;">
-      <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 12px;">${input.heading}</h1>
-      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">${input.body}</p>
-      <a href="${input.ctaHref}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px;">
-        ${input.ctaLabel}
+    <div style="font-family: Georgia, serif; color: #2a2622; background: #f6f2eb; padding: 24px; max-width: 560px;">
+      <p style="margin:0 0 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5c554c;">Hey Ralli</p>
+      <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 12px;">${escapeHtml(input.heading)}</h1>
+      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${input.body}</p>
+      ${contentPreview}
+      <a href="${escapeHtml(input.ctaHref)}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px; margin-top: 8px;">
+        ${escapeHtml(input.ctaLabel)}
       </a>
       <p style="margin: 28px 0 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; line-height: 1.5; color: #5c554c;">
-        <a href="${emailPrimaryUrl}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
-        — one-time Gmail setup so approvals, reminders, and Socials kits aren’t filed under Promotions.
+        <a href="${escapeHtml(emailPrimaryUrl)}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
+        — one-time Gmail setup so approvals, reminders, and post kits aren’t filed under Promotions.
       </p>
     </div>
   `;
+}
+
+function contentPreviewFromInput(
+  input: ApprovalEmailContentPreview,
+): ApprovalEmailContentPreview {
+  return {
+    feedArtworkUrl: input.feedArtworkUrl ?? null,
+    storyArtworkUrl: input.storyArtworkUrl ?? null,
+    captionText: input.captionText ?? null,
+    storyCaption: input.storyCaption ?? null,
+  };
 }
 
 function approvalsPageUrl(eventId: string): string {
@@ -184,11 +205,13 @@ export async function sendApprovalAssignedEmail(
   input: CampaignApprovalNotificationInput,
 ): Promise<CampaignApprovalNotificationResult> {
   const href = approvalsPageUrl(input.eventId);
+  const content = contentPreviewFromInput(input);
   const html = buildApprovalEmailHtml({
     heading: "Approval assigned to you",
-    body: `"${input.milestoneName}" in ${input.campaignName} is waiting for your review.`,
+    body: `<strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)} is waiting for your review.`,
     ctaLabel: "Review in Approvals",
     ctaHref: href,
+    content,
   });
 
   return dispatchApprovalEmail({
@@ -197,27 +220,31 @@ export async function sendApprovalAssignedEmail(
     recipientEmail: input.recipientEmail,
     subject: `Approval needed: ${input.milestoneName}`,
     html,
-    text: `Approval assigned: ${input.milestoneName} in ${input.campaignName}. Review at ${href}`,
+    text: `Approval assigned: ${input.milestoneName} in ${input.campaignName}. Review at ${href}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
 }
 
-export async function sendChangeRequestedEmail(input: {
-  eventId: string;
-  campaignName: string;
-  milestoneName: string;
-  recipientEmail: string;
-  comment: string;
-  schedulingItemId?: string | null;
-  approvalRequestId?: string | null;
-}): Promise<CampaignApprovalNotificationResult> {
+export async function sendChangeRequestedEmail(
+  input: ApprovalEmailContentPreview & {
+    eventId: string;
+    campaignName: string;
+    milestoneName: string;
+    recipientEmail: string;
+    comment: string;
+    schedulingItemId?: string | null;
+    approvalRequestId?: string | null;
+  },
+): Promise<CampaignApprovalNotificationResult> {
   const href = approvalsPageUrl(input.eventId);
+  const content = contentPreviewFromInput(input);
   const html = buildApprovalEmailHtml({
     heading: "Changes requested",
-    body: `An approver requested changes to "${input.milestoneName}" in ${input.campaignName}. Comment: ${input.comment}`,
+    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}.<br /><br /><strong>Comment:</strong> ${escapeHtml(input.comment)}`,
     ctaLabel: "View in Create with AI",
     ctaHref: `${process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"}/events/${input.eventId}/campaign-builder#review`,
+    content,
   });
 
   return dispatchApprovalEmail({
@@ -226,26 +253,30 @@ export async function sendChangeRequestedEmail(input: {
     recipientEmail: input.recipientEmail,
     subject: `Changes requested: ${input.milestoneName}`,
     html,
-    text: `Changes requested for ${input.milestoneName}: ${input.comment}. Open ${href}`,
+    text: `Changes requested for ${input.milestoneName}: ${input.comment}. Open ${href}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
 }
 
-export async function sendContentApprovedEmail(input: {
-  eventId: string;
-  campaignName: string;
-  milestoneName: string;
-  recipientEmail: string;
-  schedulingItemId?: string | null;
-  approvalRequestId?: string | null;
-}): Promise<CampaignApprovalNotificationResult> {
+export async function sendContentApprovedEmail(
+  input: ApprovalEmailContentPreview & {
+    eventId: string;
+    campaignName: string;
+    milestoneName: string;
+    recipientEmail: string;
+    schedulingItemId?: string | null;
+    approvalRequestId?: string | null;
+  },
+): Promise<CampaignApprovalNotificationResult> {
   const href = approvalsPageUrl(input.eventId);
+  const content = contentPreviewFromInput(input);
   const html = buildApprovalEmailHtml({
     heading: "Content approved",
-    body: `"${input.milestoneName}" in ${input.campaignName} was approved and is ready for delivery.`,
+    body: `<strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)} was approved and is ready for delivery.`,
     ctaLabel: "View schedule",
     ctaHref: href,
+    content,
   });
 
   return dispatchApprovalEmail({
@@ -254,26 +285,30 @@ export async function sendContentApprovedEmail(input: {
     recipientEmail: input.recipientEmail,
     subject: `Approved: ${input.milestoneName}`,
     html,
-    text: `${input.milestoneName} was approved. View schedule at ${href}`,
+    text: `${input.milestoneName} was approved. View schedule at ${href}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });
 }
 
-export async function sendScheduledDeliveryEmail(input: {
-  eventId: string;
-  campaignName: string;
-  milestoneName: string;
-  recipientEmail: string;
-  scheduleLabel: string;
-  schedulingItemId?: string | null;
-}): Promise<CampaignApprovalNotificationResult> {
+export async function sendScheduledDeliveryEmail(
+  input: ApprovalEmailContentPreview & {
+    eventId: string;
+    campaignName: string;
+    milestoneName: string;
+    recipientEmail: string;
+    scheduleLabel: string;
+    schedulingItemId?: string | null;
+  },
+): Promise<CampaignApprovalNotificationResult> {
   const href = approvalsPageUrl(input.eventId);
+  const content = contentPreviewFromInput(input);
   const html = buildApprovalEmailHtml({
     heading: "Scheduled for delivery",
-    body: `"${input.milestoneName}" in ${input.campaignName} is scheduled for ${input.scheduleLabel}.`,
+    body: `<strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)} is scheduled for ${escapeHtml(input.scheduleLabel)}.`,
     ctaLabel: "View in Approvals",
     ctaHref: href,
+    content,
   });
 
   return dispatchApprovalEmail({
@@ -282,7 +317,7 @@ export async function sendScheduledDeliveryEmail(input: {
     recipientEmail: input.recipientEmail,
     subject: `Scheduled: ${input.milestoneName}`,
     html,
-    text: `${input.milestoneName} scheduled for ${input.scheduleLabel}. ${href}`,
+    text: `${input.milestoneName} scheduled for ${input.scheduleLabel}. ${href}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
   });
 }

@@ -72,8 +72,8 @@ async function fetchStoryAttachment(
 }
 
 /**
- * Professional Hey Ralli Socials template for manual Instagram upload kits.
- * Sent from Socials@heyralli.com via Resend.
+ * Professional Hey Ralli template for manual Instagram upload kits.
+ * Sent from Socials@heyralli.com via Resend (display name: Hey Ralli).
  */
 export async function buildSocialsManualUploadEmail(
   input: SocialsManualUploadEmailInput,
@@ -136,7 +136,7 @@ export async function buildSocialsManualUploadEmail(
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:560px;max-width:100%;background:#f6f2eb;border:1px solid #ddd4c8;border-radius:20px;overflow:hidden;">
           <tr>
             <td style="background:#2a2622;padding:22px 32px;">
-              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f6f2eb;letter-spacing:0.02em;">Hey Ralli Socials</p>
+              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#f6f2eb;letter-spacing:0.02em;">Hey Ralli</p>
               <p style="margin:6px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#a89f94;letter-spacing:0.08em;text-transform:uppercase;">Story post kit</p>
             </td>
           </tr>
@@ -179,13 +179,13 @@ export async function buildSocialsManualUploadEmail(
                 Keep Hey Ralli in Primary
               </a>
               <p style="margin:10px 0 0;font-size:12px;line-height:1.45;color:#5c554c;">
-                One-time Gmail setup so approvals, reminders, and Socials kits stay in Primary — not Promotions.
+                One-time Gmail setup so approvals, reminders, and post kits stay in Primary — not Promotions.
               </p>
             </td>
           </tr>
           <tr>
             <td style="padding:18px 32px 22px;border-top:1px solid #ddd4c8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;line-height:1.5;color:#5c554c;">
-              Sent by Hey Ralli Socials · <a href="mailto:Socials@heyralli.com" style="color:#5c554c;">Socials@heyralli.com</a>
+              Sent by Hey Ralli · <a href="mailto:Socials@heyralli.com" style="color:#5c554c;">Socials@heyralli.com</a>
             </td>
           </tr>
         </table>
@@ -197,7 +197,7 @@ export async function buildSocialsManualUploadEmail(
   `.trim();
 
   const textParts = [
-    "Hey Ralli Socials — Story post kit",
+    "Hey Ralli — Story post kit",
     "",
     `${input.eventTitle} · ${input.milestoneTitle}`,
     `Post by: ${input.scheduledLabel}`,

@@ -13,6 +13,7 @@ import {
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 
 const GIVE_APP_ACCESS_ROLES: CampaignRole[] = [
   "contributor",
@@ -25,12 +26,16 @@ interface TeamAccessGiveAppAccessModalProps {
   open: boolean;
   onClose: () => void;
   member: UnifiedTeamMember | null;
+  accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: AccessTemplate[];
 }
 
 export function TeamAccessGiveAppAccessModal({
   open,
   onClose,
   member,
+  accessLabels = null,
+  accessTemplates = [],
 }: TeamAccessGiveAppAccessModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -108,7 +113,7 @@ export function TeamAccessGiveAppAccessModal({
     <TeamAccessModal
       open={open}
       onClose={handleClose}
-      title="Give app access"
+      title="Invite to Login"
       subtitle={`${member.displayName} — create a login invite without changing roster assignments.`}
       footer={
         inviteUrl ? (
@@ -168,10 +173,27 @@ export function TeamAccessGiveAppAccessModal({
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-          <Select name="campaignRole" label="App access level" defaultValue="contributor">
-            {GIVE_APP_ACCESS_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {campaignRoleLabel(role)}
+          <Select name="campaignRole" label="Access level" defaultValue="contributor">
+            {(accessTemplates.length > 0
+              ? accessTemplates
+                  .filter(
+                    (template) =>
+                      template.isCustom ||
+                      GIVE_APP_ACCESS_ROLES.includes(
+                        template.id as CampaignRole,
+                      ),
+                  )
+                  .map((template) => ({
+                    id: template.id,
+                    label: template.displayName,
+                  }))
+              : GIVE_APP_ACCESS_ROLES.map((role) => ({
+                  id: role,
+                  label: accessLabels?.[role] ?? campaignRoleLabel(role),
+                }))
+            ).map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </Select>

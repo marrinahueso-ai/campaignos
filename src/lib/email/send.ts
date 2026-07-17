@@ -33,11 +33,11 @@ export function resolveFromAddress(): string {
   );
 }
 
-/** From address for Socials / manual-upload kits. */
+/** From address for manual-upload / story post kits. */
 export function resolveSocialsFromAddress(): string {
   return (
     process.env.RESEND_SOCIALS_FROM_EMAIL?.trim() ||
-    "Hey Ralli Socials <Socials@heyralli.com>"
+    "Hey Ralli <Socials@heyralli.com>"
   );
 }
 

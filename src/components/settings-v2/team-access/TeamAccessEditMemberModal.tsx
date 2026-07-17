@@ -18,6 +18,7 @@ import {
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import {
   createOrganizationMemberAction,
   saveRosterCommitteeAssignmentAction,
@@ -38,6 +39,8 @@ interface TeamAccessEditMemberModalProps {
   roles: OrganizationRole[];
   committees: OrganizationCommittee[];
   workspace: OrganizationWorkspaceData;
+  accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: AccessTemplate[];
 }
 
 export function TeamAccessEditMemberModal({
@@ -47,6 +50,8 @@ export function TeamAccessEditMemberModal({
   roles,
   committees,
   workspace,
+  accessLabels = null,
+  accessTemplates = [],
 }: TeamAccessEditMemberModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -80,7 +85,7 @@ export function TeamAccessEditMemberModal({
     const email = emailRaw || null;
     const phone = formData.get("phone")?.toString()?.trim() || null;
     const organizationRoleId = (formData.get("organizationRoleId") as string) || null;
-    const campaignRole = formData.get("campaignRole") as CampaignRole;
+    const campaignRole = formData.get("campaignRole")?.toString() ?? "contributor";
     const status = formData.get("status") as "active" | "deactivated" | "archived";
     const committeeId = (formData.get("committeeId") as string) || null;
     const committeeRole =
@@ -186,7 +191,7 @@ export function TeamAccessEditMemberModal({
       if (source.kind === "committee") {
         const committee = committees.find((entry) => entry.id === source.committeeId);
         if (!committee) {
-          setError("Committee not found.");
+          setError("Team not found.");
           return;
         }
 
@@ -314,11 +319,24 @@ export function TeamAccessEditMemberModal({
           <Select
             name="campaignRole"
             label="App access"
-            defaultValue={activeMember.accessLevel}
+            defaultValue={
+              activeMember.accessTemplateId ?? activeMember.accessLevel
+            }
           >
-            {CAMPAIGN_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {campaignRoleLabel(role as CampaignRole)}
+            {(accessTemplates.length > 0
+              ? accessTemplates.map((template) => ({
+                  id: template.id,
+                  label: template.displayName,
+                }))
+              : CAMPAIGN_ROLES.map((role) => ({
+                  id: role,
+                  label:
+                    accessLabels?.[role] ??
+                    campaignRoleLabel(role as CampaignRole),
+                }))
+            ).map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </Select>
@@ -343,7 +361,7 @@ export function TeamAccessEditMemberModal({
           <>
             <Select
               name="committeeId"
-              label="Assigned committee"
+              label="Assigned team"
               defaultValue={activeEditContext.defaultCommitteeId ?? ""}
             >
               <option value="">None</option>
@@ -355,13 +373,13 @@ export function TeamAccessEditMemberModal({
             </Select>
             <Select
               name="committeeRole"
-              label="Committee role"
+              label="Event responsibility"
               defaultValue={activeEditContext.defaultCommitteeRole ?? "member"}
             >
-              <option value="chair">Chair</option>
-              <option value="co_chair">Co-chair</option>
-              <option value="member">Member</option>
-              <option value="supervising_vp">Supervising VP</option>
+              <option value="chair">Event Lead</option>
+              <option value="co_chair">Assistant Lead</option>
+              <option value="member">Team Member</option>
+              <option value="supervising_vp">Supervisor</option>
             </Select>
           </>
         ) : null}
@@ -371,7 +389,7 @@ export function TeamAccessEditMemberModal({
             <option value="invited">Pending invite</option>
             <option value="deactivated">Deactivated</option>
             <option value="archived">Archived</option>
-            <option value="roster">Roster</option>
+            <option value="roster">Not Invited</option>
           </Select>
         ) : null}
         <Textarea

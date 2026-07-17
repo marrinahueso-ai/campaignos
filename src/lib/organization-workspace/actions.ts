@@ -240,14 +240,18 @@ export async function createRosterPersonAction(input: {
     }
   }
 
-  if (input.eventIds && input.eventIds.length > 0) {
-    const { replaceOrganizationMemberEventAssignments } = await import(
-      "@/lib/organization-workspace/roster-assignments"
-    );
+  // Keep any Event ID tied by the committee role sync above, plus explicit picks.
+  const { listOrganizationMemberEventIds, replaceOrganizationMemberEventAssignments } =
+    await import("@/lib/organization-workspace/roster-assignments");
+  const alreadyTied = await listOrganizationMemberEventIds(created.id);
+  const nextEventIds = Array.from(
+    new Set([...(input.eventIds ?? []), ...alreadyTied].map((id) => id.trim()).filter(Boolean)),
+  );
+  if (nextEventIds.length > 0) {
     const events = await replaceOrganizationMemberEventAssignments({
       organizationId: org.organizationId,
       organizationMemberId: created.id,
-      eventIds: input.eventIds,
+      eventIds: nextEventIds,
     });
     if ("error" in events) {
       return { error: events.error, success: false, memberId: created.id };
@@ -256,6 +260,44 @@ export async function createRosterPersonAction(input: {
 
   revalidateOrganizationWorkspace();
   return { error: null, success: true, memberId: created.id };
+}
+
+/** Remove one team/role assignment for a roster person (does not delete the team). */
+export async function removeRosterCommitteeAssignmentAction(input: {
+  organizationMemberId: string;
+  committeeId: string;
+}): Promise<OrganizationActionState> {
+  const org = await requireOrganizationId();
+  if ("error" in org) {
+    return { error: org.error, success: false };
+  }
+
+  if (!input.organizationMemberId.trim() || !input.committeeId.trim()) {
+    return { error: "Person and team are required.", success: false };
+  }
+
+  const {
+    listCommitteeAssignmentsForMember,
+    replaceMemberCommitteeAssignments,
+  } = await import("@/lib/organization-workspace/roster-assignments");
+
+  const existing = await listCommitteeAssignmentsForMember(
+    input.organizationMemberId,
+  );
+  const result = await replaceMemberCommitteeAssignments({
+    organizationId: org.organizationId,
+    organizationMemberId: input.organizationMemberId,
+    assignments: existing
+      .filter((row) => row.committeeId !== input.committeeId)
+      .map((row) => ({ committeeId: row.committeeId, role: row.role })),
+  });
+
+  if ("error" in result) {
+    return { error: result.error, success: false };
+  }
+
+  revalidateOrganizationWorkspace();
+  return { error: null, success: true };
 }
 
 export async function saveRosterCommitteeAssignmentAction(input: {
@@ -489,6 +531,21 @@ export async function updateOrganizationCommitteeAction(
 
   if ("error" in result) {
     return { error: result.error, success: false };
+  }
+
+  // Linking a team → Event ID should tie every role-holder to that event.
+  if (input.assignedEventId) {
+    const { syncCommitteeAssigneesToLinkedEvent } = await import(
+      "@/lib/organization-workspace/roster-assignments"
+    );
+    const sync = await syncCommitteeAssigneesToLinkedEvent({
+      organizationId: org.organizationId,
+      committeeId,
+      eventId: input.assignedEventId,
+    });
+    if ("error" in sync) {
+      return { error: sync.error, success: false };
+    }
   }
 
   revalidateOrganizationWorkspace();

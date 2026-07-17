@@ -180,7 +180,7 @@ export function CalendarImportPlanList({
           </CardDescription>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button href="/calendar/import">Import calendar</Button>
-            <Button href="/settings" variant="secondary">
+            <Button href="/settings/integrations/calendar" variant="secondary">
               Sync subscribe feed
             </Button>
           </div>

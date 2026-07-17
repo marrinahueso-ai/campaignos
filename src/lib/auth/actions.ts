@@ -24,6 +24,8 @@ import {
   campaignRoleLabel,
   isCampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
+import { resolveAccessTemplateSelection } from "@/lib/access-templates/merge";
 import { getCurrentCampaignRole, SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
 import {
   buildInviteLoginUrl,
@@ -482,10 +484,16 @@ export async function inviteTeamMemberAction(
     roleKind = (data?.role_kind as typeof roleKind) ?? null;
   }
 
-  const resolvedCampaignRole = resolveCampaignRoleForInvite(
+  const accessTemplates = await getOrganizationAccessTemplates(organization.id);
+  const templateSelection = resolveAccessTemplateSelection(
+    accessTemplates,
     accessRoleRaw,
-    roleKind,
   );
+  const resolvedCampaignRole =
+    templateSelection?.campaignRole ??
+    resolveCampaignRoleForInvite(accessRoleRaw, roleKind);
+  const accessTemplateId =
+    templateSelection?.templateId ?? resolvedCampaignRole;
 
   const result = await inviteOrganizationUser({
     organizationId: organization.id,
@@ -495,6 +503,7 @@ export async function inviteTeamMemberAction(
     committeeId,
     inviteMessage,
     campaignRole: resolvedCampaignRole,
+    accessTemplateId,
     invitedByUserId: user.id,
   });
 
@@ -554,8 +563,11 @@ export async function updateTeamMemberAction(
   membershipId: string,
   input: {
     organizationRoleId?: string | null;
-    campaignRole?: CampaignRole;
+    campaignRole?: CampaignRole | string;
+    accessTemplateId?: string | null;
     status?: "active" | "deactivated";
+    displayName?: string | null;
+    committeeId?: string | null;
   },
 ): Promise<AuthActionState> {
   const campaignRole = await getCurrentCampaignRole();
@@ -563,7 +575,42 @@ export async function updateTeamMemberAction(
     return { error: "You do not have permission to update team members.", success: false };
   }
 
-  const result = await updateOrganizationMembership(membershipId, input);
+  const organization = await getCurrentOrganization();
+  const resolvedInput: {
+    organizationRoleId?: string | null;
+    campaignRole?: CampaignRole;
+    accessTemplateId?: string | null;
+    status?: "active" | "deactivated";
+    displayName?: string | null;
+    committeeId?: string | null;
+  } = {
+    organizationRoleId: input.organizationRoleId,
+    accessTemplateId: input.accessTemplateId,
+    status: input.status,
+    displayName: input.displayName,
+    committeeId: input.committeeId,
+  };
+
+  if (typeof input.campaignRole === "string" && organization) {
+    const templates = await getOrganizationAccessTemplates(organization.id);
+    const selection = resolveAccessTemplateSelection(
+      templates,
+      input.campaignRole,
+    );
+    if (selection) {
+      resolvedInput.campaignRole = selection.campaignRole;
+      resolvedInput.accessTemplateId =
+        input.accessTemplateId ?? selection.templateId;
+    } else if (isCampaignRole(input.campaignRole)) {
+      resolvedInput.campaignRole = input.campaignRole;
+      resolvedInput.accessTemplateId =
+        input.accessTemplateId ?? input.campaignRole;
+    } else {
+      return { error: "Invalid access role.", success: false };
+    }
+  }
+
+  const result = await updateOrganizationMembership(membershipId, resolvedInput);
   if ("error" in result) {
     return { error: result.error, success: false };
   }
@@ -840,7 +887,7 @@ export async function setSimulatedRoleAction(
 export async function giveAppAccessAction(input: {
   organizationMemberId: string;
   email: string;
-  campaignRole: CampaignRole;
+  campaignRole: CampaignRole | string;
   sendEmail?: boolean;
 }): Promise<AuthActionState> {
   const user = await getAuthUser();
@@ -863,9 +910,17 @@ export async function giveAppAccessAction(input: {
   if (!email) {
     return { error: "Email is required to grant app access.", success: false };
   }
-  if (!isCampaignRole(input.campaignRole)) {
+
+  const templates = await getOrganizationAccessTemplates(organization.id);
+  const selection = resolveAccessTemplateSelection(
+    templates,
+    String(input.campaignRole),
+  );
+  if (!selection) {
     return { error: "Invalid access role.", success: false };
   }
+  const resolvedCampaignRole: CampaignRole = selection.campaignRole;
+  const accessTemplateId = selection.templateId;
 
   const supabase = await createClient();
   const { data: rosterMember, error: rosterError } = await supabase
@@ -886,7 +941,8 @@ export async function giveAppAccessAction(input: {
     organizationRoleId:
       (rosterMember.organization_role_id as string | null) ?? null,
     organizationMemberId,
-    campaignRole: input.campaignRole,
+    campaignRole: resolvedCampaignRole,
+    accessTemplateId,
     invitedByUserId: user.id,
   });
 
@@ -929,7 +985,7 @@ export async function giveAppAccessAction(input: {
     inviteUrl,
     organizationName: orgRecord?.name ?? "your PTO",
     inviteeName: (rosterMember.name as string | null) ?? null,
-    accessLevel: input.campaignRole,
+    accessLevel: resolvedCampaignRole,
     personalMessage: null,
     inviterEmail: user.email ?? null,
   });

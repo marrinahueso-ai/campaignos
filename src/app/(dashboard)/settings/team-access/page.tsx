@@ -1,5 +1,6 @@
 import { TeamAccessSettingsContent } from "@/components/settings-v2/TeamAccessSettingsContent";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
+import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import {
@@ -47,13 +48,14 @@ export default async function TeamAccessSettingsPage() {
     );
   }
 
-  const [workspaceResult, members, workload, events, headersList] =
+  const [workspaceResult, members, workload, events, headersList, accessTemplates] =
     await Promise.all([
       getOrganizationWorkspaceData(organization.id),
       getOrganizationUsers(organization.id),
       getTeamAccessWorkloadIndex(organization.id),
       getCampaignPageEvents(organization.id),
       headers(),
+      getOrganizationAccessTemplates(organization.id),
     ]);
 
   const workspace =
@@ -61,6 +63,7 @@ export default async function TeamAccessSettingsPage() {
 
   // Claim banner only applies when there is no membership; this branch requires one.
   const showClaimBanner = false;
+  const canManage = canManageTeam(campaignRole) || showClaimBanner;
 
   const siteOrigin = resolveAuthSiteOrigin(
     headersList.get("origin"),
@@ -73,7 +76,9 @@ export default async function TeamAccessSettingsPage() {
       members={members}
       workspace={workspace}
       workload={workload}
-      canManage={canManageTeam(campaignRole) || showClaimBanner}
+      canManage={canManage}
+      canEditAccessTemplates={canManageTeam(campaignRole)}
+      accessTemplates={accessTemplates}
       showClaimBanner={showClaimBanner}
       currentUserEmail={user?.email ?? null}
       siteOrigin={siteOrigin}
