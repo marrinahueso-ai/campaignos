@@ -173,30 +173,33 @@ export function TeamAccessGiveAppAccessModal({
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-          <Select name="campaignRole" label="Access level" defaultValue="contributor">
-            {(accessTemplates.length > 0
-              ? accessTemplates
-                  .filter(
-                    (template) =>
-                      template.isCustom ||
-                      GIVE_APP_ACCESS_ROLES.includes(
-                        template.id as CampaignRole,
-                      ),
-                  )
-                  .map((template) => ({
+          <div className="space-y-1.5">
+            <Select
+              name="campaignRole"
+              label="Role"
+              defaultValue={
+                member.accessTemplateId ?? member.accessLevel ?? "contributor"
+              }
+            >
+              {(accessTemplates.length > 0
+                ? accessTemplates.map((template) => ({
                     id: template.id,
                     label: template.displayName,
                   }))
-              : GIVE_APP_ACCESS_ROLES.map((role) => ({
-                  id: role,
-                  label: accessLabels?.[role] ?? campaignRoleLabel(role),
-                }))
-            ).map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+                : GIVE_APP_ACCESS_ROLES.map((role) => ({
+                    id: role,
+                    label: accessLabels?.[role] ?? campaignRoleLabel(role),
+                  }))
+              ).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <p className="text-xs text-cos-muted">
+              From Access templates — this assigns their login permissions.
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-sm text-cos-text">
             <input
               type="checkbox"

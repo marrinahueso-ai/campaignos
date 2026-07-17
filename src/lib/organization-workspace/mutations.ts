@@ -179,6 +179,7 @@ export async function createOrganizationMember(
     email?: string | null;
     phone?: string | null;
     organizationRoleId?: string | null;
+    campaignRole?: CampaignRole | null;
     active?: boolean;
   },
 ): Promise<{ id: string } | { error: string }> {
@@ -199,6 +200,7 @@ export async function createOrganizationMember(
       email,
       phone,
       organization_role_id: input.organizationRoleId ?? null,
+      campaign_role: input.campaignRole ?? null,
       active: input.active ?? true,
     })
     .select("id")

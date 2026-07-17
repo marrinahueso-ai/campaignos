@@ -679,15 +679,14 @@ function resolveOrgRoleLabel(input: {
   }
 }
 
-function resolveAccessLevel(
-  organizationUser: OrganizationUser | null,
-): CampaignRole {
-  if (organizationUser) {
-    return organizationUser.campaignRole;
+function resolveAccessLevel(person: PersonAccumulator): CampaignRole {
+  if (person.organizationUser) {
+    return person.organizationUser.campaignRole;
   }
 
-  // Roster-only: do not invent app access from board/committee roles.
-  return "view_only";
+  // Roster-only: use the planned Access template base role when set.
+  // Do not invent access from board/committee titles.
+  return person.rosterCampaignRole ?? "contributor";
 }
 
 function resolveReportsTo(
@@ -996,7 +995,7 @@ function finalizeUnifiedMember(
 
   const vpOversightCommittees = roleOversightCommittees;
 
-  const accessLevel = resolveAccessLevel(person.organizationUser);
+  const accessLevel = resolveAccessLevel(person);
   const isRosterOnly = !person.organizationUser;
 
   const orgRoleLabel = resolveOrgRoleLabel({
@@ -1043,12 +1042,11 @@ function finalizeUnifiedMember(
     roleLabel: orgRoleLabel,
     accessLabel: accessLevelLabel(
       person.organizationUser?.accessTemplateId ?? accessLevel,
-      isRosterOnly,
+      false,
     ),
     accessLevel,
     accessTemplateId:
-      person.organizationUser?.accessTemplateId ??
-      (isRosterOnly ? null : accessLevel),
+      person.organizationUser?.accessTemplateId ?? accessLevel,
     vpPortfolio: person.isVp
       ? person.organizationRoleName
       : person.vpPortfolioName,
@@ -1147,12 +1145,10 @@ export function memberStatusLabel(
 
 export function accessLevelLabel(
   role: CampaignRole | string,
-  isRosterOnly = false,
+  _isRosterOnly = false,
   customLabels?: Partial<Record<string, string>> | null,
 ): string {
-  if (isRosterOnly) {
-    return "No login yet";
-  }
+  // Role always means Access template label. Login status is separate.
   const custom = customLabels?.[role]?.trim();
   if (custom) {
     return custom;

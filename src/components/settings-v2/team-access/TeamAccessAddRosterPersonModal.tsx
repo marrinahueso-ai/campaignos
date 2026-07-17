@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
+import {
+  CAMPAIGN_ROLES,
+  campaignRoleLabel,
+  type CampaignRole,
+  isCampaignRole,
+} from "@/lib/auth/campaign-roles";
+import { resolveAccessTemplateSelection } from "@/lib/access-templates/merge";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import { createRosterPersonAction } from "@/lib/organization-workspace/actions";
 import type {
   OrganizationCommittee,
@@ -23,14 +31,16 @@ interface TeamAccessAddRosterPersonModalProps {
   roles: OrganizationRole[];
   committees: OrganizationCommittee[];
   events?: EventOption[];
+  accessTemplates?: AccessTemplate[];
+  accessLabels?: Partial<Record<string, string>> | null;
 }
 
 export function TeamAccessAddRosterPersonModal({
   open,
   onClose,
-  roles,
-  committees,
   events = [],
+  accessTemplates = [],
+  accessLabels = null,
 }: TeamAccessAddRosterPersonModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -51,33 +61,40 @@ export function TeamAccessAddRosterPersonModal({
     );
   }
 
+  const roleOptions =
+    accessTemplates.length > 0
+      ? accessTemplates.map((template) => ({
+          id: template.id,
+          label: template.displayName,
+        }))
+      : CAMPAIGN_ROLES.map((role) => ({
+          id: role,
+          label: accessLabels?.[role] ?? campaignRoleLabel(role),
+        }));
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const name = formData.get("name")?.toString()?.trim() ?? "";
     const email = formData.get("email")?.toString()?.trim() || null;
     const phone = formData.get("phone")?.toString()?.trim() || null;
-    const organizationRoleId =
-      formData.get("organizationRoleId")?.toString() || null;
-    const committeeId = formData.get("committeeId")?.toString() || null;
-    const committeeRoleRaw = formData.get("committeeRole")?.toString() || "";
-    const committeeRole =
-      committeeRoleRaw === "chair" ||
-      committeeRoleRaw === "co_chair" ||
-      committeeRoleRaw === "member" ||
-      committeeRoleRaw === "supervising_vp"
-        ? committeeRoleRaw
-        : null;
+    const roleRaw = formData.get("accessRole")?.toString() ?? "contributor";
+    const selection =
+      resolveAccessTemplateSelection(accessTemplates, roleRaw) ??
+      (isCampaignRole(roleRaw)
+        ? { templateId: roleRaw, campaignRole: roleRaw }
+        : { templateId: "contributor", campaignRole: "contributor" as CampaignRole });
 
     startTransition(async () => {
       const result = await createRosterPersonAction({
         name,
         email,
         phone,
-        organizationRoleId,
-        committeeId: committeeId || null,
-        committeeRole: committeeId ? committeeRole : null,
+        organizationRoleId: null,
+        committeeId: null,
+        committeeRole: null,
         eventIds: selectedEventIds,
+        campaignRole: selection.campaignRole,
       });
       if (result.error) {
         setError(result.error);
@@ -93,15 +110,15 @@ export function TeamAccessAddRosterPersonModal({
     <TeamAccessModal
       open={open}
       onClose={handleClose}
-      title="Add roster person"
-      subtitle="Add someone to the board roster without granting app access."
+      title="Add person"
+      subtitle="Add someone to People. Role comes from Access templates."
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
           <Button type="submit" form="add-roster-person-form" disabled={isPending}>
-            {isPending ? "Saving…" : "Add to roster"}
+            {isPending ? "Saving…" : "Add person"}
           </Button>
         </div>
       }
@@ -114,35 +131,30 @@ export function TeamAccessAddRosterPersonModal({
           type="email"
           placeholder="name@schoolpto.org"
         />
-        <Input name="phone" label="Phone (optional)" type="tel" placeholder="(555) 555-5555" />
-        <Select name="organizationRoleId" label="Board role (optional)" defaultValue="">
-          <option value="">None</option>
-          {roles.map((role) => (
-            <option key={role.id} value={role.id}>
-              {role.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="committeeId" label="Team (optional)" defaultValue="">
-          <option value="">None</option>
-          {committees.map((committee) => (
-            <option key={committee.id} value={committee.id}>
-              {committee.name}
-            </option>
-          ))}
-        </Select>
-        <Select name="committeeRole" label="Event responsibility (optional)" defaultValue="member">
-          <option value="chair">Event Lead</option>
-          <option value="co_chair">Assistant Lead</option>
-          <option value="member">Team Member</option>
-          <option value="supervising_vp">Supervisor</option>
-        </Select>
+        <Input
+          name="phone"
+          label="Phone (optional)"
+          type="tel"
+          placeholder="(555) 555-5555"
+        />
+        <div className="space-y-1.5">
+          <Select name="accessRole" label="Role" defaultValue="contributor">
+            {roleOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-cos-muted">
+            From Access templates. Applied when they are invited to log in.
+          </p>
+        </div>
 
         <fieldset className="space-y-2">
           <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-            Event assignments (optional)
+            Assigned events (optional)
           </legend>
-          <div className="max-h-40 space-y-2 overflow-y-auto border border-cos-border p-3">
+          <div className="max-h-40 space-y-2 overflow-y-auto rounded-xl border border-cos-border bg-cos-card p-3">
             {events.length === 0 ? (
               <p className="text-sm text-cos-muted">No events available yet.</p>
             ) : (
@@ -164,7 +176,11 @@ export function TeamAccessAddRosterPersonModal({
           </div>
         </fieldset>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
       </form>
     </TeamAccessModal>
   );

@@ -106,6 +106,7 @@ export function TeamAccessPersonProfileShell({
     name?: string;
     committeeId?: string;
     organizationRoleId?: string;
+    campaignRole?: string;
   } | null>(null);
   const [giveAppAccessOpen, setGiveAppAccessOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -161,6 +162,8 @@ export function TeamAccessPersonProfileShell({
         email: target.email || undefined,
         name: target.displayName,
         organizationRoleId: target.organizationRoleId ?? undefined,
+        campaignRole:
+          target.accessTemplateId ?? target.accessLevel ?? undefined,
       });
       return;
     }
@@ -265,7 +268,7 @@ export function TeamAccessPersonProfileShell({
 
   async function handleSaveAccessLevel(
     target: UnifiedTeamMember,
-    campaignRole: CampaignRole,
+    campaignRole: CampaignRole | string,
   ): Promise<string | null> {
     if (target.isRosterOnly || !target.raw) {
       return "Use Invite to Login to grant login access for people who are not invited yet.";
@@ -277,15 +280,30 @@ export function TeamAccessPersonProfileShell({
     }
 
     router.refresh();
+    const template =
+      accessTemplates.find((entry) => entry.id === campaignRole) ?? null;
+    const nextAccessLevel = template?.baseRole ?? (campaignRole as CampaignRole);
+    const nextTemplateId = template?.id ?? String(campaignRole);
     setMember((current) =>
       current
         ? {
             ...current,
-            accessLevel: campaignRole,
-            accessLabel: accessLevelLabel(campaignRole, false, accessLabels),
+            accessLevel: nextAccessLevel,
+            accessTemplateId: nextTemplateId,
+            accessLabel: accessLevelLabel(
+              nextTemplateId,
+              false,
+              accessLabels,
+            ),
             status: current.raw?.status ?? current.status,
             isRosterOnly: false,
-            raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
+            raw: current.raw
+              ? {
+                  ...current.raw,
+                  campaignRole: nextAccessLevel,
+                  accessTemplateId: nextTemplateId,
+                }
+              : current.raw,
           }
         : current,
     );
@@ -448,86 +466,94 @@ export function TeamAccessPersonProfileShell({
         onRemoveEventInvolvement={
           canManage && (member.organizationMemberId || member.raw)
             ? async ({ eventId, committeeId }) => {
-                if (committeeId && member.organizationMemberId) {
-                  const roleResult = await removeRosterCommitteeAssignmentAction(
-                    {
-                      organizationMemberId: member.organizationMemberId,
-                      committeeId,
-                    },
-                  );
-                  if (roleResult.error) {
-                    return roleResult.error;
-                  }
-                }
-
-                if (eventId) {
-                  const nextIds = (
-                    member.assignedEventIds ??
-                    member.raw?.assignedEventIds ??
-                    []
-                  ).filter((id) => id !== eventId);
-
-                  if (member.organizationMemberId) {
-                    const result = await replaceMemberEventAssignmentsAction({
-                      organizationMemberId: member.organizationMemberId,
-                      eventIds: nextIds,
-                    });
-                    if (result.error) {
-                      return result.error;
+                try {
+                  if (committeeId && member.organizationMemberId) {
+                    const roleResult =
+                      await removeRosterCommitteeAssignmentAction({
+                        organizationMemberId: member.organizationMemberId,
+                        committeeId,
+                      });
+                    if (roleResult.error) {
+                      return roleResult.error;
                     }
-                  } else if (member.raw) {
-                    const result =
-                      await setOrganizationUserEventAssignmentsAction({
-                        organizationUserId: member.raw.id,
+                  } else if (committeeId && !member.organizationMemberId) {
+                    return "This role is not linked to a roster person, so it cannot be removed here.";
+                  }
+
+                  if (eventId) {
+                    const nextIds = (
+                      member.assignedEventIds ??
+                      member.raw?.assignedEventIds ??
+                      []
+                    ).filter((id) => id !== eventId);
+
+                    if (member.organizationMemberId) {
+                      const result = await replaceMemberEventAssignmentsAction({
+                        organizationMemberId: member.organizationMemberId,
                         eventIds: nextIds,
                       });
-                    if (result.error) {
-                      return result.error;
+                      if (result.error) {
+                        return result.error;
+                      }
+                    } else if (member.raw) {
+                      const result =
+                        await setOrganizationUserEventAssignmentsAction({
+                          organizationUserId: member.raw.id,
+                          eventIds: nextIds,
+                        });
+                      if (result.error) {
+                        return result.error;
+                      }
                     }
+
+                    setMember((current) =>
+                      current
+                        ? {
+                            ...current,
+                            assignedEventIds: nextIds,
+                            committees: committeeId
+                              ? current.committees.filter(
+                                  (assignment) =>
+                                    assignment.committee.id !== committeeId,
+                                )
+                              : current.committees,
+                            raw: current.raw
+                              ? {
+                                  ...current.raw,
+                                  assignedEventIds: nextIds,
+                                }
+                              : current.raw,
+                          }
+                        : current,
+                    );
+                  } else if (committeeId) {
+                    setMember((current) =>
+                      current
+                        ? {
+                            ...current,
+                            committees: current.committees.filter(
+                              (assignment) =>
+                                assignment.committee.id !== committeeId,
+                            ),
+                          }
+                        : current,
+                    );
                   }
 
-                  setMember((current) =>
-                    current
-                      ? {
-                          ...current,
-                          assignedEventIds: nextIds,
-                          committees: committeeId
-                            ? current.committees.filter(
-                                (assignment) =>
-                                  assignment.committee.id !== committeeId,
-                              )
-                            : current.committees,
-                          raw: current.raw
-                            ? {
-                                ...current.raw,
-                                assignedEventIds: nextIds,
-                              }
-                            : current.raw,
-                        }
-                      : current,
-                  );
-                } else if (committeeId) {
-                  setMember((current) =>
-                    current
-                      ? {
-                          ...current,
-                          committees: current.committees.filter(
-                            (assignment) =>
-                              assignment.committee.id !== committeeId,
-                          ),
-                        }
-                      : current,
-                  );
+                  router.refresh();
+                  return null;
+                } catch (error) {
+                  return error instanceof Error
+                    ? error.message
+                    : "Unable to remove this event role.";
                 }
-
-                router.refresh();
-                return null;
               }
             : undefined
         }
         events={events}
         canManage={canManage}
         accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
       <TeamAccessInviteModal

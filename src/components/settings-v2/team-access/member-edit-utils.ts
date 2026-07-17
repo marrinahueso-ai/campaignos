@@ -112,7 +112,8 @@ export function resolveMemberEditContext(
   const primaryCommittee = primaryCommitteeAssignment(member);
   const rosterMemberId = rosterMember?.id ?? member.organizationMemberId ?? null;
 
-  // Prefer org_member when a roster row exists (contact edits + committee).
+  // Prefer org_member when a roster row exists (contact + board role).
+  // Event/team assignments are edited on the person Events tab — not here.
   if (rosterMemberId) {
     return {
       source: { kind: "org_member", memberId: rosterMemberId },
@@ -120,13 +121,13 @@ export function resolveMemberEditContext(
       canEditEmail: true,
       canEditPhone: true,
       canEditRole: true,
-      // Roster-only people gain app access only via Give App Access.
+      // Roster-only people gain app access only via Invite to Login.
       canEditAccess: !member.isRosterOnly && Boolean(member.raw),
       canEditStatus: Boolean(member.raw),
-      canEditVpPortfolio: true,
-      canEditCommittee: true,
+      canEditVpPortfolio: false,
+      canEditCommittee: false,
       defaultVpPortfolioId:
-        rosterMember?.organizationRoleId ?? member.vpPortfolioId,
+        rosterMember?.organizationRoleId ?? member.organizationRoleId,
       defaultCommitteeId: primaryCommittee?.committee.id ?? null,
       defaultCommitteeRole: committeeAssignmentRole(primaryCommittee?.roleOnCommittee),
       rosterMemberId,
@@ -142,9 +143,9 @@ export function resolveMemberEditContext(
       canEditRole: true,
       canEditAccess: true,
       canEditStatus: true,
-      canEditVpPortfolio: true,
-      canEditCommittee: true,
-      defaultVpPortfolioId: member.vpPortfolioId,
+      canEditVpPortfolio: false,
+      canEditCommittee: false,
+      defaultVpPortfolioId: member.organizationRoleId,
       defaultCommitteeId: primaryCommittee?.committee.id ?? null,
       defaultCommitteeRole: committeeAssignmentRole(primaryCommittee?.roleOnCommittee),
       rosterMemberId: null,
@@ -162,7 +163,7 @@ export function resolveMemberEditContext(
         canEditRole: false,
         canEditAccess: false,
         canEditStatus: false,
-        canEditVpPortfolio: true,
+        canEditVpPortfolio: false,
         canEditCommittee: false,
         defaultVpPortfolioId: roleId,
         defaultCommitteeId: null,
@@ -204,8 +205,8 @@ export function resolveMemberEditContext(
       canEditRole: false,
       canEditAccess: false,
       canEditStatus: false,
-      canEditVpPortfolio: true,
-      canEditCommittee: true,
+      canEditVpPortfolio: false,
+      canEditCommittee: false,
       defaultVpPortfolioId: primaryCommittee.committee.parentRoleId,
       defaultCommitteeId: primaryCommittee.committee.id,
       defaultCommitteeRole: committeeRole,

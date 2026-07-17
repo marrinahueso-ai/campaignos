@@ -273,6 +273,8 @@ describe("Team & Access people simplification", () => {
     assert.match(profileSource, /Needs event link/);
     assert.match(profileSource, /EventSearchPicker/);
     assert.match(profileSource, /Search by event name or date/);
+    assert.match(profileSource, /Type a name or date to find the matching event/);
+    assert.match(profileSource, /removingEventId !== null/);
     assert.doesNotMatch(profileSource, /Roles on Events/);
     assert.doesNotMatch(profileSource, /Add or remove Event IDs/);
     assert.doesNotMatch(

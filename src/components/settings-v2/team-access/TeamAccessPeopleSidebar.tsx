@@ -125,7 +125,7 @@ export function TeamAccessPeopleSidebar({
                     {member.displayName}
                   </p>
                   <p className="truncate text-xs text-cos-muted">
-                    {member.orgRoleLabel}
+                    {member.accessLabel}
                   </p>
                 </div>
                 <span className="rounded-full border border-cos-border bg-cos-bg px-2 py-0.5 text-xs font-medium tabular-nums text-cos-text">

@@ -202,6 +202,8 @@ export async function createRosterPersonAction(input: {
   committeeId?: string | null;
   committeeRole?: "chair" | "co_chair" | "member" | "supervising_vp" | null;
   eventIds?: string[];
+  /** Access-template base role stored on roster until invite. */
+  campaignRole?: CampaignRole | null;
 }): Promise<OrganizationActionState & { memberId?: string }> {
   const org = await requireOrganizationId();
   if ("error" in org) {
@@ -218,6 +220,7 @@ export async function createRosterPersonAction(input: {
     email: input.email?.trim() || null,
     phone: input.phone?.trim() || null,
     organizationRoleId: input.organizationRoleId ?? null,
+    campaignRole: input.campaignRole ?? null,
     active: true,
   });
 

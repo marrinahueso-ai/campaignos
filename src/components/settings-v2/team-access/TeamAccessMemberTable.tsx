@@ -7,14 +7,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import {
-  accessBadgeVariant,
-  peopleAccessBadgeLabel,
   peopleLoginStatus,
   peopleLoginStatusLabel,
   peopleRelatedEventIds,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
-import type { CampaignRole } from "@/lib/auth/campaign-roles";
 
 interface TeamAccessMemberTableProps {
   members: UnifiedTeamMember[];
@@ -24,7 +21,6 @@ interface TeamAccessMemberTableProps {
   statusFilter: string;
   eventOptions: Array<{ id: string; title: string }>;
   eventTitlesById: Map<string, string>;
-  accessLabels?: Partial<Record<string, string>> | null;
   onSearchChange: (value: string) => void;
   onRoleFilterChange: (value: string) => void;
   onEventFilterChange: (value: string) => void;
@@ -96,7 +92,6 @@ export function TeamAccessMemberTable({
   roleFilter,
   eventFilter,
   statusFilter,
-  accessLabels = null,
   eventOptions,
   eventTitlesById,
   onSearchChange,
@@ -108,7 +103,9 @@ export function TeamAccessMemberTable({
   canManage,
   peopleCount,
 }: TeamAccessMemberTableProps) {
-  const roleOptions = [...new Set(members.map((member) => member.orgRoleLabel))].sort();
+  const roleOptions = [
+    ...new Set(members.map((member) => member.accessLabel).filter(Boolean)),
+  ].sort();
   const totalLabel =
     typeof peopleCount === "number" ? peopleCount : members.length;
 
@@ -216,8 +213,6 @@ export function TeamAccessMemberTable({
               </tr>
             ) : (
               members.map((member) => {
-                const accessBadge = peopleAccessBadgeLabel(member, accessLabels);
-                const loginStatus = peopleLoginStatus(member);
                 return (
                   <tr
                     key={member.id}
@@ -247,7 +242,7 @@ export function TeamAccessMemberTable({
                       </div>
                     </td>
                     <td className="truncate py-4.5 pr-3 align-middle text-sm font-medium text-cos-text">
-                      {member.orgRoleLabel}
+                      {member.accessLabel}
                     </td>
                     <td className="py-4.5 pr-3 align-middle">
                       <AssignedEventsCell
@@ -256,14 +251,7 @@ export function TeamAccessMemberTable({
                       />
                     </td>
                     <td className="py-4.5 pr-3 align-middle">
-                      <div className="flex flex-col items-start gap-1.5">
-                        {loginStatusBadge(member)}
-                        {loginStatus === "active" && accessBadge ? (
-                          <Badge variant={accessBadgeVariant(member.accessLevel)}>
-                            {accessBadge}
-                          </Badge>
-                        ) : null}
-                      </div>
+                      {loginStatusBadge(member)}
                     </td>
                     {canManage ? (
                       <td className="py-4.5 align-middle">

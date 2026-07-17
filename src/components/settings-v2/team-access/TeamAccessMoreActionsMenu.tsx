@@ -15,8 +15,9 @@ interface TeamAccessMoreActionsMenuProps {
   onAssignCommittee: () => void;
   onViewTasks: () => void;
   onViewApprovals: () => void;
-  onSendMessage: () => void;
   onInvite: () => void;
+  onResendInvite: () => void;
+  onChangeAccess: () => void;
   onDeactivate: () => void;
   onArchive: () => void;
   onRemove: () => void;
@@ -31,8 +32,9 @@ export function TeamAccessMoreActionsMenu({
   onAssignCommittee,
   onViewTasks,
   onViewApprovals,
-  onSendMessage,
   onInvite,
+  onResendInvite,
+  onChangeAccess,
   onDeactivate,
   onArchive,
   onRemove,
@@ -55,27 +57,38 @@ export function TeamAccessMoreActionsMenu({
 
   const loginStatus = peopleLoginStatus(member);
 
-  const inviteItems =
+  const accessItems =
     loginStatus === "not_invited"
-      ? [{ id: "invite", label: "Invite to Login" }]
+      ? [{ id: "invite" as const, label: "Invite to Login" }]
       : loginStatus === "invited"
-        ? [{ id: "invite", label: "Resend Invite" }]
+        ? [{ id: "resend" as const, label: "Resend Invite" }]
         : loginStatus === "active"
-          ? [{ id: "invite", label: "Change Access" }]
+          ? [{ id: "changeAccess" as const, label: "Change Access" }]
           : [];
 
   const items = [
-    { id: "profile", label: "View Profile" },
-    { id: "edit", label: "Edit Person" },
-    { id: "assign", label: "Manage Event Assignments" },
-    { id: "tasks", label: "View tasks" },
-    { id: "approvals", label: "View approvals" },
-    { id: "message", label: "Send message" },
-    ...inviteItems,
-    ...(member.raw ? [{ id: "deactivate", label: "Deactivate" }] : []),
-    { id: "archive", label: "Archive" },
-    ...(member.raw ? [{ id: "remove", label: "Remove", danger: true }] : []),
-  ] as const;
+    { id: "profile" as const, label: "View Profile" },
+    { id: "edit" as const, label: "Edit Person" },
+    { id: "assign" as const, label: "Manage Event Assignments" },
+    { id: "tasks" as const, label: "View tasks" },
+    { id: "approvals" as const, label: "View approvals" },
+    ...accessItems,
+    ...(member.raw
+      ? [
+          {
+            id: "deactivate" as const,
+            label:
+              member.status === "deactivated"
+                ? "Reactivate Access"
+                : "Deactivate Access",
+          },
+        ]
+      : []),
+    { id: "archive" as const, label: "Archive" },
+    ...(member.raw
+      ? [{ id: "remove" as const, label: "Remove", danger: true as const }]
+      : []),
+  ];
 
   const handlers: Record<string, () => void> = {
     profile: onViewProfile,
@@ -83,8 +96,9 @@ export function TeamAccessMoreActionsMenu({
     assign: onAssignCommittee,
     tasks: onViewTasks,
     approvals: onViewApprovals,
-    message: onSendMessage,
     invite: onInvite,
+    resend: onResendInvite,
+    changeAccess: onChangeAccess,
     deactivate: onDeactivate,
     archive: onArchive,
     remove: onRemove,

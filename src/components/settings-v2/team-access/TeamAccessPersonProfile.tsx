@@ -78,7 +78,7 @@ interface TeamAccessPersonProfileProps {
   onArchive: () => void;
   onRemove: () => void;
   onViewTasks: () => void;
-  onSaveAccessLevel?: (campaignRole: CampaignRole) => Promise<string | null>;
+  onSaveAccessLevel?: (campaignRole: CampaignRole | string) => Promise<string | null>;
   onSaveEventAssignments?: (eventIds: string[]) => Promise<string | null>;
   /** Link a team/role to a real Event ID (fixes “No event linked”). */
   onLinkCommitteeEvent?: (
@@ -94,6 +94,7 @@ interface TeamAccessPersonProfileProps {
   canManage: boolean;
   /** Org-custom access template display names. */
   accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: import("@/lib/access-templates/types").AccessTemplate[];
 }
 
 const TABS: { id: Exclude<PersonProfileTab, "responsibilities">; label: string }[] =
@@ -117,15 +118,15 @@ function loginStatusLabel(member: UnifiedTeamMember): string {
   }
 }
 
-function heroSubtitle(member: UnifiedTeamMember, primaryRole: string): string {
-  const roleBit = primaryRole !== "—" ? primaryRole : member.orgRoleLabel;
+function heroSubtitle(member: UnifiedTeamMember, _primaryRole: string): string {
+  const roleBit = member.accessLabel;
   const loginBit = member.isRosterOnly
     ? "Not invited to login yet"
     : member.status === "invited"
       ? "Invite pending"
       : member.status === "deactivated"
         ? "Login inactive"
-        : member.accessLabel;
+        : "Login enabled";
   return `${roleBit} · ${loginBit}`;
 }
 
@@ -200,19 +201,19 @@ function EventSearchPicker({
 }) {
   const [query, setQuery] = useState("");
   const exclude = useMemo(() => new Set(excludeIds), [excludeIds]);
+  const search = query.trim().toLowerCase();
   const filtered = useMemo(() => {
-    const search = query.trim().toLowerCase();
+    if (!search) {
+      return [];
+    }
     return events
       .filter((event) => !exclude.has(event.id))
       .filter((event) => {
-        if (!search) {
-          return true;
-        }
         const haystack = `${event.title} ${formatEventDate(event.date)}`.toLowerCase();
         return haystack.includes(search);
       })
-      .slice(0, 40);
-  }, [events, exclude, query]);
+      .slice(0, 12);
+  }, [events, exclude, search]);
 
   return (
     <div className="space-y-2">
@@ -227,38 +228,44 @@ function EventSearchPicker({
           aria-label={placeholder}
         />
       </div>
-      <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-cos-border bg-cos-card p-1">
-        {filtered.length === 0 ? (
-          <p className="px-2 py-2 text-xs text-cos-muted">{emptyLabel}</p>
-        ) : (
-          filtered.map((event) => (
-            <button
-              key={event.id}
-              type="button"
-              disabled={disabled}
-              // onMouseDown + preventDefault avoids click-through onto Remove
-              // when this list unmounts under the cursor.
-              onMouseDown={(mouseEvent) => {
-                mouseEvent.preventDefault();
-                mouseEvent.stopPropagation();
-                if (disabled) {
-                  return;
-                }
-                onSelect(event.id);
-                setQuery("");
-              }}
-              className="flex w-full flex-col rounded-md px-2.5 py-2 text-left transition-colors hover:bg-cos-bg disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="truncate text-sm font-medium text-cos-text">
-                {event.title}
-              </span>
-              <span className="text-xs text-cos-muted">
-                {formatEventDate(event.date)}
-              </span>
-            </button>
-          ))
-        )}
-      </div>
+      {search ? (
+        <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-cos-border bg-cos-card p-1">
+          {filtered.length === 0 ? (
+            <p className="px-2 py-2 text-xs text-cos-muted">{emptyLabel}</p>
+          ) : (
+            filtered.map((event) => (
+              <button
+                key={event.id}
+                type="button"
+                disabled={disabled}
+                // onMouseDown + preventDefault avoids click-through onto Remove
+                // when this list unmounts under the cursor.
+                onMouseDown={(mouseEvent) => {
+                  mouseEvent.preventDefault();
+                  mouseEvent.stopPropagation();
+                  if (disabled) {
+                    return;
+                  }
+                  onSelect(event.id);
+                  setQuery("");
+                }}
+                className="flex w-full flex-col rounded-md px-2.5 py-2 text-left transition-colors hover:bg-cos-bg disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span className="truncate text-sm font-medium text-cos-text">
+                  {event.title}
+                </span>
+                <span className="text-xs text-cos-muted">
+                  {formatEventDate(event.date)}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-cos-muted">
+          Type a name or date to find the matching event.
+        </p>
+      )}
     </div>
   );
 }
@@ -304,12 +311,16 @@ export function TeamAccessPersonProfile({
   events = [],
   canManage,
   accessLabels = null,
+  accessTemplates = [],
 }: TeamAccessPersonProfileProps) {
   const [linkingCommitteeId, setLinkingCommitteeId] = useState<string | null>(
     null,
   );
-  const [draftAccessLevel, setDraftAccessLevel] =
-    useState<CampaignRole>("view_only");
+  /** Which unlinked card has the search picker open (keeps rows compact). */
+  const [linkPickerCommitteeId, setLinkPickerCommitteeId] = useState<
+    string | null
+  >(null);
+  const [draftAccessLevel, setDraftAccessLevel] = useState("view_only");
   const [accessError, setAccessError] = useState<string | null>(null);
   const [isSavingAccess, startSaveAccess] = useTransition();
   const [draftEventIds, setDraftEventIds] = useState<string[]>([]);
@@ -341,11 +352,12 @@ export function TeamAccessPersonProfile({
   );
 
   useEffect(() => {
-    setDraftAccessLevel(member.accessLevel);
+    setDraftAccessLevel(member.accessTemplateId ?? member.accessLevel);
     setAccessError(null);
     setDraftEventIds(member.assignedEventIds ?? member.raw?.assignedEventIds ?? []);
     setEventError(null);
     setRemovingEventId(null);
+    setLinkPickerCommitteeId(null);
     setMoreOpen(false);
   }, [member]);
 
@@ -385,7 +397,18 @@ export function TeamAccessPersonProfile({
   const firstName = member.displayName.trim().split(/\s+/)[0] || member.displayName;
   const accessChipValue = member.isRosterOnly ? "—" : member.accessLabel;
 
-  const accessLevelDirty = draftAccessLevel !== member.accessLevel;
+  const currentAccessKey = member.accessTemplateId ?? member.accessLevel;
+  const accessLevelDirty = draftAccessLevel !== currentAccessKey;
+  const accessSelectOptions =
+    accessTemplates.length > 0
+      ? accessTemplates.map((template) => ({
+          id: template.id,
+          label: template.displayName,
+        }))
+      : CAMPAIGN_ROLES.map((role) => ({
+          id: role,
+          label: accessLabels?.[role] ?? campaignRoleLabel(role),
+        }));
   const showGiveAppAccess =
     canManage && (member.isRosterOnly || member.emailMissing);
   const showResendInvite =
@@ -415,24 +438,36 @@ export function TeamAccessPersonProfile({
       return;
     }
     const previousIds = draftEventIds;
+    const pendingKey = input.eventId
+      ? input.eventId
+      : input.committeeId
+        ? `committee:${input.committeeId}`
+        : null;
+    if (!pendingKey) {
+      return;
+    }
     if (input.eventId) {
       setDraftEventIds((current) =>
         current.filter((id) => id !== input.eventId),
       );
-      setRemovingEventId(input.eventId);
-    } else if (input.committeeId) {
-      setRemovingEventId(`committee:${input.committeeId}`);
     }
+    setRemovingEventId(pendingKey);
     setEventError(null);
     startSaveEvents(async () => {
-      const error = await onRemoveEventInvolvement(input);
-      setRemovingEventId(null);
-      if (error) {
-        setEventError(error);
+      try {
+        const error = await onRemoveEventInvolvement(input);
+        if (error) {
+          setEventError(error);
+          setDraftEventIds(previousIds);
+          return;
+        }
+        setEventError(null);
+      } catch {
+        setEventError("Unable to remove this event role. Try again.");
         setDraftEventIds(previousIds);
-        return;
+      } finally {
+        setRemovingEventId(null);
       }
-      setEventError(null);
     });
   }
 
@@ -775,15 +810,16 @@ export function TeamAccessPersonProfile({
           {(activeTab === "events" || activeTab === "responsibilities") && (
             <div className="space-y-8">
               <div>
-                <h3 className="font-display text-lg text-cos-text">Events</h3>
+                <h3 className="font-display text-xl text-cos-text">
+                  Assigned Events
+                </h3>
                 <p className="mt-1 text-sm text-cos-muted">
-                  Events this person is on, with their role. Search below to link
-                  a missing Event ID or add another event (date included — same
-                  names can repeat year to year).
+                  Events this person is on, with their role. Link a missing Event
+                  ID or add another event below.
                 </p>
-                <div className="mt-3 space-y-3">
+                <div className="mt-4 space-y-3">
                   {eventInvolvements.length === 0 ? (
-                    <p className="text-sm text-cos-muted">
+                    <p className="rounded-2xl border border-dashed border-cos-border bg-cos-card px-4 py-8 text-center text-sm text-cos-muted shadow-sm">
                       Not tied to any events yet.
                     </p>
                   ) : (
@@ -801,15 +837,24 @@ export function TeamAccessPersonProfile({
 
                       const isLinkingThis =
                         linkingCommitteeId === involvement.committeeId;
+                      const showLinkPicker =
+                        involvement.needsEventLink &&
+                        canManage &&
+                        onLinkCommitteeEvent &&
+                        involvement.committeeId &&
+                        linkPickerCommitteeId === involvement.committeeId;
+                      // Do not compare null === null (unlinked rows all looked "Removing…").
                       const isRemovingThis =
-                        removingEventId === involvement.eventId ||
-                        removingEventId ===
-                          `committee:${involvement.committeeId}`;
+                        removingEventId !== null &&
+                        (removingEventId === involvement.eventId ||
+                          (involvement.committeeId !== null &&
+                            removingEventId ===
+                              `committee:${involvement.committeeId}`));
 
                       return (
                         <div
                           key={rowKey}
-                          className="space-y-3 rounded-xl border border-cos-border px-3 py-2.5"
+                          className="rounded-2xl border border-cos-border bg-cos-card p-3 shadow-sm"
                         >
                           <div className="flex items-start gap-3">
                             {involvement.eventId && showThumb ? (
@@ -820,33 +865,49 @@ export function TeamAccessPersonProfile({
                                 className="shrink-0"
                               />
                             ) : (
-                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-cos-border bg-cos-bg">
-                                <Calendar className="h-5 w-5 text-cos-muted" />
+                              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-cos-border bg-[#e7eee6]">
+                                <Calendar className="h-5 w-5 text-[#3f5240]" />
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-cos-text">
-                                {involvement.title}
-                              </p>
-                              <p className="mt-0.5 text-xs text-cos-muted">
-                                {involvement.eventId
-                                  ? formatEventDate(event?.date)
-                                  : "Needs Event ID"}
-                              </p>
-                              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                <Badge
-                                  variant="default"
-                                  className="bg-[#ece8e1] text-cos-muted"
+                              {involvement.eventId ? (
+                                <Link
+                                  href={`/events/${involvement.eventId}`}
+                                  className="font-display text-lg text-cos-text hover:underline"
                                 >
+                                  {involvement.title}
+                                </Link>
+                              ) : (
+                                <p className="font-display text-lg text-cos-text">
+                                  {involvement.title}
+                                </p>
+                              )}
+                              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-cos-muted">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {involvement.eventId
+                                    ? formatEventDate(event?.date)
+                                    : "Needs Event ID"}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <User className="h-3.5 w-3.5" />
                                   {involvement.roleLabel}
-                                </Badge>
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                 {involvement.needsEventLink ? (
                                   <Badge variant="warning">
                                     Needs event link
                                   </Badge>
                                 ) : (
-                                  eventStatusBadge(event?.status)
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-[#e7eee6] px-2.5 py-0.5 text-xs font-medium text-[#3f5240]">
+                                    <Link2 className="h-3 w-3" />
+                                    Linked
+                                  </span>
                                 )}
+                                {!involvement.needsEventLink
+                                  ? eventStatusBadge(event?.status)
+                                  : null}
                               </div>
                             </div>
                             <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -857,6 +918,24 @@ export function TeamAccessPersonProfile({
                                   size="sm"
                                 >
                                   Open Event
+                                </Button>
+                              ) : canManage &&
+                                onLinkCommitteeEvent &&
+                                involvement.committeeId ? (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={isLinkingThis}
+                                  onClick={() =>
+                                    setLinkPickerCommitteeId((current) =>
+                                      current === involvement.committeeId
+                                        ? null
+                                        : involvement.committeeId,
+                                    )
+                                  }
+                                >
+                                  {showLinkPicker ? "Cancel" : "Link event"}
                                 </Button>
                               ) : null}
                               {canRemoveInvolvements ? (
@@ -879,13 +958,10 @@ export function TeamAccessPersonProfile({
                               ) : null}
                             </div>
                           </div>
-                          {involvement.needsEventLink &&
-                          canManage &&
-                          onLinkCommitteeEvent &&
-                          involvement.committeeId ? (
-                            <div className="max-w-lg pl-[4.75rem]">
+                          {showLinkPicker ? (
+                            <div className="mt-3 max-w-lg rounded-xl border border-cos-border bg-[#f6f2eb] p-3">
                               <p className="mb-1.5 text-xs font-medium text-cos-muted">
-                                Search and link the matching Event ID
+                                Search by name or date
                                 {isLinkingThis ? " — linking…" : ""}
                               </p>
                               <EventSearchPicker
@@ -900,15 +976,22 @@ export function TeamAccessPersonProfile({
                                   }
                                   setLinkingCommitteeId(committeeId);
                                   setEventError(null);
-                                  void onLinkCommitteeEvent(
-                                    committeeId,
-                                    eventId,
-                                  ).then((error) => {
-                                    setLinkingCommitteeId(null);
-                                    if (error) {
-                                      setEventError(error);
-                                    }
-                                  });
+                                  void onLinkCommitteeEvent(committeeId, eventId)
+                                    .then((error) => {
+                                      if (error) {
+                                        setEventError(error);
+                                        return;
+                                      }
+                                      setLinkPickerCommitteeId(null);
+                                    })
+                                    .catch(() => {
+                                      setEventError(
+                                        "Unable to link this event. Try again.",
+                                      );
+                                    })
+                                    .finally(() => {
+                                      setLinkingCommitteeId(null);
+                                    });
                                 }}
                               />
                             </div>
@@ -924,13 +1007,12 @@ export function TeamAccessPersonProfile({
               </div>
 
               {canEditEvents ? (
-                <div className="rounded-xl border border-cos-border bg-cos-bg/50 p-4">
+                <div className="rounded-2xl border border-cos-border bg-cos-card p-5 shadow-sm">
                   <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
                     Add another event
                   </p>
-                  <p className="mt-1 text-xs text-cos-muted">
-                    Search by name or date, then pick the right year. Use Remove
-                    on a row above to take them off an event.
+                  <p className="mt-1 text-sm text-cos-muted">
+                    Type a name or date, then pick the right year.
                   </p>
                   <div className="mt-3 max-w-lg">
                     {events.length === 0 ? (
@@ -1077,22 +1159,22 @@ export function TeamAccessPersonProfile({
               {canEditAccess ? (
                 <div className="rounded-xl border border-cos-border bg-cos-bg/50 p-4">
                   <Select
-                    label="Change Access"
+                    label="Role"
                     value={draftAccessLevel}
                     disabled={isSavingAccess}
                     onChange={(event) => {
-                      setDraftAccessLevel(event.target.value as CampaignRole);
+                      setDraftAccessLevel(event.target.value);
                       setAccessError(null);
                     }}
                   >
-                    {CAMPAIGN_ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {accessLabels?.[role] ?? campaignRoleLabel(role)}
+                    {accessSelectOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
                       </option>
                     ))}
                   </Select>
                   <p className="mt-2 text-xs text-cos-muted">
-                    Access level controls what this member can do in Hey Ralli.
+                    From Access templates — this assigns their login permissions.
                   </p>
                   {accessError ? (
                     <p className="mt-2 text-xs text-red-600">{accessError}</p>
@@ -1105,7 +1187,7 @@ export function TeamAccessPersonProfile({
                       disabled={isSavingAccess}
                       onClick={handleSaveAccessLevel}
                     >
-                      {isSavingAccess ? "Saving…" : "Save access level"}
+                      {isSavingAccess ? "Saving…" : "Save role"}
                     </Button>
                   ) : null}
                 </div>

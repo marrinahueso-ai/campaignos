@@ -13,7 +13,6 @@ import { TeamAccessMoreActionsMenu } from "@/components/settings-v2/team-access/
 import { TeamAccessOpenTasksDrawer } from "@/components/settings-v2/team-access/TeamAccessOpenTasksDrawer";
 import { TeamAccessPeopleSidebar } from "@/components/settings-v2/team-access/TeamAccessPeopleSidebar";
 import { teamAccessPersonProfilePath } from "@/components/settings-v2/team-access/TeamAccessPersonProfile";
-import { TeamAccessSendMessageModal } from "@/components/settings-v2/team-access/TeamAccessSendMessageModal";
 import {
   accessLevelLabel,
   buildUnifiedTeamMembers,
@@ -27,6 +26,7 @@ import { Mail } from "lucide-react";
 import {
   claimOrganizationAccessAction,
   removeTeamMemberAction,
+  resendTeamInviteAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
 import type { AccessTemplate } from "@/lib/access-templates/types";
@@ -109,6 +109,7 @@ export function TeamAccessShell({
     name?: string;
     committeeId?: string;
     organizationRoleId?: string;
+    campaignRole?: string;
   } | null>(null);
   const [addRosterOpen, setAddRosterOpen] = useState(false);
   const [giveAppAccessOpen, setGiveAppAccessOpen] = useState(false);
@@ -117,8 +118,6 @@ export function TeamAccessShell({
 
   const [editOpen, setEditOpen] = useState(false);
   const [editMember, setEditMember] = useState<UnifiedTeamMember | null>(null);
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageMember, setMessageMember] = useState<UnifiedTeamMember | null>(null);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [tasksMember, setTasksMember] = useState<UnifiedTeamMember | null>(null);
 
@@ -157,7 +156,7 @@ export function TeamAccessShell({
         search,
         eventTitlesById,
       );
-      const matchesRole = !roleFilter || member.orgRoleLabel === roleFilter;
+      const matchesRole = !roleFilter || member.accessLabel === roleFilter;
       const relatedEventIds = peopleRelatedEventIds(member);
       const matchesEvent =
         !eventFilter || relatedEventIds.includes(eventFilter);
@@ -187,6 +186,8 @@ export function TeamAccessShell({
         email: member.email || undefined,
         name: member.displayName,
         organizationRoleId: member.organizationRoleId ?? undefined,
+        campaignRole:
+          member.accessTemplateId ?? member.accessLevel ?? undefined,
       });
       return;
     }
@@ -346,7 +347,6 @@ export function TeamAccessShell({
             title: event.title,
           }))}
           eventTitlesById={eventTitlesById}
-          accessLabels={accessLabels}
           onSearchChange={setSearch}
           onRoleFilterChange={setRoleFilter}
           onEventFilterChange={setEventFilter}
@@ -396,6 +396,8 @@ export function TeamAccessShell({
         roles={workspace.roles}
         committees={workspace.committees}
         events={events}
+        accessTemplates={accessTemplates}
+        accessLabels={accessLabels}
       />
 
       <TeamAccessGiveAppAccessModal
@@ -418,12 +420,6 @@ export function TeamAccessShell({
         workspace={workspace}
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
-      />
-
-      <TeamAccessSendMessageModal
-        open={messageOpen}
-        onClose={() => setMessageOpen(false)}
-        member={messageMember}
       />
 
       <TeamAccessOpenTasksDrawer
@@ -464,12 +460,6 @@ export function TeamAccessShell({
             window.location.href = "/approvals";
           }
         }}
-        onSendMessage={() => {
-          if (moreActionsMember) {
-            setMessageMember(moreActionsMember);
-            setMessageOpen(true);
-          }
-        }}
         onDeactivate={() => {
           if (moreActionsMember) handleDeactivate(moreActionsMember);
         }}
@@ -482,6 +472,20 @@ export function TeamAccessShell({
         onInvite={() => {
           if (moreActionsMember) {
             openGiveAppAccess(moreActionsMember);
+          }
+        }}
+        onResendInvite={() => {
+          if (!moreActionsMember?.raw) {
+            return;
+          }
+          startTransition(async () => {
+            await resendTeamInviteAction(moreActionsMember.raw!.id);
+            router.refresh();
+          });
+        }}
+        onChangeAccess={() => {
+          if (moreActionsMember) {
+            openPersonProfile(moreActionsMember, "access");
           }
         }}
       />

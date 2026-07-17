@@ -37,14 +37,14 @@ interface TeamAccessInviteModalProps {
     committeeId?: string;
     organizationRoleId?: string;
     eventIds?: string[];
+    /** Access template id or base CampaignRole. */
+    campaignRole?: string;
   } | null;
 }
 
 export function TeamAccessInviteModal({
   open,
   onClose,
-  roles,
-  committees,
   events = [],
   accessLabels = null,
   accessTemplates = [],
@@ -173,48 +173,44 @@ export function TeamAccessInviteModal({
             placeholder="Jamie Smith"
             defaultValue={prefill?.name ?? ""}
           />
-          <Select
+          <div className="space-y-1.5">
+            <Select
+              name="campaignRole"
+              label="Role"
+              defaultValue={prefill?.campaignRole ?? "contributor"}
+            >
+              {(accessTemplates.length > 0
+                ? accessTemplates.map((template) => ({
+                    id: template.id,
+                    label: template.displayName,
+                  }))
+                : CAMPAIGN_ROLES.map((role) => ({
+                    id: role,
+                    label:
+                      accessLabels?.[role] ??
+                      campaignRoleLabel(role as CampaignRole),
+                  }))
+              ).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <p className="text-xs text-cos-muted">
+              From Access templates — this assigns their login permissions.
+            </p>
+          </div>
+          {/* Keep optional board-title id for legacy invite linking; hidden from UI. */}
+          <input
+            type="hidden"
             name="organizationRoleId"
-            label="Board role (optional)"
-            defaultValue={prefill?.organizationRoleId ?? ""}
-          >
-            <option value="">Select role (optional)</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </Select>
-          <Select name="campaignRole" label="App access level" defaultValue="contributor">
-            {(accessTemplates.length > 0
-              ? accessTemplates.map((template) => ({
-                  id: template.id,
-                  label: template.displayName,
-                }))
-              : CAMPAIGN_ROLES.map((role) => ({
-                  id: role,
-                  label:
-                    accessLabels?.[role] ??
-                    campaignRoleLabel(role as CampaignRole),
-                }))
-            ).map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-          <Select
+            value={prefill?.organizationRoleId ?? ""}
+          />
+          <input
+            type="hidden"
             name="committeeId"
-            label="Team (optional)"
-            defaultValue={prefill?.committeeId ?? ""}
-          >
-            <option value="">None</option>
-            {committees.map((committee) => (
-              <option key={committee.id} value={committee.id}>
-                {committee.name}
-              </option>
-            ))}
-          </Select>
+            value={prefill?.committeeId ?? ""}
+          />
 
           <fieldset className="space-y-2">
             <legend className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
