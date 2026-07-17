@@ -11,6 +11,11 @@ import {
 } from "../campaign-roles.ts";
 import { canManageTeam } from "../infer-campaign-role.ts";
 import { buildTeamInviteEmail } from "../../email/team-invite-email.ts";
+import {
+  computeInviteExpiresAt,
+  isInviteExpired,
+  TEAM_INVITE_TTL_DAYS,
+} from "../invite-constants.ts";
 
 describe("campaign roles phase 1", () => {
   it("includes developer and tester", () => {
@@ -40,14 +45,26 @@ describe("campaign roles phase 1", () => {
   });
 });
 
+describe("invite expiry helpers", () => {
+  it("computes expiry TEAM_INVITE_TTL_DAYS ahead", () => {
+    const from = new Date("2026-07-17T12:00:00.000Z");
+    const expires = computeInviteExpiresAt(from);
+    const expected = new Date(from);
+    expected.setUTCDate(expected.getUTCDate() + TEAM_INVITE_TTL_DAYS);
+    assert.equal(expires, expected.toISOString());
+    assert.equal(isInviteExpired(expires), false);
+    assert.equal(isInviteExpired("2000-01-01T00:00:00.000Z"), true);
+  });
+});
+
 describe("team invite email", () => {
-  it("includes invite link, role, and optional message in branded template", () => {
+  it("includes invite setup link without emailed password", () => {
     const content = buildTeamInviteEmail({
       organizationName: "EES PTO",
       inviteeName: "Jamie",
       inviteeEmail: "jamie@example.com",
       accessLevelLabel: "Developer",
-      inviteUrl: "https://heyralli.com/login?invite=abc",
+      inviteUrl: "https://heyralli.com/invite/abc",
       personalMessage: "Welcome aboard",
       inviterEmail: "admin@example.com",
     });
@@ -56,30 +73,13 @@ describe("team invite email", () => {
     assert.match(content.text, /Welcome aboard/);
     assert.match(content.text, /Developer/);
     assert.match(content.text, /jamie@example.com/);
-    assert.match(content.text, /https:\/\/heyralli.com\/login\?invite=abc/);
+    assert.match(content.text, /https:\/\/heyralli.com\/invite\/abc/);
+    assert.match(content.text, /Create your own password/);
     assert.match(content.html, /Accept invite/);
+    assert.match(content.html, /create password/i);
     assert.match(content.html, /Hey Ralli/);
     assert.match(content.html, /Team invite/);
-    assert.match(content.html, /Developer/);
-    assert.match(content.html, /Sign in with/);
     assert.doesNotMatch(content.html, /Temporary password/);
-  });
-
-  it("includes temporary password when provided for testing invites", () => {
-    const content = buildTeamInviteEmail({
-      organizationName: "EES PTO",
-      inviteeName: "Jamie",
-      inviteeEmail: "jamie@example.com",
-      accessLevelLabel: "Developer",
-      inviteUrl: "https://heyralli.com/login?invite=abc",
-      personalMessage: null,
-      inviterEmail: "admin@example.com",
-      temporaryPassword: "Hr-testpass1",
-    });
-
-    assert.match(content.text, /Temporary password: Hr-testpass1/);
-    assert.match(content.html, /Hr-testpass1/);
-    assert.match(content.html, /Sign in with/);
-    assert.match(content.html, /Email &amp; password/);
+    assert.doesNotMatch(content.text, /Temporary password:/);
   });
 });

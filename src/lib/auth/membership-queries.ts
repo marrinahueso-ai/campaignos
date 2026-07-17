@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { listOrganizationUserEventAssignmentsByOrg } from "@/lib/auth/event-assignments";
+import { isInviteExpired } from "@/lib/auth/invite-constants";
 import { mapOrganizationUserRow } from "@/lib/auth/mappers";
 import { getAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -107,9 +108,14 @@ export async function getOrganizationUsers(
   });
 }
 
-export async function getInviteByToken(
+export type InviteTokenLookup =
+  | { status: "valid"; invite: OrganizationUser }
+  | { status: "expired"; invite: OrganizationUser }
+  | { status: "missing" };
+
+export async function lookupInviteByToken(
   token: string,
-): Promise<OrganizationUser | null> {
+): Promise<InviteTokenLookup> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organization_users")
@@ -124,14 +130,29 @@ export async function getInviteByToken(
     .maybeSingle();
 
   if (error || !data) {
-    return null;
+    return { status: "missing" };
   }
 
   const row = data as OrganizationUserRow & {
     organization_roles: { name: string } | null;
   };
+  const invite = mapOrganizationUserRow(
+    row,
+    row.organization_roles?.name ?? null,
+  );
 
-  return mapOrganizationUserRow(row, row.organization_roles?.name ?? null);
+  if (isInviteExpired(invite.inviteExpiresAt)) {
+    return { status: "expired", invite };
+  }
+
+  return { status: "valid", invite };
+}
+
+export async function getInviteByToken(
+  token: string,
+): Promise<OrganizationUser | null> {
+  const lookup = await lookupInviteByToken(token);
+  return lookup.status === "valid" ? lookup.invite : null;
 }
 
 export async function countActiveOrganizationUsers(
@@ -185,6 +206,7 @@ export async function acceptPendingInvitesForUser(
           status: "active",
           joined_at: now,
           invite_token: null,
+          invite_expires_at: null,
         })
         .eq("invite_token", inviteToken)
         .eq("status", "invited")
@@ -206,6 +228,7 @@ export async function acceptPendingInvitesForUser(
       status: "active",
       joined_at: now,
       invite_token: null,
+      invite_expires_at: null,
     })
     .eq("status", "invited")
     .ilike("email", normalizedEmail)

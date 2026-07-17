@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { userMustChangePassword } from "@/lib/auth/invite-credentials";
 import { acceptPendingInvitesForUser } from "@/lib/auth/membership-queries";
 import {
   clearPendingFoundingAccessCookieOnResponse,
@@ -72,16 +73,20 @@ export async function GET(request: NextRequest) {
   }
 
   if (user) {
-    nextPath = await resolvePostAuthPathForUser(
-      supabase,
-      user.id,
-      requestedNext,
-      {
-        setupIntent,
-        pendingCode: pendingFoundingCode,
-        inviteToken: invite,
-      },
-    );
+    if (userMustChangePassword(user)) {
+      nextPath = "/account/change-password";
+    } else {
+      nextPath = await resolvePostAuthPathForUser(
+        supabase,
+        user.id,
+        requestedNext,
+        {
+          setupIntent,
+          pendingCode: pendingFoundingCode,
+          inviteToken: invite,
+        },
+      );
+    }
   }
 
   const target = new URL(nextPath, origin);

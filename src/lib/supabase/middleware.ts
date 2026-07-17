@@ -18,6 +18,7 @@ const PUBLIC_PATHS = [
   "/pricing",
   "/features",
   "/login",
+  "/invite",
   "/auth/callback",
   "/auth/signout",
   "/robots.txt",
@@ -126,7 +127,18 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
-  if (user && !isPublicPath(pathname)) {
+  if (user) {
+    const mustChangePassword =
+      user.app_metadata?.must_change_password === true;
+    if (mustChangePassword && pathname !== "/account/change-password") {
+      const changeUrl = new URL("/account/change-password", request.nextUrl.origin);
+      const redirectResponse = NextResponse.redirect(changeUrl);
+      copyCookies(supabaseResponse, redirectResponse);
+      return redirectResponse;
+    }
+  }
+
+  if (user && !isPublicPath(pathname) && pathname !== "/account/change-password") {
     const gateRedirect = await resolveOrgGateRedirect(request, supabase, user.id);
     if (gateRedirect) {
       const gateUrl = new URL(gateRedirect, request.nextUrl.origin);

@@ -18,6 +18,7 @@ export interface OrganizationUser {
   accessTemplateId?: string | null;
   status: OrganizationUserStatus;
   inviteToken: string | null;
+  inviteExpiresAt?: string | null;
   invitedAt: string | null;
   joinedAt: string | null;
   createdAt: string;
@@ -39,6 +40,7 @@ export interface OrganizationUserRow {
   access_template_id?: string | null;
   status: OrganizationUserStatus;
   invite_token: string | null;
+  invite_expires_at?: string | null;
   invited_by_user_id: string | null;
   invited_at: string | null;
   joined_at: string | null;

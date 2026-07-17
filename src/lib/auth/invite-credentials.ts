@@ -1,7 +1,5 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
-
 import {
   createAdminClient,
   findAuthUserByEmail,
@@ -12,56 +10,41 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/** Readable temp password for invite emails (not a user-chosen secret). */
-export function generateInviteTemporaryPassword(): string {
-  // Example: Hr-a8f3k2m9q1
-  return `Hr-${randomBytes(6).toString("base64url")}`;
-}
+export const MUST_CHANGE_PASSWORD_KEY = "must_change_password";
 
 /**
- * When true, invite emails include a temporary password and we provision
- * the Supabase auth user so Email & password works on first sign-in.
- *
- * Set TEAM_INVITE_INCLUDE_TEMP_PASSWORD=false to turn off (e.g. later prod).
- * Defaults to on outside production; set =true on Vercel while testing.
+ * Create or update the invited member's auth account with a password they chose.
+ * Email is treated as verified because they opened a secret, expiring invite link.
  */
-export function shouldIncludeTempPasswordInInvite(): boolean {
-  const raw = process.env.TEAM_INVITE_INCLUDE_TEMP_PASSWORD?.trim().toLowerCase();
-  if (raw === "false" || raw === "0" || raw === "off") {
-    return false;
-  }
-  if (raw === "true" || raw === "1" || raw === "on") {
-    return true;
-  }
-  return process.env.NODE_ENV !== "production";
-}
-
-/**
- * Create or reset a Supabase auth user for an invited email.
- * Does not activate organization membership — claim still happens on sign-in.
- */
-export async function ensureInvitedAuthCredentials(
-  email: string,
-): Promise<{ password: string } | { error: string }> {
+export async function createInvitedMemberAccount(input: {
+  email: string;
+  password: string;
+}): Promise<{ userId: string } | { error: string }> {
   if (!isSupabaseAdminConfigured()) {
     return {
       error:
-        "Could not add a temporary password (SUPABASE_SERVICE_ROLE_KEY missing). Share the invite link and use Magic link or Google.",
+        "Account setup is not configured. Ask your admin to add SUPABASE_SERVICE_ROLE_KEY.",
     };
   }
 
-  const normalized = normalizeEmail(email);
-  const password = generateInviteTemporaryPassword();
+  if (input.password.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+
+  const email = normalizeEmail(input.email);
   const admin = createAdminClient();
 
   const created = await admin.auth.admin.createUser({
-    email: normalized,
-    password,
+    email,
+    password: input.password,
     email_confirm: true,
+    app_metadata: {
+      [MUST_CHANGE_PASSWORD_KEY]: false,
+    },
   });
 
   if (!created.error && created.data.user) {
-    return { password };
+    return { userId: created.data.user.id };
   }
 
   const alreadyExists = created.error?.message.toLowerCase().includes("already");
@@ -69,27 +52,73 @@ export async function ensureInvitedAuthCredentials(
     return {
       error:
         created.error?.message ??
-        "Could not create a sign-in account for this invite.",
+        "Could not create your account. Try again or ask your admin to resend the invite.",
     };
   }
 
-  const existingUser = await findAuthUserByEmail(normalized);
-  if (!existingUser) {
-    return {
-      error:
-        created.error?.message ??
-        "Could not find the existing account to reset the invite password.",
-    };
+  return {
+    error:
+      "An account already exists for this email. Sign in instead to accept the invite.",
+  };
+}
+
+/** Mark manually provisioned accounts so first login requires a password change. */
+export async function markMustChangePassword(
+  userId: string,
+): Promise<{ error?: string }> {
+  if (!isSupabaseAdminConfigured()) {
+    return { error: "Admin client not configured." };
   }
 
-  const updated = await admin.auth.admin.updateUserById(existingUser.id, {
-    password,
-    email_confirm: true,
+  const admin = createAdminClient();
+  const { data, error: getError } = await admin.auth.admin.getUserById(userId);
+  if (getError || !data.user) {
+    return { error: getError?.message ?? "User not found." };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: {
+      ...data.user.app_metadata,
+      [MUST_CHANGE_PASSWORD_KEY]: true,
+    },
   });
 
-  if (updated.error) {
-    return { error: updated.error.message };
+  return error ? { error: error.message } : {};
+}
+
+export async function clearMustChangePassword(
+  userId: string,
+): Promise<{ error?: string }> {
+  if (!isSupabaseAdminConfigured()) {
+    return { error: "Admin client not configured." };
   }
 
-  return { password };
+  const admin = createAdminClient();
+  const { data, error: getError } = await admin.auth.admin.getUserById(userId);
+  if (getError || !data.user) {
+    return { error: getError?.message ?? "User not found." };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: {
+      ...data.user.app_metadata,
+      [MUST_CHANGE_PASSWORD_KEY]: false,
+    },
+  });
+
+  return error ? { error: error.message } : {};
+}
+
+export function userMustChangePassword(user: {
+  app_metadata?: Record<string, unknown> | null;
+}): boolean {
+  return user.app_metadata?.[MUST_CHANGE_PASSWORD_KEY] === true;
+}
+
+export async function authUserExistsForEmail(email: string): Promise<boolean> {
+  if (!isSupabaseAdminConfigured()) {
+    return false;
+  }
+  const existing = await findAuthUserByEmail(normalizeEmail(email));
+  return Boolean(existing);
 }

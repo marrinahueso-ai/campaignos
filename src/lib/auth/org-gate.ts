@@ -39,7 +39,12 @@ export async function resolveOrgGateRedirect(
     return isOrgSetupPath(pathname) ? null : SCHOOL_SETUP_PATH;
   }
 
-  if (isOrgSetupPath(pathname) || pathname === "/login") {
+  if (
+    isOrgSetupPath(pathname) ||
+    pathname === "/login" ||
+    pathname.startsWith("/invite/") ||
+    pathname === "/account/change-password"
+  ) {
     return null;
   }
 

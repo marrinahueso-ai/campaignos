@@ -23,6 +23,7 @@ export function mapOrganizationUserRow(
     accessTemplateId: row.access_template_id ?? row.campaign_role ?? null,
     status: row.status,
     inviteToken: row.invite_token,
+    inviteExpiresAt: row.invite_expires_at ?? null,
     invitedAt: row.invited_at,
     joinedAt: row.joined_at,
     createdAt: row.created_at,

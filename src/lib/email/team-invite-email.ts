@@ -12,8 +12,8 @@ export interface TeamInviteEmailInput {
   inviteUrl: string;
   personalMessage: string | null;
   inviterEmail: string | null;
-  /** When set (testing mode), shown so invitees can use Email & password first. */
-  temporaryPassword?: string | null;
+  /** Invite link validity in days (shown in copy). */
+  ttlDays?: number;
 }
 
 function escapeHtml(value: string): string {
@@ -25,14 +25,12 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-/** Production Hey Ralli origin for invite email deep links. */
 function gmailPrimaryFilterUrl(): string {
   return "https://heyralli.com/go/email-primary";
 }
 
 /**
- * Hey Ralli team invite — same visual system as story/approval emails,
- * pared down to one job: open the link and sign in.
+ * Hey Ralli team invite — secure setup link (no password in email).
  */
 export function buildTeamInviteEmail(
   input: TeamInviteEmailInput,
@@ -42,7 +40,7 @@ export function buildTeamInviteEmail(
   const roleLabel = input.accessLevelLabel.trim() || "team member";
   const message = input.personalMessage?.trim() || null;
   const inviter = input.inviterEmail?.trim() || null;
-  const temporaryPassword = input.temporaryPassword?.trim() || null;
+  const ttlDays = input.ttlDays ?? 7;
   const emailPrimaryUrl = gmailPrimaryFilterUrl();
 
   const subject = `You're invited to ${org} on Hey Ralli`;
@@ -53,29 +51,6 @@ export function buildTeamInviteEmail(
   ]
     .filter(Boolean)
     .join(" · ");
-
-  const credentialsBlock = temporaryPassword
-    ? `<tr>
-        <td style="padding:0 32px 24px;font-family:Arial,Helvetica,sans-serif;">
-          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Sign in with</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fffcf7" style="background-color:#fffcf7;border:1px solid #ddd4c8;border-radius:12px;">
-            <tr>
-              <td style="padding:16px 18px;">
-                <p style="margin:0 0 4px;font-size:12px;line-height:1.4;color:#5c554c;">Email</p>
-                <p style="margin:0 0 14px;font-size:15px;line-height:1.4;font-weight:600;color:#2a2622;">${escapeHtml(input.inviteeEmail)}</p>
-                <p style="margin:0 0 4px;font-size:12px;line-height:1.4;color:#5c554c;">Temporary password</p>
-                <p style="margin:0;font-size:18px;line-height:1.35;font-weight:700;letter-spacing:0.03em;color:#2a2622;font-family:Consolas,Monaco,monospace;">${escapeHtml(temporaryPassword)}</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>`
-    : `<tr>
-        <td style="padding:0 32px 24px;font-family:Arial,Helvetica,sans-serif;">
-          <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Sign in with</p>
-          <p style="margin:0;font-size:15px;line-height:1.5;font-weight:600;color:#2a2622;">${escapeHtml(input.inviteeEmail)}</p>
-        </td>
-      </tr>`;
 
   const messageBlock = message
     ? `<tr>
@@ -116,19 +91,15 @@ export function buildTeamInviteEmail(
               </p>
             </td>
           </tr>
-          ${credentialsBlock}
           ${messageBlock}
           <tr>
             <td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif;">
               <a href="${escapeHtml(input.inviteUrl)}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;">
-                Accept invite &amp; sign in
+                Accept invite &amp; create password
               </a>
               <p style="margin:14px 0 0;font-size:13px;line-height:1.5;color:#5c554c;">
-                ${
-                  temporaryPassword
-                    ? "Use Email &amp; password with the details above."
-                    : "Sign in with the email this invite was sent to."
-                }
+                Sign in with <strong style="color:#2a2622;">${escapeHtml(input.inviteeEmail)}</strong>.
+                You’ll choose your own password. This link expires in ${ttlDays} days.
               </p>
             </td>
           </tr>
@@ -155,11 +126,12 @@ export function buildTeamInviteEmail(
     `You're invited to join ${org} on Hey Ralli.`,
     metaLine,
     "",
-    `Email: ${input.inviteeEmail}`,
-    temporaryPassword ? `Temporary password: ${temporaryPassword}` : null,
+    `Sign in email: ${input.inviteeEmail}`,
+    "Create your own password when you accept (no password is emailed).",
+    `This invite link expires in ${ttlDays} days.`,
     message ? `\n“${message}”` : null,
     "",
-    "Accept invite & sign in:",
+    "Accept invite & create password:",
     input.inviteUrl,
     "",
     "— Hey Ralli",

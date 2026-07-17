@@ -13,6 +13,7 @@ import {
 } from "@/lib/auth/membership-mutations";
 import {
   acceptPendingInvitesForUser,
+  lookupInviteByToken,
 } from "@/lib/auth/membership-queries";
 import { replaceOrganizationUserEventAssignments } from "@/lib/auth/event-assignments";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
@@ -32,9 +33,11 @@ import {
   resolveAuthSiteOrigin,
   toPublicInviteUrl,
 } from "@/lib/auth/invite-url";
+import { TEAM_INVITE_TTL_DAYS } from "@/lib/auth/invite-constants";
 import {
-  ensureInvitedAuthCredentials,
-  shouldIncludeTempPasswordInInvite,
+  clearMustChangePassword,
+  createInvitedMemberAccount,
+  userMustChangePassword,
 } from "@/lib/auth/invite-credentials";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
@@ -108,17 +111,6 @@ async function maybeSendTeamInviteEmail(input: {
     return "Invite created, but email was not sent (RESEND_API_KEY is not configured). Copy the invite link below.";
   }
 
-  let temporaryPassword: string | null = null;
-  let credentialWarning: string | null = null;
-  if (shouldIncludeTempPasswordInInvite()) {
-    const credentials = await ensureInvitedAuthCredentials(input.toEmail);
-    if ("error" in credentials) {
-      credentialWarning = credentials.error;
-    } else {
-      temporaryPassword = credentials.password;
-    }
-  }
-
   const publicInviteUrl = toPublicInviteUrl(input.inviteUrl);
   const roleLabel =
     input.accessLevelLabel?.trim() || campaignRoleLabel(input.accessLevel);
@@ -130,34 +122,10 @@ async function maybeSendTeamInviteEmail(input: {
     inviteUrl: publicInviteUrl,
     personalMessage: input.personalMessage,
     inviterEmail: input.inviterEmail,
-    temporaryPassword,
+    ttlDays: TEAM_INVITE_TTL_DAYS,
   });
 
-  // When a temp password is included, prefer HTML so credentials always render.
-  // Template send is used when there is no password (or as a fallback attempt).
-  if (!temporaryPassword) {
-    const templateResult = await sendTemplateEmail({
-      to: [input.toEmail],
-      templateId: resolveTeamInviteTemplateId(),
-      subject: content.subject,
-      variables: {
-        ORGANIZATION_NAME: input.organizationName.trim() || "your PTO",
-        INVITEE_NAME: input.inviteeName?.trim() || "there",
-        ROLE_LABEL: roleLabel,
-        INVITE_URL: publicInviteUrl,
-        INVITEE_EMAIL: input.toEmail,
-        INVITER_EMAIL: input.inviterEmail?.trim() || "your team",
-        PERSONAL_MESSAGE:
-          input.personalMessage?.trim() || "Welcome to the team.",
-        TEMPORARY_PASSWORD: "Use Magic link or Google with your invited email.",
-      },
-    });
-
-    if (templateResult.success) {
-      return credentialWarning;
-    }
-  }
-
+  // Prefer branded HTML (secure setup link). Template is best-effort fallback.
   const htmlResult = await sendEmail({
     to: [input.toEmail],
     subject: content.subject,
@@ -165,11 +133,32 @@ async function maybeSendTeamInviteEmail(input: {
     text: content.text,
   });
 
-  if (!htmlResult.success) {
-    return `Invite created, but email failed to send: ${htmlResult.error ?? "unknown error"}. Copy the invite link below.`;
+  if (htmlResult.success) {
+    return null;
   }
 
-  return credentialWarning;
+  const templateResult = await sendTemplateEmail({
+    to: [input.toEmail],
+    templateId: resolveTeamInviteTemplateId(),
+    subject: content.subject,
+    variables: {
+      ORGANIZATION_NAME: input.organizationName.trim() || "your PTO",
+      INVITEE_NAME: input.inviteeName?.trim() || "there",
+      ROLE_LABEL: roleLabel,
+      INVITE_URL: publicInviteUrl,
+      INVITEE_EMAIL: input.toEmail,
+      INVITER_EMAIL: input.inviterEmail?.trim() || "your team",
+      PERSONAL_MESSAGE:
+        input.personalMessage?.trim() || "Welcome to the team.",
+      TEMPORARY_PASSWORD: "Create your own password on the invite page.",
+    },
+  });
+
+  if (!templateResult.success) {
+    return `Invite created, but email failed to send: ${htmlResult.error ?? templateResult.error ?? "unknown error"}. Copy the invite link below.`;
+  }
+
+  return null;
 }
 
 export interface AuthActionState {
@@ -317,7 +306,115 @@ export async function signInWithPasswordAction(
 
   await clearPendingFoundingAccessCookie();
 
+  if (data.user && userMustChangePassword(data.user)) {
+    redirect("/account/change-password");
+  }
+
   redirect(await getAuthenticatedAppPath(safeNextPath(formData.get("next")?.toString())));
+}
+
+export async function completeInviteSetupAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const inviteToken = formData.get("inviteToken")?.toString()?.trim() || "";
+  const password = formData.get("password")?.toString() ?? "";
+  const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+
+  if (!inviteToken) {
+    return { error: "This invite link is invalid.", success: false };
+  }
+
+  const lookup = await lookupInviteByToken(inviteToken);
+  if (lookup.status === "missing") {
+    return {
+      error: "This invite link is invalid or already used.",
+      success: false,
+    };
+  }
+  if (lookup.status === "expired") {
+    return {
+      error:
+        "This invite has expired. Ask your admin to resend the invitation.",
+      success: false,
+    };
+  }
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters.", success: false };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match.", success: false };
+  }
+
+  const created = await createInvitedMemberAccount({
+    email: lookup.invite.email,
+    password,
+  });
+  if ("error" in created) {
+    return { error: created.error, success: false };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: lookup.invite.email,
+    password,
+  });
+  if (error || !data.user?.email) {
+    return {
+      error:
+        error?.message ??
+        "Account created, but sign-in failed. Try signing in from the login page.",
+      success: false,
+    };
+  }
+
+  const claim = await acceptPendingInvitesForUser(
+    data.user.id,
+    data.user.email,
+    { inviteToken },
+  );
+  if (claim.accepted < 1) {
+    return {
+      error:
+        claim.emailMismatch
+          ? `This invite is for ${claim.emailMismatch}.`
+          : "Could not activate your team access. Ask your admin to resend the invite.",
+      success: false,
+    };
+  }
+
+  await clearPendingFoundingAccessCookie();
+  redirect(await getAuthenticatedAppPath());
+}
+
+export async function changePasswordAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: "Sign in first.", success: false };
+  }
+
+  const password = formData.get("password")?.toString() ?? "";
+  const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters.", success: false };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message, success: false };
+  }
+
+  await clearMustChangePassword(user.id);
+  redirect(await getAuthenticatedAppPath());
 }
 
 export async function signInWithEmailAction(

@@ -38,7 +38,6 @@ export function LoginForm({
   foundingCodeRetry = false,
 }: LoginFormProps) {
   const isNewSchoolSignup = setupIntent && !inviteToken;
-  // Invite emails include a temporary password during testing — Email & password first.
   const [mode, setMode] = useState<"password" | "magic">("password");
   const [passwordState, passwordAction, passwordPending] = useActionState(
     signInWithPasswordAction,
@@ -241,9 +240,7 @@ export function LoginForm({
             name="password"
             label="Password"
             type="password"
-            placeholder={
-              inviteToken ? "Temporary password from your invite email" : "Password"
-            }
+            placeholder="Password"
             required
             autoComplete="current-password"
             variant={isStudio ? "studio" : "default"}
@@ -270,7 +267,7 @@ export function LoginForm({
 
           <p className="text-center text-xs leading-relaxed text-cos-muted">
             {inviteToken
-              ? "Use the temporary password from your invite email for the first sign-in. After that you can use Google if you prefer."
+              ? "New to Hey Ralli? Open your invite link to create a password first. Already have an account? Sign in here to join."
               : "Your admin creates accounts in Settings → Team and shares email + password with you."}
           </p>
         </form>
@@ -313,7 +310,7 @@ export function LoginForm({
 
           <p className="text-center text-xs leading-relaxed text-cos-muted">
             {inviteToken
-              ? "Prefer Email & password with the temporary password from your invite. Magic link also works with the invited email."
+              ? "Use the invited email. New members should open the Accept invite link to create a password."
               : "Magic links require an existing account. Use Google sign-in or the email & password your admin shared."}
           </p>
         </form>

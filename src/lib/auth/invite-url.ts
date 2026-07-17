@@ -5,12 +5,12 @@ import {
   resolveSiteUrlFromHeaders,
 } from "@/lib/site/url";
 
+/** Secure invite accept URL — member sets their own password here. */
 export function buildInviteLoginUrl(
   inviteToken: string,
   siteOrigin: string,
 ): string {
-  const url = new URL("/login", siteOrigin);
-  url.searchParams.set("invite", inviteToken);
+  const url = new URL(`/invite/${encodeURIComponent(inviteToken)}`, siteOrigin);
   return url.toString();
 }
 
@@ -24,11 +24,18 @@ export function toPublicInviteUrl(inviteUrl: string): string {
     if (!isLocalHostname(parsed.hostname)) {
       return inviteUrl;
     }
-    const token = parsed.searchParams.get("invite");
-    if (!token) {
-      return inviteUrl;
+
+    const pathMatch = parsed.pathname.match(/^\/invite\/([^/]+)\/?$/);
+    if (pathMatch?.[1]) {
+      return buildInviteLoginUrl(decodeURIComponent(pathMatch[1]), DEFAULT_SITE_URL);
     }
-    return buildInviteLoginUrl(token, DEFAULT_SITE_URL);
+
+    const token = parsed.searchParams.get("invite");
+    if (token) {
+      return buildInviteLoginUrl(token, DEFAULT_SITE_URL);
+    }
+
+    return inviteUrl;
   } catch {
     return inviteUrl;
   }

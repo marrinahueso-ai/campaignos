@@ -4,6 +4,7 @@ import {
   type CampaignRole,
   isCampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { computeInviteExpiresAt } from "@/lib/auth/invite-constants";
 import { inferDefaultCampaignRole } from "@/lib/auth/infer-campaign-role";
 import type { OrganizationRoleKind } from "@/types/organization-workspace";
 
@@ -135,6 +136,7 @@ export async function inviteOrganizationUser(input: {
       input.accessTemplateId ?? input.campaignRole ?? "contributor",
     status: "invited" as const,
     invite_token: inviteToken,
+    invite_expires_at: computeInviteExpiresAt(new Date(now)),
     invited_by_user_id: input.invitedByUserId,
     invited_at: now,
     user_id: null,
@@ -320,6 +322,7 @@ export async function refreshOrganizationInviteToken(
     .update({
       invite_token: inviteToken,
       invited_at: now,
+      invite_expires_at: computeInviteExpiresAt(new Date(now)),
     })
     .eq("id", membershipId)
     .eq("status", "invited")
