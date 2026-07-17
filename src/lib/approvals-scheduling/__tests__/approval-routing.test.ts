@@ -248,7 +248,7 @@ describe("Approval Routing — queue visibility", () => {
       "utf8",
     );
     assert.match(queriesSource, /isSchedulingRowAssignedToActor/);
-    assert.match(queriesSource, /canApproveDraft\(role\)/);
+    assert.match(queriesSource, /hasPermission\("approve_comms"\)/);
   });
 });
 

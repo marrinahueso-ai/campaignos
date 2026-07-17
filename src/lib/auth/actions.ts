@@ -17,7 +17,6 @@ import {
 } from "@/lib/auth/membership-queries";
 import { replaceOrganizationUserEventAssignments } from "@/lib/auth/event-assignments";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
-import { canManageTeam } from "@/lib/auth/infer-campaign-role";
 import { getAuthUser, requireAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -25,9 +24,10 @@ import {
   campaignRoleLabel,
   isCampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { requirePermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import { resolveAccessTemplateSelection } from "@/lib/access-templates/merge";
-import { getCurrentCampaignRole, SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
+import { SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
 import {
   buildInviteLoginUrl,
   resolveAuthSiteOrigin,
@@ -176,12 +176,12 @@ export async function setOrganizationUserEventAssignmentsAction(input: {
   eventIds: string[];
 }): Promise<AuthActionState> {
   const organization = await getCurrentOrganization();
-  const campaignRole = await getCurrentCampaignRole();
 
   if (!organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to update event assignments.", success: false };
   }
 
@@ -540,13 +540,13 @@ export async function createTeamMemberAccountAction(
 ): Promise<AuthActionState> {
   const user = await getAuthUser();
   const organization = await getCurrentOrganization();
-  const campaignRole = await getCurrentCampaignRole();
 
   if (!user || !organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
 
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to create team accounts.", success: false };
   }
 
@@ -610,13 +610,13 @@ export async function inviteTeamMemberAction(
 ): Promise<AuthActionState> {
   const user = await getAuthUser();
   const organization = await getCurrentOrganization();
-  const campaignRole = await getCurrentCampaignRole();
 
   if (!user || !organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
 
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to invite team members.", success: false };
   }
 
@@ -736,8 +736,8 @@ export async function updateTeamMemberAction(
     committeeId?: string | null;
   },
 ): Promise<AuthActionState> {
-  const campaignRole = await getCurrentCampaignRole();
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to update team members.", success: false };
   }
 
@@ -793,13 +793,13 @@ export async function setTeamMemberAccessLevelAction(input: {
 }): Promise<AuthActionState> {
   const user = await getAuthUser();
   const organization = await getCurrentOrganization();
-  const currentRole = await getCurrentCampaignRole();
 
   if (!user || !organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
 
-  if (!canManageTeam(currentRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to update team members.", success: false };
   }
 
@@ -857,9 +857,9 @@ export async function setRosterMemberAccessLevelAction(input: {
   source: MemberEditSource;
   campaignRole: CampaignRole;
 }): Promise<AuthActionState> {
-  const currentRole = await getCurrentCampaignRole();
 
-  if (!canManageTeam(currentRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to update team members.", success: false };
   }
 
@@ -915,8 +915,8 @@ export async function setRosterMemberAccessLevelAction(input: {
 export async function removeTeamMemberAction(
   membershipId: string,
 ): Promise<AuthActionState> {
-  const campaignRole = await getCurrentCampaignRole();
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to remove team members.", success: false };
   }
 
@@ -935,8 +935,8 @@ export async function resendTeamInviteAction(
 ): Promise<AuthActionState> {
   const user = await getAuthUser();
   const organization = await getCurrentOrganization();
-  const campaignRole = await getCurrentCampaignRole();
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to resend invites.", success: false };
   }
 
@@ -1004,8 +1004,8 @@ export async function resendTeamInviteAction(
 export async function cancelTeamInviteAction(
   membershipId: string,
 ): Promise<AuthActionState> {
-  const campaignRole = await getCurrentCampaignRole();
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to cancel invites.", success: false };
   }
 
@@ -1067,13 +1067,13 @@ export async function giveAppAccessAction(input: {
 }): Promise<AuthActionState> {
   const user = await getAuthUser();
   const organization = await getCurrentOrganization();
-  const currentRole = await getCurrentCampaignRole();
 
   if (!user || !organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
 
-  if (!canManageTeam(currentRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to grant app access.", success: false };
   }
 
@@ -1188,12 +1188,12 @@ export async function replaceMemberEventAssignmentsAction(input: {
   eventIds: string[];
 }): Promise<AuthActionState> {
   const organization = await getCurrentOrganization();
-  const campaignRole = await getCurrentCampaignRole();
 
   if (!organization) {
     return { error: "Sign in and set up your organization first.", success: false };
   }
-  if (!canManageTeam(campaignRole)) {
+  const managePeople = await requirePermission("manage_people");
+  if ("error" in managePeople) {
     return { error: "You do not have permission to update event assignments.", success: false };
   }
   if (!input.organizationMemberId.trim()) {

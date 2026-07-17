@@ -3,6 +3,7 @@ import {
   expectNoBlankScreen,
   hasTestCredentials,
   loginWithTestUser,
+  mainContent,
 } from "../helpers/auth";
 
 test.describe("Authenticated navigation", () => {
@@ -33,9 +34,9 @@ test.describe("Authenticated navigation", () => {
     await expectNoBlankScreen(page);
     await expect(page).not.toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { name: /team & access/i }).or(
-        page.getByText(/team & access/i).first(),
-      ),
-    ).toBeVisible();
+      mainContent(page).getByRole("heading", {
+        name: /people & responsibilities|team & access/i,
+      }),
+    ).toBeVisible({ timeout: 20_000 });
   });
 });

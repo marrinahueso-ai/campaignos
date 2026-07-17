@@ -4,6 +4,11 @@ import {
   canPublishCampaignContent,
 } from "@/lib/auth/campaign-roles";
 
+/**
+ * Sync helper for client props from CampaignRole only.
+ * Prefer EffectiveAccess `upload_artwork` (hasPermission / canUploadArtwork props)
+ * — role helpers ignore org template overrides (e.g. developer with upload off).
+ */
 export function canManageCampaignAssets(role: CampaignRole): boolean {
   // Testers may draft/review content but not publish/upload campaign assets by default.
   return canPublishCampaignContent(role);

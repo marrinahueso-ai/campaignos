@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  filterEventsByAccess,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventRows } from "@/lib/events/mappers";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
@@ -72,9 +76,11 @@ async function fetchScopedCampaignEvents(input: {
     return [];
   }
 
-  return mapEventRows((data ?? []) as unknown as EventRow[]).filter((event) =>
-    isCampaignPageStrategy(event.communicationStrategy),
+  const events = mapEventRows((data ?? []) as unknown as EventRow[]).filter(
+    (event) => isCampaignPageStrategy(event.communicationStrategy),
   );
+  const access = await getEffectiveAccess();
+  return filterEventsByAccess(access, events);
 }
 
 /** Narrow event summaries for assigned-event lists (Person Profile, etc.). */

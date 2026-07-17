@@ -63,6 +63,7 @@ interface CampaignBuilderShellProps {
   eventDate: string;
   organizationId: string;
   canUseDeveloperTools?: boolean;
+  canUploadArtwork?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -159,6 +160,7 @@ export function CampaignBuilderShell({
   eventDate,
   organizationId,
   canUseDeveloperTools = false,
+  canUploadArtwork = true,
   playbooks,
   brandKits,
   campaignOptions,
@@ -175,6 +177,7 @@ export function CampaignBuilderShell({
       eventDate={eventDate}
       organizationId={organizationId}
       canUseDeveloperTools={canUseDeveloperTools}
+      canUploadArtwork={canUploadArtwork}
       playbooks={playbooks}
       brandKits={brandKits}
       campaignOptions={campaignOptions}

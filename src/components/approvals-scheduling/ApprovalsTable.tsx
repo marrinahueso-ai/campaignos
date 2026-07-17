@@ -14,14 +14,13 @@ import {
   approveUnifiedItemAction,
 } from "@/lib/approvals-scheduling/actions";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
-import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { cn } from "@/lib/utils/cn";
 
 interface ApprovalsTableProps {
   items: UnifiedApprovalItem[];
-  role: CampaignRole;
+  canApproveComms: boolean;
   actorEmail: string | null;
   onReview: (item: UnifiedApprovalItem) => void;
   onActionError: (message: string) => void;
@@ -29,7 +28,7 @@ interface ApprovalsTableProps {
 
 export function ApprovalsTable({
   items,
-  role,
+  canApproveComms,
   actorEmail,
   onReview,
   onActionError,
@@ -96,7 +95,7 @@ export function ApprovalsTable({
         </thead>
         <tbody>
           {items.map((item) => {
-            const canAct = canActOnUnifiedItem(item, role);
+            const canAct = canActOnUnifiedItem(item, canApproveComms);
             const isPending = pendingId === item.id;
             const showReview =
               item.workflowStatus === "assigned_to_me" ||

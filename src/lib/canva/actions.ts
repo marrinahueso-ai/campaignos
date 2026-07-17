@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { listCanvaDesigns } from "@/lib/canva/api-client";
 import {
   disconnectCanvaConnection,
@@ -34,8 +33,7 @@ export async function listCanvaDesignsAction(): Promise<{
   error?: string | null;
   designs?: CanvaDesignSummary[];
 }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to browse Canva designs." };
   }
 
@@ -64,8 +62,7 @@ export async function listCanvaDesignsAction(): Promise<{
 }
 
 export async function disconnectCanvaConnectionAction(): Promise<CanvaActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to disconnect Canva." };
   }
 

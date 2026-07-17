@@ -47,6 +47,14 @@ describe("access templates defaults", () => {
     assert.equal(next.view_all_events, false);
   });
 
+  it("preserves explicit false toggles over true fallbacks", () => {
+    const next = normalizePermissions(
+      { upload_artwork: false },
+      DEFAULT_ACCESS_TEMPLATES.find((t) => t.id === "developer")!.permissions,
+    );
+    assert.equal(next.upload_artwork, false);
+  });
+
   it("builds custom template ids", () => {
     const id = buildCustomTemplateId("Team Parent");
     assert.equal(isCustomAccessTemplateId(id), true);
@@ -136,6 +144,35 @@ describe("mergeAccessTemplates", () => {
     );
   });
 
+  it("lets org override developer upload_artwork false over defaults", () => {
+    assert.equal(
+      DEFAULT_ACCESS_TEMPLATES.find((t) => t.id === "developer")?.permissions
+        .upload_artwork,
+      true,
+    );
+
+    const merged = mergeAccessTemplates([
+      {
+        organization_id: "org-1",
+        template_id: "developer",
+        display_name: "Developer",
+        description: null,
+        permissions: { upload_artwork: false },
+        base_role: "developer",
+        updated_at: "2026-07-16T00:00:00.000Z",
+      },
+    ]);
+
+    assert.equal(
+      merged.find((t) => t.id === "developer")?.permissions.upload_artwork,
+      false,
+    );
+    assert.equal(
+      hasAccessPermission(merged, "developer", "upload_artwork"),
+      false,
+    );
+  });
+
   it("builds a label map for People UI", () => {
     const map = accessTemplateLabelMap(
       mergeAccessTemplates([
@@ -158,6 +195,36 @@ describe("mergeAccessTemplates", () => {
     assert.equal(hasAccessPermission(templates, "admin", "manage_billing"), true);
     assert.equal(
       hasAccessPermission(templates, "view_only", "publish_social"),
+      false,
+    );
+  });
+
+  it("resolves permission checks by custom template id", () => {
+    const templates = mergeAccessTemplates([
+      {
+        organization_id: "org-1",
+        template_id: "custom_treasurer_abc123",
+        display_name: "Treasurer",
+        description: null,
+        permissions: {
+          manage_billing: true,
+          draft_edit: true,
+          view_all_events: true,
+        },
+        base_role: "contributor",
+        updated_at: "2026-07-16T00:00:00.000Z",
+      },
+    ]);
+    assert.equal(
+      hasAccessPermission(templates, "custom_treasurer_abc123", "manage_billing"),
+      true,
+    );
+    assert.equal(
+      hasAccessPermission(templates, "custom_treasurer_abc123", "manage_people"),
+      false,
+    );
+    assert.equal(
+      hasAccessPermission(templates, "custom_missing_xyz", "draft_edit"),
       false,
     );
   });

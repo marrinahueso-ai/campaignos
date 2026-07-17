@@ -56,10 +56,34 @@ export async function createInvitedMemberAccount(input: {
     };
   }
 
-  return {
-    error:
-      "An account already exists for this email. Sign in instead to accept the invite.",
-  };
+  // Invite links are secret + expiring — allow setting/resetting password on an
+  // existing auth user (e.g. Google-only accounts needing local email login).
+  const existing = await findAuthUserByEmail(email);
+  if (!existing) {
+    return {
+      error:
+        "An account already exists for this email, but it could not be updated. Sign in instead or ask your admin to resend the invite.",
+    };
+  }
+
+  const updated = await admin.auth.admin.updateUserById(existing.id, {
+    password: input.password,
+    email_confirm: true,
+    app_metadata: {
+      ...existing.app_metadata,
+      [MUST_CHANGE_PASSWORD_KEY]: false,
+    },
+  });
+
+  if (updated.error || !updated.data.user) {
+    return {
+      error:
+        updated.error?.message ??
+        "Could not update your password. Try signing in instead.",
+    };
+  }
+
+  return { userId: updated.data.user.id };
 }
 
 /** Mark manually provisioned accounts so first login requires a password change. */

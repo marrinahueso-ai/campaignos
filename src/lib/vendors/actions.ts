@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
 import { MAX_VENDOR_DOCUMENT_BYTES, MAX_VENDOR_LOGO_BYTES } from "@/lib/vendors/constants";
@@ -18,7 +18,6 @@ import {
   uploadVendorDocument,
   uploadVendorLogo,
 } from "@/lib/vendors/mutations";
-import { canManageVendors, canWriteVendors } from "@/lib/vendors/permissions";
 import type {
   CreateVendorInput,
   UpdateVendorInput,
@@ -53,13 +52,12 @@ async function requireWritableOrg(): Promise<
   { organizationId: string } | { error: string }
 > {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
 
   if (!organization) {
     return { error: "Complete School Setup before managing vendors." };
   }
 
-  if (!canWriteVendors(role)) {
+  if (!(await hasPermission("draft_edit"))) {
     return { error: "You do not have permission to modify vendors." };
   }
 
@@ -148,13 +146,12 @@ export async function archiveVendorAction(
   vendorId: string,
 ): Promise<{ success: boolean; error: string | null }> {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
 
   if (!organization) {
     return { success: false, error: "Complete School Setup before managing vendors." };
   }
 
-  if (!canManageVendors(role)) {
+  if (!(await hasPermission("manage_people"))) {
     return { success: false, error: "Only admins can archive vendors." };
   }
 

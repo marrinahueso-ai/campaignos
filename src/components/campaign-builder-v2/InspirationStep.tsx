@@ -137,6 +137,7 @@ export function InspirationStep() {
     inspirationUploadError,
     clearInspirationUploadError,
     isSaving,
+    canUploadArtwork,
   } = useCampaignBuilder();
 
   const inspirationInputRef = useRef<HTMLInputElement>(null);
@@ -315,55 +316,76 @@ export function InspirationStep() {
                 <SectionHeader
                   number={1}
                   title="Inspiration"
-                  description="Optional. Upload posters, flyers, or mood images — add notes per image if you like."
+                  description={
+                    canUploadArtwork
+                      ? "Optional. Upload posters, flyers, or mood images — add notes per image if you like."
+                      : "Optional visual references for this campaign. Uploading new images is not available for your access level."
+                  }
                 />
 
-                <div className="grid gap-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
-                  <button
-                    type="button"
-                    aria-label="Upload inspiration images"
-                    onClick={() => inspirationInputRef.current?.click()}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      const files = Array.from(event.dataTransfer.files ?? []);
-                      for (const file of files) {
-                        if (file.type.startsWith("image/")) {
-                          addInspirationImage(file);
-                        }
-                      }
-                    }}
-                    className={cn(
-                      "flex min-h-[9rem] flex-col items-center justify-center border border-dashed border-cos-border bg-cos-bg/30 px-4 py-6 text-center transition-colors",
-                      "hover:border-cos-accent hover:bg-cos-bg/50",
-                    )}
-                  >
-                    <Upload
-                      className="h-7 w-7 text-cos-muted"
-                      strokeWidth={1.25}
-                    />
-                    <p className="mt-2 text-sm font-medium text-cos-text">
-                      Drag & drop
-                    </p>
-                    <p className="mt-1 text-xs text-cos-muted">
-                      PNG, JPG up to 10 MB
-                    </p>
-                  </button>
-                  <input
-                    ref={inspirationInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    aria-label="Choose inspiration images"
-                    className="hidden"
-                    onChange={(event) => {
-                      const files = Array.from(event.target.files ?? []);
-                      for (const file of files) {
-                        addInspirationImage(file);
-                      }
-                      event.target.value = "";
-                    }}
-                  />
+                {!canUploadArtwork && (
+                  <p className="rounded border border-cos-border bg-cos-bg/40 px-3 py-2 text-xs text-cos-muted">
+                    Inspiration and logo uploads are disabled for your role.
+                  </p>
+                )}
+
+                <div
+                  className={cn(
+                    "grid gap-4",
+                    canUploadArtwork && "sm:grid-cols-[12rem_minmax(0,1fr)]",
+                  )}
+                >
+                  {canUploadArtwork && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Upload inspiration images"
+                        onClick={() => inspirationInputRef.current?.click()}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          const files = Array.from(
+                            event.dataTransfer.files ?? [],
+                          );
+                          for (const file of files) {
+                            if (file.type.startsWith("image/")) {
+                              addInspirationImage(file);
+                            }
+                          }
+                        }}
+                        className={cn(
+                          "flex min-h-[9rem] flex-col items-center justify-center border border-dashed border-cos-border bg-cos-bg/30 px-4 py-6 text-center transition-colors",
+                          "hover:border-cos-accent hover:bg-cos-bg/50",
+                        )}
+                      >
+                        <Upload
+                          className="h-7 w-7 text-cos-muted"
+                          strokeWidth={1.25}
+                        />
+                        <p className="mt-2 text-sm font-medium text-cos-text">
+                          Drag & drop
+                        </p>
+                        <p className="mt-1 text-xs text-cos-muted">
+                          PNG, JPG up to 10 MB
+                        </p>
+                      </button>
+                      <input
+                        ref={inspirationInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        aria-label="Choose inspiration images"
+                        className="hidden"
+                        onChange={(event) => {
+                          const files = Array.from(event.target.files ?? []);
+                          for (const file of files) {
+                            addInspirationImage(file);
+                          }
+                          event.target.value = "";
+                        }}
+                      />
+                    </>
+                  )}
 
                   <div className="space-y-3">
                     {inspirationImages.length === 0 ? (
@@ -412,14 +434,16 @@ export function InspirationStep() {
                         ))}
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => inspirationInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text underline hover:no-underline"
-                    >
-                      <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                      Add images
-                    </button>
+                    {canUploadArtwork && (
+                      <button
+                        type="button"
+                        onClick={() => inspirationInputRef.current?.click()}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-cos-text underline hover:no-underline"
+                      >
+                        <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        Add images
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -457,7 +481,11 @@ export function InspirationStep() {
                 <SectionHeader
                   number={2}
                   title="Logo"
-                  description="Optional. Choose None, an organization logo, or upload one."
+                  description={
+                    canUploadArtwork
+                      ? "Optional. Choose None, an organization logo, or upload one."
+                      : "Optional. Choose None or an organization logo."
+                  }
                 />
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -520,30 +548,37 @@ export function InspirationStep() {
                     </SelectionCard>
                   )}
 
-                  <SelectionCard
-                    selected={false}
-                    onClick={() => logoInputRef.current?.click()}
-                    className="border-dashed"
-                  >
-                    <Upload className="h-5 w-5 text-cos-muted" strokeWidth={1.5} />
-                    <span className="text-sm font-medium text-cos-text">
-                      Upload logo
-                    </span>
-                  </SelectionCard>
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept="image/*"
-                    aria-label="Upload campaign logo"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        void uploadCampaignLogo(file);
-                      }
-                      event.target.value = "";
-                    }}
-                  />
+                  {canUploadArtwork && (
+                    <>
+                      <SelectionCard
+                        selected={false}
+                        onClick={() => logoInputRef.current?.click()}
+                        className="border-dashed"
+                      >
+                        <Upload
+                          className="h-5 w-5 text-cos-muted"
+                          strokeWidth={1.5}
+                        />
+                        <span className="text-sm font-medium text-cos-text">
+                          Upload logo
+                        </span>
+                      </SelectionCard>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        aria-label="Upload campaign logo"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) {
+                            void uploadCampaignLogo(file);
+                          }
+                          event.target.value = "";
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
 
                 {logoOptions.length === 0 && !inspiration.uploadedLogoUrl && (
@@ -554,8 +589,8 @@ export function InspirationStep() {
                       className="font-medium text-cos-text underline hover:no-underline"
                     >
                       Add logos in Organization settings
-                    </Link>{" "}
-                    or upload one here.
+                    </Link>
+                    {canUploadArtwork ? " or upload one here." : "."}
                   </p>
                 )}
               </section>

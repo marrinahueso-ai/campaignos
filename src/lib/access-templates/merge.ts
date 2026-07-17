@@ -131,11 +131,15 @@ export function resolveAccessTemplateSelection(
 
 export function hasAccessPermission(
   templates: AccessTemplate[],
-  role: CampaignRole,
+  templateId: string,
   key: AccessPermissionKey,
 ): boolean {
   const template =
-    templates.find((entry) => entry.id === role) ?? getDefaultAccessTemplate(role);
+    findAccessTemplate(templates, templateId) ??
+    (isCampaignRole(templateId) ? getDefaultAccessTemplate(templateId) : null);
+  if (!template) {
+    return false;
+  }
   return Boolean(template.permissions[key]);
 }
 

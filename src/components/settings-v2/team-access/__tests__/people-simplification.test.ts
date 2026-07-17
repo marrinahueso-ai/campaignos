@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildPersonEventInvolvements,
   buildUnifiedTeamMembers,
+  canResendTeamInvite,
   memberMatchesPeopleSearch,
   memberStatusLabel,
   peopleAccessBadgeLabel,
@@ -14,6 +15,7 @@ import {
   peopleLoginStatusLabel,
   peopleRelatedEventIds,
   peopleResponsibilityLabel,
+  resendTeamInviteLabel,
 } from "../team-access-utils.ts";
 import type { OrganizationWorkspaceData } from "../../../../types/organization-workspace.ts";
 import type { OrganizationUser } from "../../../../types/auth.ts";
@@ -232,6 +234,13 @@ describe("Team & Access people simplification", () => {
     assert.equal(peopleLoginStatus(active), "active");
     assert.equal(peopleLoginStatus(inactive), "inactive");
     assert.equal(peopleAccessBadgeLabel(active), "Contributor");
+
+    assert.equal(canResendTeamInvite(invited, true), true);
+    assert.equal(canResendTeamInvite(inactive, true), true);
+    assert.equal(canResendTeamInvite(active, true), false);
+    assert.equal(canResendTeamInvite(invited, false), false);
+    assert.equal(resendTeamInviteLabel(invited), "Resend Invite");
+    assert.equal(resendTeamInviteLabel(inactive), "Reinvite to Login");
   });
 
   it("11. Assigned Events shows name for one event, count for many", () => {

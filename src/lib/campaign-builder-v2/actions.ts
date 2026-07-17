@@ -34,6 +34,7 @@ import {
 import {
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
 import type {
   ArtworkView,
@@ -763,6 +764,13 @@ export async function uploadInspirationImageAction(
   image?: InspirationImagePayload;
   message: string;
 }> {
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      message: "You do not have permission to upload artwork.",
+    };
+  }
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { success: false, message: "Choose an image to upload." };

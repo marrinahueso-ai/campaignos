@@ -34,6 +34,9 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Can a test user sign in?
 - Do Dashboard and Team & Access load?
 - Does Create with AI load?
+- Does an invalid invite link show a clear error?
+- (Optional) Does a pending invite show password setup?
+- (Optional) Are Inspiration uploads hidden when `upload_artwork` is off?
 
 It never intentionally deletes production data. Authenticated tests are designed to use **test/staging credentials** only.
 
@@ -76,9 +79,14 @@ HEY_RALLI_BASE_URL=http://localhost:3000
 HEY_RALLI_TEST_EMAIL=your-staging-user@example.com
 HEY_RALLI_TEST_PASSWORD=your-staging-password
 HEY_RALLI_TEST_EVENT_ID=your-staging-event-id
+# Optional — member with upload_artwork denied (e.g. developer template override)
+HEY_RALLI_TEST_NO_UPLOAD_EMAIL=restricted-staging-user@example.com
+HEY_RALLI_TEST_NO_UPLOAD_PASSWORD=their-staging-password
+# Optional — pending invite token from Team & Access (staging only)
+HEY_RALLI_TEST_INVITE_TOKEN=paste-pending-invite-token-here
 ```
 
-If those values are missing, login/dashboard/Create-with-AI tests will be **skipped** instead of failing against production.
+If those values are missing, login/dashboard/Create-with-AI/restricted-upload/invite-form tests will be **skipped** instead of failing against production. The invalid-invite smoke test always runs.
 
 ---
 

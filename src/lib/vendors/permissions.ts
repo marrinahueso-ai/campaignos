@@ -9,6 +9,7 @@ const WRITE_ROLES: CampaignRole[] = [
   "contributor",
 ];
 
+/** Sync helper for client props — server gates should use hasPermission keys. */
 export function canWriteVendors(role: CampaignRole): boolean {
   return WRITE_ROLES.includes(role);
 }

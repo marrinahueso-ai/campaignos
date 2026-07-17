@@ -6,8 +6,7 @@ import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
 import { logAiUsage } from "@/lib/ai/usage";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import {
   resolveBrandContextForGeneration,
   resolveSelectedLogoForGeneration,
@@ -161,8 +160,7 @@ export async function generateCampaignBuilderArtwork(input: {
   storyFromFeed?: boolean;
   versionCount?: number;
 }): Promise<{ success: boolean; variationUrls: string[]; message: string }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return {
       success: false,
       variationUrls: [],
@@ -279,8 +277,7 @@ export async function generateCampaignBuilderCaption(input: {
   artworkImageUrl?: string | null;
   playbookName?: string | null;
 }): Promise<{ success: boolean; caption: string; message: string }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return {
       success: false,
       caption: "",

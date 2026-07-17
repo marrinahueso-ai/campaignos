@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
 import {
+  expectCreateWithAiLoaded,
   expectNoBlankScreen,
   hasTestCredentials,
   loginWithTestUser,
+  mainContent,
   testEventId,
 } from "../helpers/auth";
 
@@ -25,9 +27,7 @@ test.describe("Create with AI creative workflow", () => {
     await expectNoBlankScreen(page);
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.locator("body")).not.toContainText("Internal Server Error");
-    await expect(
-      page.getByText(/your creative setup|create with ai|campaign milestones|inspiration/i).first(),
-    ).toBeVisible({ timeout: 20_000 });
+    await expectCreateWithAiLoaded(page);
   });
 
   test("Inspiration selections remain saved when moving to Milestones", async ({
@@ -36,12 +36,14 @@ test.describe("Create with AI creative workflow", () => {
     const eventId = testEventId()!;
     await page.goto(`/events/${eventId}/campaign-builder#inspiration`);
     await expectNoBlankScreen(page);
+    await expectCreateWithAiLoaded(page);
 
-    const notes = page.getByLabel(/notes to ai|global|guidance/i).first();
+    const main = mainContent(page);
+    const notes = main.getByLabel(/notes to ai|global|guidance/i).first();
     if (await notes.count()) {
       const marker = `hey-ralli-smoke-${Date.now()}`;
       await notes.fill(marker);
-      const continueButton = page.getByRole("button", {
+      const continueButton = main.getByRole("button", {
         name: /save & continue to milestones|continue to milestones/i,
       });
       if (await continueButton.count()) {
@@ -50,6 +52,7 @@ test.describe("Create with AI creative workflow", () => {
         await page.goto(`/events/${eventId}/campaign-builder#milestones`);
       }
       await page.goto(`/events/${eventId}/campaign-builder#inspiration`);
+      await expectCreateWithAiLoaded(page);
       await expect(notes).toHaveValue(new RegExp(marker));
     } else {
       test.info().annotations.push({
@@ -66,8 +69,13 @@ test.describe("Create with AI creative workflow", () => {
   }) => {
     const eventId = testEventId()!;
     await page.goto(`/events/${eventId}/campaign-builder#inspiration`);
-    const playbook = page.locator("select").filter({ hasText: /playbook|choose/i }).first()
-      .or(page.getByLabel(/playbook/i));
+    await expectCreateWithAiLoaded(page);
+    const main = mainContent(page);
+    const playbook = main
+      .locator("select")
+      .filter({ hasText: /playbook|choose/i })
+      .first()
+      .or(main.getByLabel(/playbook/i));
 
     if (!(await playbook.count())) {
       test.skip(true, "Playbook selector not found on Creative Setup for this event.");
@@ -83,7 +91,7 @@ test.describe("Create with AI creative workflow", () => {
     }
     await playbook.selectOption(secondValue!);
 
-    const continueButton = page.getByRole("button", {
+    const continueButton = main.getByRole("button", {
       name: /save & continue to milestones|continue to milestones/i,
     });
     if (await continueButton.count()) {
@@ -93,6 +101,6 @@ test.describe("Create with AI creative workflow", () => {
       await page.goto(`/events/${eventId}/campaign-builder#milestones`);
     }
 
-    await expect(page.locator("body")).toContainText(/milestone|days out|week|announcement|event day/i);
+    await expect(main).toContainText(/milestone|days out|week|announcement|event day/i);
   });
 });

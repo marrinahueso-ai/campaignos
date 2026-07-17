@@ -1,7 +1,6 @@
 import "server-only";
 
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canApproveDraft } from "@/lib/auth/campaign-roles";
 import { getPlanningCalendarData } from "@/lib/communications-calendar/planning-queries";
 import {
   mapClassicApprovalItem,
@@ -13,7 +12,6 @@ import {
   isPendingSchedulingRow,
   isSchedulingRowAssignedToActor,
 } from "@/lib/approvals-scheduling/approval-visibility";
-import { canViewAllApprovals } from "@/lib/approvals-scheduling/permissions";
 import { summarizeCounts } from "@/lib/approvals-scheduling/status";
 import type {
   ApprovalSchedulingItemRow,
@@ -28,6 +26,7 @@ import {
   resolveApprovalQueueBaseForEvent,
 } from "@/lib/event-workspace/approval-routing-queries";
 import type { ApprovalActor } from "@/lib/event-workspace/approval-permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
 import type { MetaPublishBundle } from "@/lib/meta-publishing/types";
@@ -427,7 +426,7 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     actorUserId: actor?.organizationUserId ?? null,
     actorRoleId: actor?.organizationRoleId ?? null,
     role,
-    canViewAll: canViewAllApprovals(role),
+    canViewAll: await hasPermission("approve_comms"),
   };
 });
 
@@ -458,9 +457,9 @@ export async function getChangeRequestsSchedulingCount(): Promise<number> {
 }
 
 export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
-  const [membership, role] = await Promise.all([
+  const [membership, canApprove] = await Promise.all([
     getActiveMembership(),
-    getCurrentCampaignRole(),
+    hasPermission("approve_comms"),
   ]);
   const actor: ApprovalActor | null = membership
     ? {
@@ -475,7 +474,6 @@ export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
   }
 
   const rows = await fetchCampaignBuilderSchedulingItems();
-  const canApprove = canApproveDraft(role);
 
   return rows.filter((row) => {
     if (!isPendingSchedulingRow(row)) {
@@ -752,6 +750,6 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     actorUserId: actor?.organizationUserId ?? null,
     actorRoleId: actor?.organizationRoleId ?? null,
     role,
-    canViewAll: canViewAllApprovals(role),
+    canViewAll: await hasPermission("approve_comms"),
   };
 }

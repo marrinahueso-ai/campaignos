@@ -102,6 +102,7 @@ interface CampaignBuilderProviderProps {
   eventDate: string;
   organizationId: string;
   canUseDeveloperTools?: boolean;
+  canUploadArtwork?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -178,6 +179,7 @@ interface CampaignBuilderContextValue {
   navigateToWarning: (warning: StepWarning) => void;
   organizationId: string;
   canUseDeveloperTools: boolean;
+  canUploadArtwork: boolean;
   clearMilestoneGeneratedContent: (
     milestoneId: string,
   ) => Promise<{
@@ -419,6 +421,7 @@ export function CampaignBuilderProvider({
   eventDate,
   organizationId,
   canUseDeveloperTools = false,
+  canUploadArtwork = true,
   playbooks,
   brandKits,
   campaignOptions,
@@ -936,6 +939,13 @@ export function CampaignBuilderProvider({
 
   const addInspirationImage = useCallback(
     (file: File) => {
+      if (!canUploadArtwork) {
+        setInspirationUploadError(
+          "You do not have permission to upload artwork.",
+        );
+        return;
+      }
+
       const imageId = `inspiration-${Date.now()}`;
       const previewUrl = URL.createObjectURL(file);
       setInspirationUploadError(null);
@@ -965,6 +975,18 @@ export function CampaignBuilderProvider({
           setInspirationUploadError(
             result.message || "Could not upload inspiration image.",
           );
+          updateSession((prev) => ({
+            ...prev,
+            inspiration: {
+              ...prev.inspiration,
+              inspirationImages: prev.inspiration.inspirationImages.filter(
+                (image) => image.id !== imageId,
+              ),
+            },
+          }));
+          if (previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+          }
           return;
         }
 
@@ -985,7 +1007,7 @@ export function CampaignBuilderProvider({
         }));
       })();
     },
-    [eventId, updateSession],
+    [canUploadArtwork, eventId, updateSession],
   );
 
   const removeInspirationImage = useCallback(
@@ -1041,6 +1063,13 @@ export function CampaignBuilderProvider({
 
   const uploadCampaignLogo = useCallback(
     async (file: File) => {
+      if (!canUploadArtwork) {
+        setInspirationUploadError(
+          "You do not have permission to upload artwork.",
+        );
+        return;
+      }
+
       const imageId = `logo-upload-${Date.now()}`;
       setInspirationUploadError(null);
       const formData = new FormData();
@@ -1066,7 +1095,7 @@ export function CampaignBuilderProvider({
         },
       }));
     },
-    [eventId, updateSession],
+    [canUploadArtwork, eventId, updateSession],
   );
 
   const setMilestones = useCallback(
@@ -1863,6 +1892,7 @@ export function CampaignBuilderProvider({
       navigateToWarning,
       organizationId,
       canUseDeveloperTools,
+      canUploadArtwork,
       clearMilestoneGeneratedContent,
     }),
     [
@@ -1912,6 +1942,7 @@ export function CampaignBuilderProvider({
       navigateToWarning,
       organizationId,
       canUseDeveloperTools,
+      canUploadArtwork,
       clearMilestoneGeneratedContent,
     ],
   );

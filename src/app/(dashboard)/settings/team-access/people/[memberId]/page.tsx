@@ -9,8 +9,10 @@ import {
 } from "@/components/settings-v2/team-access/team-access-utils";
 import { accessTemplateLabelMap } from "@/lib/access-templates/merge";
 import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
-import { canManageTeam } from "@/lib/auth/infer-campaign-role";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import {
+  accessHasPermission,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import {
   getActiveMembership,
   getOrganizationUsers,
@@ -75,9 +77,9 @@ export default async function TeamAccessPersonProfilePage({
   const { memberId: rawId } = await params;
   const memberId = decodeURIComponent(rawId);
 
-  const [membership, campaignRole] = await Promise.all([
+  const [membership, access] = await Promise.all([
     getActiveMembership(),
-    getCurrentCampaignRole(),
+    getEffectiveAccess(),
   ]);
 
   const organization = membership
@@ -126,7 +128,9 @@ export default async function TeamAccessPersonProfilePage({
     ),
   };
 
-  const canManage = canManageTeam(campaignRole);
+  const canManage = Boolean(
+    access && accessHasPermission(access, "manage_people"),
+  );
   // Display: only events this person is tied to (keeps profile light).
   const relatedIds = peopleRelatedEventIds(person);
   // Manage picker: full catalog only when the viewer can edit assignments.

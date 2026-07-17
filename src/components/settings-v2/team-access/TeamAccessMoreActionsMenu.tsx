@@ -62,9 +62,11 @@ export function TeamAccessMoreActionsMenu({
       ? [{ id: "invite" as const, label: "Invite to Login" }]
       : loginStatus === "invited"
         ? [{ id: "resend" as const, label: "Resend Invite" }]
-        : loginStatus === "active"
-          ? [{ id: "changeAccess" as const, label: "Change Access" }]
-          : [];
+        : loginStatus === "inactive"
+          ? [{ id: "resend" as const, label: "Reinvite to Login" }]
+          : loginStatus === "active"
+            ? [{ id: "changeAccess" as const, label: "Change Access" }]
+            : [];
 
   const items = [
     { id: "profile" as const, label: "View Profile" },

@@ -1,11 +1,16 @@
 import { test, expect } from "@playwright/test";
 import {
   expectNoBlankScreen,
+  gotoApprovals,
   hasTestCredentials,
   loginWithTestUser,
+  mainContent,
 } from "../helpers/auth";
 
 test.describe("Approvals and calendar safety", () => {
+  // Approvals RSC can be slow; keep headroom after login + navigation.
+  test.describe.configure({ timeout: 120_000 });
+
   test.beforeEach(async ({ page }) => {
     test.skip(
       !hasTestCredentials(),
@@ -15,32 +20,33 @@ test.describe("Approvals and calendar safety", () => {
   });
 
   test("Approval submission routes to the correct role", async ({ page }) => {
-    await page.goto("/approvals");
+    await gotoApprovals(page);
     await expectNoBlankScreen(page);
     await expect(page).not.toHaveURL(/\/login/);
 
-    const roleCue = page.getByText(
-      /president|vp|communications|committee|approver|waiting|needs review|approved/i,
-    );
-    // Soft assertion: approvals page should load and mention role/status language.
-    if (await roleCue.count()) {
-      await expect(roleCue.first()).toBeVisible();
-    } else {
-      await expect(page.locator("body")).toContainText(/approval|review|campaign/i);
-    }
+    const main = mainContent(page);
+    // Visible summary/guide copy only — never <option> "Assigned to Me" or sidebar tooltips.
+    const roleCue = main
+      .locator("p, h1, h2, h3, span, td, th, button, label")
+      .filter({
+        hasText:
+          /needs your approval|waiting to be assigned|how the approval flow works|assigned to approver|changes requested|in queue/i,
+      });
+    await expect(roleCue.first()).toBeVisible({ timeout: 20_000 });
   });
 
   test("Approval and change-request badges update correctly", async ({ page }) => {
-    await page.goto("/approvals");
+    await gotoApprovals(page);
     await expectNoBlankScreen(page);
-    const badges = page.getByText(
-      /approved|changes requested|needs review|pending|waiting/i,
-    );
-    // Page should render without error even when the queue is empty.
-    await expect(page.locator("body")).not.toContainText("Internal Server Error");
-    if (await badges.count()) {
-      await expect(badges.first()).toBeVisible();
-    }
+
+    const main = mainContent(page);
+    // Summary card labels (visible <p>), not select <option> text.
+    const badges = main.locator("p").filter({
+      hasText:
+        /^(in queue|assigned to me|scheduled|posted|published|changes requested)$/i,
+    });
+    await expect(main).not.toContainText("Internal Server Error");
+    await expect(badges.first()).toBeVisible({ timeout: 20_000 });
   });
 
   test("Existing calendar events remain intact during creative-workflow tests", async ({

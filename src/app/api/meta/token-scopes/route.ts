@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import {
   ensureMetaConnectionHealthyForOrganization,
 } from "@/lib/meta-publishing/connection-token-health";
@@ -8,8 +7,7 @@ import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export async function GET() {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

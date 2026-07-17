@@ -235,7 +235,10 @@ export function TeamAccessPersonProfileShell({
   }
 
   function handleResendInvite(target: UnifiedTeamMember) {
-    if (!target.raw || target.status !== "invited") {
+    if (
+      !target.raw ||
+      (target.status !== "invited" && target.status !== "deactivated")
+    ) {
       return;
     }
     startTransition(async () => {

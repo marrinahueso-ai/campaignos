@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
@@ -19,7 +19,6 @@ import {
   mapVendorNoteRow,
   mapVendorRow,
 } from "@/lib/vendors/mappers";
-import { canManageVendors, canWriteVendors } from "@/lib/vendors/permissions";
 import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/storage";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -199,7 +198,10 @@ export async function getVendorDirectoryPickerData(): Promise<{
 
 export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageData> {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+  const [canWrite, canManage] = await Promise.all([
+    hasPermission("draft_edit"),
+    hasPermission("manage_people"),
+  ]);
 
   if (!organization) {
     return {
@@ -212,8 +214,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
         upcomingEventsWithVendors: 0,
         favoriteVendors: 0,
       },
-      canWrite: canWriteVendors(role),
-      canManage: canManageVendors(role),
+      canWrite,
+      canManage,
     };
   }
 
@@ -228,8 +230,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
         upcomingEventsWithVendors: 0,
         favoriteVendors: 0,
       },
-      canWrite: canWriteVendors(role),
-      canManage: canManageVendors(role),
+      canWrite,
+      canManage,
     };
   }
 
@@ -284,8 +286,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
     categories,
     events,
     summary: buildVendorDirectorySummary(rows, upcomingEventIds),
-    canWrite: canWriteVendors(role),
-    canManage: canManageVendors(role),
+    canWrite,
+    canManage,
   };
 }
 
@@ -313,7 +315,10 @@ export async function getVendorDetailData(
   vendorId: string,
 ): Promise<VendorDetailData | null> {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+  const [canWrite, canManage] = await Promise.all([
+    hasPermission("draft_edit"),
+    hasPermission("manage_people"),
+  ]);
   const vendor = await getVendorById(vendorId);
 
   if (!organization || !vendor || vendor.organizationId !== organization.id) {
@@ -412,8 +417,8 @@ export async function getVendorDetailData(
         },
       ),
     ),
-    canWrite: canWriteVendors(role),
-    canManage: canManageVendors(role),
+    canWrite,
+    canManage,
   };
 }
 
@@ -424,17 +429,15 @@ export async function getEventVendorsData(
     campaignRole?: CampaignRole;
   },
 ): Promise<EventVendorsData> {
-  const [organization, role] = await Promise.all([
+  const [organization, canWrite] = await Promise.all([
     context?.organizationId
       ? Promise.resolve({ id: context.organizationId })
       : getCurrentOrganization(),
-    context?.campaignRole
-      ? Promise.resolve(context.campaignRole)
-      : getCurrentCampaignRole(),
+    hasPermission("draft_edit"),
   ]);
 
   if (!organization || !(await areVendorTablesAvailable())) {
-    return { vendors: [], canWrite: canWriteVendors(role) };
+    return { vendors: [], canWrite };
   }
 
   const supabase = await createClient();
@@ -446,7 +449,7 @@ export async function getEventVendorsData(
     .is("deleted_at", null);
 
   if (error || !assignmentRows?.length) {
-    return { vendors: [], canWrite: canWriteVendors(role) };
+    return { vendors: [], canWrite };
   }
 
   const assignments = (assignmentRows as VendorEventAssignmentRow[]).map(
@@ -534,7 +537,7 @@ export async function getEventVendorsData(
     };
   });
 
-  return { vendors: withLogos, canWrite: canWriteVendors(role) };
+  return { vendors: withLogos, canWrite };
 }
 
 export async function getAllOrgVendorsForDedup(organizationId: string) {

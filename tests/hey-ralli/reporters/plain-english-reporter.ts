@@ -19,9 +19,17 @@ type Row = {
 
 function workflowFromTitle(title: string): string {
   const lower = title.toLowerCase();
+  if (lower.includes("invite") || lower.includes("password setup")) {
+    return "Invite accept";
+  }
+  if (lower.includes("upload_artwork") || lower.includes("upload access")) {
+    return "Create with AI / upload gate";
+  }
   if (lower.includes("login")) return "Login";
   if (lower.includes("dashboard")) return "Dashboard";
-  if (lower.includes("team")) return "Team & Access";
+  if (lower.includes("team") || lower.includes("people & responsibilities")) {
+    return "Team & Access";
+  }
   if (lower.includes("create with ai") || lower.includes("campaign-builder")) {
     return "Create with AI";
   }

@@ -29,8 +29,10 @@ import { resolveMemberEditContext } from "@/components/settings-v2/team-access/m
 import {
   accessBadgeVariant,
   buildPersonEventInvolvements,
+  canResendTeamInvite,
   formatMemberEmail,
   formatMemberPhone,
+  resendTeamInviteLabel,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import {
@@ -411,8 +413,8 @@ export function TeamAccessPersonProfile({
         }));
   const showGiveAppAccess =
     canManage && (member.isRosterOnly || member.emailMissing);
-  const showResendInvite =
-    canManage && member.status === "invited" && Boolean(member.raw);
+  const showResendInvite = canResendTeamInvite(member, canManage);
+  const resendInviteLabel = resendTeamInviteLabel(member);
   const showDeactivate = canManage && Boolean(member.raw);
 
   function handleSaveAccessLevel() {
@@ -520,8 +522,16 @@ export function TeamAccessPersonProfile({
       : []),
     ...(showResendInvite
       ? [
-          { id: "resend", label: "Resend Invite", onClick: onResendInvite },
-          { id: "cancel", label: "Cancel invite", onClick: onCancelInvite },
+          { id: "resend", label: resendInviteLabel, onClick: onResendInvite },
+          ...(member.status === "invited"
+            ? [
+                {
+                  id: "cancel",
+                  label: "Cancel invite",
+                  onClick: onCancelInvite,
+                },
+              ]
+            : []),
         ]
       : []),
     ...(showDeactivate
@@ -1129,7 +1139,7 @@ export function TeamAccessPersonProfile({
                         size="sm"
                         onClick={onResendInvite}
                       >
-                        Resend Invite
+                        {resendInviteLabel}
                       </Button>
                     ) : null}
                     {showDeactivate ? (

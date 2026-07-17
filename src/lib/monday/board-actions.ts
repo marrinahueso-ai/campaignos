@@ -17,7 +17,7 @@ import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForOrganization,
 } from "@/lib/monday/connection";
-import { canManageMondayIntegration } from "@/lib/monday/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import type { MondayBoardColumnMap } from "@/lib/monday/types";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { canEditTaskHub, resolveTaskHubViewScope } from "@/lib/task-hub/access";
@@ -208,6 +208,5 @@ export async function createMondayBoardSubitemAction(input: {
 }
 
 export async function canManageMondayBoardAction(): Promise<boolean> {
-  const role = await getCurrentCampaignRole();
-  return canManageMondayIntegration(role);
+  return hasPermission("manage_integrations");
 }

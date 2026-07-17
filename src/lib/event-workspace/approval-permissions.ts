@@ -20,8 +20,9 @@ export function canActOnAssignedApproval(
   role: CampaignRole,
   actor: ApprovalActor | null,
   assignment: ApprovalAssignment | null,
+  canApprove: boolean = canApproveDraft(role),
 ): boolean {
-  if (!canApproveDraft(role)) {
+  if (!canApprove) {
     return false;
   }
 

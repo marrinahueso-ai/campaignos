@@ -1,5 +1,8 @@
 import { EventDetailPhase3Client } from "@/components/events-phase3/EventDetailPhase3Client";
-import { canManageTeam } from "@/lib/auth/infer-campaign-role";
+import {
+  accessHasPermission,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -36,6 +39,7 @@ export async function renderEventsPhase3Detail(
 
   const [
     userRole,
+    access,
     artwork,
     orgWorkspace,
     committeeAssignments,
@@ -45,6 +49,7 @@ export async function renderEventsPhase3Detail(
     orgDefaults,
   ] = await Promise.all([
     getCurrentCampaignRole(),
+    getEffectiveAccess(),
     getEventArtwork(event.id),
     organization
       ? getOrganizationWorkspaceData(organization.id)
@@ -205,7 +210,9 @@ export async function renderEventsPhase3Detail(
       responsibilities={responsibilities}
       approvalFlow={approvalFlow}
       heroStats={heroStats}
-      canManageAssignments={canManageTeam(userRole)}
+      canManageAssignments={Boolean(
+        access && accessHasPermission(access, "manage_people"),
+      )}
       workspace={initialWorkspace}
       initialTab={initialTab}
       committeeId={linkedCommittee?.id ?? null}

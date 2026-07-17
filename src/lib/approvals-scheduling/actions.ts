@@ -13,8 +13,7 @@ import {
   scheduleMetaFeedFromCampaignBuilderApproval,
 } from "@/lib/campaign-builder-v2/schedule-meta-from-approval";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canApproveDraft } from "@/lib/auth/campaign-roles";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   approveCommunicationAction,
@@ -155,10 +154,9 @@ export async function approveUnifiedItemAction(input: {
       return { success: false, error: "Scheduling item not found." };
     }
 
-    const role = await getCurrentCampaignRole();
     if (
       !row.assigned_user_id &&
-      !canApproveDraft(role) &&
+      !(await hasPermission("approve_comms")) &&
       (row.workflow_status === "in_queue" ||
         row.workflow_status === "assigned_to_me")
     ) {
@@ -377,8 +375,7 @@ export async function reassignUnifiedItemAction(input: {
   schedulingItemId: string;
   assignedUserId: string;
 }): Promise<UnifiedApprovalActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (role !== "admin" && role !== "president" && role !== "vp_communications") {
+  if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "Only admins can reassign approvals." };
   }
 

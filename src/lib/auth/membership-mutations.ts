@@ -317,15 +317,20 @@ export async function refreshOrganizationInviteToken(
   const inviteToken = randomUUID();
   const now = new Date().toISOString();
 
+  // Pending invites and deactivated members can be reinvited (reset to invited).
+  // Active members keep Change Access for toggle updates without a new invite.
   const { data, error } = await supabase
     .from("organization_users")
     .update({
       invite_token: inviteToken,
       invited_at: now,
       invite_expires_at: computeInviteExpiresAt(new Date(now)),
+      status: "invited",
+      user_id: null,
+      joined_at: null,
     })
     .eq("id", membershipId)
-    .eq("status", "invited")
+    .in("status", ["invited", "deactivated"])
     .select("id")
     .maybeSingle();
 
@@ -334,7 +339,10 @@ export async function refreshOrganizationInviteToken(
   }
 
   if (!data) {
-    return { error: "Pending invite not found." };
+    return {
+      error:
+        "Member cannot be reinvited. Use Resend Invite for pending or inactive members.",
+    };
   }
 
   return { inviteToken };

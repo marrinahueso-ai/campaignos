@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import * as campaignAssetPermissions from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
@@ -165,8 +164,7 @@ export async function publishMetaBundleNowAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
@@ -234,8 +232,7 @@ export async function publishMetaBundleNowAction(
 export async function publishAllActionableMetaBundlesNowAction(
   eventId: string,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
@@ -291,8 +288,7 @@ export async function publishAllActionableMetaBundlesNowAction(
 export async function scheduleAllReadyMetaBundlesAction(
   eventId: string,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to schedule posts." };
   }
 
@@ -357,8 +353,7 @@ export async function scheduleMetaBundlesAtAction(
   scheduledFor: string,
   relativeDays?: number[],
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to schedule posts." };
   }
 
@@ -424,8 +419,7 @@ export async function scheduleMetaBundlesAtAction(
 export async function approveAllScheduledMetaBundlesAction(
   eventId: string,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to approve posts." };
   }
 
@@ -459,8 +453,7 @@ export async function approveAllScheduledMetaBundlesAction(
 export async function publishAllApprovedMetaBundlesAction(
   eventId: string,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
@@ -514,8 +507,7 @@ export async function unscheduleMetaBundleAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to unschedule posts." };
   }
 
@@ -616,8 +608,7 @@ export async function scheduleMetaBundleAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to schedule posts." };
   }
 
@@ -663,8 +654,7 @@ export async function publishMetaBundleAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
@@ -690,8 +680,7 @@ export async function retryFailedMetaBundleAction(
 export async function runDueMetaPublishForEventAction(
   eventId: string,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
@@ -711,8 +700,7 @@ export async function skipMetaPublishMilestoneAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to skip posts." };
   }
 
@@ -800,8 +788,7 @@ export async function unskipMetaPublishMilestoneAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to restore posts." };
   }
 
@@ -866,8 +853,7 @@ export async function updatePublishModeAction(
   relativeDay: number,
   mode: MetaPublishMode,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to update publish settings." };
   }
 
@@ -922,8 +908,7 @@ export async function updateMetaPublishSurfacesAction(
   relativeDay: number,
   surfaces: import("@/types/playbooks").MetaPublishSurfaces,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to update publish settings." };
   }
 
@@ -973,8 +958,7 @@ export async function updateStoryManualPublishAction(
   relativeDay: number,
   storyManualPublish: boolean,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to update publish settings." };
   }
 
@@ -1024,8 +1008,7 @@ export async function setMetaPublishPlatformEnabledAction(
   platform: "instagram" | "facebook",
   enabled: boolean,
 ): Promise<MetaPublishActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to update publish settings." };
   }
 

@@ -1,3 +1,7 @@
+import {
+  filterEventsByAccess,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
 import { mapEventRow, mapEventRows } from "@/lib/events/mappers";
@@ -7,6 +11,11 @@ import {
 } from "@/lib/events/org-scope";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import type { Event, EventRow } from "@/types";
+
+async function applyAssignedEventsFilter(events: Event[]): Promise<Event[]> {
+  const access = await getEffectiveAccess();
+  return filterEventsByAccess(access, events);
+}
 
 async function scopedSchoolYearIds(
   organizationId?: string | null,
@@ -45,7 +54,7 @@ export async function getUpcomingEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
 }
 
 export async function getEventsInDateRange(
@@ -74,7 +83,7 @@ export async function getEventsInDateRange(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
 }
 
 export async function getEventsInNextDays(
@@ -104,7 +113,7 @@ export async function getEventsInNextDays(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
 }
 
 export async function getActiveEvents(
@@ -129,7 +138,7 @@ export async function getActiveEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
 }
 
 export async function getAllEvents(
@@ -153,7 +162,7 @@ export async function getAllEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
 }
 
 export const getEventById = cache(async (id: string): Promise<Event | null> => {

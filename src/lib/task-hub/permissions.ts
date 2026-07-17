@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  canAccessEvent,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
@@ -40,17 +44,22 @@ function buildUserContext(
 export async function assertTaskHubEventAccess(
   eventId: string,
 ): Promise<TaskHubAccessResult> {
-  const [organization, authUser, membership, campaignRole, event] =
+  const [organization, authUser, membership, campaignRole, event, access] =
     await Promise.all([
       getLatestOrganization(),
       getAuthUser(),
       getActiveMembership(),
       getCurrentCampaignRole(),
       getEventById(eventId),
+      getEffectiveAccess(),
     ]);
 
   if (!organization) {
     return { ok: false, error: "Organization not found." };
+  }
+
+  if (access && !canAccessEvent(access, eventId)) {
+    return { ok: false, error: "You do not have access to this event." };
   }
 
   const playbookEvents = await getEventPlaybookEvents(organization.id);

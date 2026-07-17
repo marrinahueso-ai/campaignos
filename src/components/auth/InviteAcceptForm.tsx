@@ -54,23 +54,6 @@ export function InviteAcceptForm({
     );
   }
 
-  if (accountExists) {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm leading-relaxed text-cos-muted">
-          An account already exists for <strong className="text-cos-text">{email}</strong>.
-          Sign in to join <strong className="text-cos-text">{organizationName}</strong>.
-        </p>
-        <Link
-          href={`/login?invite=${encodeURIComponent(inviteToken)}`}
-          className="inline-flex w-full items-center justify-center rounded-full bg-cos-text px-5 py-3 text-sm font-semibold text-white"
-        >
-          Sign in to accept invite
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5">
       <div>
@@ -78,11 +61,14 @@ export function InviteAcceptForm({
           {organizationName}
         </p>
         <h2 className="mt-2 font-serif text-2xl font-medium text-cos-text">
-          Create your password
+          {accountExists ? "Set your password" : "Create your password"}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-cos-muted">
           Joining as <strong className="text-cos-text">{roleLabel}</strong>.
           Your username is your email.
+          {accountExists
+            ? " An account already exists for this email — choose a password to continue (useful for local email sign-in)."
+            : null}
         </p>
       </div>
 
@@ -122,7 +108,7 @@ export function InviteAcceptForm({
           {pending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Creating account…
+              {accountExists ? "Updating account…" : "Creating account…"}
             </>
           ) : (
             <>
@@ -132,6 +118,18 @@ export function InviteAcceptForm({
           )}
         </Button>
       </form>
+
+      {accountExists ? (
+        <p className="text-center text-sm text-cos-muted">
+          Already know your password?{" "}
+          <Link
+            href={`/login?invite=${encodeURIComponent(inviteToken)}`}
+            className="font-semibold text-cos-text underline-offset-2 hover:underline"
+          >
+            Sign in instead
+          </Link>
+        </p>
+      ) : null}
 
       {state.error && (
         <p className="text-sm text-cos-error-text">{state.error}</p>

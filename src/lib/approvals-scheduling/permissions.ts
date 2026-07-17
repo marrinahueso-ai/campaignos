@@ -7,6 +7,7 @@ import type {
   UnifiedViewScope,
 } from "@/lib/approvals-scheduling/types";
 
+/** Sync helper for client props — server data should set canViewAll from EffectiveAccess. */
 export function canViewAllApprovals(role: CampaignRole): boolean {
   return canApproveDraft(role);
 }
@@ -25,11 +26,15 @@ export function filterItemsByViewScope(
 
 export function canActOnUnifiedItem(
   item: UnifiedApprovalItem,
-  role: CampaignRole,
+  roleOrCanApprove: CampaignRole | boolean,
 ): boolean {
   // Presidents / VPs / admins can approve from the queue even before an
   // individual assignee is set (in_queue). Non-approvers still need assignment.
-  if (canApproveDraft(role)) {
+  const canApprove =
+    typeof roleOrCanApprove === "boolean"
+      ? roleOrCanApprove
+      : canApproveDraft(roleOrCanApprove);
+  if (canApprove) {
     return true;
   }
 

@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canManageTeam } from "@/lib/auth/infer-campaign-role";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { requirePermission } from "@/lib/access-templates/effective-access";
 import {
   isCampaignRole,
   type CampaignRole,
@@ -32,22 +30,27 @@ function revalidateTeamAccess() {
 }
 
 async function requireTemplateEditor() {
-  const membership = await getActiveMembership();
-  const campaignRole = await getCurrentCampaignRole();
+  const access = await requirePermission("manage_people");
+  if ("error" in access) {
+    return {
+      error:
+        access.error === "Sign in and set up your organization first."
+          ? ("Sign in and set up your organization first." as const)
+          : ("Only Admin or President can edit access templates." as const),
+      membership: null,
+    };
+  }
 
-  if (!membership) {
-    return {
-      error: "Sign in and set up your organization first." as const,
-      membership: null,
-    };
-  }
-  if (!canManageTeam(campaignRole)) {
-    return {
-      error: "Only Admin or President can edit access templates." as const,
-      membership: null,
-    };
-  }
-  return { error: null, membership };
+  return {
+    error: null,
+    membership: {
+      organizationId: access.organizationId,
+      user: {
+        id: access.membershipId,
+        email: access.email,
+      },
+    },
+  };
 }
 
 export async function saveOrganizationAccessTemplateAction(input: {

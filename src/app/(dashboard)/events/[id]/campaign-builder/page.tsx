@@ -8,6 +8,7 @@ import {
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { canUseDeveloperClearTools } from "@/lib/dev-tools/access";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -77,6 +78,7 @@ export default async function CampaignBuilderPage({
     campaignOptions,
     organization,
     canUseDeveloperTools,
+    canUploadArtwork,
   ] = await Promise.all([
     eventPromise,
     sessionPromise,
@@ -85,6 +87,7 @@ export default async function CampaignBuilderPage({
     campaignOptionsPromise,
     organizationPromise,
     canUseDeveloperClearTools(),
+    hasPermission("upload_artwork"),
   ]);
 
   if (!event) {
@@ -128,6 +131,7 @@ export default async function CampaignBuilderPage({
       eventDate={event.date}
       organizationId={organization?.id ?? ""}
       canUseDeveloperTools={canUseDeveloperTools}
+      canUploadArtwork={canUploadArtwork}
       playbooks={playbookOptions}
       brandKits={brandKits}
       campaignOptions={campaignOptions}

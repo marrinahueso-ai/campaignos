@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getEventPlaybookEvents, getEventPlaybookTasksForEvents } from "@/lib/event-playbooks/queries";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -24,7 +24,6 @@ import {
 import { PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/constants";
 import { createPtoEventProjectPlanningBoard } from "@/lib/monday/template-board";
 import type { MondayBoardColumn } from "@/lib/monday/types";
-import { canManageMondayIntegration } from "@/lib/monday/permissions";
 import { backfillOpenTasksToMonday } from "@/lib/monday/sync";
 import type { MondayBoardColumnMap } from "@/lib/monday/types";
 
@@ -63,8 +62,7 @@ async function requireMondayManager(): Promise<
     };
   }
 
-  const role = await getCurrentCampaignRole();
-  if (!canManageMondayIntegration(role)) {
+  if (!(await hasPermission("manage_integrations"))) {
     return { ok: false, error: "You do not have permission to manage Monday integration." };
   }
 

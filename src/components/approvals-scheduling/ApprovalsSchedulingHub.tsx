@@ -44,7 +44,7 @@ export function ApprovalsSchedulingHub({
   items,
   campaigns,
   actorEmail,
-  role,
+  role: _role,
   canViewAll,
   initialEventFilter = null,
   lockedEventId = null,
@@ -110,7 +110,7 @@ export function ApprovalsSchedulingHub({
   }, [viewScopedItems]);
 
   const canActOnReviewItem = reviewItem
-    ? canActOnUnifiedItem(reviewItem, role)
+    ? canActOnUnifiedItem(reviewItem, canViewAll)
     : false;
 
   async function handleApprove() {
@@ -281,7 +281,7 @@ export function ApprovalsSchedulingHub({
 
         <ApprovalsTable
           items={scopedItems}
-          role={role}
+          canApproveComms={canViewAll}
           actorEmail={actorEmail}
           onReview={(item) => {
             setReviewItem(item);

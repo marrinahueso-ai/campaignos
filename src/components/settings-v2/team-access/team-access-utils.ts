@@ -169,6 +169,24 @@ export function peopleLoginStatus(
   return "active";
 }
 
+/** Resend/reinvite is for pending invites and inactive (deactivated) login members. */
+export function canResendTeamInvite(
+  member: Pick<UnifiedTeamMember, "status" | "raw">,
+  canManage: boolean,
+): boolean {
+  return (
+    canManage &&
+    Boolean(member.raw) &&
+    (member.status === "invited" || member.status === "deactivated")
+  );
+}
+
+export function resendTeamInviteLabel(
+  member: Pick<UnifiedTeamMember, "status">,
+): string {
+  return member.status === "deactivated" ? "Reinvite to Login" : "Resend Invite";
+}
+
 export function peopleLoginStatusLabel(status: PeopleLoginStatus): string {
   switch (status) {
     case "not_invited":

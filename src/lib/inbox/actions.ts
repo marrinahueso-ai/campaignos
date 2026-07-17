@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateInboxRoutes } from "@/lib/inbox/revalidate-paths";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { generateInboxAiDraft } from "@/lib/inbox/ai-draft";
 import {
   getInboxMessageById,
@@ -47,8 +46,7 @@ export type InboxReplyActionResult = {
 };
 
 export async function syncInboxNowAction(): Promise<InboxActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to sync inbox." };
   }
 
@@ -100,8 +98,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
 }
 
 export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to manage inbox webhooks." };
   }
 
@@ -136,8 +133,7 @@ export type RefreshMetaTokenScopesResult = {
 };
 
 export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenScopesResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to refresh Meta token scopes." };
   }
 
@@ -178,8 +174,7 @@ export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenSc
 async function requireInboxPermission(): Promise<
   { ok: true; organizationId: string } | { ok: false; error: string }
 > {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { ok: false, error: "You do not have permission to manage inbox." };
   }
 
