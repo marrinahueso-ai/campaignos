@@ -60,8 +60,8 @@ describe("team invite email", () => {
     assert.match(content.html, /Accept invite/);
     assert.match(content.html, /Hey Ralli/);
     assert.match(content.html, /Team invite/);
-    assert.match(content.html, /Your role/);
     assert.match(content.html, /Developer/);
+    assert.match(content.html, /Sign in with/);
     assert.doesNotMatch(content.html, /Temporary password/);
   });
 
@@ -79,7 +79,7 @@ describe("team invite email", () => {
 
     assert.match(content.text, /Temporary password: Hr-testpass1/);
     assert.match(content.html, /Hr-testpass1/);
-    assert.match(content.html, /Your sign-in details/);
+    assert.match(content.html, /Sign in with/);
     assert.match(content.html, /Email &amp; password/);
   });
 });
