@@ -7,6 +7,7 @@ import {
   eventNotesHref,
   eventTasksGlobalHref,
   eventTasksHref,
+  eventVolunteersHref,
   mapCommitteeRoleToResponsibility,
   resolveEventResponsibilities,
   resolveResponsiblePersonForEvent,
@@ -314,11 +315,15 @@ describe("Phase 3 deep links and fallback flag", () => {
     assert.equal(eventApprovalsHref("evt-123"), "/approvals?event=evt-123");
   });
 
-  it("scopes tasks, files, and notes to the event detail tabs", () => {
+  it("scopes tasks, files, notes, and volunteers to the event detail tabs", () => {
     assert.equal(eventTasksHref("evt-123"), "/events/evt-123?tab=tasks");
     assert.equal(eventTasksGlobalHref("evt-123"), "/tasks?event=evt-123");
     assert.equal(eventFilesHref("evt-123"), "/events/evt-123?tab=files");
     assert.equal(eventNotesHref("evt-123"), "/events/evt-123?tab=notes");
+    assert.equal(
+      eventVolunteersHref("evt-123"),
+      "/events/evt-123?tab=volunteers",
+    );
   });
 
   it("exports fallback flag helper (default enabled)", () => {
