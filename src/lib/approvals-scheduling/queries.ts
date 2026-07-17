@@ -9,7 +9,6 @@ import {
 } from "@/lib/approvals-scheduling/map-items";
 import {
   dedupeUnifiedApprovalItems,
-  isPendingSchedulingRow,
   isSchedulingRowAssignedToActor,
 } from "@/lib/approvals-scheduling/approval-visibility";
 import { summarizeCounts } from "@/lib/approvals-scheduling/status";
@@ -129,11 +128,11 @@ function previewAssetsFromSchedulingRow(
   };
 }
 
-/** Org-scoped scheduling rows (request-deduped). Shared by badge counts + Approvals hub. */
-const fetchCampaignBuilderSchedulingItems = cache(
-  async function fetchCampaignBuilderSchedulingItems(): Promise<
-    ApprovalSchedulingItemRow[]
-  > {
+const PENDING_SCHEDULING_STATUSES = ["assigned_to_me", "in_queue"] as const;
+
+/** Org-scoped event ids for scheduling queries (request-deduped). */
+const resolveScopedSchedulingEventIds = cache(
+  async function resolveScopedSchedulingEventIds(): Promise<string[]> {
     const { resolveScopedOrganizationId, getOrganizationSchoolYearIds } =
       await import("@/lib/events/org-scope");
     const scopedOrgId = await resolveScopedOrganizationId(undefined);
@@ -156,11 +155,21 @@ const fetchCampaignBuilderSchedulingItems = cache(
       return [];
     }
 
-    const eventIds = (events ?? []).map((row) => row.id as string);
+    return (events ?? []).map((row) => row.id as string);
+  },
+);
+
+/** Org-scoped scheduling rows for Approvals hub (full rows; not for badges). */
+const fetchCampaignBuilderSchedulingItems = cache(
+  async function fetchCampaignBuilderSchedulingItems(): Promise<
+    ApprovalSchedulingItemRow[]
+  > {
+    const eventIds = await resolveScopedSchedulingEventIds();
     if (eventIds.length === 0) {
       return [];
     }
 
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("approval_scheduling_items")
       .select("*")
@@ -179,6 +188,16 @@ const fetchCampaignBuilderSchedulingItems = cache(
     return (data ?? []) as ApprovalSchedulingItemRow[];
   },
 );
+
+function schedulingAssigneeOrFilter(actor: ApprovalActor): string {
+  const parts = [`assigned_user_id.eq.${actor.organizationUserId}`];
+  if (actor.organizationRoleId) {
+    parts.push(
+      `assigned_organization_role_id.eq.${actor.organizationRoleId}`,
+    );
+  }
+  return parts.join(",");
+}
 
 type AssigneeLookup = { name: string; role: string };
 
@@ -434,76 +453,97 @@ export async function getUnifiedApprovalsSchedulingData(): Promise<UnifiedApprov
   return resolveUnifiedApprovalsData();
 }
 
-export async function getChangeRequestsSchedulingCount(): Promise<number> {
-  const membership = await getActiveMembership();
-  const actor: ApprovalActor | null = membership
-    ? {
-        organizationUserId: membership.user.id,
-        organizationRoleId: membership.user.organizationRoleId,
-        email: membership.user.email,
-      }
-    : null;
-
-  if (!actor?.organizationUserId) {
-    return 0;
-  }
-
-  const rows = await fetchCampaignBuilderSchedulingItems();
-  return rows.filter(
-    (row) =>
-      row.workflow_status === "changes_requested" &&
-      row.requested_by_user_id === actor.organizationUserId,
-  ).length;
-}
-
-export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
-  const [membership, canApprove] = await Promise.all([
-    getActiveMembership(),
-    hasPermission("approve_comms"),
-  ]);
-  const actor: ApprovalActor | null = membership
-    ? {
-        organizationUserId: membership.user.id,
-        organizationRoleId: membership.user.organizationRoleId,
-        email: membership.user.email,
-      }
-    : null;
-
-  if (!actor?.organizationUserId) {
-    return 0;
-  }
-
-  const rows = await fetchCampaignBuilderSchedulingItems();
-
-  return rows.filter((row) => {
-    if (!isPendingSchedulingRow(row)) {
-      return false;
-    }
-
-    // Approvers should see the nav badge for anything still waiting in Approvals.
-    if (canApprove) {
-      return true;
-    }
-
-    return isSchedulingRowAssignedToActor(row, actor);
-  }).length;
-}
-
 /**
- * Combined sidebar scheduling badge totals — one shared fetch for both counts.
+ * Lean sidebar scheduling badge totals — head-count queries only.
+ * Does not materialize full approval_scheduling_items rows.
  */
 export const getSidebarSchedulingBadgeCounts = cache(
   async function getSidebarSchedulingBadgeCounts(): Promise<{
     assignedApprovalsCount: number;
     changeRequestsCount: number;
   }> {
-    const [assignedApprovalsCount, changeRequestsCount] = await Promise.all([
-      getAssignedApprovalsSchedulingCount(),
-      getChangeRequestsSchedulingCount(),
+    const [membership, canApprove, eventIds] = await Promise.all([
+      getActiveMembership(),
+      hasPermission("approve_comms"),
+      resolveScopedSchedulingEventIds(),
     ]);
-    return { assignedApprovalsCount, changeRequestsCount };
+
+    const actor: ApprovalActor | null = membership
+      ? {
+          organizationUserId: membership.user.id,
+          organizationRoleId: membership.user.organizationRoleId,
+          email: membership.user.email,
+        }
+      : null;
+
+    if (!actor?.organizationUserId || eventIds.length === 0) {
+      return { assignedApprovalsCount: 0, changeRequestsCount: 0 };
+    }
+
+    const supabase = await createClient();
+
+    let assignedQuery = supabase
+      .from("approval_scheduling_items")
+      .select("id", { count: "exact", head: true })
+      .in("event_id", eventIds)
+      .in("workflow_status", [...PENDING_SCHEDULING_STATUSES]);
+
+    // Approvers see every pending item; others only rows assigned to them.
+    if (!canApprove) {
+      assignedQuery = assignedQuery.or(schedulingAssigneeOrFilter(actor));
+    }
+
+    const changeRequestsQuery = supabase
+      .from("approval_scheduling_items")
+      .select("id", { count: "exact", head: true })
+      .in("event_id", eventIds)
+      .eq("workflow_status", "changes_requested")
+      .eq("requested_by_user_id", actor.organizationUserId);
+
+    const [assignedResult, changeRequestsResult] = await Promise.all([
+      assignedQuery,
+      changeRequestsQuery,
+    ]);
+
+    if (assignedResult.error?.code !== "42P01" && assignedResult.error) {
+      console.error(
+        "Failed to count assigned scheduling badges:",
+        assignedResult.error.message,
+      );
+    }
+    if (
+      changeRequestsResult.error?.code !== "42P01" &&
+      changeRequestsResult.error
+    ) {
+      console.error(
+        "Failed to count change-request scheduling badges:",
+        changeRequestsResult.error.message,
+      );
+    }
+
+    return {
+      assignedApprovalsCount:
+        assignedResult.error && assignedResult.error.code !== "42P01"
+          ? 0
+          : (assignedResult.count ?? 0),
+      changeRequestsCount:
+        changeRequestsResult.error &&
+        changeRequestsResult.error.code !== "42P01"
+          ? 0
+          : (changeRequestsResult.count ?? 0),
+    };
   },
 );
+
+export async function getChangeRequestsSchedulingCount(): Promise<number> {
+  const { changeRequestsCount } = await getSidebarSchedulingBadgeCounts();
+  return changeRequestsCount;
+}
+
+export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
+  const { assignedApprovalsCount } = await getSidebarSchedulingBadgeCounts();
+  return assignedApprovalsCount;
+}
 
 /** Exact-event scheduling rows — Event Detail Approvals tab. */
 async function fetchSchedulingItemsForEvent(

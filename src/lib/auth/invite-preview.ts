@@ -1,6 +1,5 @@
 import { TEAM_INVITE_TTL_DAYS } from "@/lib/auth/invite-constants";
 import { lookupInviteByToken } from "@/lib/auth/membership-queries";
-import { createClient } from "@/lib/supabase/server";
 
 export type InvitePreview = {
   organizationName: string;
@@ -21,15 +20,9 @@ export async function getInvitePreview(
   }
 
   const invite = lookup.invite;
-  const supabase = await createClient();
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("name")
-    .eq("id", invite.organizationId)
-    .maybeSingle();
 
   return {
-    organizationName: org?.name ?? "your PTO",
+    organizationName: lookup.organizationName ?? "your PTO",
     email: invite.email,
     roleName: invite.organizationRoleName,
     campaignRole: invite.campaignRole,

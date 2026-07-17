@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { PLACEHOLDER_APPROVALS } from "@/lib/communications-calendar/constants";
+import {
+  PLANNING_EVENT_SELECT,
+  PLANNING_ITEM_SELECT,
+  PLANNING_STEP_SELECT,
+} from "@/lib/communications-calendar/planning-selects";
 import { getWorkloadLevel } from "@/lib/communications-calendar/workload";
 import { mapEventRows } from "@/lib/events/mappers";
 import { mapEventCommunicationStepRow } from "@/lib/playbooks/mappers";
@@ -71,7 +76,7 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: eventRows, error: eventsError } = await supabase
     .from("events")
-    .select("*")
+    .select(PLANNING_EVENT_SELECT)
     .order("date", { ascending: true });
 
   const events: CalendarEventEntry[] = eventsError
@@ -92,7 +97,7 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: stepRows } = await supabase
     .from("event_communication_steps")
-    .select("*")
+    .select(PLANNING_STEP_SELECT)
     .order("due_date", { ascending: true });
 
   const stepIds = (stepRows ?? []).map((row) => row.id as string);
@@ -128,7 +133,7 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: itemRows } = await supabase
     .from("communication_items")
-    .select("*")
+    .select(PLANNING_ITEM_SELECT)
     .eq("status", "draft")
     .order("last_updated", { ascending: false });
 

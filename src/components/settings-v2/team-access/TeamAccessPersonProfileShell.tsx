@@ -15,6 +15,7 @@ import { TeamAccessSendMessageModal } from "@/components/settings-v2/team-access
 import {
   accessLevelLabel,
   buildUnifiedTeamMembers,
+  isCurrentUserTeamMember,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import {
@@ -65,6 +66,7 @@ interface TeamAccessPersonProfileShellProps {
   events: TeamAccessEventOption[];
   accessLabels?: Partial<Record<string, string>> | null;
   accessTemplates?: import("@/lib/access-templates/types").AccessTemplate[];
+  currentUserEmail?: string | null;
 }
 
 export function TeamAccessPersonProfileShell({
@@ -78,6 +80,7 @@ export function TeamAccessPersonProfileShell({
   events,
   accessLabels = null,
   accessTemplates = [],
+  currentUserEmail = null,
 }: TeamAccessPersonProfileShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -173,9 +176,13 @@ export function TeamAccessPersonProfileShell({
   function handleDeactivate(target: UnifiedTeamMember) {
     startTransition(async () => {
       if (target.raw) {
-        await updateTeamMemberAction(target.raw.id, {
+        const result = await updateTeamMemberAction(target.raw.id, {
           status: target.status === "deactivated" ? "active" : "deactivated",
         });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -202,7 +209,13 @@ export function TeamAccessPersonProfileShell({
     }
     startTransition(async () => {
       if (target.raw) {
-        await updateTeamMemberAction(target.raw.id, { status: "deactivated" });
+        const result = await updateTeamMemberAction(target.raw.id, {
+          status: "deactivated",
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -228,7 +241,11 @@ export function TeamAccessPersonProfileShell({
       return;
     }
     startTransition(async () => {
-      await removeTeamMemberAction(target.raw!.id);
+      const result = await removeTeamMemberAction(target.raw!.id);
+      if (result.error) {
+        window.alert(result.error);
+        return;
+      }
       router.refresh();
       router.push("/settings/team-access");
     });
@@ -367,6 +384,7 @@ export function TeamAccessPersonProfileShell({
         activeTab={activeTab}
         onTabChange={handleTabChange}
         workspace={workspace}
+        isSelf={isCurrentUserTeamMember(member, currentUserEmail)}
         onEdit={() => setEditOpen(true)}
         onInvite={() => openGiveAppAccess(member)}
         onResendInvite={() => handleResendInvite(member)}
@@ -591,6 +609,7 @@ export function TeamAccessPersonProfileShell({
         workspace={workspace}
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
+        currentUserEmail={currentUserEmail}
       />
 
       <TeamAccessSendMessageModal

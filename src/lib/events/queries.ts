@@ -11,6 +11,7 @@ import {
   getOrganizationSchoolYearIds,
   resolveScopedOrganizationId,
 } from "@/lib/events/org-scope";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import type { Event, EventRow } from "@/types";
 
@@ -44,7 +45,7 @@ export async function getUpcomingEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", today)
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
@@ -73,7 +74,7 @@ export async function getEventsInDateRange(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", startDate)
     .lte("date", endDate)
     .neq("status", "archived")
@@ -103,7 +104,7 @@ export async function getEventsInNextDays(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", today)
     .lte("date", endDate)
     .neq("status", "archived")
@@ -130,7 +131,7 @@ export async function getActiveEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
@@ -155,7 +156,7 @@ export async function getAllEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
 

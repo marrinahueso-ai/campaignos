@@ -8,26 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import { mapEventRows } from "@/lib/events/mappers";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
 import { resolvePlanningHubSwitcherDateWindow } from "@/lib/events/campaign-page-utils";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
-
-/** Columns used by Campaigns / Events Home list UI (no planning JSON blobs). */
-const CAMPAIGN_PAGE_EVENT_SELECT = [
-  "id",
-  "title",
-  "description",
-  "date",
-  "time",
-  "location",
-  "status",
-  "category",
-  "event_type",
-  "communication_strategy",
-  "event_owner",
-  "school_year_id",
-  "created_at",
-  "updated_at",
-].join(", ");
 
 async function fetchScopedCampaignEvents(input: {
   organizationId?: string | null;
@@ -49,7 +32,7 @@ async function fetchScopedCampaignEvents(input: {
 
   let query = supabase
     .from("events")
-    .select(CAMPAIGN_PAGE_EVENT_SELECT)
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
     // Keep null strategy (maps to full_campaign) and exclude calendar-only in SQL.
     .or(
@@ -95,7 +78,7 @@ export async function getCampaignEventsByIds(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select(CAMPAIGN_PAGE_EVENT_SELECT)
+    .select(EVENT_SUMMARY_SELECT)
     .in("id", uniqueIds)
     .neq("status", "archived");
 

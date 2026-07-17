@@ -70,7 +70,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       nextPath={nextPath}
       setupIntent={setupIntent}
       userEmail={
-        needsFoundingCodeRetry || params.error === "existing_org"
+        needsFoundingCodeRetry ||
+        params.error === "existing_org" ||
+        params.error === "account_deactivated"
           ? user?.email ?? null
           : null
       }

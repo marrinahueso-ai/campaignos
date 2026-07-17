@@ -247,8 +247,49 @@ describe("Approval Routing — queue visibility", () => {
       new URL("../queries.ts", import.meta.url),
       "utf8",
     );
-    assert.match(queriesSource, /isSchedulingRowAssignedToActor/);
+    // Lean badge path: head-count only; permission-aware assigned filter preserved.
     assert.match(queriesSource, /hasPermission\("approve_comms"\)/);
+    assert.match(
+      queriesSource,
+      /select\("id", \{ count: "exact", head: true \}\)/,
+    );
+    assert.match(queriesSource, /schedulingAssigneeOrFilter/);
+    assert.match(queriesSource, /getSidebarSchedulingBadgeCounts/);
+    // Full-row select stays for Approvals hub, not badges.
+    assert.match(queriesSource, /fetchCampaignBuilderSchedulingItems/);
+    assert.match(
+      queriesSource,
+      /Org-scoped scheduling rows for Approvals hub/,
+    );
+  });
+
+  it("5b. classic approval sidebar counts use lean selects, not full queue", () => {
+    const routingSource = readFileSync(
+      new URL(
+        "../../event-workspace/approval-routing-queries.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    assert.match(routingSource, /getApprovalSidebarCountsForCurrentUser/);
+    assert.match(routingSource, /fetchApprovalSidebarAssignedRows/);
+    assert.match(routingSource, /countApprovalSidebarChangeRequests/);
+    assert.match(
+      routingSource,
+      /select\("id, communication_items!inner\(status\)", \{\s*count: "exact",\s*head: true,/s,
+    );
+    assert.match(routingSource, /isActorAssignedToApproval/);
+    // Sidebar path must not resolve the full queue base.
+    const sidebarFn = routingSource.slice(
+      routingSource.indexOf(
+        "export const getApprovalSidebarCountsForCurrentUser",
+      ),
+      routingSource.indexOf(
+        "export async function getAssignedApprovalsCountForCurrentUser",
+      ),
+    );
+    assert.doesNotMatch(sidebarFn, /resolveApprovalQueueBase\(/);
+    assert.doesNotMatch(sidebarFn, /select\(\s*`\s*\*/);
   });
 });
 

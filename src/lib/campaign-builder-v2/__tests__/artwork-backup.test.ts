@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   applyArtworkBackup,
+  artworkBackupKey,
   buildArtworkBackup,
+  persistArtworkBackup,
   type ArtworkBackupMap,
 } from "../artwork-backup.ts";
 import { buildDefaultSession } from "../seed-data.ts";
@@ -198,6 +200,57 @@ describe("artwork-backup", () => {
       restored.previewContents[0]?.artwork.feedUrl,
       "https://x/campaign-builder-v2/generated/keep.png",
     );
+  });
+
+  it("skips localStorage writes when artwork backup payload is unchanged", () => {
+    const store = new Map<string, string>();
+    let setCount = 0;
+    const previousWindow = (globalThis as { window?: unknown }).window;
+    (globalThis as { window: unknown }).window = {
+      localStorage: {
+        getItem(key: string) {
+          return store.get(key) ?? null;
+        },
+        setItem(key: string, value: string) {
+          setCount += 1;
+          store.set(key, value);
+        },
+      },
+    };
+
+    try {
+      const session = buildDefaultSession(
+        "evt-art-skip",
+        "Back to School Fair",
+        "2026-08-17",
+      );
+      const withArt = {
+        ...session,
+        previewContents: session.previewContents.map((content, index) =>
+          index === 0
+            ? {
+                ...content,
+                generationStatus: "generated" as const,
+                artwork: {
+                  feedUrl: "https://x/campaign-builder-v2/generated/a.png",
+                  storyUrl: null,
+                },
+              }
+            : content,
+        ),
+      };
+
+      assert.equal(persistArtworkBackup(withArt), true);
+      assert.equal(persistArtworkBackup(withArt), true);
+      assert.equal(setCount, 1);
+      assert.ok(store.has(artworkBackupKey("evt-art-skip")));
+    } finally {
+      if (previousWindow === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window: unknown }).window = previousWindow;
+      }
+    }
   });
 
   it("does not apply name fallback when duplicate milestone names collide", () => {

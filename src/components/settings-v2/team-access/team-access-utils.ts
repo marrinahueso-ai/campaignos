@@ -187,6 +187,23 @@ export function resendTeamInviteLabel(
   return member.status === "deactivated" ? "Reinvite to Login" : "Resend Invite";
 }
 
+/** True when this People row is the signed-in user's own membership. */
+export function isCurrentUserTeamMember(
+  member: Pick<UnifiedTeamMember, "email" | "raw">,
+  currentUserEmail: string | null | undefined,
+): boolean {
+  const viewer = currentUserEmail?.trim().toLowerCase();
+  if (!viewer) {
+    return false;
+  }
+  const memberEmail = member.email?.trim().toLowerCase();
+  if (memberEmail && memberEmail === viewer) {
+    return true;
+  }
+  const rawEmail = member.raw?.email?.trim().toLowerCase();
+  return Boolean(rawEmail && rawEmail === viewer);
+}
+
 export function peopleLoginStatusLabel(status: PeopleLoginStatus): string {
   switch (status) {
     case "not_invited":

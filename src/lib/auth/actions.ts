@@ -11,6 +11,7 @@ import {
   resolveCampaignRoleForInvite,
   updateOrganizationMembership,
 } from "@/lib/auth/membership-mutations";
+import { selfMembershipChangeError } from "@/lib/auth/membership-access";
 import {
   acceptPendingInvitesForUser,
   lookupInviteByToken,
@@ -783,6 +784,29 @@ export async function updateTeamMemberAction(
     return { error: orgMembership.error, success: false };
   }
 
+  if (input.status === "deactivated") {
+    const user = await getAuthUser();
+    if (!user) {
+      return { error: "Sign in required.", success: false };
+    }
+
+    const supabase = await createClient();
+    const { data: target } = await supabase
+      .from("organization_users")
+      .select("user_id")
+      .eq("id", membershipId)
+      .maybeSingle();
+
+    const selfError = selfMembershipChangeError({
+      actorUserId: user.id,
+      targetUserId: target?.user_id,
+      change: "deactivate",
+    });
+    if (selfError) {
+      return { error: selfError, success: false };
+    }
+  }
+
   const organization = await getCurrentOrganization();
   const resolvedInput: {
     organizationRoleId?: string | null;
@@ -975,6 +999,27 @@ export async function removeTeamMemberAction(
   const orgMembership = await requireMembershipInCurrentOrg(membershipId);
   if ("error" in orgMembership) {
     return { error: orgMembership.error, success: false };
+  }
+
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: "Sign in required.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { data: target } = await supabase
+    .from("organization_users")
+    .select("user_id")
+    .eq("id", membershipId)
+    .maybeSingle();
+
+  const selfError = selfMembershipChangeError({
+    actorUserId: user.id,
+    targetUserId: target?.user_id,
+    change: "remove",
+  });
+  if (selfError) {
+    return { error: selfError, success: false };
   }
 
   const result = await deleteOrganizationMembership(membershipId);

@@ -69,6 +69,8 @@ export function buildArtworkBackup(
   return backup;
 }
 
+const lastArtworkBackupJsonByEventId = new Map<string, string>();
+
 export function persistArtworkBackup(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
     return false;
@@ -82,7 +84,12 @@ export function persistArtworkBackup(session: CampaignBuilderSession): boolean {
       // empty (e.g. mid-hydrate). Only overwrite when we have artwork to keep.
       return true;
     }
-    window.localStorage.setItem(key, JSON.stringify(backup));
+    const json = JSON.stringify(backup);
+    if (lastArtworkBackupJsonByEventId.get(session.eventId) === json) {
+      return true;
+    }
+    window.localStorage.setItem(key, json);
+    lastArtworkBackupJsonByEventId.set(session.eventId, json);
     return true;
   } catch {
     console.error(

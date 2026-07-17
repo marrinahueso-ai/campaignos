@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { TeamAccessPersonProfileShell } from "@/components/settings-v2/team-access/TeamAccessPersonProfileShell";
 import {
   accessLevelLabel,
@@ -14,6 +14,8 @@ import {
   filterEventsByAccess,
   getEffectiveAccess,
 } from "@/lib/access-templates/effective-access";
+import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
+import { getAuthUser } from "@/lib/auth/queries";
 import {
   getActiveMembership,
   getOrganizationUsers,
@@ -78,9 +80,10 @@ export default async function TeamAccessPersonProfilePage({
   const { memberId: rawId } = await params;
   const memberId = decodeURIComponent(rawId);
 
-  const [membership, access] = await Promise.all([
+  const [membership, access, user] = await Promise.all([
     getActiveMembership(),
     getEffectiveAccess(),
+    getAuthUser(),
   ]);
 
   const organization = membership
@@ -88,7 +91,9 @@ export default async function TeamAccessPersonProfilePage({
     : null;
 
   if (!organization) {
-    notFound();
+    // Missing active membership used to 404 here after self-deactivate;
+    // send through post-auth routing (deactivated → clear login error).
+    redirect(await getAuthenticatedAppPath());
   }
 
   const [workspaceResult, members, workload, accessTemplates] =
@@ -168,6 +173,7 @@ export default async function TeamAccessPersonProfilePage({
         events={eventsWithArtwork}
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
+        currentUserEmail={user?.email ?? null}
       />
     </Suspense>
   );

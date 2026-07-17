@@ -97,6 +97,8 @@ interface TeamAccessPersonProfileProps {
   /** Org-custom access template display names. */
   accessLabels?: Partial<Record<string, string>> | null;
   accessTemplates?: import("@/lib/access-templates/types").AccessTemplate[];
+  /** Hide self-deactivate / self-remove actions for the signed-in user. */
+  isSelf?: boolean;
 }
 
 const TABS: { id: Exclude<PersonProfileTab, "responsibilities">; label: string }[] =
@@ -314,6 +316,7 @@ export function TeamAccessPersonProfile({
   canManage,
   accessLabels = null,
   accessTemplates = [],
+  isSelf = false,
 }: TeamAccessPersonProfileProps) {
   const [linkingCommitteeId, setLinkingCommitteeId] = useState<string | null>(
     null,
@@ -415,7 +418,9 @@ export function TeamAccessPersonProfile({
     canManage && (member.isRosterOnly || member.emailMissing);
   const showResendInvite = canResendTeamInvite(member, canManage);
   const resendInviteLabel = resendTeamInviteLabel(member);
-  const showDeactivate = canManage && Boolean(member.raw);
+  const showDeactivate = canManage && Boolean(member.raw) && !isSelf;
+  const showRemove = canManage && Boolean(member.raw) && !isSelf;
+  const showArchive = canManage && !isSelf;
 
   function handleSaveAccessLevel() {
     if (!onSaveAccessLevel || !accessLevelDirty) {
@@ -537,10 +542,10 @@ export function TeamAccessPersonProfile({
     ...(showDeactivate
       ? [{ id: "deactivate", label: "Deactivate Access", onClick: onDeactivate }]
       : []),
-    ...(canManage
+    ...(showArchive
       ? [{ id: "archive", label: "Archive", onClick: onArchive }]
       : []),
-    ...(canManage && member.raw
+    ...(showRemove
       ? [{ id: "remove", label: "Remove", onClick: onRemove, danger: true }]
       : []),
   ];

@@ -7,7 +7,10 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { resolveMemberEditContext } from "@/components/settings-v2/team-access/member-edit-utils";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
-import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
+import {
+  isCurrentUserTeamMember,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
 import { updateTeamMemberAction } from "@/lib/auth/actions";
 import {
   CAMPAIGN_ROLES,
@@ -35,6 +38,7 @@ interface TeamAccessEditMemberModalProps {
   workspace: OrganizationWorkspaceData;
   accessLabels?: Partial<Record<string, string>> | null;
   accessTemplates?: AccessTemplate[];
+  currentUserEmail?: string | null;
 }
 
 export function TeamAccessEditMemberModal({
@@ -44,6 +48,7 @@ export function TeamAccessEditMemberModal({
   workspace,
   accessLabels = null,
   accessTemplates = [],
+  currentUserEmail = null,
 }: TeamAccessEditMemberModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -90,6 +95,8 @@ export function TeamAccessEditMemberModal({
     activeMember.accessTemplateId ??
     activeMember.accessLevel ??
     "contributor";
+  const isSelf = isCurrentUserTeamMember(activeMember, currentUserEmail);
+  const canEditStatus = activeEditContext.canEditStatus && !isSelf;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,7 +132,7 @@ export function TeamAccessEditMemberModal({
       if (activeMember.raw && selection) {
         const result = await updateTeamMemberAction(activeMember.raw.id, {
           campaignRole: selection.templateId,
-          status: activeEditContext.canEditStatus
+          status: canEditStatus
             ? status === "deactivated"
               ? "deactivated"
               : "active"
@@ -138,7 +145,11 @@ export function TeamAccessEditMemberModal({
       } else if (source.kind === "org_user" && selection) {
         const result = await updateTeamMemberAction(source.membershipId, {
           campaignRole: selection.templateId,
-          status: status === "deactivated" ? "deactivated" : "active",
+          status: canEditStatus
+            ? status === "deactivated"
+              ? "deactivated"
+              : "active"
+            : undefined,
         });
         if (result.error) {
           setError(result.error);
@@ -257,11 +268,16 @@ export function TeamAccessEditMemberModal({
           </div>
         ) : null}
 
-        {activeEditContext.canEditStatus ? (
+        {canEditStatus ? (
           <Select name="status" label="Login status" defaultValue={defaultStatus}>
             <option value="active">Active</option>
             <option value="deactivated">Deactivated</option>
           </Select>
+        ) : isSelf && activeEditContext.canEditStatus ? (
+          <p className="text-xs leading-relaxed text-cos-muted">
+            You cannot deactivate your own account. Ask another admin if you need
+            access removed.
+          </p>
         ) : null}
 
         <p className="text-xs leading-relaxed text-cos-muted">

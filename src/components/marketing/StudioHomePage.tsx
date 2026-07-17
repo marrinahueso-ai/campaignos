@@ -204,11 +204,19 @@ export function StudioHomePage({
                     , or use an invite link to join another team.
                   </p>
                 )}
+                {authError === "account_deactivated" && (
+                  <p className="text-sm text-red-600">
+                    Your account has been deactivated for this workspace. Contact
+                    an admin to be reinvited — this is not a new school signup.
+                  </p>
+                )}
                 <p className="text-sm text-cos-muted">{userEmail}</p>
-                <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
-                  {needsSchoolSetup ? "Start school setup" : "Go to your workspace"}
-                  <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-                </Button>
+                {authError === "account_deactivated" ? null : (
+                  <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
+                    {needsSchoolSetup ? "Start school setup" : "Go to your workspace"}
+                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
+                )}
                 <form action="/auth/signout" method="POST">
                   <button
                     type="submit"
@@ -307,6 +315,13 @@ export function StudioHomePage({
                   <p className="mb-4 text-sm text-red-300">
                     Finish creating your school workspace with a founding access
                     code before using Hey Ralli.
+                  </p>
+                )}
+
+                {authError === "account_deactivated" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    Your account has been deactivated. Contact an admin to be
+                    reinvited — this is not a new school signup.
                   </p>
                 )}
 

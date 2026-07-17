@@ -2,6 +2,15 @@ import "server-only";
 
 import { cache } from "react";
 import { resolveCalendarPlanningWindow } from "@/lib/communications-calendar/planning-date-window";
+import {
+  PLANNING_APPROVAL_SELECT,
+  PLANNING_ASSET_SELECT,
+  PLANNING_EVENT_SELECT,
+  PLANNING_ITEM_SELECT,
+  PLANNING_SCHEDULE_SELECT,
+  PLANNING_STEP_SELECT,
+  PLANNING_VERSION_SELECT,
+} from "@/lib/communications-calendar/planning-selects";
 import { getEventsInDateRange } from "@/lib/events/queries";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -65,18 +74,30 @@ export async function fetchPlanningRawDataForEvents(
   ] = await Promise.all([
     supabase
       .from("events")
-      .select("*")
+      .select(PLANNING_EVENT_SELECT)
       .in("id", eventIds)
       .order("date", { ascending: true }),
     supabase
       .from("event_communication_steps")
-      .select("*")
+      .select(PLANNING_STEP_SELECT)
       .in("event_id", eventIds)
       .order("due_date"),
-    supabase.from("communication_items").select("*").in("event_id", eventIds),
-    supabase.from("event_assets").select("*").in("event_id", eventIds),
-    supabase.from("approval_requests").select("*").in("event_id", eventIds),
-    supabase.from("publication_schedule").select("*").in("event_id", eventIds),
+    supabase
+      .from("communication_items")
+      .select(PLANNING_ITEM_SELECT)
+      .in("event_id", eventIds),
+    supabase
+      .from("event_assets")
+      .select(PLANNING_ASSET_SELECT)
+      .in("event_id", eventIds),
+    supabase
+      .from("approval_requests")
+      .select(PLANNING_APPROVAL_SELECT)
+      .in("event_id", eventIds),
+    supabase
+      .from("publication_schedule")
+      .select(PLANNING_SCHEDULE_SELECT)
+      .in("event_id", eventIds),
   ]);
 
   const scopedItems = (itemRows ?? []) as CommunicationItemRow[];
@@ -86,7 +107,7 @@ export async function fetchPlanningRawDataForEvents(
   if (itemIds.length > 0) {
     const { data } = await supabase
       .from("communication_versions")
-      .select("*")
+      .select(PLANNING_VERSION_SELECT)
       .in("communication_item_id", itemIds)
       .order("version_number", { ascending: false });
     versionRows = (data ?? []) as CommunicationVersionRow[];

@@ -315,22 +315,30 @@ function slimSessionForLocalStorage(
   };
 }
 
+const lastLocalSessionJsonByEventId = new Map<string, string>();
+
 function persistLocalSession(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
     return false;
   }
+
+  const slimmed = slimSessionForLocalStorage(session);
+  const slimmedJson = JSON.stringify(slimmed);
+  if (lastLocalSessionJsonByEventId.get(session.eventId) === slimmedJson) {
+    return true;
+  }
+
   // Always try the compact artwork backup first — it must survive even when
   // the full session JSON is too large for localStorage.
   persistArtworkBackup(session);
   try {
-    const slimmed = slimSessionForLocalStorage(session);
-    localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(slimmed));
+    localStorage.setItem(localSessionKey(session.eventId), slimmedJson);
+    lastLocalSessionJsonByEventId.set(session.eventId, slimmedJson);
     return true;
   } catch {
     // Quota or private mode — shrink captions/notes, but NEVER clear inspiration
     // http URLs. Wiping inspiration mid-campaign made later milestones diverge.
     try {
-      const slimmed = slimSessionForLocalStorage(session);
       const minimal: CampaignBuilderSession = {
         ...slimmed,
         previewContents: slimmed.previewContents.map((content) => ({
@@ -341,7 +349,9 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
           })),
         })),
       };
-      localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(minimal));
+      const minimalJson = JSON.stringify(minimal);
+      localStorage.setItem(localSessionKey(session.eventId), minimalJson);
+      lastLocalSessionJsonByEventId.set(session.eventId, minimalJson);
       return true;
     } catch {
       console.error(
@@ -485,8 +495,7 @@ export function CampaignBuilderProvider({
     persistBuilderStep(eventId, currentStep);
   }, [currentStep, eventId]);
 
-  const persistSession = useCallback(async (next: CampaignBuilderSession) => {
-    persistLocalSession(next);
+  const saveSessionToServer = useCallback(async (next: CampaignBuilderSession) => {
     setIsSaving(true);
     try {
       await saveCampaignBuilderSessionAction(next);
@@ -495,17 +504,27 @@ export function CampaignBuilderProvider({
     }
   }, []);
 
+  const persistSession = useCallback(
+    async (next: CampaignBuilderSession) => {
+      persistLocalSession(next);
+      await saveSessionToServer(next);
+    },
+    [saveSessionToServer],
+  );
+
   const scheduleSave = useCallback(
     (next: CampaignBuilderSession) => {
+      // Write localStorage immediately; debounce only the server round-trip so
+      // we do not re-stringify the same session on every timer fire.
       persistLocalSession(next);
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
       saveTimerRef.current = setTimeout(() => {
-        void persistSession(next);
+        void saveSessionToServer(next);
       }, 800);
     },
-    [persistSession],
+    [saveSessionToServer],
   );
 
   const flushSave = useCallback(async () => {

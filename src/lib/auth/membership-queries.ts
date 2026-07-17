@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { listOrganizationUserEventAssignmentsByOrg } from "@/lib/auth/event-assignments";
+import {
+  resolveOrganizationAccessState,
+  type OrganizationAccessState,
+} from "@/lib/auth/membership-access";
 import { isInviteExpired } from "@/lib/auth/invite-constants";
 import { mapOrganizationUserRow } from "@/lib/auth/mappers";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -109,43 +113,62 @@ export async function getOrganizationUsers(
 }
 
 export type InviteTokenLookup =
-  | { status: "valid"; invite: OrganizationUser }
-  | { status: "expired"; invite: OrganizationUser }
+  | {
+      status: "valid";
+      invite: OrganizationUser;
+      organizationName: string | null;
+    }
+  | {
+      status: "expired";
+      invite: OrganizationUser;
+      organizationName: string | null;
+    }
   | { status: "missing" };
 
+type InviteLookupRpcRow = OrganizationUserRow & {
+  organization_role_name?: string | null;
+  organization_name?: string | null;
+};
+
+/**
+ * Invite token lookup via SECURITY DEFINER RPC (migration 064).
+ * Avoids open SELECT on organization_users for anon/public invite pages.
+ */
 export async function lookupInviteByToken(
   token: string,
 ): Promise<InviteTokenLookup> {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return { status: "missing" };
+  }
+
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("organization_users")
-    .select(
-      `
-      *,
-      organization_roles ( name )
-    `,
-    )
-    .eq("invite_token", token)
-    .eq("status", "invited")
-    .maybeSingle();
+  const { data, error } = await supabase.rpc(
+    "lookup_organization_invite_by_token",
+    { p_token: trimmed },
+  );
 
   if (error || !data) {
     return { status: "missing" };
   }
 
-  const row = data as OrganizationUserRow & {
-    organization_roles: { name: string } | null;
-  };
-  const invite = mapOrganizationUserRow(
-    row,
-    row.organization_roles?.name ?? null,
-  );
-
-  if (isInviteExpired(invite.inviteExpiresAt)) {
-    return { status: "expired", invite };
+  const rows = (Array.isArray(data) ? data : [data]) as InviteLookupRpcRow[];
+  const row = rows[0];
+  if (!row?.id) {
+    return { status: "missing" };
   }
 
-  return { status: "valid", invite };
+  const invite = mapOrganizationUserRow(
+    row,
+    row.organization_role_name ?? null,
+  );
+  const organizationName = row.organization_name?.trim() || null;
+
+  if (isInviteExpired(invite.inviteExpiresAt)) {
+    return { status: "expired", invite, organizationName };
+  }
+
+  return { status: "valid", invite, organizationName };
 }
 
 export async function getInviteByToken(
@@ -247,23 +270,37 @@ export async function hasActiveOrganizationMembership(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<boolean | null> {
+  const state = await getOrganizationAccessState(supabase, userId);
+  if (state === null) {
+    return null;
+  }
+  return state === "active";
+}
+
+/**
+ * Active vs deactivated vs no membership for post-auth / org-gate routing.
+ * Returns null when organization_users is unavailable (legacy local dev).
+ */
+export async function getOrganizationAccessState(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<OrganizationAccessState | null> {
   const { data, error } = await supabase
     .from("organization_users")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle();
+    .select("status")
+    .eq("user_id", userId);
 
   if (error?.code === "42P01") {
     return null;
   }
 
   if (error) {
-    return false;
+    return "none";
   }
 
-  return Boolean(data);
+  return resolveOrganizationAccessState(
+    (data ?? []).map((row) => row.status as string),
+  );
 }
 
 export { getLatestOrganizationLegacyId };

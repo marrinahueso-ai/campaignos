@@ -5,7 +5,7 @@ import {
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
-import { hasActiveOrganizationMembership } from "@/lib/auth/membership-queries";
+import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
 import { resolveOrgGateRedirect } from "@/lib/auth/org-gate";
 import {
   resolvePostAuthPathForUser,
@@ -97,13 +97,39 @@ export async function updateSession(request: NextRequest) {
       : null;
     const hasValidPendingCode =
       Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
-    const hasMembership = await hasActiveOrganizationMembership(
-      supabase,
-      user.id,
-    );
+    const accessState = await getOrganizationAccessState(supabase, user.id);
+    const hasMembership = accessState === "active";
+
+    // Deactivated members must resolve to the deactivated login state, not
+    // founding-access / school-setup entry.
+    if (accessState === "deactivated") {
+      const homePath = await resolvePostAuthPathForUser(
+        supabase,
+        user.id,
+        null,
+        { setupIntent, pendingCode },
+      );
+      if (
+        shouldAllowAuthenticatedLoginView(
+          new URL(homePath, request.url).searchParams.get("error"),
+        )
+      ) {
+        const deactivatedUrl = new URL(homePath, request.nextUrl.origin);
+        if (
+          request.nextUrl.pathname !== deactivatedUrl.pathname ||
+          request.nextUrl.search !== deactivatedUrl.search
+        ) {
+          const redirectResponse = NextResponse.redirect(deactivatedUrl);
+          copyCookies(supabaseResponse, redirectResponse);
+          return redirectResponse;
+        }
+        return supabaseResponse;
+      }
+    }
 
     if (
       !hasMembership &&
+      accessState !== "deactivated" &&
       isFoundingAccessCodeRequired() &&
       !hasValidPendingCode
     ) {

@@ -16,6 +16,7 @@ import { teamAccessPersonProfilePath } from "@/components/settings-v2/team-acces
 import {
   accessLevelLabel,
   buildUnifiedTeamMembers,
+  isCurrentUserTeamMember,
   memberMatchesPeopleSearch,
   peopleLoginStatus,
   peopleRelatedEventIds,
@@ -198,9 +199,13 @@ export function TeamAccessShell({
   function handleDeactivate(member: UnifiedTeamMember) {
     startTransition(async () => {
       if (member.raw) {
-        await updateTeamMemberAction(member.raw.id, {
+        const result = await updateTeamMemberAction(member.raw.id, {
           status: member.status === "deactivated" ? "active" : "deactivated",
         });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -223,7 +228,13 @@ export function TeamAccessShell({
     }
     startTransition(async () => {
       if (member.raw) {
-        await updateTeamMemberAction(member.raw.id, { status: "deactivated" });
+        const result = await updateTeamMemberAction(member.raw.id, {
+          status: "deactivated",
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -246,7 +257,11 @@ export function TeamAccessShell({
       return;
     }
     startTransition(async () => {
-      await removeTeamMemberAction(member.raw!.id);
+      const result = await removeTeamMemberAction(member.raw!.id);
+      if (result.error) {
+        window.alert(result.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -420,6 +435,7 @@ export function TeamAccessShell({
         workspace={workspace}
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
+        currentUserEmail={currentUserEmail}
       />
 
       <TeamAccessOpenTasksDrawer
@@ -435,6 +451,11 @@ export function TeamAccessShell({
           setMoreActionsMember(null);
           setMoreActionsAnchor(null);
         }}
+        isSelf={
+          moreActionsMember
+            ? isCurrentUserTeamMember(moreActionsMember, currentUserEmail)
+            : false
+        }
         onViewProfile={() => {
           if (moreActionsMember) openPersonProfile(moreActionsMember);
         }}

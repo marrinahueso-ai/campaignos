@@ -21,6 +21,8 @@ interface TeamAccessMoreActionsMenuProps {
   onDeactivate: () => void;
   onArchive: () => void;
   onRemove: () => void;
+  /** Hide deactivate/remove/archive for the signed-in user. */
+  isSelf?: boolean;
 }
 
 export function TeamAccessMoreActionsMenu({
@@ -38,6 +40,7 @@ export function TeamAccessMoreActionsMenu({
   onDeactivate,
   onArchive,
   onRemove,
+  isSelf = false,
 }: TeamAccessMoreActionsMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +78,7 @@ export function TeamAccessMoreActionsMenu({
     { id: "tasks" as const, label: "View tasks" },
     { id: "approvals" as const, label: "View approvals" },
     ...accessItems,
-    ...(member.raw
+    ...(!isSelf && member.raw
       ? [
           {
             id: "deactivate" as const,
@@ -86,8 +89,8 @@ export function TeamAccessMoreActionsMenu({
           },
         ]
       : []),
-    { id: "archive" as const, label: "Archive" },
-    ...(member.raw
+    ...(!isSelf ? [{ id: "archive" as const, label: "Archive" }] : []),
+    ...(!isSelf && member.raw
       ? [{ id: "remove" as const, label: "Remove", danger: true as const }]
       : []),
   ];
