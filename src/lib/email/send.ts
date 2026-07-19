@@ -43,11 +43,26 @@ export const TEAM_INVITE_TEMPLATE_ALIAS = "team-invite";
 /** Stable published template id (alias fallback also works). */
 export const TEAM_INVITE_TEMPLATE_ID = "fc5c274b-e88d-41ca-bdfa-c6a798c3a3bd";
 
+/** Published Resend template alias for new-organization welcome. */
+export const ORGANIZATION_WELCOME_TEMPLATE_ALIAS = "organization-welcome";
+
+/** Stable published template id (alias fallback also works). */
+export const ORGANIZATION_WELCOME_TEMPLATE_ID =
+  "99983b20-d42c-43be-aced-947e8707918d";
+
 export function resolveTeamInviteTemplateId(): string {
   return (
     process.env.RESEND_TEAM_INVITE_TEMPLATE_ID?.trim() ||
     TEAM_INVITE_TEMPLATE_ID ||
     TEAM_INVITE_TEMPLATE_ALIAS
+  );
+}
+
+export function resolveOrganizationWelcomeTemplateId(): string {
+  return (
+    process.env.RESEND_ORGANIZATION_WELCOME_TEMPLATE_ID?.trim() ||
+    ORGANIZATION_WELCOME_TEMPLATE_ID ||
+    ORGANIZATION_WELCOME_TEMPLATE_ALIAS
   );
 }
 

@@ -85,8 +85,8 @@ export function SocialSignInButtons({
     <div className="space-y-3">
       {isSignup && (
         <p className="text-center text-sm leading-relaxed text-cos-muted">
-          Sign up with Google or Facebook to create your account and start school
-          setup.
+          Sign up with Google or Facebook to create your account and start
+          organization setup.
         </p>
       )}
 

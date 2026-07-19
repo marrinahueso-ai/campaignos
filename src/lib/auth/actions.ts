@@ -43,6 +43,7 @@ import {
 } from "@/lib/auth/invite-credentials";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
 import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
+import { sendOrganizationWelcomeEmail } from "@/lib/email/send-organization-welcome";
 import {
   isEmailConfigured,
   resolveTeamInviteTemplateId,
@@ -72,7 +73,10 @@ import {
   SCHOOL_SETUP_PATH,
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import {
+  createAdminClient,
+  isSupabaseAdminConfigured,
+} from "@/lib/supabase/admin";
 
 function parseEventIdsFromForm(formData: FormData): string[] {
   const multi = formData
@@ -509,6 +513,55 @@ export async function signInWithEmailAction(
     }
   }
 
+  // New organization founding: generate Supabase magic link, send via Resend
+  // `organization-welcome` template (avoids default Auth email copy).
+  if (
+    isNewSchoolSignup &&
+    isEmailConfigured() &&
+    isSupabaseAdminConfigured()
+  ) {
+    const admin = createAdminClient();
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: {
+          redirectTo: redirectTo.toString(),
+        },
+      });
+
+    const actionUrl = linkData?.properties?.action_link?.trim() ?? "";
+    if (linkError || !actionUrl) {
+      return {
+        error:
+          linkError?.message ??
+          "Could not create your setup link. Try again in a moment.",
+        success: false,
+      };
+    }
+
+    const sendResult = await sendOrganizationWelcomeEmail({
+      toEmail: email,
+      actionUrl,
+    });
+
+    if (!sendResult.success) {
+      return {
+        error:
+          sendResult.error ??
+          "Could not send the welcome email. Try again in a moment.",
+        success: false,
+      };
+    }
+
+    return {
+      error: null,
+      success: true,
+      message:
+        "Check your email for a link to create your account and set up your organization.",
+    };
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
@@ -528,7 +581,7 @@ export async function signInWithEmailAction(
     error: null,
     success: true,
     message: isNewSchoolSignup
-      ? "Check your email for a link to create your account and continue to school setup."
+      ? "Check your email for a link to create your account and set up your organization."
       : inviteToken
         ? "Check your email for a sign-in link. Open it to join the team — use the same invited address."
         : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
@@ -1144,7 +1197,7 @@ export async function claimOrganizationAccessAction(): Promise<AuthActionState> 
 
   return {
     error:
-      "Complete School Setup to create your PTO workspace. Claiming an existing organization is disabled.",
+      "Complete organization setup to create your workspace. Claiming an existing organization is disabled.",
     success: false,
   };
 }

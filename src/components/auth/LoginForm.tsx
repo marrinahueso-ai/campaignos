@@ -96,7 +96,7 @@ export function LoginForm({
             ) : (
               <>
                 <KeyRound className="h-4 w-4" strokeWidth={1.5} />
-                Continue to school setup
+                Continue to organization setup
               </>
             )}
           </Button>
@@ -121,7 +121,7 @@ export function LoginForm({
             label="Email"
             type="email"
             defaultValue={defaultEmail}
-            placeholder="you@schoolpto.org"
+            placeholder="you@yourorg.com"
             required
             autoComplete="email"
             variant={isStudio ? "studio" : "default"}
@@ -158,7 +158,7 @@ export function LoginForm({
 
           <p className="text-center text-xs leading-relaxed text-cos-muted">
             We&apos;ll email you a link to create your account and continue to
-            school setup. A valid founding access code is required.
+            organization setup. A valid founding access code is required.
           </p>
         </form>
 
@@ -230,7 +230,7 @@ export function LoginForm({
             label="Email"
             type="email"
             defaultValue={defaultEmail}
-            placeholder="you@schoolpto.org"
+            placeholder="you@yourorg.com"
             required
             autoComplete="email"
             variant={isStudio ? "studio" : "default"}
@@ -283,7 +283,7 @@ export function LoginForm({
             label="Email"
             type="email"
             defaultValue={defaultEmail}
-            placeholder="you@schoolpto.org"
+            placeholder="you@yourorg.com"
             required
             autoComplete="email"
             variant={isStudio ? "studio" : "default"}
