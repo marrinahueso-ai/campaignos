@@ -1,8 +1,8 @@
 # Access control — Phases A–C
 
-**Status:** Phases A–C + C2 (table RLS) + C3 (storage RLS) complete (Supabase `zyllfqieeihshnwpakiv`)  
+**Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete  
 **Last updated:** July 18, 2026  
-**Deferred:** Phase D (org switcher), Phase E (Stripe / org billing) — document when finished  
+**Deferred:** Phase E (Stripe / org billing) — document when finished  
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
 
@@ -190,8 +190,31 @@ Do **not** commit `.env.local`.
 | **C** | Membership-scoped RLS on core org/team/event tables | Done |
 | **C2** | Broader RLS — vendors/inbox/comms/playbooks/approvals/assets/social/etc. | Done |
 | **C3** | Storage RLS — path-aware membership on all buckets | Done |
-| **D** | Org switcher / multi-membership UX | Deferred |
+| **D** | Org switcher / multi-membership UX | Done (MVP) |
 | **E** | Stripe / org billing + `manage_billing` product gates | Deferred |
+
+---
+
+## Phase D — Active organization / multi-tenant switcher
+
+### Isolation contract (non-negotiable)
+
+1. Active-org cookie (`campaignos-active-organization-id`) is **never** trusted alone.
+2. Preference applies only when the signed-in user has an **active** `organization_users` row for that org (`user_id` + `organization_id` + `status = active`).
+3. Foreign / malformed cookie values are ignored → fall back to oldest active membership.
+4. `setActiveOrganizationAction` asserts membership **before** writing the cookie, then redirects to `/dashboard` (never stays on another tenant’s event URL).
+5. Cookie cleared on sign-out with the role-simulator cookie.
+
+### Surfaces
+
+| Piece | Path |
+|-------|------|
+| Pure resolve + types | `src/lib/auth/active-organization.ts` |
+| Cookie read/write | `src/lib/auth/active-organization-cookie.ts` |
+| Switch action | `src/lib/auth/active-organization-actions.ts` |
+| Membership list + resolve | `src/lib/auth/membership-queries.ts` (`listActiveMemberships`, `getActiveMembership`) |
+| Header switcher | `src/components/layout/OrganizationSwitcher.tsx` (shown only when >1 membership) |
+| Tests | `src/lib/auth/__tests__/active-organization.test.ts` |
 
 ---
 

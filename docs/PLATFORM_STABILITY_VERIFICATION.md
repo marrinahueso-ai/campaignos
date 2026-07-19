@@ -135,12 +135,13 @@ Configured via `HEY_RALLI_*` in `.env.local` (gitignored; script loads only thos
 
 ## Known gaps (not regressions)
 
-1. Phase D / E not started (intentional).  
+1. Phase D (org switcher) shipping separately; Phase E (Stripe) still deferred.  
 2. CampaignBuilderProvider is still a large client module (safe step-state trim only; full rewrite deferred).  
 3. AI/artwork generation paths still use full `event_assets` rows (by design).  
-4. Broader RLS coverage for vendors/inbox/comms still future work.  
+4. Broader table RLS for vendors/inbox/comms covered by Phase C2 (done); residual is template-key vs membership (app-layer by design).  
 5. Site-wide school-year filter UI is not on every surface yet (Events Home + org-scoped queries are coherent; no new filter chrome in P2).  
-6. Local Next can die on transient Supabase `fetch failed` in middleware — restart `npm run dev` if “connect server” appears.
+6. Local Next can die on transient Supabase `fetch failed` in middleware — restart `npm run dev` if “connect server” appears.  
+7. Public storage HTTP GET residual until signed-URL migration (see STORAGE_RLS.md).
 
 ---
 

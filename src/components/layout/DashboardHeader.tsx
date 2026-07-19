@@ -3,12 +3,16 @@
 import { Home, Menu, Settings, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { OrganizationSwitcher } from "@/components/layout/OrganizationSwitcher";
+import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
 import { cn } from "@/lib/utils/cn";
 
 interface DashboardHeaderProps {
   userEmail?: string | null;
   mobileOpen: boolean;
   onToggleMobile: () => void;
+  organizations?: ActiveOrganizationOption[];
+  activeOrganizationId?: string | null;
 }
 
 function UtilityIconLink({
@@ -43,6 +47,8 @@ export function DashboardHeader({
   userEmail,
   mobileOpen,
   onToggleMobile,
+  organizations = [],
+  activeOrganizationId = null,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
   const onSettings = pathname.startsWith("/settings");
@@ -66,6 +72,10 @@ export function DashboardHeader({
         <div className="min-w-0 flex-1" aria-hidden="true" />
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <OrganizationSwitcher
+            organizations={organizations}
+            activeOrganizationId={activeOrganizationId}
+          />
           <UtilityIconLink
             href="/dashboard"
             label="Home"

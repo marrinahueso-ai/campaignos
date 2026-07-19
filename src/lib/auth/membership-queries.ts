@@ -1,5 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import {
+  normalizeOrganizationId,
+  resolveActiveOrganizationId,
+  type ActiveOrganizationOption,
+} from "@/lib/auth/active-organization";
+import { readActiveOrganizationCookie } from "@/lib/auth/active-organization-cookie";
 import { listOrganizationUserEventAssignmentsByOrg } from "@/lib/auth/event-assignments";
 import {
   resolveOrganizationAccessState,
@@ -15,6 +21,8 @@ import type {
   OrganizationUserRow,
 } from "@/types/auth";
 
+export type { ActiveOrganizationOption };
+
 async function getLatestOrganizationLegacyId(): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -27,6 +35,89 @@ async function getLatestOrganizationLegacyId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
+type ActiveMembershipRow = OrganizationUserRow & {
+  organization_roles: { name: string } | null;
+  organizations:
+    | { id: string; name: string }
+    | { id: string; name: string }[]
+    | null;
+};
+
+function organizationFromJoin(
+  organizations: ActiveMembershipRow["organizations"],
+): { id: string; name: string } | null {
+  if (!organizations) {
+    return null;
+  }
+  if (Array.isArray(organizations)) {
+    return organizations[0] ?? null;
+  }
+  return organizations;
+}
+
+/**
+ * All active memberships for the signed-in user (oldest first).
+ * Used for org switcher + active-org resolution. Never returns another
+ * user's memberships — always filtered by auth.uid().
+ */
+export const listActiveMemberships = cache(
+  async (): Promise<ActiveOrganizationOption[]> => {
+    const user = await getAuthUser();
+    if (!user) {
+      return [];
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("organization_users")
+      .select(
+        `
+        organization_id,
+        campaign_role,
+        created_at,
+        organizations ( id, name ),
+        organization_roles ( name )
+      `,
+      )
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: true });
+
+    if (error?.code === "42P01") {
+      return [];
+    }
+
+    if (error) {
+      console.error("Failed to list active memberships:", error.message);
+      return [];
+    }
+
+    const options: ActiveOrganizationOption[] = [];
+    for (const raw of data ?? []) {
+      const row = raw as unknown as ActiveMembershipRow;
+      const orgId = normalizeOrganizationId(row.organization_id);
+      if (!orgId) {
+        continue;
+      }
+      const org = organizationFromJoin(row.organizations);
+      options.push({
+        organizationId: orgId,
+        organizationName: org?.name?.trim() || "Organization",
+        campaignRole: row.campaign_role,
+        roleLabel: row.organization_roles?.name ?? null,
+      });
+    }
+
+    return options;
+  },
+);
+
+/**
+ * Active membership for the current request's organization.
+ *
+ * Isolation: preferred org cookie is applied only when the user has an
+ * active membership in that org. Foreign cookie values are ignored.
+ */
 export const getActiveMembership = cache(
   async (): Promise<OrganizationMembership | null> => {
     const user = await getAuthUser();
@@ -45,21 +136,43 @@ export const getActiveMembership = cache(
       )
       .eq("user_id", user.id)
       .eq("status", "active")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order("created_at", { ascending: true });
 
     if (error?.code === "42P01") {
       return null;
     }
 
-    if (error || !data) {
+    if (error || !data?.length) {
       return null;
     }
 
-    const row = data as OrganizationUserRow & {
-      organization_roles: { name: string } | null;
-    };
+    const rows = data as Array<
+      OrganizationUserRow & {
+        organization_roles: { name: string } | null;
+      }
+    >;
+
+    const membershipOrgIds = rows.map((row) => row.organization_id);
+    const preferredOrganizationId = await readActiveOrganizationCookie();
+    const activeOrgId = resolveActiveOrganizationId({
+      preferredOrganizationId,
+      membershipOrganizationIds: membershipOrgIds,
+    });
+
+    if (!activeOrgId) {
+      return null;
+    }
+
+    const row =
+      rows.find(
+        (entry) =>
+          normalizeOrganizationId(entry.organization_id) === activeOrgId,
+      ) ?? null;
+
+    if (!row) {
+      // Defense in depth — should be unreachable if resolve matched a membership.
+      return null;
+    }
 
     return {
       organizationId: row.organization_id,
@@ -70,6 +183,37 @@ export const getActiveMembership = cache(
     };
   },
 );
+
+/**
+ * Prove the signed-in user has an active seat in this org.
+ * Used before writing the active-org cookie — never trust client org ids.
+ */
+export async function assertActiveMembershipInOrganization(
+  organizationId: string,
+): Promise<boolean> {
+  const user = await getAuthUser();
+  const normalized = normalizeOrganizationId(organizationId);
+  if (!user || !normalized) {
+    return false;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_users")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("organization_id", normalized)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (error || !data) {
+    // Retry with original casing from DB if normalized lookup missed
+    // (UUIDs are case-insensitive in Postgres, so this is belt-and-suspenders).
+    return false;
+  }
+
+  return true;
+}
 
 export async function getOrganizationUsers(
   organizationId: string,

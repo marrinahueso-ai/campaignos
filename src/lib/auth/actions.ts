@@ -537,6 +537,10 @@ export async function signInWithEmailAction(
 
 export async function signOutAction(): Promise<void> {
   await clearSimulatedRoleCookie();
+  const { clearActiveOrganizationPreference } = await import(
+    "@/lib/auth/active-organization-actions"
+  );
+  await clearActiveOrganizationPreference();
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
