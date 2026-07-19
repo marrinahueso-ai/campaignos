@@ -12,7 +12,14 @@ import {
   resolveFeedScheduleIso,
   scheduleMetaFeedFromCampaignBuilderApproval,
 } from "@/lib/campaign-builder-v2/schedule-meta-from-approval";
+import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import {
+  applySchedulingOutcomeToPreview,
+  applySchedulingOutcomeToWorkflow,
+  applySchedulingRowsToSession,
+  type SchedulingSessionOutcome,
+} from "@/lib/campaign-builder-v2/sync-session-from-scheduling";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
@@ -38,6 +45,62 @@ export type UnifiedApprovalActionResult = {
   /** Non-fatal notice (e.g. Meta schedule failed after approval already saved). */
   warning?: string;
 };
+
+async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
+  eventId: string;
+  campaignMilestoneId: string | null;
+  milestoneName: string;
+  outcome: SchedulingSessionOutcome;
+}): Promise<void> {
+  const session = await loadCampaignBuilderSession(input.eventId);
+  if (!session) {
+    return;
+  }
+
+  const workflowStatus =
+    input.outcome === "approved"
+      ? "scheduled"
+      : input.outcome === "published"
+        ? "published"
+        : input.outcome;
+
+  const synced = applySchedulingRowsToSession(session, [
+    {
+      campaignMilestoneId: input.campaignMilestoneId,
+      milestoneName: input.milestoneName,
+      workflowStatus,
+    },
+  ]);
+
+  // Always stamp the matched milestone + workflow even if rows helper no-ops
+  // (e.g. name/id mismatch edge cases after playbook rebuilds).
+  const at = new Date().toISOString();
+  const previewContents = synced.previewContents.map((preview) => {
+    const matchesId =
+      Boolean(input.campaignMilestoneId) &&
+      preview.milestoneId === input.campaignMilestoneId;
+    const milestone = session.milestones.find(
+      (entry) => entry.id === preview.milestoneId,
+    );
+    const matchesName =
+      Boolean(milestone) &&
+      milestone!.name.trim().toLowerCase() ===
+        input.milestoneName.trim().toLowerCase();
+    if (!matchesId && !matchesName) {
+      return preview;
+    }
+    return applySchedulingOutcomeToPreview(preview, input.outcome, at);
+  });
+
+  await saveCampaignBuilderSessionAction({
+    ...synced,
+    previewContents,
+    approvalWorkflow: applySchedulingOutcomeToWorkflow(
+      synced.approvalWorkflow,
+      input.outcome,
+    ),
+  });
+}
 
 async function updateSchedulingItemStatus(
   schedulingItemId: string,
@@ -181,6 +244,15 @@ export async function approveUnifiedItemAction(input: {
       return { success: false, error: "Unable to update scheduling item." };
     }
 
+    const sessionOutcome: SchedulingSessionOutcome =
+      nextStatus === "published" ? "published" : "scheduled";
+    await syncCampaignBuilderSessionAfterSchedulingOutcome({
+      eventId: input.eventId,
+      campaignMilestoneId: row.campaign_milestone_id,
+      milestoneName: row.milestone_name,
+      outcome: sessionOutcome,
+    });
+
     const creatorEmail =
       (await resolveSchedulingCreatorEmail(input.schedulingItemId)) ??
       input.recipientEmail ??
@@ -306,6 +378,7 @@ export async function approveUnifiedItemAction(input: {
   }
 
   revalidatePath("/approvals");
+  revalidatePath(`/events/${input.eventId}/campaign-builder`);
   return { success: true, warning: metaWarning };
 }
 
@@ -347,6 +420,15 @@ export async function requestUnifiedChangesAction(input: {
     if (!updated) {
       return { success: false, error: "Unable to update scheduling item." };
     }
+
+    if (schedulingRow) {
+      await syncCampaignBuilderSessionAfterSchedulingOutcome({
+        eventId: input.eventId,
+        campaignMilestoneId: schedulingRow.campaign_milestone_id,
+        milestoneName: schedulingRow.milestone_name,
+        outcome: "changes_requested",
+      });
+    }
   }
 
   const creatorEmail =
@@ -371,6 +453,7 @@ export async function requestUnifiedChangesAction(input: {
   }
 
   revalidatePath("/approvals");
+  revalidatePath(`/events/${input.eventId}/campaign-builder`);
   return { success: true };
 }
 

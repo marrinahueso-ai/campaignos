@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -343,12 +342,13 @@ export function EventDetailShell({
   workspace = {},
   initialTab = null,
 }: EventDetailShellProps) {
-  const router = useRouter();
   const [tab, setTab] = useState<EventDetailTab>(() => {
-    if (initialTab === "create-with-ai") {
-      return "create-with-ai";
-    }
-    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
+    // create-with-ai is a route handoff, not an in-page panel.
+    if (
+      initialTab &&
+      initialTab !== "create-with-ai" &&
+      VALID_TABS.has(initialTab as EventDetailTab)
+    ) {
       return initialTab as EventDetailTab;
     }
     return "responsibilities";
@@ -434,9 +434,11 @@ export function EventDetailShell({
     setTabError(null);
     setRefreshError(null);
     setRefreshingTab(null);
-    if (initialTab === "create-with-ai") {
-      setTab("create-with-ai");
-    } else if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
+    if (
+      initialTab &&
+      initialTab !== "create-with-ai" &&
+      VALID_TABS.has(initialTab as EventDetailTab)
+    ) {
       setTab(initialTab as EventDetailTab);
     } else {
       setTab("responsibilities");
@@ -445,9 +447,10 @@ export function EventDetailShell({
 
   useEffect(() => {
     if (initialTab === "create-with-ai") {
-      router.replace(createWithAiUrl);
+      // Hard navigate so we never soft-prefetch the heavy builder onto the event page.
+      window.location.replace(createWithAiUrl);
     }
-  }, [initialTab, event.id, router, createWithAiUrl]);
+  }, [initialTab, event.id, createWithAiUrl]);
 
   const ensureTabLoaded = useCallback(
     (nextTab: EventDetailTab) => {
@@ -693,23 +696,46 @@ export function EventDetailShell({
 
       <div className="border-b border-cos-border">
         <nav className="-mb-px flex flex-wrap gap-1" aria-label="Event sections">
-          {TABS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => {
-                setTab(entry.id);
-              }}
-              className={cn(
-                "border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                tab === entry.id
-                  ? "border-cos-text text-cos-text"
-                  : "border-transparent text-cos-muted hover:text-cos-text",
-              )}
-            >
-              {entry.label}
-            </button>
-          ))}
+          {TABS.map((entry) => {
+            // Create with AI is a separate heavy route — navigate there directly
+            // instead of mounting a stub tab (keeps event page light).
+            if (entry.id === "create-with-ai") {
+              return (
+                <Link
+                  key={entry.id}
+                  href={createWithAiUrl}
+                  prefetch={false}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    window.location.assign(createWithAiUrl);
+                  }}
+                  className={cn(
+                    "border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-cos-muted transition-colors hover:text-cos-text",
+                  )}
+                >
+                  {entry.label}
+                </Link>
+              );
+            }
+
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => {
+                  setTab(entry.id);
+                }}
+                className={cn(
+                  "border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                  tab === entry.id
+                    ? "border-cos-text text-cos-text"
+                    : "border-transparent text-cos-muted hover:text-cos-text",
+                )}
+              >
+                {entry.label}
+              </button>
+            );
+          })}
         </nav>
       </div>
 
@@ -896,22 +922,6 @@ export function EventDetailShell({
                 </ol>
               </div>
             </section>
-          ) : null}
-
-          {tab === "create-with-ai" ? (
-            <div className="rounded-xl border border-cos-border bg-white p-6">
-              <h3 className="font-display text-xl text-cos-text">
-                Create with AI
-              </h3>
-              <p className="mt-2 text-sm text-cos-muted">
-                Opening Create with AI for{" "}
-                <span className="font-medium text-cos-text">{event.title}</span>
-                …
-              </p>
-              <Button href={createWithAiUrl} className="mt-4">
-                Continue to Create with AI
-              </Button>
-            </div>
           ) : null}
 
           {tab === "approvals" && panelData.approvalsData && loadedTabs.has("approvals") ? (

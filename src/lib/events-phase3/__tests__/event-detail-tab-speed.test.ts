@@ -82,6 +82,15 @@ describe("targeted event tab speed contracts", () => {
     );
   });
 
+  it("Create with AI tab navigates to the builder route without embedding it", () => {
+    assert.match(shell, /window\.location\.assign\(createWithAiUrl\)/);
+    assert.match(shell, /prefetch=\{false\}/);
+    assert.doesNotMatch(shell, /CampaignBuilderProvider/);
+    assert.doesNotMatch(shell, /CampaignBuilderShell/);
+    assert.doesNotMatch(shell, /loadCampaignBuilderSession/);
+    assert.doesNotMatch(shell, /Continue to Create with AI/);
+  });
+
   it("keeps standalone hub loaders on org-wide paths", () => {
     assert.match(taskHub, /export async function getTaskHubPageData\(/);
     assert.match(taskHub, /getOrganizationWorkspaceData\(organization\.id\)/);
