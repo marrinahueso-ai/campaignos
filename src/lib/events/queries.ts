@@ -57,7 +57,7 @@ export async function getUpcomingEvents(
     return [];
   }
 
-  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getEventsInDateRange(
@@ -86,7 +86,7 @@ export async function getEventsInDateRange(
     return [];
   }
 
-  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getEventsInNextDays(
@@ -116,7 +116,7 @@ export async function getEventsInNextDays(
     return [];
   }
 
-  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getActiveEvents(
@@ -141,7 +141,7 @@ export async function getActiveEvents(
     return [];
   }
 
-  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getAllEvents(
@@ -165,7 +165,7 @@ export async function getAllEvents(
     return [];
   }
 
-  return applyAssignedEventsFilter(mapEventRows((data ?? []) as EventRow[]));
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export const getEventById = cache(async (id: string): Promise<Event | null> => {
@@ -188,7 +188,7 @@ export const getEventById = cache(async (id: string): Promise<Event | null> => {
     return null;
   }
 
-  const row = data as EventRow & { school_year_id?: string | null };
+  const row = data as unknown as EventRow & { school_year_id?: string | null };
   if (!row.school_year_id || !schoolYearIds.includes(row.school_year_id)) {
     return null;
   }

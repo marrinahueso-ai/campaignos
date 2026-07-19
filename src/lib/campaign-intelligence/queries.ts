@@ -51,7 +51,7 @@ async function getLatestContentMap(
     .order("version_number", { ascending: false });
 
   const map = new Map<string, string>();
-  for (const row of (data ?? []) as CommunicationVersionRow[]) {
+  for (const row of (data ?? []) as unknown as CommunicationVersionRow[]) {
     if (!map.has(row.communication_item_id)) {
       map.set(row.communication_item_id, row.content);
     }
@@ -221,22 +221,22 @@ export async function fetchCampaignIntelligenceInputsForEvents(
   ]);
 
   const communicationRows = getHubCommunicationItems(
-    (communicationsResult.data ?? []) as CommunicationItemRow[],
+    (communicationsResult.data ?? []) as unknown as CommunicationItemRow[],
   );
   const contentMap = await getLatestContentMap(
     communicationRows.map((row) => row.id),
   );
 
   const stepsByEvent = groupByEventId(
-    (stepsResult.data ?? []) as EventCommunicationStepRow[],
+    (stepsResult.data ?? []) as unknown as EventCommunicationStepRow[],
   );
-  const assetsByEvent = groupByEventId((assetsResult.data ?? []) as EventAssetRow[]);
+  const assetsByEvent = groupByEventId((assetsResult.data ?? []) as unknown as EventAssetRow[]);
   const communicationsByEvent = groupByEventId(communicationRows);
   const approvalsByEvent = groupByEventId(
-    (approvalsResult.data ?? []) as ApprovalRequestRow[],
+    (approvalsResult.data ?? []) as unknown as ApprovalRequestRow[],
   );
   const scheduleByEvent = groupByEventId(
-    (scheduleResult.data ?? []) as PublicationScheduleRow[],
+    (scheduleResult.data ?? []) as unknown as PublicationScheduleRow[],
   );
 
   for (const event of events) {

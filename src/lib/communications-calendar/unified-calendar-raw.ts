@@ -45,7 +45,7 @@ export const fetchUnifiedCalendarRawData = cache(
       .in("school_year_id", schoolYearIds)
       .order("date", { ascending: true });
 
-    const scopedEventRows = (eventRows ?? []) as CoreEventRow[];
+    const scopedEventRows = (eventRows ?? []) as unknown as CoreEventRow[];
     const eventIds = scopedEventRows.map((row) => row.id);
 
     if (eventIds.length === 0) {
@@ -61,7 +61,7 @@ export const fetchUnifiedCalendarRawData = cache(
 
     return {
       eventRows: scopedEventRows,
-      metaSlots: ((metaSlotRows ?? []) as MetaPublicationSlotRow[]).map(
+      metaSlots: ((metaSlotRows ?? []) as unknown as MetaPublicationSlotRow[]).map(
         mapMetaPublicationSlotRow,
       ),
     };

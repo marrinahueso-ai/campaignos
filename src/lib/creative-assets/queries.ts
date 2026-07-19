@@ -40,7 +40,7 @@ export async function getCampaignAssetsForEvent(
     return [];
   }
 
-  return mapEventAssetRows((data ?? []) as EventAssetRow[]);
+  return mapEventAssetRows((data ?? []) as unknown as EventAssetRow[]);
 }
 
 /** Lean assets for event detail / creative studio display (no generation JSON). */
@@ -60,7 +60,7 @@ export async function getCampaignAssetsForEventDisplay(
     return [];
   }
 
-  return mapEventAssetRows((data ?? []) as EventAssetRow[]);
+  return mapEventAssetRows((data ?? []) as unknown as EventAssetRow[]);
 }
 
 export async function getAssetVersionsForEvent(
@@ -118,7 +118,7 @@ export async function getInspirationAssets(): Promise<InspirationAsset[]> {
     return [];
   }
 
-  const assets = mapEventAssetRows((assetRows ?? []) as EventAssetRow[]);
+  const assets = mapEventAssetRows((assetRows ?? []) as unknown as EventAssetRow[]);
   if (assets.length === 0) return [];
 
   const eventIds = [...new Set(assets.map((asset) => asset.eventId))];

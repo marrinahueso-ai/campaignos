@@ -241,7 +241,7 @@ async function fetchApprovalSidebarAssignedRows(
     return [];
   }
 
-  return (data ?? []) as ApprovalSidebarCountRow[];
+  return (data ?? []) as unknown as ApprovalSidebarCountRow[];
 }
 
 async function countApprovalSidebarChangeRequests(
@@ -324,7 +324,7 @@ async function fetchStepsById(
   }
 
   return new Map(
-    ((data ?? []) as EventCommunicationStepRow[]).map((row) => [row.id, row]),
+    ((data ?? []) as unknown as EventCommunicationStepRow[]).map((row) => [row.id, row]),
   );
 }
 

@@ -206,7 +206,7 @@ const fetchCampaignBuilderSchedulingItems = cache(
       return [];
     }
 
-    return ((data ?? []) as Record<string, unknown>[]).map(
+    return ((data ?? []) as unknown as Record<string, unknown>[]).map(
       normalizeSchedulingListRow,
     );
   },
@@ -231,7 +231,7 @@ export async function fetchSchedulingItemPreviewFields(
     return null;
   }
 
-  const row = data as {
+  const row = data as unknown as {
     caption_text: string | null;
     story_caption: string | null;
     feed_artwork_url: string | null;
@@ -625,7 +625,7 @@ async function fetchSchedulingItemsForEvent(
     return [];
   }
 
-  return ((data ?? []) as Record<string, unknown>[]).map(
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(
     normalizeSchedulingListRow,
   );
 }

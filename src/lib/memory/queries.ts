@@ -304,7 +304,7 @@ async function getUploadedAssetEventIds(eventIds: string[]): Promise<Set<string>
     return new Set();
   }
 
-  const assets = mapEventAssetRows(data as EventAssetRow[]);
+  const assets = mapEventAssetRows(data as unknown as EventAssetRow[]);
   const withVisual = new Set<string>();
 
   for (const asset of assets) {

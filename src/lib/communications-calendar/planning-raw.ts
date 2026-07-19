@@ -100,7 +100,7 @@ export async function fetchPlanningRawDataForEvents(
       .in("event_id", eventIds),
   ]);
 
-  const scopedItems = (itemRows ?? []) as CommunicationItemRow[];
+  const scopedItems = (itemRows ?? []) as unknown as CommunicationItemRow[];
   const itemIds = scopedItems.map((row) => row.id);
 
   let versionRows: CommunicationVersionRow[] = [];
@@ -110,17 +110,17 @@ export async function fetchPlanningRawDataForEvents(
       .select(PLANNING_VERSION_SELECT)
       .in("communication_item_id", itemIds)
       .order("version_number", { ascending: false });
-    versionRows = (data ?? []) as CommunicationVersionRow[];
+    versionRows = (data ?? []) as unknown as CommunicationVersionRow[];
   }
 
   return {
-    eventRows: (eventRows ?? []) as CoreEventRow[],
-    stepRows: (stepRows ?? []) as EventCommunicationStepRow[],
+    eventRows: (eventRows ?? []) as unknown as CoreEventRow[],
+    stepRows: (stepRows ?? []) as unknown as EventCommunicationStepRow[],
     itemRows: scopedItems,
     versionRows,
-    assetRows: (assetRows ?? []) as EventAssetRow[],
-    approvalRows: (approvalRows ?? []) as ApprovalRequestRow[],
-    scheduleRows: (scheduleRows ?? []) as PublicationScheduleRow[],
+    assetRows: (assetRows ?? []) as unknown as EventAssetRow[],
+    approvalRows: (approvalRows ?? []) as unknown as ApprovalRequestRow[],
+    scheduleRows: (scheduleRows ?? []) as unknown as PublicationScheduleRow[],
   };
 }
 

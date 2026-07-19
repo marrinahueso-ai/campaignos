@@ -87,7 +87,7 @@ async function mapApprovalRequestRows(
     );
 
   const relationById = new Map(
-    ((data ?? []) as ApprovalRequestWithRelations[]).map((row) => [row.id, row]),
+    ((data ?? []) as unknown as ApprovalRequestWithRelations[]).map((row) => [row.id, row]),
   );
 
   return rows.map((row) => {
@@ -119,7 +119,7 @@ async function getLatestContentMap(
     return new Map();
   }
 
-  return mapLatestContentByItemId(data as CommunicationVersionRow[]);
+  return mapLatestContentByItemId(data as unknown as CommunicationVersionRow[]);
 }
 
 /** Exact-event activity_log only — Event Detail Activity tab. */
@@ -142,7 +142,7 @@ export async function getEventActivityLogForEvent(
     return [];
   }
 
-  return mapActivityLogRows((data ?? []) as ActivityLogRow[]);
+  return mapActivityLogRows((data ?? []) as unknown as ActivityLogRow[]);
 }
 
 export async function getEventWorkspaceData(
@@ -190,24 +190,24 @@ export async function getEventWorkspaceData(
   }
 
   const communicationRows = getHubCommunicationItems(
-    (communicationsResult.data ?? []) as CommunicationItemRow[],
+    (communicationsResult.data ?? []) as unknown as CommunicationItemRow[],
   );
   const contentMap = await getLatestContentMap(communicationRows.map((row) => row.id));
 
   return {
-    assets: mapEventAssetRows((assetsResult.data ?? []) as EventAssetRow[]),
+    assets: mapEventAssetRows((assetsResult.data ?? []) as unknown as EventAssetRow[]),
     communications: communicationRows.map((row) =>
       mapCommunicationItemRow(
         row,
         displayDraftContent(contentMap.get(row.id) ?? null),
       ),
     ),
-    timeline: mapActivityLogRows((timelineResult.data ?? []) as ActivityLogRow[]),
+    timeline: mapActivityLogRows((timelineResult.data ?? []) as unknown as ActivityLogRow[]),
     approvalRequests: await mapApprovalRequestRows(
-      (approvalsResult.data ?? []) as ApprovalRequestRow[],
+      (approvalsResult.data ?? []) as unknown as ApprovalRequestRow[],
     ),
     publicationSchedule: (
-      (scheduleResult.data ?? []) as PublicationScheduleRow[]
+      (scheduleResult.data ?? []) as unknown as PublicationScheduleRow[]
     ).map(mapPublicationScheduleRow),
   };
 }

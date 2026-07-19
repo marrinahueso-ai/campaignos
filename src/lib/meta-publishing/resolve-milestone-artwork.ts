@@ -168,19 +168,17 @@ export async function resolveMilestoneArtworkUrls(input: {
       id: `cb2-feed-${input.relativeDay}`,
       label: cb2.milestoneTitle,
       assetType: "instagram_graphic" as const,
+      planLabel: `${cb2.milestoneTitle} — Feed (1:1)`,
       formatLabel: "Feed (1:1)",
       metaPlacement: "feed" as const,
-      required: true,
-      sortOrder: 0,
     };
     const syntheticStory = {
       id: `cb2-story-${input.relativeDay}`,
       label: cb2.milestoneTitle,
       assetType: "instagram_story" as const,
+      planLabel: `${cb2.milestoneTitle} — Story`,
       formatLabel: "Story",
       metaPlacement: "story" as const,
-      required: true,
-      sortOrder: 1,
     };
     const titledFeed = resolveMilestonePhaseAsset(syntheticFeed, assets, [
       cb2.milestoneTitle,

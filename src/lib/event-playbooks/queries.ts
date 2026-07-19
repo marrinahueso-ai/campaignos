@@ -80,7 +80,7 @@ export async function getEventPlaybookEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return mapEventRows((data ?? []) as unknown as EventRow[]);
 }
 
 export async function getEventPlaybookTasksForEvents(
@@ -105,7 +105,7 @@ export async function getEventPlaybookTasksForEvents(
     return [];
   }
 
-  return (data ?? []) as EventPlaybookTaskRow[];
+  return (data ?? []) as unknown as EventPlaybookTaskRow[];
 }
 
 /** Exact-event notes only — Event Detail Notes tab. */
@@ -130,7 +130,7 @@ export async function getEventPlaybookNotesForEvent(
     return [];
   }
 
-  return ((data ?? []) as EventPlaybookNoteRow[]).map(mapEventPlaybookNoteRow);
+  return ((data ?? []) as unknown as EventPlaybookNoteRow[]).map(mapEventPlaybookNoteRow);
 }
 
 /** Exact-event playbook activity only — Event Detail Activity tab. */
@@ -157,7 +157,7 @@ export async function getEventPlaybookActivityForEvent(
     return [];
   }
 
-  return ((data ?? []) as EventPlaybookActivityRow[]).map(
+  return ((data ?? []) as unknown as EventPlaybookActivityRow[]).map(
     mapEventPlaybookActivityRow,
   );
 }
@@ -209,22 +209,22 @@ export async function getEventPlaybookHubData(
       .limit(20),
   ]);
 
-  const tasks = ((tasksResult.data ?? []) as EventPlaybookTaskRow[]).map(
+  const tasks = ((tasksResult.data ?? []) as unknown as EventPlaybookTaskRow[]).map(
     mapEventPlaybookTaskRow,
   );
   const taskGroups =
     groupsResult.error && isMissingSchemaError(groupsResult.error)
       ? []
-      : ((groupsResult.data ?? []) as EventPlaybookTaskGroupRow[]).map(
+      : ((groupsResult.data ?? []) as unknown as EventPlaybookTaskGroupRow[]).map(
           mapEventPlaybookTaskGroupRow,
         );
-  const notes = ((notesResult.data ?? []) as EventPlaybookNoteRow[]).map(
+  const notes = ((notesResult.data ?? []) as unknown as EventPlaybookNoteRow[]).map(
     mapEventPlaybookNoteRow,
   );
-  const files = ((filesResult.data ?? []) as EventPlaybookFileRow[]).map(
+  const files = ((filesResult.data ?? []) as unknown as EventPlaybookFileRow[]).map(
     mapEventPlaybookFileRow,
   );
-  const activity = ((activityResult.data ?? []) as EventPlaybookActivityRow[]).map(
+  const activity = ((activityResult.data ?? []) as unknown as EventPlaybookActivityRow[]).map(
     mapEventPlaybookActivityRow,
   );
 
@@ -307,5 +307,5 @@ export async function getPastEventsForType(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return mapEventRows((data ?? []) as unknown as EventRow[]);
 }
