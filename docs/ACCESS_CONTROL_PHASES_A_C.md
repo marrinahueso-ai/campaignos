@@ -1,7 +1,7 @@
 # Access control — Phases A–C
 
-**Status:** Phases A–C complete (local + linked Supabase project `zyllfqieeihshnwpakiv`)  
-**Last updated:** July 17, 2026  
+**Status:** Phases A–C + C2 (table RLS) + C3 (storage RLS) complete (Supabase `zyllfqieeihshnwpakiv`)  
+**Last updated:** July 18, 2026  
 **Deferred:** Phase D (org switcher), Phase E (Stripe / org billing) — document when finished  
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
@@ -113,14 +113,41 @@ Applied remotely (history may show split entries: `membership_scoped_rls` + `mem
 
 **Service role** still bypasses RLS (provisioning, admin paths, cron).
 
+### Phase C2 — Broader membership RLS
+
+**Migrations:**  
+- `supabase/migrations/065_broader_membership_rls.sql` (applied remotely as `broader_membership_rls_0`…`_8`)  
+- `supabase/migrations/066_broader_membership_rls_remaining.sql` (applied as `broader_membership_rls_remaining_a` / `_b`)
+
+| Scope | Examples |
+|-------|----------|
+| Org membership | vendors*, inbox*, org meta/monday/brand/playbook prefs, volunteers*, social insights/activity, calendar imports, creative style memory |
+| Event access | communications*, event playbooks*, approvals/scheduling, campaign builder sessions, meta slots/captions, event assets/versions/concepts, activity_log, publication_schedule, creative briefs |
+| Special | `communication_playbooks` with `organization_id IS NULL` readable by any authenticated user; mutations only for org-owned rows |
+
+**Verified remotely:** every `public` table has RLS enabled; the only remaining `with_check = true` policy is `organizations_insert_authenticated` (founding).
+
 ### Phase C findings / gaps (known)
 
 | Item | Notes |
 |------|--------|
-| Many product tables still open | vendors, inbox, playbooks, communications, volunteers, etc. — follow-up hardening |
-| 2 events with `school_year_id IS NULL` | Invisible under new event RLS until backfilled |
 | `organizations` INSERT for founding | Intentionally open to authenticated users (advisor WARN acceptable for now) |
 | Template keys vs RLS | RLS = **org membership isolation**; `manage_people` / artwork / etc. remain **app-layer** |
+| Public storage URLs | See Phase C3 — API hardened; public GET residual until signed-URL migration |
+
+### Phase C3 — Storage membership RLS
+
+**Full write-up:** [STORAGE_RLS.md](./STORAGE_RLS.md)  
+**Migration:** `supabase/migrations/067_storage_membership_rls.sql`
+
+| Scope | Behavior |
+|-------|----------|
+| Path key | First folder = `organization_id` or `event_id` (matches app upload builders) |
+| Roles | `authenticated` only; anon Storage API denied |
+| Private buckets | Full membership gate (vendor-documents, calendar-uploads, training-library) |
+| Public buckets | Same API gate; `public = true` kept so existing `/object/public/` URLs still work |
+
+**Contract tests:** `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts`
 
 ### How to re-verify Phase C
 
@@ -161,6 +188,8 @@ Do **not** commit `.env.local`.
 | **A** | Template toggles → real permissions + security hardening | Done |
 | **B** | See all / work assigned (Mode A) + strict list hide (Mode B) | Done |
 | **C** | Membership-scoped RLS on core org/team/event tables | Done |
+| **C2** | Broader RLS — vendors/inbox/comms/playbooks/approvals/assets/social/etc. | Done |
+| **C3** | Storage RLS — path-aware membership on all buckets | Done |
 | **D** | Org switcher / multi-membership UX | Deferred |
 | **E** | Stripe / org billing + `manage_billing` product gates | Deferred |
 
@@ -176,5 +205,6 @@ Do **not** commit `.env.local`.
 | Event access | `src/lib/events/queries.ts`, `campaign-page-queries.ts` |
 | Invite | `src/app/invite/[token]/`, `src/lib/auth/invite-*.ts`, RPC in migration 064 |
 | Templates UI | `src/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel.tsx` |
-| RLS migration | `supabase/migrations/064_membership_scoped_rls.sql` |
+| RLS migrations | `064`–`066` (tables), `067_storage_membership_rls.sql` (storage) |
+| Storage RLS doc | `docs/STORAGE_RLS.md` |
 | Playwright | `tests/hey-ralli/smoke/06–08-*.spec.ts`, `tests/hey-ralli/helpers/auth.ts` |

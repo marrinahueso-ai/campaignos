@@ -1,11 +1,11 @@
 import "server-only";
 
 import { isPlaceholderArtworkUrl } from "@/lib/campaign-builder-v2/platform-utils";
-import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
 import {
   milestoneNameMatchKey,
   normalizeMilestoneName,
 } from "@/lib/campaign-builder-v2/milestone-names";
+import { resolveRelativeDayFromApprovalInputs } from "@/lib/campaign-builder-v2/relative-day-from-approval";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { syncCampaignBuilderMilestoneArtwork } from "@/lib/campaign-builder-v2/hero-sync";
 import type {
@@ -13,6 +13,7 @@ import type {
   MilestonePreviewContent,
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
+import { META_PUBLISH_TARGETS } from "@/lib/artwork-v2/campaign-phases";
 import { getEventById } from "@/lib/events/queries";
 import { upsertMetaSocialCaption } from "@/lib/meta-captions/queries";
 import { publishModeToDb } from "@/lib/meta-publishing/publish-mode";
@@ -20,6 +21,8 @@ import { syncMetaPublicationSlots } from "@/lib/meta-publishing/sync-slots";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { createClient } from "@/lib/supabase/server";
 import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
+
+export { resolveRelativeDayFromApprovalInputs } from "@/lib/campaign-builder-v2/relative-day-from-approval";
 
 const FEED_FORMATS = new Set<PlatformFormat>([
   "facebook-feed",
@@ -147,10 +150,8 @@ async function resolveRelativeDayForMilestone(input: {
   const titleMatch = (steps ?? []).find(
     (step) => milestoneNameMatchKey(String(step.title ?? "")) === targetKey,
   );
-  if (titleMatch && typeof titleMatch.relative_day === "number") {
-    return titleMatch.relative_day;
-  }
 
+  let suggestedDate: string | null = null;
   const session = await loadCampaignBuilderSession(input.eventId);
   if (session) {
     const milestone =
@@ -158,19 +159,57 @@ async function resolveRelativeDayForMilestone(input: {
       session.milestones.find(
         (entry) => milestoneNameMatchKey(entry.name) === targetKey,
       );
-    if (milestone?.suggestedDate) {
-      return playbookRelativeDay(input.eventDate, milestone.suggestedDate);
-    }
+    suggestedDate = milestone?.suggestedDate ?? null;
   }
 
-  if (input.feedScheduleAt) {
-    const dateOnly = input.feedScheduleAt.slice(0, 10);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
-      return playbookRelativeDay(input.eventDate, dateOnly);
-    }
+  return resolveRelativeDayFromApprovalInputs({
+    stepTitleMatchDay:
+      titleMatch && typeof titleMatch.relative_day === "number"
+        ? titleMatch.relative_day
+        : null,
+    suggestedDate,
+    feedScheduleAt: input.feedScheduleAt,
+    eventDate: input.eventDate,
+  });
+}
+
+/** When CB2 publish day is not a playbook step day, create Meta slots so cron can post. */
+async function ensureMetaSlotsForRelativeDay(input: {
+  eventId: string;
+  relativeDay: number;
+  milestoneTitle: string;
+  scheduledFor: string;
+  storyManual: boolean;
+}): Promise<void> {
+  const supabase = await createClient();
+  const { data: existing, error: existingError } = await supabase
+    .from("meta_publication_slots")
+    .select("id")
+    .eq("event_id", input.eventId)
+    .eq("relative_day", input.relativeDay)
+    .limit(1);
+
+  if (existingError || (existing?.length ?? 0) > 0) {
+    return;
   }
 
-  return null;
+  const now = new Date().toISOString();
+  const targets = input.storyManual
+    ? META_PUBLISH_TARGETS.filter((target) => target.placement === "feed")
+    : META_PUBLISH_TARGETS;
+
+  await supabase.from("meta_publication_slots").insert(
+    targets.map((target) => ({
+      event_id: input.eventId,
+      relative_day: input.relativeDay,
+      milestone_title: input.milestoneTitle,
+      platform: target.platform,
+      placement: target.placement,
+      scheduled_for: input.scheduledFor,
+      status: "draft",
+      updated_at: now,
+    })),
+  );
 }
 
 async function applyPublishModeForHybrid(input: {
@@ -329,12 +368,23 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
   const now = new Date().toISOString();
   const scheduledFor = input.feedScheduleAt ?? now;
 
+  // Playbook sync only creates slots for known communication steps. CB2
+  // milestones with a custom publish date (e.g. Announcement on -27) need slots.
+  await ensureMetaSlotsForRelativeDay({
+    eventId: input.eventId,
+    relativeDay,
+    milestoneTitle,
+    scheduledFor,
+    storyManual,
+  });
+
   // Commit feed placements only when story is manual; otherwise commit all auto targets.
   let query = supabase
     .from("meta_publication_slots")
     .update({
       status: "approved",
       scheduled_for: scheduledFor,
+      milestone_title: milestoneTitle,
       updated_at: now,
     })
     .eq("event_id", input.eventId)

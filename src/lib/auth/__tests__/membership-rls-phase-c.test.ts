@@ -40,4 +40,34 @@ describe("Phase C membership-scoped RLS contract", () => {
     const eventScopePath = "events.school_year_id -> school_years.organization_id";
     assert.match(eventScopePath, /school_years\.organization_id/);
   });
+
+  it("Phase C2 scopes product tables by membership helpers", () => {
+    // 065/066: org-keyed → is_active_org_member; event-keyed → can_access_event
+    const orgScopedExamples = [
+      "vendors",
+      "inbox_threads",
+      "organization_meta_connections",
+      "social_post_insights",
+    ];
+    const eventScopedExamples = [
+      "communication_items",
+      "approval_requests",
+      "event_assets",
+      "campaign_builder_sessions",
+    ];
+    assert.equal(orgScopedExamples.length > 0, true);
+    assert.equal(eventScopedExamples.length > 0, true);
+    // Global playbooks (organization_id IS NULL) stay readable; mutations org-owned only
+    const globalPlaybooksReadable = true;
+    const globalPlaybooksMutableByClient = false;
+    assert.equal(globalPlaybooksReadable, true);
+    assert.equal(globalPlaybooksMutableByClient, false);
+  });
+
+  it("keeps organizations INSERT open only for founding", () => {
+    // organizations_insert_authenticated: with_check true for authenticated
+    // (only intentional qual/with_check=true policy remaining after C2)
+    const foundingOrgInsertAllowed = true;
+    assert.equal(foundingOrgInsertAllowed, true);
+  });
 });

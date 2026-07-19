@@ -1,6 +1,6 @@
 # Platform stability verification — Phases A–C + memory slices
 
-**Verified:** 2026-07-17 (local + Supabase `zyllfqieeihshnwpakiv`)  
+**Verified:** 2026-07-18 (local + Supabase `zyllfqieeihshnwpakiv`) — includes Phase C2 broader RLS  
 **Goal:** Stable single-org platform that functions as designed. Phase D (org switcher) and Phase E (Stripe) deferred.
 
 Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md)
@@ -11,14 +11,18 @@ Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.
 
 | Suite / check | Result |
 |---------------|--------|
-| `npm run test:team-access` | **50/50 pass** (EffectiveAccess, Mode A/B, RLS contract, invites, role simulator) |
+| `npm run test:team-access` | **pass** (EffectiveAccess, Mode A/B, table + storage RLS contracts, invites, role simulator) |
+| Storage C3 API smoke | **pass** (own-event upload OK; foreign org upload denied; vendor signed URL OK) |
+| Playwright `01` + `05` + `07` | **7/7 pass** (login, approvals/calendar, upload gate UI) |
 | `npm run test:approvals-scheduling` | **24/24 pass** (lean badges + hub list/preview split contracts) |
 | `npm run test:communications-calendar` | **9/9 pass** (lean selects, workspace/playbook lean, provider step trim) |
 | `npm run test:events-phase3` | **55/55 pass** (tab loaders + Meta skip artwork-based) |
 | Playwright `01` + `07` + `08` | **5/5 pass** (app/login, upload gate allow/deny, Mode A assigned access) |
 | Remote RLS helpers | `private.is_active_org_member` **present**; invite RPC **present** |
-| Remote policies on core tables | **21** policies on org/users/events/school_years/templates |
-| Active members on project | **6** (memberships intact) |
+| Remote policies on core tables | Membership helpers on org/users/events + C2 product tables |
+| Open `qual`/`with_check=true` policies | **1** only — `organizations_insert_authenticated` (founding) |
+| Public tables with RLS disabled | **0** |
+| Storage `storage.objects` policies | **24** membership-scoped; **0** anon / “Allow public…” |
 | Events with null `school_year_id` | **0** (backfilled in Stability P2) |
 
 ---
@@ -58,11 +62,11 @@ Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.
 | Tenancy | Mostly app-layer; many tables publicly readable | RLS: active membership for core org/team/event tables |
 | Invite lookup | Open SELECT patterns risk | `lookup_organization_invite_by_token` SECURITY DEFINER RPC |
 | Founding seed | Could fail under strict RLS | Membership created before org seed |
-| Migration | N/A | `supabase/migrations/064_membership_scoped_rls.sql` applied remotely |
+| Migration | N/A | `064` + `065`/`066` broader RLS applied remotely |
 
-**Evidence today:** remote helper + RPC exist; 21 core policies; contract tests in `membership-rls-phase-c.test.ts`.
+**Evidence today:** remote helper + RPC exist; C2 locked vendors/inbox/comms/playbooks/approvals/assets/social/etc.; only intentional open policy is founding org INSERT; contract tests in `membership-rls-phase-c.test.ts`.
 
-**Still open:** vendors/inbox/playbooks/etc. not fully under this RLS; 2 events missing `school_year_id`.
+**Storage (Phase C3):** See [STORAGE_RLS.md](./STORAGE_RLS.md) — `067` applied; Storage API membership-scoped; public bucket HTTP GET residual documented.
 
 ---
 

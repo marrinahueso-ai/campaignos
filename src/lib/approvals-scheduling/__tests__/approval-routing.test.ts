@@ -20,11 +20,21 @@ import type {
   UnifiedApprovalItem,
 } from "../types.ts";
 
+const ACTIONABLE = new Set([
+  "in_queue",
+  "assigned_to_me",
+  "changes_requested",
+]);
+
 /** Mirrors permissions.canActOnUnifiedItem for Node tests (no @/ alias). */
 function canActOnUnifiedItem(
   item: UnifiedApprovalItem,
   role: CampaignRole,
 ): boolean {
+  if (!ACTIONABLE.has(item.workflowStatus)) {
+    return false;
+  }
+
   if (canApproveDraft(role)) {
     return true;
   }
@@ -389,10 +399,36 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
     const fnStart = metaSource.indexOf(
       "export async function scheduleMetaFeedFromCampaignBuilderApproval",
     );
-    const fnBody = metaSource.slice(fnStart, fnStart + 4500);
+    const fnBody = metaSource.slice(fnStart, fnStart + 6500);
     assert.match(fnBody, /\.from\("meta_publication_slots"\)/);
     assert.match(fnBody, /\.update\(\{/);
-    assert.doesNotMatch(fnBody, /\.insert\(/);
+    // Ad-hoc CB2 publish days may insert missing slots; approval still updates.
+    assert.match(fnBody, /ensureMetaSlotsForRelativeDay/);
+    assert.match(metaSource, /resolveRelativeDayFromApprovalInputs/);
+  });
+
+  it("9b. Approve actions are disabled after scheduled/posted/published", () => {
+    for (const workflowStatus of [
+      "scheduled",
+      "posted",
+      "published",
+    ] as const) {
+      const item = buildItem({ workflowStatus, assignedToMe: true });
+      assert.equal(canActOnUnifiedItem(item, "admin"), false);
+      assert.equal(canActOnUnifiedItem(item, "president"), false);
+    }
+
+    const pending = buildItem({
+      workflowStatus: "assigned_to_me",
+      assignedToMe: true,
+    });
+    assert.equal(canActOnUnifiedItem(pending, "admin"), true);
+
+    const changes = buildItem({
+      workflowStatus: "changes_requested",
+      assignedToMe: true,
+    });
+    assert.equal(canActOnUnifiedItem(changes, "admin"), true);
   });
 });
 

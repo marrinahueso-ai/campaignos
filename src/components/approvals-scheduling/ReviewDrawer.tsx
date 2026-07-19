@@ -120,26 +120,34 @@ export function ReviewDrawer({
           ) : null}
         </div>
 
-        {canAct ? (
-          <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
-            <Button
-              type="button"
-              variant="primary"
-              disabled={isSubmitting}
-              onClick={onApprove}
-            >
-              Approve
+        <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
+          {canAct ? (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isSubmitting}
+                onClick={onApprove}
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isSubmitting}
+                onClick={onRequestChanges}
+              >
+                Request changes
+              </Button>
+            </>
+          ) : item.workflowStatus === "scheduled" ||
+            item.workflowStatus === "posted" ||
+            item.workflowStatus === "published" ? (
+            <Button type="button" variant="secondary" disabled>
+              Approved
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isSubmitting}
-              onClick={onRequestChanges}
-            >
-              Request changes
-            </Button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </aside>
     </div>
   );

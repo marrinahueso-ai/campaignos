@@ -24,6 +24,7 @@ import {
   type StepperStepState,
 } from "@/lib/campaign-builder-v2/health";
 import {
+  loadCampaignBuilderSessionAction,
   saveCampaignBuilderSessionAction,
 } from "@/lib/campaign-builder-v2/session";
 import {
@@ -50,7 +51,10 @@ import {
   DEFAULT_VOICE_TONE_OPTIONS,
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
-import { hydrateCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
+import {
+  hydrateCampaignBuilderSession,
+  protectSessionFromRichnessDowngrade,
+} from "@/lib/campaign-builder-v2/normalize-session";
 import {
   applyArtworkBackup,
   loadArtworkBackup,
@@ -433,6 +437,32 @@ function previewSessionRichness(session: CampaignBuilderSession): number {
   }, 0);
 }
 
+async function recoverSessionFromServerIfRicher(
+  local: CampaignBuilderSession,
+  eventTitle: string,
+  eventDate: string,
+): Promise<CampaignBuilderSession | null> {
+  try {
+    const server = await loadCampaignBuilderSessionAction(local.eventId);
+    if (!server) {
+      return null;
+    }
+    if (previewSessionRichness(server) <= previewSessionRichness(local)) {
+      return null;
+    }
+    return hydrateCampaignBuilderSession(
+      protectSessionFromRichnessDowngrade(local, server),
+      local,
+      local.eventId,
+      eventTitle,
+      eventDate,
+      true,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function CampaignBuilderProvider({
   eventId,
   eventTitle,
@@ -772,6 +802,32 @@ export function CampaignBuilderProvider({
     // Reconcile persisted milestone statuses once per mount after hydration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  // If the client is stuck on an empty/failed Preview while the server has
+  // richer artwork (common after Storage RLS errors), pull it back once.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const local = sessionRef.current;
+      if (previewSessionRichness(local) > 0) {
+        return;
+      }
+      const recovered = await recoverSessionFromServerIfRicher(
+        local,
+        eventTitle,
+        eventDate,
+      );
+      if (cancelled || !recovered) {
+        return;
+      }
+      sessionRef.current = recovered;
+      setSession(recovered);
+      persistLocalSession(recovered);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, eventTitle, eventDate]);
 
   const reconcilePreviewStatuses = useCallback(() => {
     setSession((prev) => {
@@ -1460,6 +1516,24 @@ export function CampaignBuilderProvider({
         }
 
         if (!result.success) {
+          // Storage/table RLS or mid-flight errors can leave the client empty
+          // while the server already persisted richer artwork — recover first.
+          const recovered = await recoverSessionFromServerIfRicher(
+            workingBase,
+            eventTitle,
+            eventDate,
+          );
+          if (recovered && previewSessionRichness(recovered) > 0) {
+            sessionRef.current = recovered;
+            setSession(recovered);
+            persistLocalSession(recovered);
+            return {
+              success: true,
+              message:
+                "Restored saved artwork from the server. Generation had reported an error, but completed content was already stored.",
+            };
+          }
+
           const failedBase: CampaignBuilderSession = {
             ...workingBase,
             previewContents: workingBase.previewContents.map((content) =>
@@ -1474,7 +1548,8 @@ export function CampaignBuilderProvider({
           };
           sessionRef.current = failedBase;
           setSession(failedBase);
-          await persistSession(failedBase);
+          // Local only — do not upsert a failed empty snapshot over server art.
+          persistLocalSession(failedBase);
           const { reportFailedAction } = await import(
             "@/lib/monitoring/report-error"
           );
@@ -1570,6 +1645,23 @@ export function CampaignBuilderProvider({
                 error.message,
               )));
 
+        const recovered = await recoverSessionFromServerIfRicher(
+          sessionRef.current,
+          eventTitle,
+          eventDate,
+        );
+        if (recovered && previewSessionRichness(recovered) > 0) {
+          sessionRef.current = recovered;
+          setSession(recovered);
+          persistLocalSession(recovered);
+          return {
+            success: true,
+            message: interrupted
+              ? "Generation was interrupted, but saved artwork was restored from the server."
+              : "Restored saved artwork from the server after a generation error.",
+          };
+        }
+
         if (interrupted) {
           return {
             success: false,
@@ -1592,7 +1684,7 @@ export function CampaignBuilderProvider({
         };
         sessionRef.current = failedBase;
         setSession(failedBase);
-        await persistSession(failedBase);
+        persistLocalSession(failedBase);
 
         const { reportIntegrationError } = await import(
           "@/lib/monitoring/report-error"
@@ -1614,7 +1706,7 @@ export function CampaignBuilderProvider({
         setGenerationProgress(null);
       }
     },
-    [flushSave, persistSession, playbooks],
+    [eventDate, eventTitle, flushSave, persistSession, playbooks],
   );
 
   const generateMilestoneContent = useCallback(

@@ -106,6 +106,54 @@ function pickRicherPreview(
  * list — otherwise a stale server milestone list (different IDs after a playbook
  * rebuild) silently orphans local artwork and the next hydrate writes it away.
  */
+/**
+ * Prevent a poorer client snapshot (e.g. empty + "generating"/"failed") from
+ * overwriting richer server artwork/captions during persist. Used by
+ * saveCampaignBuilderSessionAction after Storage/table RLS hardening made
+ * mid-generation failures more visible.
+ */
+export function protectSessionFromRichnessDowngrade(
+  incoming: CampaignBuilderSession,
+  existing: CampaignBuilderSession | null | undefined,
+): CampaignBuilderSession {
+  if (!existing) {
+    return incoming;
+  }
+
+  const existingRichness = sessionPreviewRichness(existing);
+  const incomingRichness = sessionPreviewRichness(incoming);
+  if (existingRichness === 0 || incomingRichness >= existingRichness) {
+    // Still merge per-milestone so a partial incoming cannot blank one slot.
+    const merged = mergeCampaignBuilderSessions(existing, incoming);
+    return {
+      ...incoming,
+      inspiration: merged.inspiration ?? incoming.inspiration,
+      milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
+        incoming.milestones,
+      milestonesPlaybookId:
+        merged.milestonesPlaybookId ?? incoming.milestonesPlaybookId,
+      previewContents:
+        (merged.previewContents as MilestonePreviewContent[] | undefined) ??
+        incoming.previewContents,
+    };
+  }
+
+  const merged = mergeCampaignBuilderSessions(incoming, existing);
+  return {
+    ...incoming,
+    inspiration: merged.inspiration ?? existing.inspiration ?? incoming.inspiration,
+    milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
+      existing.milestones,
+    milestonesPlaybookId:
+      merged.milestonesPlaybookId ??
+      existing.milestonesPlaybookId ??
+      incoming.milestonesPlaybookId,
+    previewContents:
+      (merged.previewContents as MilestonePreviewContent[] | undefined) ??
+      existing.previewContents,
+  };
+}
+
 export function mergeCampaignBuilderSessions(
   primary: Partial<CampaignBuilderSession>,
   secondary: Partial<CampaignBuilderSession>,
