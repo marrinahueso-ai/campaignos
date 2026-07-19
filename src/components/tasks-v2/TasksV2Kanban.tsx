@@ -11,7 +11,10 @@ import {
   setTaskHubDragData,
 } from "@/components/task-hub/task-hub-dnd";
 import { TaskHubTaskRow } from "@/components/task-hub/TaskHubTaskRow";
-import { updateTaskHubTaskStatusAction } from "@/lib/task-hub/actions";
+import {
+  updateTaskHubTaskAction,
+  updateTaskHubTaskStatusAction,
+} from "@/lib/task-hub/actions";
 import { tasksByBoardColumn } from "@/lib/task-hub/grouping";
 import {
   BOARD_COLUMN_STATUSES,
@@ -19,6 +22,15 @@ import {
   taskStatusLabel,
 } from "@/lib/event-playbooks/task-status";
 import { flattenEventGroups } from "@/lib/tasks-v2/group-by-event";
+import {
+  FOCUS_BOARD_COLUMNS,
+  FOCUS_BOARD_LABELS,
+  FOCUS_IN_PROGRESS_WIP_LIMIT,
+  focusColumnDropPatch,
+  groupTasksByFocusColumn,
+  type FocusBoardColumn,
+  type TasksV2KanbanBoardMode,
+} from "@/lib/tasks-v2/kanban-focus-board";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TaskHubTaskItem } from "@/types/task-hub";
@@ -29,7 +41,7 @@ interface TasksV2KanbanProps {
   canEdit: boolean;
 }
 
-const COLUMN_META: Record<
+const STATUS_COLUMN_META: Record<
   (typeof BOARD_COLUMN_STATUSES)[number],
   { label: string; headerClass: string }
 > = {
@@ -51,6 +63,7 @@ const COLUMN_META: Record<
 
 export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
   const router = useRouter();
+  const [boardMode, setBoardMode] = useState<TasksV2KanbanBoardMode>("status");
   const [pending, startTransition] = useTransition();
   const sourceTasks = useMemo(
     () => flattenEventGroups(eventGroups),
@@ -63,22 +76,25 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [dragOverColumn, setDragOverColumn] = useState<EventPlaybookTaskStatus | null>(
-    null,
-  );
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
 
   useEffect(() => {
     setTasks(sourceTasks);
   }, [sourceTasks]);
 
-  const columns = useMemo(() => {
+  const statusColumns = useMemo(() => {
     const resolved = tasks.map((task) => ({
       ...task,
       status: taskStatuses[task.id] ?? task.status,
     }));
     return tasksByBoardColumn(resolved);
   }, [tasks, taskStatuses]);
+
+  const focusColumns = useMemo(
+    () => groupTasksByFocusColumn(tasks, taskStatuses),
+    [tasks, taskStatuses],
+  );
 
   function resolveStatus(task: TaskHubTaskItem): EventPlaybookTaskStatus {
     return taskStatuses[task.id] ?? task.status;
@@ -127,7 +143,61 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
     });
   }
 
-  function handleColumnDrop(
+  function applyFocusDrop(task: TaskHubTaskItem, column: FocusBoardColumn) {
+    if (pendingTaskIds.has(task.id)) {
+      return;
+    }
+
+    const patch = focusColumnDropPatch(column);
+    const nextStatus = patch.status;
+    const nextDueDate =
+      patch.dueDate !== undefined ? patch.dueDate : task.dueDate;
+
+    if (
+      resolveStatus(task) === nextStatus &&
+      (task.dueDate ?? null) === (nextDueDate ?? null)
+    ) {
+      return;
+    }
+
+    setTaskStatuses((currentMap) => ({ ...currentMap, [task.id]: nextStatus }));
+    setTasks((current) =>
+      current.map((entry) =>
+        entry.id === task.id
+          ? { ...entry, status: nextStatus, dueDate: nextDueDate ?? null }
+          : entry,
+      ),
+    );
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.eventId,
+        task.id,
+        {
+          status: nextStatus,
+          ...(patch.dueDate !== undefined ? { dueDate: patch.dueDate } : {}),
+        },
+        task.title,
+      );
+
+      setPendingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(task.id);
+        return next;
+      });
+
+      if (!result.success) {
+        setTasks(sourceTasks);
+        setTaskStatuses({});
+        return;
+      }
+
+      router.refresh();
+    });
+  }
+
+  function handleStatusColumnDrop(
     targetStatus: EventPlaybookTaskStatus,
     event: React.DragEvent,
   ) {
@@ -147,12 +217,32 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
     setDragOverColumn(null);
   }
 
+  function handleFocusColumnDrop(
+    column: FocusBoardColumn,
+    event: React.DragEvent,
+  ) {
+    event.preventDefault();
+    const payload = readTaskHubDragPayload(event);
+    if (!payload) {
+      return;
+    }
+
+    const task = tasks.find((entry) => entry.id === payload.taskId);
+    if (!task || !canEdit) {
+      setDragOverColumn(null);
+      return;
+    }
+
+    applyFocusDrop(task, column);
+    setDragOverColumn(null);
+  }
+
   if (tasks.length === 0) {
     return (
       <EmptyState
         icon={LayoutGrid}
         title="No tasks on the board"
-        description="Tasks from your accessible events will appear here as cards by status."
+        description="Tasks from your accessible events will appear here as cards."
         className="border border-cos-border bg-cos-card py-16"
       />
     );
@@ -160,121 +250,254 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-3">
-        {BOARD_COLUMN_STATUSES.map((columnStatus) => {
-          const meta = COLUMN_META[columnStatus];
-          const columnTasks = columns[columnStatus];
-
-          return (
-            <Card
-              key={columnStatus}
-              padding="none"
-              className={cn(
-                "flex min-h-[22rem] flex-col overflow-hidden",
-                dragOverColumn === columnStatus &&
-                  "ring-2 ring-cos-accent ring-offset-2 ring-offset-cos-bg",
-              )}
-              onDragOver={(event) => {
-                if (!canEdit) return;
-                event.preventDefault();
-                event.dataTransfer.dropEffect = "move";
-                setDragOverColumn(columnStatus);
-              }}
-              onDragLeave={() => {
-                if (dragOverColumn === columnStatus) {
-                  setDragOverColumn(null);
-                }
-              }}
-              onDrop={(event) => handleColumnDrop(columnStatus, event)}
-            >
-              <div
-                className={cn(
-                  "border-b border-cos-border px-4 py-3",
-                  meta.headerClass,
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-cos-text">{meta.label}</h3>
-                  <Badge variant="default">{columnTasks.length}</Badge>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto bg-cos-bg/30 py-1">
-                {columnTasks.map((task) => {
-                  const status = resolveStatus(task);
-                  const isPending = pendingTaskIds.has(task.id);
-
-                  return (
-                    <div
-                      key={task.id}
-                      draggable={canEdit && !isPending}
-                      onDragStart={(event) => {
-                        if (!canEdit) return;
-                        setTaskHubDragData(event, {
-                          taskId: task.id,
-                          committeeKey: task.event.eventId,
-                          sourceStatus: status,
-                        });
-                      }}
-                    >
-                      <TaskHubTaskRow
-                        task={task}
-                        status={status}
-                        committeeName={task.event.eventTitle}
-                        isPending={isPending}
-                        disabled={pending}
-                        canEdit={canEdit}
-                        variant="board"
-                        onToggleStatus={() =>
-                          applyStatus(task, nextTaskStatus(status))
-                        }
-                        onStatusChange={(nextStatus) =>
-                          applyStatus(task, nextStatus)
-                        }
-                      />
-                    </div>
-                  );
-                })}
-                {columnTasks.length === 0 && (
-                  <p className="px-4 py-10 text-center text-sm text-cos-muted">
-                    {canEdit ? "Drop tasks here" : "No tasks"}
-                  </p>
-                )}
-              </div>
-            </Card>
-          );
-        })}
+      <div
+        className="inline-flex rounded-lg border border-cos-border bg-cos-card p-0.5"
+        role="group"
+        aria-label="Board layout"
+      >
+        <button
+          type="button"
+          onClick={() => setBoardMode("status")}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            boardMode === "status"
+              ? "bg-cos-dark text-[#f6f2eb]"
+              : "text-cos-muted hover:text-cos-text",
+          )}
+        >
+          By status
+        </button>
+        <button
+          type="button"
+          onClick={() => setBoardMode("focus")}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            boardMode === "focus"
+              ? "bg-cos-dark text-[#f6f2eb]"
+              : "text-cos-muted hover:text-cos-text",
+          )}
+        >
+          Focus board
+        </button>
       </div>
 
-      {columns.done.length > 0 && (
-        <Card padding="none" className="overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowDone((value) => !value)}
-            className="flex w-full items-center justify-between border-t-[3px] border-t-[var(--cos-status-done)] border-b border-cos-border bg-[var(--cos-status-done-bg)] px-4 py-3 text-left transition-colors hover:opacity-90"
-          >
-            <span className="text-sm font-semibold text-[var(--cos-status-done-text)]">
-              {taskStatusLabel("done")} ({columns.done.length})
-            </span>
-            <span className="text-xs text-cos-muted">{showDone ? "Hide" : "Show"}</span>
-          </button>
-          {showDone && (
-            <div className="grid gap-0 bg-cos-bg/30 sm:grid-cols-2 lg:grid-cols-3">
-              {columns.done.map((task) => (
-                <TaskHubTaskRow
-                  key={task.id}
-                  task={task}
-                  status="done"
-                  committeeName={task.event.eventTitle}
-                  canEdit={canEdit}
-                  variant="board"
-                  onToggleStatus={() => applyStatus(task, nextTaskStatus("done"))}
-                  onStatusChange={(nextStatus) => applyStatus(task, nextStatus)}
-                />
-              ))}
-            </div>
+      {boardMode === "focus" ? (
+        <div className="overflow-hidden rounded-lg border border-cos-border bg-cos-card">
+          <div className="grid grid-cols-1 divide-y divide-cos-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            {FOCUS_BOARD_COLUMNS.map((column) => {
+              const columnTasks = focusColumns[column];
+              const label = FOCUS_BOARD_LABELS[column];
+              const countLabel =
+                column === "in_progress"
+                  ? `${columnTasks.length} / ${FOCUS_IN_PROGRESS_WIP_LIMIT}`
+                  : String(columnTasks.length);
+
+              return (
+                <div
+                  key={column}
+                  className={cn(
+                    "flex min-h-[22rem] flex-col bg-cos-bg/40",
+                    dragOverColumn === column &&
+                      "ring-2 ring-inset ring-cos-accent",
+                  )}
+                  onDragOver={(event) => {
+                    if (!canEdit) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDragOverColumn(column);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverColumn === column) {
+                      setDragOverColumn(null);
+                    }
+                  }}
+                  onDrop={(event) => handleFocusColumnDrop(column, event)}
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-cos-border bg-cos-bg px-3 py-2.5">
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <h3 className="text-sm font-semibold text-cos-text">
+                        {label}
+                      </h3>
+                      <span className="text-xs tabular-nums text-cos-muted">
+                        {countLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-0 overflow-y-auto py-1">
+                    {columnTasks.map((task) => {
+                      const status = resolveStatus(task);
+                      const isPending = pendingTaskIds.has(task.id);
+
+                      return (
+                        <div
+                          key={task.id}
+                          draggable={canEdit && !isPending}
+                          onDragStart={(event) => {
+                            if (!canEdit) return;
+                            setTaskHubDragData(event, {
+                              taskId: task.id,
+                              committeeKey: task.event.eventId,
+                              sourceStatus: status,
+                            });
+                          }}
+                        >
+                          <TaskHubTaskRow
+                            task={task}
+                            status={status}
+                            committeeName={task.event.eventTitle}
+                            isPending={isPending}
+                            disabled={pending}
+                            canEdit={canEdit}
+                            variant="board"
+                            onToggleStatus={() =>
+                              applyStatus(task, nextTaskStatus(status))
+                            }
+                            onStatusChange={(nextStatus) =>
+                              applyStatus(task, nextStatus)
+                            }
+                          />
+                        </div>
+                      );
+                    })}
+                    {columnTasks.length === 0 && (
+                      <p className="px-4 py-10 text-center text-sm text-cos-muted">
+                        {canEdit ? "Drop tasks here" : "No tasks"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {BOARD_COLUMN_STATUSES.map((columnStatus) => {
+              const meta = STATUS_COLUMN_META[columnStatus];
+              const columnTasks = statusColumns[columnStatus];
+
+              return (
+                <Card
+                  key={columnStatus}
+                  padding="none"
+                  className={cn(
+                    "flex min-h-[22rem] flex-col overflow-hidden",
+                    dragOverColumn === columnStatus &&
+                      "ring-2 ring-cos-accent ring-offset-2 ring-offset-cos-bg",
+                  )}
+                  onDragOver={(event) => {
+                    if (!canEdit) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDragOverColumn(columnStatus);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverColumn === columnStatus) {
+                      setDragOverColumn(null);
+                    }
+                  }}
+                  onDrop={(event) => handleStatusColumnDrop(columnStatus, event)}
+                >
+                  <div
+                    className={cn(
+                      "border-b border-cos-border px-4 py-3",
+                      meta.headerClass,
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold text-cos-text">
+                        {meta.label}
+                      </h3>
+                      <Badge variant="default">{columnTasks.length}</Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto bg-cos-bg/30 py-1">
+                    {columnTasks.map((task) => {
+                      const status = resolveStatus(task);
+                      const isPending = pendingTaskIds.has(task.id);
+
+                      return (
+                        <div
+                          key={task.id}
+                          draggable={canEdit && !isPending}
+                          onDragStart={(event) => {
+                            if (!canEdit) return;
+                            setTaskHubDragData(event, {
+                              taskId: task.id,
+                              committeeKey: task.event.eventId,
+                              sourceStatus: status,
+                            });
+                          }}
+                        >
+                          <TaskHubTaskRow
+                            task={task}
+                            status={status}
+                            committeeName={task.event.eventTitle}
+                            isPending={isPending}
+                            disabled={pending}
+                            canEdit={canEdit}
+                            variant="board"
+                            onToggleStatus={() =>
+                              applyStatus(task, nextTaskStatus(status))
+                            }
+                            onStatusChange={(nextStatus) =>
+                              applyStatus(task, nextStatus)
+                            }
+                          />
+                        </div>
+                      );
+                    })}
+                    {columnTasks.length === 0 && (
+                      <p className="px-4 py-10 text-center text-sm text-cos-muted">
+                        {canEdit ? "Drop tasks here" : "No tasks"}
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {statusColumns.done.length > 0 && (
+            <Card padding="none" className="overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowDone((value) => !value)}
+                className="flex w-full items-center justify-between border-t-[3px] border-t-[var(--cos-status-done)] border-b border-cos-border bg-[var(--cos-status-done-bg)] px-4 py-3 text-left transition-colors hover:opacity-90"
+              >
+                <span className="text-sm font-semibold text-[var(--cos-status-done-text)]">
+                  {taskStatusLabel("done")} ({statusColumns.done.length})
+                </span>
+                <span className="text-xs text-cos-muted">
+                  {showDone ? "Hide" : "Show"}
+                </span>
+              </button>
+              {showDone && (
+                <div className="grid gap-0 bg-cos-bg/30 sm:grid-cols-2 lg:grid-cols-3">
+                  {statusColumns.done.map((task) => (
+                    <TaskHubTaskRow
+                      key={task.id}
+                      task={task}
+                      status="done"
+                      committeeName={task.event.eventTitle}
+                      canEdit={canEdit}
+                      variant="board"
+                      onToggleStatus={() =>
+                        applyStatus(task, nextTaskStatus("done"))
+                      }
+                      onStatusChange={(nextStatus) =>
+                        applyStatus(task, nextStatus)
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </Card>
           )}
-        </Card>
+        </>
       )}
     </div>
   );
