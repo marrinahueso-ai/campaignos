@@ -105,7 +105,7 @@ describe("planning lean selects", () => {
     assert.match(unifiedRaw, /UNIFIED_META_SLOT_SELECT/);
   });
 
-  it("CampaignBuilderShell loads InspirationStep via next/dynamic", () => {
+  it("CampaignBuilderShell keeps InspirationStep as a static import (no loading flash)", () => {
     const shellPath = fileURLToPath(
       new URL(
         "../../../components/campaign-builder-v2/CampaignBuilderShell.tsx",
@@ -113,11 +113,11 @@ describe("planning lean selects", () => {
       ),
     );
     const shell = readFileSync(shellPath, "utf8");
-    assert.match(shell, /const InspirationStep = dynamic\(/);
-    assert.doesNotMatch(
+    assert.match(
       shell,
       /import\s+\{\s*InspirationStep\s*\}\s+from\s+["']@\/components\/campaign-builder-v2\/InspirationStep["']/,
     );
+    assert.doesNotMatch(shell, /const InspirationStep = dynamic\(/);
   });
 
   it("CampaignBuilderProvider skips unchanged localStorage writes and avoids debounce double-write", () => {
@@ -126,6 +126,7 @@ describe("planning lean selects", () => {
     );
     assert.match(provider, /lastLocalSessionJsonByEventId/);
     assert.match(provider, /saveSessionToServer/);
+    assert.match(provider, /resolveInspirationImagesForStorage/);
     assert.match(
       provider,
       /Write localStorage immediately; debounce only the server round-trip/,
@@ -139,7 +140,55 @@ describe("planning lean selects", () => {
     );
     const scheduleSaveBody = provider.slice(scheduleSaveStart, scheduleSaveEnd);
     assert.match(scheduleSaveBody, /persistLocalSession\(next\)/);
-    assert.match(scheduleSaveBody, /saveSessionToServer\(next\)/);
+    // Debounced server write must use the latest ref — not a stale closure.
+    assert.match(scheduleSaveBody, /saveSessionToServer\(sessionRef\.current\)/);
     assert.doesNotMatch(scheduleSaveBody, /persistSession\(next\)/);
+  });
+
+  it("CampaignBuilderProvider clears non-active step UI state", () => {
+    const provider = readSource(
+      "../../../components/campaign-builder-v2/CampaignBuilderProvider.tsx",
+    );
+    assert.match(provider, /Drop step-local UI noise when leaving/);
+    assert.match(provider, /setInspirationUploadError\(null\)/);
+    assert.match(
+      provider,
+      /if \(!isGeneratingContent && generationProgress\)/,
+    );
+  });
+
+  it("event workspace / playbook loaders use lean selects (no generation JSON)", () => {
+    const workspaceSelects = readSource("../../event-workspace/selects.ts");
+    const workspaceQueries = readSource("../../event-workspace/queries.ts");
+    const playbookSelects = readSource("../../event-playbooks/selects.ts");
+    const playbookQueries = readSource("../../event-playbooks/queries.ts");
+
+    const assetStart = workspaceSelects.indexOf(
+      "export const WORKSPACE_ASSET_SELECT",
+    );
+    const assetEnd = workspaceSelects.indexOf(
+      "export const WORKSPACE_ACTIVITY_SELECT",
+      assetStart,
+    );
+    const assetBlock = workspaceSelects.slice(assetStart, assetEnd);
+    assert.match(assetBlock, /plan_label/);
+    assert.doesNotMatch(assetBlock, /"generation_prompt"/);
+    assert.doesNotMatch(assetBlock, /"ai_review"/);
+    assert.doesNotMatch(assetBlock, /"generation_settings"/);
+
+    assert.match(workspaceQueries, /WORKSPACE_ASSET_SELECT/);
+    assert.match(workspaceQueries, /WORKSPACE_COMMUNICATION_SELECT/);
+    assert.doesNotMatch(
+      workspaceQueries,
+      /from\("event_assets"\)\.select\(\s*["']\*["']\s*\)/,
+    );
+
+    assert.match(playbookSelects, /export const PLAYBOOK_TASK_SELECT/);
+    assert.match(playbookQueries, /EVENT_SUMMARY_SELECT/);
+    assert.match(playbookQueries, /PLAYBOOK_TASK_SELECT/);
+    assert.doesNotMatch(
+      playbookQueries,
+      /from\("event_playbook_tasks"\)[\s\S]*\.select\(\s*["']\*["']\s*\)/,
+    );
   });
 });

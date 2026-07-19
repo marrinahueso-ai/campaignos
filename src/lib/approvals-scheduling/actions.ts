@@ -26,8 +26,11 @@ import {
   resolveRowManualEmailSendAt,
   resolveRowMetaScheduleIntent,
 } from "@/lib/approvals-scheduling/approval-visibility";
-import type { UnifiedWorkflowStatus } from "@/lib/approvals-scheduling/types";
-import type { ApprovalSchedulingItemRow } from "@/lib/approvals-scheduling/types";
+import type {
+  ApprovalSchedulingItemRow,
+  UnifiedApprovalItem,
+  UnifiedWorkflowStatus,
+} from "@/lib/approvals-scheduling/types";
 
 export type UnifiedApprovalActionResult = {
   success: boolean;
@@ -416,4 +419,70 @@ export async function getReassignableUsersAction(): Promise<
       email: user.email,
       roleName: user.organizationRoleName,
     }));
+}
+
+/**
+ * Load rich preview fields for the opened Approvals hub item.
+ * Hub list uses lean columns; captions load here on demand.
+ */
+export async function enrichUnifiedApprovalItemPreviewAction(
+  item: UnifiedApprovalItem,
+): Promise<UnifiedApprovalItem> {
+  if (item.schedulingItemId) {
+    const { fetchSchedulingItemPreviewFields } = await import(
+      "@/lib/approvals-scheduling/queries"
+    );
+    const preview = await fetchSchedulingItemPreviewFields(item.schedulingItemId);
+    if (!preview) {
+      return item;
+    }
+    return {
+      ...item,
+      thumbnailUrl:
+        preview.feedArtworkUrl ??
+        preview.storyArtworkUrl ??
+        item.thumbnailUrl,
+      preview: {
+        captionText: preview.captionText ?? item.preview.captionText,
+        storyCaptionSnippet:
+          preview.storyCaptionSnippet ?? item.preview.storyCaptionSnippet,
+        feedArtworkUrl: preview.feedArtworkUrl ?? item.preview.feedArtworkUrl,
+        storyArtworkUrl:
+          preview.storyArtworkUrl ?? item.preview.storyArtworkUrl,
+      },
+    };
+  }
+
+  if (item.source === "classic" && item.approvalRequestId) {
+    const { getApprovalQueueOverviewForCurrentUser } = await import(
+      "@/lib/event-workspace/approval-routing-queries"
+    );
+    const { mapClassicApprovalItem } = await import(
+      "@/lib/approvals-scheduling/map-items"
+    );
+    const { getTodayDateString } = await import("@/lib/utils/dates");
+
+    const overview = await getApprovalQueueOverviewForCurrentUser(item.eventId, {
+      enrichPreviews: true,
+    });
+    const candidates = [
+      ...overview.assignedToMe,
+      ...overview.allPending,
+      ...overview.changesRequested,
+      ...overview.recentlyApproved,
+    ];
+    const match = candidates.find((entry) => entry.id === item.approvalRequestId);
+    if (!match) {
+      return item;
+    }
+    const mapped = mapClassicApprovalItem(match, getTodayDateString());
+    return {
+      ...item,
+      milestoneName: mapped.milestoneName || item.milestoneName,
+      thumbnailUrl: mapped.thumbnailUrl ?? item.thumbnailUrl,
+      preview: mapped.preview,
+    };
+  }
+
+  return item;
 }

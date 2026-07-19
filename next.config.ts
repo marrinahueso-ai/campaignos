@@ -47,19 +47,27 @@ const configWithAnalyzer = withBundleAnalyzer({
   enabled: analyzeEnabled,
 })(nextConfig);
 
-const sentryEnabled = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()) &&
-  process.env.SENTRY_ENABLED !== "false";
+/** Match runtime `isSentryEnabled`: off in local dev unless SENTRY_ENABLED=true. */
+const sentryEnabled =
+  process.env.SENTRY_ENABLED !== "false" &&
+  Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()) &&
+  (process.env.SENTRY_ENABLED === "true" ||
+    process.env.NODE_ENV !== "development");
 
-export default withSentryConfig(configWithAnalyzer, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  // Only upload source maps when an auth token is present (CI / Vercel).
-  silent: true,
-  widenClientFileUpload: true,
-  disableLogger: true,
-  automaticVercelMonitors: false,
-  sourcemaps: {
-    disable: !process.env.SENTRY_AUTH_TOKEN || !sentryEnabled,
-  },
-  telemetry: false,
-});
+// Skip withSentryConfig in local/dev — the webpack plugin is a large memory cost
+// even when Sentry.init({ enabled: false }).
+export default sentryEnabled
+  ? withSentryConfig(configWithAnalyzer, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      // Only upload source maps when an auth token is present (CI / Vercel).
+      silent: true,
+      widenClientFileUpload: true,
+      disableLogger: true,
+      automaticVercelMonitors: false,
+      sourcemaps: {
+        disable: !process.env.SENTRY_AUTH_TOKEN || !sentryEnabled,
+      },
+      telemetry: false,
+    })
+  : configWithAnalyzer;

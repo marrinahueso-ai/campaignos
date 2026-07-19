@@ -22,7 +22,15 @@ fi
 MODE="${1:-run}"
 
 if [[ "$MODE" == "ui" ]]; then
-  exec npx playwright test --config=playwright.config.ts --ui
+  shift || true
+  exec npx playwright test --config=playwright.config.ts --ui "$@"
 fi
 
-exec npx playwright test --config=playwright.config.ts
+# Forward path/filter args (e.g. tests/hey-ralli/smoke/09-….spec.ts).
+# When first arg is a test path (not "run"/"ui"), pass all args through.
+if [[ "$MODE" == "run" ]]; then
+  shift || true
+  exec npx playwright test --config=playwright.config.ts "$@"
+fi
+
+exec npx playwright test --config=playwright.config.ts "$@"

@@ -36,6 +36,15 @@ function workflowFromTitle(title: string): string {
   if (lower.includes("inspiration") || lower.includes("playbook")) {
     return "Creative Setup / Milestones";
   }
+  if (
+    lower.includes("artwork generation") ||
+    lower.includes("generate artwork") ||
+    lower.includes("request changes") ||
+    lower.includes("request-changes") ||
+    lower.includes("re-approval")
+  ) {
+    return "Artwork generation → approvals";
+  }
   if (lower.includes("artwork") || lower.includes("caption")) {
     return "Preview / Generation";
   }

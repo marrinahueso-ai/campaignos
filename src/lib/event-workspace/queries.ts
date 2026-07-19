@@ -11,6 +11,15 @@ import {
   mapLatestContentByItemId,
   mapPublicationScheduleRow,
 } from "@/lib/event-workspace/mappers";
+import {
+  WORKSPACE_ACTIVITY_SELECT,
+  WORKSPACE_APPROVAL_REQUEST_WITH_RELATIONS_SELECT,
+  WORKSPACE_APPROVAL_SELECT,
+  WORKSPACE_ASSET_SELECT,
+  WORKSPACE_COMMUNICATION_SELECT,
+  WORKSPACE_SCHEDULE_SELECT,
+  WORKSPACE_VERSION_SELECT,
+} from "@/lib/event-workspace/selects";
 import type {
   ActivityLogRow,
   ApprovalRequestRow,
@@ -71,19 +80,7 @@ async function mapApprovalRequestRows(
   const supabase = await createClient();
   const { data } = await supabase
     .from("approval_requests")
-    .select(
-      `
-      *,
-      assigned_role:organization_roles!approval_requests_assigned_organization_role_id_fkey (
-        name,
-        contact_name
-      ),
-      assigned_user:organization_users!approval_requests_assigned_user_id_fkey (
-        email,
-        organization_roles ( name )
-      )
-    `,
-    )
+    .select(WORKSPACE_APPROVAL_REQUEST_WITH_RELATIONS_SELECT)
     .in(
       "id",
       rows.map((row) => row.id),
@@ -114,7 +111,7 @@ async function getLatestContentMap(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("communication_versions")
-    .select("*")
+    .select(WORKSPACE_VERSION_SELECT)
     .in("communication_item_id", itemIds)
     .order("version_number", { ascending: false });
 
@@ -132,7 +129,7 @@ export async function getEventActivityLogForEvent(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("activity_log")
-    .select("*")
+    .select(WORKSPACE_ACTIVITY_SELECT)
     .eq("event_id", eventId)
     .order("occurred_at", { ascending: false })
     .limit(40);
@@ -160,21 +157,27 @@ export async function getEventWorkspaceData(
     approvalsResult,
     scheduleResult,
   ] = await Promise.all([
-    supabase.from("event_assets").select("*").eq("event_id", eventId),
-    supabase.from("communication_items").select("*").eq("event_id", eventId),
+    supabase
+      .from("event_assets")
+      .select(WORKSPACE_ASSET_SELECT)
+      .eq("event_id", eventId),
+    supabase
+      .from("communication_items")
+      .select(WORKSPACE_COMMUNICATION_SELECT)
+      .eq("event_id", eventId),
     supabase
       .from("activity_log")
-      .select("*")
+      .select(WORKSPACE_ACTIVITY_SELECT)
       .eq("event_id", eventId)
       .order("occurred_at", { ascending: true }),
     supabase
       .from("approval_requests")
-      .select("*")
+      .select(WORKSPACE_APPROVAL_SELECT)
       .eq("event_id", eventId)
       .order("requested_at", { ascending: false }),
     supabase
       .from("publication_schedule")
-      .select("*")
+      .select(WORKSPACE_SCHEDULE_SELECT)
       .eq("event_id", eventId)
       .order("scheduled_for", { ascending: true }),
   ]);

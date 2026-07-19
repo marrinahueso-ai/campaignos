@@ -35,7 +35,10 @@ import {
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
 import { hasPermission } from "@/lib/access-templates/effective-access";
+import { applyGenerationResultsToSession } from "@/lib/campaign-builder-v2/generation-session";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
 import type {
   ArtworkView,
   CampaignBuilderInspiration,
@@ -733,6 +736,25 @@ export async function generateAllContentAction(
         generationStatusAfter: generationStatus,
         phase: "complete",
       });
+    }
+
+    // Persist into campaign_builder_sessions before returning so a browser
+    // navigation / aborted client fetch cannot lose successful artwork URLs.
+    try {
+      const stored = await loadCampaignBuilderSession(input.eventId);
+      if (stored) {
+        const nextSession = applyGenerationResultsToSession(
+          stored,
+          results,
+          resolved.inspiration,
+        );
+        await saveCampaignBuilderSessionAction(nextSession);
+      }
+    } catch (persistError) {
+      console.error(
+        "Failed to persist generation results to campaign builder session:",
+        persistError,
+      );
     }
 
     return {

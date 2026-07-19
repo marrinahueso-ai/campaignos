@@ -56,7 +56,10 @@ import {
   loadArtworkBackup,
   persistArtworkBackup,
 } from "@/lib/campaign-builder-v2/artwork-backup";
-import { mergeInspirationAfterGeneration, slimInspirationImagesForStorage } from "@/lib/campaign-builder-v2/inspiration-preserve";
+import {
+  mergeInspirationAfterGeneration,
+  resolveInspirationImagesForStorage,
+} from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
   captionPlatformsForFormats,
   findNextMilestoneToGenerate,
@@ -279,34 +282,38 @@ function buildNewMilestone(
   return { milestone, preview };
 }
 
+function readStoredLocalSession(eventId: string): CampaignBuilderSession | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem(localSessionKey(eventId));
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as CampaignBuilderSession;
+  } catch {
+    return null;
+  }
+}
+
 function slimSessionForLocalStorage(
   session: CampaignBuilderSession,
+  previouslyStored?: CampaignBuilderSession | null,
 ): CampaignBuilderSession {
-  // Persist http(s) inspiration URLs only. Never replace a real inspiration
-  // set with [] — that made milestone 2+ generate without the visual base.
-  const inspirationImages = slimInspirationImagesForStorage(
+  // Persist http(s) inspiration URLs only. While a blob upload is in flight,
+  // keep previously stored http inspiration so skip-unchanged cannot treat a
+  // blob-only slim as "unchanged empty" and leave localStorage wiped.
+  const inspirationImages = resolveInspirationImagesForStorage(
     session.inspiration.inspirationImages,
-  ).filter(
-    (image) =>
-      Boolean(image.url?.startsWith("http://") || image.url?.startsWith("https://")),
+    previouslyStored?.inspiration?.inspirationImages,
   );
 
   return {
     ...session,
     inspiration: {
       ...session.inspiration,
-      // If we only had blob previews (not yet uploaded), keep the previous
-      // http set from session rather than writing empty shells.
-      inspirationImages:
-        inspirationImages.length > 0
-          ? inspirationImages
-          : session.inspiration.inspirationImages.filter(
-              (image) =>
-                Boolean(
-                  image.url?.startsWith("http://") ||
-                    image.url?.startsWith("https://"),
-                ),
-            ),
+      inspirationImages,
       uploadedLogoUrl:
         session.inspiration.uploadedLogoUrl?.startsWith("data:")
           ? null
@@ -322,7 +329,8 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
     return false;
   }
 
-  const slimmed = slimSessionForLocalStorage(session);
+  const previouslyStored = readStoredLocalSession(session.eventId);
+  const slimmed = slimSessionForLocalStorage(session, previouslyStored);
   const slimmedJson = JSON.stringify(slimmed);
   if (lastLocalSessionJsonByEventId.get(session.eventId) === slimmedJson) {
     return true;
@@ -516,12 +524,14 @@ export function CampaignBuilderProvider({
     (next: CampaignBuilderSession) => {
       // Write localStorage immediately; debounce only the server round-trip so
       // we do not re-stringify the same session on every timer fire.
+      // Always flush the latest sessionRef on the timer — a stale closure from
+      // an earlier keystroke must not overwrite a completed inspiration upload.
       persistLocalSession(next);
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
       saveTimerRef.current = setTimeout(() => {
-        void saveSessionToServer(next);
+        void saveSessionToServer(sessionRef.current);
       }, 800);
     },
     [saveSessionToServer],
@@ -852,22 +862,40 @@ export function CampaignBuilderProvider({
         const leavingInspiration = currentStepRef.current === "inspiration";
         const enteringMilestoneFlow =
           step === "milestones" || step === "preview" || step === "review";
+        let syncChanged = false;
         if (leavingInspiration || enteringMilestoneFlow) {
           const syncResult = await syncMilestonesToSelectedPlaybook();
           if (!syncResult.success) {
             return;
           }
-          if (syncResult.changed) {
-            await persistSession(sessionRef.current);
-          }
+          syncChanged = syncResult.changed;
+        }
+        // Drop step-local UI noise when leaving so context stays lean.
+        if (leavingInspiration) {
+          setInspirationUploadError(null);
+          // Flush debounced server save so inspiration http URLs are not lost
+          // if the user navigates away before the 800ms timer fires.
+          await flushSave();
+        } else if (syncChanged) {
+          await persistSession(sessionRef.current);
+        }
+        if (step !== "preview" && step !== "review") {
+          setGenerationProgress(null);
         }
         setLocationHash(step);
         setCurrentStep(step);
         updateSession((prev) => ({ ...prev, currentStep: step }));
       })();
     },
-    [persistSession, syncMilestonesToSelectedPlaybook, updateSession],
+    [flushSave, persistSession, syncMilestonesToSelectedPlaybook, updateSession],
   );
+
+  // Clear finished generation progress so non-active step UI state is not kept hot.
+  useEffect(() => {
+    if (!isGeneratingContent && generationProgress) {
+      setGenerationProgress(null);
+    }
+  }, [isGeneratingContent, generationProgress]);
 
   const updateInspiration = useCallback(
     (patch: Partial<CampaignBuilderInspiration>) => {
@@ -1528,6 +1556,27 @@ export function CampaignBuilderProvider({
           error instanceof Error
             ? error.message
             : "Could not generate artwork and captions.";
+
+        // Navigation / Safari "Load failed" aborts the client fetch while the
+        // server action often still finishes. Do not clobber session as failed
+        // — server persists successful artwork into campaign_builder_sessions.
+        const interrupted =
+          (typeof DOMException !== "undefined" &&
+            error instanceof DOMException &&
+            error.name === "AbortError") ||
+          (error instanceof Error &&
+            (error.name === "AbortError" ||
+              /failed to fetch|networkerror|load failed|aborted/i.test(
+                error.message,
+              )));
+
+        if (interrupted) {
+          return {
+            success: false,
+            message:
+              "Generation was interrupted (page left or connection dropped). Refresh Create with AI — completed artwork may already be saved.",
+          };
+        }
 
         const failedBase: CampaignBuilderSession = {
           ...sessionRef.current,

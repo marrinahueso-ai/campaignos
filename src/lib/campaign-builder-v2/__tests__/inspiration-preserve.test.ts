@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   mergeInspirationAfterGeneration,
+  resolveInspirationImagesForStorage,
   slimInspirationImagesForStorage,
 } from "../inspiration-preserve.ts";
 import type { CampaignBuilderInspiration } from "../types.ts";
@@ -111,5 +112,65 @@ describe("inspiration-preserve", () => {
     assert.equal(slimmed.length, 1);
     assert.equal(slimmed[0]?.url, "https://cdn.example/a.png");
     assert.equal(slimmed[0]?.previewUrl, "https://cdn.example/a.png");
+  });
+
+  it("persist resolve keeps prior http inspiration while a blob upload is pending", () => {
+    const previous = [
+      {
+        id: "img-1",
+        label: "poster",
+        url: "https://cdn.example/a.png",
+        previewUrl: "https://cdn.example/a.png",
+      },
+    ];
+    const livePending = [
+      {
+        id: "img-2",
+        label: "new",
+        url: null,
+        previewUrl: "blob:http://localhost/pending",
+      },
+    ];
+
+    const resolved = resolveInspirationImagesForStorage(livePending, previous);
+    assert.equal(resolved.length, 1);
+    assert.equal(resolved[0]?.url, "https://cdn.example/a.png");
+  });
+
+  it("persist resolve allows intentional clear when there is no pending blob", () => {
+    const previous = [
+      {
+        id: "img-1",
+        label: "poster",
+        url: "https://cdn.example/a.png",
+        previewUrl: "https://cdn.example/a.png",
+      },
+    ];
+
+    const resolved = resolveInspirationImagesForStorage([], previous);
+    assert.deepEqual(resolved, []);
+  });
+
+  it("persist resolve prefers live http urls over previous storage", () => {
+    const previous = [
+      {
+        id: "img-1",
+        label: "old",
+        url: "https://cdn.example/old.png",
+        previewUrl: "https://cdn.example/old.png",
+      },
+    ];
+    const live = [
+      {
+        id: "img-2",
+        label: "new",
+        url: "https://cdn.example/new.png",
+        previewUrl: "https://cdn.example/new.png",
+      },
+    ];
+
+    const resolved = resolveInspirationImagesForStorage(live, previous);
+    assert.equal(resolved.length, 1);
+    assert.equal(resolved[0]?.url, "https://cdn.example/new.png");
   });
 });

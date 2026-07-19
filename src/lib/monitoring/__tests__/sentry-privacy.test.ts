@@ -1,6 +1,48 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { scrubSentryEvent } from "../sentry-privacy.ts";
+import { isSentryEnabled, scrubSentryEvent } from "../sentry-privacy.ts";
+
+describe("isSentryEnabled", () => {
+  const original = {
+    SENTRY_ENABLED: process.env.SENTRY_ENABLED,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    NODE_ENV: process.env.NODE_ENV,
+  };
+
+  function restore() {
+    for (const [key, value] of Object.entries(original)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+
+  it("defaults off in development even with a DSN", () => {
+    process.env.NODE_ENV = "development";
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://example@o.ingest.sentry.io/1";
+    delete process.env.SENTRY_ENABLED;
+    assert.equal(isSentryEnabled(), false);
+    restore();
+  });
+
+  it("allows opt-in with SENTRY_ENABLED=true in development", () => {
+    process.env.NODE_ENV = "development";
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://example@o.ingest.sentry.io/1";
+    process.env.SENTRY_ENABLED = "true";
+    assert.equal(isSentryEnabled(), true);
+    restore();
+  });
+
+  it("stays on in production when DSN is set", () => {
+    process.env.NODE_ENV = "production";
+    process.env.NEXT_PUBLIC_SENTRY_DSN = "https://example@o.ingest.sentry.io/1";
+    delete process.env.SENTRY_ENABLED;
+    assert.equal(isSentryEnabled(), true);
+    restore();
+  });
+});
 
 describe("scrubSentryEvent Safari Load failed filter", () => {
   it("drops empty-stack Load failed", () => {

@@ -1,10 +1,12 @@
 # Access control — Phases A–C
 
 **Status:** Phases A–C complete (local + linked Supabase project `zyllfqieeihshnwpakiv`)  
-**Last updated:** July 2026  
+**Last updated:** July 17, 2026  
 **Deferred:** Phase D (org switcher), Phase E (Stripe / org billing) — document when finished  
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
+
+**Re-verification (before/after + test results):** see [PLATFORM_STABILITY_VERIFICATION.md](./PLATFORM_STABILITY_VERIFICATION.md) — includes Stability P0/P1 memory slices.
 
 ---
 
@@ -145,6 +147,13 @@ Do **not** commit `.env.local`.
 
 ---
 
+## Stability slices (platform, not D/E)
+
+| Slice | Goal | Status |
+|-------|------|--------|
+| **P0** | Lean dashboard badge counts (no full scheduling fetch on every nav) | Done |
+| **P1** | Dynamic Inspiration + lean planning/calendar/list event selects | Done |
+
 ## Phase map (for D / E later)
 
 | Phase | Goal | Status |
@@ -152,8 +161,8 @@ Do **not** commit `.env.local`.
 | **A** | Template toggles → real permissions + security hardening | Done |
 | **B** | See all / work assigned (Mode A) + strict list hide (Mode B) | Done |
 | **C** | Membership-scoped RLS on core org/team/event tables | Done |
-| **D** | Org switcher / multi-membership UX | Not started — add section when finished |
-| **E** | Stripe / org billing + `manage_billing` product gates | Not started — add section when finished |
+| **D** | Org switcher / multi-membership UX | Deferred |
+| **E** | Stripe / org billing + `manage_billing` product gates | Deferred |
 
 ---
 

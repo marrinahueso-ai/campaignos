@@ -16,6 +16,7 @@ import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDeta
 import { Button } from "@/components/ui/Button";
 import {
   approveUnifiedItemAction,
+  enrichUnifiedApprovalItemPreviewAction,
   requestUnifiedChangesAction,
 } from "@/lib/approvals-scheduling/actions";
 import { filterItemsByViewScope, canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
@@ -23,6 +24,7 @@ import {
   searchMatchesItem,
   summarizeCounts,
   tabMatchesItem,
+  unifiedItemNeedsPreviewEnrichment,
 } from "@/lib/approvals-scheduling/status";
 import type {
   UnifiedApprovalsPageData,
@@ -286,6 +288,14 @@ export function ApprovalsSchedulingHub({
           onReview={(item) => {
             setReviewItem(item);
             setComment("");
+            if (!unifiedItemNeedsPreviewEnrichment(item)) {
+              return;
+            }
+            void enrichUnifiedApprovalItemPreviewAction(item).then((enriched) => {
+              setReviewItem((current) =>
+                current?.id === enriched.id ? enriched : current,
+              );
+            });
           }}
           onActionError={setActionError}
         />

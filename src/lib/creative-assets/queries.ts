@@ -1,6 +1,7 @@
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventAssetRows } from "@/lib/event-workspace/mappers";
+import { WORKSPACE_ASSET_SELECT } from "@/lib/event-workspace/selects";
 import {
   mapBrandKitItemRow,
   mapEventAssetVersionRow,
@@ -19,6 +20,10 @@ import type {
 } from "@/types/event-workspace";
 import type { BrandKitItemRow } from "@/lib/creative-assets/types";
 
+/**
+ * Full asset rows including generation JSON — used by AI/artwork generation paths.
+ * Event Detail / inspiration UI should prefer getCampaignAssetsForEventDisplay.
+ */
 export async function getCampaignAssetsForEvent(
   eventId: string,
 ): Promise<EventAsset[]> {
@@ -32,6 +37,26 @@ export async function getCampaignAssetsForEvent(
 
   if (error) {
     console.error("Failed to fetch campaign assets:", error.message);
+    return [];
+  }
+
+  return mapEventAssetRows((data ?? []) as EventAssetRow[]);
+}
+
+/** Lean assets for event detail / creative studio display (no generation JSON). */
+export async function getCampaignAssetsForEventDisplay(
+  eventId: string,
+): Promise<EventAsset[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("event_assets")
+    .select(WORKSPACE_ASSET_SELECT)
+    .eq("event_id", eventId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch campaign assets (display):", error.message);
     return [];
   }
 
@@ -84,7 +109,7 @@ export async function getInspirationAssets(): Promise<InspirationAsset[]> {
 
   const { data: assetRows, error } = await supabase
     .from("event_assets")
-    .select("*")
+    .select(WORKSPACE_ASSET_SELECT)
     .eq("status", "uploaded")
     .order("updated_at", { ascending: false });
 
@@ -167,6 +192,7 @@ export async function getCreativeStudioContext(selectedEventId?: string | null) 
 
   const [campaignAssets, assetVersions, inspirationAssets, brandKitItems, schoolProfile] =
     await Promise.all([
+      // Full rows: Creative Studio panels read generationPrompt / settings.
       resolvedEventId ? getCampaignAssetsForEvent(resolvedEventId) : Promise.resolve([]),
       resolvedEventId ? getAssetVersionsForEvent(resolvedEventId) : Promise.resolve(new Map()),
       getInspirationAssets(),

@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { mapEventRows } from "@/lib/events/mappers";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import {
   mapEventPlaybookActivityRow,
   mapEventPlaybookFileRow,
@@ -12,6 +13,13 @@ import {
   mapEventPlaybookTaskRow,
 } from "@/lib/event-playbooks/mappers";
 import { computePlanningProgress } from "@/lib/event-playbooks/progress";
+import {
+  PLAYBOOK_ACTIVITY_SELECT,
+  PLAYBOOK_FILE_SELECT,
+  PLAYBOOK_NOTE_SELECT,
+  PLAYBOOK_TASK_GROUP_SELECT,
+  PLAYBOOK_TASK_SELECT,
+} from "@/lib/event-playbooks/selects";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
 import type {
@@ -53,7 +61,7 @@ export async function getEventPlaybookEvents(
 
   let query = supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
     .neq("communication_strategy", "calendar_only")
     .order("date", { ascending: true });
@@ -85,7 +93,7 @@ export async function getEventPlaybookTasksForEvents(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_playbook_tasks")
-    .select("*")
+    .select(PLAYBOOK_TASK_SELECT)
     .in("event_id", eventIds)
     .order("sort_order", { ascending: true });
 
@@ -111,7 +119,7 @@ export async function getEventPlaybookNotesForEvent(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_playbook_notes")
-    .select("*")
+    .select(PLAYBOOK_NOTE_SELECT)
     .eq("event_id", eventId)
     .order("created_at", { ascending: false });
 
@@ -137,7 +145,7 @@ export async function getEventPlaybookActivityForEvent(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_playbook_activity")
-    .select("*")
+    .select(PLAYBOOK_ACTIVITY_SELECT)
     .eq("event_id", eventId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -175,27 +183,27 @@ export async function getEventPlaybookHubData(
   const [tasksResult, groupsResult, notesResult, filesResult, activityResult] = await Promise.all([
     supabase
       .from("event_playbook_tasks")
-      .select("*")
+      .select(PLAYBOOK_TASK_SELECT)
       .eq("event_id", eventId)
       .order("sort_order", { ascending: true }),
     supabase
       .from("event_playbook_task_groups")
-      .select("*")
+      .select(PLAYBOOK_TASK_GROUP_SELECT)
       .eq("event_id", eventId)
       .order("sort_order", { ascending: true }),
     supabase
       .from("event_playbook_notes")
-      .select("*")
+      .select(PLAYBOOK_NOTE_SELECT)
       .eq("event_id", eventId)
       .order("created_at", { ascending: false }),
     supabase
       .from("event_playbook_files")
-      .select("*")
+      .select(PLAYBOOK_FILE_SELECT)
       .eq("event_id", eventId)
       .order("uploaded_at", { ascending: false }),
     supabase
       .from("event_playbook_activity")
-      .select("*")
+      .select(PLAYBOOK_ACTIVITY_SELECT)
       .eq("event_id", eventId)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -288,7 +296,7 @@ export async function getPastEventsForType(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .eq("event_type", eventType)
     .neq("id", excludeEventId)
     .neq("status", "archived")

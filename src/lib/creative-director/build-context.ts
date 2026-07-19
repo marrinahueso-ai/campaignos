@@ -1,4 +1,7 @@
-import { getInspirationAssets } from "@/lib/creative-assets/queries";
+import {
+  getCampaignAssetsForEvent,
+  getInspirationAssets,
+} from "@/lib/creative-assets/queries";
 import {
   getLatestOrganization,
   getSchoolProfile,
@@ -43,7 +46,9 @@ export async function buildCreativeDirectorContext(
   event: Event,
 ): Promise<CreativeDirectorContext> {
   const organization = await getLatestOrganization();
-  const [workspace, playbook, inspirationAssets, schoolProfile, styleMemory] =
+  // Assets must be full rows (generation_prompt / settings / ai_review).
+  // Event workspace lean selects omit those for UI loaders — never reuse them here.
+  const [workspace, playbook, inspirationAssets, schoolProfile, styleMemory, assets] =
     await Promise.all([
       getEventWorkspaceData(event.id),
       getEventPlaybookData(event.id),
@@ -52,6 +57,7 @@ export async function buildCreativeDirectorContext(
       organization
         ? loadStyleMemory(organization.id)
         : Promise.resolve([]),
+      getCampaignAssetsForEvent(event.id),
     ]);
 
   const profile = organization
@@ -69,6 +75,6 @@ export async function buildCreativeDirectorContext(
     playbookStepCount: playbook?.steps.length ?? 0,
     inspirationAssets,
     styleMemory,
-    assets: workspace?.assets ?? [],
+    assets,
   };
 }

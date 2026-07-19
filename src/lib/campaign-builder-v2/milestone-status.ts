@@ -12,14 +12,14 @@ import type {
   MilestonePreviewStatus,
 } from "./types.ts";
 
-const STALE_GENERATION_MS = 6 * 60 * 1000;
+const STALE_GENERATION_MS = 8 * 60 * 1000;
 
 /**
  * Soft warning before hard stall timeout.
  * Feed + story are generated sequentially (story often uses the feed as reference),
- * so a healthy dual-image run commonly exceeds 2 minutes.
+ * so a healthy dual-image run commonly takes 3–6 minutes locally.
  */
-export const GENERATION_STALL_WARNING_MS = 4 * 60 * 1000;
+export const GENERATION_STALL_WARNING_MS = 5 * 60 * 1000;
 
 /** Hard stall timeout — matches stale generation recovery. */
 export const GENERATION_STALL_TIMEOUT_MS = STALE_GENERATION_MS;

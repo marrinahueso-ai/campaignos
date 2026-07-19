@@ -255,11 +255,14 @@ describe("Approval Routing — queue visibility", () => {
     );
     assert.match(queriesSource, /schedulingAssigneeOrFilter/);
     assert.match(queriesSource, /getSidebarSchedulingBadgeCounts/);
-    // Full-row select stays for Approvals hub, not badges.
+    // Hub list uses lean columns; caption preview loads on demand.
     assert.match(queriesSource, /fetchCampaignBuilderSchedulingItems/);
+    assert.match(queriesSource, /SCHEDULING_LIST_SELECT/);
+    assert.match(queriesSource, /fetchSchedulingItemPreviewFields/);
+    assert.match(queriesSource, /enrichPreviews:\s*false/);
     assert.match(
       queriesSource,
-      /Org-scoped scheduling rows for Approvals hub/,
+      /Org-scoped scheduling rows for Approvals hub list/,
     );
   });
 

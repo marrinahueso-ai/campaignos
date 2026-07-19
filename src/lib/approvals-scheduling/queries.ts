@@ -36,10 +36,24 @@ import {
   startTabTimer,
 } from "@/lib/events-phase3/tab-timing";
 import { createClient } from "@/lib/supabase/server";
+import {
+  SCHEDULING_LIST_SELECT,
+  SCHEDULING_PREVIEW_SELECT,
+} from "@/lib/approvals-scheduling/selects";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { cache } from "react";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
 import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
+
+function normalizeSchedulingListRow(
+  row: Record<string, unknown>,
+): ApprovalSchedulingItemRow {
+  return {
+    ...(row as unknown as ApprovalSchedulingItemRow),
+    caption_text: (row.caption_text as string | null | undefined) ?? null,
+    story_caption: (row.story_caption as string | null | undefined) ?? null,
+  };
+}
 
 function isPublishedPlanningItem(
   item: import("@/types/communications-calendar").PlanningCalendarItem,
@@ -96,10 +110,14 @@ function previewAssetsFromBundle(
   };
 }
 
+/** List rows may omit captions; artwork alone is enough to skip classic dedupe. */
 function schedulingRowHasDisplayPreview(row: ApprovalSchedulingItemRow): boolean {
-  const hasArtwork = Boolean(row.feed_artwork_url || row.story_artwork_url);
-  const hasCaption = Boolean(row.caption_text || row.story_caption);
-  return hasArtwork && hasCaption;
+  return Boolean(
+    row.feed_artwork_url ||
+      row.story_artwork_url ||
+      row.caption_text ||
+      row.story_caption,
+  );
 }
 
 function previewAssetsFromSchedulingRow(
@@ -159,7 +177,10 @@ const resolveScopedSchedulingEventIds = cache(
   },
 );
 
-/** Org-scoped scheduling rows for Approvals hub (full rows; not for badges). */
+/**
+ * Org-scoped scheduling rows for Approvals hub list (lean columns).
+ * Caption bodies load on demand via fetchSchedulingItemPreviewFields.
+ */
 const fetchCampaignBuilderSchedulingItems = cache(
   async function fetchCampaignBuilderSchedulingItems(): Promise<
     ApprovalSchedulingItemRow[]
@@ -172,7 +193,7 @@ const fetchCampaignBuilderSchedulingItems = cache(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("approval_scheduling_items")
-      .select("*")
+      .select(SCHEDULING_LIST_SELECT)
       .in("event_id", eventIds)
       .order("requested_at", { ascending: false });
 
@@ -185,9 +206,45 @@ const fetchCampaignBuilderSchedulingItems = cache(
       return [];
     }
 
-    return (data ?? []) as ApprovalSchedulingItemRow[];
+    return ((data ?? []) as Record<string, unknown>[]).map(
+      normalizeSchedulingListRow,
+    );
   },
 );
+
+export async function fetchSchedulingItemPreviewFields(
+  schedulingItemId: string,
+): Promise<{
+  captionText: string | null;
+  storyCaptionSnippet: string | null;
+  feedArtworkUrl: string | null;
+  storyArtworkUrl: string | null;
+} | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_scheduling_items")
+    .select(SCHEDULING_PREVIEW_SELECT)
+    .eq("id", schedulingItemId)
+    .maybeSingle();
+
+  if (error?.code === "42P01" || error || !data) {
+    return null;
+  }
+
+  const row = data as {
+    caption_text: string | null;
+    story_caption: string | null;
+    feed_artwork_url: string | null;
+    story_artwork_url: string | null;
+  };
+
+  return {
+    captionText: row.caption_text,
+    storyCaptionSnippet: row.story_caption,
+    feedArtworkUrl: row.feed_artwork_url,
+    storyArtworkUrl: row.story_artwork_url,
+  };
+}
 
 function schedulingAssigneeOrFilter(actor: ApprovalActor): string {
   const parts = [`assigned_user_id.eq.${actor.organizationUserId}`];
@@ -316,7 +373,8 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
   const [role, membership, queue, planning, schedulingRows] = await Promise.all([
     getCurrentCampaignRole(),
     getActiveMembership(),
-    getApprovalQueueOverviewForCurrentUser(),
+    // Hub list: skip classic version/Meta preview enrichment (load on open).
+    getApprovalQueueOverviewForCurrentUser(undefined, { enrichPreviews: false }),
     getPlanningCalendarData(),
     fetchCampaignBuilderSchedulingItems(),
   ]);
@@ -545,14 +603,14 @@ export async function getAssignedApprovalsSchedulingCount(): Promise<number> {
   return assignedApprovalsCount;
 }
 
-/** Exact-event scheduling rows — Event Detail Approvals tab. */
+/** Exact-event scheduling rows — Event Detail Approvals tab (lean list columns). */
 async function fetchSchedulingItemsForEvent(
   eventId: string,
 ): Promise<ApprovalSchedulingItemRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("approval_scheduling_items")
-    .select("*")
+    .select(SCHEDULING_LIST_SELECT)
     .eq("event_id", eventId)
     .order("requested_at", { ascending: false });
 
@@ -567,7 +625,9 @@ async function fetchSchedulingItemsForEvent(
     return [];
   }
 
-  return (data ?? []) as ApprovalSchedulingItemRow[];
+  return ((data ?? []) as Record<string, unknown>[]).map(
+    normalizeSchedulingListRow,
+  );
 }
 
 function splitQueueOverview(
@@ -679,8 +739,9 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     .filter((item) => item.eventId === eventId)
     .map((item) => mapClassicApprovalItem(item, today));
 
+  // Meta bundles only when list rows lack artwork (captions load on Review open).
   const needsMetaPreview = schedulingRows.some(
-    (row) => !schedulingRowHasDisplayPreview(row),
+    (row) => !row.feed_artwork_url && !row.story_artwork_url,
   );
   let metaPreviewMs = 0;
   let bundles: MetaPublishBundle[] = [];

@@ -37,9 +37,10 @@ describe("targeted event tab speed contracts", () => {
     assert.match(approvals, /schedulingRowHasDisplayPreview/);
     assert.match(approvals, /classicQueueNeedsPreviewEnrichment/);
     assert.match(approvals, /resolveApprovalQueueBaseForEvent/);
+    // Lean list omits captions; Meta skip is artwork-URL based.
     assert.match(
       approvals,
-      /needsMetaPreview = schedulingRows\.some\(\s*\(row\) => !schedulingRowHasDisplayPreview\(row\)/,
+      /needsMetaPreview = schedulingRows\.some\(\s*\(row\) => !row\.feed_artwork_url && !row\.story_artwork_url/,
     );
   });
 

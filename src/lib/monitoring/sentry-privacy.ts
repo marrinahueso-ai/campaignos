@@ -162,9 +162,28 @@ export function getSentryEnvironment(): string {
   );
 }
 
+/**
+ * Sentry on/off for runtime SDK init.
+ *
+ * - Explicit `SENTRY_ENABLED=false` → always off
+ * - Explicit `SENTRY_ENABLED=true` → on when DSN is set (incl. local debugging)
+ * - Default in `development` → **off** (avoids webpack wrap + SDK memory locally
+ *   even when a DSN is present in `.env.local`)
+ * - Preview/production → on when DSN is set
+ */
 export function isSentryEnabled(): boolean {
   if (process.env.SENTRY_ENABLED === "false") {
     return false;
   }
-  return Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim());
+  const hasDsn = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN?.trim());
+  if (!hasDsn) {
+    return false;
+  }
+  if (process.env.SENTRY_ENABLED === "true") {
+    return true;
+  }
+  if (process.env.NODE_ENV === "development") {
+    return false;
+  }
+  return true;
 }

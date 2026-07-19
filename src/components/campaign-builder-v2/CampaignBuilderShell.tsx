@@ -6,6 +6,10 @@ import { ArrowLeft } from "lucide-react";
 import { CampaignBuilderProvider, useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderStepper } from "@/components/campaign-builder-v2/CampaignBuilderStepper";
 import { CampaignHealthGauge } from "@/components/campaign-builder-v2/CampaignHealthGauge";
+// Keep Inspiration static: it is the default landing step. Dynamic + loading
+// fallback remounts flashed a pulse skeleton on every Soft refresh / context
+// churn and felt like the Inspiration screen was blinking.
+import { InspirationStep } from "@/components/campaign-builder-v2/InspirationStep";
 import type {
   BrandKitOption,
   CampaignBuilderSession,
@@ -15,14 +19,6 @@ import type {
 } from "@/lib/campaign-builder-v2/types";
 import type { SetupLogoOption } from "@/lib/artwork-v2/setup-logos";
 import type { CampaignBuilderSchoolColors } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
-
-const InspirationStep = dynamic(
-  () =>
-    import("@/components/campaign-builder-v2/InspirationStep").then((module) => ({
-      default: module.InspirationStep,
-    })),
-  { loading: () => <CampaignBuilderStepFallback /> },
-);
 
 const MilestonesStep = dynamic(
   () =>
