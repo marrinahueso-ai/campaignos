@@ -132,6 +132,7 @@ export async function updateTaskHubTaskAction(
     dueDate?: string | null;
     assigneeName?: string | null;
     assigneeInitials?: string | null;
+    assigneeUserId?: string | null;
   },
   taskTitleForActivity?: string,
 ): Promise<{ success: boolean; error: string | null }> {
@@ -159,6 +160,10 @@ export async function updateTaskHubTaskAction(
             : null
           : undefined
         : input.assigneeInitials,
+    assigneeUserId:
+      input.assigneeUserId === undefined
+        ? undefined
+        : input.assigneeUserId?.trim() || null,
   };
 
   const ok = await updateEventPlaybookTask(
@@ -183,6 +188,7 @@ export async function createTaskHubTaskAction(
     dueDate?: string | null;
     assigneeName?: string | null;
     assigneeInitials?: string | null;
+    assigneeUserId?: string | null;
   },
 ): Promise<{ success: boolean; error: string | null; taskId: string | null }> {
   const access = await assertTaskHubEventAccess(eventId);
@@ -199,12 +205,14 @@ export async function createTaskHubTaskAction(
   const assigneeInitials =
     input.assigneeInitials?.trim() ||
     (assigneeName ? deriveInitials(assigneeName) : null);
+  const assigneeUserId = input.assigneeUserId?.trim() || null;
 
   const taskId = await createEventPlaybookTask(eventId, {
     title: trimmed,
     dueDate: input.dueDate ?? null,
     assigneeName,
     assigneeInitials,
+    assigneeUserId,
   });
 
   if (!taskId) {

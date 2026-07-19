@@ -50,10 +50,15 @@ export function TasksV2MainTable({
         tasks = tasks.filter((task) => task.status === statusFilter);
       }
       if (personFilter.trim()) {
-        const query = personFilter.trim().toLowerCase();
-        tasks = tasks.filter((task) =>
-          (task.assigneeName ?? "").toLowerCase().includes(query),
-        );
+        const query = personFilter.trim();
+        tasks = tasks.filter((task) => {
+          if (task.assigneeUserId && task.assigneeUserId === query) {
+            return true;
+          }
+          return (task.assigneeName ?? "")
+            .toLowerCase()
+            .includes(query.toLowerCase());
+        });
       }
       return sum + tasks.length;
     }, 0);
@@ -97,6 +102,7 @@ export function TasksV2MainTable({
             key={group.eventId}
             group={group}
             canEdit={canEdit}
+            orgMembers={orgMembers}
             searchQuery={searchQuery}
             statusFilter={statusFilter}
             sortMode={sortMode}

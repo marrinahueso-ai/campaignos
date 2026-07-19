@@ -15,11 +15,20 @@ function effectiveDueDate(task: TaskHubTaskItem): string | null {
   return task.monday?.mondayDueDate ?? task.dueDate ?? null;
 }
 
+/** Prefer auth user id; fall back to legacy name match for unmigrated rows. */
 export function taskMatchesViewer(
   task: TaskHubTaskItem,
   viewer: TasksV2Viewer,
 ): boolean {
-  return taskAssigneeMatchesUser(task.assigneeName, viewer);
+  if (viewer.userId && task.assigneeUserId) {
+    return task.assigneeUserId === viewer.userId;
+  }
+
+  if (viewer.userId && task.assigneeUserId === null) {
+    return taskAssigneeMatchesUser(task.assigneeName, viewer);
+  }
+
+  return false;
 }
 
 export function filterTasksForMyView(

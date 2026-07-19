@@ -263,11 +263,19 @@ export async function getTaskHubPageDataForEvent(
       canAccessEvent(access, eventId),
   );
 
-  const taskRows = await getEventPlaybookTasksForEvents([eventId]);
+  const organization = await getLatestOrganization();
+  const [taskRows, orgUsers, workspace] = await Promise.all([
+    getEventPlaybookTasksForEvents([eventId]),
+    organization
+      ? getOrganizationUsers(organization.id)
+      : Promise.resolve([]),
+    organization
+      ? getOrganizationWorkspaceData(organization.id)
+      : Promise.resolve(null),
+  ]);
   const { mapEventPlaybookTaskRow } = await import(
     "@/lib/event-playbooks/mappers"
   );
-  const { deriveInitials } = await import("@/lib/task-hub/org-members");
 
   const eventContext = {
     eventId,
@@ -282,24 +290,9 @@ export async function getTaskHubPageDataForEvent(
     monday: null,
   }));
 
-  const assigneeMap = new Map<string, { id: string; displayName: string; initials: string }>();
-  for (const task of tasks) {
-    const name = task.assigneeName?.trim();
-    if (!name) {
-      continue;
-    }
-    const key = name.toLowerCase();
-    if (!assigneeMap.has(key)) {
-      assigneeMap.set(key, {
-        id: key,
-        displayName: name,
-        initials: task.assigneeInitials?.trim() || deriveInitials(name),
-      });
-    }
-  }
-  const orgMembers = [...assigneeMap.values()].sort((left, right) =>
-    left.displayName.localeCompare(right.displayName),
-  );
+  const orgMembers = workspace
+    ? buildTaskHubOrgMembers(workspace, orgUsers)
+    : [];
 
   const doneCount = tasks.filter((task) => task.status === "done").length;
   const openTasks = tasks.filter((task) => isOpenTaskStatus(task.status)).length;

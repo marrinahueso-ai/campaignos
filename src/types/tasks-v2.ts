@@ -12,6 +12,8 @@ export type TasksV2Priority = "high" | "medium" | "low";
 export type TasksV2DisplayStatus = EventPlaybookTaskStatus | "deferred";
 
 export interface TasksV2Viewer {
+  /** auth.users id — primary My Tasks match key */
+  userId: string | null;
   displayName: string | null;
   email: string | null;
 }

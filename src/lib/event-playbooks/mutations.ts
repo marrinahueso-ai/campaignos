@@ -30,6 +30,7 @@ export async function createEventPlaybookTask(
     dueDate?: string | null;
     assigneeName?: string | null;
     assigneeInitials?: string | null;
+    assigneeUserId?: string | null;
     groupId?: string | null;
   },
 ): Promise<string | null> {
@@ -64,6 +65,7 @@ export async function createEventPlaybookTask(
       due_date: input.dueDate ?? null,
       assignee_name: input.assigneeName ?? null,
       assignee_initials: input.assigneeInitials ?? null,
+      assignee_user_id: input.assigneeUserId ?? null,
       group_id: input.groupId ?? null,
       sort_order: nextSort,
     })
@@ -97,6 +99,7 @@ export async function updateEventPlaybookTask(
     dueDate?: string | null;
     assigneeName?: string | null;
     assigneeInitials?: string | null;
+    assigneeUserId?: string | null;
   },
   taskTitleForActivity?: string,
 ): Promise<boolean> {
@@ -119,6 +122,9 @@ export async function updateEventPlaybookTask(
   }
   if (input.assigneeInitials !== undefined) {
     updates.assignee_initials = input.assigneeInitials;
+  }
+  if (input.assigneeUserId !== undefined) {
+    updates.assignee_user_id = input.assigneeUserId;
   }
 
   const { error } = await supabase

@@ -311,7 +311,7 @@ export function TasksV2Shell({
           }
           description={
             personalEmpty
-              ? "Tasks assigned to you (by name matching your profile) will show here."
+              ? "Tasks assigned to you will show here. Use the Owner column to assign people."
               : eventFilter
                 ? "Generate tasks with AI or add one manually for this event."
                 : "Tasks from your accessible campaigns and events will appear here."

@@ -29,9 +29,13 @@ export interface TaskHubEventOption {
 }
 
 export interface TaskHubOrgMember {
+  /** organization_users.id */
   id: string;
+  /** auth.users id — stored on event_playbook_tasks.assignee_user_id */
+  userId: string | null;
   displayName: string;
   initials: string;
+  email: string | null;
 }
 
 export interface TaskHubTaskItem extends EventPlaybookTask {

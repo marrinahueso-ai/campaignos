@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { taskAssigneeMatchesUser } from "../../task-hub/access.ts";
 import {
   filterEventGroupsForMyView,
   filterTasksForMyView,
+  taskMatchesViewer,
 } from "../my-tasks-filter.ts";
 import type { TaskHubTaskItem } from "../../../types/task-hub.ts";
 import type { TasksV2EventGroup } from "../../../types/tasks-v2.ts";
+
+const VIEWER_USER_ID = "11111111-1111-4111-8111-111111111111";
+const OTHER_USER_ID = "22222222-2222-4222-8222-222222222222";
 
 function makeTask(
   overrides: Partial<TaskHubTaskItem> & Pick<TaskHubTaskItem, "id" | "title">,
@@ -18,6 +21,7 @@ function makeTask(
     dueDate: null,
     assigneeName: null,
     assigneeInitials: null,
+    assigneeUserId: null,
     groupId: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -32,30 +36,62 @@ function makeTask(
   };
 }
 
-describe("taskAssigneeMatchesUser", () => {
-  it("matches display name", () => {
+describe("taskMatchesViewer", () => {
+  const viewer = {
+    userId: VIEWER_USER_ID,
+    displayName: "Marina Osborn",
+    email: "marina@example.com",
+  };
+
+  it("matches by assignee_user_id", () => {
     assert.equal(
-      taskAssigneeMatchesUser("Marina Osborn", {
-        displayName: "Marina Osborn",
-        email: "marina@example.com",
-      }),
+      taskMatchesViewer(
+        makeTask({
+          id: "1",
+          title: "Mine",
+          assigneeUserId: VIEWER_USER_ID,
+          assigneeName: "Wrong Name",
+        }),
+        viewer,
+      ),
       true,
     );
   });
 
-  it("rejects other assignees", () => {
+  it("rejects other user ids", () => {
     assert.equal(
-      taskAssigneeMatchesUser("Alex Other", {
-        displayName: "Marina Osborn",
-        email: "marina@example.com",
-      }),
+      taskMatchesViewer(
+        makeTask({
+          id: "1",
+          title: "Theirs",
+          assigneeUserId: OTHER_USER_ID,
+          assigneeName: "Marina Osborn",
+        }),
+        viewer,
+      ),
       false,
+    );
+  });
+
+  it("falls back to name match when assignee_user_id is null", () => {
+    assert.equal(
+      taskMatchesViewer(
+        makeTask({
+          id: "1",
+          title: "Legacy",
+          assigneeUserId: null,
+          assigneeName: "Marina Osborn",
+        }),
+        viewer,
+      ),
+      true,
     );
   });
 });
 
 describe("filterTasksForMyView", () => {
   const viewer = {
+    userId: VIEWER_USER_ID,
     displayName: "Marina Osborn",
     email: "marina@example.com",
   };
@@ -64,6 +100,7 @@ describe("filterTasksForMyView", () => {
     makeTask({
       id: "1",
       title: "Mine open",
+      assigneeUserId: VIEWER_USER_ID,
       assigneeName: "Marina Osborn",
       status: "todo",
       dueDate: "2026-07-20",
@@ -71,21 +108,21 @@ describe("filterTasksForMyView", () => {
     makeTask({
       id: "2",
       title: "Mine overdue",
-      assigneeName: "Marina",
+      assigneeUserId: VIEWER_USER_ID,
       status: "in_progress",
       dueDate: "2026-07-01",
     }),
     makeTask({
       id: "3",
       title: "Mine done",
-      assigneeName: "Marina Osborn",
+      assigneeUserId: VIEWER_USER_ID,
       status: "done",
       dueDate: "2026-07-10",
     }),
     makeTask({
       id: "4",
       title: "Someone else",
-      assigneeName: "Alex Other",
+      assigneeUserId: OTHER_USER_ID,
       status: "todo",
       dueDate: "2026-07-20",
     }),
@@ -131,7 +168,7 @@ describe("filterEventGroupsForMyView", () => {
           makeTask({
             id: "1",
             title: "Mine",
-            assigneeName: "Marina Osborn",
+            assigneeUserId: VIEWER_USER_ID,
             status: "todo",
           }),
         ],
@@ -149,7 +186,7 @@ describe("filterEventGroupsForMyView", () => {
             id: "2",
             title: "Theirs",
             eventId: "event-2",
-            assigneeName: "Alex",
+            assigneeUserId: OTHER_USER_ID,
             status: "todo",
             event: {
               eventId: "event-2",
@@ -164,7 +201,11 @@ describe("filterEventGroupsForMyView", () => {
 
     const filtered = filterEventGroupsForMyView(
       groups,
-      { displayName: "Marina Osborn", email: null },
+      {
+        userId: VIEWER_USER_ID,
+        displayName: "Marina Osborn",
+        email: null,
+      },
       "my_tasks",
     );
     assert.equal(filtered.length, 1);

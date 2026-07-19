@@ -18,7 +18,9 @@ async function resolveTasksV2Viewer(): Promise<TasksV2Viewer> {
     getActiveMembership(),
   ]);
   return {
-    displayName: authUser?.displayName ?? null,
+    userId: authUser?.id ?? membership?.user.userId ?? null,
+    displayName:
+      authUser?.displayName ?? membership?.user.displayName ?? null,
     email: authUser?.email ?? membership?.user.email ?? null,
   };
 }
