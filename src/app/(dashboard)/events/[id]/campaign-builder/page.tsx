@@ -92,8 +92,8 @@ export default async function CampaignBuilderPage({
 
   if (!event) {
     // Stale sidebar "last event" (e.g. after switching or founding a new org)
-    // used to 404 — send users to Events instead.
-    redirect("/events");
+    // — land on the Create with AI hub instead of Events.
+    redirect("/create-with-ai");
   }
 
   const brandKits: BrandKitOption[] = [

@@ -122,7 +122,8 @@ function resolveCampaignBuilderHref(
   if (lastEventId) {
     return `/events/${lastEventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
   }
-  return "/events";
+  // Hub page — works with zero events and respects access there.
+  return "/create-with-ai";
 }
 
 function handleCampaignBuilderClick(
@@ -135,8 +136,8 @@ function handleCampaignBuilderClick(
   const hash = hashPart.replace(/^#/, "");
   const targetEventId = extractCampaignBuilderEventId(pathPart);
 
-  if (pathPart === "/events" && !targetEventId) {
-    window.location.assign("/events");
+  if (pathPart === "/create-with-ai" || (pathPart === "/events" && !targetEventId)) {
+    window.location.assign("/create-with-ai");
     return;
   }
 
@@ -144,7 +145,11 @@ function handleCampaignBuilderClick(
 }
 
 function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
-  return extractCampaignBuilderEventId(pathname) !== null;
+  return (
+    pathname === "/create-with-ai" ||
+    pathname.startsWith("/create-with-ai/") ||
+    extractCampaignBuilderEventId(pathname) !== null
+  );
 }
 
 function isCreativeStudioActive(pathname: string, hash: string): boolean {
@@ -203,11 +208,11 @@ const navItems: {
     icon: Megaphone,
     isActive: isCampaignsActive,
   },
-  ...(isCampaignBuilderV2Enabled()
+      ...(isCampaignBuilderV2Enabled()
     ? [
         {
           label: "Create with AI",
-          href: "/events",
+          href: "/create-with-ai",
           icon: WandSparkles,
           resolveHref: resolveCampaignBuilderHref,
           isActive: isCampaignBuilderActive,

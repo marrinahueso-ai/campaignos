@@ -53,6 +53,7 @@ interface TasksV2SidebarProps {
   /** When set, source is fixed to this event and the select is locked. */
   lockedEventId?: string | null;
   hideMyViews?: boolean;
+  activeMyView?: string | null;
   onViewSelect?: (viewId: string) => void;
 }
 
@@ -65,6 +66,7 @@ export function TasksV2Sidebar({
   preferredEventId,
   lockedEventId = null,
   hideMyViews = false,
+  activeMyView = null,
   onViewSelect,
 }: TasksV2SidebarProps) {
   const refreshTasksTab = useEventTabMutationRefresh("tasks");
@@ -405,29 +407,25 @@ export function TasksV2Sidebar({
         <section className="border border-cos-border bg-cos-card p-4">
           <h2 className="font-display text-base text-cos-text">My Views</h2>
           <ul className="mt-3 space-y-1">
-            {MY_VIEWS.map((view) => (
-              <li key={view.id}>
-                <button
-                  type="button"
-                  onClick={() => onViewSelect?.(view.id)}
-                  className={cn(
-                    "flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-                    "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
-                  )}
-                >
-                  {view.label}
-                </button>
-              </li>
-            ))}
-            <li>
-              <button
-                type="button"
-                className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-sm text-cos-accent hover:bg-cos-bg"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Create new view
-              </button>
-            </li>
+            {MY_VIEWS.map((view) => {
+              const isActive = activeMyView === view.id;
+              return (
+                <li key={view.id}>
+                  <button
+                    type="button"
+                    onClick={() => onViewSelect?.(view.id)}
+                    className={cn(
+                      "flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                      isActive
+                        ? "bg-cos-bg font-medium text-cos-text"
+                        : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                    )}
+                  >
+                    {view.label}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

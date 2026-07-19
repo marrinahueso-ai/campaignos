@@ -1,8 +1,13 @@
 import "server-only";
 
-import { getActiveMembership } from "@/lib/auth/membership-queries";
-import { getAuthUser } from "@/lib/auth/queries";
+import {
+  accessHasPermission,
+  canAccessEvent,
+  filterEventsByAccess,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   areEventPlaybookTablesAvailable,
   getEventPlaybookEvents,
@@ -12,15 +17,11 @@ import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queri
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import {
   resolveTaskHubViewScope,
-  resolveVisibleCommittees,
   taskHubScopeLabel,
-  canEditTaskHub,
-  type TaskHubUserContext,
 } from "@/lib/task-hub/access";
 import { groupTasksByCommittee } from "@/lib/task-hub/group-tasks";
 import { buildTaskHubOrgMembers } from "@/lib/task-hub/org-members";
 import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
-import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   getMondayBoardMappingForOrganization,
   getMondayConnectionForOrganization,
@@ -30,18 +31,6 @@ import { getMondayBoardDetails } from "@/lib/monday/client";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { fetchMondayOverlaysForTasks } from "@/lib/monday/sync";
 import type { TaskHubPageData } from "@/types/task-hub";
-
-function buildUserContext(
-  authUser: Awaited<ReturnType<typeof getAuthUser>>,
-  membership: Awaited<ReturnType<typeof getActiveMembership>>,
-  campaignRole: Awaited<ReturnType<typeof getCurrentCampaignRole>>,
-): TaskHubUserContext {
-  return {
-    campaignRole,
-    displayName: authUser?.displayName ?? null,
-    email: authUser?.email ?? membership?.user.email ?? null,
-  };
-}
 
 function emptyTaskHubPage(scopeLabel: string, tablesAvailable: boolean): TaskHubPageData {
   return {
@@ -59,18 +48,40 @@ function emptyTaskHubPage(scopeLabel: string, tablesAvailable: boolean): TaskHub
   };
 }
 
-export async function getTaskHubPageData(): Promise<TaskHubPageData> {
-  const [organization, authUser, membership, campaignRole, tablesAvailable] =
-    await Promise.all([
-      getLatestOrganization(),
-      getAuthUser(),
-      getActiveMembership(),
-      getCurrentCampaignRole(),
-      areEventPlaybookTablesAvailable(),
-    ]);
+/** Events the user may see/work on for Tasks (access templates + Mode B list). */
+function filterEventsForTaskHub<T extends { id: string }>(
+  events: T[],
+  access: Awaited<ReturnType<typeof getEffectiveAccess>>,
+): T[] {
+  if (!access) {
+    return [];
+  }
+
+  const workAccessible = events.filter((event) => canAccessEvent(access, event.id));
+  return filterEventsByAccess(access, workAccessible);
+}
+
+export type GetTaskHubPageDataOptions = {
+  /** When true, load optional Monday board/overlays. Tasks v2 leaves this off. */
+  includeMonday?: boolean;
+};
+
+export async function getTaskHubPageData(
+  options: GetTaskHubPageDataOptions = {},
+): Promise<TaskHubPageData> {
+  const includeMonday = options.includeMonday === true;
+
+  const [organization, campaignRole, tablesAvailable, access] = await Promise.all([
+    getLatestOrganization(),
+    getCurrentCampaignRole(),
+    areEventPlaybookTablesAvailable(),
+    getEffectiveAccess(),
+  ]);
 
   const scope = resolveTaskHubViewScope(campaignRole);
-  const scopeLabel = taskHubScopeLabel(scope);
+  const scopeLabel = access?.accessAssignedEventsOnly
+    ? "Assigned events"
+    : "Accessible events";
 
   if (!organization) {
     return emptyTaskHubPage(scopeLabel, tablesAvailable);
@@ -85,81 +96,78 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     return emptyTaskHubPage(scopeLabel, tablesAvailable);
   }
 
-  const user = buildUserContext(authUser, membership, campaignRole);
-  const visibleCommittees = resolveVisibleCommittees(workspace.committees, user);
+  const canEdit = Boolean(access && accessHasPermission(access, "draft_edit"));
 
-  const [events, orgUsers] = await Promise.all([
+  const [allEvents, orgUsers] = await Promise.all([
     getEventPlaybookEvents(organization.id),
     getOrganizationUsers(organization.id),
   ]);
+  const events = filterEventsForTaskHub(allEvents, access);
   const eventIds = events.map((event) => event.id);
-  const taskRows = await getEventPlaybookTasksForEvents(eventIds);
+  const taskRows =
+    eventIds.length > 0
+      ? await getEventPlaybookTasksForEvents(eventIds)
+      : [];
 
+  // All committees — visibility is event-access, not chair-of-committee.
   const committees = groupTasksByCommittee({
     events,
     taskRows,
     workspace,
-    visibleCommittees,
+    visibleCommittees: workspace.committees,
   });
 
   const orgMembers = buildTaskHubOrgMembers(workspace, orgUsers);
 
-  const mondayIntegrationEnabled = isMondayIntegrationEnabled();
-  const mondayConnectionPromise = mondayIntegrationEnabled
-    ? getMondayConnectionForOrganization(organization.id)
-    : Promise.resolve(null);
-  const mondayMappingPromise = mondayIntegrationEnabled
-    ? getMondayBoardMappingForOrganization(organization.id)
-    : Promise.resolve(null);
-
-  const [mondayConnection, mondayMapping] = await Promise.all([
-    mondayConnectionPromise,
-    mondayMappingPromise,
-  ]);
-  const mondaySyncEnabled =
-    mondayIntegrationEnabled &&
-    Boolean(mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId);
-
+  let mondaySyncEnabled = false;
   let mondayBoard = null;
-  if (mondaySyncEnabled && mondayConnection && mondayMapping) {
-    const visibleCommitteeNames =
-      scope === "all_committees"
-        ? null
-        : visibleCommittees.map((committee) => committee.name);
 
-    try {
-      const boardDetails = await getMondayBoardDetails(
-        mondayConnection.accessToken,
-        mondayMapping.mondayBoardId,
-      );
-      mondayBoard = await fetchMondayBoardForTaskHub({
-        accessToken: mondayConnection.accessToken,
-        boardId: mondayMapping.mondayBoardId,
-        boardName: boardDetails?.name ?? "Monday board",
-        columnMap: mondayMapping.columnMap,
-        accountSlug: mondayConnection.accountSlug,
-        events,
-        visibleCommitteeNames,
-      });
-    } catch (error) {
-      console.error("Failed to load Monday board for Task Hub:", error);
-    }
-  }
+  if (includeMonday && isMondayIntegrationEnabled()) {
+    const [mondayConnection, mondayMapping] = await Promise.all([
+      getMondayConnectionForOrganization(organization.id),
+      getMondayBoardMappingForOrganization(organization.id),
+    ]);
+    mondaySyncEnabled = Boolean(
+      mondayConnection?.mondaySyncEnabled && mondayMapping?.columnMap.statusColumnId,
+    );
 
-  if (mondaySyncEnabled && !mondayBoard) {
-    const allTaskIds = committees.flatMap((group) => group.tasks.map((task) => task.id));
-    const overlays = await fetchMondayOverlaysForTasks({
-      organizationId: organization.id,
-      taskIds: allTaskIds,
-      columnMap: mondayMapping?.columnMap ?? null,
-      accountSlug: mondayConnection?.accountSlug ?? null,
-    });
+    if (mondaySyncEnabled && mondayConnection && mondayMapping) {
+      try {
+        const boardDetails = await getMondayBoardDetails(
+          mondayConnection.accessToken,
+          mondayMapping.mondayBoardId,
+        );
+        mondayBoard = await fetchMondayBoardForTaskHub({
+          accessToken: mondayConnection.accessToken,
+          boardId: mondayMapping.mondayBoardId,
+          boardName: boardDetails?.name ?? "Monday board",
+          columnMap: mondayMapping.columnMap,
+          accountSlug: mondayConnection.accountSlug,
+          events,
+          visibleCommitteeNames: null,
+        });
+      } catch (error) {
+        console.error("Failed to load Monday board for Task Hub:", error);
+      }
 
-    for (const group of committees) {
-      group.tasks = group.tasks.map((task) => ({
-        ...task,
-        monday: overlays.get(task.id) ?? null,
-      }));
+      if (!mondayBoard) {
+        const allTaskIds = committees.flatMap((group) =>
+          group.tasks.map((task) => task.id),
+        );
+        const overlays = await fetchMondayOverlaysForTasks({
+          organizationId: organization.id,
+          taskIds: allTaskIds,
+          columnMap: mondayMapping.columnMap,
+          accountSlug: mondayConnection.accountSlug,
+        });
+
+        for (const group of committees) {
+          group.tasks = group.tasks.map((task) => ({
+            ...task,
+            monday: overlays.get(task.id) ?? null,
+          }));
+        }
+      }
     }
   }
 
@@ -208,7 +216,7 @@ export async function getTaskHubPageData(): Promise<TaskHubPageData> {
     openTasks,
     mondaySyncEnabled,
     mondayBoard,
-    canEdit: canEditTaskHub(scope),
+    canEdit,
     orgMembers,
     events: eventOptions,
   };
@@ -221,20 +229,21 @@ export type EventTaskHubContext = {
 
 /**
  * Event Detail Tasks tab — exact eventId tasks only.
- * No org workspace, org users, unrelated events, or Monday board.
+ * No org workspace, unrelated events, or Monday board.
  */
 export async function getTaskHubPageDataForEvent(
   eventId: string,
   eventMeta: { title: string; date: string },
   context?: EventTaskHubContext,
 ): Promise<TaskHubPageData> {
-  const [campaignRole, tablesAvailable] = await Promise.all([
+  const [campaignRole, tablesAvailable, access] = await Promise.all([
     context?.campaignRole
       ? Promise.resolve(context.campaignRole)
       : getCurrentCampaignRole(),
     context?.tablesAvailable !== undefined
       ? Promise.resolve(context.tablesAvailable)
       : areEventPlaybookTablesAvailable(),
+    getEffectiveAccess(),
   ]);
 
   const scope = resolveTaskHubViewScope(campaignRole);
@@ -243,6 +252,16 @@ export async function getTaskHubPageDataForEvent(
   if (!tablesAvailable) {
     return emptyTaskHubPage(scopeLabel, false);
   }
+
+  if (access && !canAccessEvent(access, eventId)) {
+    return emptyTaskHubPage("Assigned events", tablesAvailable);
+  }
+
+  const canEdit = Boolean(
+    access &&
+      accessHasPermission(access, "draft_edit") &&
+      canAccessEvent(access, eventId),
+  );
 
   const taskRows = await getEventPlaybookTasksForEvents([eventId]);
   const { mapEventPlaybookTaskRow } = await import(
@@ -313,7 +332,7 @@ export async function getTaskHubPageDataForEvent(
     openTasks,
     mondaySyncEnabled: false,
     mondayBoard: null,
-    canEdit: canEditTaskHub(scope),
+    canEdit,
     orgMembers,
     events: [
       {

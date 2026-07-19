@@ -1,7 +1,7 @@
 # Platform stability verification — Phases A–C + memory slices
 
 **Verified:** 2026-07-18 (local + Supabase `zyllfqieeihshnwpakiv`) — includes Phase C2 broader RLS  
-**Goal:** Stable single-org platform that functions as designed. Phase D (org switcher) and Phase E (Stripe) deferred.
+**Goal:** Stable single-org platform that functions as designed. Phase D (org switcher MVP) done — see [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md). Phase E (Stripe) deferred.
 
 Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md)
 
@@ -135,13 +135,14 @@ Configured via `HEY_RALLI_*` in `.env.local` (gitignored; script loads only thos
 
 ## Known gaps (not regressions)
 
-1. Phase D (org switcher) shipping separately; Phase E (Stripe) still deferred.  
+1. Phase E (Stripe / org billing) still deferred. Phase D org switcher MVP is shipped (cookie + membership validation + header switcher when >1 active memberships).  
 2. CampaignBuilderProvider is still a large client module (safe step-state trim only; full rewrite deferred).  
 3. AI/artwork generation paths still use full `event_assets` rows (by design).  
 4. Broader table RLS for vendors/inbox/comms covered by Phase C2 (done); residual is template-key vs membership (app-layer by design).  
 5. Site-wide school-year filter UI is not on every surface yet (Events Home + org-scoped queries are coherent; no new filter chrome in P2).  
 6. Local Next can die on transient Supabase `fetch failed` in middleware — restart `npm run dev` if “connect server” appears.  
-7. Public storage HTTP GET residual until signed-URL migration (see STORAGE_RLS.md).
+7. Public storage HTTP GET residual until signed-URL migration (see STORAGE_RLS.md).  
+8. Phase D polish (optional): invite-pending clarity for multi-org switcher; Playwright smoke for org switch; no dedicated E2E yet.
 
 ---
 

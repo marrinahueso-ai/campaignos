@@ -1,6 +1,8 @@
 import "server-only";
 
 import { getAiAssistantStatus } from "@/lib/ai";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { getAuthUser } from "@/lib/auth/queries";
 import { flattenCommitteeTasks } from "@/lib/task-hub/grouping";
 import {
   getTaskHubPageData,
@@ -8,10 +10,24 @@ import {
 } from "@/lib/task-hub/queries";
 import { computeTasksV2SummaryStats } from "@/lib/tasks-v2/summary-stats";
 import { groupTasksByEvent } from "@/lib/tasks-v2/group-by-event";
-import type { TasksV2PageData } from "@/types/tasks-v2";
+import type { TasksV2PageData, TasksV2Viewer } from "@/types/tasks-v2";
+
+async function resolveTasksV2Viewer(): Promise<TasksV2Viewer> {
+  const [authUser, membership] = await Promise.all([
+    getAuthUser(),
+    getActiveMembership(),
+  ]);
+  return {
+    displayName: authUser?.displayName ?? null,
+    email: authUser?.email ?? membership?.user.email ?? null,
+  };
+}
 
 export async function getTasksV2PageData(): Promise<TasksV2PageData> {
-  const hubData = await getTaskHubPageData();
+  const [hubData, viewer] = await Promise.all([
+    getTaskHubPageData({ includeMonday: false }),
+    resolveTasksV2Viewer(),
+  ]);
   const allTasks = flattenCommitteeTasks(hubData.committees);
   const eventGroups = groupTasksByEvent(allTasks);
   const summary = computeTasksV2SummaryStats(allTasks);
@@ -23,6 +39,7 @@ export async function getTasksV2PageData(): Promise<TasksV2PageData> {
     summary,
     aiAvailable: aiStatus.available,
     aiUnavailableReason: aiStatus.reason,
+    viewer,
   };
 }
 
@@ -32,10 +49,12 @@ export async function getTasksV2PageDataForEvent(
   eventMeta: { title: string; date: string },
   context?: import("@/lib/task-hub/queries").EventTaskHubContext,
 ): Promise<TasksV2PageData> {
-  const hubData = await getTaskHubPageDataForEvent(eventId, eventMeta, context);
+  const [hubData, viewer] = await Promise.all([
+    getTaskHubPageDataForEvent(eventId, eventMeta, context),
+    resolveTasksV2Viewer(),
+  ]);
   const allTasks = flattenCommitteeTasks(hubData.committees);
   const eventGroups = groupTasksByEvent(allTasks);
-  // Keep summary shape for type compatibility; embedded shell may hide the cards.
   const summary = computeTasksV2SummaryStats(allTasks);
   const aiStatus = getAiAssistantStatus();
 
@@ -45,5 +64,6 @@ export async function getTasksV2PageDataForEvent(
     summary,
     aiAvailable: aiStatus.available,
     aiUnavailableReason: aiStatus.reason,
+    viewer,
   };
 }

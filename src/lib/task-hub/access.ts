@@ -109,3 +109,34 @@ export function canEditTaskHub(scope: TaskHubViewScope): boolean {
 export function canAssignInScope(scope: TaskHubViewScope): boolean {
   return scope === "all_committees" || scope === "chaired_committees";
 }
+
+/** Match task assignee_name to the signed-in user (name/email fuzzy). */
+export function taskAssigneeMatchesUser(
+  assigneeName: string | null | undefined,
+  user: Pick<TaskHubUserContext, "displayName" | "email">,
+): boolean {
+  const assignee = assigneeName?.trim();
+  if (!assignee) {
+    return false;
+  }
+
+  if (user.displayName && personTokensMatch(user.displayName, assignee)) {
+    return true;
+  }
+
+  if (user.email && personTokensMatch(user.email, assignee)) {
+    return true;
+  }
+
+  const emailLocal = user.email?.split("@")[0]?.trim() ?? "";
+  if (
+    emailLocal &&
+    normalizePersonToken(assignee).replace(/\s+/g, "").includes(
+      normalizePersonToken(emailLocal).replace(/\s+/g, ""),
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
