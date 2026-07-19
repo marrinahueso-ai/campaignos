@@ -33,6 +33,7 @@ import { canUseRoleSimulator } from "@/lib/auth/role-simulator-access";
 import {
   buildInviteLoginUrl,
   resolveAuthSiteOrigin,
+  resolvePublicEmailAuthOrigin,
   toPublicInviteUrl,
 } from "@/lib/auth/invite-url";
 import { TEAM_INVITE_TTL_DAYS } from "@/lib/auth/invite-constants";
@@ -67,6 +68,7 @@ import {
   setPendingFoundingAccessCookie,
 } from "@/lib/auth/founding-access";
 import { createPendingFoundingAccessLinkToken } from "@/lib/auth/founding-access-link-token";
+import { buildFoundingSetupEmailUrl } from "@/lib/auth/founding-setup-link";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
 import {
   getAuthenticatedAppPath,
@@ -520,18 +522,35 @@ export async function signInWithEmailAction(
     isEmailConfigured() &&
     isSupabaseAdminConfigured()
   ) {
+    // Emailed links must land on the public site — never localhost.
+    const emailOrigin = resolvePublicEmailAuthOrigin(
+      headersList.get("origin"),
+      headersList.get("x-forwarded-host") ?? headersList.get("host"),
+      headersList.get("x-forwarded-proto"),
+    );
+    const emailRedirectTo = new URL(redirectTo.pathname + redirectTo.search, emailOrigin);
+
     const admin = createAdminClient();
     const { data: linkData, error: linkError } =
       await admin.auth.admin.generateLink({
         type: "magiclink",
         email,
         options: {
-          redirectTo: redirectTo.toString(),
+          redirectTo: emailRedirectTo.toString(),
         },
       });
 
-    const actionUrl = linkData?.properties?.action_link?.trim() ?? "";
-    if (linkError || !actionUrl) {
+    const actionLink = linkData?.properties?.action_link?.trim() ?? "";
+    const setupEmailUrl = actionLink
+      ? buildFoundingSetupEmailUrl({
+          emailRedirectTo: emailRedirectTo.toString(),
+          actionLink,
+          hashedToken: linkData?.properties?.hashed_token,
+          verificationType: linkData?.properties?.verification_type,
+        })
+      : null;
+
+    if (linkError || !setupEmailUrl) {
       return {
         error:
           linkError?.message ??
@@ -542,7 +561,7 @@ export async function signInWithEmailAction(
 
     const sendResult = await sendOrganizationWelcomeEmail({
       toEmail: email,
-      actionUrl,
+      actionUrl: setupEmailUrl,
     });
 
     if (!sendResult.success) {

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { ArrowLeft, Mail } from "lucide-react";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { TeamAccessAccessTemplatesPanel } from "@/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel";
 import { TeamAccessAddRosterPersonModal } from "@/components/settings-v2/team-access/TeamAccessAddRosterPersonModal";
@@ -23,7 +25,6 @@ import {
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
 import { Button } from "@/components/ui/Button";
-import { Mail } from "lucide-react";
 import {
   claimOrganizationAccessAction,
   removeTeamMemberAction,
@@ -275,29 +276,38 @@ export function TeamAccessShell({
 
   return (
     <div className="space-y-8">
-      <SettingsV2PageHeader
-        title="People & Responsibilities"
-        description="Manage people, event assignments, login access, and access templates."
-        className="mb-0"
-        actions={
-          canManage && hubTab === "people" ? (
-            <>
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
-                onClick={() => setAddRosterOpen(true)}
-              >
-                Add Person
-              </Button>
-              <Button type="button" size="md" onClick={() => openInviteModal()}>
-                <Mail className="h-4 w-4" />
-                Invite to Login
-              </Button>
-            </>
-          ) : null
-        }
-      />
+      <div>
+        <Link
+          href="/settings"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+          Back to Settings
+        </Link>
+        <SettingsV2PageHeader
+          title="People & Responsibilities"
+          description="Manage people, event assignments, login access, and access templates."
+          className="mb-0"
+          actions={
+            canManage && hubTab === "people" ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setAddRosterOpen(true)}
+                >
+                  Add Person
+                </Button>
+                <Button type="button" size="md" onClick={() => openInviteModal()}>
+                  <Mail className="h-4 w-4" />
+                  Invite to Login
+                </Button>
+              </>
+            ) : null
+          }
+        />
+      </div>
 
       <div className="flex flex-wrap gap-2 border-b border-cos-border pb-px">
         {(

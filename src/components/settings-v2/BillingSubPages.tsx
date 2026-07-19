@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -16,165 +17,161 @@ export function BillingSubPageShell({
 }: BillingSubPageShellProps) {
   return (
     <div className="space-y-6">
-      <SettingsV2PageHeader
-        title={title}
-        description={description}
-        actions={
-          <Button variant="secondary" size="sm" href="/settings/billing-plan">
-            Back to billing
-          </Button>
-        }
-      />
+      <div>
+        <Link
+          href="/settings/billing-plan"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+          Back to Billing & Plan
+        </Link>
+        <SettingsV2PageHeader title={title} description={description} />
+      </div>
       {children}
     </div>
   );
 }
 
-export function BillingPaymentMethodContent() {
+interface BillingSubPageProps {
+  isFoundingPartner?: boolean;
+  planLabel?: string;
+}
+
+export function BillingPaymentMethodContent({
+  isFoundingPartner = false,
+}: BillingSubPageProps) {
   return (
     <BillingSubPageShell
       title="Payment Method"
-      description="Manage the card or bank account used for your Hey Ralli subscription."
+      description="Manage the card used for your Hey Ralli subscription."
     >
       <SettingsV2Card title="Default payment method">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-cos-text">Visa ending in 4242</p>
-            <p className="text-xs text-cos-muted">Expires 12/2028</p>
-          </div>
-          <span className="rounded-full border border-cos-border px-2 py-0.5 text-xs font-medium text-cos-muted">
-            Default
-          </span>
-        </div>
-        <Button className="mt-4" variant="secondary" href="/settings/billing-plan/payment-method">
-          Update payment method
-        </Button>
-      </SettingsV2Card>
-
-      <SettingsV2Card title="Add payment method">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button variant="secondary">Credit card</Button>
-          <Button variant="secondary">Bank account</Button>
-        </div>
+        {isFoundingPartner ? (
+          <>
+            <p className="text-sm font-medium text-cos-text">No payment required</p>
+            <p className="mt-1 text-sm text-cos-muted">
+              Founding partner access does not need a card on file.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-cos-text">No payment method on file</p>
+            <p className="mt-1 text-sm text-cos-muted">
+              Card checkout is not connected yet. You will add a payment method
+              here when billing goes live for your organization.
+            </p>
+          </>
+        )}
       </SettingsV2Card>
     </BillingSubPageShell>
   );
 }
 
-export function BillingHistoryContent() {
-  const rows = [
-    { date: "Jul 12, 2026", description: "Professional plan", amount: "$29.00", status: "Paid" },
-    { date: "Jun 12, 2026", description: "Professional plan", amount: "$29.00", status: "Paid" },
-    { date: "May 12, 2026", description: "Professional plan", amount: "$29.00", status: "Paid" },
-  ];
-
+export function BillingHistoryContent({
+  isFoundingPartner = false,
+}: BillingSubPageProps) {
   return (
     <BillingSubPageShell
       title="Billing History"
-      description="View past invoices and download receipts."
+      description="Invoices and receipts for your organization."
     >
-      <SettingsV2Card>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-cos-border text-xs uppercase tracking-wide text-cos-muted">
-                <th className="py-2 pr-4 font-medium">Date</th>
-                <th className="py-2 pr-4 font-medium">Description</th>
-                <th className="py-2 pr-4 font-medium">Amount</th>
-                <th className="py-2 pr-4 font-medium">Status</th>
-                <th className="py-2 font-medium">Invoice</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.date} className="border-b border-cos-border last:border-b-0">
-                  <td className="py-3 pr-4 text-cos-text">{row.date}</td>
-                  <td className="py-3 pr-4 text-cos-muted">{row.description}</td>
-                  <td className="py-3 pr-4 text-cos-text">{row.amount}</td>
-                  <td className="py-3 pr-4 text-emerald-700">{row.status}</td>
-                  <td className="py-3">
-                    <Link href="#" className="text-cos-text hover:text-cos-primary">
-                      Download
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <SettingsV2Card title="Invoices">
+        {isFoundingPartner ? (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            No invoices yet. Founding partner billing is waived during early
+            access, so there is nothing to download.
+          </p>
+        ) : (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            No invoices yet. When paid billing is enabled for your organization,
+            receipts will appear here.
+          </p>
+        )}
       </SettingsV2Card>
     </BillingSubPageShell>
   );
 }
 
-export function BillingManagePlanContent() {
+export function BillingManagePlanContent({
+  isFoundingPartner = false,
+  planLabel = "Professional",
+}: BillingSubPageProps) {
   return (
     <BillingSubPageShell
       title="Manage Plan"
-      description="Review your current plan, usage, and renewal details."
+      description="Review your current plan and renewal details."
     >
-      <div className="grid gap-6 lg:grid-cols-2">
-        <SettingsV2Card title="Professional plan">
-          <p className="text-sm text-cos-muted">
-            Unlimited campaigns, AI credits, team members, and 10 GB storage.
-          </p>
-          <p className="mt-2 text-sm text-cos-text">Renews Aug 12, 2026</p>
-          <Button className="mt-4" variant="secondary" href="/settings/billing-plan/upgrade-downgrade">
-            Change plan
-          </Button>
-        </SettingsV2Card>
+      <SettingsV2Card title={planLabel}>
+        {isFoundingPartner ? (
+          <>
+            <p className="text-sm leading-relaxed text-cos-muted">
+              Founding partner benefits — full workspace access with billing
+              waived during early access.
+            </p>
+            <p className="mt-2 text-sm text-cos-text">No renewal date while waived</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed text-cos-muted">
+              Your organization plan details will appear here once paid billing
+              is connected.
+            </p>
+            <Button
+              className="mt-4"
+              variant="secondary"
+              href="/settings/billing-plan/upgrade-downgrade"
+            >
+              View plan options
+            </Button>
+          </>
+        )}
+      </SettingsV2Card>
 
-        <SettingsV2Card title="Usage this month">
-          {[
-            { label: "Campaigns", value: 68 },
-            { label: "AI credits", value: 42 },
-            { label: "Team members", value: 55 },
-            { label: "Storage", value: 24 },
-          ].map((item) => (
-            <div key={item.label} className="mb-3 last:mb-0">
-              <div className="mb-1 flex justify-between text-sm">
-                <span className="text-cos-muted">{item.label}</span>
-                <span className="text-cos-text">{item.value}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-cos-bg">
-                <div
-                  className="h-2 rounded-full bg-cos-primary"
-                  style={{ width: `${item.value}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </SettingsV2Card>
-      </div>
-
-      <Link
-        href="/settings/billing-plan/cancel-plan"
-        className="text-sm text-cos-muted hover:text-cos-error-text"
-      >
-        Cancel subscription
-      </Link>
+      {!isFoundingPartner ? (
+        <Link
+          href="/settings/billing-plan/cancel-plan"
+          className="text-sm text-cos-muted hover:text-cos-error-text"
+        >
+          Cancel subscription
+        </Link>
+      ) : null}
     </BillingSubPageShell>
   );
 }
 
-export function BillingUpgradeDowngradeContent() {
+export function BillingUpgradeDowngradeContent({
+  isFoundingPartner = false,
+}: BillingSubPageProps) {
   const plans = [
-    { name: "Starter", price: "$0", description: "Basic tools for small PTOs" },
-    { name: "Professional", price: "$29", description: "Full campaign studio + AI", active: true },
-    { name: "Premium", price: "$59", description: "Advanced analytics + priority support" },
+    {
+      name: "Starter",
+      price: "$0",
+      description: "Core tools to get your first campaigns organized.",
+    },
+    {
+      name: "Professional",
+      price: "$29",
+      description: "Full campaign studio + AI for growing teams.",
+      active: !isFoundingPartner,
+    },
+    {
+      name: "Premium",
+      price: "$59",
+      description: "Advanced analytics + priority support.",
+    },
   ];
 
   return (
     <BillingSubPageShell
       title="Upgrade / Downgrade"
-      description="Compare plans and switch when your PTO is ready."
+      description="Compare plan options. Paid switches unlock when billing is connected."
     >
-      <div className="mb-4 flex gap-2">
-        <Button size="sm">Monthly</Button>
-        <Button size="sm" variant="secondary">
-          Yearly
-        </Button>
-      </div>
+      {isFoundingPartner ? (
+        <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
+          You are on Founding Partner access. Plan changes are not required while
+          billing is waived.
+        </p>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((plan) => (
@@ -184,9 +181,9 @@ export function BillingUpgradeDowngradeContent() {
             <Button
               className="mt-4"
               variant={plan.active ? "secondary" : "primary"}
-              disabled={plan.active}
+              disabled
             >
-              {plan.active ? "Current plan" : "Select plan"}
+              {plan.active ? "Current plan" : "Coming soon"}
             </Button>
           </SettingsV2Card>
         ))}
@@ -195,35 +192,29 @@ export function BillingUpgradeDowngradeContent() {
   );
 }
 
-export function BillingCancelPlanContent() {
+export function BillingCancelPlanContent({
+  isFoundingPartner = false,
+}: BillingSubPageProps) {
   return (
     <BillingSubPageShell
       title="Cancel Plan"
-      description="We're sorry to see you go. Review what happens before canceling."
+      description="Review what happens before ending a paid subscription."
     >
-      <SettingsV2Card title="Before you cancel">
-        <p className="text-sm leading-relaxed text-cos-muted">
-          Your workspace stays active until the end of the current billing period.
-          You can export your data anytime from Advanced settings.
-        </p>
+      <SettingsV2Card title="Cancellation">
+        {isFoundingPartner ? (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            Founding partner access is not a paid subscription, so there is
+            nothing to cancel here. Contact support if you need to close the
+            workspace.
+          </p>
+        ) : (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            Paid cancellation is not available yet. When billing is connected,
+            your workspace will stay active through the end of the billing period
+            if you cancel.
+          </p>
+        )}
       </SettingsV2Card>
-
-      <SettingsV2Card title="Before you go">
-        <ul className="space-y-2 text-sm text-cos-muted">
-          <li>
-            <Link href="/settings/advanced" className="text-cos-text hover:text-cos-primary">
-              Download your data
-            </Link>
-          </li>
-          <li>
-            <Link href="/help" className="text-cos-text hover:text-cos-primary">
-              Contact support
-            </Link>
-          </li>
-        </ul>
-      </SettingsV2Card>
-
-      <Button variant="danger">Yes, cancel subscription</Button>
     </BillingSubPageShell>
   );
 }

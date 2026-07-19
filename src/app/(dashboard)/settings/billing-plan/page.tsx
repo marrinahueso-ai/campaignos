@@ -16,7 +16,7 @@ export default async function BillingPlanSettingsPage() {
     <BillingPlanContent
       planLabel={isFoundingPartner ? "Founding Partner" : "Professional"}
       isFoundingPartner={isFoundingPartner}
-      renewalLabel={isFoundingPartner ? null : "Renews Aug 12, 2026"}
+      renewalLabel={null}
     />
   );
 }

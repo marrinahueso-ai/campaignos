@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { CampaignBuilderShell } from "@/components/campaign-builder-v2/CampaignBuilderShell";
 import {
   getCachedCampaignBuilderBrandSetup,
@@ -91,7 +91,9 @@ export default async function CampaignBuilderPage({
   ]);
 
   if (!event) {
-    notFound();
+    // Stale sidebar "last event" (e.g. after switching or founding a new org)
+    // used to 404 — send users to Events instead.
+    redirect("/events");
   }
 
   const brandKits: BrandKitOption[] = [

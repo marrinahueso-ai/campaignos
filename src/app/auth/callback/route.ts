@@ -11,14 +11,40 @@ import { resolvePendingFoundingAccessForCallback } from "@/lib/auth/founding-acc
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
+type EmailOtpType =
+  | "signup"
+  | "invite"
+  | "magiclink"
+  | "recovery"
+  | "email_change"
+  | "email";
+
+const EMAIL_OTP_TYPES = new Set<string>([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
+
+function resolveEmailOtpType(raw: string | null): EmailOtpType | null {
+  if (!raw || !EMAIL_OTP_TYPES.has(raw)) {
+    return null;
+  }
+  return raw as EmailOtpType;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const otpType = resolveEmailOtpType(searchParams.get("type"));
   const invite = searchParams.get("invite");
   const setupIntent = searchParams.get("setup") === "1";
   const requestedNext = safeNextPath(searchParams.get("next"));
 
-  if (!code) {
+  if (!code && !(tokenHash && otpType)) {
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
@@ -47,7 +73,13 @@ export async function GET(request: NextRequest) {
     },
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } =
+    tokenHash && otpType
+      ? await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: otpType,
+        })
+      : await supabase.auth.exchangeCodeForSession(code!);
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=auth`);

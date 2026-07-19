@@ -33,6 +33,7 @@ export function DashboardShell({
           assignedApprovalsCount={assignedApprovalsCount}
           changeRequestsCount={changeRequestsCount}
           inboxUnreadCount={inboxUnreadCount}
+          activeOrganizationId={activeOrganizationId}
         />
       </div>
 
@@ -50,6 +51,7 @@ export function DashboardShell({
               assignedApprovalsCount={assignedApprovalsCount}
               changeRequestsCount={changeRequestsCount}
               inboxUnreadCount={inboxUnreadCount}
+              activeOrganizationId={activeOrganizationId}
               onNavigate={() => setMobileOpen(false)}
             />
           </div>

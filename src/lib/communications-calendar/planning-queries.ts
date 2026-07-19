@@ -12,6 +12,10 @@ import {
 import { getEventsInDateRange } from "@/lib/events/queries";
 import { computePostingHeatmap } from "@/lib/posting-analytics/compute-heatmap";
 import { fetchPublishedPostTimestamps } from "@/lib/posting-analytics/fetch-publish-history";
+import {
+  getStoredMetaConnectionForOrganization,
+  isMetaConnectionConfigured,
+} from "@/lib/meta-publishing/connection";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { PlanningCalendarData } from "@/types/communications-calendar";
@@ -20,6 +24,10 @@ import type { PlanningCalendarItem } from "@/types/communications-calendar";
 export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
   const organization = await getLatestOrganization();
   const schoolYear = organization?.schoolYear ?? null;
+  const orgMeta = await getStoredMetaConnectionForOrganization(
+    organization?.id ?? null,
+  );
+  const metaConnected = isMetaConnectionConfigured(orgMeta);
 
   const [activeSchoolYear, raw, importedList, publishedAtTimestamps] =
     await Promise.all([
@@ -28,7 +36,7 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
         : Promise.resolve(null),
       fetchUnifiedCalendarRawData(schoolYear, organization?.id ?? null),
       getImportedEventsForCalendarList(),
-      fetchPublishedPostTimestamps(),
+      metaConnected ? fetchPublishedPostTimestamps() : Promise.resolve([] as string[]),
     ]);
 
   let importCleanup: PlanningCalendarData["importCleanup"] = null;
@@ -49,11 +57,14 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     };
   }
 
-  const postingHeatmap = computePostingHeatmap({
-    timezone: organization?.timezone ?? "America/Chicago",
-    preferredPostingHours: organization?.preferredPostingHours ?? null,
-    publishedAtTimestamps,
-  });
+  // Best-times heat sheet is Meta-backed — hide when this org has no Meta connection.
+  const postingHeatmap = metaConnected
+    ? computePostingHeatmap({
+        timezone: organization?.timezone ?? "America/Chicago",
+        preferredPostingHours: organization?.preferredPostingHours ?? null,
+        publishedAtTimestamps,
+      })
+    : null;
 
   return {
     items: buildUnifiedCalendarItemsFromRaw(raw),

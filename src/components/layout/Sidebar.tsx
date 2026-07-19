@@ -46,15 +46,28 @@ function notifyLastEventIdListeners(): void {
   }
 }
 
-function getLastEventIdSnapshot(): string | null {
-  if (typeof window === "undefined") {
-    return null;
+function lastEventStorageKey(organizationId: string | null | undefined): string {
+  if (!organizationId) {
+    return LAST_EVENT_STORAGE_KEY;
   }
-  return localStorage.getItem(LAST_EVENT_STORAGE_KEY);
+  return `${LAST_EVENT_STORAGE_KEY}:${organizationId}`;
 }
 
-function setLastEventIdSnapshot(eventId: string): void {
-  localStorage.setItem(LAST_EVENT_STORAGE_KEY, eventId);
+function readLastEventId(organizationId: string | null | undefined): string | null {
+  if (typeof window === "undefined" || !organizationId) {
+    return null;
+  }
+  return localStorage.getItem(lastEventStorageKey(organizationId));
+}
+
+function writeLastEventId(
+  organizationId: string | null | undefined,
+  eventId: string,
+): void {
+  if (!organizationId) {
+    return;
+  }
+  localStorage.setItem(lastEventStorageKey(organizationId), eventId);
   notifyLastEventIdListeners();
 }
 
@@ -216,6 +229,8 @@ interface SidebarProps {
   assignedApprovalsCount?: number;
   changeRequestsCount?: number;
   inboxUnreadCount?: number;
+  /** Scopes "last event" for Create with AI so orgs never share ids. */
+  activeOrganizationId?: string | null;
 }
 
 type NavBadgeVariant = "approval" | "changeRequest";
@@ -277,6 +292,7 @@ export function Sidebar({
   assignedApprovalsCount = 0,
   changeRequestsCount = 0,
   inboxUnreadCount = 0,
+  activeOrganizationId = null,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -288,7 +304,7 @@ export function Sidebar({
   );
   const lastEventId = useSyncExternalStore(
     subscribeToLastEventId,
-    getLastEventIdSnapshot,
+    () => readLastEventId(activeOrganizationId),
     () => null,
   );
 
@@ -299,11 +315,15 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
+    notifyLastEventIdListeners();
+  }, [activeOrganizationId]);
+
+  useEffect(() => {
     const eventId = extractEventId(pathname);
     if (eventId) {
-      setLastEventIdSnapshot(eventId);
+      writeLastEventId(activeOrganizationId, eventId);
     }
-  }, [pathname]);
+  }, [pathname, activeOrganizationId]);
 
   function toggleExpanded() {
     setExpanded((prev) => {

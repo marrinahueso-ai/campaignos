@@ -71,3 +71,23 @@ export function resolveAuthSiteOrigin(
 
   return resolveSiteOrigin(requestOrigin);
 }
+
+/**
+ * Email clients cannot open localhost auth redirects. Prefer the public site
+ * origin when building magic-link / setup URLs that will be emailed.
+ */
+export function resolvePublicEmailAuthOrigin(
+  requestOrigin: string | null,
+  host?: string | null,
+  proto?: string | null,
+): string {
+  const origin = resolveAuthSiteOrigin(requestOrigin, host, proto);
+  try {
+    if (isLocalHostname(new URL(origin).hostname)) {
+      return DEFAULT_SITE_URL;
+    }
+  } catch {
+    // keep resolved origin
+  }
+  return origin;
+}
