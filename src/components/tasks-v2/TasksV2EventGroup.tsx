@@ -51,7 +51,7 @@ export function TasksV2EventGroupSection({
   const tasksSyncKey = initialGroup.tasks
     .map(
       (task) =>
-        `${task.id}:${task.status}:${task.sortOrder}:${task.title}:${task.assigneeUserId ?? ""}:${task.assigneeName ?? ""}`,
+        `${task.id}:${task.status}:${task.sortOrder}:${task.title}:${task.assigneeUserId ?? ""}:${task.assigneeName ?? ""}:${task.dueDate ?? ""}`,
     )
     .join("|");
 
@@ -179,6 +179,34 @@ export function TasksV2EventGroupSection({
     });
   }
 
+  function handleDueDateChange(task: TaskHubTaskItem, dueDate: string | null) {
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === task.id ? { ...item, dueDate } : item,
+      ),
+    );
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.event.eventId,
+        task.id,
+        { dueDate },
+        task.title,
+      );
+      setPendingTaskIds((current) => {
+        const pendingNext = new Set(current);
+        pendingNext.delete(task.id);
+        return pendingNext;
+      });
+      if (!result.success) {
+        setTasks(initialGroup.tasks);
+      } else {
+        await refreshTasksTab();
+      }
+    });
+  }
+
   function handleDrop(targetTaskId: string, event: React.DragEvent) {
     event.preventDefault();
     setDragOverTaskId(null);
@@ -262,6 +290,9 @@ export function TasksV2EventGroupSection({
                   dragOver={dragOverTaskId === task.id}
                   onStatusChange={(status) => handleStatusChange(task, status)}
                   onAssigneeChange={(next) => handleAssigneeChange(task, next)}
+                  onDueDateChange={(dueDate) =>
+                    handleDueDateChange(task, dueDate)
+                  }
                   onDragOver={(event) => {
                     event.preventDefault();
                     setDragOverTaskId(task.id);
