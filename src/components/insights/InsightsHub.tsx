@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  BarChart3,
-  Download,
-  Eye,
-  Heart,
-  MessageCircle,
-  RefreshCw,
-  Share2,
-  TrendingUp,
-} from "lucide-react";
+import { BarChart3, Download, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ConnectionHealthBanner } from "@/components/insights/ConnectionHealthBanner";
@@ -32,14 +23,6 @@ import { cn } from "@/lib/utils/cn";
 interface InsightsHubProps {
   data: InsightsPageData;
 }
-
-const KPI_ICONS = {
-  reach: Eye,
-  engagement: TrendingUp,
-  likes: Heart,
-  comments: MessageCircle,
-  shares: Share2,
-} as const;
 
 export function InsightsHub({ data }: InsightsHubProps) {
   const router = useRouter();
@@ -152,7 +135,6 @@ export function InsightsHub({ data }: InsightsHubProps) {
         <div className="space-y-6">
           <InsightsKpiCards
             kpis={data.kpis}
-            icons={KPI_ICONS}
             comparisonLabel="vs prior"
           />
 

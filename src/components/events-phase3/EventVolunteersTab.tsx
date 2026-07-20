@@ -276,7 +276,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
 
   if (phase === "loading" && !payload) {
     return (
-      <section className="rounded-xl border border-cos-border bg-white p-6">
+      <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-6">
         <p className="text-sm text-cos-muted">Loading volunteer overview…</p>
       </section>
     );
@@ -284,7 +284,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
 
   if (!payload?.success) {
     return (
-      <section className="rounded-xl border border-cos-border bg-white p-6">
+      <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-6">
         <p className="text-sm text-red-700">
           {payload && !payload.success
             ? payload.error
@@ -397,7 +397,7 @@ function VolunteerEmptyState({
   error: string | null;
 }) {
   return (
-    <section className="rounded-xl border border-cos-border bg-white p-5 sm:p-8">
+    <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5 sm:p-8">
       <div className="mx-auto max-w-xl text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-cos-border bg-cos-bg">
           <Users className="h-6 w-6 text-cos-muted" strokeWidth={1.5} />
@@ -471,7 +471,7 @@ function VolunteerConnectionReview({
 }) {
   if (!snapshot) {
     return (
-      <section className="rounded-xl border border-cos-border bg-white p-6">
+      <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-6">
         <p className="text-sm text-cos-muted">Reading signup…</p>
         {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
         <div className="mt-4 flex gap-2">
@@ -498,7 +498,7 @@ function VolunteerConnectionReview({
   ];
 
   return (
-    <section className="space-y-4 rounded-xl border border-cos-border bg-white p-5 sm:p-6">
+    <section className="space-y-4 rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5 sm:p-6">
       <div>
         <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
           Review detected data
@@ -727,8 +727,8 @@ function VolunteerOverview({
   const campaignBuilderHref = `/events/${event.id}/campaign-builder`;
 
   return (
-    <div className="space-y-5">
-      <header className="rounded-xl border border-cos-border bg-white p-5 sm:p-6">
+    <div className="space-y-4">
+      <header className="rounded-2xl border border-cos-border/70 bg-cos-bg-alt p-4 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs text-cos-muted">
@@ -737,7 +737,7 @@ function VolunteerOverview({
                 ? formatSyncTime(source.lastSuccessfulSyncAt)
                 : "Not yet synced"}
             </p>
-            <h2 className="mt-1 font-display text-3xl text-cos-text">
+            <h2 className="mt-1 font-display text-2xl text-cos-text sm:text-3xl">
               {event.title} – Volunteer Overview
             </h2>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -877,7 +877,7 @@ function VolunteerOverview({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-5">
-          <section className="rounded-xl border border-cos-border bg-white p-5">
+          <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cos-muted" />
               <h3 className="font-display text-xl text-cos-text">AI Assistant</h3>
@@ -919,7 +919,7 @@ function VolunteerOverview({
           </section>
 
           <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-cos-border bg-white p-5">
+            <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
               <h3 className="font-display text-xl text-cos-text">
                 Needs Snapshot
               </h3>
@@ -950,7 +950,7 @@ function VolunteerOverview({
                 </p>
               ) : null}
             </div>
-            <div className="rounded-xl border border-cos-border bg-white p-5">
+            <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
               <h3 className="font-display text-xl text-cos-text">Quick Totals</h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-3">
@@ -975,7 +975,7 @@ function VolunteerOverview({
             </div>
           </section>
 
-          <section className="rounded-xl border border-cos-border bg-white p-5">
+          <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <h3 className="font-display text-xl text-cos-text">
                 Volunteer Assignments
@@ -1088,7 +1088,7 @@ function VolunteerOverview({
         </div>
 
         <aside className="space-y-4">
-          <div className="rounded-xl border border-cos-border bg-white p-5">
+          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
             <h3 className="font-display text-xl text-cos-text">Event Details</h3>
             <dl className="mt-4 space-y-3 text-sm">
               <Detail label="Event" value={event.title} />
@@ -1108,7 +1108,7 @@ function VolunteerOverview({
             </dl>
           </div>
 
-          <div className="rounded-xl border border-cos-border bg-white p-5">
+          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
             <h3 className="font-display text-xl text-cos-text">Signup Source</h3>
             <p className="mt-3 text-sm text-cos-muted">Provider: SignUpGenius</p>
             <p className="mt-2 break-all text-sm text-cos-text">
@@ -1136,7 +1136,7 @@ function VolunteerOverview({
             </div>
           </div>
 
-          <div className="rounded-xl border border-cos-border bg-white p-5">
+          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
             <h3 className="font-display text-xl text-cos-text">Sync Details</h3>
             <dl className="mt-4 space-y-3 text-sm">
               <Detail
@@ -1254,12 +1254,14 @@ function StatCard({
   hint: string;
 }) {
   return (
-    <div className="rounded-xl border border-cos-border bg-white p-4">
+    <div className="flex min-h-[7.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
       <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
         {label}
       </p>
-      <p className="mt-2 font-display text-3xl text-cos-text">{value}</p>
-      <p className="mt-1 text-xs text-cos-muted">{hint}</p>
+      <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
+        {value}
+      </p>
+      <p className="text-xs text-cos-muted">{hint}</p>
     </div>
   );
 }
@@ -1292,7 +1294,7 @@ function AssignmentDetailsDrawer({
         aria-label="Close details"
         onClick={onClose}
       />
-      <aside className="relative z-10 h-full w-full max-w-md overflow-y-auto rounded-xl border border-cos-border bg-white p-5 shadow-xl">
+      <aside className="relative z-10 h-full w-full max-w-md overflow-y-auto rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5 shadow-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">

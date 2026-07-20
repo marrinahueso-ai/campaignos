@@ -197,7 +197,7 @@ export function FilesDocumentsShell({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      {!isEventScope ? (
         <div>
           <h1 className="font-display text-3xl text-cos-text">Files &amp; Documents</h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
@@ -205,42 +205,7 @@ export function FilesDocumentsShell({
             downloaded as PDF.
           </p>
         </div>
-
-        <div className="flex items-center gap-3 self-start">
-          <div className="inline-flex border border-cos-border bg-cos-card p-0.5">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              className={cn(
-                "p-2 transition-colors",
-                viewMode === "grid"
-                  ? "bg-cos-bg-alt text-cos-text"
-                  : "text-cos-muted hover:text-cos-text",
-              )}
-              aria-label="Grid view"
-              aria-pressed={viewMode === "grid"}
-            >
-              <Grid3x3 className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={cn(
-                "p-2 transition-colors",
-                viewMode === "list"
-                  ? "bg-cos-bg-alt text-cos-text"
-                  : "text-cos-muted hover:text-cos-text",
-              )}
-              aria-label="List view"
-              aria-pressed={viewMode === "list"}
-            >
-              <List className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
-
-          <FileUploadButton onClick={() => setUploadOpen(true)} />
-        </div>
-      </div>
+      ) : null}
 
       <div className="space-y-3 border border-cos-border bg-cos-card p-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -328,6 +293,39 @@ export function FilesDocumentsShell({
               ]}
               onChange={(value) => updateFilter("status", value)}
             />
+
+            <div className="inline-flex border border-cos-border bg-cos-bg p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "p-2 transition-colors",
+                  viewMode === "grid"
+                    ? "bg-cos-card text-cos-text"
+                    : "text-cos-muted hover:text-cos-text",
+                )}
+                aria-label="Grid view"
+                aria-pressed={viewMode === "grid"}
+              >
+                <Grid3x3 className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "p-2 transition-colors",
+                  viewMode === "list"
+                    ? "bg-cos-card text-cos-text"
+                    : "text-cos-muted hover:text-cos-text",
+                )}
+                aria-label="List view"
+                aria-pressed={viewMode === "list"}
+              >
+                <List className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </div>
+
+            <FileUploadButton onClick={() => setUploadOpen(true)} />
           </div>
         </div>
 

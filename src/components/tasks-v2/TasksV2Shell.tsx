@@ -2,8 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, FolderOpen, ListChecks } from "lucide-react";
+import { FolderOpen, ListChecks } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -343,54 +342,24 @@ export function TasksV2Shell({
     myViewFilter,
   ]);
 
-  const globalTasksHref = eventFilter
-    ? `/tasks?event=${encodeURIComponent(eventFilter)}`
-    : "/tasks";
-
   return (
     <div className={cn(embedded ? "space-y-4" : "space-y-6")}>
-      <header
-        className={cn(
-          "flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between",
-          embedded ? "gap-4" : "gap-6",
-        )}
-      >
-        <div className="min-w-0">
-          {!embedded ? (
-            <>
+      {!embedded ? (
+        <>
+          <header className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
               <h1 className="font-display text-3xl text-cos-text">Tasks</h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
                 Organize work, assign tasks, and track progress across campaigns and
                 events you can access.
               </p>
-            </>
-          ) : (
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="font-display text-xl text-cos-text">Tasks</h2>
-                <p className="mt-1 text-sm text-cos-muted">
-                  Tasks for this event — same workspace as the Tasks page.
-                </p>
-              </div>
-              <Link
-                href={globalTasksHref}
-                className="inline-flex shrink-0 items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
-              >
-                Open in Tasks
-                <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
-              </Link>
             </div>
-          )}
-        </div>
-        {!embedded ? (
-          <div className="w-full lg:max-w-md lg:shrink-0">
-            <TasksV2SummaryCards summary={scopedSummary} />
-          </div>
-        ) : null}
-      </header>
-
-      {!embedded ? (
-        <TasksV2Tabs activeTab={activeTab} onTabChange={handleTabChange} />
+            <div className="w-full lg:max-w-md lg:shrink-0">
+              <TasksV2SummaryCards summary={scopedSummary} />
+            </div>
+          </header>
+          <TasksV2Tabs activeTab={activeTab} onTabChange={handleTabChange} />
+        </>
       ) : null}
 
       <div

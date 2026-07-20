@@ -182,6 +182,19 @@ export function ApprovalsSchedulingHub({
     }
   }
 
+  const searchField = (
+    <label className="relative block w-full max-w-sm shrink-0 lg:w-72">
+      <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+        placeholder="Search approvals..."
+        className="w-full border border-cos-border bg-cos-card py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+      />
+    </label>
+  );
+
   return (
     <div className={cn(embedded ? "space-y-4" : "studio-page space-y-8 pb-12")}>
       <CalendarActionToast
@@ -189,13 +202,8 @@ export function ApprovalsSchedulingHub({
         onDismiss={() => setActionError(null)}
       />
 
-      <header
-        className={cn(
-          "space-y-6",
-          embedded ? "pb-2" : "border-b border-cos-border pb-8",
-        )}
-      >
-        {!embedded ? (
+      {!embedded ? (
+        <header className="space-y-6 border-b border-cos-border pb-8">
           <div>
             <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
               Approvals & Scheduling
@@ -205,81 +213,69 @@ export function ApprovalsSchedulingHub({
               and see what&apos;s published.
             </p>
           </div>
-        ) : (
-          <div>
-            <h2 className="font-display text-xl text-cos-text">Approvals</h2>
-            <p className="mt-1 text-sm text-cos-muted">
-              Approval and scheduling items for this event only.
-            </p>
-          </div>
-        )}
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            {!lockedId ? (
-              <>
-                <label className="sr-only" htmlFor="campaign-filter">
-                  Campaign filter
-                </label>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {!lockedId ? (
+                <>
+                  <label className="sr-only" htmlFor="campaign-filter">
+                    Campaign filter
+                  </label>
+                  <select
+                    id="campaign-filter"
+                    value={eventFilter}
+                    onChange={(event) => setEventFilter(event.target.value)}
+                    className="min-w-[180px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                  >
+                    <option value="all">All campaigns</option>
+                    {campaigns.map((campaign) => (
+                      <option key={campaign.id} value={campaign.id}>
+                        {campaign.title}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : null}
+
+              {canViewAll ? (
                 <select
-                  id="campaign-filter"
-                  value={eventFilter}
-                  onChange={(event) => setEventFilter(event.target.value)}
-                  className="min-w-[180px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                  value={viewScope}
+                  onChange={(event) =>
+                    setViewScope(event.target.value as UnifiedViewScope)
+                  }
+                  className="min-w-[160px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                  aria-label="View scope"
                 >
-                  <option value="all">All campaigns</option>
-                  {campaigns.map((campaign) => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.title}
-                    </option>
-                  ))}
+                  <option value="assigned_to_me">Assigned to Me</option>
+                  <option value="all">All</option>
                 </select>
-              </>
-            ) : null}
+              ) : null}
 
-            {canViewAll && !embedded ? (
-              <select
-                value={viewScope}
-                onChange={(event) =>
-                  setViewScope(event.target.value as UnifiedViewScope)
-                }
-                className="min-w-[160px] border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-                aria-label="View scope"
-              >
-                <option value="assigned_to_me">Assigned to Me</option>
-                <option value="all">All</option>
-              </select>
-            ) : null}
-
-            {!embedded ? (
               <Button type="button" variant="secondary" size="sm">
                 <Filter className="h-4 w-4" />
                 Filters
               </Button>
-            ) : null}
-          </div>
+            </div>
 
-          <label className="relative block w-full max-w-sm">
-            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search approvals..."
-              className="w-full border border-cos-border bg-cos-card py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
-            />
-          </label>
-        </div>
-      </header>
+            {searchField}
+          </div>
+        </header>
+      ) : null}
 
       {!embedded ? <SummaryCards summary={scopedSummary} /> : null}
 
       <div className="space-y-4">
-        <ApprovalTabs
-          activeTab={activeTab}
-          counts={tabCounts}
-          onChange={(tab) => setActiveTab(tab as UnifiedTabId)}
-        />
+        <div className="flex flex-col gap-3 border-b border-cos-border lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+          <ApprovalTabs
+            activeTab={activeTab}
+            counts={tabCounts}
+            onChange={(tab) => setActiveTab(tab as UnifiedTabId)}
+            className="border-b-0"
+          />
+          {embedded ? (
+            <div className="pb-2 lg:pb-0">{searchField}</div>
+          ) : null}
+        </div>
 
         <ApprovalsTable
           items={scopedItems}

@@ -241,10 +241,12 @@ export function ApprovalTabs({
   activeTab,
   counts,
   onChange,
+  className,
 }: {
   activeTab: string;
   counts: Record<string, number>;
   onChange: (tab: string) => void;
+  className?: string;
 }) {
   const tabs = [
     { id: "all", label: "All" },
@@ -261,7 +263,12 @@ export function ApprovalTabs({
   ];
 
   return (
-    <div className="flex gap-1 overflow-x-auto border-b border-cos-border">
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 gap-1 overflow-x-auto border-b border-cos-border",
+        className,
+      )}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.id}

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, ExternalLink, Mail, Phone, Plus, Store } from "lucide-react";
+import { Camera, ExternalLink, Mail, Phone, Plus } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Badge } from "@/components/ui/Badge";
@@ -310,52 +310,41 @@ export function EventVendorsSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Store className="h-4 w-4 text-cos-muted" strokeWidth={1.5} />
-            <h3 className="font-display text-lg text-cos-text">Vendors</h3>
-          </div>
-          <p className="mt-1 text-sm text-cos-muted">
-            Vendor cards for this event — logo and details at a glance.
-          </p>
-        </div>
-        {data.canWrite || directoryHref ? (
-          <div className="flex flex-wrap gap-2">
-            {directoryHref ? (
-              <Button href={directoryHref} size="sm" variant="secondary">
-                Open vendor directory
+      {data.canWrite || directoryHref ? (
+        <div className="flex flex-wrap justify-end gap-2">
+          {directoryHref ? (
+            <Button href={directoryHref} size="sm" variant="secondary">
+              Open vendor directory
+            </Button>
+          ) : null}
+          {data.canWrite ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={directoryLoading}
+                onClick={() =>
+                  ensureDirectoryLoaded(() => setLinkOpen(true))
+                }
+              >
+                {directoryLoading ? "Loading…" : "Add Existing"}
               </Button>
-            ) : null}
-            {data.canWrite ? (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={directoryLoading}
-                  onClick={() =>
-                    ensureDirectoryLoaded(() => setLinkOpen(true))
-                  }
-                >
-                  {directoryLoading ? "Loading…" : "Add Existing"}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={directoryLoading}
-                  onClick={() =>
-                    ensureDirectoryLoaded(() => setAddOpen(true))
-                  }
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Create New
-                </Button>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={directoryLoading}
+                onClick={() =>
+                  ensureDirectoryLoaded(() => setAddOpen(true))
+                }
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Create New
+              </Button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {data.vendors.length === 0 ? (
         <Card className="p-5">

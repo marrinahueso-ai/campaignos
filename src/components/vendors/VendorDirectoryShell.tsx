@@ -2,16 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Briefcase,
-  Calendar,
-  CheckCircle2,
-  Heart,
-  MoreVertical,
-  Plus,
-  Search,
-  Star,
-} from "lucide-react";
+import { MoreVertical, Plus, Search, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -194,26 +185,22 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
-          icon={Briefcase}
           label="Total Vendors"
           value={String(data.summary.totalVendors)}
         />
         <SummaryCard
-          icon={CheckCircle2}
           label="Confirmed"
           value={String(data.summary.confirmedThisYear)}
           detail="this year"
         />
         <SummaryCard
-          icon={Calendar}
           label="Upcoming Events"
           value={String(data.summary.upcomingEventsWithVendors)}
           detail="with vendors"
         />
         <SummaryCard
-          icon={Heart}
           label="Favorite Vendors"
           value={String(data.summary.favoriteVendors)}
           detail="frequently used"
@@ -424,27 +411,24 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
 }
 
 function SummaryCard({
-  icon: Icon,
   label,
   value,
   detail,
 }: {
-  icon: typeof Briefcase;
   label: string;
   value: string;
   detail?: string;
 }) {
   return (
-    <Card className="flex items-start gap-4 p-5">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cos-bg text-cos-muted">
-        <Icon className="h-5 w-5" strokeWidth={1.5} />
-      </span>
-      <div>
-        <p className="text-xs uppercase tracking-wide text-cos-muted">{label}</p>
-        <p className="font-display text-3xl text-cos-text">{value}</p>
-        {detail && <p className="text-xs text-cos-muted">{detail}</p>}
-      </div>
-    </Card>
+    <div className="flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
+      <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+        {label}
+      </p>
+      <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
+        {value}
+      </p>
+      {detail ? <p className="text-xs text-cos-muted">{detail}</p> : null}
+    </div>
   );
 }
 

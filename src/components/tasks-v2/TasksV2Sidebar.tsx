@@ -19,12 +19,22 @@ const MY_VIEWS = [
   { id: "completed", label: "Completed" },
 ];
 
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike> & { length: number };
+}
+
 interface SpeechRecognitionLike {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -110,6 +120,9 @@ export function TasksV2Sidebar({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const keepListeningRef = useRef(false);
+  const voiceBasePromptRef = useRef("");
+  const voiceFinalTranscriptRef = useRef("");
 
   useEffect(() => {
     setVoiceSupported(Boolean(getSpeechRecognitionConstructor()));
@@ -125,8 +138,14 @@ export function TasksV2Sidebar({
   }, [resolvedPreferredId, sourceOptions]);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    keepListeningRef.current = false;
+    const recognition = recognitionRef.current;
     recognitionRef.current = null;
+    try {
+      recognition?.stop();
+    } catch {
+      // already stopped
+    }
     setIsListening(false);
   }, []);
 
@@ -145,34 +164,78 @@ export function TasksV2Sidebar({
     }
 
     const recognition = new SpeechRecognitionCtor();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
-    recognition.onresult = (event) => {
-      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
-      if (transcript) {
-        setPrompt((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
-      }
+    voiceBasePromptRef.current = prompt.trim();
+    voiceFinalTranscriptRef.current = "";
+
+    const applySpokenText = (finalText: string, interimText: string) => {
+      const spoken = [finalText, interimText].filter(Boolean).join(" ").trim();
+      const base = voiceBasePromptRef.current;
+      setPrompt(base ? `${base} ${spoken}`.trim() : spoken);
     };
-    recognition.onerror = () => {
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const result = event.results[i];
+        const piece = result?.[0]?.transcript?.trim() ?? "";
+        if (!piece) continue;
+        if (result.isFinal) {
+          voiceFinalTranscriptRef.current = [
+            voiceFinalTranscriptRef.current,
+            piece,
+          ]
+            .filter(Boolean)
+            .join(" ");
+        } else {
+          interim = interim ? `${interim} ${piece}` : piece;
+        }
+      }
+      applySpokenText(voiceFinalTranscriptRef.current, interim);
+    };
+    recognition.onerror = (event) => {
+      const code = event.error ?? "";
+      // Benign / recoverable — keep session going when possible.
+      if (code === "aborted" || code === "no-speech") {
+        return;
+      }
+      keepListeningRef.current = false;
       setIsListening(false);
+      recognitionRef.current = null;
       setErrorMessage("Couldn’t capture voice. Try typing instead.");
     };
     recognition.onend = () => {
+      // Chrome often ends continuous sessions after a pause — restart while mic is on.
+      if (keepListeningRef.current && recognitionRef.current === recognition) {
+        try {
+          recognition.start();
+          return;
+        } catch {
+          // fall through to stop
+        }
+      }
+      keepListeningRef.current = false;
       setIsListening(false);
-      recognitionRef.current = null;
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
     };
 
     recognitionRef.current = recognition;
+    keepListeningRef.current = true;
     setErrorMessage(null);
     setIsListening(true);
     try {
       recognition.start();
     } catch {
+      keepListeningRef.current = false;
       setIsListening(false);
+      recognitionRef.current = null;
       setErrorMessage("Couldn’t start voice input.");
     }
-  }, [isListening, stopListening]);
+  }, [isListening, prompt, stopListening]);
 
   async function handleGenerate() {
     if (!canEdit) {

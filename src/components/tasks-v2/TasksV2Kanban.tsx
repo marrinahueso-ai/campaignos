@@ -95,7 +95,7 @@ const FOCUS_COLUMN_META: Record<
 
 export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
   const router = useRouter();
-  const [boardMode, setBoardMode] = useState<TasksV2KanbanBoardMode>("status");
+  const [boardMode, setBoardMode] = useState<TasksV2KanbanBoardMode>("focus");
   const [pending, startTransition] = useTransition();
   const sourceTasks = useMemo(
     () => flattenEventGroups(eventGroups),
@@ -304,18 +304,6 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
       >
         <button
           type="button"
-          onClick={() => setBoardMode("status")}
-          className={cn(
-            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-            boardMode === "status"
-              ? "bg-cos-dark text-[#f6f2eb]"
-              : "text-cos-muted hover:text-cos-text",
-          )}
-        >
-          By status
-        </button>
-        <button
-          type="button"
           onClick={() => setBoardMode("focus")}
           className={cn(
             "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
@@ -325,6 +313,18 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
           )}
         >
           Focus board
+        </button>
+        <button
+          type="button"
+          onClick={() => setBoardMode("status")}
+          className={cn(
+            "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+            boardMode === "status"
+              ? "bg-cos-dark text-[#f6f2eb]"
+              : "text-cos-muted hover:text-cos-text",
+          )}
+        >
+          By status
         </button>
       </div>
 

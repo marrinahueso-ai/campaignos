@@ -16,7 +16,7 @@ const TABS: {
 }[] = [
   { id: "main_table", label: "Main Table", icon: Table2 },
   { id: "my_tasks", label: "My Tasks", icon: User },
-  { id: "kanban", label: "Kanban", icon: Kanban },
+  { id: "kanban", label: "Board", icon: Kanban },
   { id: "files", label: "Files", icon: FolderOpen },
 ];
 
