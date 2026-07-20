@@ -15,9 +15,10 @@ This is the documentation hub. Start here.
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) |
-| **Ops / deploy** | [Ops section](./ops/README.md) (stubs — full runbooks in Phase 4) |
+| **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
 | **Historical only** | [Archive](./archive/README.md) — do not treat as current |
+| **Maintaining docs** | [Governance](./GOVERNANCE.md) |
 
 ---
 
@@ -65,6 +66,14 @@ Old flat paths (e.g. `docs/ARCHITECTURE.md`) keep short **Moved to…** stubs fo
 | **Planned stub** | Placeholder — content not written yet |
 | **Archive** | Historical — not current product truth |
 
+Living and stub pages should include **Status**, **Owner** (or TBD), and **Last updated**. Full rules: [GOVERNANCE.md](./GOVERNANCE.md).
+
+---
+
+## Same-PR rule (summary)
+
+Ship a product/integration/schema change → update [feature-list.md](./product/feature-list.md) **and** the related living doc in the **same PR**. Details: [GOVERNANCE.md §2](./GOVERNANCE.md#2-same-pr-documentation-rule).
+
 ---
 
 ## Reorganization status
@@ -75,11 +84,13 @@ Old flat paths (e.g. `docs/ARCHITECTURE.md`) keep short **Moved to…** stubs fo
 | 1 — Scaffold tree + indexes + stubs | Done |
 | 2 — Move living docs + archive outdated | Done |
 | 3 — Link pass | Done |
-| 4 — Critical ops/eng drafts | **Done** (this branch) |
-| 5 — Governance conventions | Pending |
+| 4 — Critical ops/eng drafts | Done |
+| 5 — Governance conventions | **Done** |
+
+Hub restructure complete. Ongoing work follows [GOVERNANCE.md](./GOVERNANCE.md).
 
 ---
 
 ## Agent note
 
-Cursor/Claude: see root [AGENTS.md](../AGENTS.md). Prefer this index and [product/feature-list.md](./product/feature-list.md) over archived sprint/PRD docs.
+Cursor/Claude: see root [AGENTS.md](../AGENTS.md). Prefer this index and [product/feature-list.md](./product/feature-list.md) over archived sprint/PRD docs. Apply [GOVERNANCE.md](./GOVERNANCE.md) when changing product behavior.

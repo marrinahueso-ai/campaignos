@@ -7,7 +7,7 @@
 |-----|--------|
 | [feature-list.md](./feature-list.md) | **Living** |
 | [vision.md](./vision.md) | Planned stub |
-| [changelog.md](./changelog.md) | Planned stub |
+| [changelog.md](./changelog.md) | **Living** — process (Feature list is the record) |
 | [blueprints/](./blueprints/) | **Living** (from former `product-v2/`) |
 
 **Back:** [Documentation home](../README.md)
