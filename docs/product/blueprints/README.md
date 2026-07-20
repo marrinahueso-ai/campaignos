@@ -1,12 +1,10 @@
 # Product blueprints
 
-**Status:** Placeholder folder (Phase 1)  
+**Status:** Living (design / experience specs)  
 **Last updated:** July 20, 2026
 
-Blueprint markdown currently lives at repo root **[product-v2/](../../../product-v2/)**.
+Moved from repo-root `product-v2/`. Prefer [feature-list.md](../feature-list.md) for what shipped; treat blueprints as design intent when they diverge from production.
 
-**Phase 2** will move those files here (except outdated Publishing Center → archive).
-
-Until then, open: [product-v2/](../../../product-v2/)
+Outdated Publishing Center blueprint → [archive/PUBLISHING_CENTER.md](../../archive/PUBLISHING_CENTER.md).
 
 **Back:** [Product](../README.md) · [Documentation home](../../README.md)

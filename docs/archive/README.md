@@ -3,22 +3,22 @@
 **Status:** Historical only — **not** current product truth  
 **Last updated:** July 20, 2026
 
-Files will be moved here in **Phase 2**. Until then, outdated docs may still sit flat under `docs/` (e.g. `ENGINE_4.md`, `SPRINTS.md`, `PRD.md`, `RELEASE_0_5.md`, June `DATABASE_BLUEPRINT.md`). Prefer:
+Prefer:
 
-- [Feature list](../FEATURE_LIST.md)
-- [Architecture](../ARCHITECTURE.md)
-- [QA overview](../QA_ARCHITECTURE_OVERVIEW.md)
+- [Feature list](../product/feature-list.md)
+- [Architecture](../engineering/architecture.md)
+- [QA overview](../qa/architecture-overview.md)
 
-### Planned archive contents (Phase 2)
+### Archived contents
 
 | File | Replaced by |
 |------|-------------|
 | ENGINE_4, SPRINTS, SPRINT_5, RELEASE_0_5 | Architecture + Feature list |
-| PRD, ROADMAP (June) | Feature list appendix + product blueprints roadmap |
-| DATABASE_BLUEPRINT | `engineering/database.md` (Phase 4) + `supabase/migrations/` |
+| PRD, ROADMAP (June) | Feature list + product blueprints roadmap |
+| DATABASE_BLUEPRINT | [engineering/database.md](../engineering/database.md) (Phase 4 draft) + `supabase/migrations/` |
 | ARTWORK_FOUNDATION_REPAIR_PLAN | product blueprints artwork notes |
-| VISION / PRODUCT_VISION / USER_JOURNEY (v1) | product blueprints + vision stub |
-| Publishing Center blueprint | Approvals + [Meta connection](../META_CONNECTION.md) |
-| PLATFORM_STABILITY_VERIFICATION | Snapshot evidence; see access-control |
+| VISION_v1 / PRODUCT_VISION_v1 / USER_JOURNEY_v1 | [product/vision.md](../product/vision.md) stub + blueprints |
+| PUBLISHING_CENTER | Approvals + [Meta connection](../integrations/meta.md) |
+| PLATFORM_STABILITY_VERIFICATION | Snapshot evidence; see [access-control](../engineering/access-control.md) |
 
 **Back:** [Documentation home](../README.md)

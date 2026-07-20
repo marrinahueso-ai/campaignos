@@ -27,9 +27,9 @@ Env catalog: [.env.local.example](.env.local.example)
 | Need | Doc |
 |------|-----|
 | Documentation index | [docs/README.md](docs/README.md) |
-| What shipped | [docs/FEATURE_LIST.md](docs/FEATURE_LIST.md) |
-| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| QA orientation | [docs/QA_ARCHITECTURE_OVERVIEW.md](docs/QA_ARCHITECTURE_OVERVIEW.md) |
+| What shipped | [docs/product/feature-list.md](docs/product/feature-list.md) |
+| Architecture | [docs/engineering/architecture.md](docs/engineering/architecture.md) |
+| QA orientation | [docs/qa/architecture-overview.md](docs/qa/architecture-overview.md) |
 | Agent rules (Cursor) | [AGENTS.md](AGENTS.md) |
 
 ## Scripts
