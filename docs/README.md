@@ -74,8 +74,8 @@ Old flat paths (e.g. `docs/ARCHITECTURE.md`) keep short **Moved to…** stubs fo
 | 0 — Commit current docs | Done |
 | 1 — Scaffold tree + indexes + stubs | Done |
 | 2 — Move living docs + archive outdated | Done |
-| 3 — Link pass | **Done** (this branch) |
-| 4 — Critical ops/eng drafts | Pending |
+| 3 — Link pass | Done |
+| 4 — Critical ops/eng drafts | **Done** (this branch) |
 | 5 — Governance conventions | Pending |
 
 ---

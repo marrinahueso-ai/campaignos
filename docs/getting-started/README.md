@@ -5,7 +5,7 @@
 
 | Doc | Status | Notes |
 |-----|--------|-------|
-| [local-setup.md](./local-setup.md) | Planned stub | Full guide in Phase 4; see also root README quickstart |
-| [environments.md](./environments.md) | Planned stub | Local / Preview / Production |
+| [local-setup.md](./local-setup.md) | **Living** | Install, env, migrations, troubleshooting |
+| [environments.md](./environments.md) | Planned stub | Local / Preview / Production — see also [ops/env-and-secrets.md](../ops/env-and-secrets.md) |
 
 **Back:** [Documentation home](../README.md)
