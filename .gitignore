@@ -53,3 +53,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local/dev artifacts — do not commit
+.next-dev.lock
+.next-dev*.lock
+tmp-socials-email-preview.html
+tmp-*.html
