@@ -9,6 +9,6 @@
 | [multi-tenant-isolation.md](./multi-tenant-isolation.md) | Planned stub |
 | [privacy-and-data.md](./privacy-and-data.md) | Planned stub |
 
-Living related: [Access control](../ACCESS_CONTROL_PHASES_A_C.md) · [Storage RLS](../STORAGE_RLS.md)
+Living related: [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md)
 
 **Back:** [Documentation home](../README.md)

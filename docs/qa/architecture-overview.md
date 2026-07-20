@@ -7,7 +7,7 @@
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
-Related detail: [ARCHITECTURE.md](./ARCHITECTURE.md) (engineering structure), [FEATURE_LIST.md](./FEATURE_LIST.md), [META_CONNECTION.md](./META_CONNECTION.md), [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md).
+Related detail: [architecture.md](../engineering/architecture.md) (engineering structure), [feature-list.md](../product/feature-list.md), [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md).
 
 ---
 
@@ -195,7 +195,7 @@ flowchart LR
 
 ## 5. Known limitations and work in progress
 
-Use this as a **do-not-file-as-regression** / expected-gap list unless the ticket says otherwise. Source of truth for status: [FEATURE_LIST.md](./FEATURE_LIST.md).
+Use this as a **do-not-file-as-regression** / expected-gap list unless the ticket says otherwise. Source of truth for status: [feature-list.md](../product/feature-list.md).
 
 ### Incomplete or stub
 
@@ -237,13 +237,17 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 
 | Topic | Doc |
 |-------|-----|
-| Engineering architecture | [ARCHITECTURE.md](./ARCHITECTURE.md) |
-| Full feature status | [FEATURE_LIST.md](./FEATURE_LIST.md) |
-| Meta Connect model | [META_CONNECTION.md](./META_CONNECTION.md) |
-| Google Calendar | [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md) |
-| Access control phases | [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md) |
-| Storage / RLS notes | [STORAGE_RLS.md](./STORAGE_RLS.md) |
+| Engineering architecture | [architecture.md](../engineering/architecture.md) |
+| Full feature status | [feature-list.md](../product/feature-list.md) |
+| Meta Connect model | [meta.md](../integrations/meta.md) |
+| Google Calendar | [google-calendar.md](../integrations/google-calendar.md) |
+| Access control phases | [access-control.md](../engineering/access-control.md) |
+| Storage / RLS notes | [storage-rls.md](../engineering/storage-rls.md) |
 
 ---
 
-*End of QA architecture overview. Treat FEATURE_LIST + this doc as current product truth; RELEASE_0_5 / SPRINTS are historical.*
+*End of QA architecture overview. Treat [feature-list.md](../product/feature-list.md) + this doc as current product truth; `docs/archive/RELEASE_0_5` / `SPRINTS` are historical.*
+
+---
+
+**Canonical docs:** [Documentation home](../README.md) · [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md)

@@ -7,7 +7,7 @@
 
 ## Timing preset reference
 
-Communication timeline steps are generated from **timing presets** defined in `src/lib/playbooks/timing-presets.ts`. See `product-v2/06_COMMUNICATION_PLAYBOOK.md` → **Implemented Timing Presets (Application v1)** for the full node tables, calendar import defaults, and manual override surfaces.
+Communication timeline steps are generated from **timing presets** defined in `src/lib/playbooks/timing-presets.ts`. See [`06_COMMUNICATION_PLAYBOOK.md`](./06_COMMUNICATION_PLAYBOOK.md) → **Implemented Timing Presets (Application v1)** for the full node tables, calendar import defaults, and manual override surfaces.
 
 **Quick reference — Full Campaign default (`full_event`):**  
 30 → 21 → 14 → 7 → 3 → 1 → 0 → +1 days (Save the Date through Thank You).

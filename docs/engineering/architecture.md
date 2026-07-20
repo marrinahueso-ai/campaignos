@@ -5,7 +5,7 @@
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  
 **Last updated:** July 20, 2026  
 
-This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA_ARCHITECTURE_OVERVIEW.md](./QA_ARCHITECTURE_OVERVIEW.md). For feature status, see [FEATURE_LIST.md](./FEATURE_LIST.md).
+This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For feature status, see [feature list](../product/feature-list.md).
 
 ---
 
@@ -40,8 +40,8 @@ Hey Ralli is a calendar-first AI communications OS for school PTO / PTA voluntee
 
 ```
 CampignOS/
-├── docs/                         # Product + engineering docs (this file, FEATURE_LIST, QA overview, …)
-├── product-v2/                   # Product blueprint (not runtime)
+├── docs/                         # Docs hub (see docs/README.md)
+│   └── product/blueprints/       # Product design blueprints (not runtime)
 ├── scripts/                      # dev, verify, hey-ralli-test, capture helpers
 ├── supabase/migrations/          # Ordered SQL (001…069+, access-template migrations)
 ├── tests/hey-ralli/              # Playwright smoke
@@ -164,8 +164,8 @@ Playbooks still seed milestone timelines and health; campaign creative generatio
 
 | Provider | Connect surface | Storage | Docs |
 |----------|-----------------|---------|------|
-| Meta | `/settings/meta` (+ Inbox / Insights CTAs) | `organization_meta_connections` | [META_CONNECTION.md](./META_CONNECTION.md) |
-| Google Calendar | `/settings/integrations/calendar`, `/calendar/import` | `organization_google_calendar_connections` | [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md) |
+| Meta | `/settings/meta` (+ Inbox / Insights CTAs) | `organization_meta_connections` | [meta.md](../integrations/meta.md) |
+| Google Calendar | `/settings/integrations/calendar`, `/calendar/import` | `organization_google_calendar_connections` | [google-calendar.md](../integrations/google-calendar.md) |
 | Canva | `/settings/canva` | `organization_canva_connections` | — |
 | Monday | `/settings/monday` | `organization_monday_connections` | — |
 
@@ -200,7 +200,7 @@ Pattern: `isAiConfigured()` / missing `OPENAI_API_KEY` → clear “not configur
 - **RLS:** Membership-scoped policies are the default for tenant tables; Storage membership RLS in later migrations. Cron / admin paths use `createAdminClient()` where required.
 - **Storage buckets (examples):** school logos / brand assets, calendar uploads, artwork / creative assets. Prefer org-prefixed paths.
 
-For deeper schema notes see [DATABASE_BLUEPRINT.md](./DATABASE_BLUEPRINT.md) and [STORAGE_RLS.md](./STORAGE_RLS.md) (may lag newest migrations — prefer live migrations + FEATURE_LIST for product truth).
+For deeper schema notes see archived [DATABASE_BLUEPRINT.md](../archive/DATABASE_BLUEPRINT.md) and [storage-rls.md](./storage-rls.md) (may lag newest migrations — prefer live migrations + [feature list](../product/feature-list.md) for product truth).
 
 ---
 
@@ -210,7 +210,7 @@ For deeper schema notes see [DATABASE_BLUEPRINT.md](./DATABASE_BLUEPRINT.md) and
 - Organization memberships + **access templates** (permission toggles) + built-in role presets.  
 - Effective access gates artwork, approve, publish, people, integrations, and event visibility (`canAccessEvent` / see-vs-work modes).  
 - Invites: `/invite/[token]`; founding access codes for sign-up.  
-- Detail: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md).
+- Detail: [access-control.md](./access-control.md).
 
 ---
 
@@ -220,13 +220,13 @@ For deeper schema notes see [DATABASE_BLUEPRINT.md](./DATABASE_BLUEPRINT.md) and
 |------|-----|
 | Unit / domain | `npm run test:*` scripts in `package.json` (e.g. insights, team-access, approvals) |
 | Smoke E2E | `npm run test:hey-ralli` → Playwright under `tests/hey-ralli/smoke/` |
-| Manual QA map | [QA_ARCHITECTURE_OVERVIEW.md](./QA_ARCHITECTURE_OVERVIEW.md) |
+| Manual QA map | [qa/architecture-overview.md](../qa/architecture-overview.md) |
 
 ---
 
 ## 11. Known gaps (architecture-relevant)
 
-Do not treat these as regressions unless a ticket says otherwise. Full list: [FEATURE_LIST.md](./FEATURE_LIST.md) appendix.
+Do not treat these as regressions unless a ticket says otherwise. Full list: [feature-list.md](../product/feature-list.md) appendix.
 
 - Stripe / paid plan enforcement — deferred  
 - Gmail Connect / Gmail inbox — deferred  
@@ -237,7 +237,7 @@ Do not treat these as regressions unless a ticket says otherwise. Full list: [FE
 - Vendor payments/contracts depth — partial shells  
 - AI credits widget — stub UI  
 
-Historical Release 0.5 notes remain in [RELEASE_0_5.md](./RELEASE_0_5.md) and [SPRINTS.md](./SPRINTS.md); they describe earlier Engine milestones and should not be read as current architecture.
+Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEASE_0_5.md) and [archive/SPRINTS.md](../archive/SPRINTS.md); they describe earlier Engine milestones and should not be read as current architecture.
 
 ---
 
@@ -245,9 +245,13 @@ Historical Release 0.5 notes remain in [RELEASE_0_5.md](./RELEASE_0_5.md) and [S
 
 | Doc | Use |
 |-----|-----|
-| [QA_ARCHITECTURE_OVERVIEW.md](./QA_ARCHITECTURE_OVERVIEW.md) | QA onboarding: workflow, diagrams, limitations |
-| [FEATURE_LIST.md](./FEATURE_LIST.md) | Shipped / partial / deferred inventory |
-| [META_CONNECTION.md](./META_CONNECTION.md) | Meta OAuth model |
-| [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md) | Google Calendar OAuth + sync |
-| [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md) | Membership + permissions |
-| [PRODUCT_VISION.md](./PRODUCT_VISION.md) | Product intent (may use older CampaignOS naming) |
+| [qa/architecture-overview.md](../qa/architecture-overview.md) | QA onboarding: workflow, diagrams, limitations |
+| [product/feature-list.md](../product/feature-list.md) | Shipped / partial / deferred inventory |
+| [integrations/meta.md](../integrations/meta.md) | Meta OAuth model |
+| [integrations/google-calendar.md](../integrations/google-calendar.md) | Google Calendar OAuth + sync |
+| [access-control.md](./access-control.md) | Membership + permissions |
+| [product/vision.md](../product/vision.md) · [blueprints](../product/blueprints/) | Product intent |
+
+---
+
+**Canonical docs:** [Documentation home](../README.md) · [Feature list](../product/feature-list.md) · [QA overview](../qa/architecture-overview.md)

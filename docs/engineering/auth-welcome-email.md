@@ -32,16 +32,16 @@ Requires `RESEND_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. If either is missing,
 | `{{{ACTION_URL}}}` | Supabase magic-link / setup URL |
 | `{{{RECIPIENT_EMAIL}}}` | Recipient address shown in the body |
 
-Code: [`src/lib/email/send-organization-welcome.ts`](../src/lib/email/send-organization-welcome.ts) (template first, HTML builder fallback).
+Code: [`src/lib/email/send-organization-welcome.ts`](../../src/lib/email/send-organization-welcome.ts) (template first, HTML builder fallback).
 
 ## Repo source files
 
 | File | Role |
 |------|------|
-| [`src/lib/email/organization-welcome-email.ts`](../src/lib/email/organization-welcome-email.ts) | Subject + HTML/text builder |
-| [`src/lib/email/send-organization-welcome.ts`](../src/lib/email/send-organization-welcome.ts) | Send via Resend |
-| [`src/lib/auth/actions.ts`](../src/lib/auth/actions.ts) | Founding signup wiring |
-| [`supabase/templates/magic_link.html`](../supabase/templates/magic_link.html) | Local / Auth fallback body |
+| [`src/lib/email/organization-welcome-email.ts`](../../src/lib/email/organization-welcome-email.ts) | Subject + HTML/text builder |
+| [`src/lib/email/send-organization-welcome.ts`](../../src/lib/email/send-organization-welcome.ts) | Send via Resend |
+| [`src/lib/auth/actions.ts`](../../src/lib/auth/actions.ts) | Founding signup wiring |
+| [`supabase/templates/magic_link.html`](../../supabase/templates/magic_link.html) | Local / Auth fallback body |
 
 ## Related in-app copy
 

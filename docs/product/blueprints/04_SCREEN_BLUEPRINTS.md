@@ -340,7 +340,7 @@ Fast, trustworthy governance. Minutes, not meetings.
 ## Screen 11: Publishing Center
 
 ### Purpose
-Close the loop on approved content. See `10_PUBLISHING_CENTER.md`.
+Close the loop on approved content. See archived [PUBLISHING_CENTER.md](../../archive/PUBLISHING_CENTER.md) (surface replaced by Approvals).
 
 ### What the user sees
 

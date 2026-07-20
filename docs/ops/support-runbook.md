@@ -3,7 +3,7 @@
 **Status:** Planned stub  
 **Owner:** TBD  
 **Last updated:** July 20, 2026  
-**Related:** [Ops](./README.md) · [Meta](../META_CONNECTION.md) · [Google Calendar](../GOOGLE_CONNECTION.md) · [Documentation home](../README.md)
+**Related:** [Ops](./README.md) · [Meta](../integrations/meta.md) · [Google Calendar](../integrations/google-calendar.md) · [Documentation home](../README.md)
 
 ## Purpose
 

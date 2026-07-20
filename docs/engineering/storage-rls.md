@@ -5,7 +5,7 @@
 **Migration:** `supabase/migrations/067_storage_membership_rls.sql`  
 **Depends on:** Phase C helpers (`private.is_active_org_member`, `private.can_access_event`)
 
-Companion: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md)
+Companion: [access-control.md](./access-control.md)
 
 ---
 

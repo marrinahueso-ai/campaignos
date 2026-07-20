@@ -1,9 +1,9 @@
 # Platform stability verification — Phases A–C + memory slices
 
 **Verified:** 2026-07-18 (local + Supabase `zyllfqieeihshnwpakiv`) — includes Phase C2 broader RLS  
-**Goal:** Stable single-org platform that functions as designed. Phase D (org switcher MVP) done — see [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md). Phase E (Stripe) deferred.
+**Goal:** Stable single-org platform that functions as designed. Phase D (org switcher MVP) done — see [access-control.md](../engineering/access-control.md). Phase E (Stripe) deferred.
 
-Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md)
+Companion narrative: [access-control.md](../engineering/access-control.md)
 
 ---
 
@@ -66,7 +66,7 @@ Companion narrative: [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.
 
 **Evidence today:** remote helper + RPC exist; C2 locked vendors/inbox/comms/playbooks/approvals/assets/social/etc.; only intentional open policy is founding org INSERT; contract tests in `membership-rls-phase-c.test.ts`.
 
-**Storage (Phase C3):** See [STORAGE_RLS.md](./STORAGE_RLS.md) — `067` applied; Storage API membership-scoped; public bucket HTTP GET residual documented.
+**Storage (Phase C3):** See [storage-rls.md](../engineering/storage-rls.md) — `067` applied; Storage API membership-scoped; public bucket HTTP GET residual documented.
 
 ---
 

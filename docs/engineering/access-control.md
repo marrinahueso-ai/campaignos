@@ -6,7 +6,7 @@
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
 
-**Re-verification (before/after + test results):** see [PLATFORM_STABILITY_VERIFICATION.md](./PLATFORM_STABILITY_VERIFICATION.md) — includes Stability P0/P1 memory slices.
+**Re-verification (before/after + test results):** see [PLATFORM_STABILITY_VERIFICATION.md](../archive/PLATFORM_STABILITY_VERIFICATION.md) — includes Stability P0/P1 memory slices.
 
 ---
 
@@ -137,7 +137,7 @@ Applied remotely (history may show split entries: `membership_scoped_rls` + `mem
 
 ### Phase C3 — Storage membership RLS
 
-**Full write-up:** [STORAGE_RLS.md](./STORAGE_RLS.md)  
+**Full write-up:** [storage-rls.md](./storage-rls.md)  
 **Migration:** `supabase/migrations/067_storage_membership_rls.sql`
 
 | Scope | Behavior |
@@ -229,5 +229,5 @@ Do **not** commit `.env.local`.
 | Invite | `src/app/invite/[token]/`, `src/lib/auth/invite-*.ts`, RPC in migration 064 |
 | Templates UI | `src/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel.tsx` |
 | RLS migrations | `064`–`066` (tables), `067_storage_membership_rls.sql` (storage) |
-| Storage RLS doc | `docs/STORAGE_RLS.md` |
+| Storage RLS doc | `docs/engineering/storage-rls.md` |
 | Playwright | `tests/hey-ralli/smoke/06–08-*.spec.ts`, `tests/hey-ralli/helpers/auth.ts` |

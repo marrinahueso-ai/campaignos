@@ -138,6 +138,6 @@ Interactive flow (pick item → generate → deny → adjust → approve → ret
 
 ## Related docs
 
-- `docs/SPRINTS.md` — Artwork v2 sprint entry
+- `docs/archive/SPRINTS.md` — Artwork v2 sprint entry
 - `docs/RELEASE_0_5.md` — Release checkpoint including Artwork v2
 - `docs/ARTWORK_FOUNDATION_REPAIR_PLAN.md` — earlier repair planning (pre-removal)

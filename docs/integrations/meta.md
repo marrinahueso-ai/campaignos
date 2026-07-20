@@ -30,7 +30,7 @@ Same mental model for Canva and Monday: one Connect CTA per provider, `returnTo`
 - Settings → Meta is the manage home; Insights / Inbox Connect CTAs hit the **same** `/api/meta/oauth/start` (no `flow=` fork).
 - Canva / Monday panels and Artwork Canva connect use the same start-path helper.
 - Connection rows: `organization_meta_connections`, `organization_canva_connections`, `organization_monday_connections`.
-- Google Calendar Sign-in is **live and wired** through review → calendar / dashboard, plus daily cron (see [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md)); ICS + upload remain alternate streams. Gmail still deferred.
+- Google Calendar Sign-in is **live and wired** through review → calendar / dashboard, plus daily cron (see [google-calendar.md](./google-calendar.md)); ICS + upload remain alternate streams. Gmail still deferred.
 
 Still later: shared connection-health contract, App Review / production permission lifecycle, env-vs-org tenancy cleanup, Gmail Connect.
 
@@ -41,4 +41,4 @@ Still later: shared connection-health contract, App Review / production permissi
 1. Shared health (`connected` / `needs_reconnect` / `missing_scopes`) consumed by banners.
 2. Keep Login for Business `config_id` as source of truth for Meta use cases.
 3. Monday post-OAuth board mapping as a short finish-setup step (not a second OAuth).
-4. Google Gmail Connect (separate CTA; same GCP project) — see [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md).
+4. Google Gmail Connect (separate CTA; same GCP project) — see [google-calendar.md](./google-calendar.md).

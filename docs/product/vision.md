@@ -3,7 +3,7 @@
 **Status:** Planned stub  
 **Owner:** TBD  
 **Last updated:** July 20, 2026  
-**Related:** [Product](./README.md) · [Feature list](../FEATURE_LIST.md) · [Documentation home](../README.md)
+**Related:** [Product](./README.md) · [Feature list](./feature-list.md) · [Documentation home](../README.md)
 
 ## Purpose
 
@@ -11,8 +11,8 @@ Single Hey Ralli product vision entry point for engineers and QA (not historical
 
 ## Until this is written
 
-- Living status: [FEATURE_LIST.md](../FEATURE_LIST.md)
-- Design blueprints: [product-v2/01_PRODUCT_VISION.md](../../product-v2/01_PRODUCT_VISION.md) (moves to `blueprints/` in Phase 2)
+- Living status: [feature-list.md](./feature-list.md)
+- Design blueprints: [blueprints/01_PRODUCT_VISION.md](./blueprints/01_PRODUCT_VISION.md)
 - Historical: `docs/VISION.md`, `docs/PRODUCT_VISION.md` (archive in Phase 2)
 
 ## TODO

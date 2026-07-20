@@ -76,13 +76,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Layer toggles, detail panel — **shipped**
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**
 - Insights-weighted engagement heatmap — **deferred** (current scores use preferred windows + local publish times, not Meta Insights metrics)
-- Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md))
+- Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [google-calendar.md](../integrations/google-calendar.md))
 - Google Calendar daily sync cron (auto-import new events) — **shipped**
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
 - Calendar file upload + import review (incl. AI fix) — **shipped**
 - Communications planning calendar — **shipped** (secondary)
-- Gmail inbox OAuth — **deferred** (see [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md))
+- Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))
 
 ## Communications Hub (inbox)
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
@@ -123,7 +123,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Connect Meta empty state with `returnTo=/insights` — **shipped**
 - Audience demographics overview — **deferred**
 - LLM-generated narrative — **deferred**
-- Year-end / board operational analytics — **deferred** (see product-v2/11_ANALYTICS.md)
+- Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))
 - Smoke: `tests/hey-ralli/smoke/11-insights.spec.ts` — **shipped**
 
 ## Playbooks
@@ -141,7 +141,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Board roster / committees / responsibility matrix — **shipped**
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
-- Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [META_CONNECTION.md](./META_CONNECTION.md), [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md))
+- Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
 - Billing & Plan UI — **partial**; Stripe checkout / real upgrades — **deferred**
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
@@ -159,4 +159,8 @@ Settings: Overview · Organization · Team & Access · Integrations · AI Brain 
 ---
 
 ## Not yet full product (appendix)
-Stripe billing · Gmail / Dropbox / Constant Contact · Tasks Calendar/Timeline/Workload · 2FA · Inbox assign/campaign filter · Full Create-with-AI → Meta published sync · Vendor payments/contracts depth · Shared one-click Meta OAuth framework polish (see [META_CONNECTION.md](./META_CONNECTION.md)) · Longer vision (SMS, native mobile, multi-vertical, succession, year clone, etc.)
+Stripe billing · Gmail / Dropbox / Constant Contact · Tasks Calendar/Timeline/Workload · 2FA · Inbox assign/campaign filter · Full Create-with-AI → Meta published sync · Vendor payments/contracts depth · Shared one-click Meta OAuth framework polish (see [meta.md](../integrations/meta.md)) · Longer vision (SMS, native mobile, multi-vertical, succession, year clone, etc.)
+
+---
+
+**Canonical docs:** [Documentation home](../README.md) · [Architecture](../engineering/architecture.md) · [QA overview](../qa/architecture-overview.md)

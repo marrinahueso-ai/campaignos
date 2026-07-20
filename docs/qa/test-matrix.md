@@ -3,11 +3,11 @@
 **Status:** Planned stub  
 **Owner:** TBD  
 **Last updated:** July 20, 2026  
-**Related:** [QA](./README.md) · [Feature list](../FEATURE_LIST.md) · [Testing guide](../../HEY-RALLI-TESTING-GUIDE.md) · [Documentation home](../README.md)
+**Related:** [QA](./README.md) · [Feature list](../product/feature-list.md) · [Testing guide](./testing-guide.md) · [Documentation home](../README.md)
 
 ## Purpose
 
-Map [FEATURE_LIST.md](../FEATURE_LIST.md) areas to Playwright smokes under `tests/hey-ralli/smoke/` and key unit test scripts in `package.json`.
+Map [feature-list.md](../product/feature-list.md) areas to Playwright smokes under `tests/hey-ralli/smoke/` and key unit test scripts in `package.json`.
 
 ## TODO
 

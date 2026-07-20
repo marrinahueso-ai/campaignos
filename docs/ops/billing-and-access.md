@@ -3,7 +3,7 @@
 **Status:** Planned stub  
 **Owner:** TBD  
 **Last updated:** July 20, 2026  
-**Related:** [Ops](./README.md) · [Feature list](../FEATURE_LIST.md) · [Documentation home](../README.md)
+**Related:** [Ops](./README.md) · [Feature list](../product/feature-list.md) · [Documentation home](../README.md)
 
 ## Purpose
 
