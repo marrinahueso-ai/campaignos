@@ -96,10 +96,10 @@ export const MARKETING_FEATURES: FeatureDefinition[] = [
     navLabel: "Heatmap",
     title: "Posting-time heatmap",
     summary:
-      "See when parents actually engage — schedule posts in the green zones, not guesswork.",
-    highlights: ["Engagement heatmap", "Preferred windows", "History blended"],
+      "See the best hours to post — based on your preferred windows and when you’ve published before.",
+    highlights: ["Week-view heatmap", "Preferred windows", "Publish history blended"],
     details: [
-      "Week view tints each hour by engagement score",
+      "Week view tints each hour by best-time score (Meta connected)",
       "Blend your preferred times with published-post history",
       "Drag posts onto high-score slots in one motion",
     ],

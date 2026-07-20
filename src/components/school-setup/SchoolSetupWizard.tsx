@@ -131,7 +131,7 @@ export function SchoolSetupWizard({
         4: {
           title: "Import your school calendar",
           description:
-            "Upload a calendar file or paste an ICS subscribe feed. We will read the dates and let you review them before they go live.",
+            "Upload a calendar file or paste an ICS subscribe feed. After setup you can also Sign in with Google from Integrations — same review flow before dates go live.",
         },
         5: {
           title: "Connect Facebook & Instagram",
@@ -460,6 +460,15 @@ export function SchoolSetupWizard({
                   hint="Optional — Google Calendar ICS or webcal:// URLs sync daily after setup."
                   type="url"
                 />
+                <div className="rounded-xl border border-dashed border-cos-border bg-cos-bg/40 px-5 py-4">
+                  <p className="text-sm font-medium text-cos-text">
+                    Prefer Sign in with Google?
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-cos-muted">
+                    Finish setup, then connect under Settings → Integrations →
+                    Google Calendar. We sync events into the same review list.
+                  </p>
+                </div>
                 <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
                   <p className="font-display text-xl text-cos-text">
                     Review before anything goes live

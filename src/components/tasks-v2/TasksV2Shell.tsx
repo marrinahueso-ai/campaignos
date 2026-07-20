@@ -247,8 +247,10 @@ export function TasksV2Shell({
       eventScopedGroups,
       data.viewer,
       myViewFilter,
+      // Focus/Kanban Done column must keep completed cards visible.
+      activeTab === "kanban" ? { includeDone: true } : undefined,
     );
-  }, [data.viewer, eventScopedGroups, myViewFilter]);
+  }, [activeTab, data.viewer, eventScopedGroups, myViewFilter]);
 
   const scopedSummary = useMemo(
     () => computeTasksV2SummaryStats(flattenEventGroups(displayEventGroups)),

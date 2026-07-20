@@ -12,6 +12,7 @@ import {
   isMondayIntegrationConfigured,
   resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { createMondayOAuthState } from "@/lib/monday/connection";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 
@@ -38,9 +39,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(settingsUrl);
   }
 
-  const returnTo = request.nextUrl.searchParams.get("returnTo") ?? "/settings/monday";
-  const safeReturnTo =
-    returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/monday";
+  const safeReturnTo = safeOAuthReturnTo(
+    request.nextUrl.searchParams.get("returnTo"),
+    "/settings/monday",
+  );
 
   const redirectUri = getMondayRedirectUri(origin);
   const state = createMondayOAuthState(safeReturnTo, redirectUri);

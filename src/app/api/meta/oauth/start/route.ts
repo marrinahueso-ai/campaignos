@@ -5,6 +5,7 @@ import {
   META_OAUTH_PAGE_ID_COOKIE,
   META_OAUTH_STATE_COOKIE,
 } from "@/lib/meta-publishing/config";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { META_COMBINED_OAUTH_SCOPES } from "@/lib/meta-publishing/oauth-scopes";
 import {
   createMetaOAuthState,
@@ -26,8 +27,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(settingsUrl);
   }
 
-  const returnTo = request.nextUrl.searchParams.get("returnTo") ?? "/settings/meta";
-  const safeReturnTo = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/meta";
+  const safeReturnTo = safeOAuthReturnTo(
+    request.nextUrl.searchParams.get("returnTo"),
+    "/settings/meta",
+  );
   const pageId =
     request.nextUrl.searchParams.get("pageId")?.trim() ||
     getMetaFacebookPageId() ||

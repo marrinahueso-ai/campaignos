@@ -106,26 +106,33 @@ export function CalendarSubscribeFeedPanel({
 
   const body = (
     <div className="space-y-4">
-      <div>
-        <h2 className="font-display text-xl text-cos-text">
-          Calendar subscribe feed
-        </h2>
-        <p className="mt-1 text-sm text-cos-muted">
-          Paste your Google Calendar ICS (or webcal) URL. Save it, then sync —
-          existing events are skipped so refreshes do not duplicate. New events
-          also pull in daily at 6:00 AM UTC.
+      {variant === "card" ? (
+        <div>
+          <h2 className="font-display text-xl text-cos-text">
+            Calendar subscribe feed
+          </h2>
+          <p className="mt-1 text-sm text-cos-muted">
+            Paste your Google Calendar ICS (or webcal) URL. Save it, then sync —
+            existing events are skipped so refreshes do not duplicate. New events
+            also pull in daily at 6:00 AM UTC.
+          </p>
+          {activeSchoolYear ? (
+            <p className="mt-1 text-xs text-cos-muted">
+              Active school year: {activeSchoolYear.label}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-amber-800">
+              Finish school setup so an active school year exists before linking a
+              feed.
+            </p>
+          )}
+        </div>
+      ) : !activeSchoolYear ? (
+        <p className="text-sm text-amber-800">
+          Finish school setup so an active school year exists before linking a
+          feed.
         </p>
-        {activeSchoolYear ? (
-          <p className="mt-1 text-xs text-cos-muted">
-            Active school year: {activeSchoolYear.label}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-amber-800">
-            Finish school setup so an active school year exists before linking a
-            feed.
-          </p>
-        )}
-      </div>
+      ) : null}
 
       <Input
         label="Calendar subscribe feed (ICS URL)"

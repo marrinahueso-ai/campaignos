@@ -175,13 +175,16 @@ export function CalendarImportPlanList({
         <CardHeader className="items-center py-12 text-center">
           <CardTitle>No calendar events yet</CardTitle>
           <CardDescription className="max-w-md">
-            Sync your subscribe feed or upload a school calendar PDF, review the dates,
-            then import them here.
+            Sign in with Google, sync a subscribe feed, or upload a school
+            calendar. Review the dates, then they show up here and on your
+            dashboard.
           </CardDescription>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button href="/calendar/import">Import calendar</Button>
-            <Button href="/settings/integrations/calendar" variant="secondary">
-              Sync subscribe feed
+            <Button href="/settings/integrations/calendar">
+              Sign in with Google
+            </Button>
+            <Button href="/calendar/import" variant="secondary">
+              Import calendar
             </Button>
           </div>
         </CardHeader>

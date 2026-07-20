@@ -24,6 +24,7 @@ import { refreshInboxScopesFromPageToken } from "@/lib/inbox/settings";
 import { missingFacebookCommentReplyScopes } from "@/lib/inbox/scopes";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { pickBestPageFromTokenResult } from "@/lib/meta-publishing/connection-token-select";
 import { resolveSiteOrigin } from "@/lib/site/url";
 
@@ -41,11 +42,10 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
 
-  const returnToCookie = request.cookies.get(META_OAUTH_RETURN_COOKIE)?.value;
-  const returnTo =
-    returnToCookie && returnToCookie.startsWith("/") && !returnToCookie.startsWith("//")
-      ? returnToCookie
-      : fallbackReturn;
+  const returnTo = safeOAuthReturnTo(
+    request.cookies.get(META_OAUTH_RETURN_COOKIE)?.value,
+    fallbackReturn,
+  );
 
   const redirectTarget = new URL(returnTo, origin);
 

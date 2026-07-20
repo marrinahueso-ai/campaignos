@@ -266,15 +266,33 @@ export function TasksV2Sidebar({
 
   return (
     <aside className="flex flex-col gap-4">
-      <section className="border border-cos-border bg-cos-card p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-cos-accent" />
-          <h2 className="font-display text-base text-cos-text">AI Task Generator</h2>
-          <span className="rounded bg-[#dce8dc] px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-[#3f5240] uppercase">
-            New
+      <section
+        className={cn(
+          "relative overflow-hidden rounded-lg border border-[color-mix(in_srgb,var(--cos-accent)_45%,var(--cos-border))] p-4 shadow-md",
+          "bg-[linear-gradient(165deg,var(--cos-warning)_0%,var(--cos-card)_42%,var(--cos-card)_100%)]",
+        )}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-[color-mix(in_srgb,var(--cos-accent)_22%,transparent)] blur-2xl"
+        />
+        <div className="relative">
+        <div className="flex items-center gap-2.5">
+          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--cos-accent)_18%,var(--cos-card))] text-[var(--cos-warning-text)] ring-1 ring-[color-mix(in_srgb,var(--cos-accent)_35%,transparent)]">
+            <Sparkles className="h-4 w-4" strokeWidth={2} />
           </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-display text-base text-cos-text">
+                AI Task Generator
+              </h2>
+              <span className="rounded-full bg-[var(--cos-success-bg)] px-2 py-0.5 text-[9px] font-bold tracking-wide text-[var(--cos-success-text)] uppercase">
+                New
+              </span>
+            </div>
+          </div>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-cos-muted">
+        <p className="mt-2.5 text-xs leading-relaxed text-cos-muted">
           {lockedId
             ? "Describe what you’re working on (or use voice), then generate tasks grounded in this event."
             : "Pick a campaign/event, describe what you’re working on (or use voice), then generate tasks grounded in that event."}
@@ -287,10 +305,10 @@ export function TasksV2Sidebar({
           </p>
         )}
 
-        <label className="mt-3 block text-xs text-cos-muted">
+        <label className="mt-3 block text-xs font-medium text-cos-muted">
           {lockedId ? "Source event" : "Select source"}
           <select
-            className="mt-1 w-full rounded-md border border-cos-border bg-cos-bg px-2 py-1.5 text-sm text-cos-text disabled:cursor-not-allowed disabled:opacity-80"
+            className="mt-1 w-full rounded-md border border-cos-border bg-cos-card px-2 py-1.5 text-sm text-cos-text shadow-sm disabled:cursor-not-allowed disabled:opacity-80"
             value={sourceEventId}
             onChange={(event) => setSourceEventId(event.target.value)}
             disabled={Boolean(lockedId) || sourceOptions.length === 0}
@@ -307,7 +325,7 @@ export function TasksV2Sidebar({
           </select>
         </label>
 
-        <label className="mt-3 block text-xs text-cos-muted">
+        <label className="mt-3 block text-xs font-medium text-cos-muted">
           What are you working on?
           <div className="mt-1 flex gap-2">
             <textarea
@@ -315,7 +333,7 @@ export function TasksV2Sidebar({
               onChange={(event) => setPrompt(event.target.value)}
               rows={3}
               placeholder="e.g. volunteer signup, booth setup, reminder posts…"
-              className="min-h-[4.5rem] w-full resize-y rounded-md border border-cos-border bg-cos-bg px-2 py-1.5 text-sm text-cos-text placeholder:text-cos-muted"
+              className="min-h-[4.5rem] w-full resize-y rounded-md border border-cos-border bg-cos-card px-2 py-1.5 text-sm text-cos-text shadow-sm placeholder:text-cos-muted"
             />
             {voiceSupported ? (
               <button
@@ -323,10 +341,10 @@ export function TasksV2Sidebar({
                 aria-label={isListening ? "Stop voice input" : "Start voice input"}
                 onClick={toggleVoice}
                 className={cn(
-                  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-cos-border transition-colors",
+                  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-cos-border shadow-sm transition-colors",
                   isListening
                     ? "bg-cos-text text-[#f6f2eb]"
-                    : "bg-cos-bg text-cos-muted hover:text-cos-text",
+                    : "bg-cos-card text-cos-muted hover:text-cos-text",
                 )}
               >
                 {isListening ? (
@@ -343,8 +361,9 @@ export function TasksV2Sidebar({
           type="button"
           onClick={() => void handleGenerate()}
           disabled={isGenerating || !sourceEventId || !canEdit}
-          className="mt-3 w-full rounded-md bg-[#2a2622] px-3 py-2 text-xs font-medium text-[#f6f2eb] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-cos-dark px-3 py-2.5 text-xs font-semibold text-[#f6f2eb] shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          <Sparkles className="h-3.5 w-3.5 text-[var(--cos-accent)]" aria-hidden />
           {isGenerating ? "Generating…" : "Generate tasks"}
         </button>
 
@@ -358,7 +377,7 @@ export function TasksV2Sidebar({
         ) : null}
 
         {suggestions.length > 0 ? (
-          <div className="mt-3 space-y-2 border-t border-cos-border pt-3">
+          <div className="mt-3 space-y-2 border-t border-[color-mix(in_srgb,var(--cos-accent)_30%,var(--cos-border))] pt-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs font-medium text-cos-text">
                 Suggestions ({suggestions.length})
@@ -367,7 +386,7 @@ export function TasksV2Sidebar({
                 type="button"
                 onClick={() => void handleAddSelected()}
                 disabled={isAdding || selected.size === 0 || !canEdit}
-                className="inline-flex items-center gap-1 rounded-md bg-[#2a2622] px-2 py-1 text-[10px] font-medium text-[#f6f2eb] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-md bg-cos-dark px-2 py-1 text-[10px] font-medium text-[#f6f2eb] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="h-3 w-3" />
                 {isAdding ? "Adding…" : "Add selected"}
@@ -378,7 +397,7 @@ export function TasksV2Sidebar({
                 const checked = selected.has(title);
                 return (
                   <li key={title}>
-                    <label className="flex cursor-pointer items-start gap-2 text-xs leading-relaxed text-cos-muted">
+                    <label className="flex cursor-pointer items-start gap-2 rounded-md bg-cos-card/80 px-2 py-1.5 text-xs leading-relaxed text-cos-muted ring-1 ring-cos-border/70">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -395,12 +414,13 @@ export function TasksV2Sidebar({
             </ul>
           </div>
         ) : (
-          <p className="mt-3 inline-flex items-center gap-1 text-xs text-cos-muted">
+          <p className="mt-3 inline-flex items-center gap-1 rounded-md bg-cos-card/70 px-2 py-1.5 text-xs text-cos-muted ring-1 ring-cos-border/60">
             View suggestions
             <ChevronRight className="h-3.5 w-3.5" />
             <span>generate to see them here</span>
           </p>
         )}
+        </div>
       </section>
 
       {!hideMyViews ? (

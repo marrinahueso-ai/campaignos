@@ -29,6 +29,7 @@ const PUBLIC_PATHS = [
   "/api/monday/oauth/callback",
   "/api/canva/oauth/callback",
   "/api/meta/oauth/callback",
+  "/api/google/oauth/callback",
   "/api/meta/webhook",
   "/go/instagram-post",
   "/go/email-primary",

@@ -54,7 +54,7 @@ export function IntegrationsSettingsContent({
     <div className="space-y-6">
       <SettingsV2PageHeader
         title="Integrations"
-        description="Connect the tools your PTO already uses. OAuth flows stay on their existing routes."
+        description="Connect once per tool — approve the use cases, then Hey Ralli uses that connection across the app."
       />
 
       <SettingsV2Card

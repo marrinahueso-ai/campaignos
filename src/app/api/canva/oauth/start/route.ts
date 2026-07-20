@@ -10,6 +10,7 @@ import {
   isCanvaIntegrationConfigured,
 } from "@/lib/canva/config";
 import { createCanvaCodeChallenge, createCanvaCodeVerifier, createCanvaOAuthState } from "@/lib/canva/pkce";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { resolveSiteOrigin } from "@/lib/site/url";
 
 export async function GET(request: NextRequest) {
@@ -21,8 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(settingsUrl);
   }
 
-  const returnTo = request.nextUrl.searchParams.get("returnTo") ?? "/settings/canva";
-  const safeReturnTo = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/settings/canva";
+  const safeReturnTo = safeOAuthReturnTo(
+    request.nextUrl.searchParams.get("returnTo"),
+    "/settings/canva",
+  );
 
   const codeVerifier = createCanvaCodeVerifier();
   const codeChallenge = createCanvaCodeChallenge(codeVerifier);

@@ -6,21 +6,36 @@ export const metadata = {
   title: "Calendar Review",
 };
 
-export default async function CalendarReviewPage() {
+interface CalendarReviewPageProps {
+  searchParams: Promise<{ import?: string }>;
+}
+
+export default async function CalendarReviewPage({
+  searchParams,
+}: CalendarReviewPageProps) {
+  const params = await searchParams;
   const { importRecord, reviewData, importedEventCount } =
-    await getCalendarReviewPageData();
+    await getCalendarReviewPageData(params.import);
 
   if (!importRecord || !reviewData) {
     return (
       <div className="mx-auto max-w-2xl space-y-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold text-cos-text">Review calendar import</h1>
+        <h1 className="text-2xl font-semibold text-cos-text">
+          Review calendar import
+        </h1>
         <p className="text-sm text-cos-muted">
-          Upload your school calendar first. We will read the dates and let you
-          review them before they appear on your calendar.
+          Connect Google Calendar, paste a subscribe link, or upload a file
+          first. We will read the dates and let you review them before they
+          appear on your calendar.
         </p>
-        <div className="flex justify-center gap-3 pt-2">
-          <Button href="/calendar/import">Upload calendar</Button>
-          <Button href="/settings/school-setup" variant="secondary">
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Button href="/settings/integrations/calendar">
+            Sign in with Google
+          </Button>
+          <Button href="/calendar/import" variant="secondary">
+            Import calendar
+          </Button>
+          <Button href="/settings/school-setup" variant="ghost">
             School setup
           </Button>
         </div>

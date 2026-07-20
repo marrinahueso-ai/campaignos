@@ -103,3 +103,37 @@ export async function expectApprovalsLoaded(page: Page): Promise<void> {
     }),
   ).toBeVisible({ timeout: 45_000 });
 }
+
+/** Navigate to Tasks and wait for the hub heading. */
+export async function gotoTasks(page: Page): Promise<void> {
+  await page.goto("/tasks", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await expectTasksLoaded(page);
+}
+
+/** Wait until Tasks page main content has loaded. */
+export async function expectTasksLoaded(page: Page): Promise<void> {
+  await expect(page).toHaveURL(/\/tasks/, { timeout: 30_000 });
+  await expect(
+    mainContent(page).getByRole("heading", { name: /^tasks$/i }),
+  ).toBeVisible({ timeout: 45_000 });
+}
+
+/** Navigate to Insights and wait for the hub heading. */
+export async function gotoInsights(page: Page): Promise<void> {
+  await page.goto("/insights", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await expectInsightsLoaded(page);
+}
+
+/** Wait until Insights page main content has loaded. */
+export async function expectInsightsLoaded(page: Page): Promise<void> {
+  await expect(page).toHaveURL(/\/insights/, { timeout: 30_000 });
+  await expect(
+    mainContent(page).getByRole("heading", { name: /^insights$/i }),
+  ).toBeVisible({ timeout: 45_000 });
+}

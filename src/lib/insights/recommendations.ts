@@ -81,13 +81,13 @@ export function buildInsightsRecommendation(input: {
     const rounded = Math.round(Math.abs(engagementKpi.changePercent) * 10) / 10;
     const direction = engagementKpi.changePercent > 0 ? "up" : "down";
     items.push({
-      title: "Engagement trend",
-      body: `Engagement is ${direction} ${rounded}% compared to the previous period (${engagementKpi.previousValue.toLocaleString()} → ${engagementKpi.value.toLocaleString()}).`,
+      title: "Parent engagement",
+      body: `Families interacted ${direction} ${rounded}% vs the previous period (${engagementKpi.previousValue.toLocaleString()} → ${engagementKpi.value.toLocaleString()}).`,
     });
   } else if (engagementKpi?.value != null && engagementKpi.value > 0) {
     items.push({
-      title: "Engagement",
-      body: `You recorded ${engagementKpi.value.toLocaleString()} engagements in this period.`,
+      title: "Parent engagement",
+      body: `Families interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
     });
   }
 
@@ -100,12 +100,15 @@ export function buildInsightsRecommendation(input: {
     const rounded = Math.round(Math.abs(reachKpi.changePercent) * 10) / 10;
     const direction = reachKpi.changePercent > 0 ? "up" : "down";
     items.push({
-      title: "Reach trend",
-      body: `Reach is ${direction} ${rounded}% compared to the previous period (${reachKpi.previousValue.toLocaleString()} → ${reachKpi.value.toLocaleString()}).`,
+      title: "Parents reached",
+      body:
+        direction === "up"
+          ? `Your posts reached ${rounded}% more accounts vs the previous period (${reachKpi.previousValue.toLocaleString()} → ${reachKpi.value.toLocaleString()}).`
+          : `Your posts reached ${rounded}% fewer accounts vs the previous period (${reachKpi.previousValue.toLocaleString()} → ${reachKpi.value.toLocaleString()}).`,
     });
   } else if (reachKpi?.value != null && reachKpi.value > 0) {
     items.push({
-      title: "Reach",
+      title: "Parents reached",
       body: `Your content reached ${reachKpi.value.toLocaleString()} accounts in this period.`,
     });
   }
@@ -115,10 +118,10 @@ export function buildInsightsRecommendation(input: {
     const metricLabel = top.engagement > 0 ? "engagement" : "posts";
     const metricValue =
       top.engagement > 0
-        ? `${top.engagement.toLocaleString()} engagements`
+        ? `${top.engagement.toLocaleString()} interactions`
         : `${top.count} post${top.count === 1 ? "" : "s"}`;
     items.push({
-      title: "Top content format",
+      title: "What worked best",
       body: `${top.label} led with ${metricValue} (${top.percent}% of total ${metricLabel}).`,
     });
 
@@ -148,7 +151,7 @@ export function buildInsightsRecommendation(input: {
         : { name: "Facebook", reach: facebook.reach, engagement: facebook.engagement };
 
     items.push({
-      title: "Platform reach",
+      title: "Where parents saw you",
       body: `${leader.name} reached ${leader.reach.toLocaleString()} accounts vs ${other.reach.toLocaleString()} on ${other.name}.`,
     });
 
@@ -158,8 +161,8 @@ export function buildInsightsRecommendation(input: {
       (leader.engagement > 0 || other.engagement > 0)
     ) {
       items.push({
-        title: "Platform engagement",
-        body: `${leader.name} recorded ${leader.engagement.toLocaleString()} engagements vs ${other.engagement.toLocaleString()} on ${other.name}.`,
+        title: "Where parents engaged",
+        body: `${leader.name} drove ${leader.engagement.toLocaleString()} interactions vs ${other.engagement.toLocaleString()} on ${other.name}.`,
       });
     }
   }
@@ -167,15 +170,15 @@ export function buildInsightsRecommendation(input: {
   if (input.topPosts.length > 0) {
     const topPost = input.topPosts[0];
     items.push({
-      title: "Best performing post",
-      body: `"${topPost.title}" reached ${(topPost.reach ?? 0).toLocaleString()} accounts with ${(topPost.engagement ?? 0).toLocaleString()} engagements.`,
+      title: "Standout post",
+      body: `"${topPost.title}" reached ${(topPost.reach ?? 0).toLocaleString()} accounts with ${(topPost.engagement ?? 0).toLocaleString()} interactions.`,
     });
   }
 
   if (likesKpi?.value != null && likesKpi.value > 0) {
     items.push({
       title: "Reactions",
-      body: `${likesKpi.value.toLocaleString()} likes/reactions recorded in this period.`,
+      body: `${likesKpi.value.toLocaleString()} likes and reactions in this period.`,
     });
   }
 
@@ -189,11 +192,11 @@ export function buildInsightsRecommendation(input: {
     engagementKpi.changePercent > 0
   ) {
     summaryParts.push(
-      `Your engagement is up ${Math.round(engagementKpi.changePercent * 10) / 10}% compared to the previous period.`,
+      `Parent engagement is up ${Math.round(engagementKpi.changePercent * 10) / 10}% compared to the previous period.`,
     );
   } else if (engagementKpi?.value != null && engagementKpi.value > 0) {
     summaryParts.push(
-      `You recorded ${engagementKpi.value.toLocaleString()} engagements in this period.`,
+      `Families interacted with your posts ${engagementKpi.value.toLocaleString()} times in this period.`,
     );
   } else if (reachKpi?.value != null && reachKpi.value > 0) {
     summaryParts.push(

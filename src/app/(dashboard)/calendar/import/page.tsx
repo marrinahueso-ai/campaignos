@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { CalendarImportForm } from "@/components/calendar-import/CalendarImportForm";
 import { CalendarSubscribeFeedSection } from "@/components/calendar-import/CalendarSubscribeFeedSection";
+import { GoogleCalendarImportSection } from "@/components/calendar-import/GoogleCalendarImportSection";
 import { Button } from "@/components/ui/Button";
 
 export const metadata = {
@@ -21,10 +22,18 @@ export default function CalendarImportPage() {
           </Button>
         </div>
         <p className="text-sm text-cos-muted">
-          Link a live ICS subscribe feed (recommended) or upload a calendar file.
-          Feed sync skips events you already have so refreshes do not duplicate.
+          Sign in with Google, link an ICS subscribe feed, or upload a calendar
+          file. New dates go to review before they appear on your calendar.
         </p>
       </div>
+
+      <Suspense
+        fallback={
+          <p className="text-sm text-cos-muted">Loading Google Calendar…</p>
+        }
+      >
+        <GoogleCalendarImportSection />
+      </Suspense>
 
       <Suspense
         fallback={
@@ -47,7 +56,7 @@ export default function CalendarImportPage() {
       </div>
 
       <p className="text-sm text-cos-muted">
-        Manage this feed anytime from{" "}
+        Manage connections anytime from{" "}
         <Link
           href="/settings/integrations/calendar"
           className="font-medium text-cos-accent hover:underline"

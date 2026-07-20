@@ -10,6 +10,7 @@ import {
   isMondayIntegrationConfigured,
   resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import {
   exchangeMondayAuthorizationCode,
   parseMondayOAuthState,
@@ -46,9 +47,7 @@ export async function GET(request: NextRequest) {
     const returnToCookie = request.cookies.get(MONDAY_OAUTH_RETURN_COOKIE)?.value;
     const returnTo =
       (parsedState.valid && parsedState.returnTo) ||
-      (returnToCookie && returnToCookie.startsWith("/") && !returnToCookie.startsWith("//")
-        ? returnToCookie
-        : fallbackReturn);
+      safeOAuthReturnTo(returnToCookie, fallbackReturn);
 
     const redirectTarget = new URL(returnTo, origin);
 

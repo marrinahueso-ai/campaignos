@@ -151,6 +151,20 @@ describe("filterTasksForMyView", () => {
       ["3"],
     );
   });
+
+  it("includeDone keeps completed cards for Kanban/Focus boards", () => {
+    const result = filterTasksForMyView(
+      tasks,
+      viewer,
+      "my_tasks",
+      "2026-07-18",
+      { includeDone: true },
+    );
+    assert.deepEqual(
+      result.map((task) => task.id).sort(),
+      ["1", "2", "3"],
+    );
+  });
 });
 
 describe("filterEventGroupsForMyView", () => {

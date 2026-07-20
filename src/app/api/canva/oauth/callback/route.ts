@@ -10,6 +10,7 @@ import {
   exchangeCanvaAuthorizationCode,
   saveCanvaConnectionFromTokenResponse,
 } from "@/lib/canva/connection";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { resolveSiteOrigin } from "@/lib/site/url";
 
@@ -27,11 +28,10 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
 
-  const returnToCookie = request.cookies.get(CANVA_OAUTH_RETURN_COOKIE)?.value;
-  const returnTo =
-    returnToCookie && returnToCookie.startsWith("/") && !returnToCookie.startsWith("//")
-      ? returnToCookie
-      : fallbackReturn;
+  const returnTo = safeOAuthReturnTo(
+    request.cookies.get(CANVA_OAUTH_RETURN_COOKIE)?.value,
+    fallbackReturn,
+  );
 
   const redirectTarget = new URL(returnTo, origin);
 

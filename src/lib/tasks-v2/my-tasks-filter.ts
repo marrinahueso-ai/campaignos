@@ -31,33 +31,49 @@ export function taskMatchesViewer(
   return false;
 }
 
+export type FilterTasksForMyViewOptions = {
+  /**
+   * Kanban / Focus board needs Done cards to stay visible.
+   * Table “My Tasks” views stay open-only unless view is `completed`.
+   */
+  includeDone?: boolean;
+};
+
 export function filterTasksForMyView(
   tasks: TaskHubTaskItem[],
   viewer: TasksV2Viewer,
   view: TasksV2MyViewId,
   today = getTodayDateString(),
+  options?: FilterTasksForMyViewOptions,
 ): TaskHubTaskItem[] {
   const weekEnd = addDaysToDateOnly(today, 7);
   const mine = tasks.filter((task) => taskMatchesViewer(task, viewer));
+  const myDone = () => mine.filter((task) => task.status === "done");
+  const withDone = (open: TaskHubTaskItem[]) =>
+    options?.includeDone ? [...open, ...myDone()] : open;
 
   switch (view) {
     case "my_tasks":
     case "assigned":
-      return mine.filter((task) => isOpenTaskStatus(task.status));
+      return withDone(mine.filter((task) => isOpenTaskStatus(task.status)));
     case "this_week":
-      return mine.filter((task) => {
-        if (!isOpenTaskStatus(task.status)) return false;
-        const due = effectiveDueDate(task);
-        return Boolean(due && due >= today && due <= weekEnd);
-      });
+      return withDone(
+        mine.filter((task) => {
+          if (!isOpenTaskStatus(task.status)) return false;
+          const due = effectiveDueDate(task);
+          return Boolean(due && due >= today && due <= weekEnd);
+        }),
+      );
     case "overdue":
-      return mine.filter((task) => {
-        if (!isOpenTaskStatus(task.status)) return false;
-        const due = effectiveDueDate(task);
-        return Boolean(due && due < today);
-      });
+      return withDone(
+        mine.filter((task) => {
+          if (!isOpenTaskStatus(task.status)) return false;
+          const due = effectiveDueDate(task);
+          return Boolean(due && due < today);
+        }),
+      );
     case "completed":
-      return mine.filter((task) => task.status === "done");
+      return myDone();
     default:
       return mine;
   }
@@ -87,12 +103,15 @@ export function filterEventGroupsForMyView(
   groups: TasksV2EventGroup[],
   viewer: TasksV2Viewer,
   view: TasksV2MyViewId,
+  options?: FilterTasksForMyViewOptions,
 ): TasksV2EventGroup[] {
   const allowedIds = new Set(
     filterTasksForMyView(
       groups.flatMap((group) => group.tasks),
       viewer,
       view,
+      getTodayDateString(),
+      options,
     ).map((task) => task.id),
   );
   return filterEventGroupsByTasks(groups, (task) => allowedIds.has(task.id));

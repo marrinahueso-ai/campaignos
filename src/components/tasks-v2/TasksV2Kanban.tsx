@@ -43,21 +43,53 @@ interface TasksV2KanbanProps {
 
 const STATUS_COLUMN_META: Record<
   (typeof BOARD_COLUMN_STATUSES)[number],
-  { label: string; headerClass: string }
+  { label: string; headerClass: string; titleClass?: string }
 > = {
   todo: {
     label: taskStatusLabel("todo"),
     headerClass: "border-t-[3px] border-t-[var(--cos-status-todo)] bg-[var(--cos-status-todo-bg)]",
+    titleClass: "text-[var(--cos-status-todo-text)]",
   },
   in_progress: {
     label: taskStatusLabel("in_progress"),
     headerClass:
       "border-t-[3px] border-t-[var(--cos-status-progress)] bg-[var(--cos-status-progress-bg)]",
+    titleClass: "text-[var(--cos-status-progress-text)]",
   },
   blocked: {
     label: taskStatusLabel("blocked"),
     headerClass:
       "border-t-[3px] border-t-[var(--cos-status-blocked)] bg-[var(--cos-status-blocked-bg)]",
+    titleClass: "text-[var(--cos-status-blocked-text)]",
+  },
+};
+
+const FOCUS_COLUMN_META: Record<
+  FocusBoardColumn,
+  { headerClass: string; titleClass: string; bodyClass: string }
+> = {
+  todo: {
+    headerClass:
+      "border-t-[3px] border-t-[var(--cos-status-todo)] bg-[var(--cos-status-todo-bg)]",
+    titleClass: "text-[var(--cos-status-todo-text)]",
+    bodyClass: "bg-[var(--cos-status-todo-bg)]/35",
+  },
+  this_week: {
+    headerClass: "border-t-[3px] border-t-[var(--cos-accent)] bg-[var(--cos-warning)]",
+    titleClass: "text-[var(--cos-warning-text)]",
+    bodyClass: "bg-[var(--cos-warning)]/40",
+  },
+  in_progress: {
+    headerClass:
+      "border-t-[3px] border-t-[var(--cos-status-progress)] bg-[var(--cos-status-progress-bg)]",
+    titleClass: "text-[var(--cos-status-progress-text)]",
+    bodyClass: "bg-[var(--cos-status-progress-bg)]/45",
+  },
+  done: {
+    headerClass:
+      "border-t-[3px] border-t-[var(--cos-status-done)] bg-[var(--cos-status-done-bg)]",
+    titleClass: "text-[var(--cos-status-done-text)]",
+    bodyClass: "bg-[var(--cos-status-done-bg)]/40",
   },
 };
 
@@ -81,6 +113,21 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
 
   useEffect(() => {
     setTasks(sourceTasks);
+    // Drop overrides once server data catches up so Done cards stay
+    // after refresh without fighting local status maps.
+    setTaskStatuses((current) => {
+      if (Object.keys(current).length === 0) {
+        return current;
+      }
+      const next: Record<string, EventPlaybookTaskStatus> = {};
+      for (const [id, status] of Object.entries(current)) {
+        const server = sourceTasks.find((task) => task.id === id);
+        if (server && server.status !== status) {
+          next[id] = status;
+        }
+      }
+      return next;
+    });
   }, [sourceTasks]);
 
   const statusColumns = useMemo(() => {
@@ -282,94 +329,112 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
       </div>
 
       {boardMode === "focus" ? (
-        <div className="overflow-hidden rounded-lg border border-cos-border bg-cos-card">
-          <div className="grid grid-cols-1 divide-y divide-cos-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-            {FOCUS_BOARD_COLUMNS.map((column) => {
-              const columnTasks = focusColumns[column];
-              const label = FOCUS_BOARD_LABELS[column];
-              const countLabel =
-                column === "in_progress"
-                  ? `${columnTasks.length} / ${FOCUS_IN_PROGRESS_WIP_LIMIT}`
-                  : String(columnTasks.length);
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FOCUS_BOARD_COLUMNS.map((column) => {
+            const columnTasks = focusColumns[column];
+            const label = FOCUS_BOARD_LABELS[column];
+            const meta = FOCUS_COLUMN_META[column];
+            const countLabel =
+              column === "in_progress"
+                ? `${columnTasks.length} / ${FOCUS_IN_PROGRESS_WIP_LIMIT}`
+                : String(columnTasks.length);
+            const wipOver =
+              column === "in_progress" &&
+              columnTasks.length > FOCUS_IN_PROGRESS_WIP_LIMIT;
 
-              return (
+            return (
+              <Card
+                key={column}
+                padding="none"
+                className={cn(
+                  "flex min-h-[22rem] flex-col overflow-hidden shadow-sm",
+                  dragOverColumn === column &&
+                    "ring-2 ring-cos-accent ring-offset-2 ring-offset-cos-bg",
+                )}
+                onDragOver={(event) => {
+                  if (!canEdit) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDragOverColumn(column);
+                }}
+                onDragLeave={() => {
+                  if (dragOverColumn === column) {
+                    setDragOverColumn(null);
+                  }
+                }}
+                onDrop={(event) => handleFocusColumnDrop(column, event)}
+              >
                 <div
-                  key={column}
                   className={cn(
-                    "flex min-h-[22rem] flex-col bg-cos-bg/40",
-                    dragOverColumn === column &&
-                      "ring-2 ring-inset ring-cos-accent",
+                    "border-b border-cos-border px-4 py-3",
+                    meta.headerClass,
                   )}
-                  onDragOver={(event) => {
-                    if (!canEdit) return;
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "move";
-                    setDragOverColumn(column);
-                  }}
-                  onDragLeave={() => {
-                    if (dragOverColumn === column) {
-                      setDragOverColumn(null);
-                    }
-                  }}
-                  onDrop={(event) => handleFocusColumnDrop(column, event)}
                 >
-                  <div className="flex items-center justify-between gap-2 border-b border-cos-border bg-cos-bg px-3 py-2.5">
-                    <div className="flex min-w-0 items-baseline gap-2">
-                      <h3 className="text-sm font-semibold text-cos-text">
-                        {label}
-                      </h3>
-                      <span className="text-xs tabular-nums text-cos-muted">
-                        {countLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-0 overflow-y-auto py-1">
-                    {columnTasks.map((task) => {
-                      const status = resolveStatus(task);
-                      const isPending = pendingTaskIds.has(task.id);
-
-                      return (
-                        <div
-                          key={task.id}
-                          draggable={canEdit && !isPending}
-                          onDragStart={(event) => {
-                            if (!canEdit) return;
-                            setTaskHubDragData(event, {
-                              taskId: task.id,
-                              committeeKey: task.event.eventId,
-                              sourceStatus: status,
-                            });
-                          }}
-                        >
-                          <TaskHubTaskRow
-                            task={task}
-                            status={status}
-                            committeeName={task.event.eventTitle}
-                            isPending={isPending}
-                            disabled={pending}
-                            canEdit={canEdit}
-                            variant="board"
-                            onToggleStatus={() =>
-                              applyStatus(task, nextTaskStatus(status))
-                            }
-                            onStatusChange={(nextStatus) =>
-                              applyStatus(task, nextStatus)
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                    {columnTasks.length === 0 && (
-                      <p className="px-4 py-10 text-center text-sm text-cos-muted">
-                        {canEdit ? "Drop tasks here" : "No tasks"}
-                      </p>
-                    )}
+                  <div className="flex items-center justify-between gap-2">
+                    <h3
+                      className={cn("text-sm font-semibold", meta.titleClass)}
+                    >
+                      {label}
+                    </h3>
+                    <Badge
+                      variant="default"
+                      className={cn(
+                        "tabular-nums",
+                        wipOver && "bg-[var(--cos-error-bg)] text-[var(--cos-error-text)]",
+                      )}
+                    >
+                      {countLabel}
+                    </Badge>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                <div
+                  className={cn("flex-1 space-y-0 overflow-y-auto py-1", meta.bodyClass)}
+                >
+                  {columnTasks.map((task) => {
+                    const status = resolveStatus(task);
+                    const isPending = pendingTaskIds.has(task.id);
+
+                    return (
+                      <div
+                        key={task.id}
+                        draggable={canEdit && !isPending}
+                        onDragStart={(event) => {
+                          if (!canEdit) return;
+                          setTaskHubDragData(event, {
+                            taskId: task.id,
+                            committeeKey: task.event.eventId,
+                            sourceStatus: status,
+                          });
+                        }}
+                      >
+                        <TaskHubTaskRow
+                          task={task}
+                          status={status}
+                          committeeName={task.event.eventTitle}
+                          isPending={isPending}
+                          disabled={pending}
+                          canEdit={canEdit}
+                          variant="board"
+                          onToggleStatus={() =>
+                            applyStatus(task, nextTaskStatus(status))
+                          }
+                          onStatusChange={(nextStatus) =>
+                            applyStatus(task, nextStatus)
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                  {columnTasks.length === 0 && (
+                    <p className="px-4 py-10 text-center text-sm text-cos-muted">
+                      {canEdit ? "Drop tasks here" : "No tasks"}
+                    </p>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <>
@@ -383,7 +448,7 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
                   key={columnStatus}
                   padding="none"
                   className={cn(
-                    "flex min-h-[22rem] flex-col overflow-hidden",
+                    "flex min-h-[22rem] flex-col overflow-hidden shadow-sm",
                     dragOverColumn === columnStatus &&
                       "ring-2 ring-cos-accent ring-offset-2 ring-offset-cos-bg",
                   )}
@@ -407,7 +472,12 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-cos-text">
+                      <h3
+                        className={cn(
+                          "text-sm font-semibold",
+                          meta.titleClass ?? "text-cos-text",
+                        )}
+                      >
                         {meta.label}
                       </h3>
                       <Badge variant="default">{columnTasks.length}</Badge>

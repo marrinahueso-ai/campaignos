@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { buildOAuthStartPath } from "@/lib/integrations/oauth";
 import {
   disconnectMondayConnectionAction,
   setMondaySyncEnabledAction,
@@ -32,7 +33,7 @@ export function MondayConnectionPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const connectHref = `/api/monday/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
+  const connectHref = buildOAuthStartPath("monday", { returnTo });
 
   function handleDisconnect() {
     setError(null);

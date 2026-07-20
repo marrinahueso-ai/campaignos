@@ -45,12 +45,21 @@ export async function getLatestCalendarImport(): Promise<CalendarImport | null> 
 
 export async function getCalendarImportById(
   importId: string,
+  organizationId?: string,
 ): Promise<CalendarImport | null> {
+  const organization = organizationId
+    ? { id: organizationId }
+    : await getLatestOrganization();
+  if (!organization) {
+    return null;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("calendar_imports")
     .select("*")
     .eq("id", importId)
+    .eq("organization_id", organization.id)
     .maybeSingle();
 
   if (error || !data) {
@@ -60,12 +69,16 @@ export async function getCalendarImportById(
   return mapCalendarImportRow(data as CalendarImportRow);
 }
 
-export const getCalendarReviewPageData = cache(async (): Promise<{
+export const getCalendarReviewPageData = cache(async (
+  importId?: string | null,
+): Promise<{
   importRecord: CalendarImport | null;
   reviewData: CalendarReviewData | null;
   importedEventCount: number;
 }> => {
-  const importRecord = await getLatestCalendarImport();
+  const importRecord = importId?.trim()
+    ? await getCalendarImportById(importId.trim())
+    : await getLatestCalendarImport();
 
   if (!importRecord) {
     return {
