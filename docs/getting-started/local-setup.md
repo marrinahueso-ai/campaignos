@@ -1,6 +1,7 @@
 # Local setup
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Related:** [Getting started](./README.md) · [`.env.local.example`](../../.env.local.example) · [Env & secrets](../ops/env-and-secrets.md) · [Database](../engineering/database.md) · [Documentation home](../README.md)
 

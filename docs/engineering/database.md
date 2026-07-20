@@ -1,6 +1,7 @@
 # Database
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Related:** [Engineering](./README.md) · [`supabase/migrations/`](../../supabase/migrations/) · [Access control](./access-control.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Documentation home](../README.md)
 

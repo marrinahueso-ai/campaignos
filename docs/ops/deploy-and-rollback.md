@@ -1,6 +1,7 @@
 # Deploy and rollback
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Related:** [Ops](./README.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
 

@@ -1,6 +1,8 @@
 # Hey Ralli — Full feature list
 
 Product brand: **Hey Ralli**.  
+**Status:** Living  
+**Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
 **Last updated:** July 19, 2026 — Posting heatmap verified with org Meta connection; Google Calendar wired end-to-end
 

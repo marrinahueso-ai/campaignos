@@ -1,6 +1,7 @@
 # Cron jobs
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 

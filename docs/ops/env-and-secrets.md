@@ -1,6 +1,7 @@
 # Environment variables and secrets
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Related:** [Ops](./README.md) · [`.env.local.example`](../../.env.local.example) · [Local setup](../getting-started/local-setup.md) · [Cron jobs](./cron-jobs.md) · [Documentation home](../README.md)
 

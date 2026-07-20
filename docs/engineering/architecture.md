@@ -1,5 +1,7 @@
 # Hey Ralli — Architecture
 
+**Status:** Living  
+**Owner:** Engineering  
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  

@@ -1,6 +1,7 @@
 # Hey Ralli — Documentation
 
 **Status:** Living index  
+**Owner:** Engineering  
 **Last updated:** July 20, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
