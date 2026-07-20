@@ -225,16 +225,26 @@ export function EventsHomeContent({
                   resetPage();
                 }}
                 className={cn(
-                  "flex min-h-[5.75rem] flex-col items-center justify-center rounded-xl border px-4 py-4 text-center transition-[border-color,box-shadow,background-color] duration-200",
+                  "flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-5 text-center transition-all duration-200",
                   selected
-                    ? "border-cos-primary bg-cos-primary/8 shadow-[0_4px_16px_rgba(42,38,34,0.08)]"
-                    : "border-cos-border/70 bg-white shadow-[0_1px_3px_rgba(42,38,34,0.06)] hover:border-cos-primary/40 hover:shadow-[0_8px_24px_rgba(42,38,34,0.08)]",
+                    ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
+                    : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]",
                 )}
               >
-                <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+                <p
+                  className={cn(
+                    "text-xs font-medium tracking-wide uppercase",
+                    selected ? "text-white/70" : "text-cos-muted",
+                  )}
+                >
                   {card.label}
                 </p>
-                <p className="mt-2 font-display text-3xl leading-none text-cos-text tabular-nums">
+                <p
+                  className={cn(
+                    "font-display text-3xl leading-none tabular-nums",
+                    selected ? "text-white" : "text-cos-text",
+                  )}
+                >
                   {summaryCounts[card.key]}
                 </p>
               </button>
