@@ -225,16 +225,16 @@ export function EventsHomeContent({
                   resetPage();
                 }}
                 className={cn(
-                  "rounded-xl border px-4 py-3 text-left transition-colors",
+                  "flex min-h-[5.75rem] flex-col items-center justify-center rounded-xl border px-4 py-4 text-center transition-[border-color,box-shadow,background-color] duration-200",
                   selected
-                    ? "border-cos-primary bg-cos-primary/5"
-                    : "border-cos-border bg-cos-card hover:border-cos-primary/40",
+                    ? "border-cos-primary bg-cos-primary/8 shadow-[0_4px_16px_rgba(42,38,34,0.08)]"
+                    : "border-cos-border/70 bg-white shadow-[0_1px_3px_rgba(42,38,34,0.06)] hover:border-cos-primary/40 hover:shadow-[0_8px_24px_rgba(42,38,34,0.08)]",
                 )}
               >
                 <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
                   {card.label}
                 </p>
-                <p className="mt-1 font-display text-3xl text-cos-text">
+                <p className="mt-2 font-display text-3xl leading-none text-cos-text tabular-nums">
                   {summaryCounts[card.key]}
                 </p>
               </button>
