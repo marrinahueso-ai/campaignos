@@ -11,6 +11,15 @@ import {
   mapLatestContentByItemId,
   mapPublicationScheduleRow,
 } from "@/lib/event-workspace/mappers";
+import {
+  WORKSPACE_ACTIVITY_SELECT,
+  WORKSPACE_APPROVAL_REQUEST_WITH_RELATIONS_SELECT,
+  WORKSPACE_APPROVAL_SELECT,
+  WORKSPACE_ASSET_SELECT,
+  WORKSPACE_COMMUNICATION_SELECT,
+  WORKSPACE_SCHEDULE_SELECT,
+  WORKSPACE_VERSION_SELECT,
+} from "@/lib/event-workspace/selects";
 import type {
   ActivityLogRow,
   ApprovalRequestRow,
@@ -71,26 +80,14 @@ async function mapApprovalRequestRows(
   const supabase = await createClient();
   const { data } = await supabase
     .from("approval_requests")
-    .select(
-      `
-      *,
-      assigned_role:organization_roles!approval_requests_assigned_organization_role_id_fkey (
-        name,
-        contact_name
-      ),
-      assigned_user:organization_users!approval_requests_assigned_user_id_fkey (
-        email,
-        organization_roles ( name )
-      )
-    `,
-    )
+    .select(WORKSPACE_APPROVAL_REQUEST_WITH_RELATIONS_SELECT)
     .in(
       "id",
       rows.map((row) => row.id),
     );
 
   const relationById = new Map(
-    ((data ?? []) as ApprovalRequestWithRelations[]).map((row) => [row.id, row]),
+    ((data ?? []) as unknown as ApprovalRequestWithRelations[]).map((row) => [row.id, row]),
   );
 
   return rows.map((row) => {
@@ -114,7 +111,7 @@ async function getLatestContentMap(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("communication_versions")
-    .select("*")
+    .select(WORKSPACE_VERSION_SELECT)
     .in("communication_item_id", itemIds)
     .order("version_number", { ascending: false });
 
@@ -122,7 +119,30 @@ async function getLatestContentMap(
     return new Map();
   }
 
-  return mapLatestContentByItemId(data as CommunicationVersionRow[]);
+  return mapLatestContentByItemId(data as unknown as CommunicationVersionRow[]);
+}
+
+/** Exact-event activity_log only — Event Detail Activity tab. */
+export async function getEventActivityLogForEvent(
+  eventId: string,
+): Promise<import("@/types/event-workspace").ActivityLogEntry[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select(WORKSPACE_ACTIVITY_SELECT)
+    .eq("event_id", eventId)
+    .order("occurred_at", { ascending: false })
+    .limit(40);
+
+  if (error) {
+    if (error.code === "42P01") {
+      return [];
+    }
+    console.error("Failed to fetch event activity log:", error.message);
+    return [];
+  }
+
+  return mapActivityLogRows((data ?? []) as unknown as ActivityLogRow[]);
 }
 
 export async function getEventWorkspaceData(
@@ -137,21 +157,27 @@ export async function getEventWorkspaceData(
     approvalsResult,
     scheduleResult,
   ] = await Promise.all([
-    supabase.from("event_assets").select("*").eq("event_id", eventId),
-    supabase.from("communication_items").select("*").eq("event_id", eventId),
+    supabase
+      .from("event_assets")
+      .select(WORKSPACE_ASSET_SELECT)
+      .eq("event_id", eventId),
+    supabase
+      .from("communication_items")
+      .select(WORKSPACE_COMMUNICATION_SELECT)
+      .eq("event_id", eventId),
     supabase
       .from("activity_log")
-      .select("*")
+      .select(WORKSPACE_ACTIVITY_SELECT)
       .eq("event_id", eventId)
       .order("occurred_at", { ascending: true }),
     supabase
       .from("approval_requests")
-      .select("*")
+      .select(WORKSPACE_APPROVAL_SELECT)
       .eq("event_id", eventId)
       .order("requested_at", { ascending: false }),
     supabase
       .from("publication_schedule")
-      .select("*")
+      .select(WORKSPACE_SCHEDULE_SELECT)
       .eq("event_id", eventId)
       .order("scheduled_for", { ascending: true }),
   ]);
@@ -164,24 +190,24 @@ export async function getEventWorkspaceData(
   }
 
   const communicationRows = getHubCommunicationItems(
-    (communicationsResult.data ?? []) as CommunicationItemRow[],
+    (communicationsResult.data ?? []) as unknown as CommunicationItemRow[],
   );
   const contentMap = await getLatestContentMap(communicationRows.map((row) => row.id));
 
   return {
-    assets: mapEventAssetRows((assetsResult.data ?? []) as EventAssetRow[]),
+    assets: mapEventAssetRows((assetsResult.data ?? []) as unknown as EventAssetRow[]),
     communications: communicationRows.map((row) =>
       mapCommunicationItemRow(
         row,
         displayDraftContent(contentMap.get(row.id) ?? null),
       ),
     ),
-    timeline: mapActivityLogRows((timelineResult.data ?? []) as ActivityLogRow[]),
+    timeline: mapActivityLogRows((timelineResult.data ?? []) as unknown as ActivityLogRow[]),
     approvalRequests: await mapApprovalRequestRows(
-      (approvalsResult.data ?? []) as ApprovalRequestRow[],
+      (approvalsResult.data ?? []) as unknown as ApprovalRequestRow[],
     ),
     publicationSchedule: (
-      (scheduleResult.data ?? []) as PublicationScheduleRow[]
+      (scheduleResult.data ?? []) as unknown as PublicationScheduleRow[]
     ).map(mapPublicationScheduleRow),
   };
 }

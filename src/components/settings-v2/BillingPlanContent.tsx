@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowRight, CreditCard, Crown } from "lucide-react";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
 interface BillingPlanContentProps {
@@ -28,7 +27,7 @@ export function BillingPlanContent({
     <div className="space-y-6">
       <SettingsV2PageHeader
         title="Billing & Plan"
-        description="Manage your subscription, payment method, and usage."
+        description="Subscription and payment for this organization."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -45,7 +44,11 @@ export function BillingPlanContent({
                 </p>
               ) : renewalLabel ? (
                 <p className="mt-1 text-sm text-cos-muted">{renewalLabel}</p>
-              ) : null}
+              ) : (
+                <p className="mt-1 text-sm text-cos-muted">
+                  Paid billing is not connected yet for this organization.
+                </p>
+              )}
               <Badge className="mt-3" variant={isFoundingPartner ? "info" : "success"}>
                 Active
               </Badge>
@@ -58,18 +61,15 @@ export function BillingPlanContent({
             <CreditCard className="mt-0.5 h-5 w-5 text-cos-muted" strokeWidth={1.5} />
             <div>
               <p className="text-sm text-cos-text">
-                {isFoundingPartner ? "No payment required" : "Visa ending in 4242"}
+                {isFoundingPartner
+                  ? "No payment required"
+                  : "No payment method on file"}
               </p>
-              {!isFoundingPartner ? (
-                <Button
-                  className="mt-3"
-                  variant="secondary"
-                  size="sm"
-                  href="/settings/billing-plan/payment-method"
-                >
-                  Update payment method
-                </Button>
-              ) : null}
+              <p className="mt-1 text-sm text-cos-muted">
+                {isFoundingPartner
+                  ? "No card is stored for founding partner access."
+                  : "A card will appear here when billing goes live."}
+              </p>
             </div>
           </div>
         </SettingsV2Card>

@@ -13,6 +13,15 @@ import { GraduationCap } from "lucide-react";
 
 export const metadata = {
   title: "Dashboard",
+  description:
+    "Your Hey Ralli today view — next campaign actions, approvals, and the week ahead.",
+  alternates: {
+    canonical: "/dashboard",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function DashboardPage() {

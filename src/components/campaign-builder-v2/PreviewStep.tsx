@@ -11,7 +11,12 @@ import { MilestoneEmptyState } from "@/components/campaign-builder-v2/MilestoneE
 import { MilestoneRail } from "@/components/campaign-builder-v2/MilestoneRail";
 import { PreviewSettingsPanel } from "@/components/campaign-builder-v2/PreviewSettingsPanel";
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
+import { ClearGeneratedContentModal } from "@/components/dev-tools/ClearGeneratedContentModal";
 import { Button } from "@/components/ui/Button";
+import {
+  buildArtworkDownloadFilename,
+  downloadArtworkImage,
+} from "@/lib/artwork-v2/download";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
 import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
 import {
@@ -20,17 +25,21 @@ import {
 } from "@/lib/campaign-builder-v2/caption-utils";
 import {
   allMilestonesGenerated,
+  captionPlatformsForFormats,
   countCompleteMilestones,
   findMilestoneAfter,
   findNextMilestoneToGenerate,
+  generationStatusAfterContent,
   inferGenerationStatus,
   isMilestoneContentComplete,
+  milestoneHasPartialContent,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
   ARTWORK_VIEW_OPTIONS,
   artworkKeyForView,
   aspectClassForView,
   enabledArtworkViews,
+  isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -94,6 +103,8 @@ export function PreviewStep() {
     generatingMilestoneId,
     isGeneratingContent,
     reconcilePreviewStatuses,
+    canUseDeveloperTools,
+    clearMilestoneGeneratedContent,
   } = useCampaignBuilder();
 
   useEffect(() => {
@@ -104,6 +115,31 @@ export function PreviewStep() {
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearSubmitting, setClearSubmitting] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [clearMessage, setClearMessage] = useState<string | null>(null);
+  const [downloadingView, setDownloadingView] = useState<ArtworkView | null>(
+    null,
+  );
+
+  async function handleDownloadArtwork(
+    view: ArtworkView,
+    imageUrl: string,
+    label: string,
+  ) {
+    setDownloadingView(view);
+    try {
+      const filename = buildArtworkDownloadFilename(
+        `${selectedMilestone?.name ?? "artwork"} ${label}`,
+      );
+      await downloadArtworkImage(imageUrl, filename);
+    } catch {
+      // Allow retry from the same icon.
+    } finally {
+      setDownloadingView(null);
+    }
+  }
 
   const selectedId =
     session.selectedMilestoneId ?? session.milestones[0]?.id ?? null;
@@ -135,10 +171,15 @@ export function PreviewStep() {
     ? inferGenerationStatus(selectedPreview, selectedPreview.enabledFormats)
     : "ready_to_generate";
 
-  const hasGeneratedContent =
+  const hasCompleteContent =
     selectedPreview && selectedMilestone
       ? isMilestoneContentComplete(selectedPreview, selectedPreview.enabledFormats)
       : false;
+  // Show the preview grid whenever any real artwork/caption exists. Gating on
+  // full completeness hid saved feed/story images behind "No artwork yet"
+  // whenever a required platform caption was missing.
+  const hasPreviewableContent =
+    selectedPreview != null && milestoneHasPartialContent(selectedPreview);
 
   const showArtwork =
     session.previewTab !== "captions" && session.previewTab !== "schedule";
@@ -164,7 +205,7 @@ export function PreviewStep() {
     : null;
 
   const showCompletionBanner =
-    hasGeneratedContent &&
+    hasCompleteContent &&
     !selectedIsGenerating &&
     nextAfterSelected &&
     (nextToGenerate?.id === nextAfterSelected.id ||
@@ -190,8 +231,46 @@ export function PreviewStep() {
     }
   }
 
+  async function handleClearMilestone() {
+    if (!selectedId) {
+      return;
+    }
+    setClearSubmitting(true);
+    setClearError(null);
+    try {
+      const result = await clearMilestoneGeneratedContent(selectedId);
+      if (!result.success) {
+        setClearError(result.message);
+        return;
+      }
+      setClearMessage(
+        `Cleared ${result.artworkCleared} artwork reference(s) and ${result.captionsCleared} caption(s).`,
+      );
+      setClearModalOpen(false);
+      router.refresh();
+    } finally {
+      setClearSubmitting(false);
+    }
+  }
+
   const generatingName = generatingMilestoneId
     ? session.milestones.find((m) => m.id === generatingMilestoneId)?.name
+    : null;
+
+  const settingsPanelProps = selectedPreview
+    ? {
+        preview: selectedPreview,
+        onUpdate: (patch: Parameters<typeof updatePreviewContent>[1]) =>
+          updatePreviewContent(selectedPreview.milestoneId, patch),
+        canUseDeveloperTools,
+        onClearGeneratedContent: canUseDeveloperTools
+          ? () => {
+              setClearError(null);
+              setClearModalOpen(true);
+            }
+          : undefined,
+        clearMessage,
+      }
     : null;
 
   return (
@@ -252,15 +331,20 @@ export function PreviewStep() {
             </div>
           </div>
 
-          {selectedMilestone && selectedPreview && !hasGeneratedContent ? (
-            <MilestoneEmptyState
-              milestoneName={selectedMilestone.name}
-              isGenerating={selectedIsGenerating}
-              isFailed={selectedStatus === "failed"}
-              errorMessage={generateError}
-              onGenerate={() => void handleGenerateSelected()}
-              onGoToInspiration={() => goToStep("inspiration")}
-            />
+          {selectedMilestone && selectedPreview && !hasPreviewableContent ? (
+            <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
+              <MilestoneEmptyState
+                milestoneName={selectedMilestone.name}
+                isGenerating={selectedIsGenerating}
+                isFailed={selectedStatus === "failed"}
+                errorMessage={generateError}
+                onGenerate={() => void handleGenerateSelected()}
+                onGoToInspiration={() => goToStep("inspiration")}
+              />
+              {settingsPanelProps ? (
+                <PreviewSettingsPanel {...settingsPanelProps} />
+              ) : null}
+            </div>
           ) : selectedMilestone && selectedPreview ? (
             <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
               <div className="space-y-6">
@@ -283,12 +367,16 @@ export function PreviewStep() {
                         );
                         const artworkKey = artworkKeyForView(view);
                         const imageUrl = selectedPreview.artwork[artworkKey];
+                        const canDownload =
+                          Boolean(imageUrl) &&
+                          !isPlaceholderArtworkUrl(imageUrl);
+                        const viewLabel = option?.label ?? view;
 
                         return (
                           <div key={view} className="space-y-2">
                             <div>
                               <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                                {option?.label ?? view}
+                                {viewLabel}
                               </p>
                               {option?.subtitle && (
                                 <p className="text-[11px] text-cos-muted">
@@ -299,9 +387,23 @@ export function PreviewStep() {
                             <ArtworkPlaceholder
                               aspectClassName={aspectClassForView(view)}
                               imageUrl={imageUrl}
+                              alt={`${viewLabel} artwork`}
+                              priority={view === "feed"}
                               className={
                                 view === "story" ? "max-h-64" : undefined
                               }
+                              onDownload={
+                                canDownload
+                                  ? () =>
+                                      void handleDownloadArtwork(
+                                        view,
+                                        imageUrl!,
+                                        viewLabel,
+                                      )
+                                  : undefined
+                              }
+                              downloadDisabled={downloadingView === view}
+                              downloadLabel={`Download ${viewLabel}`}
                             />
                           </div>
                         );
@@ -347,25 +449,15 @@ export function PreviewStep() {
                   </section>
                 )}
 
-                {showScheduleTab && session.previewTab === "schedule" && (
+                {showScheduleTab && session.previewTab === "schedule" && settingsPanelProps && (
                   <section className="cos-card lg:hidden">
-                    <PreviewSettingsPanel
-                      preview={selectedPreview}
-                      onUpdate={(patch) =>
-                        updatePreviewContent(selectedPreview.milestoneId, patch)
-                      }
-                    />
+                    <PreviewSettingsPanel {...settingsPanelProps} />
                   </section>
                 )}
               </div>
 
-              {session.previewTab !== "schedule" && (
-                <PreviewSettingsPanel
-                  preview={selectedPreview}
-                  onUpdate={(patch) =>
-                    updatePreviewContent(selectedPreview.milestoneId, patch)
-                  }
-                />
+              {session.previewTab !== "schedule" && settingsPanelProps && (
+                <PreviewSettingsPanel {...settingsPanelProps} />
               )}
             </div>
           ) : (
@@ -466,15 +558,41 @@ export function PreviewStep() {
           }
           onClose={() => setCaptionModalOpen(false)}
           onApply={(text) => {
+            const captionPlatforms = (() => {
+              const fromFormats = captionPlatformsForFormats(
+                selectedPreview.enabledFormats,
+              );
+              if (fromFormats.length > 0) {
+                return fromFormats;
+              }
+              return selectedMilestone.platforms.length > 0
+                ? selectedMilestone.platforms
+                : (["facebook", "instagram"] as const);
+            })();
+            const captions = syncCaptionsToPlatforms(text, [...captionPlatforms]);
             updatePreviewContent(selectedPreview.milestoneId, {
-              captions: syncCaptionsToPlatforms(text, selectedMilestone.platforms),
-              status: "needs-review",
-              generationStatus: "needs_review",
+              captions,
+              status: "ready",
+              generationStatus: generationStatusAfterContent(
+                { ...selectedPreview, captions },
+                selectedPreview.enabledFormats,
+              ),
             });
             setCaptionModalOpen(false);
           }}
         />
       )}
+
+      <ClearGeneratedContentModal
+        open={clearModalOpen}
+        title="Clear This Milestone"
+        isSubmitting={clearSubmitting}
+        errorMessage={clearError}
+        onClose={() => setClearModalOpen(false)}
+        onConfirm={() => {
+          void handleClearMilestone();
+        }}
+      />
     </div>
   );
 }

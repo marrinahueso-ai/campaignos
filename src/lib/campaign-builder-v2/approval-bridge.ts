@@ -7,12 +7,17 @@ import {
   sendApprovalAssignedEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
-import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
+import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
+import {
+  derivedPreviewStatus,
+  milestoneHasArtwork,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import { loadCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
 import type {
   CampaignBuilderMilestone,
   MilestonePreviewContent,
 } from "@/lib/campaign-builder-v2/types";
+import { buildManualEmailPersistenceFields } from "@/lib/campaign-builder-v2/manual-email-scheduling";
 import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
@@ -32,6 +37,7 @@ export interface SendCampaignBuilderForApprovalResult {
   createdCount: number;
 }
 
+/** Meta / publish schedule_at — unchanged from pre–Manual Email Commit 4 behavior. */
 function resolveScheduleIso(preview: MilestonePreviewContent): string | null {
   if (preview.deliveryMethod === "manual-email") {
     return combineLocalDateAndTimeToIso(
@@ -73,13 +79,28 @@ export async function sendCampaignBuilderForApproval(
 
   const milestonesToSubmit = input.milestones.filter((milestone) => {
     const preview = previewByMilestone.get(milestone.id);
-    return Boolean(preview) && derivedPreviewStatus(preview!) !== "draft";
+    // Artwork is required for Approvals review — caption-only rows looked empty.
+    return Boolean(preview) && milestoneHasArtwork(preview!);
   });
+
+  const skippedWithoutArtwork = input.milestones
+    .filter((milestone) => {
+      const preview = previewByMilestone.get(milestone.id);
+      return (
+        Boolean(preview) &&
+        derivedPreviewStatus(preview!) !== "draft" &&
+        !milestoneHasArtwork(preview!)
+      );
+    })
+    .map((milestone) => normalizeMilestoneName(milestone.name));
 
   if (milestonesToSubmit.length === 0) {
     return {
       success: false,
-      message: "Generate content for at least one milestone before sending for approval.",
+      message:
+        skippedWithoutArtwork.length > 0
+          ? `Generate artwork before sending for approval. Missing artwork: ${skippedWithoutArtwork.join(", ")}.`
+          : "Generate artwork for at least one milestone before sending for approval.",
       createdCount: 0,
     };
   }
@@ -100,7 +121,9 @@ export async function sendCampaignBuilderForApproval(
 
     const captionText = getSharedCaptionText(preview.captions);
     const scheduleAt = resolveScheduleIso(preview);
+    const manualEmailFields = buildManualEmailPersistenceFields(preview);
     const workflowStatus = assignee.assignedUserId ? "assigned_to_me" : "in_queue";
+    const milestoneName = normalizeMilestoneName(milestone.name);
 
     const { data: existing } = await supabase
       .from("approval_scheduling_items")
@@ -120,7 +143,7 @@ export async function sendCampaignBuilderForApproval(
       source: "campaign_builder" as const,
       campaign_milestone_id: milestone.id,
       campaign_name: input.campaignName,
-      milestone_name: milestone.name,
+      milestone_name: milestoneName,
       workflow_status: workflowStatus,
       assigned_organization_role_id: assignee.organizationRoleId,
       assigned_user_id: assignee.assignedUserId,
@@ -133,6 +156,9 @@ export async function sendCampaignBuilderForApproval(
         preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
       feed_artwork_url: preview.artwork.feedUrl,
       story_artwork_url: preview.artwork.storyUrl,
+      manual_upload_link: preview.manualUploadLink.trim() || null,
+      manual_email_to: manualEmailFields.manual_email_to,
+      manual_email_send_at: manualEmailFields.manual_email_send_at,
       notes: null,
       resolved_at: null,
       requested_at: now,
@@ -151,6 +177,16 @@ export async function sendCampaignBuilderForApproval(
 
       if (error) {
         console.error("Failed to update approval scheduling item:", error.message);
+        const { reportFailedAction } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportFailedAction("approvals", {
+          action: "sendCampaignBuilderForApproval.update",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          organizationId: organization.id,
+          message: error.message,
+        });
         continue;
       }
 
@@ -173,10 +209,57 @@ export async function sendCampaignBuilderForApproval(
 
       if (error || !inserted?.id) {
         console.error("Failed to create approval scheduling item:", error?.message);
+        const { reportFailedAction } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportFailedAction("approvals", {
+          action: "sendCampaignBuilderForApproval.insert",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          organizationId: organization.id,
+          message: error?.message || "Unable to create approval scheduling item.",
+        });
+        if (error?.code === "42501") {
+          return {
+            success: false,
+            message:
+              "Unable to save approval items (database permissions). Please try again or contact support.",
+            createdCount: 0,
+          };
+        }
         continue;
       }
 
       schedulingItemId = inserted.id;
+    } else if (existing?.id) {
+      // Keep workflow status, but refresh display snapshot (name/artwork/caption/schedule).
+      const { error } = await supabase
+        .from("approval_scheduling_items")
+        .update({
+          milestone_name: milestoneName,
+          campaign_name: input.campaignName,
+          caption_text: captionText,
+          story_caption:
+            preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
+          feed_artwork_url: preview.artwork.feedUrl,
+          story_artwork_url: preview.artwork.storyUrl,
+          manual_upload_link: preview.manualUploadLink.trim() || null,
+          manual_email_to: manualEmailFields.manual_email_to,
+          manual_email_send_at: manualEmailFields.manual_email_send_at,
+          schedule_at: scheduleAt,
+          delivery_method: preview.deliveryMethod,
+          platforms: milestone.platforms,
+          updated_at: now,
+        })
+        .eq("id", existing.id);
+
+      if (error) {
+        console.error(
+          "Failed to refresh approval scheduling snapshot:",
+          error.message,
+        );
+      }
+      continue;
     } else {
       continue;
     }
@@ -187,10 +270,15 @@ export async function sendCampaignBuilderForApproval(
       await sendApprovalAssignedEmail({
         eventId: input.eventId,
         campaignName: input.campaignName,
-        milestoneName: milestone.name,
+        milestoneName,
         recipientEmail,
         approverRole: assignee.organizationRoleName ?? "committee-chair",
         schedulingItemId,
+        feedArtworkUrl: preview.artwork.feedUrl,
+        storyArtworkUrl: preview.artwork.storyUrl,
+        captionText,
+        storyCaption:
+          preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
       });
     }
   }
@@ -205,9 +293,14 @@ export async function sendCampaignBuilderForApproval(
 
   void role;
 
+  const skippedNote =
+    skippedWithoutArtwork.length > 0
+      ? ` Skipped without artwork: ${skippedWithoutArtwork.join(", ")}.`
+      : "";
+
   return {
     success: true,
-    message: `${createdCount} milestone${createdCount === 1 ? "" : "s"} sent for approval.`,
+    message: `${createdCount} milestone${createdCount === 1 ? "" : "s"} sent for approval.${skippedNote}`,
     createdCount,
   };
 }

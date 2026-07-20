@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   getLocationHash,
   normalizeLocationHash,
@@ -23,6 +24,7 @@ import {
   type StepperStepState,
 } from "@/lib/campaign-builder-v2/health";
 import {
+  loadCampaignBuilderSessionAction,
   saveCampaignBuilderSessionAction,
 } from "@/lib/campaign-builder-v2/session";
 import {
@@ -33,9 +35,13 @@ import {
 } from "@/lib/campaign-builder-v2/actions";
 import {
   milestonesLostOnPlaybookSwitch,
+  playbookSwitchConfirmMessage,
   reconcileMilestonesWithPlaybookSteps,
 } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
+import {
+  ensureSharedCaptionsForPlatforms,
+} from "@/lib/campaign-builder-v2/caption-utils";
 import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
 import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
 import { normalizeCreativeSelections } from "@/lib/campaign-builder-v2/creative-config";
@@ -45,22 +51,33 @@ import {
   DEFAULT_VOICE_TONE_OPTIONS,
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
-import { hydrateCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
+import {
+  hydrateCampaignBuilderSession,
+  protectSessionFromRichnessDowngrade,
+} from "@/lib/campaign-builder-v2/normalize-session";
 import {
   applyArtworkBackup,
   loadArtworkBackup,
   persistArtworkBackup,
 } from "@/lib/campaign-builder-v2/artwork-backup";
-import { mergeInspirationAfterGeneration, slimInspirationImagesForStorage } from "@/lib/campaign-builder-v2/inspiration-preserve";
 import {
+  mergeInspirationAfterGeneration,
+  resolveInspirationImagesForStorage,
+} from "@/lib/campaign-builder-v2/inspiration-preserve";
+import {
+  captionPlatformsForFormats,
   findNextMilestoneToGenerate,
+  GENERATION_STALL_TIMEOUT_MS,
+  GENERATION_STALL_WARNING_MS,
   inferGenerationStatus,
   isStaleGeneration,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
+  campaignBuilderHref,
   isValidCampaignBuilderStep,
   stepFromHash,
 } from "@/lib/campaign-builder-v2/navigation";
+import { shouldRetainInMemorySessionOnHydrate } from "@/lib/campaign-builder-v2/session-identity";
 import type {
   BrandKitOption,
   CampaignBuilderInspiration,
@@ -90,6 +107,9 @@ interface CampaignBuilderProviderProps {
   eventId: string;
   eventTitle: string;
   eventDate: string;
+  organizationId: string;
+  canUseDeveloperTools?: boolean;
+  canUploadArtwork?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -118,6 +138,9 @@ interface CampaignBuilderContextValue {
   generationProgress: ContentGenerationProgress | null;
   goToStep: (step: CampaignBuilderStepId) => void;
   updateInspiration: (patch: Partial<CampaignBuilderInspiration>) => void;
+  setPlaybookId: (
+    playbookId: string,
+  ) => Promise<{ success: boolean; message?: string }>;
   selectCampaign: (campaignId: string) => void;
   addInspirationImage: (file: File) => void;
   removeInspirationImage: (imageId: string) => void;
@@ -161,6 +184,17 @@ interface CampaignBuilderContextValue {
   toggleExpandedReview: (milestoneId: string) => void;
   reconcilePreviewStatuses: () => void;
   navigateToWarning: (warning: StepWarning) => void;
+  organizationId: string;
+  canUseDeveloperTools: boolean;
+  canUploadArtwork: boolean;
+  clearMilestoneGeneratedContent: (
+    milestoneId: string,
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    artworkCleared: number;
+    captionsCleared: number;
+  }>;
 }
 
 const CampaignBuilderContext = createContext<CampaignBuilderContextValue | null>(
@@ -227,6 +261,7 @@ function buildNewMilestone(
     emailSendDate: inspiration.eventDate,
     emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
+    manualUploadLink: "",
     approvalStatuses: [
       {
         role: "creator",
@@ -251,34 +286,38 @@ function buildNewMilestone(
   return { milestone, preview };
 }
 
+function readStoredLocalSession(eventId: string): CampaignBuilderSession | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = localStorage.getItem(localSessionKey(eventId));
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw) as CampaignBuilderSession;
+  } catch {
+    return null;
+  }
+}
+
 function slimSessionForLocalStorage(
   session: CampaignBuilderSession,
+  previouslyStored?: CampaignBuilderSession | null,
 ): CampaignBuilderSession {
-  // Persist http(s) inspiration URLs only. Never replace a real inspiration
-  // set with [] — that made milestone 2+ generate without the visual base.
-  const inspirationImages = slimInspirationImagesForStorage(
+  // Persist http(s) inspiration URLs only. While a blob upload is in flight,
+  // keep previously stored http inspiration so skip-unchanged cannot treat a
+  // blob-only slim as "unchanged empty" and leave localStorage wiped.
+  const inspirationImages = resolveInspirationImagesForStorage(
     session.inspiration.inspirationImages,
-  ).filter(
-    (image) =>
-      Boolean(image.url?.startsWith("http://") || image.url?.startsWith("https://")),
+    previouslyStored?.inspiration?.inspirationImages,
   );
 
   return {
     ...session,
     inspiration: {
       ...session.inspiration,
-      // If we only had blob previews (not yet uploaded), keep the previous
-      // http set from session rather than writing empty shells.
-      inspirationImages:
-        inspirationImages.length > 0
-          ? inspirationImages
-          : session.inspiration.inspirationImages.filter(
-              (image) =>
-                Boolean(
-                  image.url?.startsWith("http://") ||
-                    image.url?.startsWith("https://"),
-                ),
-            ),
+      inspirationImages,
       uploadedLogoUrl:
         session.inspiration.uploadedLogoUrl?.startsWith("data:")
           ? null
@@ -287,22 +326,31 @@ function slimSessionForLocalStorage(
   };
 }
 
+const lastLocalSessionJsonByEventId = new Map<string, string>();
+
 function persistLocalSession(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
     return false;
   }
+
+  const previouslyStored = readStoredLocalSession(session.eventId);
+  const slimmed = slimSessionForLocalStorage(session, previouslyStored);
+  const slimmedJson = JSON.stringify(slimmed);
+  if (lastLocalSessionJsonByEventId.get(session.eventId) === slimmedJson) {
+    return true;
+  }
+
   // Always try the compact artwork backup first — it must survive even when
   // the full session JSON is too large for localStorage.
   persistArtworkBackup(session);
   try {
-    const slimmed = slimSessionForLocalStorage(session);
-    localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(slimmed));
+    localStorage.setItem(localSessionKey(session.eventId), slimmedJson);
+    lastLocalSessionJsonByEventId.set(session.eventId, slimmedJson);
     return true;
   } catch {
     // Quota or private mode — shrink captions/notes, but NEVER clear inspiration
     // http URLs. Wiping inspiration mid-campaign made later milestones diverge.
     try {
-      const slimmed = slimSessionForLocalStorage(session);
       const minimal: CampaignBuilderSession = {
         ...slimmed,
         previewContents: slimmed.previewContents.map((content) => ({
@@ -313,7 +361,9 @@ function persistLocalSession(session: CampaignBuilderSession): boolean {
           })),
         })),
       };
-      localStorage.setItem(localSessionKey(session.eventId), JSON.stringify(minimal));
+      const minimalJson = JSON.stringify(minimal);
+      localStorage.setItem(localSessionKey(session.eventId), minimalJson);
+      lastLocalSessionJsonByEventId.set(session.eventId, minimalJson);
       return true;
     } catch {
       console.error(
@@ -387,10 +437,39 @@ function previewSessionRichness(session: CampaignBuilderSession): number {
   }, 0);
 }
 
+async function recoverSessionFromServerIfRicher(
+  local: CampaignBuilderSession,
+  eventTitle: string,
+  eventDate: string,
+): Promise<CampaignBuilderSession | null> {
+  try {
+    const server = await loadCampaignBuilderSessionAction(local.eventId);
+    if (!server) {
+      return null;
+    }
+    if (previewSessionRichness(server) <= previewSessionRichness(local)) {
+      return null;
+    }
+    return hydrateCampaignBuilderSession(
+      protectSessionFromRichnessDowngrade(local, server),
+      local,
+      local.eventId,
+      eventTitle,
+      eventDate,
+      true,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function CampaignBuilderProvider({
   eventId,
   eventTitle,
   eventDate,
+  organizationId,
+  canUseDeveloperTools = false,
+  canUploadArtwork = true,
   playbooks,
   brandKits,
   campaignOptions,
@@ -400,6 +479,7 @@ export function CampaignBuilderProvider({
   restoredFromServer,
   children,
 }: CampaignBuilderProviderProps) {
+  const router = useRouter();
   const [session, setSession] = useState<CampaignBuilderSession>(() =>
     hydrateWithArtworkBackup(
       initialSession,
@@ -453,8 +533,7 @@ export function CampaignBuilderProvider({
     persistBuilderStep(eventId, currentStep);
   }, [currentStep, eventId]);
 
-  const persistSession = useCallback(async (next: CampaignBuilderSession) => {
-    persistLocalSession(next);
+  const saveSessionToServer = useCallback(async (next: CampaignBuilderSession) => {
     setIsSaving(true);
     try {
       await saveCampaignBuilderSessionAction(next);
@@ -463,17 +542,29 @@ export function CampaignBuilderProvider({
     }
   }, []);
 
+  const persistSession = useCallback(
+    async (next: CampaignBuilderSession) => {
+      persistLocalSession(next);
+      await saveSessionToServer(next);
+    },
+    [saveSessionToServer],
+  );
+
   const scheduleSave = useCallback(
     (next: CampaignBuilderSession) => {
+      // Write localStorage immediately; debounce only the server round-trip so
+      // we do not re-stringify the same session on every timer fire.
+      // Always flush the latest sessionRef on the timer — a stale closure from
+      // an earlier keystroke must not overwrite a completed inspiration upload.
       persistLocalSession(next);
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
       saveTimerRef.current = setTimeout(() => {
-        void persistSession(next);
+        void saveSessionToServer(sessionRef.current);
       }, 800);
     },
-    [persistSession],
+    [saveSessionToServer],
   );
 
   const flushSave = useCallback(async () => {
@@ -483,6 +574,87 @@ export function CampaignBuilderProvider({
     }
     await persistSession(sessionRef.current);
   }, [persistSession]);
+
+  const syncMilestonesToSelectedPlaybook = useCallback(
+    async (options?: {
+      playbookId?: string;
+      eventDate?: string;
+      confirm?: boolean;
+    }): Promise<{ success: boolean; changed: boolean; message?: string }> => {
+      const current = sessionRef.current;
+      const playbookId =
+        options?.playbookId ?? current.inspiration.playbookId;
+      const resolvedEventDate =
+        options?.eventDate ?? current.inspiration.eventDate ?? eventDate;
+      const milestonesPlaybookId = current.milestonesPlaybookId ?? null;
+
+      if (!playbookId || playbookId === milestonesPlaybookId) {
+        return { success: true, changed: false };
+      }
+
+      const stepsResult = await getPlaybookMilestoneStepsAction(playbookId);
+      if (!stepsResult.success) {
+        return {
+          success: false,
+          changed: false,
+          message: "Could not load playbook milestones.",
+        };
+      }
+
+      // Keep existing milestones when the playbook has no steps in the DB
+      // (e.g. a demo/legacy playbook id that was never a real row).
+      if (stepsResult.steps.length === 0) {
+        return { success: true, changed: false };
+      }
+
+      const atRisk = milestonesLostOnPlaybookSwitch(
+        stepsResult.steps,
+        current.milestones,
+        current.previewContents,
+      );
+      if (atRisk.length > 0 && options?.confirm !== false) {
+        const confirmed = window.confirm(
+          playbookSwitchConfirmMessage(atRisk),
+        );
+        if (!confirmed) {
+          return {
+            success: false,
+            changed: false,
+            message: "Playbook change canceled — milestones unchanged.",
+          };
+        }
+      }
+
+      const rebuilt = reconcileMilestonesWithPlaybookSteps(
+        stepsResult.steps,
+        resolvedEventDate,
+        current.milestones,
+        current.previewContents,
+      );
+
+      const selectedStillPresent = rebuilt.milestones.some(
+        (milestone) => milestone.id === current.selectedMilestoneId,
+      );
+
+      const next: CampaignBuilderSession = {
+        ...current,
+        inspiration: {
+          ...current.inspiration,
+          playbookId,
+        },
+        milestones: rebuilt.milestones,
+        previewContents: rebuilt.previewContents,
+        milestonesPlaybookId: playbookId,
+        selectedMilestoneId: selectedStillPresent
+          ? current.selectedMilestoneId
+          : (rebuilt.milestones[0]?.id ?? null),
+      };
+      sessionRef.current = next;
+      setSession(next);
+      return { success: true, changed: true };
+    },
+    [eventDate],
+  );
 
   /**
    * Creative Setup primary CTA: normalize None/empty, save session, navigate
@@ -509,54 +681,27 @@ export function CampaignBuilderProvider({
       sessionRef.current.inspiration,
     );
 
-    const selectedPlaybookId = normalizedInspiration.playbookId;
-    let milestones = sessionRef.current.milestones;
-    let previewContents = sessionRef.current.previewContents;
-    let milestonesPlaybookId = sessionRef.current.milestonesPlaybookId ?? null;
-
-    if (selectedPlaybookId && selectedPlaybookId !== milestonesPlaybookId) {
-      const stepsResult = await getPlaybookMilestoneStepsAction(selectedPlaybookId);
-
-      if (stepsResult.success && stepsResult.steps.length > 0) {
-        const atRisk = milestonesLostOnPlaybookSwitch(
-          stepsResult.steps,
-          milestones,
-          previewContents,
-        );
-        if (atRisk.length > 0) {
-          const confirmed = window.confirm(
-            `Switching playbooks will remove ${atRisk.length} milestone${atRisk.length === 1 ? "" : "s"} that ${atRisk.length === 1 ? "doesn't" : "don't"} belong to the new playbook, along with their existing notes/artwork/captions: ${atRisk.map((m) => m.name).join(", ")}.\n\nContinue?`,
-          );
-          if (!confirmed) {
-            return {
-              success: false,
-              message: "Playbook change canceled — milestones unchanged.",
-            };
-          }
-        }
-
-        const rebuilt = reconcileMilestonesWithPlaybookSteps(
-          stepsResult.steps,
-          normalizedInspiration.eventDate,
-          milestones,
-          previewContents,
-        );
-        milestones = rebuilt.milestones;
-        previewContents = rebuilt.previewContents;
-        milestonesPlaybookId = selectedPlaybookId;
-      }
-      // If the playbook has no steps in the DB (e.g. a demo/legacy playbook
-      // id that was never a real row), keep the existing milestones rather
-      // than wiping them out.
-    }
-
-    const next = {
+    const withNormalized: CampaignBuilderSession = {
       ...sessionRef.current,
       inspiration: normalizedInspiration,
-      milestones,
-      previewContents,
-      milestonesPlaybookId,
-      currentStep: "milestones" as const,
+    };
+    sessionRef.current = withNormalized;
+    setSession(withNormalized);
+
+    const syncResult = await syncMilestonesToSelectedPlaybook({
+      playbookId: normalizedInspiration.playbookId,
+      eventDate: normalizedInspiration.eventDate,
+    });
+    if (!syncResult.success) {
+      return {
+        success: false,
+        message: syncResult.message,
+      };
+    }
+
+    const next: CampaignBuilderSession = {
+      ...sessionRef.current,
+      currentStep: "milestones",
     };
     sessionRef.current = next;
     setSession(next);
@@ -564,7 +709,7 @@ export function CampaignBuilderProvider({
     setCurrentStep("milestones");
     await persistSession(next);
     return { success: true };
-  }, [persistSession]);
+  }, [persistSession, syncMilestonesToSelectedPlaybook]);
 
   const updateSession = useCallback(
     (updater: (prev: CampaignBuilderSession) => CampaignBuilderSession) => {
@@ -595,14 +740,26 @@ export function CampaignBuilderProvider({
         ? previewSessionRichness(localForHydrate)
         : 0;
 
-      // Never let a remount hydrate overwrite richer in-memory OR localStorage
-      // artwork with a stale server/default snapshot.
-      if (prevRichness > hydratedRichness) {
+      // Never let a remount hydrate overwrite richer in-memory artwork with a
+      // stale server/default snapshot — but only for the SAME campaign.
+      // Switching eventId must drop the previous campaign's previews.
+      if (
+        shouldRetainInMemorySessionOnHydrate({
+          previousEventId: prev.eventId,
+          routeEventId: eventId,
+          previousRichness: prevRichness,
+          hydratedRichness,
+        })
+      ) {
         persistLocalSession(prev);
         return prev;
       }
 
-      if (localRichness > hydratedRichness && localForHydrate) {
+      if (
+        localRichness > hydratedRichness &&
+        localForHydrate &&
+        localForHydrate.eventId === eventId
+      ) {
         const keepLocal = hydrateWithArtworkBackup(
           localForHydrate,
           null,
@@ -645,6 +802,32 @@ export function CampaignBuilderProvider({
     // Reconcile persisted milestone statuses once per mount after hydration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
+
+  // If the client is stuck on an empty/failed Preview while the server has
+  // richer artwork (common after Storage RLS errors), pull it back once.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const local = sessionRef.current;
+      if (previewSessionRichness(local) > 0) {
+        return;
+      }
+      const recovered = await recoverSessionFromServerIfRicher(
+        local,
+        eventTitle,
+        eventDate,
+      );
+      if (cancelled || !recovered) {
+        return;
+      }
+      sessionRef.current = recovered;
+      setSession(recovered);
+      persistLocalSession(recovered);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, eventTitle, eventDate]);
 
   const reconcilePreviewStatuses = useCallback(() => {
     setSession((prev) => {
@@ -731,11 +914,44 @@ export function CampaignBuilderProvider({
 
   const goToStep = useCallback(
     (step: CampaignBuilderStepId) => {
-      setLocationHash(step);
-      updateSession((prev) => ({ ...prev, currentStep: step }));
+      void (async () => {
+        const leavingInspiration = currentStepRef.current === "inspiration";
+        const enteringMilestoneFlow =
+          step === "milestones" || step === "preview" || step === "review";
+        let syncChanged = false;
+        if (leavingInspiration || enteringMilestoneFlow) {
+          const syncResult = await syncMilestonesToSelectedPlaybook();
+          if (!syncResult.success) {
+            return;
+          }
+          syncChanged = syncResult.changed;
+        }
+        // Drop step-local UI noise when leaving so context stays lean.
+        if (leavingInspiration) {
+          setInspirationUploadError(null);
+          // Flush debounced server save so inspiration http URLs are not lost
+          // if the user navigates away before the 800ms timer fires.
+          await flushSave();
+        } else if (syncChanged) {
+          await persistSession(sessionRef.current);
+        }
+        if (step !== "preview" && step !== "review") {
+          setGenerationProgress(null);
+        }
+        setLocationHash(step);
+        setCurrentStep(step);
+        updateSession((prev) => ({ ...prev, currentStep: step }));
+      })();
     },
-    [updateSession],
+    [flushSave, persistSession, syncMilestonesToSelectedPlaybook, updateSession],
   );
+
+  // Clear finished generation progress so non-active step UI state is not kept hot.
+  useEffect(() => {
+    if (!isGeneratingContent && generationProgress) {
+      setGenerationProgress(null);
+    }
+  }, [isGeneratingContent, generationProgress]);
 
   const updateInspiration = useCallback(
     (patch: Partial<CampaignBuilderInspiration>) => {
@@ -747,14 +963,72 @@ export function CampaignBuilderProvider({
     [updateSession],
   );
 
+  const setPlaybookId = useCallback(
+    async (
+      playbookId: string,
+    ): Promise<{ success: boolean; message?: string }> => {
+      const previous = sessionRef.current;
+      const optimistic: CampaignBuilderSession = {
+        ...previous,
+        inspiration: {
+          ...previous.inspiration,
+          playbookId,
+        },
+      };
+      sessionRef.current = optimistic;
+      setSession(optimistic);
+
+      const syncResult = await syncMilestonesToSelectedPlaybook({
+        playbookId,
+      });
+      if (!syncResult.success) {
+        const reverted: CampaignBuilderSession = {
+          ...sessionRef.current,
+          inspiration: {
+            ...sessionRef.current.inspiration,
+            playbookId: previous.inspiration.playbookId,
+          },
+          milestones: previous.milestones,
+          previewContents: previous.previewContents,
+          milestonesPlaybookId: previous.milestonesPlaybookId,
+          selectedMilestoneId: previous.selectedMilestoneId,
+        };
+        sessionRef.current = reverted;
+        setSession(reverted);
+        return {
+          success: false,
+          message:
+            syncResult.message ??
+            "Playbook change canceled — milestones unchanged.",
+        };
+      }
+
+      await persistSession(sessionRef.current);
+      return { success: true };
+    },
+    [persistSession, syncMilestonesToSelectedPlaybook],
+  );
+
   const selectCampaign = useCallback(
     (campaignId: string) => {
       const campaign = campaignOptions.find((option) => option.id === campaignId);
       if (!campaign) {
         return;
       }
+
+      // The campaign dropdown lists other events. Switching must open that
+      // event's Create with AI workspace — never rename the current session
+      // while keeping another campaign's artwork/captions.
+      if (campaign.id !== eventId) {
+        void flushSave().finally(() => {
+          router.push(campaignBuilderHref(campaign.id, currentStepRef.current));
+        });
+        return;
+      }
+
       updateSession((prev) => ({
         ...prev,
+        eventId: campaign.id,
         inspiration: {
           ...prev.inspiration,
           campaignId: campaign.id,
@@ -763,11 +1037,18 @@ export function CampaignBuilderProvider({
         },
       }));
     },
-    [campaignOptions, updateSession],
+    [campaignOptions, eventId, flushSave, router, updateSession],
   );
 
   const addInspirationImage = useCallback(
     (file: File) => {
+      if (!canUploadArtwork) {
+        setInspirationUploadError(
+          "You do not have permission to upload artwork.",
+        );
+        return;
+      }
+
       const imageId = `inspiration-${Date.now()}`;
       const previewUrl = URL.createObjectURL(file);
       setInspirationUploadError(null);
@@ -797,6 +1078,18 @@ export function CampaignBuilderProvider({
           setInspirationUploadError(
             result.message || "Could not upload inspiration image.",
           );
+          updateSession((prev) => ({
+            ...prev,
+            inspiration: {
+              ...prev.inspiration,
+              inspirationImages: prev.inspiration.inspirationImages.filter(
+                (image) => image.id !== imageId,
+              ),
+            },
+          }));
+          if (previewUrl.startsWith("blob:")) {
+            URL.revokeObjectURL(previewUrl);
+          }
           return;
         }
 
@@ -817,7 +1110,7 @@ export function CampaignBuilderProvider({
         }));
       })();
     },
-    [eventId, updateSession],
+    [canUploadArtwork, eventId, updateSession],
   );
 
   const removeInspirationImage = useCallback(
@@ -873,6 +1166,13 @@ export function CampaignBuilderProvider({
 
   const uploadCampaignLogo = useCallback(
     async (file: File) => {
+      if (!canUploadArtwork) {
+        setInspirationUploadError(
+          "You do not have permission to upload artwork.",
+        );
+        return;
+      }
+
       const imageId = `logo-upload-${Date.now()}`;
       setInspirationUploadError(null);
       const formData = new FormData();
@@ -898,7 +1198,7 @@ export function CampaignBuilderProvider({
         },
       }));
     },
-    [eventId, updateSession],
+    [canUploadArtwork, eventId, updateSession],
   );
 
   const setMilestones = useCallback(
@@ -1175,17 +1475,34 @@ export function CampaignBuilderProvider({
           milestoneName: milestone?.name ?? "Milestone",
         });
 
-        const result = await generateAllContentAction({
-          eventId: generatingBase.eventId,
-          inspiration: generatingBase.inspiration,
-          inspirationImages,
-          milestones: generatingBase.milestones,
-          previewContents: generatingBase.previewContents,
-          brandKitId,
-          useBrandKit: brandKitId !== null,
-          milestoneIds: [milestoneId],
-          playbookName,
-        });
+        const result = await (async () => {
+          const { withStallWatchdog } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          return withStallWatchdog(
+            "ai",
+            generateAllContentAction({
+              eventId: generatingBase.eventId,
+              inspiration: generatingBase.inspiration,
+              inspirationImages,
+              milestones: generatingBase.milestones,
+              previewContents: generatingBase.previewContents,
+              brandKitId,
+              useBrandKit: brandKitId !== null,
+              milestoneIds: [milestoneId],
+              playbookName,
+            }),
+            {
+              action: "generateMilestoneContent",
+              eventId: generatingBase.eventId,
+              milestoneId,
+              timeoutMs: GENERATION_STALL_TIMEOUT_MS,
+              warningMs: GENERATION_STALL_WARNING_MS,
+              stallMessage:
+                "Artwork generation is taking longer than expected. Feed and story images are created one after another and can take a few minutes.",
+            },
+          );
+        })();
 
         let workingBase = generatingBase;
         if (result.updatedInspiration) {
@@ -1199,6 +1516,24 @@ export function CampaignBuilderProvider({
         }
 
         if (!result.success) {
+          // Storage/table RLS or mid-flight errors can leave the client empty
+          // while the server already persisted richer artwork — recover first.
+          const recovered = await recoverSessionFromServerIfRicher(
+            workingBase,
+            eventTitle,
+            eventDate,
+          );
+          if (recovered && previewSessionRichness(recovered) > 0) {
+            sessionRef.current = recovered;
+            setSession(recovered);
+            persistLocalSession(recovered);
+            return {
+              success: true,
+              message:
+                "Restored saved artwork from the server. Generation had reported an error, but completed content was already stored.",
+            };
+          }
+
           const failedBase: CampaignBuilderSession = {
             ...workingBase,
             previewContents: workingBase.previewContents.map((content) =>
@@ -1213,7 +1548,17 @@ export function CampaignBuilderProvider({
           };
           sessionRef.current = failedBase;
           setSession(failedBase);
-          await persistSession(failedBase);
+          // Local only — do not upsert a failed empty snapshot over server art.
+          persistLocalSession(failedBase);
+          const { reportFailedAction } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          reportFailedAction("ai", {
+            action: "generateMilestoneContent",
+            eventId: workingBase.eventId,
+            milestoneId,
+            message: result.message || "Artwork generation failed.",
+          });
           return { success: false, message: result.message };
         }
 
@@ -1248,6 +1593,35 @@ export function CampaignBuilderProvider({
         setSession(updatedBase);
         await persistSession(updatedBase);
 
+        const generatedArtwork =
+          result.results.find((entry) => entry.milestoneId === milestoneId)
+            ?.artwork ?? null;
+        if (
+          generatedArtwork &&
+          (generatedArtwork.feedUrl || generatedArtwork.storyUrl)
+        ) {
+          try {
+            // Generation already synced assets server-side (no revalidate).
+            // This pass refreshes cached dashboard/campaign routes if the
+            // builder is still open; safe if the user already navigated away.
+            const { syncAppliedMilestoneArtworkAction } = await import(
+              "@/lib/campaign-builder-v2/actions"
+            );
+            await syncAppliedMilestoneArtworkAction({
+              eventId: updatedBase.eventId,
+              milestones: updatedBase.milestones,
+              milestoneId,
+              artwork: generatedArtwork,
+              revalidate: true,
+            });
+          } catch (syncError) {
+            console.error(
+              "Failed to revalidate event surfaces after artwork sync:",
+              syncError,
+            );
+          }
+        }
+
         return {
           success: true,
           message: `Artwork and captions generated for ${milestone?.name ?? "this milestone"}.`,
@@ -1257,6 +1631,44 @@ export function CampaignBuilderProvider({
           error instanceof Error
             ? error.message
             : "Could not generate artwork and captions.";
+
+        // Navigation / Safari "Load failed" aborts the client fetch while the
+        // server action often still finishes. Do not clobber session as failed
+        // — server persists successful artwork into campaign_builder_sessions.
+        const interrupted =
+          (typeof DOMException !== "undefined" &&
+            error instanceof DOMException &&
+            error.name === "AbortError") ||
+          (error instanceof Error &&
+            (error.name === "AbortError" ||
+              /failed to fetch|networkerror|load failed|aborted/i.test(
+                error.message,
+              )));
+
+        const recovered = await recoverSessionFromServerIfRicher(
+          sessionRef.current,
+          eventTitle,
+          eventDate,
+        );
+        if (recovered && previewSessionRichness(recovered) > 0) {
+          sessionRef.current = recovered;
+          setSession(recovered);
+          persistLocalSession(recovered);
+          return {
+            success: true,
+            message: interrupted
+              ? "Generation was interrupted, but saved artwork was restored from the server."
+              : "Restored saved artwork from the server after a generation error.",
+          };
+        }
+
+        if (interrupted) {
+          return {
+            success: false,
+            message:
+              "Generation was interrupted (page left or connection dropped). Refresh Create with AI — completed artwork may already be saved.",
+          };
+        }
 
         const failedBase: CampaignBuilderSession = {
           ...sessionRef.current,
@@ -1272,7 +1684,17 @@ export function CampaignBuilderProvider({
         };
         sessionRef.current = failedBase;
         setSession(failedBase);
-        await persistSession(failedBase);
+        persistLocalSession(failedBase);
+
+        const { reportIntegrationError } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportIntegrationError("ai", error, {
+          action: "generateMilestoneContent",
+          eventId: sessionRef.current.eventId,
+          milestoneId,
+          message,
+        });
 
         return { success: false, message };
       } finally {
@@ -1284,7 +1706,7 @@ export function CampaignBuilderProvider({
         setGenerationProgress(null);
       }
     },
-    [flushSave, persistSession, playbooks],
+    [eventDate, eventTitle, flushSave, persistSession, playbooks],
   );
 
   const generateMilestoneContent = useCallback(
@@ -1348,6 +1770,28 @@ export function CampaignBuilderProvider({
       return;
     }
 
+    void import("@/lib/monitoring/report-error").then(({ reportStalledOperation }) => {
+      for (const milestoneId of staleIds) {
+        const preview = session.previewContents.find(
+          (content) => content.milestoneId === milestoneId,
+        );
+        const startedAt = preview?.generationStartedAt
+          ? Date.parse(preview.generationStartedAt)
+          : NaN;
+        reportStalledOperation("ai", {
+          action: "generateMilestoneContent.staleRecovery",
+          eventId,
+          milestoneId,
+          message:
+            "Recovered a stalled artwork generation that never finished.",
+          durationMs: Number.isNaN(startedAt)
+            ? null
+            : Date.now() - startedAt,
+          level: "error",
+        });
+      }
+    });
+
     updateSession((prev) => ({
       ...prev,
       previewContents: prev.previewContents.map((content) =>
@@ -1402,11 +1846,25 @@ export function CampaignBuilderProvider({
               next.emailSendTime = next.scheduleTime;
             }
           }
+          // Shared caption model: keep Facebook & Instagram rows in sync whenever
+          // captions or enabled formats change.
+          if (patch.captions || patch.enabledFormats) {
+            const captionPlatforms = captionPlatformsForFormats(next.enabledFormats);
+            if (captionPlatforms.length > 0) {
+              next.captions = ensureSharedCaptionsForPlatforms(
+                next.captions,
+                captionPlatforms,
+              );
+            }
+          }
+          // Honor an explicit generationStatus (e.g. awaiting_approval after
+          // Send for approval). Only re-infer when status wasn't provided.
           if (
-            patch.artwork ||
-            patch.captions ||
-            patch.status ||
-            patch.enabledFormats
+            patch.generationStatus == null &&
+            (patch.artwork ||
+              patch.captions ||
+              patch.status ||
+              patch.enabledFormats)
           ) {
             next.generationStatus = inferGenerationStatus(
               next,
@@ -1459,6 +1917,56 @@ export function CampaignBuilderProvider({
       }
     },
     [goToStep, updateSession],
+  );
+
+  const clearMilestoneGeneratedContent = useCallback(
+    async (
+      milestoneId: string,
+    ): Promise<{
+      success: boolean;
+      message: string;
+      artworkCleared: number;
+      captionsCleared: number;
+    }> => {
+      const { clearMilestoneGeneratedContentAction } = await import(
+        "@/lib/dev-tools/actions"
+      );
+      const { clearLocalGeneratedContent } = await import(
+        "@/lib/dev-tools/clear-local-generated-content"
+      );
+      const { clearSessionGeneratedContent } = await import(
+        "@/lib/dev-tools/clear-generated-content"
+      );
+
+      const result = await clearMilestoneGeneratedContentAction({
+        organizationId,
+        eventId,
+        milestoneId,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          message: result.message,
+          artworkCleared: 0,
+          captionsCleared: 0,
+        };
+      }
+
+      clearLocalGeneratedContent(eventId, [milestoneId]);
+      updateSession((prev) => {
+        const cleared = clearSessionGeneratedContent(prev, [milestoneId]);
+        return cleared.next;
+      });
+
+      return {
+        success: true,
+        message: result.message,
+        artworkCleared: result.artworkCleared,
+        captionsCleared: result.captionsCleared,
+      };
+    },
+    [eventId, organizationId, updateSession],
   );
 
   const healthPercent = useMemo(
@@ -1514,6 +2022,7 @@ export function CampaignBuilderProvider({
       generationProgress,
       goToStep,
       updateInspiration,
+      setPlaybookId,
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,
@@ -1541,6 +2050,10 @@ export function CampaignBuilderProvider({
       toggleExpandedReview,
       reconcilePreviewStatuses,
       navigateToWarning,
+      organizationId,
+      canUseDeveloperTools,
+      canUploadArtwork,
+      clearMilestoneGeneratedContent,
     }),
     [
       session,
@@ -1559,6 +2072,7 @@ export function CampaignBuilderProvider({
       generationProgress,
       goToStep,
       updateInspiration,
+      setPlaybookId,
       selectCampaign,
       addInspirationImage,
       removeInspirationImage,
@@ -1586,6 +2100,10 @@ export function CampaignBuilderProvider({
       toggleExpandedReview,
       reconcilePreviewStatuses,
       navigateToWarning,
+      organizationId,
+      canUseDeveloperTools,
+      canUploadArtwork,
+      clearMilestoneGeneratedContent,
     ],
   );
 

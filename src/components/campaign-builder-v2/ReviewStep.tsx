@@ -83,6 +83,45 @@ export function ReviewStep() {
         previewContents: session.previewContents,
       });
       setActionMessage(result.message);
+      if (result.success) {
+        const submittedAt = new Date().toISOString();
+        for (const preview of session.previewContents) {
+          if (derivedPreviewStatus(preview) !== "ready") {
+            continue;
+          }
+          const approvalStatuses =
+            preview.approvalStatuses.length > 0
+              ? preview.approvalStatuses.map((entry) =>
+                  entry.role === "creator"
+                    ? entry
+                    : {
+                        ...entry,
+                        status: "pending" as const,
+                        timestamp: submittedAt,
+                      },
+                )
+              : [
+                  {
+                    role: "creator" as const,
+                    label: "Creator",
+                    status: "not-started" as const,
+                    timestamp: null,
+                  },
+                  {
+                    role: "committee-chair" as const,
+                    label: "Committee Chair",
+                    status: "pending" as const,
+                    timestamp: submittedAt,
+                  },
+                ];
+          updatePreviewContent(preview.milestoneId, {
+            generationStatus: "awaiting_approval",
+            status: "ready",
+            approvalStatuses,
+          });
+        }
+        goToStep("published");
+      }
     } finally {
       setIsSending(false);
     }

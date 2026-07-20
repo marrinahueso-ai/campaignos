@@ -31,6 +31,7 @@ import {
   resetArtworkV2SlotAction,
 } from "@/lib/artwork-v2/actions";
 import { getCanvaConnectionStatusAction } from "@/lib/canva/actions";
+import { buildOAuthStartPath } from "@/lib/integrations/oauth";
 import {
   getApprovedArtworkAssets,
   isApprovedArtworkAsset,
@@ -344,10 +345,10 @@ export function ArtworkV2Shell({
 
   function buildCanvaConnectHref() {
     if (typeof window === "undefined") {
-      return "/api/canva/oauth/start?returnTo=/settings/canva";
+      return buildOAuthStartPath("canva", { returnTo: "/settings/canva" });
     }
     const returnTo = `${window.location.pathname}${window.location.search}`;
-    return `/api/canva/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
+    return buildOAuthStartPath("canva", { returnTo });
   }
 
   const isMilestoneArtworkComplete = useCallback(

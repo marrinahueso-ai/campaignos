@@ -1,5 +1,9 @@
 import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
-import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
+import {
+  describeAudienceFacingTiming,
+  playbookRelativeDay,
+} from "@/lib/campaign-builder-v2/campaign-timing";
+import { isFirstCampaignMilestone } from "@/lib/campaign-builder-v2/first-milestone";
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
@@ -43,12 +47,16 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.eventDate,
     input.milestone.suggestedDate,
   );
+  const isFirstMilestone = isFirstCampaignMilestone(input.milestone.sortOrder);
 
   const campaignMoment = resolveCampaignStage({
     relativeDay,
     stepTitle: input.milestone.name,
     eventDate: input.inspiration.eventDate,
+    isFirstMilestone,
   });
+
+  const timing = describeAudienceFacingTiming(relativeDay, { isFirstMilestone });
 
   const userArtDirection = [
     input.milestone.artworkNotes.trim(),
@@ -63,7 +71,13 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     `Campaign / event: ${input.inspiration.campaignName}`,
     `Event date: ${input.inspiration.eventDate}`,
     `Internal scheduled post date (never render on graphic): ${input.milestone.suggestedDate}`,
+    `Internal milestone label (never render on graphic): ${input.milestone.name}`,
     `Campaign moment: ${campaignMoment.label} — ${campaignMoment.description}`,
+    `Timing for this post: ${timing.scheduleSummary}`,
+    timing.onGraphicExamples.length > 0
+      ? `Audience-facing timing to express on the graphic (pick one short phrase, do not invent logistics): ${timing.onGraphicExamples.join(" / ")}`
+      : null,
+    timing.guidance,
     input.milestone.purpose.trim()
       ? `Creative intent (internal — interpret, do not paste on graphic): ${input.milestone.purpose.trim()}`
       : null,
@@ -130,7 +144,7 @@ export function buildCampaignBuilderArtworkPrompt(input: {
       "",
       input.storyFromFeed
         ? "Keep the same visual style, colors, and branding as the attached feed design. Adapt layout for vertical story safe zones."
-        : "Use the attached inspiration images for style, color palette, and visual mood. Do not copy them literally — create original campaign artwork in that style.",
+        : "Use the attached inspiration images for composition, layout, visual hierarchy, style, color palette, and visual mood.",
     );
 
     const imageComments = input.inspiration.inspirationImages

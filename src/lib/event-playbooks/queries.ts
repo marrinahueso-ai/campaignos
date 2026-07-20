@@ -1,8 +1,10 @@
 import "server-only";
 
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { mapEventRows } from "@/lib/events/mappers";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import {
   mapEventPlaybookActivityRow,
   mapEventPlaybookFileRow,
@@ -11,6 +13,13 @@ import {
   mapEventPlaybookTaskRow,
 } from "@/lib/event-playbooks/mappers";
 import { computePlanningProgress } from "@/lib/event-playbooks/progress";
+import {
+  PLAYBOOK_ACTIVITY_SELECT,
+  PLAYBOOK_FILE_SELECT,
+  PLAYBOOK_NOTE_SELECT,
+  PLAYBOOK_TASK_GROUP_SELECT,
+  PLAYBOOK_TASK_SELECT,
+} from "@/lib/event-playbooks/selects";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
 import type {
@@ -22,7 +31,7 @@ import type {
   EventPlaybookTaskRow,
 } from "@/types/event-playbooks";
 
-export async function areEventPlaybookTablesAvailable(): Promise<boolean> {
+export const areEventPlaybookTablesAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase
     .from("event_playbook_tasks")
@@ -30,11 +39,11 @@ export async function areEventPlaybookTablesAvailable(): Promise<boolean> {
     .limit(1);
 
   return !error || !isMissingSchemaError(error);
-}
+});
 
 export { EVENT_PLAYBOOK_TASK_GROUPS_MIGRATION } from "@/lib/event-playbooks/constants";
 
-export async function areEventPlaybookTaskGroupsAvailable(): Promise<boolean> {
+export const areEventPlaybookTaskGroupsAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase
     .from("event_playbook_task_groups")
@@ -42,7 +51,7 @@ export async function areEventPlaybookTaskGroupsAvailable(): Promise<boolean> {
     .limit(1);
 
   return !error || !isMissingSchemaError(error);
-}
+});
 
 /** Events eligible for Event Playbooks — non calendar-only, active school year when set. */
 export async function getEventPlaybookEvents(
@@ -52,7 +61,7 @@ export async function getEventPlaybookEvents(
 
   let query = supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
     .neq("communication_strategy", "calendar_only")
     .order("date", { ascending: true });
@@ -71,7 +80,7 @@ export async function getEventPlaybookEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return mapEventRows((data ?? []) as unknown as EventRow[]);
 }
 
 export async function getEventPlaybookTasksForEvents(
@@ -84,7 +93,7 @@ export async function getEventPlaybookTasksForEvents(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_playbook_tasks")
-    .select("*")
+    .select(PLAYBOOK_TASK_SELECT)
     .in("event_id", eventIds)
     .order("sort_order", { ascending: true });
 
@@ -96,7 +105,61 @@ export async function getEventPlaybookTasksForEvents(
     return [];
   }
 
-  return (data ?? []) as EventPlaybookTaskRow[];
+  return (data ?? []) as unknown as EventPlaybookTaskRow[];
+}
+
+/** Exact-event notes only — Event Detail Notes tab. */
+export async function getEventPlaybookNotesForEvent(
+  eventId: string,
+): Promise<import("@/types/event-playbooks").EventPlaybookNote[]> {
+  if (!(await areEventPlaybookTablesAvailable())) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_notes")
+    .select(PLAYBOOK_NOTE_SELECT)
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to fetch event notes:", error.message);
+    }
+    return [];
+  }
+
+  return ((data ?? []) as unknown as EventPlaybookNoteRow[]).map(mapEventPlaybookNoteRow);
+}
+
+/** Exact-event playbook activity only — Event Detail Activity tab. */
+export async function getEventPlaybookActivityForEvent(
+  eventId: string,
+  limit = 40,
+): Promise<import("@/types/event-playbooks").EventPlaybookActivity[]> {
+  if (!(await areEventPlaybookTablesAvailable())) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("event_playbook_activity")
+    .select(PLAYBOOK_ACTIVITY_SELECT)
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (!isMissingSchemaError(error)) {
+      console.error("Failed to fetch event activity:", error.message);
+    }
+    return [];
+  }
+
+  return ((data ?? []) as unknown as EventPlaybookActivityRow[]).map(
+    mapEventPlaybookActivityRow,
+  );
 }
 
 export async function getEventPlaybookHubData(
@@ -120,48 +183,48 @@ export async function getEventPlaybookHubData(
   const [tasksResult, groupsResult, notesResult, filesResult, activityResult] = await Promise.all([
     supabase
       .from("event_playbook_tasks")
-      .select("*")
+      .select(PLAYBOOK_TASK_SELECT)
       .eq("event_id", eventId)
       .order("sort_order", { ascending: true }),
     supabase
       .from("event_playbook_task_groups")
-      .select("*")
+      .select(PLAYBOOK_TASK_GROUP_SELECT)
       .eq("event_id", eventId)
       .order("sort_order", { ascending: true }),
     supabase
       .from("event_playbook_notes")
-      .select("*")
+      .select(PLAYBOOK_NOTE_SELECT)
       .eq("event_id", eventId)
       .order("created_at", { ascending: false }),
     supabase
       .from("event_playbook_files")
-      .select("*")
+      .select(PLAYBOOK_FILE_SELECT)
       .eq("event_id", eventId)
       .order("uploaded_at", { ascending: false }),
     supabase
       .from("event_playbook_activity")
-      .select("*")
+      .select(PLAYBOOK_ACTIVITY_SELECT)
       .eq("event_id", eventId)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
 
-  const tasks = ((tasksResult.data ?? []) as EventPlaybookTaskRow[]).map(
+  const tasks = ((tasksResult.data ?? []) as unknown as EventPlaybookTaskRow[]).map(
     mapEventPlaybookTaskRow,
   );
   const taskGroups =
     groupsResult.error && isMissingSchemaError(groupsResult.error)
       ? []
-      : ((groupsResult.data ?? []) as EventPlaybookTaskGroupRow[]).map(
+      : ((groupsResult.data ?? []) as unknown as EventPlaybookTaskGroupRow[]).map(
           mapEventPlaybookTaskGroupRow,
         );
-  const notes = ((notesResult.data ?? []) as EventPlaybookNoteRow[]).map(
+  const notes = ((notesResult.data ?? []) as unknown as EventPlaybookNoteRow[]).map(
     mapEventPlaybookNoteRow,
   );
-  const files = ((filesResult.data ?? []) as EventPlaybookFileRow[]).map(
+  const files = ((filesResult.data ?? []) as unknown as EventPlaybookFileRow[]).map(
     mapEventPlaybookFileRow,
   );
-  const activity = ((activityResult.data ?? []) as EventPlaybookActivityRow[]).map(
+  const activity = ((activityResult.data ?? []) as unknown as EventPlaybookActivityRow[]).map(
     mapEventPlaybookActivityRow,
   );
 
@@ -233,7 +296,7 @@ export async function getPastEventsForType(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .eq("event_type", eventType)
     .neq("id", excludeEventId)
     .neq("status", "archived")
@@ -244,5 +307,5 @@ export async function getPastEventsForType(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return mapEventRows((data ?? []) as unknown as EventRow[]);
 }

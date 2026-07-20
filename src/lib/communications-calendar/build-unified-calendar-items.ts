@@ -51,7 +51,8 @@ function buildMetaMilestoneItems(
   const items: PlanningCalendarItem[] = [];
 
   for (const [, group] of groups) {
-    const first = group[0]!;
+    const first =
+      group.find((slot) => slot.placement === "feed") ?? group[0]!;
     const scheduledDate = toDateOnly(first.scheduledFor!);
     const aggregateStatus = aggregateMetaStatus(group);
 

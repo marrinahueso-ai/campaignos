@@ -41,6 +41,8 @@ interface CreativeStudioShellProps {
   brandAssets: BrandAssets | null;
   organizationVoice: string | null;
   userRole: CampaignRole;
+  /** When set, overrides role-based upload helpers (EffectiveAccess upload_artwork). */
+  canUploadArtwork?: boolean;
   creativeBrief: CreativeBrief | null;
   briefIsAiEnhanced: boolean;
   assetPlan: AssetPlanItem[];
@@ -62,6 +64,7 @@ export function CreativeStudioShell({
   assetVersions,
   inspirationAssets,
   userRole,
+  canUploadArtwork,
   creativeBrief,
   assetPlan,
   artworkConcepts,
@@ -89,7 +92,8 @@ export function CreativeStudioShell({
     [eventType, communicationStrategy, campaignAssets],
   );
 
-  const canEdit = canUploadCampaignAssets(userRole);
+  const canEdit =
+    canUploadArtwork ?? canUploadCampaignAssets(userRole);
   const eventTitle =
     campaignEvent?.title ??
     events.find((event) => event.id === selectedEventId)?.title ??

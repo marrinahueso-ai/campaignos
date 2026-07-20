@@ -38,10 +38,6 @@ export function artworkBackupKey(eventId: string): string {
   return `campaign-builder-v2-artwork:${eventId}`;
 }
 
-function normalizeName(name: string): string {
-  return name.trim().toLowerCase();
-}
-
 export function buildArtworkBackup(
   session: CampaignBuilderSession,
 ): ArtworkBackupMap {
@@ -73,6 +69,8 @@ export function buildArtworkBackup(
   return backup;
 }
 
+const lastArtworkBackupJsonByEventId = new Map<string, string>();
+
 export function persistArtworkBackup(session: CampaignBuilderSession): boolean {
   if (typeof window === "undefined") {
     return false;
@@ -86,7 +84,12 @@ export function persistArtworkBackup(session: CampaignBuilderSession): boolean {
       // empty (e.g. mid-hydrate). Only overwrite when we have artwork to keep.
       return true;
     }
-    window.localStorage.setItem(key, JSON.stringify(backup));
+    const json = JSON.stringify(backup);
+    if (lastArtworkBackupJsonByEventId.get(session.eventId) === json) {
+      return true;
+    }
+    window.localStorage.setItem(key, json);
+    lastArtworkBackupJsonByEventId.set(session.eventId, json);
     return true;
   } catch {
     console.error(
@@ -120,23 +123,11 @@ function backupEntryForMilestone(
   backup: ArtworkBackupMap,
   milestone: CampaignBuilderMilestone,
 ): ArtworkBackupEntry | null {
+  // Exact milestoneId only — never match by name. Shared playbook titles
+  // across campaigns must not pull another milestone's artwork/captions.
   const byId = backup[milestone.id];
   if (byId && (byId.artwork.feedUrl || byId.artwork.storyUrl)) {
     return byId;
-  }
-
-  const targetName = normalizeName(milestone.name);
-  if (!targetName) {
-    return null;
-  }
-
-  for (const entry of Object.values(backup)) {
-    if (
-      normalizeName(entry.milestoneName) === targetName &&
-      (entry.artwork.feedUrl || entry.artwork.storyUrl)
-    ) {
-      return entry;
-    }
   }
 
   return null;

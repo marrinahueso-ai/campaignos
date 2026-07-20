@@ -3,6 +3,11 @@ import {
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
 import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
+import {
+  appAccessLabel,
+  ROSTER_ONLY_STATUS_LABEL,
+  type CommitteeAssignmentRole,
+} from "@/lib/organization-workspace/roster-first";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import {
   personTokensMatch,
@@ -32,17 +37,22 @@ export interface UnifiedTeamMember {
   roleLabel: string;
   accessLabel: string;
   accessLevel: CampaignRole;
+  /** Template id for display (custom_* or system); auth still uses accessLevel. */
+  accessTemplateId: string | null;
   vpPortfolio: string | null;
   vpPortfolioId: string | null;
   committeeCount: number;
   committees: MemberCommitteeAssignment[];
   vpOversightCommittees: MemberCommitteeAssignment[];
   status: UnifiedMemberStatus;
+  statusLabel: string;
   isRosterOnly: boolean;
   lastActive: string | null;
   joinedAt: string | null;
   organizationRoleId: string | null;
   organizationRoleName: string | null;
+  organizationMemberId: string | null;
+  assignedEventIds: string[];
   reportsTo: string | null;
   teamMemberCount: number;
   isVp: boolean;
@@ -59,7 +69,7 @@ export interface UnifiedTeamMember {
 
 export interface MemberCommitteeAssignment {
   committee: OrganizationCommittee;
-  roleOnCommittee: "vp" | "chair" | "co_chair" | "member";
+  roleOnCommittee: "vp" | "chair" | "co_chair" | "member" | "supervising_vp";
   status: CommitteeStatus;
   memberNames: string[];
   memberCount: number;
@@ -74,6 +84,8 @@ interface RosterPersonSeed {
   phone: string | null;
   organizationRoleId: string | null;
   organizationRoleName: string | null;
+  organizationMemberId?: string | null;
+  assignedEventIds?: string[];
   isVp: boolean;
   isPresident: boolean;
   vpPortfolioId: string | null;
@@ -95,6 +107,8 @@ interface PersonAccumulator {
   phone: string | null;
   organizationRoleId: string | null;
   organizationRoleName: string | null;
+  organizationMemberId: string | null;
+  assignedEventIds: string[];
   isVp: boolean;
   isPresident: boolean;
   vpPortfolioId: string | null;
@@ -110,6 +124,257 @@ interface PersonAccumulator {
       roleOnCommittee: MemberCommitteeAssignment["roleOnCommittee"];
     }
   >;
+}
+
+export { ROSTER_ONLY_STATUS_LABEL };
+
+/** People UI login status — never show “Roster Only”. */
+export type PeopleLoginStatus =
+  | "not_invited"
+  | "invited"
+  | "active"
+  | "inactive";
+
+/** Responsibility labels for Team & Access (backend roles unchanged). */
+export function peopleResponsibilityLabel(
+  role: MemberCommitteeAssignment["roleOnCommittee"] | CommitteeAssignmentRole,
+): string {
+  switch (role) {
+    case "chair":
+      return "Event Lead";
+    case "co_chair":
+      return "Assistant Lead";
+    case "member":
+      return "Team Member";
+    case "supervising_vp":
+    case "vp":
+      return "Supervisor";
+    default:
+      return "Team Member";
+  }
+}
+
+export function peopleLoginStatus(
+  member: Pick<UnifiedTeamMember, "status" | "isRosterOnly">,
+): PeopleLoginStatus {
+  if (member.isRosterOnly || member.status === "roster") {
+    return "not_invited";
+  }
+  if (member.status === "invited") {
+    return "invited";
+  }
+  if (member.status === "deactivated") {
+    return "inactive";
+  }
+  return "active";
+}
+
+/** Resend/reinvite is for pending invites and inactive (deactivated) login members. */
+export function canResendTeamInvite(
+  member: Pick<UnifiedTeamMember, "status" | "raw">,
+  canManage: boolean,
+): boolean {
+  return (
+    canManage &&
+    Boolean(member.raw) &&
+    (member.status === "invited" || member.status === "deactivated")
+  );
+}
+
+export function resendTeamInviteLabel(
+  member: Pick<UnifiedTeamMember, "status">,
+): string {
+  return member.status === "deactivated" ? "Reinvite to Login" : "Resend Invite";
+}
+
+/** True when this People row is the signed-in user's own membership. */
+export function isCurrentUserTeamMember(
+  member: Pick<UnifiedTeamMember, "email" | "raw">,
+  currentUserEmail: string | null | undefined,
+): boolean {
+  const viewer = currentUserEmail?.trim().toLowerCase();
+  if (!viewer) {
+    return false;
+  }
+  const memberEmail = member.email?.trim().toLowerCase();
+  if (memberEmail && memberEmail === viewer) {
+    return true;
+  }
+  const rawEmail = member.raw?.email?.trim().toLowerCase();
+  return Boolean(rawEmail && rawEmail === viewer);
+}
+
+export function peopleLoginStatusLabel(status: PeopleLoginStatus): string {
+  switch (status) {
+    case "not_invited":
+      return "Not Invited";
+    case "invited":
+      return "Invited";
+    case "active":
+      return "Active";
+    case "inactive":
+      return "Inactive";
+  }
+}
+
+/** Secondary access badge under Active — not the primary Login Status. */
+export function peopleAccessBadgeLabel(
+  member: Pick<
+    UnifiedTeamMember,
+    "isRosterOnly" | "accessLevel" | "accessTemplateId" | "isPresident"
+  >,
+  customLabels?: Partial<Record<string, string>> | null,
+): string | null {
+  if (member.isRosterOnly) {
+    return null;
+  }
+  const templateKey = member.accessTemplateId ?? member.accessLevel;
+  const custom = customLabels?.[templateKey]?.trim();
+  if (custom) {
+    return custom;
+  }
+  if (member.isPresident || member.accessLevel === "president") {
+    return "President";
+  }
+  if (member.accessLevel === "admin") {
+    return "Admin";
+  }
+  if (member.accessLevel === "developer") {
+    return "Developer";
+  }
+  if (member.accessLevel === "tester") {
+    return "Tester";
+  }
+  if (member.accessLevel === "view_only") {
+    return "View Only";
+  }
+  if (
+    member.accessLevel === "contributor" ||
+    member.accessLevel === "committee_chair" ||
+    member.accessLevel === "vp_communications"
+  ) {
+    return "Contributor";
+  }
+  return null;
+}
+
+/** Unique events from direct assignment + roles/teams this person is responsible for. */
+export function peopleRelatedEventIds(member: UnifiedTeamMember): string[] {
+  const ids = new Set<string>(member.assignedEventIds);
+  for (const assignment of member.committees) {
+    const eventId = assignment.committee.assignedEventId;
+    if (eventId) {
+      ids.add(eventId);
+    }
+  }
+  return Array.from(ids);
+}
+
+export type PersonEventInvolvement = {
+  /** Null when the person has a team role that is not yet tied to an Event ID. */
+  eventId: string | null;
+  title: string;
+  roleLabel: string;
+  committeeId: string | null;
+  committeeName: string | null;
+  needsEventLink: boolean;
+};
+
+/**
+ * One involvement per Event ID (with role), plus unlinked team roles that still
+ * need an Event ID. Pure helper — no fetches.
+ */
+export function buildPersonEventInvolvements(
+  member: UnifiedTeamMember,
+  eventTitlesById: Map<string, string> = new Map(),
+): PersonEventInvolvement[] {
+  const byEventId = new Map<string, PersonEventInvolvement>();
+
+  for (const assignment of member.committees) {
+    const eventId = assignment.committee.assignedEventId;
+    const roleLabel = peopleResponsibilityLabel(assignment.roleOnCommittee);
+    if (eventId) {
+      byEventId.set(eventId, {
+        eventId,
+        title: eventTitlesById.get(eventId) ?? assignment.committee.name,
+        roleLabel,
+        committeeId: assignment.committee.id,
+        committeeName: assignment.committee.name,
+        needsEventLink: false,
+      });
+    }
+  }
+
+  for (const eventId of member.assignedEventIds) {
+    if (byEventId.has(eventId)) {
+      continue;
+    }
+    byEventId.set(eventId, {
+      eventId,
+      title: eventTitlesById.get(eventId) ?? "Assigned event",
+      roleLabel: "Team Member",
+      committeeId: null,
+      committeeName: null,
+      needsEventLink: false,
+    });
+  }
+
+  const linked = Array.from(byEventId.values()).sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  const unlinked = member.committees
+    .filter((assignment) => !assignment.committee.assignedEventId)
+    .map((assignment) => ({
+      eventId: null as string | null,
+      title: assignment.committee.name,
+      roleLabel: peopleResponsibilityLabel(assignment.roleOnCommittee),
+      committeeId: assignment.committee.id,
+      committeeName: assignment.committee.name,
+      needsEventLink: true,
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  return [...linked, ...unlinked];
+}
+
+export function memberMatchesPeopleSearch(
+  member: UnifiedTeamMember,
+  query: string,
+  eventTitlesById: Map<string, string>,
+): boolean {
+  const search = query.trim().toLowerCase();
+  if (!search) {
+    return true;
+  }
+
+  const loginLabel = peopleLoginStatusLabel(peopleLoginStatus(member)).toLowerCase();
+  const accessBadge = peopleAccessBadgeLabel(member)?.toLowerCase() ?? "";
+  const responsibilityLabels = member.committees.map((assignment) =>
+    peopleResponsibilityLabel(assignment.roleOnCommittee).toLowerCase(),
+  );
+  const eventTitles = peopleRelatedEventIds(member).map(
+    (eventId) => eventTitlesById.get(eventId)?.toLowerCase() ?? "",
+  );
+
+  const haystack = [
+    member.displayName,
+    member.email,
+    member.phone ?? "",
+    member.orgRoleLabel,
+    member.roleLabel,
+    member.organizationRoleName ?? "",
+    member.statusLabel,
+    loginLabel,
+    accessBadge,
+    member.accessLabel,
+    ...responsibilityLabels,
+    ...eventTitles,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(search);
 }
 
 function formatEmailAsName(email: string): string {
@@ -128,6 +393,10 @@ function makeDedupeKey(email: string | null | undefined, name: string): string {
     return `email:${trimmedEmail}`;
   }
   return `name:${normalizePersonToken(name)}`;
+}
+
+function makeMemberDedupeKey(organizationMemberId: string): string {
+  return `member:${organizationMemberId}`;
 }
 
 function personIdentityMatches(
@@ -170,8 +439,28 @@ function personMatchesSeed(
 
 function findExistingPerson(
   people: Map<string, PersonAccumulator>,
-  seed: Pick<RosterPersonSeed, "displayName" | "email">,
+  seed: Pick<
+    RosterPersonSeed,
+    "displayName" | "email" | "organizationMemberId" | "organizationUser"
+  >,
 ): PersonAccumulator | undefined {
+  const memberId =
+    seed.organizationMemberId?.trim() ||
+    seed.organizationUser?.organizationMemberId?.trim() ||
+    null;
+
+  if (memberId) {
+    const byMember = people.get(makeMemberDedupeKey(memberId));
+    if (byMember) {
+      return byMember;
+    }
+    for (const person of people.values()) {
+      if (person.organizationMemberId === memberId) {
+        return person;
+      }
+    }
+  }
+
   const directKey = makeDedupeKey(seed.email, seed.displayName);
   const direct = people.get(directKey);
   if (direct) {
@@ -192,7 +481,20 @@ function mergePersonSeed(
   seed: RosterPersonSeed,
 ): PersonAccumulator {
   const existing = findExistingPerson(people, seed);
-  const dedupeKey = existing?.dedupeKey ?? makeDedupeKey(seed.email, seed.displayName);
+  const memberId =
+    seed.organizationMemberId?.trim() ||
+    seed.organizationUser?.organizationMemberId?.trim() ||
+    existing?.organizationMemberId ||
+    null;
+  const dedupeKey =
+    existing?.dedupeKey ??
+    (memberId
+      ? makeMemberDedupeKey(memberId)
+      : makeDedupeKey(seed.email, seed.displayName));
+
+  if (existing && existing.dedupeKey !== dedupeKey) {
+    people.delete(existing.dedupeKey);
+  }
 
   const person: PersonAccumulator = existing ?? {
     dedupeKey,
@@ -201,6 +503,8 @@ function mergePersonSeed(
     phone: seed.phone,
     organizationRoleId: seed.organizationRoleId,
     organizationRoleName: seed.organizationRoleName,
+    organizationMemberId: memberId,
+    assignedEventIds: seed.assignedEventIds ?? [],
     isVp: seed.isVp,
     isPresident: seed.isPresident,
     vpPortfolioId: seed.vpPortfolioId,
@@ -211,6 +515,8 @@ function mergePersonSeed(
     rosterCampaignRolePriority: 0,
     committeeAssignments: new Map(),
   };
+
+  person.dedupeKey = dedupeKey;
 
   if (seed.displayName.trim()) {
     person.displayName = seed.displayName.trim();
@@ -226,8 +532,29 @@ function mergePersonSeed(
     person.phone = null;
   }
 
+  if (memberId) {
+    person.organizationMemberId = memberId;
+  }
+
+  if (seed.assignedEventIds && seed.assignedEventIds.length > 0) {
+    person.assignedEventIds = Array.from(
+      new Set([...person.assignedEventIds, ...seed.assignedEventIds]),
+    );
+  }
+
   if (seed.organizationUser) {
     person.organizationUser = seed.organizationUser;
+    if (seed.organizationUser.assignedEventIds?.length) {
+      person.assignedEventIds = Array.from(
+        new Set([
+          ...person.assignedEventIds,
+          ...seed.organizationUser.assignedEventIds,
+        ]),
+      );
+    }
+    if (seed.organizationUser.organizationMemberId) {
+      person.organizationMemberId = seed.organizationUser.organizationMemberId;
+    }
   }
 
   if (seed.organizationRoleId) {
@@ -292,6 +619,7 @@ function rolePriority(role: MemberCommitteeAssignment["roleOnCommittee"]): numbe
       return 3;
     case "member":
       return 2;
+    case "supervising_vp":
     case "vp":
       return 1;
     default:
@@ -326,6 +654,7 @@ function resolveOrgRoleLabel(input: {
   organizationRoleName: string | null;
   committeeAssignments: MemberCommitteeAssignment[];
   campaignRole: CampaignRole;
+  hasAppAccess: boolean;
 }): string {
   if (input.isPresident) {
     return "President";
@@ -335,82 +664,64 @@ function resolveOrgRoleLabel(input: {
     return input.organizationRoleName ?? "VP";
   }
 
-  if (input.campaignRole === "admin") {
-    return "Owner";
+  if (input.hasAppAccess && input.campaignRole === "admin") {
+    return "Administrator";
   }
 
   const committeeRole = input.committeeAssignments.reduce<
-    MemberCommitteeAssignment["roleOnCommittee"] | null
+    MemberCommitteeAssignment | null
   >((best, assignment) => {
-    if (!best || rolePriority(assignment.roleOnCommittee) > rolePriority(best)) {
-      return assignment.roleOnCommittee;
+    if (
+      !best ||
+      rolePriority(assignment.roleOnCommittee) > rolePriority(best.roleOnCommittee)
+    ) {
+      return assignment;
     }
     return best;
   }, null);
 
-  switch (committeeRole) {
-    case "chair":
-      return "Committee Chair";
-    case "co_chair":
-      return "Committee Co-Chair";
-    case "member":
-      return "Committee Member";
-    default:
-      break;
+  if (committeeRole) {
+    return peopleResponsibilityLabel(committeeRole.roleOnCommittee);
+  }
+
+  if (input.organizationRoleName) {
+    return input.organizationRoleName;
+  }
+
+  if (!input.hasAppAccess) {
+    return "Team Member";
   }
 
   switch (input.campaignRole) {
     case "view_only":
-      return "Viewer";
+      return "View Only";
     case "contributor":
-      return "Volunteer";
+      return "Team Member";
     case "committee_chair":
-      return "Committee Chair";
+      return "Event Lead";
     case "vp_communications":
       return "VP Communications";
+    case "developer":
+      return "Developer";
+    case "tester":
+      return "Tester";
+    case "president":
+      return "President";
+    case "admin":
+      return "Administrator";
     default:
       return campaignRoleLabel(input.campaignRole);
   }
 }
 
-function resolveAccessLevel(
-  organizationUser: OrganizationUser | null,
-  rosterCampaignRole: CampaignRole | null,
-  isVp: boolean,
-  isPresident: boolean,
-  committeeAssignments: MemberCommitteeAssignment[],
-): CampaignRole {
-  if (organizationUser) {
-    return organizationUser.campaignRole;
+function resolveAccessLevel(person: PersonAccumulator): CampaignRole {
+  if (person.organizationUser) {
+    return person.organizationUser.campaignRole;
   }
 
-  if (rosterCampaignRole) {
-    return rosterCampaignRole;
-  }
-
-  if (isPresident) {
-    return "president";
-  }
-
-  if (isVp) {
-    return "vp_communications";
-  }
-
-  if (committeeAssignments.some((assignment) => assignment.roleOnCommittee === "chair")) {
-    return "committee_chair";
-  }
-
-  if (
-    committeeAssignments.some(
-      (assignment) =>
-        assignment.roleOnCommittee === "co_chair" ||
-        assignment.roleOnCommittee === "member",
-    )
-  ) {
-    return "contributor";
-  }
-
-  return "view_only";
+  // Roster-only: use the planned Access template base role when set.
+  // Do not invent access from board/committee titles.
+  return person.rosterCampaignRole ?? "contributor";
 }
 
 function resolveReportsTo(
@@ -567,22 +878,7 @@ function collectRosterPeople(
 ): Map<string, PersonAccumulator> {
   const people = new Map<string, PersonAccumulator>();
 
-  for (const user of members) {
-    const displayName = resolveDisplayNameFromWorkspace(user.email, workspace);
-    mergePersonSeed(people, {
-      displayName,
-      email: user.email,
-      phone: null,
-      organizationRoleId: user.organizationRoleId,
-      organizationRoleName: user.organizationRoleName,
-      isVp: false,
-      isPresident: false,
-      vpPortfolioId: null,
-      vpPortfolioName: null,
-      organizationUser: user,
-    });
-  }
-
+  // Prefer roster member rows as the join key when assignment tables are loaded.
   for (const rosterMember of workspace.members) {
     if (!rosterMember.active) {
       continue;
@@ -590,9 +886,11 @@ function collectRosterPeople(
     mergePersonSeed(people, {
       displayName: rosterMember.name,
       email: rosterMember.email,
-      phone: null,
+      phone: rosterMember.phone,
       organizationRoleId: rosterMember.organizationRoleId,
       organizationRoleName: rosterMember.roleName,
+      organizationMemberId: rosterMember.id,
+      assignedEventIds: rosterMember.assignedEventIds ?? [],
       isVp: false,
       isPresident: false,
       vpPortfolioId: rosterMember.organizationRoleId,
@@ -600,6 +898,26 @@ function collectRosterPeople(
       organizationUser: null,
       rosterCampaignRole: rosterMember.campaignRole,
       rosterCampaignRolePriority: 2,
+    });
+  }
+
+  for (const user of members) {
+    const displayName =
+      user.displayName?.trim() ||
+      resolveDisplayNameFromWorkspace(user.email, workspace);
+    mergePersonSeed(people, {
+      displayName,
+      email: user.email,
+      phone: null,
+      organizationRoleId: user.organizationRoleId,
+      organizationRoleName: user.organizationRoleName,
+      organizationMemberId: user.organizationMemberId,
+      assignedEventIds: user.assignedEventIds ?? [],
+      isVp: false,
+      isPresident: false,
+      vpPortfolioId: null,
+      vpPortfolioName: null,
+      organizationUser: user,
     });
   }
 
@@ -712,13 +1030,8 @@ function finalizeUnifiedMember(
 
   const vpOversightCommittees = roleOversightCommittees;
 
-  const accessLevel = resolveAccessLevel(
-    person.organizationUser,
-    person.rosterCampaignRole,
-    person.isVp,
-    person.isPresident,
-    directCommitteeAssignments,
-  );
+  const accessLevel = resolveAccessLevel(person);
+  const isRosterOnly = !person.organizationUser;
 
   const orgRoleLabel = resolveOrgRoleLabel({
     isPresident: person.isPresident,
@@ -726,6 +1039,7 @@ function finalizeUnifiedMember(
     organizationRoleName: person.organizationRoleName,
     committeeAssignments: directCommitteeAssignments,
     campaignRole: accessLevel,
+    hasAppAccess: !isRosterOnly,
   });
 
   const oversightCommittees = workspace.committees.filter(
@@ -745,9 +1059,14 @@ function finalizeUnifiedMember(
 
   const emailMissing = !person.email;
   const phoneMissing = !person.phone;
+  const status = person.organizationUser?.status ?? "roster";
 
   return {
-    id: person.organizationUser?.id ?? `roster:${person.dedupeKey}`,
+    id:
+      person.organizationUser?.id ??
+      (person.organizationMemberId
+        ? `roster-member:${person.organizationMemberId}`
+        : `roster:${person.dedupeKey}`),
     email: person.email ?? "",
     emailMissing,
     phone: person.phone,
@@ -756,8 +1075,13 @@ function finalizeUnifiedMember(
     initials: deriveInitials(person.displayName),
     orgRoleLabel,
     roleLabel: orgRoleLabel,
-    accessLabel: accessLevelLabel(accessLevel),
+    accessLabel: accessLevelLabel(
+      person.organizationUser?.accessTemplateId ?? accessLevel,
+      false,
+    ),
     accessLevel,
+    accessTemplateId:
+      person.organizationUser?.accessTemplateId ?? accessLevel,
     vpPortfolio: person.isVp
       ? person.organizationRoleName
       : person.vpPortfolioName,
@@ -767,12 +1091,15 @@ function finalizeUnifiedMember(
     committeeCount: committees.length,
     committees,
     vpOversightCommittees,
-    status: person.organizationUser?.status ?? "roster",
-    isRosterOnly: !person.organizationUser,
+    status,
+    statusLabel: memberStatusLabel(status, isRosterOnly),
+    isRosterOnly,
     lastActive: person.organizationUser?.joinedAt ?? null,
     joinedAt: person.organizationUser?.joinedAt ?? null,
     organizationRoleId: person.organizationRoleId,
     organizationRoleName: person.organizationRoleName,
+    organizationMemberId: person.organizationMemberId,
+    assignedEventIds: person.assignedEventIds,
     reportsTo: resolveReportsTo(person, workspace),
     teamMemberCount: hasRoleOversight
       ? countUniqueCommitteeMembers(oversightCommittees)
@@ -809,21 +1136,71 @@ export function buildUnifiedTeamMembers(
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
-export function accessLevelLabel(role: CampaignRole): string {
-  switch (role) {
-    case "admin":
-      return "Full Access";
-    case "president":
-    case "vp_communications":
-      return "Admin";
-    case "committee_chair":
-    case "contributor":
-      return "Editor";
-    case "view_only":
-      return "Viewer";
-    default:
-      return campaignRoleLabel(role);
+/** Resolve one profile member without materializing the full unified roster. */
+export function findUnifiedTeamMemberById(
+  memberId: string,
+  members: OrganizationUser[],
+  workspace: OrganizationWorkspaceData,
+  workload?: TeamAccessWorkloadIndex,
+): UnifiedTeamMember | null {
+  const people = collectRosterPeople(members, workspace);
+
+  for (const person of people.values()) {
+    const id =
+      person.organizationUser?.id ??
+      (person.organizationMemberId
+        ? `roster-member:${person.organizationMemberId}`
+        : `roster:${person.dedupeKey}`);
+    if (id === memberId) {
+      return finalizeUnifiedMember(person, workspace, workload);
+    }
   }
+
+  return null;
+}
+
+export function memberStatusLabel(
+  status: UnifiedMemberStatus,
+  isRosterOnly = false,
+): string {
+  if (isRosterOnly || status === "roster") {
+    return "Not Invited";
+  }
+  switch (status) {
+    case "active":
+      return "Active";
+    case "invited":
+      return "Invited";
+    case "deactivated":
+      return "Inactive";
+    default:
+      return status;
+  }
+}
+
+export function accessLevelLabel(
+  role: CampaignRole | string,
+  _isRosterOnly = false,
+  customLabels?: Partial<Record<string, string>> | null,
+): string {
+  // Role always means Access template label. Login status is separate.
+  const custom = customLabels?.[role]?.trim();
+  if (custom) {
+    return custom;
+  }
+  if (role === "view_only") {
+    return "View Only";
+  }
+  if (role === "president") {
+    return "President";
+  }
+  if (role === "committee_chair") {
+    return "Contributor";
+  }
+  if (typeof role === "string" && role.startsWith("custom_")) {
+    return "Custom role";
+  }
+  return appAccessLabel(true, role as CampaignRole);
 }
 
 export function accessBadgeVariant(
@@ -831,12 +1208,14 @@ export function accessBadgeVariant(
 ): "success" | "info" | "warning" | "default" {
   switch (role) {
     case "admin":
+    case "developer":
       return "success";
     case "president":
     case "vp_communications":
       return "info";
     case "committee_chair":
     case "contributor":
+    case "tester":
       return "warning";
     default:
       return "default";

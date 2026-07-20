@@ -88,6 +88,23 @@ export async function createSchoolProfile(
   }
 
   const organizationId = organization.id;
+
+  // Membership must exist before org-scoped RLS allows seed/writes (Phase C).
+  const authUser = await getAuthUser();
+  if (authUser) {
+    const membership = await createOrganizationMembership({
+      organizationId,
+      userId: authUser.id,
+      email: authUser.email,
+      campaignRole: "admin",
+      status: "active",
+    });
+    if ("error" in membership) {
+      console.error("Failed to create founding membership:", membership.error);
+      return { error: "Unable to create your team membership. Please try again." };
+    }
+  }
+
   await seedOrganizationPlaybookDefaults(organizationId);
   await seedOrganizationWorkspace(organizationId);
   await ensureSchoolYearForOrganization({
@@ -107,17 +124,6 @@ export async function createSchoolProfile(
         );
       }
     }
-  }
-
-  const authUser = await getAuthUser();
-  if (authUser) {
-    await createOrganizationMembership({
-      organizationId,
-      userId: authUser.id,
-      email: authUser.email,
-      campaignRole: "admin",
-      status: "active",
-    });
   }
 
   let ptoLogoUrl: string | null = null;

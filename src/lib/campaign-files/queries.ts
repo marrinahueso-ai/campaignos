@@ -183,3 +183,44 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
     currentUserName: authUser?.displayName ?? null,
   };
 }
+
+/** Event Detail Files tab — exact eventId files only (no org event list). */
+export async function getFilesPageDataForEvent(
+  event: import("@/types").Event,
+): Promise<FilesPageData> {
+  const [tablesAvailable, authUser] = await Promise.all([
+    areEventPlaybookTablesAvailable(),
+    getAuthUser(),
+  ]);
+
+  if (!tablesAvailable) {
+    return {
+      tablesAvailable,
+      files: [],
+      events: [],
+      eventList: [],
+      uploaderNames: [],
+      currentUserName: authUser?.displayName ?? null,
+    };
+  }
+
+  const files = await getCampaignFilesForEvent(event.id);
+  const artworkMap = await getEventArtworkMap([event.id]);
+
+  return {
+    tablesAvailable,
+    files,
+    events: [
+      {
+        eventId: event.id,
+        title: event.title,
+        date: event.date,
+        artwork: artworkMap.get(event.id) ?? null,
+        fileCount: files.length,
+      },
+    ],
+    eventList: [event],
+    uploaderNames: collectUploaderNames(files),
+    currentUserName: authUser?.displayName ?? null,
+  };
+}

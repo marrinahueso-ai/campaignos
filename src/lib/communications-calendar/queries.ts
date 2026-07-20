@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { PLACEHOLDER_APPROVALS } from "@/lib/communications-calendar/constants";
+import {
+  PLANNING_EVENT_SELECT,
+  PLANNING_ITEM_SELECT,
+  PLANNING_STEP_SELECT,
+} from "@/lib/communications-calendar/planning-selects";
 import { getWorkloadLevel } from "@/lib/communications-calendar/workload";
 import { mapEventRows } from "@/lib/events/mappers";
 import { mapEventCommunicationStepRow } from "@/lib/playbooks/mappers";
@@ -15,6 +20,7 @@ import type {
 } from "@/types/communications-calendar";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
 import type { EventRow as CoreEventRow } from "@/types";
+import type { CommunicationItemRow } from "@/types/event-workspace";
 
 function buildDaySummaries(
   events: CalendarEventEntry[],
@@ -71,12 +77,12 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: eventRows, error: eventsError } = await supabase
     .from("events")
-    .select("*")
+    .select(PLANNING_EVENT_SELECT)
     .order("date", { ascending: true });
 
   const events: CalendarEventEntry[] = eventsError
     ? []
-    : mapEventRows((eventRows ?? []) as CoreEventRow[])
+    : mapEventRows((eventRows ?? []) as unknown as CoreEventRow[])
         .filter((event) => event.status !== "archived")
         .map((event) => ({
         id: `event-${event.id}`,
@@ -92,10 +98,11 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: stepRows } = await supabase
     .from("event_communication_steps")
-    .select("*")
+    .select(PLANNING_STEP_SELECT)
     .order("due_date", { ascending: true });
 
-  const stepIds = (stepRows ?? []).map((row) => row.id as string);
+  const typedStepRows = (stepRows ?? []) as unknown as EventCommunicationStepRow[];
+  const stepIds = typedStepRows.map((row) => row.id);
 
   const { data: draftItems } = stepIds.length
     ? await supabase
@@ -110,9 +117,9 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
       .filter(Boolean),
   );
 
-  const communications: CalendarCommunicationEntry[] = (stepRows ?? [])
+  const communications: CalendarCommunicationEntry[] = typedStepRows
     .map((row) => {
-      const step = mapEventCommunicationStepRow(row as EventCommunicationStepRow);
+      const step = mapEventCommunicationStepRow(row);
       return {
         id: step.id,
         eventId: step.eventId,
@@ -128,12 +135,12 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
 
   const { data: itemRows } = await supabase
     .from("communication_items")
-    .select("*")
+    .select(PLANNING_ITEM_SELECT)
     .eq("status", "draft")
     .order("last_updated", { ascending: false });
 
-  const items = itemRows ?? [];
-  const itemIds = items.map((row) => row.id as string);
+  const items = (itemRows ?? []) as unknown as CommunicationItemRow[];
+  const itemIds = items.map((row) => row.id);
 
   const { data: versionRows } = itemIds.length
     ? await supabase
@@ -154,21 +161,21 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
   const stepById = new Map(communications.map((entry) => [entry.id, entry]));
 
   const publishing: CalendarPublishingEntry[] = items
-    .filter((row) => eventTitleById.has(row.event_id as string))
+    .filter((row) => eventTitleById.has(row.event_id))
     .map((row) => {
-      const stepId = row.event_communication_step_id as string | null;
+      const stepId = row.event_communication_step_id;
       const step = stepId ? stepById.get(stepId) : undefined;
-      const eventId = row.event_id as string;
+      const eventId = row.event_id;
 
       return {
-        id: row.id as string,
+        id: row.id,
         eventId,
         eventTitle: eventTitleById.get(eventId) ?? "Event",
         channel: row.channel as CommunicationChannel,
-        status: row.status as string,
+        status: row.status,
         dueDate: step?.dueDate ?? today,
         stepTitle: step?.stepTitle ?? null,
-        versionNumber: versionByItem.get(row.id as string) ?? 1,
+        versionNumber: versionByItem.get(row.id) ?? 1,
       };
     });
 

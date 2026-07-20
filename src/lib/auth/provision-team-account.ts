@@ -1,5 +1,6 @@
 import "server-only";
 
+import { markMustChangePassword } from "@/lib/auth/invite-credentials";
 import { createOrganizationMembership } from "@/lib/auth/membership-mutations";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import {
@@ -94,6 +95,7 @@ export async function provisionTeamMemberAccount(input: {
     email,
     password: input.password,
     email_confirm: true,
+    app_metadata: { must_change_password: true },
   });
 
   if (created.error) {
@@ -120,6 +122,7 @@ export async function provisionTeamMemberAccount(input: {
     }
 
     userId = existingUser.id;
+    await markMustChangePassword(userId);
   } else {
     userId = created.data.user.id;
   }

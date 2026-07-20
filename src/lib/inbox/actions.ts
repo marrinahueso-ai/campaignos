@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { revalidateInboxRoutes } from "@/lib/inbox/revalidate-paths";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { generateInboxAiDraft } from "@/lib/inbox/ai-draft";
 import {
   getInboxMessageById,
@@ -47,8 +46,7 @@ export type InboxReplyActionResult = {
 };
 
 export async function syncInboxNowAction(): Promise<InboxActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to sync inbox." };
   }
 
@@ -100,8 +98,7 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
 }
 
 export async function subscribeInboxWebhooksAction(): Promise<InboxActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to manage inbox webhooks." };
   }
 
@@ -136,8 +133,7 @@ export type RefreshMetaTokenScopesResult = {
 };
 
 export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenScopesResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to refresh Meta token scopes." };
   }
 
@@ -178,8 +174,7 @@ export async function refreshMetaTokenScopesAction(): Promise<RefreshMetaTokenSc
 async function requireInboxPermission(): Promise<
   { ok: true; organizationId: string } | { ok: false; error: string }
 > {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { ok: false, error: "You do not have permission to manage inbox." };
   }
 
@@ -577,4 +572,104 @@ export async function markInboxThreadReadAction(input: {
 
   revalidateInboxRoutes();
   return { success: true };
+}
+
+export async function archiveInboxThreadAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  if (thread.status === "archived") {
+    return { success: true };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      status: "archived",
+      unread_count: 0,
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not archive conversation." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+export async function unarchiveInboxThreadAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  if (thread.status !== "archived") {
+    return { success: true };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      status: "pending",
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not move conversation out of archive." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+export async function refreshInboxConnectionStatusAction(): Promise<{
+  success: boolean;
+  connection: import("@/lib/inbox/types").InboxConnectionStatus | null;
+  error?: string | null;
+}> {
+  try {
+    const { getLiveInboxConnectionStatus } = await import("@/lib/inbox/queries");
+    const connection = await getLiveInboxConnectionStatus();
+    return { success: true, connection };
+  } catch (error) {
+    return {
+      success: false,
+      connection: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not refresh Meta connection status.",
+    };
+  }
 }

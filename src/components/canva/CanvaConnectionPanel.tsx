@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { disconnectCanvaConnectionAction } from "@/lib/canva/actions";
+import { buildOAuthStartPath } from "@/lib/integrations/oauth";
 
 interface CanvaConnectionPanelProps {
   connected: boolean;
@@ -21,7 +22,7 @@ export function CanvaConnectionPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const connectHref = `/api/canva/oauth/start?returnTo=${encodeURIComponent(returnTo)}`;
+  const connectHref = buildOAuthStartPath("canva", { returnTo });
 
   function handleDisconnect() {
     setError(null);

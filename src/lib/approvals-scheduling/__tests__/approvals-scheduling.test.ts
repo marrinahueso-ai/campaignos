@@ -197,12 +197,13 @@ describe("deriveSchedulingWorkflowStatus", () => {
 });
 
 describe("canActOnUnifiedItem guard", () => {
-  it("blocks approval when campaign builder item has no assigned user", () => {
+  it("blocks non-approvers when campaign builder item has no assigned user", () => {
     const source = readFileSync(
       new URL("../permissions.ts", import.meta.url),
       "utf8",
     );
 
+    assert.match(source, /canApproveDraft\(role\)/);
     assert.match(source, /!item\.hasAssignedUser/);
     assert.match(source, /item\.source === "campaign_builder"/);
   });

@@ -1,9 +1,14 @@
 import "server-only";
 
+import {
+  filterEventsByAccess,
+  getEffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventRows } from "@/lib/events/mappers";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
 import { resolvePlanningHubSwitcherDateWindow } from "@/lib/events/campaign-page-utils";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { Event, EventRow } from "@/types";
 
@@ -27,8 +32,12 @@ async function fetchScopedCampaignEvents(input: {
 
   let query = supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
+    // Keep null strategy (maps to full_campaign) and exclude calendar-only in SQL.
+    .or(
+      "communication_strategy.in.(full_campaign,reminder_only,custom),communication_strategy.is.null",
+    )
     .order("date", { ascending: true });
 
   if (schoolYearIds.length === 1) {
@@ -50,11 +59,36 @@ async function fetchScopedCampaignEvents(input: {
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]).filter((event) =>
-    isCampaignPageStrategy(event.communicationStrategy),
+  const events = mapEventRows((data ?? []) as unknown as EventRow[]).filter(
+    (event) => isCampaignPageStrategy(event.communicationStrategy),
   );
+  const access = await getEffectiveAccess();
+  return filterEventsByAccess(access, events);
 }
 
+/** Narrow event summaries for assigned-event lists (Person Profile, etc.). */
+export async function getCampaignEventsByIds(
+  eventIds: string[],
+): Promise<Event[]> {
+  const uniqueIds = [...new Set(eventIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_SUMMARY_SELECT)
+    .in("id", uniqueIds)
+    .neq("status", "archived");
+
+  if (error) {
+    console.error("Failed to fetch campaign events by id:", error.message);
+    return [];
+  }
+
+  return mapEventRows((data ?? []) as unknown as EventRow[]);
+}
 /** Events on the Campaigns page — full campaigns and reminder-only social plans. */
 export async function getCampaignPageEvents(
   organizationId?: string | null,

@@ -15,18 +15,28 @@ export function UnifiedCalendarHeader() {
             <h1 className="text-2xl font-semibold text-cos-text">Calendar</h1>
             <p className="mt-1 max-w-xl text-sm text-cos-muted">
               Your school year in one place — events, posts, deadlines, and what
-              still needs attention.
+              still needs attention. Import from Google, a subscribe link, or a
+              file.
             </p>
           </div>
         </div>
-        <Button href="/calendar/import" variant="secondary" size="sm">
-          <Upload className="h-4 w-4" />
-          Import calendar
-        </Button>
-        <Button href="/calendar/review" variant="secondary" size="sm">
-          <FileSearch className="h-4 w-4" />
-          Review imported calendar
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button href="/calendar/import" variant="secondary" size="sm">
+            <Upload className="h-4 w-4" />
+            Import calendar
+          </Button>
+          <Button
+            href="/settings/integrations/calendar"
+            variant="secondary"
+            size="sm"
+          >
+            Google Calendar
+          </Button>
+          <Button href="/calendar/review" variant="secondary" size="sm">
+            <FileSearch className="h-4 w-4" />
+            Review imports
+          </Button>
+        </div>
       </div>
     </header>
   );

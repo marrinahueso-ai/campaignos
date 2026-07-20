@@ -9,6 +9,7 @@ export interface CreateEventFields {
   status: string;
   eventType: string;
   communicationStrategy: string;
+  playbookId: string;
 }
 
 export interface CreateEventFormState {
@@ -29,6 +30,7 @@ export function extractCreateEventFields(formData: FormData): CreateEventFields 
     eventType: formData.get("eventType")?.toString() ?? "general_event",
     communicationStrategy:
       formData.get("communicationStrategy")?.toString() ?? "full_campaign",
+    playbookId: formData.get("playbookId")?.toString() ?? "",
   };
 }
 

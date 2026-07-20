@@ -21,6 +21,11 @@ import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
 import { getMondayConnectionForCurrentOrg } from "@/lib/monday/connection";
 import { isMondayIntegrationConfigured } from "@/lib/monday/config";
 import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
+import {
+  getGoogleCalendarConnectionForCurrentOrg,
+  isGoogleCalendarConnectionConfigured,
+} from "@/lib/google-calendar/connection";
+import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { IntegrationStatus } from "@/lib/settings-v2/integration-types";
 
 export type { IntegrationId, IntegrationStatus } from "@/lib/settings-v2/integration-types";
@@ -56,12 +61,14 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
     canvaConnection,
     metaConnection,
     mondayConnection,
+    googleCalendarConnection,
   ] = await Promise.all([
     getActiveMembership(),
     getSchoolProfile(),
     getCanvaConnectionForCurrentOrg(),
     getMetaConnectionForCurrentOrg(),
     getMondayConnectionForCurrentOrg(),
+    getGoogleCalendarConnectionForCurrentOrg(),
   ]);
 
   const organization = schoolProfile?.organization ?? null;
@@ -89,15 +96,24 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
   const inboxSourcesCount = presetSourceCount + customSources.length;
 
   const playbooks = await getPlaybooksForOrganization(organizationId);
+  const activeSchoolYear = organizationId
+    ? await getActiveSchoolYear(organizationId)
+    : null;
+  const hasCalendarSubscribeFeed = Boolean(
+    activeSchoolYear?.calendarSubscribeUrl?.trim(),
+  );
   const hasCalendarImport = Boolean(schoolProfile?.calendarImport);
 
   const integrations: IntegrationStatus[] = [
     {
       id: "google-calendar",
       name: "Google Calendar",
-      description: "Import school events and sync subscribe feeds",
-      connected: hasCalendarImport,
-      manageHref: "/calendar/import",
+      description: "Sign in with Google, subscribe link, or upload a file",
+      connected:
+        isGoogleCalendarConnectionConfigured(googleCalendarConnection) ||
+        hasCalendarSubscribeFeed ||
+        hasCalendarImport,
+      manageHref: "/settings/integrations/calendar",
       available: true,
     },
     {

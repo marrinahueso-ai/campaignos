@@ -1,12 +1,11 @@
 import { displayDraftContent } from "@/lib/ai/content";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { isActorAssignedToApproval } from "@/lib/event-workspace/approval-actor-matching";
+import { dedupePendingApprovalQueueRows } from "@/lib/event-workspace/approval-request-dedupe";
 import {
-  dedupePendingApprovalQueueRows,
-  resolveStalePendingApprovalRequestsForApprovedItems,
-} from "@/lib/event-workspace/approval-request-dedupe";
-import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
-import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
+  APPROVABLE_COMMUNICATION_STATUSES,
+  isCommunicationApprovable,
+} from "@/lib/event-workspace/approval-workflow";
 import {
   type ApprovalActor,
 } from "@/lib/event-workspace/approval-permissions";
@@ -22,6 +21,18 @@ import type {
   CommunicationStatus,
 } from "@/types/event-workspace";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
+
+type ApprovalSidebarCountRow = {
+  id: string;
+  status: string;
+  communication_item_id: string | null;
+  requested_at: string;
+  assigned_user_id: string | null;
+  assigned_organization_role_id: string | null;
+  requested_by_user_id: string | null;
+  communication_items: { id: string; status: CommunicationStatus } | null;
+  assigned_role: { contact_name: string | null } | null;
+};
 
 type ApprovalQueueRow = ApprovalRequestRow & {
   events: { id: string; title: string } | null;
@@ -110,31 +121,37 @@ function mapQueueRow(
   };
 }
 
+const resolveScopedApprovalEventIds = cache(
+  async function resolveScopedApprovalEventIds(): Promise<string[]> {
+    const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
+      await import("@/lib/events/org-scope");
+    const scopedOrgId = await resolveScopedOrganizationId(undefined);
+    if (!scopedOrgId) {
+      return [];
+    }
+
+    const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
+    if (!schoolYearIds.length) {
+      return [];
+    }
+
+    const supabase = await createClient();
+    const { data: scopedEvents, error: scopeError } = await supabase
+      .from("events")
+      .select("id")
+      .in("school_year_id", schoolYearIds);
+
+    if (scopeError) {
+      console.error("Failed to scope approval queue events:", scopeError.message);
+      return [];
+    }
+
+    return (scopedEvents ?? []).map((row) => row.id as string);
+  },
+);
+
 async function fetchApprovalQueueRows(eventId?: string): Promise<ApprovalQueueRow[]> {
-  const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
-    await import("@/lib/events/org-scope");
-  const scopedOrgId = await resolveScopedOrganizationId(undefined);
-  if (!scopedOrgId) {
-    return [];
-  }
-
-  const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
-  if (!schoolYearIds.length) {
-    return [];
-  }
-
-  const supabase = await createClient();
-  const { data: scopedEvents, error: scopeError } = await supabase
-    .from("events")
-    .select("id")
-    .in("school_year_id", schoolYearIds);
-
-  if (scopeError) {
-    console.error("Failed to scope approval queue events:", scopeError.message);
-    return [];
-  }
-
-  const eventIds = (scopedEvents ?? []).map((row) => row.id as string);
+  const eventIds = await resolveScopedApprovalEventIds();
   if (eventIds.length === 0) {
     return [];
   }
@@ -143,6 +160,7 @@ async function fetchApprovalQueueRows(eventId?: string): Promise<ApprovalQueueRo
     return [];
   }
 
+  const supabase = await createClient();
   let approvalQuery = supabase
     .from("approval_requests")
     .select(
@@ -178,6 +196,86 @@ async function fetchApprovalQueueRows(eventId?: string): Promise<ApprovalQueueRo
   }
 
   return (data ?? []) as ApprovalQueueRow[];
+}
+
+/**
+ * Minimal columns for sidebar badge counts — no titles, versions, or assignee display.
+ * Pending rows still need JS assignment matching (incl. contact-name fallback) + dedupe.
+ */
+async function fetchApprovalSidebarAssignedRows(
+  eventIds: string[],
+): Promise<ApprovalSidebarCountRow[]> {
+  if (eventIds.length === 0) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_requests")
+    .select(
+      `
+      id,
+      status,
+      communication_item_id,
+      requested_at,
+      assigned_user_id,
+      assigned_organization_role_id,
+      requested_by_user_id,
+      communication_items!inner ( id, status ),
+      assigned_role:organization_roles!approval_requests_assigned_organization_role_id_fkey (
+        contact_name
+      )
+    `,
+    )
+    .eq("status", "pending")
+    .in("event_id", eventIds)
+    .in("communication_items.status", [...APPROVABLE_COMMUNICATION_STATUSES])
+    .order("requested_at", { ascending: false });
+
+  if (error?.code === "42P01") {
+    return [];
+  }
+
+  if (error) {
+    console.error("Failed to fetch approval sidebar assigned rows:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as unknown as ApprovalSidebarCountRow[];
+}
+
+async function countApprovalSidebarChangeRequests(
+  eventIds: string[],
+  organizationUserId: string,
+): Promise<number> {
+  if (eventIds.length === 0) {
+    return 0;
+  }
+
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("approval_requests")
+    .select("id, communication_items!inner(status)", {
+      count: "exact",
+      head: true,
+    })
+    .eq("requested_by_user_id", organizationUserId)
+    .in("event_id", eventIds)
+    .eq("communication_items.status", "changes_requested");
+
+  if (error?.code === "42P01") {
+    return 0;
+  }
+
+  if (error) {
+    console.error(
+      "Failed to count approval sidebar change requests:",
+      error.message,
+    );
+    return 0;
+  }
+
+  return count ?? 0;
 }
 
 async function fetchVersionContentById(
@@ -226,7 +324,7 @@ async function fetchStepsById(
   }
 
   return new Map(
-    ((data ?? []) as EventCommunicationStepRow[]).map((row) => [row.id, row]),
+    ((data ?? []) as unknown as EventCommunicationStepRow[]).map((row) => [row.id, row]),
   );
 }
 
@@ -321,6 +419,10 @@ async function enrichApprovalQueuePreviews(
   });
 }
 
+/**
+ * Read-only approval queue base. Never runs write-side sync/backfill —
+ * mutations and cron own that work so layout/badge GETs stay cheap.
+ */
 const resolveApprovalQueueBase = cache(async function resolveApprovalQueueBase(
   eventId?: string,
 ): Promise<{
@@ -341,64 +443,67 @@ const resolveApprovalQueueBase = cache(async function resolveApprovalQueueBase(
       }
     : null;
 
-  if (actor) {
-    const synced = await backfillMetaApprovalRequests(actor);
-    if (synced > 0) {
-      console.info(
-        `Backfilled ${synced} meta milestone approval request(s) for approvals inbox.`,
-      );
-    }
-  } else {
-    await resolveStalePendingApprovalRequestsForApprovedItems();
-  }
-
-  const refreshedRows = dedupePendingApprovalQueueRows(
-    actor ? await fetchApprovalQueueRows(eventId) : rows,
-  );
-  const items = refreshedRows
+  const dedupedRows = dedupePendingApprovalQueueRows(rows);
+  const items = dedupedRows
     .map((row) => mapQueueRow(row, actor))
     .filter((item): item is ApprovalQueueItem => item !== null);
 
-  return { actor, rows: refreshedRows, items };
+  return { actor, rows: dedupedRows, items };
 });
 
-function filterPendingAssignedToMe(items: ApprovalQueueItem[]): ApprovalQueueItem[] {
-  return items.filter(
-    (item) =>
-      item.status === "pending" &&
-      isCommunicationApprovable(item.communicationStatus) &&
-      item.assignedToMe,
-  );
-}
+/**
+ * Sidebar badge totals only — lean selects / head counts, no preview enrichment,
+ * no Meta bundles, no write-side backfill. Safe for dashboard layout on every nav.
+ */
+export const getApprovalSidebarCountsForCurrentUser = cache(
+  async function getApprovalSidebarCountsForCurrentUser(): Promise<{
+    assignedApprovalsCount: number;
+    changeRequestsCount: number;
+  }> {
+    const [membership, eventIds] = await Promise.all([
+      getActiveMembership(),
+      resolveScopedApprovalEventIds(),
+    ]);
 
-function filterChangeRequestsForSubmitter(
-  items: ApprovalQueueItem[],
-): ApprovalQueueItem[] {
-  return items.filter(
-    (item) =>
-      item.communicationStatus === "changes_requested" && item.submittedByMe,
-  );
-}
+    const actor: ApprovalActor | null = membership
+      ? {
+          organizationUserId: membership.user.id,
+          organizationRoleId: membership.user.organizationRoleId,
+          email: membership.user.email,
+        }
+      : null;
+
+    if (!actor?.organizationUserId || eventIds.length === 0) {
+      return { assignedApprovalsCount: 0, changeRequestsCount: 0 };
+    }
+
+    const [assignedRows, changeRequestsCount] = await Promise.all([
+      fetchApprovalSidebarAssignedRows(eventIds),
+      countApprovalSidebarChangeRequests(eventIds, actor.organizationUserId),
+    ]);
+
+    const dedupedAssigned = dedupePendingApprovalQueueRows(assignedRows);
+    const assignedApprovalsCount = dedupedAssigned.filter((row) =>
+      isActorAssignedToApproval(actor, {
+        assignedOrganizationRoleId: row.assigned_organization_role_id ?? null,
+        assignedUserId: row.assigned_user_id ?? null,
+        assignedRoleContactName: row.assigned_role?.contact_name ?? null,
+      }),
+    ).length;
+
+    return { assignedApprovalsCount, changeRequestsCount };
+  },
+);
 
 export async function getAssignedApprovalsCountForCurrentUser(): Promise<number> {
-  const { items } = await resolveApprovalQueueBase();
-  return filterPendingAssignedToMe(items).length;
+  const { assignedApprovalsCount } =
+    await getApprovalSidebarCountsForCurrentUser();
+  return assignedApprovalsCount;
 }
 
 export async function getChangeRequestsCountForCurrentUser(): Promise<number> {
-  const { items } = await resolveApprovalQueueBase();
-  return filterChangeRequestsForSubmitter(items).length;
-}
-
-export async function getApprovalSidebarCountsForCurrentUser(): Promise<{
-  assignedApprovalsCount: number;
-  changeRequestsCount: number;
-}> {
-  const { items } = await resolveApprovalQueueBase();
-  return {
-    assignedApprovalsCount: filterPendingAssignedToMe(items).length,
-    changeRequestsCount: filterChangeRequestsForSubmitter(items).length,
-  };
+  const { changeRequestsCount } = await getApprovalSidebarCountsForCurrentUser();
+  return changeRequestsCount;
 }
 
 export async function getApprovalQueueForCurrentUser(): Promise<{
@@ -417,6 +522,13 @@ export async function getApprovalQueueForCurrentUser(): Promise<{
 
 export async function getApprovalQueueOverviewForCurrentUser(
   eventId?: string,
+  options?: {
+    /**
+     * When false, skip Meta/version/step preview enrichment.
+     * Default true — standalone Approvals and dashboards keep full previews.
+     */
+    enrichPreviews?: boolean;
+  },
 ): Promise<{
   assignedToMe: ApprovalQueueItem[];
   allPending: ApprovalQueueItem[];
@@ -425,7 +537,10 @@ export async function getApprovalQueueOverviewForCurrentUser(
   actor: ApprovalActor | null;
 }> {
   const { actor, rows, items } = await resolveApprovalQueueBase(eventId);
-  const enriched = await enrichApprovalQueuePreviews(rows, items);
+  const enriched =
+    options?.enrichPreviews === false
+      ? items
+      : await enrichApprovalQueuePreviews(rows, items);
 
   const pending = enriched.filter(
     (item) =>
@@ -443,4 +558,35 @@ export async function getApprovalQueueOverviewForCurrentUser(
     recentlyApproved: enriched.filter((item) => item.status === "approved"),
     actor,
   };
+}
+
+/** True when classic queue items still need version/step/Meta preview fill. */
+export function classicQueueNeedsPreviewEnrichment(
+  items: ApprovalQueueItem[],
+): boolean {
+  return items.some(
+    (item) =>
+      !item.preview.artworkThumbnailUrl &&
+      !item.preview.captionText &&
+      !item.preview.storyCaptionSnippet &&
+      !item.preview.milestoneTitle &&
+      !item.preview.scheduledFor,
+  );
+}
+
+export async function enrichApprovalQueuePreviewsForItems(
+  rows: ApprovalQueueRow[],
+  items: ApprovalQueueItem[],
+): Promise<ApprovalQueueItem[]> {
+  return enrichApprovalQueuePreviews(rows, items);
+}
+
+export async function resolveApprovalQueueBaseForEvent(
+  eventId: string,
+): Promise<{
+  actor: ApprovalActor | null;
+  rows: ApprovalQueueRow[];
+  items: ApprovalQueueItem[];
+}> {
+  return resolveApprovalQueueBase(eventId);
 }

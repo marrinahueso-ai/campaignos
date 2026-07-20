@@ -126,11 +126,13 @@ export function TasksV2Toolbar({
             className="max-w-[8rem] cursor-pointer bg-transparent text-xs font-medium text-cos-text outline-none"
           >
             <option value="">All</option>
-            {orgMembers.map((member) => (
-              <option key={member.id} value={member.displayName}>
-                {member.displayName}
-              </option>
-            ))}
+            {orgMembers
+              .filter((member) => member.userId)
+              .map((member) => (
+                <option key={member.id} value={member.userId!}>
+                  {member.displayName}
+                </option>
+              ))}
           </select>
         </ToolbarButton>
 

@@ -2,6 +2,8 @@ import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
 } from "@/lib/campaign-builder-v2/types";
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
+import { defaultPurposeForMilestone } from "./milestone-purpose.ts";
 
 export interface ValidationResult {
   valid: boolean;
@@ -39,6 +41,35 @@ export function validateInspirationForGeneration(
     errors,
     message: errors.length > 0 ? formatValidationErrors(errors) : null,
   };
+}
+
+/** Fill blank purposes so playbook-built milestones can generate immediately. */
+export function ensurePurposesForGeneration(
+  milestones: CampaignBuilderMilestone[],
+  eventDate?: string | null,
+): CampaignBuilderMilestone[] {
+  return milestones.map((milestone) => {
+    if (milestone.purpose?.trim()) {
+      return milestone;
+    }
+    let relativeDay: number | null = null;
+    if (eventDate && milestone.suggestedDate) {
+      const event = Date.parse(`${eventDate}T12:00:00`);
+      const suggested = Date.parse(`${milestone.suggestedDate}T12:00:00`);
+      if (Number.isFinite(event) && Number.isFinite(suggested)) {
+        relativeDay = Math.round((suggested - event) / (1000 * 60 * 60 * 24));
+      }
+    }
+    return {
+      ...milestone,
+      purpose: defaultPurposeForMilestone({
+        name: milestone.name,
+        category: milestone.category,
+        relativeDay,
+        isFirstMilestone: isFirstCampaignMilestone(milestone.sortOrder),
+      }),
+    };
+  });
 }
 
 export function validateMilestonesForGeneration(
@@ -80,11 +111,16 @@ export function validateBeforeGeneration(input: {
     return inspirationResult;
   }
 
+  const withPurposes = ensurePurposesForGeneration(
+    input.milestones,
+    input.inspiration.eventDate,
+  );
+
   const targetMilestones = input.milestoneIds?.length
-    ? input.milestones.filter((milestone) =>
+    ? withPurposes.filter((milestone) =>
         input.milestoneIds!.includes(milestone.id),
       )
-    : input.milestones;
+    : withPurposes;
 
   if (input.milestoneIds?.length && targetMilestones.length === 0) {
     return {

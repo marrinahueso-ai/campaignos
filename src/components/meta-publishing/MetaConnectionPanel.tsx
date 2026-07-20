@@ -9,6 +9,7 @@ import {
   disconnectMetaConnectionAction,
   saveMetaConnectionAction,
 } from "@/lib/meta-publishing/connection-actions";
+import { buildMetaOAuthStartPath } from "@/lib/integrations/oauth";
 import {
   isInstagramPublishingConfigured,
   isMetaConnectionConfigured,
@@ -22,7 +23,6 @@ interface MetaConnectionPanelProps {
   integrationConfigured: boolean;
   returnTo?: string;
   oauthError?: string | null;
-  tokenNeverExpires?: boolean;
   reconnectRequired?: boolean;
 }
 
@@ -32,7 +32,6 @@ export function MetaConnectionPanel({
   integrationConfigured,
   returnTo = "/settings/meta",
   oauthError = null,
-  tokenNeverExpires = false,
   reconnectRequired = false,
 }: MetaConnectionPanelProps) {
   const router = useRouter();
@@ -43,11 +42,11 @@ export function MetaConnectionPanel({
 
   const connected = isMetaConnectionConfigured(connection);
   const hasInstagram = isInstagramPublishingConfigured(connection);
-  const reconnectParams = new URLSearchParams({ returnTo });
-  if (connected && connection?.facebookPageId) {
-    reconnectParams.set("pageId", connection.facebookPageId);
-  }
-  const connectHref = `/api/meta/oauth/start?${reconnectParams.toString()}`;
+  const connectHref = buildMetaOAuthStartPath({
+    returnTo,
+    pageId: connected ? connection?.facebookPageId : undefined,
+    authType: connected || reconnectRequired ? "rerequest" : undefined,
+  });
 
   const metaSetupSteps = (
     <ol className="list-decimal space-y-2 pl-5 text-sm text-cos-muted">
@@ -72,7 +71,8 @@ export function MetaConnectionPanel({
         <code className="rounded bg-cos-bg px-1">pages_read_engagement</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_manage_posts</code>,{" "}
         <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code>,{" "}
-        <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>, and{" "}
+        <code className="rounded bg-cos-bg px-1">pages_read_user_content</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">read_insights</code>, and{" "}
         <code className="rounded bg-cos-bg px-1">business_management</code> (set each to{" "}
         <strong className="font-medium text-cos-text">Ready for testing</strong>).
       </li>
@@ -80,14 +80,15 @@ export function MetaConnectionPanel({
         Add use case{" "}
         <strong className="font-medium text-cos-text">Manage messaging &amp; content on Instagram</strong>{" "}
         → Customize → enable{" "}
-        <code className="rounded bg-cos-bg px-1">instagram_basic</code> and{" "}
-        <code className="rounded bg-cos-bg px-1">instagram_content_publish</code> (Ready for testing).
+        <code className="rounded bg-cos-bg px-1">instagram_basic</code>,{" "}
+        <code className="rounded bg-cos-bg px-1">instagram_content_publish</code>, and{" "}
+        <code className="rounded bg-cos-bg px-1">instagram_manage_insights</code> (Ready for testing).
       </li>
       <li>
         Under <strong className="font-medium text-cos-text">Facebook Login for Business → Configurations</strong>,
-        create a configuration including the permissions above (including{" "}
-        <code className="rounded bg-cos-bg px-1">pages_manage_engagement</code> for comment replies).
-        Copy its <code className="rounded bg-cos-bg px-1">config_id</code> into{" "}
+        create a configuration including the permissions above (publishing, inbox, comments, and
+        Insights — one connect for every Meta surface in Hey Ralli). Copy its{" "}
+        <code className="rounded bg-cos-bg px-1">config_id</code> into{" "}
         <code className="rounded bg-cos-bg px-1">META_OAUTH_CONFIG_ID</code> on your server (optional
         but recommended for Business apps).
       </li>
@@ -348,138 +349,142 @@ export function MetaConnectionPanel({
     );
   }
 
+  // Calm connected state — one status, no token jargon, manage actions tucked away.
+  if (connected && !reconnectRequired) {
+    const pageLabel = connection?.pageName ?? "your Facebook Page";
+    return (
+      <div className="space-y-5">
+        {configuredViaEnv ? (
+          <p className="text-sm text-cos-muted">
+            Connected for this organization. Publishing, inbox, and Insights are ready.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            <p className="text-sm text-cos-text">
+              <span className="font-medium">{pageLabel}</span>
+              {hasInstagram ? " · Facebook & Instagram" : " · Facebook"}
+            </p>
+            <p className="text-sm text-cos-muted">
+              Publishing, inbox, and Insights share this connection. Nothing else to set up.
+            </p>
+            {!hasInstagram ? (
+              <p className="text-sm text-cos-muted">
+                Link Instagram to this Page in Meta to enable Instagram posting.
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
+
+        {!configuredViaEnv ? (
+          <details className="text-sm">
+            <summary className="cursor-pointer text-cos-muted hover:text-cos-text">
+              Manage connection
+            </summary>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button href={connectHref} variant="secondary" size="sm" disabled={isPending}>
+                Reconnect
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isPending}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
+            </div>
+            {isDev ? (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  className="text-xs text-cos-muted/70 hover:text-cos-muted"
+                  onClick={() => setShowAdvanced((value) => !value)}
+                >
+                  {showAdvanced ? "Hide developer tools" : "Developer tools"}
+                </button>
+                {showAdvanced ? (
+                  <div className="mt-3">{renderAdvancedConnect(true)}</div>
+                ) : null}
+              </div>
+            ) : null}
+          </details>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {configuredViaEnv && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Meta is connected via server environment variables. Auto-publish is active.
-        </p>
-      )}
-
-      {connection && !configuredViaEnv && connected && (
-        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Connected to {connection.pageName ?? "Facebook Page"}.
-          {hasInstagram
-            ? " Facebook and Instagram auto-posting is ready."
-            : " Facebook auto-posting is ready. Link Instagram to your Page to enable IG posts."}
-          {tokenNeverExpires || !connection.tokenExpiresAt ? (
-            <> Page token does not expire — no periodic reconnect needed.</>
-          ) : (
-            <>
-              {" "}
-              Token expires{" "}
-              {new Date(connection.tokenExpiresAt).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-              .
-            </>
-          )}
-        </p>
-      )}
-
       {connection && !configuredViaEnv && connected && reconnectRequired ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
-          <p className="font-medium">Reconnect required</p>
-          <p className="mt-2">
-            Meta reports your Page token is no longer valid (revoked, expired, or password changed).
-            Reconnect once — publishing and inbox resume automatically.
+        <div className="space-y-4">
+          <p className="text-sm text-cos-muted">
+            Facebook needs you to sign in again. One click restores publishing and inbox.
           </p>
-          <div className="mt-4">
-            <Button href={connectHref}>Reconnect with Facebook</Button>
-          </div>
+          <Button href={connectHref}>Reconnect with Facebook</Button>
         </div>
       ) : null}
 
-      {!configuredViaEnv && integrationConfigured && (
+      {!configuredViaEnv && integrationConfigured && !connected ? (
         <div className="space-y-4">
-          {!connected ? (
-            <>
-              <Button href={connectHref} disabled={isPending}>
-                Connect with Facebook
-              </Button>
-              <p className="text-sm text-cos-muted">
-                Sign in with Facebook once. Hey Ralli handles Page access for publishing and inbox
-                — no separate authorization step.
-              </p>
-              {oauthError === "no_pages" ? (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  Facebook connected your account but Hey Ralli could not resolve a Page token.
-                  Set <code className="rounded bg-white/80 px-1">META_FACEBOOK_PAGE_ID</code> on
-                  your server to your numeric Page ID, confirm your Login for Business configuration
-                  includes <code className="rounded bg-white/80 px-1">business_management</code> and{" "}
-                  <code className="rounded bg-white/80 px-1">pages_show_list</code>, then connect
-                  again.
-                </p>
-              ) : null}
-              <details className="rounded-xl border border-cos-border bg-cos-bg/40 p-4 text-sm">
-                <summary className="cursor-pointer font-medium text-cos-text">
-                  Meta Developer Console setup (fix &ldquo;Invalid Scopes&rdquo; errors)
-                </summary>
-                <div className="mt-3 space-y-3 text-cos-muted">
-                  <p>
-                    Hey Ralli requests publish and inbox scopes in one connect:{" "}
-                    {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
-                      <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
-                        {scope}
-                      </code>
-                    ))}
-                    . Meta rejects any scope not registered on your app via a use case.
-                  </p>
-                  {metaSetupSteps}
-                </div>
-              </details>
-            </>
-          ) : connected && !reconnectRequired ? (
-            <p className="text-sm text-cos-muted">
-              Connection is active. Use Disconnect below only if you want to switch Pages or remove
-              access.
+          <Button href={connectHref} disabled={isPending}>
+            Connect with Facebook
+          </Button>
+          <p className="text-sm text-cos-muted">
+            You&apos;ll approve what Hey Ralli can do, then return here. No second step.
+          </p>
+          {oauthError === "no_pages" ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Facebook signed you in, but Hey Ralli couldn&apos;t find your Page. Ask your admin to
+              finish setup, then try Connect again.
             </p>
           ) : null}
+          <details className="text-sm">
+            <summary className="cursor-pointer text-cos-muted hover:text-cos-text">
+              Developer setup
+            </summary>
+            <div className="mt-3 space-y-3 text-cos-muted">
+              <p>
+                Scopes requested on connect:{" "}
+                {META_COMBINED_OAUTH_SCOPE_LIST.map((scope) => (
+                  <code key={scope} className="mr-1 rounded bg-cos-bg px-1">
+                    {scope}
+                  </code>
+                ))}
+              </p>
+              {metaSetupSteps}
+            </div>
+          </details>
+          {showFallbackConnect ? (
+            <div id="advanced-connect">
+              <button
+                type="button"
+                className="text-sm text-cos-muted hover:text-cos-text"
+                onClick={() => setShowAdvanced((value) => !value)}
+              >
+                {showAdvanced ? "Hide advanced connect" : "Advanced connect"}
+              </button>
+              {showAdvanced ? (
+                <div className="mt-4">{renderAdvancedConnect(isDev)}</div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      {showFallbackConnect && (
-        <div id="advanced-connect">
-          <button
-            type="button"
-            className="text-sm font-medium text-cos-accent hover:text-cos-muted"
-            onClick={() => setShowAdvanced((value) => !value)}
-          >
-            {showAdvanced ? "Hide advanced connect" : "Advanced connect (Page ID + token)"}
-          </button>
-
-          {showAdvanced && <div className="mt-4">{renderAdvancedConnect(isDev)}</div>}
-        </div>
-      )}
-
-      {isDev && !configuredViaEnv && connected && (
-        <div>
-          <button
-            type="button"
-            className="text-xs text-cos-muted/70 hover:text-cos-muted"
-            onClick={() => setShowAdvanced((value) => !value)}
-          >
-            {showAdvanced ? "Hide advanced / developer setup" : "Advanced / Developer setup"}
-          </button>
-
-          {showAdvanced && <div className="mt-4">{renderAdvancedConnect(true)}</div>}
-        </div>
-      )}
-
-      {error && (
+      {error ? (
         <p className="text-sm text-red-600" role="alert">
           {error}
         </p>
-      )}
-      {message && <p className="text-sm text-emerald-700">{message}</p>}
-
-      {connection && !configuredViaEnv && (
-        <Button type="button" variant="secondary" disabled={isPending} onClick={handleDisconnect}>
-          Disconnect
-        </Button>
-      )}
+      ) : null}
+      {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
     </div>
   );
 }

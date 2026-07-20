@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { applySchedulingRowsToSession } from "@/lib/campaign-builder-v2/sync-session-from-scheduling";
 import { createClient } from "@/lib/supabase/server";
 import type { CampaignBuilderSession } from "@/lib/campaign-builder-v2/types";
 
@@ -25,13 +26,39 @@ async function loadCampaignBuilderSessionUncached(
   }
 
   const sessionData = data.session_data as CampaignBuilderSession;
-  return {
+  const session: CampaignBuilderSession = {
     ...sessionData,
     eventId,
     currentStep:
       (data.current_step as CampaignBuilderSession["currentStep"]) ??
       sessionData.currentStep,
   };
+
+  // Approvals hub is source of truth after approve — heal sticky
+  // awaiting_approval / Pending labels left in the CB2 session JSON.
+  const { data: schedulingRows } = await supabase
+    .from("approval_scheduling_items")
+    .select("campaign_milestone_id, milestone_name, workflow_status")
+    .eq("event_id", eventId)
+    .in("workflow_status", [
+      "scheduled",
+      "posted",
+      "published",
+      "changes_requested",
+    ]);
+
+  if (!schedulingRows?.length) {
+    return session;
+  }
+
+  return applySchedulingRowsToSession(
+    session,
+    schedulingRows.map((row) => ({
+      campaignMilestoneId: (row.campaign_milestone_id as string | null) ?? null,
+      milestoneName: String(row.milestone_name ?? ""),
+      workflowStatus: String(row.workflow_status ?? ""),
+    })),
+  );
 }
 
 /** Per-request cached session load for the campaign builder page. */

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { PLANNING_ASSET_SELECT } from "@/lib/communications-calendar/planning-selects";
 import { getAllEvents } from "@/lib/events/queries";
 import { mapEventAssetRows } from "@/lib/event-workspace/mappers";
 import { COMMUNICATION_CHANNELS, EVENT_ASSET_TYPES } from "@/lib/event-workspace/constants";
@@ -295,7 +296,7 @@ async function getUploadedAssetEventIds(eventIds: string[]): Promise<Set<string>
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_assets")
-    .select("*")
+    .select(PLANNING_ASSET_SELECT)
     .in("event_id", eventIds)
     .eq("status", "uploaded");
 
@@ -303,7 +304,7 @@ async function getUploadedAssetEventIds(eventIds: string[]): Promise<Set<string>
     return new Set();
   }
 
-  const assets = mapEventAssetRows(data as EventAssetRow[]);
+  const assets = mapEventAssetRows(data as unknown as EventAssetRow[]);
   const withVisual = new Set<string>();
 
   for (const asset of assets) {

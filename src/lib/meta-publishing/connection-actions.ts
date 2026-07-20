@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { pickBestPageFromTokenResult } from "@/lib/meta-publishing/connection-token-select";
 import { resolvePageTokenExpiresAt } from "@/lib/meta-publishing/connection-token-health";
@@ -26,8 +26,7 @@ export async function saveMetaConnectionAction(input: {
   instagramAccountId: string;
   pageAccessToken: string;
 }): Promise<MetaConnectionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to connect Meta." };
   }
 
@@ -91,8 +90,7 @@ export async function saveMetaConnectionAction(input: {
 }
 
 export async function disconnectMetaConnectionAction(): Promise<MetaConnectionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("publish_social"))) {
     return { success: false, error: "You do not have permission to disconnect Meta." };
   }
 
@@ -175,7 +173,7 @@ export async function connectMetaWithUserTokenAction(input: {
 }): Promise<MetaConnectionActionResult & { pageId?: string; hasInstagram?: boolean }> {
   try {
     const role = await getCurrentCampaignRole();
-    if (!canUploadCampaignAssets(role)) {
+    if (!(await hasPermission("publish_social"))) {
       return { success: false, error: "You do not have permission to connect Meta." };
     }
 

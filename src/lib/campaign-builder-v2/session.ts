@@ -1,5 +1,6 @@
 "use server";
 
+import { protectSessionFromRichnessDowngrade } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { createClient } from "@/lib/supabase/server";
 import type { CampaignBuilderSession } from "@/lib/campaign-builder-v2/types";
@@ -15,11 +16,15 @@ export async function saveCampaignBuilderSessionAction(
 ): Promise<{ success: boolean; message: string }> {
   const supabase = await createClient();
 
+  // Never let an empty/failed client snapshot erase richer server artwork.
+  const existing = await loadCampaignBuilderSession(session.eventId);
+  const protectedSession = protectSessionFromRichnessDowngrade(session, existing);
+
   const { error } = await supabase.from("campaign_builder_sessions").upsert(
     {
-      event_id: session.eventId,
-      current_step: session.currentStep,
-      session_data: session,
+      event_id: protectedSession.eventId,
+      current_step: protectedSession.currentStep,
+      session_data: protectedSession,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "event_id" },
@@ -27,6 +32,14 @@ export async function saveCampaignBuilderSessionAction(
 
   if (error) {
     console.error("Failed to save campaign builder session:", error.message);
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("supabase", error, {
+      action: "saveCampaignBuilderSessionAction",
+      eventId: protectedSession.eventId,
+      message: error.message,
+    });
     return {
       success: false,
       message: "Could not save to database — using local backup.",

@@ -1,40 +1,44 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TasksV2AddTaskRow } from "@/components/tasks-v2/TasksV2AddTaskRow";
 import { TasksV2TaskRow } from "@/components/tasks-v2/TasksV2TaskRow";
 import { readTasksV2DragPayload } from "@/components/tasks-v2/tasks-v2-dnd";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import {
   createTaskHubTaskAction,
   reorderTaskHubTasksAction,
+  updateTaskHubTaskAction,
   updateTaskHubTaskStatusAction,
 } from "@/lib/task-hub/actions";
 import { filterAndSortTasks } from "@/lib/task-hub/list-filters";
 import { reorderEventTasks } from "@/lib/tasks-v2/reorder";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TasksV2EventGroup } from "@/types/tasks-v2";
-import type { TaskHubTaskItem } from "@/types/task-hub";
+import type { TaskHubOrgMember, TaskHubTaskItem } from "@/types/task-hub";
 
 interface TasksV2EventGroupSectionProps {
   group: TasksV2EventGroup;
   canEdit: boolean;
+  orgMembers: TaskHubOrgMember[];
   searchQuery: string;
   statusFilter: import("@/lib/task-hub/list-filters").TaskHubStatusFilter;
   sortMode: import("@/lib/task-hub/list-filters").TaskHubSortMode;
+  /** Filter by auth user id (preferred) or legacy display name. */
   personFilter: string;
 }
 
 export function TasksV2EventGroupSection({
   group: initialGroup,
   canEdit,
+  orgMembers,
   searchQuery,
   statusFilter,
   sortMode,
   personFilter,
 }: TasksV2EventGroupSectionProps) {
-  const router = useRouter();
+  const refreshTasksTab = useEventTabMutationRefresh("tasks");
   const [pending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(false);
   const [tasks, setTasks] = useState(initialGroup.tasks);
@@ -43,6 +47,19 @@ export function TasksV2EventGroupSection({
     Record<string, EventPlaybookTaskStatus>
   >({});
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+
+  const tasksSyncKey = initialGroup.tasks
+    .map(
+      (task) =>
+        `${task.id}:${task.status}:${task.sortOrder}:${task.title}:${task.assigneeUserId ?? ""}:${task.assigneeName ?? ""}:${task.dueDate ?? ""}`,
+    )
+    .join("|");
+
+  useEffect(() => {
+    setTasks(initialGroup.tasks);
+    setTaskStatuses({});
+    setPendingTaskIds(new Set());
+  }, [tasksSyncKey, initialGroup.tasks]);
 
   const filteredTasks = useMemo(() => {
     let result = filterAndSortTasks(tasks, {
@@ -53,10 +70,15 @@ export function TasksV2EventGroupSection({
     });
 
     if (personFilter.trim()) {
-      const query = personFilter.trim().toLowerCase();
-      result = result.filter((task) =>
-        (task.assigneeName ?? "").toLowerCase().includes(query),
-      );
+      const query = personFilter.trim();
+      result = result.filter((task) => {
+        if (task.assigneeUserId && task.assigneeUserId === query) {
+          return true;
+        }
+        return (task.assigneeName ?? "")
+          .toLowerCase()
+          .includes(query.toLowerCase());
+      });
     }
 
     return result;
@@ -97,7 +119,7 @@ export function TasksV2EventGroupSection({
             item.id === task.id ? { ...item, status } : item,
           ),
         );
-        router.refresh();
+        await refreshTasksTab();
       }
     });
   }
@@ -106,7 +128,81 @@ export function TasksV2EventGroupSection({
     startTransition(async () => {
       const result = await createTaskHubTaskAction(initialGroup.eventId, { title });
       if (result.success) {
-        router.refresh();
+        await refreshTasksTab();
+      }
+    });
+  }
+
+  function handleAssigneeChange(
+    task: TaskHubTaskItem,
+    next: {
+      assigneeUserId: string | null;
+      assigneeName: string | null;
+      assigneeInitials: string | null;
+    },
+  ) {
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              assigneeUserId: next.assigneeUserId,
+              assigneeName: next.assigneeName,
+              assigneeInitials: next.assigneeInitials,
+            }
+          : item,
+      ),
+    );
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.event.eventId,
+        task.id,
+        {
+          assigneeUserId: next.assigneeUserId,
+          assigneeName: next.assigneeName,
+          assigneeInitials: next.assigneeInitials,
+        },
+        task.title,
+      );
+      setPendingTaskIds((current) => {
+        const pendingNext = new Set(current);
+        pendingNext.delete(task.id);
+        return pendingNext;
+      });
+      if (!result.success) {
+        setTasks(initialGroup.tasks);
+      } else {
+        await refreshTasksTab();
+      }
+    });
+  }
+
+  function handleDueDateChange(task: TaskHubTaskItem, dueDate: string | null) {
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === task.id ? { ...item, dueDate } : item,
+      ),
+    );
+    setPendingTaskIds((current) => new Set(current).add(task.id));
+
+    startTransition(async () => {
+      const result = await updateTaskHubTaskAction(
+        task.event.eventId,
+        task.id,
+        { dueDate },
+        task.title,
+      );
+      setPendingTaskIds((current) => {
+        const pendingNext = new Set(current);
+        pendingNext.delete(task.id);
+        return pendingNext;
+      });
+      if (!result.success) {
+        setTasks(initialGroup.tasks);
+      } else {
+        await refreshTasksTab();
       }
     });
   }
@@ -132,7 +228,7 @@ export function TasksV2EventGroupSection({
           eventId: task.event.eventId,
         })),
       );
-      router.refresh();
+      await refreshTasksTab();
     });
   }
 
@@ -187,11 +283,16 @@ export function TasksV2EventGroupSection({
                   task={task}
                   group={initialGroup}
                   status={resolveStatus(task.id, task.status)}
+                  orgMembers={orgMembers}
                   isPending={pendingTaskIds.has(task.id)}
                   canEdit={canEdit}
                   draggable
                   dragOver={dragOverTaskId === task.id}
                   onStatusChange={(status) => handleStatusChange(task, status)}
+                  onAssigneeChange={(next) => handleAssigneeChange(task, next)}
+                  onDueDateChange={(dueDate) =>
+                    handleDueDateChange(task, dueDate)
+                  }
                   onDragOver={(event) => {
                     event.preventDefault();
                     setDragOverTaskId(task.id);

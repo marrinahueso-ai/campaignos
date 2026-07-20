@@ -1,9 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { CampaignBuilderProvider, useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderStepper } from "@/components/campaign-builder-v2/CampaignBuilderStepper";
 import { CampaignHealthGauge } from "@/components/campaign-builder-v2/CampaignHealthGauge";
+// Keep Inspiration static: it is the default landing step. Dynamic + loading
+// fallback remounts flashed a pulse skeleton on every Soft refresh / context
+// churn and felt like the Inspiration screen was blinking.
 import { InspirationStep } from "@/components/campaign-builder-v2/InspirationStep";
 import type {
   BrandKitOption,
@@ -59,6 +64,9 @@ interface CampaignBuilderShellProps {
   eventId: string;
   eventTitle: string;
   eventDate: string;
+  organizationId: string;
+  canUseDeveloperTools?: boolean;
+  canUploadArtwork?: boolean;
   playbooks: PlaybookOption[];
   brandKits: BrandKitOption[];
   campaignOptions: CampaignOption[];
@@ -85,7 +93,13 @@ function renderActiveStep(step: CampaignBuilderStepId) {
   }
 }
 
-function CampaignBuilderContent({ eventTitle }: { eventTitle: string }) {
+function CampaignBuilderContent({
+  eventId,
+  eventTitle,
+}: {
+  eventId: string;
+  eventTitle: string;
+}) {
   const {
     session,
     currentStep,
@@ -103,7 +117,14 @@ function CampaignBuilderContent({ eventTitle }: { eventTitle: string }) {
   return (
     <div className="-mx-4 -my-8 flex min-h-[calc(100vh-var(--cos-dashboard-header-height))] flex-col lg:-mx-8 lg:-my-10">
       <div className="flex items-center justify-between gap-4 border-b border-cos-border bg-cos-card px-4 py-4 lg:px-8">
-        <div className="shrink-0">
+        <div className="min-w-0 shrink-0">
+          <Link
+            href={`/events/${eventId}`}
+            className="mb-2 inline-flex items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-primary"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+            Back to event
+          </Link>
           <p className="studio-eyebrow">Creative Studio</p>
           <p className="mt-1 text-sm text-cos-muted">
             Create with AI
@@ -140,6 +161,9 @@ export function CampaignBuilderShell({
   eventId,
   eventTitle,
   eventDate,
+  organizationId,
+  canUseDeveloperTools = false,
+  canUploadArtwork = true,
   playbooks,
   brandKits,
   campaignOptions,
@@ -150,9 +174,13 @@ export function CampaignBuilderShell({
 }: CampaignBuilderShellProps) {
   return (
     <CampaignBuilderProvider
+      key={eventId}
       eventId={eventId}
       eventTitle={eventTitle}
       eventDate={eventDate}
+      organizationId={organizationId}
+      canUseDeveloperTools={canUseDeveloperTools}
+      canUploadArtwork={canUploadArtwork}
       playbooks={playbooks}
       brandKits={brandKits}
       campaignOptions={campaignOptions}
@@ -161,7 +189,7 @@ export function CampaignBuilderShell({
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
     >
-      <CampaignBuilderContent eventTitle={eventTitle} />
+      <CampaignBuilderContent eventId={eventId} eventTitle={eventTitle} />
     </CampaignBuilderProvider>
   );
 }

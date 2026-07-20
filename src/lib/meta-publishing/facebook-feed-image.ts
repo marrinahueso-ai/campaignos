@@ -27,6 +27,10 @@ export async function prepareFacebookFeedImageBytes(
   try {
     response = await fetch(imageUrl);
   } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("meta", error, { action: "prepareFacebookFeedImageBytes.fetch" });
     const message = error instanceof Error ? error.message : "Unknown fetch error";
     return { error: `Unable to download feed artwork: ${message}` };
   }
@@ -52,6 +56,12 @@ export async function prepareFacebookFeedImageBytes(
     const bytes = await pipeline.jpeg({ quality: 90 }).toBuffer();
     return { bytes, contentType: "image/jpeg" };
   } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("meta", error, {
+      action: "prepareFacebookFeedImageBytes.process",
+    });
     const message = error instanceof Error ? error.message : "Image processing failed";
     return { error: message };
   }

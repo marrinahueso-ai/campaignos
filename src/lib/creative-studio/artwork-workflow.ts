@@ -138,30 +138,85 @@ export function resolveWorkflowAsset(
 ): EventAsset | null {
   if (planItem?.assetId) {
     const fromPlan = assets.find((asset) => asset.id === planItem.assetId) ?? null;
-    if (fromPlan?.planLabel === item.planLabel) {
+    if (fromPlan && planLabelsEquivalent(fromPlan.planLabel, item.planLabel)) {
       return fromPlan;
     }
   }
 
-  const candidate =
-    assets.find(
-      (asset) =>
-        asset.planLabel === item.planLabel && asset.assetType === item.assetType,
-    ) ?? null;
+  const candidates = assets.filter(
+    (asset) =>
+      planLabelsEquivalent(asset.planLabel, item.planLabel) &&
+      asset.assetType === item.assetType,
+  );
 
-  if (candidate && item.metaPlacement === "story" && candidate.assetType !== "instagram_story") {
+  const preferred = pickPreferredArtworkAsset(candidates);
+  if (!preferred) {
+    return null;
+  }
+
+  if (item.metaPlacement === "story" && preferred.assetType !== "instagram_story") {
     return null;
   }
 
   if (
-    candidate &&
     item.metaPlacement === "feed" &&
-    candidate.assetType === "instagram_story"
+    preferred.assetType === "instagram_story"
   ) {
     return null;
   }
 
-  return candidate;
+  return preferred;
+}
+
+/** Match plan labels across hyphen/space and "Feed 1:1" vs "Feed (1:1)". */
+export function planLabelMatchKey(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[()]/g, "")
+    .replace(/[–—]/g, " ")
+    .replace(/[-\s]+/g, " ")
+    .trim();
+}
+
+export function planLabelsEquivalent(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  if (!left || !right) {
+    return false;
+  }
+  return planLabelMatchKey(left) === planLabelMatchKey(right);
+}
+
+/** Prefer Create with AI uploads over older classic Artwork concepts. */
+export function pickPreferredArtworkAsset(
+  assets: EventAsset[],
+): EventAsset | null {
+  if (assets.length === 0) {
+    return null;
+  }
+
+  if (assets.length === 1) {
+    return assets[0] ?? null;
+  }
+
+  const scored = assets.map((asset) => {
+    const path = asset.storagePath ?? "";
+    const fromCampaignBuilder = path.includes("campaign-builder-v2") ? 2_000_000 : 0;
+    const classicConcept = path.includes("/concepts/") ? -500_000 : 0;
+    const approvedBoost =
+      asset.planStatus === "approved" || asset.planStatus === "published"
+        ? 500_000
+        : 0;
+    const updatedMs = Date.parse(asset.updatedAt ?? "") || 0;
+    return {
+      asset,
+      score: fromCampaignBuilder + classicConcept + approvedBoost + updatedMs,
+    };
+  });
+
+  scored.sort((left, right) => right.score - left.score);
+  return scored[0]?.asset ?? null;
 }
 
 export function synthesizePlanItem(

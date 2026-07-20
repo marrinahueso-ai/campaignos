@@ -1,7 +1,9 @@
 import "server-only";
 
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { cache } from "react";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import {
@@ -17,7 +19,7 @@ import {
   mapVendorNoteRow,
   mapVendorRow,
 } from "@/lib/vendors/mappers";
-import { canManageVendors, canWriteVendors } from "@/lib/vendors/permissions";
+import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/storage";
 import { createClient } from "@/lib/supabase/server";
 import type {
   EventVendorRow,
@@ -33,11 +35,11 @@ import type {
   VendorRow,
 } from "@/types/vendors";
 
-export async function areVendorTablesAvailable(): Promise<boolean> {
+export const areVendorTablesAvailable = cache(async (): Promise<boolean> => {
   const supabase = await createClient();
   const { error } = await supabase.from("vendors").select("id").limit(1);
   return !error || !isMissingSchemaError(error);
-}
+});
 
 export async function getVendorCategories(
   organizationId: string,
@@ -167,9 +169,39 @@ function buildAssignmentSummaries(
   return byVendor;
 }
 
+/** Lean picker data for Event Detail Add Vendor / link — no assignment matrix. */
+export async function getVendorDirectoryPickerData(): Promise<{
+  categories: VendorCategory[];
+  events: Array<{ id: string; title: string; date: string }>;
+  availableVendors: Array<{ id: string; name: string }>;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization || !(await areVendorTablesAvailable())) {
+    return { categories: [], events: [], availableVendors: [] };
+  }
+
+  const [vendors, categories, events] = await Promise.all([
+    getOrgVendors(organization.id),
+    getVendorCategories(organization.id),
+    getOrgEventsForVendors(organization.id),
+  ]);
+
+  return {
+    categories,
+    events,
+    availableVendors: vendors.map((vendor) => ({
+      id: vendor.id,
+      name: vendor.name,
+    })),
+  };
+}
+
 export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageData> {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+  const [canWrite, canManage] = await Promise.all([
+    hasPermission("draft_edit"),
+    hasPermission("manage_people"),
+  ]);
 
   if (!organization) {
     return {
@@ -182,8 +214,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
         upcomingEventsWithVendors: 0,
         favoriteVendors: 0,
       },
-      canWrite: canWriteVendors(role),
-      canManage: canManageVendors(role),
+      canWrite,
+      canManage,
     };
   }
 
@@ -198,8 +230,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
         upcomingEventsWithVendors: 0,
         favoriteVendors: 0,
       },
-      canWrite: canWriteVendors(role),
-      canManage: canManageVendors(role),
+      canWrite,
+      canManage,
     };
   }
 
@@ -254,8 +286,8 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
     categories,
     events,
     summary: buildVendorDirectorySummary(rows, upcomingEventIds),
-    canWrite: canWriteVendors(role),
-    canManage: canManageVendors(role),
+    canWrite,
+    canManage,
   };
 }
 
@@ -283,7 +315,10 @@ export async function getVendorDetailData(
   vendorId: string,
 ): Promise<VendorDetailData | null> {
   const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+  const [canWrite, canManage] = await Promise.all([
+    hasPermission("draft_edit"),
+    hasPermission("manage_people"),
+  ]);
   const vendor = await getVendorById(vendorId);
 
   if (!organization || !vendor || vendor.organizationId !== organization.id) {
@@ -382,17 +417,27 @@ export async function getVendorDetailData(
         },
       ),
     ),
-    canWrite: canWriteVendors(role),
-    canManage: canManageVendors(role),
+    canWrite,
+    canManage,
   };
 }
 
-export async function getEventVendorsData(eventId: string): Promise<EventVendorsData> {
-  const organization = await getCurrentOrganization();
-  const role = await getCurrentCampaignRole();
+export async function getEventVendorsData(
+  eventId: string,
+  context?: {
+    organizationId?: string;
+    campaignRole?: CampaignRole;
+  },
+): Promise<EventVendorsData> {
+  const [organization, canWrite] = await Promise.all([
+    context?.organizationId
+      ? Promise.resolve({ id: context.organizationId })
+      : getCurrentOrganization(),
+    hasPermission("draft_edit"),
+  ]);
 
   if (!organization || !(await areVendorTablesAvailable())) {
-    return { vendors: [], canWrite: canWriteVendors(role) };
+    return { vendors: [], canWrite };
   }
 
   const supabase = await createClient();
@@ -404,7 +449,7 @@ export async function getEventVendorsData(eventId: string): Promise<EventVendors
     .is("deleted_at", null);
 
   if (error || !assignmentRows?.length) {
-    return { vendors: [], canWrite: canWriteVendors(role) };
+    return { vendors: [], canWrite };
   }
 
   const assignments = (assignmentRows as VendorEventAssignmentRow[]).map(
@@ -457,12 +502,42 @@ export async function getEventVendorsData(eventId: string): Promise<EventVendors
         category: vendor.categoryId ? categoryMap.get(vendor.categoryId) ?? null : null,
         primaryContact,
         assignmentStatus: assignment.assignmentStatus,
+        logoUrl: null,
       };
     })
     .filter((value): value is EventVendorRow => value !== null)
     .sort((left, right) => left.vendor.name.localeCompare(right.vendor.name));
 
-  return { vendors, canWrite: canWriteVendors(role) };
+  const logoPaths = vendors
+    .map((row) => row.vendor.logoPath)
+    .filter((path): path is string => Boolean(path));
+
+  let signedByPath = new Map<string, string>();
+  if (logoPaths.length > 0) {
+    const { data: signedRows, error: signError } = await supabase.storage
+      .from(VENDOR_DOCUMENTS_BUCKET)
+      .createSignedUrls(logoPaths, 3600);
+
+    if (!signError && signedRows) {
+      signedByPath = new Map(
+        signedRows
+          .filter((row) => row.path && row.signedUrl && !row.error)
+          .map((row) => [row.path as string, row.signedUrl as string]),
+      );
+    }
+  }
+
+  const withLogos = vendors.map((row) => {
+    if (!row.vendor.logoPath) {
+      return row;
+    }
+    return {
+      ...row,
+      logoUrl: signedByPath.get(row.vendor.logoPath) ?? null,
+    };
+  });
+
+  return { vendors: withLogos, canWrite };
 }
 
 export async function getAllOrgVendorsForDedup(organizationId: string) {

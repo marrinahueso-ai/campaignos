@@ -13,6 +13,7 @@ export interface OrganizationCommitteeInput {
   communicationStrategy?: CommunicationStrategy;
   playbookSlug?: string | null;
   eventMatchKey?: string | null;
+  assignedEventId?: string | null;
   sortOrder?: number;
   campaignRole?: CampaignRole | null;
 }
@@ -83,6 +84,7 @@ export async function createOrganizationCommittee(
       communication_strategy: input.communicationStrategy ?? "full_campaign",
       playbook_slug: input.playbookSlug ?? null,
       event_match_key: input.eventMatchKey ?? null,
+      assigned_event_id: input.assignedEventId ?? null,
       sort_order: sortOrder,
     })
     .select("id")
@@ -136,6 +138,10 @@ export async function updateOrganizationCommittee(
 
   if (input.eventMatchKey !== undefined) {
     updates.event_match_key = input.eventMatchKey;
+  }
+
+  if (input.assignedEventId !== undefined) {
+    updates.assigned_event_id = input.assignedEventId;
   }
 
   if (input.sortOrder !== undefined) {

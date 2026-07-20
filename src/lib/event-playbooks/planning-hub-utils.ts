@@ -97,12 +97,13 @@ export function buildGoogleCalendarUrl(event: Event): string {
 const UPCOMING_STATUSES = new Set<MetaPublishBundle["status"]>([
   "scheduled",
   "approved",
-  "ready",
+  "posting",
 ]);
 const DRAFT_STATUSES = new Set<MetaPublishBundle["status"]>([
   "needs_artwork",
   "needs_caption",
   "ready",
+  "failed",
 ]);
 const RECENT_STATUSES = new Set<MetaPublishBundle["status"]>(["published"]);
 
@@ -133,6 +134,10 @@ export function filterSocialBundles(
     return sorted.filter((bundle) => {
       if (!UPCOMING_STATUSES.has(bundle.status)) {
         return false;
+      }
+      // Keep approved/posting in Upcoming until published (even if overdue).
+      if (bundle.status === "approved" || bundle.status === "posting") {
+        return true;
       }
       if (!bundle.scheduledFor) {
         return true;

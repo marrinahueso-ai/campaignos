@@ -7,14 +7,22 @@ interface CalendarReviewHeaderProps {
   eventCount: number;
 }
 
+/** Stable across Node/Safari — avoid toLocaleString date+time ("," vs " at "). */
 function formatUploadedAt(isoDate: string): string {
-  return new Date(isoDate).toLocaleString("en-US", {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) {
+    return isoDate;
+  }
+  const datePart = date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+  const timePart = date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
   });
+  return `${datePart} at ${timePart}`;
 }
 
 export function CalendarReviewHeader({

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { EventBriefDescriptionSection } from "@/components/events/EventBriefDescriptionSection";
@@ -8,9 +9,12 @@ import {
   type CreateEventFields,
   type CreateEventFormState,
 } from "@/lib/events/create-event-form-state";
-import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
+import {
+  COMMUNICATION_STRATEGY_OPTIONS,
+  shouldAssignPlaybook,
+} from "@/lib/events/communication-strategy";
 import { EVENT_TIME_INPUT_HINT } from "@/lib/events/time-input";
-import { EVENT_TYPES } from "@/lib/playbooks/constants";
+import { DEFAULT_EVENT_TYPE, SYSTEM_PLAYBOOK_IDS } from "@/lib/playbooks/constants";
 import type { EventBriefInput } from "@/lib/ai/types";
 import { Button } from "@/components/ui/Button";
 import {
@@ -21,26 +25,55 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import type { CommunicationStrategy } from "@/types/communication-strategy";
+import type { EventType } from "@/types/playbooks";
 
-const DEFAULT_FIELDS: CreateEventFields = {
-  title: "",
-  description: "",
-  date: "",
-  time: "",
-  location: "",
-  audience: "",
-  theme: "",
-  status: "draft",
-  eventType: "general_event",
-  communicationStrategy: "full_campaign",
-};
+export interface CreateEventPlaybookOption {
+  id: string;
+  name: string;
+  eventType: EventType;
+}
+
+interface CreateEventFormProps {
+  playbookOptions: CreateEventPlaybookOption[];
+}
+
+function defaultPlaybookId(options: CreateEventPlaybookOption[]): string {
+  const general =
+    options.find((option) => option.id === SYSTEM_PLAYBOOK_IDS.general_event) ??
+    options.find((option) => option.eventType === "general_event") ??
+    options[0];
+  return general?.id ?? "";
+}
+
+function buildDefaultFields(
+  playbookOptions: CreateEventPlaybookOption[],
+): CreateEventFields {
+  const playbookId = defaultPlaybookId(playbookOptions);
+  const selected = playbookOptions.find((option) => option.id === playbookId);
+  return {
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    location: "",
+    audience: "",
+    theme: "",
+    status: "draft",
+    eventType: selected?.eventType ?? DEFAULT_EVENT_TYPE,
+    communicationStrategy: "full_campaign",
+    playbookId,
+  };
+}
 
 const initialState: CreateEventFormState = { error: null };
 
-export function CreateEventForm() {
+export function CreateEventForm({ playbookOptions }: CreateEventFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [fields, setFields] = useState<CreateEventFields>(DEFAULT_FIELDS);
+  const [fields, setFields] = useState<CreateEventFields>(() =>
+    buildDefaultFields(playbookOptions),
+  );
   const [state, formAction, isPending] = useActionState(
     createEvent,
     initialState,
@@ -59,9 +92,37 @@ export function CreateEventForm() {
     setFields((current) => ({ ...current, [field]: value }));
   }
 
+  function selectPlaybook(playbookId: string) {
+    const selected = playbookOptions.find((option) => option.id === playbookId);
+    setFields((current) => ({
+      ...current,
+      playbookId,
+      eventType: selected?.eventType ?? current.eventType,
+    }));
+  }
+
+  function updateStrategy(value: string) {
+    const strategy = value as CommunicationStrategy;
+    setFields((current) => {
+      const next = { ...current, communicationStrategy: strategy };
+      if (
+        shouldAssignPlaybook(strategy) &&
+        !current.playbookId &&
+        playbookOptions.length > 0
+      ) {
+        const playbookId = defaultPlaybookId(playbookOptions);
+        const selected = playbookOptions.find((option) => option.id === playbookId);
+        next.playbookId = playbookId;
+        next.eventType = selected?.eventType ?? current.eventType;
+      }
+      return next;
+    });
+  }
+
   function getBriefInput(): EventBriefInput {
-    const eventTypeLabel =
-      EVENT_TYPES.find((entry) => entry.value === fields.eventType)?.label ?? null;
+    const playbookName =
+      playbookOptions.find((option) => option.id === fields.playbookId)?.name ??
+      null;
     const communicationStrategyLabel =
       COMMUNICATION_STRATEGY_OPTIONS.find(
         (entry) => entry.value === fields.communicationStrategy,
@@ -72,8 +133,8 @@ export function CreateEventForm() {
       roughDescription: fields.description,
       audience: fields.audience.trim() || null,
       theme: fields.theme.trim() || null,
-      category: eventTypeLabel,
-      eventTypeLabel,
+      category: playbookName,
+      eventTypeLabel: playbookName,
       communicationStrategyLabel,
       location: fields.location.trim() || null,
       date: fields.date.trim() || null,
@@ -82,13 +143,17 @@ export function CreateEventForm() {
     };
   }
 
+  const showPlaybook = shouldAssignPlaybook(
+    fields.communicationStrategy as CommunicationStrategy,
+  );
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Event Details</CardTitle>
         <CardDescription>
-          Choose an event type and communication strategy. Not every event needs a
-          full campaign.
+          Choose a playbook and communication strategy. Playbooks come from your
+          Settings templates (including custom milestones).
         </CardDescription>
       </CardHeader>
 
@@ -112,25 +177,10 @@ export function CreateEventForm() {
         />
 
         <Select
-          name="eventType"
-          label="Event Type"
-          value={fields.eventType}
-          onChange={(changeEvent) => updateField("eventType", changeEvent.target.value)}
-        >
-          {EVENT_TYPES.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
-
-        <Select
           name="communicationStrategy"
           label="How much communication does this event need?"
           value={fields.communicationStrategy}
-          onChange={(changeEvent) =>
-            updateField("communicationStrategy", changeEvent.target.value)
-          }
+          onChange={(changeEvent) => updateStrategy(changeEvent.target.value)}
         >
           {COMMUNICATION_STRATEGY_OPTIONS.map(({ value, label, description: optionDescription }) => (
             <option key={value} value={value}>
@@ -138,6 +188,41 @@ export function CreateEventForm() {
             </option>
           ))}
         </Select>
+
+        {showPlaybook ? (
+          <div className="space-y-2">
+            <Select
+              name="playbookId"
+              label="Playbook"
+              value={fields.playbookId}
+              onChange={(changeEvent) => selectPlaybook(changeEvent.target.value)}
+              required
+            >
+              {playbookOptions.length === 0 ? (
+                <option value="">No playbooks available</option>
+              ) : (
+                playbookOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))
+              )}
+            </Select>
+            <input type="hidden" name="eventType" value={fields.eventType} />
+            <p className="text-xs text-cos-muted">
+              Options match{" "}
+              <Link
+                href="/settings/playbooks-milestones"
+                className="font-medium text-cos-text underline underline-offset-2 hover:text-cos-primary"
+              >
+                Settings → Playbooks / Milestones
+              </Link>
+              .
+            </p>
+          </div>
+        ) : (
+          <input type="hidden" name="eventType" value={fields.eventType} />
+        )}
 
         <EventBriefDescriptionSection
           description={fields.description}

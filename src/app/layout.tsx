@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Hey Ralli",
   },
   description:
-    "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+    "Plan PTO campaigns, create artwork, draft captions, and publish to Facebook and Instagram — one calm workspace for busy school teams.",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -34,12 +34,22 @@ export const metadata: Metadata = {
     siteName: "Hey Ralli",
     title: "Hey Ralli",
     description:
-      "ORGANIZE. CREATE. CONNECT. — AI-powered communications for PTO and school communities.",
+      "Plan PTO campaigns, create artwork, draft captions, and publish to Facebook and Instagram — one calm workspace for busy school teams.",
   },
   alternates: {
     canonical: "/",
   },
 };
+
+const supabaseOrigin = (() => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!url) return null;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+})();
 
 export default function RootLayout({
   children,
@@ -51,6 +61,12 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} h-full antialiased`}
     >
+      {supabaseOrigin ? (
+        <>
+          <link rel="preconnect" href={supabaseOrigin} />
+          <link rel="dns-prefetch" href={supabaseOrigin} />
+        </>
+      ) : null}
       <body className="min-h-full bg-cos-bg font-sans text-cos-text">{children}</body>
     </html>
   );

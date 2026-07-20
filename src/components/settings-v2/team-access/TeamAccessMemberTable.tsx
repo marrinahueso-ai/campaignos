@@ -1,255 +1,284 @@
 "use client";
 
-import {
-  Download,
-  MoreHorizontal,
-  Pencil,
-  Search,
-} from "lucide-react";
+import Link from "next/link";
+import { MoreHorizontal, Search } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import {
-  accessBadgeVariant,
-  formatMemberEmail,
-  formatRelativeDate,
+  peopleLoginStatus,
+  peopleLoginStatusLabel,
+  peopleRelatedEventIds,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
-import {
-  CAMPAIGN_ROLES,
-  campaignRoleLabel,
-  type CampaignRole,
-} from "@/lib/auth/campaign-roles";
-import type {
-  OrganizationCommittee,
-  OrganizationRole,
-} from "@/types/organization-workspace";
 
 interface TeamAccessMemberTableProps {
   members: UnifiedTeamMember[];
-  roles: OrganizationRole[];
-  committees: OrganizationCommittee[];
   search: string;
   roleFilter: string;
-  accessFilter: string;
+  eventFilter: string;
   statusFilter: string;
-  vpPortfolioFilter: string;
-  committeeFilter: string;
+  eventOptions: Array<{ id: string; title: string }>;
+  eventTitlesById: Map<string, string>;
   onSearchChange: (value: string) => void;
   onRoleFilterChange: (value: string) => void;
-  onAccessFilterChange: (value: string) => void;
+  onEventFilterChange: (value: string) => void;
   onStatusFilterChange: (value: string) => void;
-  onVpPortfolioFilterChange: (value: string) => void;
-  onCommitteeFilterChange: (value: string) => void;
   onSelectMember: (member: UnifiedTeamMember) => void;
-  onEditMember: (member: UnifiedTeamMember) => void;
   onMoreActions: (member: UnifiedTeamMember, anchor: DOMRect) => void;
   canManage: boolean;
+  peopleCount?: number;
 }
 
-function statusBadge(status: UnifiedTeamMember["status"]) {
+const filterSelectClass =
+  "h-11 w-full rounded-lg border border-cos-border bg-white px-3 text-sm text-cos-text shadow-sm focus:border-cos-primary focus:outline-none focus:ring-2 focus:ring-cos-primary/15 sm:w-[10rem]";
+
+function loginStatusBadge(member: UnifiedTeamMember) {
+  const status = peopleLoginStatus(member);
+  const label = peopleLoginStatusLabel(status);
   switch (status) {
     case "active":
-      return <Badge variant="success">Active</Badge>;
+      return <Badge variant="success">{label}</Badge>;
     case "invited":
-      return <Badge variant="warning">Pending</Badge>;
-    case "deactivated":
-      return <Badge variant="default">Deactivated</Badge>;
-    case "roster":
-      return <Badge variant="info">Roster</Badge>;
+      return <Badge variant="warning">{label}</Badge>;
+    case "inactive":
+      return <Badge variant="default">Inactive</Badge>;
+    case "not_invited":
+      return (
+        <Badge variant="default" className="bg-[#ece8e1] text-cos-muted">
+          Not Invited
+        </Badge>
+      );
   }
+}
+
+function AssignedEventsCell({
+  member,
+  eventTitlesById,
+}: {
+  member: UnifiedTeamMember;
+  eventTitlesById: Map<string, string>;
+}) {
+  const ids = peopleRelatedEventIds(member);
+  if (ids.length === 0) {
+    return <span className="text-cos-muted">—</span>;
+  }
+
+  if (ids.length === 1) {
+    const eventId = ids[0]!;
+    const title = eventTitlesById.get(eventId) ?? "Event";
+    return (
+      <Link
+        href={`/events/${eventId}`}
+        onClick={(event) => event.stopPropagation()}
+        className="block min-w-0 truncate text-sm font-medium text-cos-text hover:underline"
+      >
+        {title}
+      </Link>
+    );
+  }
+
+  return (
+    <span className="text-sm font-medium tabular-nums text-cos-text">
+      {ids.length}
+    </span>
+  );
 }
 
 export function TeamAccessMemberTable({
   members,
-  roles,
-  committees,
   search,
   roleFilter,
-  accessFilter,
+  eventFilter,
   statusFilter,
-  vpPortfolioFilter,
-  committeeFilter,
+  eventOptions,
+  eventTitlesById,
   onSearchChange,
   onRoleFilterChange,
-  onAccessFilterChange,
+  onEventFilterChange,
   onStatusFilterChange,
-  onVpPortfolioFilterChange,
-  onCommitteeFilterChange,
   onSelectMember,
-  onEditMember,
   onMoreActions,
   canManage,
+  peopleCount,
 }: TeamAccessMemberTableProps) {
-  const roleOptions = [...new Set(members.map((member) => member.orgRoleLabel))].sort();
-  const vpPortfolioOptions = roles.filter((role) => role.roleKind === "vp");
+  const roleOptions = [
+    ...new Set(members.map((member) => member.accessLabel).filter(Boolean)),
+  ].sort();
+  const totalLabel =
+    typeof peopleCount === "number" ? peopleCount : members.length;
 
   return (
-    <SettingsV2Card>
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+    <SettingsV2Card className="min-w-0 overflow-hidden rounded-2xl p-6 shadow-sm sm:p-7">
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-display text-2xl text-cos-text sm:text-[1.75rem]">
+            People
+          </h2>
+          <span className="rounded-full border border-cos-border bg-cos-bg px-2.5 py-0.5 text-xs font-medium text-cos-muted">
+            {totalLabel}
+          </span>
+        </div>
+        <p className="mt-1.5 text-sm text-cos-muted">
+          Roles, event assignments, and login access in one place.
+        </p>
+      </div>
+
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
           <Input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search by name or email..."
-            className="pl-9"
+            placeholder="Search by person, role, or event..."
+            className="h-12 pl-10 text-base shadow-sm"
+            aria-label="Search by person, role, or event"
           />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={roleFilter}
-            onChange={(event) => onRoleFilterChange(event.target.value)}
-            className="h-9 min-w-[120px]"
-          >
-            <option value="">All roles</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={accessFilter}
-            onChange={(event) => onAccessFilterChange(event.target.value)}
-            className="h-9 min-w-[140px]"
-          >
-            <option value="">All access levels</option>
-            {CAMPAIGN_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {campaignRoleLabel(role as CampaignRole)}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={statusFilter}
-            onChange={(event) => onStatusFilterChange(event.target.value)}
-            className="h-9 min-w-[120px]"
-          >
-            <option value="">All status</option>
-            <option value="active">Active</option>
-            <option value="invited">Pending</option>
-            <option value="deactivated">Deactivated</option>
-            <option value="roster">Roster</option>
-          </Select>
-          <Select
-            value={vpPortfolioFilter}
-            onChange={(event) => onVpPortfolioFilterChange(event.target.value)}
-            className="h-9 min-w-[160px]"
-          >
-            <option value="">All VP portfolios</option>
-            {vpPortfolioOptions.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={committeeFilter}
-            onChange={(event) => onCommitteeFilterChange(event.target.value)}
-            className="h-9 min-w-[140px]"
-          >
-            <option value="">All committees</option>
-            {committees.map((committee) => (
-              <option key={committee.id} value={committee.id}>
-                {committee.name}
-              </option>
-            ))}
-          </Select>
-          <Button variant="secondary" size="sm" type="button">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
         </div>
       </div>
 
+      <div className="mb-6 flex flex-wrap items-center gap-2.5">
+        <select
+          value={roleFilter}
+          onChange={(event) => onRoleFilterChange(event.target.value)}
+          aria-label="Filter by role"
+          className={filterSelectClass}
+        >
+          <option value="">All Roles</option>
+          {roleOptions.map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+        <select
+          value={eventFilter}
+          onChange={(event) => onEventFilterChange(event.target.value)}
+          aria-label="Filter by event"
+          className={filterSelectClass}
+        >
+          <option value="">All Events</option>
+          {eventOptions.map((event) => (
+            <option key={event.id} value={event.id}>
+              {event.title}
+            </option>
+          ))}
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(event) => onStatusFilterChange(event.target.value)}
+          aria-label="Filter by login status"
+          className={filterSelectClass}
+        >
+          <option value="">All Login Status</option>
+          <option value="active">Active</option>
+          <option value="invited">Invited</option>
+          <option value="not_invited">Not Invited</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[18%]" />
+            <col className="w-[26%]" />
+            <col className="w-[18%]" />
+            {canManage ? <col className="w-[8%]" /> : null}
+          </colgroup>
           <thead>
-            <tr className="border-b border-cos-border text-xs uppercase tracking-wide text-cos-muted">
-              <th className="pb-3 pr-4 font-medium">Member</th>
-              <th className="pb-3 pr-4 font-medium">Org role</th>
-              <th className="pb-3 pr-4 font-medium">Access</th>
-              <th className="pb-3 pr-4 font-medium">VP portfolio</th>
-              <th className="pb-3 pr-4 font-medium">Committees</th>
-              <th className="pb-3 pr-4 font-medium">Status</th>
-              <th className="pb-3 pr-4 font-medium">Last active</th>
-              {canManage ? <th className="pb-3 font-medium">Actions</th> : null}
+            <tr className="border-b border-cos-border text-[11px] uppercase tracking-[0.08em] text-cos-muted">
+              <th className="pb-3.5 pr-3 font-medium">Person</th>
+              <th className="pb-3.5 pr-3 font-medium">Role</th>
+              <th className="pb-3.5 pr-3 font-medium">Assigned Events</th>
+              <th className="pb-3.5 pr-3 font-medium">Login Status</th>
+              {canManage ? (
+                <th className="pb-3.5 text-right font-medium">
+                  <span className="sr-only">Actions</span>
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 8 : 7} className="py-8 text-center text-cos-muted">
-                  No members match your filters.
+                <td
+                  colSpan={canManage ? 5 : 4}
+                  className="py-12 text-center text-cos-muted"
+                >
+                  No people match your search or filters.
                 </td>
               </tr>
             ) : (
-              members.map((member) => (
-                <tr
-                  key={member.id}
-                  className="cursor-pointer border-b border-cos-border transition-colors hover:bg-cos-bg/60"
-                  onClick={() => onSelectMember(member)}
-                >
-                  <td className="py-4 pr-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-bg text-xs font-medium text-cos-text">
-                        {member.initials}
-                      </div>
-                      <div>
-                        <p className="font-medium text-cos-text">{member.displayName}</p>
-                        <p className="text-xs text-cos-muted">{formatMemberEmail(member)}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 pr-4 text-cos-text">{member.orgRoleLabel}</td>
-                  <td className="py-4 pr-4">
-                    <Badge variant={accessBadgeVariant(member.accessLevel)}>
-                      {member.accessLabel}
-                    </Badge>
-                  </td>
-                  <td className="py-4 pr-4 text-cos-text">
-                    {member.vpPortfolio ?? "—"}
-                  </td>
-                  <td className="py-4 pr-4 text-cos-text">
-                    {member.committeeCount > 0 ? member.committeeCount : "—"}
-                  </td>
-                  <td className="py-4 pr-4">{statusBadge(member.status)}</td>
-                  <td className="py-4 pr-4 text-cos-muted">
-                    {formatRelativeDate(member.lastActive)}
-                  </td>
-                  {canManage ? (
-                    <td className="py-4">
-                      <div
-                        className="flex items-center gap-1"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onEditMember(member)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(event) => {
-                            const rect = event.currentTarget.getBoundingClientRect();
-                            onMoreActions(member, rect);
-                          }}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+              members.map((member) => {
+                return (
+                  <tr
+                    key={member.id}
+                    className="cursor-pointer border-b border-cos-border/80 transition-colors hover:bg-cos-bg/70"
+                    onClick={() => onSelectMember(member)}
+                  >
+                    <td className="py-4.5 pr-3 align-middle">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-bg text-xs font-semibold text-cos-text shadow-sm">
+                          {member.initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold leading-snug text-cos-text">
+                            {member.displayName}
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-cos-muted">
+                            {member.emailMissing || !member.email.trim()
+                              ? "No email"
+                              : member.email}
+                          </p>
+                          {member.phone ? (
+                            <p className="mt-0.5 truncate text-xs text-cos-muted/90">
+                              {member.phone}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
                     </td>
-                  ) : null}
-                </tr>
-              ))
+                    <td className="truncate py-4.5 pr-3 align-middle text-sm font-medium text-cos-text">
+                      {member.accessLabel}
+                    </td>
+                    <td className="py-4.5 pr-3 align-middle">
+                      <AssignedEventsCell
+                        member={member}
+                        eventTitlesById={eventTitlesById}
+                      />
+                    </td>
+                    <td className="py-4.5 pr-3 align-middle">
+                      {loginStatusBadge(member)}
+                    </td>
+                    {canManage ? (
+                      <td className="py-4.5 align-middle">
+                        <div
+                          className="flex justify-end"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(event) => {
+                              const rect =
+                                event.currentTarget.getBoundingClientRect();
+                              onMoreActions(member, rect);
+                            }}
+                            aria-label={`Actions for ${member.displayName}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

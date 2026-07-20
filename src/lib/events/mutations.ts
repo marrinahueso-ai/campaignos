@@ -38,11 +38,17 @@ export async function insertEvent(input: CreateEventInput): Promise<Event | null
     ? await getActiveSchoolYear(organization.id)
     : null;
 
+  // School year is required for RLS (can_access_event) and site-wide filtering.
+  if (!activeSchoolYear?.id) {
+    console.error("Failed to insert event: organization has no active school year");
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("events")
     .insert({
       ...toEventInsert(input),
-      ...(activeSchoolYear && { school_year_id: activeSchoolYear.id }),
+      school_year_id: activeSchoolYear.id,
     })
     .select("*")
     .single();

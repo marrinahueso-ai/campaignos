@@ -49,6 +49,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(await getAuthenticatedAppPath(nextPath, { setupIntent }));
   }
 
+  // New invites use /invite/[token] for password setup. Keep ?invite= for
+  // existing-account sign-in / OAuth claim, but send first-time setup there.
+  if (params.invite && !user) {
+    const preview = await getInvitePreview(params.invite);
+    if (preview && !preview.expired) {
+      redirect(`/invite/${encodeURIComponent(params.invite)}`);
+    }
+  }
+
   const invitePreview = params.invite
     ? await getInvitePreview(params.invite)
     : null;
@@ -61,7 +70,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       nextPath={nextPath}
       setupIntent={setupIntent}
       userEmail={
-        needsFoundingCodeRetry || params.error === "existing_org"
+        needsFoundingCodeRetry ||
+        params.error === "existing_org" ||
+        params.error === "account_deactivated"
           ? user?.email ?? null
           : null
       }

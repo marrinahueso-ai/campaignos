@@ -11,6 +11,7 @@ import { getPlaybookSteps } from "@/lib/playbooks/queries";
 import type { PlaybookMilestoneStep } from "@/lib/campaign-builder-v2/playbook-milestones";
 import { sendCampaignBuilderForApproval } from "@/lib/campaign-builder-v2/approval-bridge";
 import {
+  ensurePurposesForGeneration,
   resolveSingleGenerationTarget,
   validateBeforeGeneration,
 } from "@/lib/campaign-builder-v2/validation";
@@ -27,9 +28,17 @@ import {
 import { logGenerateAllContentDebug } from "@/lib/campaign-builder-v2/debug";
 import { syncCaptionsToPlatforms } from "@/lib/campaign-builder-v2/caption-utils";
 import {
+  captionPlatformsForFormats,
+  generationStatusAfterContent,
+} from "@/lib/campaign-builder-v2/milestone-status";
+import {
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
+import { hasPermission } from "@/lib/access-templates/effective-access";
+import { applyGenerationResultsToSession } from "@/lib/campaign-builder-v2/generation-session";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
 import type {
   ArtworkView,
   CampaignBuilderInspiration,
@@ -451,9 +460,14 @@ export async function regenerateCaptionAction(
 export async function generateAllContentAction(
   input: GenerateAllContentInput,
 ): Promise<GenerateAllContentResult> {
+  const milestones = ensurePurposesForGeneration(
+    input.milestones,
+    input.inspiration.eventDate,
+  );
+
   const validation = validateBeforeGeneration({
     inspiration: input.inspiration,
-    milestones: input.milestones,
+    milestones,
     milestoneIds: input.milestoneIds,
   });
 
@@ -466,7 +480,7 @@ export async function generateAllContentAction(
   }
 
   const target = resolveSingleGenerationTarget({
-    milestones: input.milestones,
+    milestones,
     milestoneIds: input.milestoneIds,
   });
 
@@ -491,6 +505,12 @@ export async function generateAllContentAction(
     );
 
     if (resolved.error) {
+      const { reportFailedAction } = await import("@/lib/monitoring/report-error");
+      reportFailedAction("ai", {
+        action: "generateAllContentAction.resolveInspiration",
+        eventId: input.eventId,
+        message: resolved.error,
+      });
       return {
         success: false,
         results: [],
@@ -515,7 +535,7 @@ export async function generateAllContentAction(
       });
 
       const styleReferenceUrl = firstCampaignStyleReferenceUrl({
-        milestones: input.milestones,
+        milestones,
         previewContents: input.previewContents,
         excludeMilestoneId: milestone.id,
       });
@@ -550,6 +570,16 @@ export async function generateAllContentAction(
             `Could not generate artwork for "${milestone.name}".`,
         });
 
+        const { reportFailedAction } = await import("@/lib/monitoring/report-error");
+        reportFailedAction("ai", {
+          action: "generateAllContentAction.artwork",
+          eventId: input.eventId,
+          milestoneId: milestone.id,
+          message:
+            artworkGeneration.message ||
+            `Could not generate artwork for "${milestone.name}".`,
+        });
+
         return {
           success: false,
           results: [],
@@ -561,66 +591,106 @@ export async function generateAllContentAction(
       }
 
       const artwork = artworkGeneration.artwork;
-      const artworkViews = enabledArtworkViews(enabledFormats);
 
       const feedArtworkUrl = artwork.feedUrl ?? artwork.storyUrl;
 
-      const hasExistingCaptions = (preview?.captions ?? []).some((caption) =>
-        caption.text.trim(),
+      // Completeness is judged against enabledFormats (not milestone.platforms).
+      // Keep caption slots in sync with that same set so generation can finish.
+      const captionPlatforms = (() => {
+        const fromFormats = captionPlatformsForFormats(enabledFormats);
+        if (fromFormats.length > 0) {
+          return fromFormats;
+        }
+        return milestone.platforms.length > 0
+          ? milestone.platforms
+          : (["facebook"] as Array<"facebook" | "instagram">);
+      })();
+
+      let captions =
+        preview?.captions ?? syncCaptionsToPlatforms("", captionPlatforms);
+
+      const hasAllRequiredCaptions = captionPlatforms.every((platform) =>
+        captions.some(
+          (caption) =>
+            caption.platform === platform && caption.text.trim().length > 0,
+        ),
       );
+      const existingCaptionText =
+        captions.find((caption) => caption.text.trim())?.text.trim() ?? "";
 
-      let captions = preview?.captions ?? syncCaptionsToPlatforms("", milestone.platforms);
+      if (!hasAllRequiredCaptions) {
+        let captionText = existingCaptionText;
 
-      if (!hasExistingCaptions) {
-        const captionResult = await generateCampaignBuilderCaption({
-          eventId: input.eventId,
-          inspiration: resolved.inspiration,
-          milestone,
-          platform: milestone.platforms[0] ?? "facebook",
-          artworkImageUrl: feedArtworkUrl,
-          playbookName: input.playbookName ?? null,
-        });
-
-        if (!captionResult.success) {
-          logGenerateAllContentDebug({
+        if (!captionText) {
+          const captionResult = await generateCampaignBuilderCaption({
             eventId: input.eventId,
-            milestoneId: milestone.id,
-            milestoneName: milestone.name,
-            generationStatusBefore: preview?.generationStatus ?? null,
-            generationStatusAfter: "failed",
-            phase: "failed",
-            message:
-              captionResult.message ||
-              `Could not generate caption for "${milestone.name}".`,
+            inspiration: resolved.inspiration,
+            milestone,
+            platform: captionPlatforms[0] ?? "facebook",
+            artworkImageUrl: feedArtworkUrl,
+            playbookName: input.playbookName ?? null,
           });
 
-          return {
-            success: false,
-            results: [],
-            message:
-              captionResult.message ||
-              `Could not generate caption for "${milestone.name}".`,
-            updatedInspiration: resolved.inspiration,
-          };
+          if (!captionResult.success) {
+            logGenerateAllContentDebug({
+              eventId: input.eventId,
+              milestoneId: milestone.id,
+              milestoneName: milestone.name,
+              generationStatusBefore: preview?.generationStatus ?? null,
+              generationStatusAfter: "failed",
+              phase: "failed",
+              message:
+                captionResult.message ||
+                `Could not generate caption for "${milestone.name}".`,
+            });
+
+            return {
+              success: false,
+              results: [],
+              message:
+                captionResult.message ||
+                `Could not generate caption for "${milestone.name}".`,
+              updatedInspiration: resolved.inspiration,
+            };
+          }
+
+          captionText = captionResult.caption;
         }
 
-        captions = syncCaptionsToPlatforms(
-          captionResult.caption,
-          milestone.platforms,
-        );
+        captions = syncCaptionsToPlatforms(captionText, captionPlatforms);
       }
 
       const hasArtwork =
         (Boolean(artwork.feedUrl) && !isPlaceholderArtworkUrl(artwork.feedUrl)) ||
         (Boolean(artwork.storyUrl) && !isPlaceholderArtworkUrl(artwork.storyUrl));
       const hasCaptions = captions.some((caption) => caption.text.trim().length > 0);
-      const hasContent = hasArtwork || hasCaptions;
 
-      const generationStatus = hasArtwork
-        ? "generated"
-        : hasContent
-          ? "needs_review"
-          : "ready_to_generate";
+      const previewForStatus: MilestonePreviewContent = {
+        ...(preview ?? {
+          milestoneId: milestone.id,
+          status: "draft",
+          generationStatus: "ready_to_generate",
+          generationStartedAt: null,
+          artwork: emptyMilestoneArtwork(),
+          captions: [],
+          enabledFormats,
+          deliveryMethod: "auto-publish",
+          scheduleDate: milestone.suggestedDate,
+          scheduleTime: "09:00",
+          emailSendDate: milestone.suggestedDate,
+          emailSendTime: "09:00",
+          manualEmailTo: "",
+          manualUploadLink: "",
+          approvalStatuses: [],
+        }),
+        artwork,
+        captions,
+        enabledFormats,
+      };
+      const generationStatus = generationStatusAfterContent(
+        previewForStatus,
+        enabledFormats,
+      );
 
       results.push({
         milestoneId: milestone.id,
@@ -629,6 +699,34 @@ export async function generateAllContentAction(
         status: hasArtwork ? "ready" : hasCaptions ? "needs-review" : "draft",
         generationStatus,
       });
+
+      // Sync inside this server action (no revalidate) so dashboard/campaign
+      // cards update even if the browser navigates away before a follow-up
+      // client sync POST completes — Safari often aborts those as "Load failed".
+      if (hasArtwork) {
+        try {
+          await syncHeroFromMilestoneArtwork({
+            eventId: input.eventId,
+            milestones,
+            milestoneId: milestone.id,
+            artwork,
+            options: { revalidate: false },
+          });
+        } catch (syncError) {
+          console.error(
+            "Failed to sync generated artwork during generateAllContentAction:",
+            syncError,
+          );
+          const { reportIntegrationError } = await import(
+            "@/lib/monitoring/report-error"
+          );
+          reportIntegrationError("app", syncError, {
+            action: "generateAllContentAction.syncArtwork",
+            eventId: input.eventId,
+            milestoneId: milestone.id,
+          });
+        }
+      }
 
       logGenerateAllContentDebug({
         eventId: input.eventId,
@@ -640,11 +738,24 @@ export async function generateAllContentAction(
       });
     }
 
-    // Intentionally do NOT sync hero / revalidateEventPaths here.
-    // revalidatePath during generation remounts the campaign builder, strips
-    // the URL hash (resetting to Inspiration), and can overwrite freshly
-    // generated artwork with a stale server session. Hero sync runs later
-    // when the user leaves Preview or publishes.
+    // Persist into campaign_builder_sessions before returning so a browser
+    // navigation / aborted client fetch cannot lose successful artwork URLs.
+    try {
+      const stored = await loadCampaignBuilderSession(input.eventId);
+      if (stored) {
+        const nextSession = applyGenerationResultsToSession(
+          stored,
+          results,
+          resolved.inspiration,
+        );
+        await saveCampaignBuilderSessionAction(nextSession);
+      }
+    } catch (persistError) {
+      console.error(
+        "Failed to persist generation results to campaign builder session:",
+        persistError,
+      );
+    }
 
     return {
       success: true,
@@ -653,6 +764,10 @@ export async function generateAllContentAction(
       updatedInspiration: resolved.inspiration,
     };
   } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("ai", error, { action: "generateAllContentAction" });
     const message =
       error instanceof Error ? error.message : "Content generation failed.";
     return {
@@ -671,6 +786,13 @@ export async function uploadInspirationImageAction(
   image?: InspirationImagePayload;
   message: string;
 }> {
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      message: "You do not have permission to upload artwork.",
+    };
+  }
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { success: false, message: "Choose an image to upload." };
@@ -785,7 +907,12 @@ export async function sendForApprovalAction(input: {
     });
 
     if (result.success) {
+      // Do not revalidatePath("/", "layout") — that soft-remounts the app and
+      // strips the campaign-builder hash, bouncing the UI back to Inspiration
+      // before the client can navigate to Published.
       revalidatePath("/approvals");
+      revalidatePath(`/events/${input.eventId}`);
+      revalidatePath(`/events/${input.eventId}/campaign-builder`);
     }
 
     return {
@@ -804,6 +931,8 @@ export async function sendForApprovalAction(input: {
 
   if (result.success) {
     revalidatePath("/approvals");
+    revalidatePath(`/events/${input.eventId}`);
+    revalidatePath(`/events/${input.eventId}/campaign-builder`);
   }
 
   return {
@@ -816,11 +945,24 @@ export async function approveAllAndScheduleAction(eventId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  void eventId;
+  const { repairCampaignBuilderMetaSchedulesForEvent } = await import(
+    "@/lib/campaign-builder-v2/schedule-meta-from-approval"
+  );
+  const result = await repairCampaignBuilderMetaSchedulesForEvent(eventId);
+
+  if (result.errors.length > 0 && result.repaired === 0) {
+    return {
+      success: false,
+      message: result.errors[0] ?? "Unable to schedule Meta feeds.",
+    };
+  }
 
   return {
     success: true,
-    message: "All milestones approved and scheduled (demo stub).",
+    message:
+      result.repaired > 0
+        ? `Scheduled ${result.repaired} Meta feed milestone${result.repaired === 1 ? "" : "s"} from Create with AI.`
+        : "No Meta feed milestones needed scheduling.",
   };
 }
 
@@ -854,6 +996,33 @@ export async function syncAppliedMilestoneArtworkAction(input: {
   milestones: CampaignBuilderMilestone[];
   milestoneId: string;
   artwork: MilestoneArtwork;
-}): Promise<void> {
-  await syncHeroFromMilestoneArtwork(input);
+  /** When false, skips path revalidation (use while Create with AI is open). */
+  revalidate?: boolean;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    await syncHeroFromMilestoneArtwork({
+      eventId: input.eventId,
+      milestones: input.milestones,
+      milestoneId: input.milestoneId,
+      artwork: input.artwork,
+      options: { revalidate: input.revalidate },
+    });
+    return { success: true };
+  } catch (error) {
+    const { reportIntegrationError } = await import(
+      "@/lib/monitoring/report-error"
+    );
+    reportIntegrationError("app", error, {
+      action: "syncAppliedMilestoneArtworkAction",
+      eventId: input.eventId,
+      milestoneId: input.milestoneId,
+    });
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not sync artwork to the event.",
+    };
+  }
 }

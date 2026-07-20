@@ -19,6 +19,7 @@ export function mapOrganizationCommitteeRow(
     communicationStrategy: row.communication_strategy,
     playbookSlug: row.playbook_slug,
     eventMatchKey: row.event_match_key,
+    assignedEventId: row.assigned_event_id ?? null,
     sortOrder: row.sort_order,
     archivedAt: row.archived_at ?? null,
     campaignRole: row.campaign_role ?? null,

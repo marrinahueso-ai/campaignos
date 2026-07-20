@@ -140,9 +140,9 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
   });
 
   assert.ok(recommendation);
-  assert.match(recommendation.summary, /engagement is up 40%/i);
-  assert.ok(recommendation.items.some((item) => item.title === "Top content format"));
-  assert.ok(recommendation.items.some((item) => item.title === "Best performing post"));
+  assert.match(recommendation.summary, /parent engagement is up 40%/i);
+  assert.ok(recommendation.items.some((item) => item.title === "What worked best"));
+  assert.ok(recommendation.items.some((item) => item.title === "Standout post"));
   assert.ok(
     recommendation.items.some((item) =>
       item.body.includes("Book Fair Reminder"),

@@ -36,6 +36,8 @@ export const VENDOR_DOCUMENT_TYPES = [
 
 export const MAX_VENDOR_DOCUMENT_BYTES = 25 * 1024 * 1024;
 
+export const MAX_VENDOR_LOGO_BYTES = 5 * 1024 * 1024;
+
 export const ALLOWED_VENDOR_DOCUMENT_EXTENSIONS = new Set([
   ".pdf",
   ".docx",

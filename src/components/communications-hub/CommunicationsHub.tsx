@@ -9,8 +9,8 @@ import { CommunicationsTopBar } from "@/components/communications-hub/Communicat
 import { CommunicationsWorkspace } from "@/components/communications-hub/CommunicationsWorkspace";
 import { CommunicationsAiPanel } from "@/components/communications-hub/CommunicationsWorkspacePanels";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { markInboxThreadReadAction } from "@/lib/inbox/actions";
-import type { InboxChannelType, InboxPageData } from "@/lib/inbox/types";
+import { markInboxThreadReadAction, refreshInboxConnectionStatusAction } from "@/lib/inbox/actions";
+import type { InboxChannelType, InboxConnectionStatus, InboxPageData } from "@/lib/inbox/types";
 import {
   computeQueueCounts,
   filterThreadsForCommunicationsHub,
@@ -26,7 +26,26 @@ interface CommunicationsHubProps {
 
 export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const router = useRouter();
-  const { connection, threads, messagesByThreadId } = data;
+  const [connection, setConnection] = useState<InboxConnectionStatus>(data.connection);
+  const { threads, messagesByThreadId } = data;
+
+  useEffect(() => {
+    setConnection(data.connection);
+  }, [data.connection]);
+
+  // Defer Meta Graph health + page pictures until after first paint.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await refreshInboxConnectionStatusAction();
+      if (!cancelled && result.success && result.connection) {
+        setConnection(result.connection);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const defaultQueueFilter = useMemo(
     () => pickDefaultQueueFilter(threads.length, computeQueueCounts(threads, messagesByThreadId)),
@@ -223,7 +242,9 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
           <div className="flex min-h-[min(760px,calc(100vh-13rem))] flex-col xl:flex-row">
             <CommunicationsQueuePanel
               threads={filteredThreads}
-              totalThreadCount={threads.length}
+              totalThreadCount={
+                threads.filter((thread) => thread.status !== "archived").length
+              }
               messagesByThreadId={messagesByThreadId}
               selectedThreadId={selectedThreadId}
               queueFilter={queueFilter}
@@ -255,6 +276,11 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                   }
                   showBack
                   onBack={() => {
+                    setMobileShowDetail(false);
+                    setMobileShowAiPanel(false);
+                  }}
+                  onArchived={() => {
+                    setSelectedThreadId(null);
                     setMobileShowDetail(false);
                     setMobileShowAiPanel(false);
                   }}

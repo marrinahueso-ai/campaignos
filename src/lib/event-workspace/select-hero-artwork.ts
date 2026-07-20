@@ -160,10 +160,13 @@ function sortVisualAssets(assets: EventAsset[]): EventAsset[] {
   });
 }
 
-/** Oldest-first — used to keep hero tied to the first approved milestone feed. */
+/**
+ * Oldest-created first — keeps the card tied to the first approved milestone feed.
+ * Uses createdAt (not updatedAt) so regenerating that feed does not demote it.
+ */
 function sortVisualAssetsOldestFirst(assets: EventAsset[]): EventAsset[] {
   return [...assets].sort((left, right) => {
-    const dateComparison = left.updatedAt.localeCompare(right.updatedAt);
+    const dateComparison = left.createdAt.localeCompare(right.createdAt);
     if (dateComparison !== 0) {
       return dateComparison;
     }
@@ -341,24 +344,35 @@ function pickApprovedPlanAsset(assets: EventAsset[]): HeroArtworkSelection | nul
     return pickApprovedStoryFallback(assets);
   }
 
-  const milestoneFeeds = sortVisualAssetsOldestFirst(
-    approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
-  );
-
-  if (milestoneFeeds.length > 0) {
-    const selection = toAssetSelection(
-      milestoneFeeds[0]!,
-      "approved_asset",
-      "Artwork ready",
-    );
+  // Prefer the promoted hero — Create with AI updates this for the first milestone.
+  const heroImage = sortVisualAssets(
+    approvedAssets.filter((asset) => asset.assetType === "hero_image"),
+  )[0];
+  if (heroImage) {
+    const selection = toAssetSelection(heroImage, "approved_asset", "Artwork ready");
     if (selection) {
       return selection;
     }
   }
 
-  const heroImage = approvedAssets.find((asset) => asset.assetType === "hero_image");
-  if (heroImage) {
-    const selection = toAssetSelection(heroImage, "approved_asset", "Artwork ready");
+  const milestoneFeeds = sortVisualAssetsOldestFirst(
+    approvedAssets.filter((asset) => MILESTONE_FEED_ASSET_TYPES.has(asset.assetType)),
+  );
+
+  if (milestoneFeeds.length > 0) {
+    const firstMilestoneLabel = milestoneFeeds[0]!.planLabel;
+    const feedsForFirstMilestone = sortVisualAssets(
+      milestoneFeeds.filter(
+        (asset) =>
+          asset.planLabel === firstMilestoneLabel ||
+          (!firstMilestoneLabel && !asset.planLabel),
+      ),
+    );
+    const selection = toAssetSelection(
+      feedsForFirstMilestone[0] ?? milestoneFeeds[0]!,
+      "approved_asset",
+      "Artwork ready",
+    );
     if (selection) {
       return selection;
     }
@@ -430,6 +444,14 @@ export function selectHeroArtwork(input: {
   approvalRequests: ApprovalRequest[];
   approvedSquareImageUrl?: string | null;
 }): HeroArtworkSelection | null {
+  const approvedPlanArtwork = pickApprovedPlanAsset(input.assets);
+
+  // Promoted hero (Create with AI first-milestone sync) wins over the planning
+  // hub approved-square column, which otherwise stays stale after regeneration.
+  if (approvedPlanArtwork?.assetType === "hero_image") {
+    return approvedPlanArtwork;
+  }
+
   if (input.approvedSquareImageUrl) {
     return {
       source: "approved_asset",
@@ -442,7 +464,6 @@ export function selectHeroArtwork(input: {
     };
   }
 
-  const approvedPlanArtwork = pickApprovedPlanAsset(input.assets);
   if (approvedPlanArtwork) {
     return approvedPlanArtwork;
   }

@@ -2,25 +2,25 @@
 
 import Image from "next/image";
 import { Loader2, MoreHorizontal } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   AssigneeAvatar,
   DeliveryIcons,
 } from "@/components/approvals-scheduling/ReviewDrawer";
 import { StatusBadge } from "@/components/approvals-scheduling/StatusBadge";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
 import {
   approveUnifiedItemAction,
 } from "@/lib/approvals-scheduling/actions";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
-import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { cn } from "@/lib/utils/cn";
 
 interface ApprovalsTableProps {
   items: UnifiedApprovalItem[];
-  role: CampaignRole;
+  canApproveComms: boolean;
   actorEmail: string | null;
   onReview: (item: UnifiedApprovalItem) => void;
   onActionError: (message: string) => void;
@@ -28,24 +28,27 @@ interface ApprovalsTableProps {
 
 export function ApprovalsTable({
   items,
-  role,
+  canApproveComms,
   actorEmail,
   onReview,
   onActionError,
 }: ApprovalsTableProps) {
-  const router = useRouter();
+  const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [expandedActionsId, setExpandedActionsId] = useState<string | null>(null);
 
   async function runAction(
     item: UnifiedApprovalItem,
-    action: () => Promise<{ success: boolean; error?: string }>,
+    action: () => Promise<{ success: boolean; error?: string; warning?: string }>,
   ) {
     setPendingId(item.id);
     try {
       const result = await action();
       if (result.success) {
-        router.refresh();
+        if (result.warning) {
+          onActionError(result.warning);
+        }
+        await refreshApprovalsTab();
         return;
       }
       onActionError(result.error ?? "Unable to complete that action.");
@@ -92,7 +95,7 @@ export function ApprovalsTable({
         </thead>
         <tbody>
           {items.map((item) => {
-            const canAct = canActOnUnifiedItem(item, role);
+            const canAct = canActOnUnifiedItem(item, canApproveComms);
             const isPending = pendingId === item.id;
             const showReview =
               item.workflowStatus === "assigned_to_me" ||
@@ -129,7 +132,11 @@ export function ApprovalsTable({
                   </div>
                 </td>
                 <td className="px-4 py-4 align-top">
-                  <StatusBadge status={item.workflowStatus} detail={item.statusDetail} />
+                  <StatusBadge
+                    status={item.workflowStatus}
+                    detail={item.statusDetail}
+                    needsRegeneration={hasStaleContentNote(item.notes)}
+                  />
                 </td>
                 <td className="px-4 py-4 align-top">
                   <AssigneeAvatar
@@ -155,60 +162,42 @@ export function ApprovalsTable({
                 </td>
                 <td className="px-4 py-4 align-top">
                   <div className="flex items-center gap-2">
-                    {showReview ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="primary"
-                        disabled={isPending}
-                        onClick={() => onReview(item)}
-                      >
-                        Review
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => onReview(item)}
-                      >
-                        View
-                      </Button>
-                    )}
                     <Button
                       type="button"
                       size="sm"
-                      variant="secondary"
+                      variant={showReview && canAct ? "primary" : "secondary"}
+                      disabled={isPending}
                       onClick={() => onReview(item)}
                     >
-                      {item.notes ? "View notes" : "View assets"}
+                      View
                     </Button>
-                    <div className="relative">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0"
-                        aria-label="More actions"
-                        onClick={() =>
-                          setExpandedActionsId((current) =>
-                            current === item.id ? null : item.id,
-                          )
-                        }
-                      >
-                        {isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <MoreHorizontal className="h-4 w-4" />
-                        )}
-                      </Button>
-                      {expandedActionsId === item.id ? (
-                        <div className="absolute right-0 z-10 mt-1 min-w-40 border border-cos-border bg-cos-card py-1 shadow-lg">
-                          {canAct && showReview ? (
+                    {canAct && showReview ? (
+                      <div className="relative">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          aria-label="More actions"
+                          onClick={() =>
+                            setExpandedActionsId((current) =>
+                              current === item.id ? null : item.id,
+                            )
+                          }
+                        >
+                          {isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreHorizontal className="h-4 w-4" />
+                          )}
+                        </Button>
+                        {expandedActionsId === item.id ? (
+                          <div className="absolute right-0 z-10 mt-1 min-w-40 border border-cos-border bg-cos-card py-1 shadow-lg">
                             <button
                               type="button"
                               className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
-                              onClick={() =>
+                              onClick={() => {
+                                setExpandedActionsId(null);
                                 void runAction(item, () =>
                                   approveUnifiedItemAction({
                                     eventId: item.eventId,
@@ -218,31 +207,25 @@ export function ApprovalsTable({
                                     milestoneName: item.milestoneName,
                                     recipientEmail: actorEmail,
                                   }),
-                                )
-                              }
+                                );
+                              }}
                             >
                               Approve
                             </button>
-                          ) : null}
-                          {canAct && showReview ? (
                             <button
                               type="button"
                               className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
-                              onClick={() => onReview(item)}
+                              onClick={() => {
+                                setExpandedActionsId(null);
+                                onReview(item);
+                              }}
                             >
                               Request changes
                             </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
-                            onClick={() => onReview(item)}
-                          >
-                            View schedule
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </td>
               </tr>

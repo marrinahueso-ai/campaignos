@@ -16,11 +16,17 @@ import type {
   OrganizationRole,
 } from "@/types/organization-workspace";
 
+interface EventOption {
+  id: string;
+  title: string;
+}
+
 interface TeamAccessEditCommitteeModalProps {
   open: boolean;
   onClose: () => void;
   committee: OrganizationCommittee | null;
   roles: OrganizationRole[];
+  events?: EventOption[];
   defaultParentRoleId?: string;
 }
 
@@ -29,6 +35,7 @@ export function TeamAccessEditCommitteeModal({
   onClose,
   committee,
   roles,
+  events = [],
   defaultParentRoleId = "",
 }: TeamAccessEditCommitteeModalProps) {
   const router = useRouter();
@@ -37,6 +44,9 @@ export function TeamAccessEditCommitteeModal({
 
   const isCreate = !committee;
   const chairs = committee ? parseCommitteeChairNames(committee.contactName) : [];
+  const vpRoles = roles.filter(
+    (role) => !role.archivedAt && (role.roleKind === "vp" || role.roleKind === "president"),
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +54,8 @@ export function TeamAccessEditCommitteeModal({
     const chairName = formData.get("chairName")?.toString()?.trim() ?? "";
     const coChairName = formData.get("coChairName")?.toString()?.trim() ?? "";
     const contactName = [chairName, coChairName].filter(Boolean).join(", ") || null;
+    const assignedEventId =
+      formData.get("assignedEventId")?.toString()?.trim() || null;
 
     startTransition(async () => {
       if (isCreate) {
@@ -63,6 +75,7 @@ export function TeamAccessEditCommitteeModal({
           contactName,
           contactEmail: formData.get("contactEmail")?.toString() || null,
           contactPhone: formData.get("contactPhone")?.toString() || null,
+          assignedEventId,
         });
         if (result.error) {
           setError(result.error);
@@ -80,7 +93,7 @@ export function TeamAccessEditCommitteeModal({
     <TeamAccessModal
       open={open}
       onClose={onClose}
-      title={isCreate ? "Add committee" : "Edit committee"}
+      title={isCreate ? "Create committee" : "Edit committee"}
       subtitle={committee?.name}
       footer={
         <div className="flex justify-end gap-2">
@@ -88,7 +101,7 @@ export function TeamAccessEditCommitteeModal({
             Cancel
           </Button>
           <Button type="submit" form="committee-form" disabled={isPending}>
-            {isCreate ? "Add committee" : "Save changes"}
+            {isCreate ? "Create committee" : "Save changes"}
           </Button>
         </div>
       }
@@ -102,11 +115,11 @@ export function TeamAccessEditCommitteeModal({
         />
         <Select
           name="parentRoleId"
-          label="VP portfolio"
+          label="Supervising VP"
           defaultValue={committee?.parentRoleId ?? defaultParentRoleId}
         >
           <option value="">Unassigned</option>
-          {roles.map((role) => (
+          {(vpRoles.length > 0 ? vpRoles : roles).map((role) => (
             <option key={role.id} value={role.id}>
               {role.name}
             </option>
@@ -124,6 +137,18 @@ export function TeamAccessEditCommitteeModal({
           defaultValue={chairs[1] ?? ""}
           placeholder="Jamie Smith"
         />
+        <Select
+          name="assignedEventId"
+          label="Assigned event (optional)"
+          defaultValue={committee?.assignedEventId ?? ""}
+        >
+          <option value="">None</option>
+          {events.map((event) => (
+            <option key={event.id} value={event.id}>
+              {event.title}
+            </option>
+          ))}
+        </Select>
         <Input
           name="contactEmail"
           label="Email"

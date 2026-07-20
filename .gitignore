@@ -12,11 +12,18 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # next.js
 /.next/
 /.next-dev/
 /out/
+# opt-in @next/bundle-analyzer HTML reports
+/analyze/
+/*.analyzer.html
 
 # production
 /build
@@ -34,6 +41,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
 
 # one-off data ops backups / scratch scripts (never commit — may contain PII/URLs)
 /backups/
@@ -45,3 +53,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local/dev artifacts — do not commit
+.next-dev.lock
+.next-dev*.lock
+tmp-socials-email-preview.html
+tmp-*.html

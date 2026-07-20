@@ -148,8 +148,13 @@ function buildPlatformComparison(input: {
   previous: AccountInsightRow[];
   hasAccountData: boolean;
   unavailableReason: string | null;
+  hasInstagram: boolean;
 }): InsightsPlatformTotals[] {
-  const platforms: Array<"facebook" | "instagram"> = ["facebook", "instagram"];
+  const hasInstagramRows = input.current.some((row) => row.platform === "instagram");
+  const platforms: Array<"facebook" | "instagram"> =
+    input.hasInstagram || hasInstagramRows
+      ? ["facebook", "instagram"]
+      : ["facebook"];
 
   return platforms.map((platform) => {
     const reach = input.hasAccountData ? sumMetric(input.current, "reach", platform) : null;
@@ -458,6 +463,7 @@ export async function getInsightsPageData(input?: {
     previous: previousAccount,
     hasAccountData,
     unavailableReason,
+    hasInstagram: connection.hasInstagram,
   });
 
   const contentBreakdown = buildContentBreakdownFromPosts(postInsights);
@@ -474,6 +480,7 @@ export async function getInsightsPageData(input?: {
     topPosts,
     platformComparison,
     contentBreakdown,
+    // Demographics deferred — keep false so UI never shows a dead Audience card.
     audienceAvailable: false,
     recommendation: buildInsightsRecommendation({
       kpis,

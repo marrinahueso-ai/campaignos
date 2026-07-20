@@ -3,6 +3,12 @@ import { getInvitePreview } from "@/lib/auth/invite-preview";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { StudioHomePage } from "@/components/marketing/StudioHomePage";
 
+export const metadata = {
+  title: "Hey Ralli",
+  description:
+    "Plan PTO campaigns, create artwork, draft captions, and publish to Facebook and Instagram — one calm workspace for busy school teams.",
+};
+
 interface HomePageProps {
   searchParams: Promise<{
     invite?: string;

@@ -435,6 +435,17 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
+  if (failedCount > 0) {
+    const { reportFailedAction } = await import("@/lib/monitoring/report-error");
+    reportFailedAction("meta", {
+      action: "publishMetaMilestoneBundle",
+      eventId: input.eventId,
+      organizationId: connection.organizationId,
+      message: firstError ?? "Some posts failed to publish.",
+      statusCode: null,
+    });
+  }
+
   return {
     success: failedCount === 0 && publishedCount > 0,
     error:

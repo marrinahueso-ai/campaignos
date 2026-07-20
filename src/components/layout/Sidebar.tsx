@@ -46,15 +46,28 @@ function notifyLastEventIdListeners(): void {
   }
 }
 
-function getLastEventIdSnapshot(): string | null {
-  if (typeof window === "undefined") {
-    return null;
+function lastEventStorageKey(organizationId: string | null | undefined): string {
+  if (!organizationId) {
+    return LAST_EVENT_STORAGE_KEY;
   }
-  return localStorage.getItem(LAST_EVENT_STORAGE_KEY);
+  return `${LAST_EVENT_STORAGE_KEY}:${organizationId}`;
 }
 
-function setLastEventIdSnapshot(eventId: string): void {
-  localStorage.setItem(LAST_EVENT_STORAGE_KEY, eventId);
+function readLastEventId(organizationId: string | null | undefined): string | null {
+  if (typeof window === "undefined" || !organizationId) {
+    return null;
+  }
+  return localStorage.getItem(lastEventStorageKey(organizationId));
+}
+
+function writeLastEventId(
+  organizationId: string | null | undefined,
+  eventId: string,
+): void {
+  if (!organizationId) {
+    return;
+  }
+  localStorage.setItem(lastEventStorageKey(organizationId), eventId);
   notifyLastEventIdListeners();
 }
 
@@ -109,7 +122,8 @@ function resolveCampaignBuilderHref(
   if (lastEventId) {
     return `/events/${lastEventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
   }
-  return "/events";
+  // Hub page — works with zero events and respects access there.
+  return "/create-with-ai";
 }
 
 function handleCampaignBuilderClick(
@@ -122,8 +136,8 @@ function handleCampaignBuilderClick(
   const hash = hashPart.replace(/^#/, "");
   const targetEventId = extractCampaignBuilderEventId(pathPart);
 
-  if (pathPart === "/events" && !targetEventId) {
-    window.location.assign("/events");
+  if (pathPart === "/create-with-ai" || (pathPart === "/events" && !targetEventId)) {
+    window.location.assign("/create-with-ai");
     return;
   }
 
@@ -131,7 +145,11 @@ function handleCampaignBuilderClick(
 }
 
 function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
-  return extractCampaignBuilderEventId(pathname) !== null;
+  return (
+    pathname === "/create-with-ai" ||
+    pathname.startsWith("/create-with-ai/") ||
+    extractCampaignBuilderEventId(pathname) !== null
+  );
 }
 
 function isCreativeStudioActive(pathname: string, hash: string): boolean {
@@ -185,16 +203,16 @@ const navItems: {
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   {
-    label: "Campaigns",
+    label: "Events",
     href: "/events",
     icon: Megaphone,
     isActive: isCampaignsActive,
   },
-  ...(isCampaignBuilderV2Enabled()
+      ...(isCampaignBuilderV2Enabled()
     ? [
         {
           label: "Create with AI",
-          href: "/events",
+          href: "/create-with-ai",
           icon: WandSparkles,
           resolveHref: resolveCampaignBuilderHref,
           isActive: isCampaignBuilderActive,
@@ -216,6 +234,8 @@ interface SidebarProps {
   assignedApprovalsCount?: number;
   changeRequestsCount?: number;
   inboxUnreadCount?: number;
+  /** Scopes "last event" for Create with AI so orgs never share ids. */
+  activeOrganizationId?: string | null;
 }
 
 type NavBadgeVariant = "approval" | "changeRequest";
@@ -277,6 +297,7 @@ export function Sidebar({
   assignedApprovalsCount = 0,
   changeRequestsCount = 0,
   inboxUnreadCount = 0,
+  activeOrganizationId = null,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -288,7 +309,7 @@ export function Sidebar({
   );
   const lastEventId = useSyncExternalStore(
     subscribeToLastEventId,
-    getLastEventIdSnapshot,
+    () => readLastEventId(activeOrganizationId),
     () => null,
   );
 
@@ -299,11 +320,15 @@ export function Sidebar({
   }, []);
 
   useEffect(() => {
+    notifyLastEventIdListeners();
+  }, [activeOrganizationId]);
+
+  useEffect(() => {
     const eventId = extractEventId(pathname);
     if (eventId) {
-      setLastEventIdSnapshot(eventId);
+      writeLastEventId(activeOrganizationId, eventId);
     }
-  }, [pathname]);
+  }, [pathname, activeOrganizationId]);
 
   function toggleExpanded() {
     setExpanded((prev) => {
@@ -371,12 +396,23 @@ export function Sidebar({
           const showApprovalBadges = href === "/approvals";
           const showInboxBadge = href === "/communications";
           const isCampaignBuilder = label === "Create with AI";
+          // Heavy hubs: skip automatic prefetch so navigating elsewhere
+          // does not trigger nested full RSC work for unused destinations.
+          const isHeavyPrefetchRoute =
+            href === "/communications" ||
+            href === "/calendar" ||
+            href === "/tasks" ||
+            href === "/events" ||
+            href === "/approvals" ||
+            href === "/files" ||
+            href === "/insights" ||
+            href === "/vendors";
 
           return (
             <Link
               key={label}
               href={linkHref}
-              prefetch={!isCampaignBuilder}
+              prefetch={isCampaignBuilder || isHeavyPrefetchRoute ? false : undefined}
               title={showLabels ? undefined : label}
               onClick={(event) => {
                 if (isCampaignBuilder) {

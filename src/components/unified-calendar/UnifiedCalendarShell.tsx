@@ -50,7 +50,9 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers,
   );
-  const [showPostingHeatmap, setShowPostingHeatmap] = useState(true);
+  const [showPostingHeatmap, setShowPostingHeatmap] = useState(
+    () => data.postingHeatmap != null,
+  );
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
   const hasAutoFocused = useRef(false);
 
@@ -192,8 +194,10 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
         onLayersChange={setActiveLayers}
         onSelectUpcomingItem={setSelectedItem}
         postingHeatmap={data.postingHeatmap}
-        showPostingHeatmap={showPostingHeatmap}
-        onShowPostingHeatmapChange={setShowPostingHeatmap}
+        showPostingHeatmap={showPostingHeatmap && data.postingHeatmap != null}
+        onShowPostingHeatmapChange={
+          data.postingHeatmap != null ? setShowPostingHeatmap : undefined
+        }
       />
 
       {showEmptyPeriodHint && (

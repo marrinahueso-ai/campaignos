@@ -2,11 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import {
-  canDeleteCampaignAssets,
-  canUploadCampaignAssets,
-} from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getEventById } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { runAiArtworkReview } from "@/lib/creative-director/ai-review";
@@ -43,8 +39,7 @@ function revalidateCreativeDirectorPaths(eventId: string): void {
 export async function generateCreativeBriefAction(
   eventId: string,
 ): Promise<CreativeDirectorActionState & { brief?: CreativeBrief }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to manage creative briefs." };
   }
 
@@ -66,8 +61,7 @@ export async function updateCreativeBriefAction(
   eventId: string,
   brief: CreativeBrief,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to edit the creative brief." };
   }
 
@@ -83,8 +77,7 @@ export async function updateAssetPromptAction(
   assetId: string,
   generationPrompt: string,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to edit prompts." };
   }
 
@@ -100,8 +93,7 @@ export async function updateAssetPlanStatusAction(
   assetId: string,
   planStatus: CreativePlanStatus,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to update asset status." };
   }
 
@@ -118,8 +110,7 @@ export async function regenerateAssetPromptAction(
   label: string,
   assetType: import("@/types/event-workspace").EventAssetType,
 ): Promise<CreativeDirectorActionState & { prompt?: string }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to regenerate prompts." };
   }
 
@@ -150,8 +141,7 @@ export async function runAssetReviewAction(
   eventId: string,
   assetId: string,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to run creative review." };
   }
 
@@ -181,8 +171,7 @@ export async function refreshInspirationMatchAction(
   eventId: string,
   assetId: string,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to refresh inspiration." };
   }
 
@@ -221,8 +210,7 @@ export async function approveAssetCreativeAction(
   eventId: string,
   assetId: string,
 ): Promise<CreativeDirectorActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canDeleteCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to approve artwork." };
   }
 
@@ -263,8 +251,7 @@ export async function ensurePlannerAssetAction(
   assetType: import("@/types/event-workspace").EventAssetType,
   planLabel: string,
 ): Promise<CreativeDirectorActionState & { assetId?: string }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to manage the asset plan." };
   }
 

@@ -250,3 +250,16 @@ export function searchMatchesItem(
 
   return haystack.includes(normalized);
 }
+
+/** True when ReviewDrawer should fetch caption / rich preview fields. */
+export function unifiedItemNeedsPreviewEnrichment(
+  item: UnifiedApprovalItem,
+): boolean {
+  const hasCaption = Boolean(
+    item.preview.captionText || item.preview.storyCaptionSnippet,
+  );
+  if (hasCaption) {
+    return false;
+  }
+  return Boolean(item.schedulingItemId) || item.source === "classic";
+}

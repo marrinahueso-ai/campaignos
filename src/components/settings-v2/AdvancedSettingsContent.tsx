@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { DeveloperClearCampaignPanel } from "@/components/dev-tools/DeveloperClearCampaignPanel";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-export function AdvancedSettingsContent() {
+interface AdvancedSettingsContentProps {
+  organizationId: string;
+  campaigns: Array<{ id: string; title: string }>;
+}
+
+export function AdvancedSettingsContent({
+  organizationId,
+  campaigns,
+}: AdvancedSettingsContentProps) {
   const [confirmText, setConfirmText] = useState("");
   const canDelete = confirmText === "DELETE";
 
@@ -16,6 +25,13 @@ export function AdvancedSettingsContent() {
         title="Advanced"
         description="Export data, security options, and workspace-level actions."
       />
+
+      {organizationId ? (
+        <DeveloperClearCampaignPanel
+          organizationId={organizationId}
+          campaigns={campaigns}
+        />
+      ) : null}
 
       <SettingsV2Card
         title="Export data"

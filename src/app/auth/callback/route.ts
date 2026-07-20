@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { userMustChangePassword } from "@/lib/auth/invite-credentials";
 import { acceptPendingInvitesForUser } from "@/lib/auth/membership-queries";
 import {
   clearPendingFoundingAccessCookieOnResponse,
@@ -10,14 +11,40 @@ import { resolvePendingFoundingAccessForCallback } from "@/lib/auth/founding-acc
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
+type EmailOtpType =
+  | "signup"
+  | "invite"
+  | "magiclink"
+  | "recovery"
+  | "email_change"
+  | "email";
+
+const EMAIL_OTP_TYPES = new Set<string>([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
+
+function resolveEmailOtpType(raw: string | null): EmailOtpType | null {
+  if (!raw || !EMAIL_OTP_TYPES.has(raw)) {
+    return null;
+  }
+  return raw as EmailOtpType;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
+  const otpType = resolveEmailOtpType(searchParams.get("type"));
   const invite = searchParams.get("invite");
   const setupIntent = searchParams.get("setup") === "1";
   const requestedNext = safeNextPath(searchParams.get("next"));
 
-  if (!code) {
+  if (!code && !(tokenHash && otpType)) {
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
@@ -46,7 +73,13 @@ export async function GET(request: NextRequest) {
     },
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } =
+    tokenHash && otpType
+      ? await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: otpType,
+        })
+      : await supabase.auth.exchangeCodeForSession(code!);
 
   if (error) {
     return NextResponse.redirect(`${origin}/login?error=auth`);
@@ -66,20 +99,30 @@ export async function GET(request: NextRequest) {
 
   // New-school signup must not auto-join an existing invited org.
   if (user?.email && !setupIntent) {
-    await acceptPendingInvitesForUser(user.id, user.email);
+    await acceptPendingInvitesForUser(user.id, user.email, {
+      inviteToken: invite,
+    });
   }
 
   if (user) {
-    nextPath = await resolvePostAuthPathForUser(
-      supabase,
-      user.id,
-      requestedNext,
-      { setupIntent, pendingCode: pendingFoundingCode },
-    );
+    if (userMustChangePassword(user)) {
+      nextPath = "/account/change-password";
+    } else {
+      nextPath = await resolvePostAuthPathForUser(
+        supabase,
+        user.id,
+        requestedNext,
+        {
+          setupIntent,
+          pendingCode: pendingFoundingCode,
+          inviteToken: invite,
+        },
+      );
+    }
   }
 
   const target = new URL(nextPath, origin);
-  if (invite) {
+  if (invite && !target.pathname.startsWith("/login")) {
     target.searchParams.set("joined", "1");
   }
 

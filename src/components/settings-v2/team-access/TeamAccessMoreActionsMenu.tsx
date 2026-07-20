@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
+import {
+  peopleLoginStatus,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
 
 interface TeamAccessMoreActionsMenuProps {
   member: UnifiedTeamMember | null;
@@ -12,11 +15,14 @@ interface TeamAccessMoreActionsMenuProps {
   onAssignCommittee: () => void;
   onViewTasks: () => void;
   onViewApprovals: () => void;
-  onSendMessage: () => void;
   onInvite: () => void;
+  onResendInvite: () => void;
+  onChangeAccess: () => void;
   onDeactivate: () => void;
   onArchive: () => void;
   onRemove: () => void;
+  /** Hide deactivate/remove/archive for the signed-in user. */
+  isSelf?: boolean;
 }
 
 export function TeamAccessMoreActionsMenu({
@@ -28,11 +34,13 @@ export function TeamAccessMoreActionsMenu({
   onAssignCommittee,
   onViewTasks,
   onViewApprovals,
-  onSendMessage,
   onInvite,
+  onResendInvite,
+  onChangeAccess,
   onDeactivate,
   onArchive,
   onRemove,
+  isSelf = false,
 }: TeamAccessMoreActionsMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -50,22 +58,42 @@ export function TeamAccessMoreActionsMenu({
     return null;
   }
 
+  const loginStatus = peopleLoginStatus(member);
+
+  const accessItems =
+    loginStatus === "not_invited"
+      ? [{ id: "invite" as const, label: "Invite to Login" }]
+      : loginStatus === "invited"
+        ? [{ id: "resend" as const, label: "Resend Invite" }]
+        : loginStatus === "inactive"
+          ? [{ id: "resend" as const, label: "Reinvite to Login" }]
+          : loginStatus === "active"
+            ? [{ id: "changeAccess" as const, label: "Change Access" }]
+            : [];
+
   const items = [
-    { id: "profile", label: "View profile" },
-    { id: "edit", label: "Edit" },
-    { id: "assign", label: "Assign committee" },
-    { id: "tasks", label: "View tasks" },
-    { id: "approvals", label: "View approvals" },
-    { id: "message", label: "Send message" },
-    ...(member.isRosterOnly || member.emailMissing
-      ? [{ id: "invite", label: "Invite" }]
+    { id: "profile" as const, label: "View Profile" },
+    { id: "edit" as const, label: "Edit Person" },
+    { id: "assign" as const, label: "Manage Event Assignments" },
+    { id: "tasks" as const, label: "View tasks" },
+    { id: "approvals" as const, label: "View approvals" },
+    ...accessItems,
+    ...(!isSelf && member.raw
+      ? [
+          {
+            id: "deactivate" as const,
+            label:
+              member.status === "deactivated"
+                ? "Reactivate Access"
+                : "Deactivate Access",
+          },
+        ]
       : []),
-    ...(member.raw
-      ? [{ id: "deactivate", label: "Deactivate" }]
+    ...(!isSelf ? [{ id: "archive" as const, label: "Archive" }] : []),
+    ...(!isSelf && member.raw
+      ? [{ id: "remove" as const, label: "Remove", danger: true as const }]
       : []),
-    { id: "archive", label: "Archive" },
-    ...(member.raw ? [{ id: "remove", label: "Remove", danger: true }] : []),
-  ] as const;
+  ];
 
   const handlers: Record<string, () => void> = {
     profile: onViewProfile,
@@ -73,8 +101,9 @@ export function TeamAccessMoreActionsMenu({
     assign: onAssignCommittee,
     tasks: onViewTasks,
     approvals: onViewApprovals,
-    message: onSendMessage,
     invite: onInvite,
+    resend: onResendInvite,
+    changeAccess: onChangeAccess,
     deactivate: onDeactivate,
     archive: onArchive,
     remove: onRemove,

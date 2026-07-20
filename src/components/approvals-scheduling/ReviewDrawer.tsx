@@ -7,8 +7,9 @@ import {
   User,
 } from "lucide-react";
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
-import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
+import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Button } from "@/components/ui/Button";
+import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 
@@ -75,6 +76,11 @@ export function ReviewDrawer({
             <p className="mt-1 text-sm text-cos-muted">
               {item.campaignName} · Campaign
             </p>
+            {hasStaleContentNote(item.notes) ? (
+              <p className="mt-2 inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f]">
+                NEEDS REGENERATION
+              </p>
+            ) : null}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             Close
@@ -82,61 +88,13 @@ export function ReviewDrawer({
         </div>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {item.preview.feedArtworkUrl ? (
-              <ArtworkLightboxThumbnail
-                src={item.preview.feedArtworkUrl}
-                alt={`${item.milestoneName} feed artwork`}
-                label="Feed 1:1"
-                variant="feed"
-                wrapperClassName="w-full"
-                frameClassName="aspect-square"
-                placeholder="Feed"
-              />
-            ) : null}
-            {item.preview.storyArtworkUrl ? (
-              <ArtworkLightboxThumbnail
-                src={item.preview.storyArtworkUrl}
-                alt={`${item.milestoneName} story artwork`}
-                label="Story 9:16"
-                variant="story"
-                wrapperClassName="w-full"
-                frameClassName="aspect-[9/16]"
-                placeholder="Story"
-              />
-            ) : null}
-          </div>
-
-          {item.preview.captionText ? (
-            <div>
-              <p className="cos-section-title">Shared caption</p>
-              <p className="mt-2 text-sm leading-relaxed text-cos-text">
-                {item.preview.captionText}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="cos-section-title">Platforms</p>
-              <p className="mt-2 text-sm text-cos-text">
-                {item.platforms.join(", ")}
-              </p>
-            </div>
-            <div>
-              <p className="cos-section-title">Delivery</p>
-              <p className="mt-2 text-sm text-cos-text">
-                {item.deliveryMethod ?? "auto-publish"}
-              </p>
-            </div>
-          </div>
-
-          {item.scheduleLabel ? (
-            <div>
-              <p className="cos-section-title">Schedule</p>
-              <p className="mt-2 text-sm text-cos-text">{item.scheduleLabel}</p>
-            </div>
-          ) : null}
+          <MilestoneContentPreview
+            milestoneName={item.milestoneName}
+            preview={item.preview}
+            scheduleLabel={item.scheduleLabel}
+            platforms={item.platforms}
+            deliveryMethod={item.deliveryMethod}
+          />
 
           <div>
             <p className="cos-section-title">Approval history</p>
@@ -162,26 +120,34 @@ export function ReviewDrawer({
           ) : null}
         </div>
 
-        {canAct ? (
-          <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
-            <Button
-              type="button"
-              variant="primary"
-              disabled={isSubmitting}
-              onClick={onApprove}
-            >
-              Approve
+        <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
+          {canAct ? (
+            <>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isSubmitting}
+                onClick={onApprove}
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isSubmitting}
+                onClick={onRequestChanges}
+              >
+                Request changes
+              </Button>
+            </>
+          ) : item.workflowStatus === "scheduled" ||
+            item.workflowStatus === "posted" ||
+            item.workflowStatus === "published" ? (
+            <Button type="button" variant="secondary" disabled>
+              Approved
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isSubmitting}
-              onClick={onRequestChanges}
-            >
-              Request changes
-            </Button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </aside>
     </div>
   );

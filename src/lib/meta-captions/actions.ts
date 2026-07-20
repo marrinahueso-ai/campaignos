@@ -1,9 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { canApproveDraft } from "@/lib/auth/campaign-roles";
-import * as campaignAssetPermissions from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
@@ -95,8 +93,7 @@ export async function generateMetaSocialCaptionAction(
   placement: MetaSocialCaptionPlacement,
   generationOptions?: MetaCaptionGenerationOptions,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 
@@ -144,8 +141,7 @@ export async function generateMetaSocialCaptionAction(
 export async function generateAllMetaSocialCaptionsAction(
   eventId: string,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 
@@ -164,8 +160,7 @@ export async function saveMetaSocialCaptionAction(
   placement: MetaSocialCaptionPlacement,
   content: string,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to edit captions." };
   }
 
@@ -215,8 +210,7 @@ export async function commitMetaSocialCaptionAction(
   relativeDay: number,
   content: string,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to edit captions." };
   }
 
@@ -276,8 +270,7 @@ export async function syncStoryFromFeedCaptionAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!campaignAssetPermissions.canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate captions." };
   }
 
@@ -322,8 +315,7 @@ export async function approveMetaSocialCaptionAction(
   relativeDay: number,
   placement: MetaSocialCaptionPlacement,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canApproveDraft(role)) {
+  if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "You do not have permission to approve captions." };
   }
 
@@ -367,8 +359,7 @@ export async function unapproveMetaSocialCaptionAction(
   relativeDay: number,
   placement: MetaSocialCaptionPlacement,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canApproveDraft(role)) {
+  if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "You do not have permission to unapprove captions." };
   }
 
@@ -442,8 +433,7 @@ export async function approveMilestoneCaptionsAction(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaSocialCaptionActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canApproveDraft(role)) {
+  if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "You do not have permission to approve captions." };
   }
 

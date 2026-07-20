@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   isStoryMilestoneDistinctlyApproved,
   resolveMilestonePhaseAsset,
@@ -27,8 +28,17 @@ import {
   getStoryCaptionForMilestone,
   isMilestoneCaptionsApproved,
 } from "@/lib/meta-captions/queries";
+import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
+import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { getEventById } from "@/lib/events/queries";
+import {
+  indexCb2ArtworkRows,
+  resolveCb2ArtworkForMilestone,
+  type Cb2ArtworkIndex,
+  type SessionMilestoneRef,
+} from "@/lib/meta-publishing/cb2-artwork-identity";
 import {
   ensureMetaPublicationSlots,
   getMetaPublicationSlotsForEvent,
@@ -50,6 +60,86 @@ import {
   isManualStoryOnlyBundle,
 } from "@/lib/meta-publishing/publish-mode";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
+
+/** Keep legacy Meta work if it already progressed beyond draft. */
+const CB2_SOCIAL_KEEP_STATUSES = new Set<MetaPublishBundleStatus>([
+  "scheduled",
+  "approved",
+  "posting",
+  "published",
+  "failed",
+]);
+
+/**
+ * When Create with AI is active, Social Media Center should follow that
+ * milestone list — not leftover playbook days (e.g. Day Of @ default 5am).
+ */
+function filterBundlesForCb2Session(
+  bundles: MetaPublishBundle[],
+  sessionMilestoneNames: string[],
+): MetaPublishBundle[] {
+  if (sessionMilestoneNames.length === 0) {
+    return bundles;
+  }
+
+  const cb2Keys = new Set(
+    sessionMilestoneNames
+      .map((name) => milestoneNameMatchKey(name))
+      .filter(Boolean),
+  );
+
+  return bundles.filter((bundle) => {
+    if (!bundle.isMetaPost) {
+      return true;
+    }
+    const key = milestoneNameMatchKey(bundle.title);
+    if (cb2Keys.has(key)) {
+      return true;
+    }
+    return CB2_SOCIAL_KEEP_STATUSES.has(bundle.status);
+  });
+}
+
+async function loadCb2ArtworkIndex(eventId: string): Promise<Cb2ArtworkIndex> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("approval_scheduling_items")
+    .select(
+      "campaign_milestone_id, milestone_name, feed_artwork_url, story_artwork_url",
+    )
+    .eq("event_id", eventId);
+
+  if (error || !data) {
+    return indexCb2ArtworkRows([]);
+  }
+
+  return indexCb2ArtworkRows(
+    data.map((row) => ({
+      campaignMilestoneId: (row.campaign_milestone_id as string | null) ?? null,
+      milestoneName: String(row.milestone_name ?? ""),
+      feedArtworkUrl: (row.feed_artwork_url as string | null) ?? null,
+      storyArtworkUrl: (row.story_artwork_url as string | null) ?? null,
+    })),
+  );
+}
+
+function sessionMilestoneRefs(
+  session: Awaited<ReturnType<typeof loadCampaignBuilderSession>>,
+  eventDate: string | null | undefined,
+): SessionMilestoneRef[] {
+  if (!session?.milestones?.length) {
+    return [];
+  }
+
+  return session.milestones.map((milestone) => ({
+    id: milestone.id,
+    name: milestone.name,
+    relativeDay:
+      eventDate && milestone.suggestedDate
+        ? playbookRelativeDay(eventDate, milestone.suggestedDate)
+        : null,
+  }));
+}
 
 function targetLabel(platform: string, placement: string): string {
   const platformLabel = platform === "facebook" ? "Facebook" : "Instagram";
@@ -132,12 +222,16 @@ function deriveBundleStatus(input: {
     return "published";
   }
 
-  if (statuses.length > 0 && statuses.every((status) => status === "approved")) {
-    return "approved";
-  }
-
-  if (statuses.length > 0 && statuses.every((status) => status === "scheduled")) {
-    return "scheduled";
+  // Ignore cancelled story leftovers (e.g. feed auto + manual story).
+  if (
+    publishableStatuses.length > 0 &&
+    publishableStatuses.every(
+      (status) => status === "approved" || status === "scheduled",
+    )
+  ) {
+    return publishableStatuses.every((status) => status === "approved")
+      ? "approved"
+      : "scheduled";
   }
 
   if (
@@ -178,7 +272,10 @@ function milestoneTitlesAtDay(
   return [...new Set(titles)];
 }
 
-export async function getMetaPublishBundles(eventId: string): Promise<MetaPublishBundle[]> {
+/** Request-cached per eventId so Approvals queue + publishing paths share one load. */
+export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
+  eventId: string,
+): Promise<MetaPublishBundle[]> {
   const event = await getEventById(eventId);
   if (!event) {
     return [];
@@ -187,18 +284,24 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
   await ensureMetaPublicationSlots(eventId);
   const slots = await getMetaPublicationSlotsForEvent(eventId);
 
-  const [assets, metaCaptions, stepsResult] = await Promise.all([
-    getCampaignAssetsForEvent(eventId),
-    getMetaSocialCaptionsForEvent(eventId),
-    createClient()
-      .then((client) =>
+  const [assets, metaCaptions, stepsResult, cb2ArtworkIndex, session] =
+    await Promise.all([
+      getCampaignAssetsForEvent(eventId),
+      getMetaSocialCaptionsForEvent(eventId),
+      createClient().then((client) =>
         client
           .from("event_communication_steps")
-          .select("id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish, story_reminder_sent_at")
+          .select(
+            "id, relative_day, due_date, title, channel, status, sort_order, meta_publish_surfaces, story_manual_publish, story_reminder_sent_at",
+          )
           .eq("event_id", eventId)
           .order("sort_order", { ascending: true }),
       ),
-  ]);
+      loadCb2ArtworkIndex(eventId),
+      loadCampaignBuilderSession(eventId),
+    ]);
+
+  const sessionMilestones = sessionMilestoneRefs(session, event.date);
 
   const steps = (stepsResult.data ?? []) as EventCommunicationStepRow[];
 
@@ -214,7 +317,7 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
   const phaseItems = buildArtworkPhaseItemsFromMilestones(planMilestones);
   const milestoneGroups = groupArtworkPhasesByMilestone(phaseItems);
 
-  return milestoneGroups.map((group) => {
+  const bundles = milestoneGroups.map((group) => {
     const step = findCommunicationStepForRelativeDay(steps, group.relativeDay, {
       preferMetaSocial: true,
     });
@@ -269,15 +372,42 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
     const dueDate = (step?.due_date as string | undefined) ?? null;
     const scheduledFor = planDueDateToScheduledTime(dueDate);
 
-    const feedArtworkUrl =
-      hasFeedArtwork && feedAsset?.storagePath
-        ? resolveAssetImageUrl(feedAsset.storagePath)
-        : null;
-    const storyArtworkUrl =
-      hasStoryArtwork && storyAsset?.storagePath
-        ? resolveAssetImageUrl(storyAsset.storagePath)
-        : null;
+    const sessionMilestone =
+      sessionMilestones.find(
+        (milestone) =>
+          milestone.relativeDay === group.relativeDay &&
+          milestoneNameMatchKey(milestone.name) ===
+            milestoneNameMatchKey(group.title),
+      ) ??
+      sessionMilestones.find(
+        (milestone) => milestone.relativeDay === group.relativeDay,
+      ) ??
+      sessionMilestones.find(
+        (milestone) =>
+          milestoneNameMatchKey(milestone.name) ===
+          milestoneNameMatchKey(group.title),
+      ) ??
+      null;
 
+    // ID-first Create with AI artwork. Never first-available / titlesAtDay.find.
+    const cb2Artwork = resolveCb2ArtworkForMilestone({
+      milestoneId: sessionMilestone?.id ?? null,
+      milestoneTitle: group.title,
+      relativeDay: group.relativeDay,
+      sessionMilestones,
+      index: cb2ArtworkIndex,
+    });
+
+    const feedArtworkUrl =
+      cb2Artwork?.feedArtworkUrl?.trim() ||
+      (hasFeedArtwork && feedAsset?.storagePath
+        ? resolveAssetImageUrl(feedAsset.storagePath)
+        : null);
+    const storyArtworkUrl =
+      cb2Artwork?.storyArtworkUrl?.trim() ||
+      (hasStoryArtwork && storyAsset?.storagePath
+        ? resolveAssetImageUrl(storyAsset.storagePath)
+        : null);
     if (!isMetaPost) {
       return {
         relativeDay: group.relativeDay,
@@ -354,7 +484,13 @@ export async function getMetaPublishBundles(eventId: string): Promise<MetaPublis
       storyReminderSentAt,
     };
   });
-}
+
+  const sessionMilestoneNames =
+    session?.milestones?.map((milestone) => milestone.name).filter(Boolean) ??
+    [];
+
+  return filterBundlesForCb2Session(bundles, sessionMilestoneNames);
+});
 
 export function countBundlesByStatus(
   bundles: MetaPublishBundle[],

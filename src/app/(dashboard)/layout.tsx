@@ -1,5 +1,11 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { getAssignedApprovalsSchedulingCount, getChangeRequestsSchedulingCount } from "@/lib/approvals-scheduling/queries";
+import { ReportProblemHost } from "@/components/monitoring/ReportProblemHost";
+import { getSidebarSchedulingBadgeCounts } from "@/lib/approvals-scheduling/queries";
+import { normalizeOrganizationId } from "@/lib/auth/active-organization";
+import {
+  getActiveMembership,
+  listActiveMemberships,
+} from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
@@ -9,23 +15,30 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [user, sidebarCounts, inboxUnreadCount, cb2AssignedCount, cb2ChangeRequestsCount] =
-    await Promise.all([
+  const [
+    user,
+    sidebarCounts,
+    inboxUnreadCount,
+    schedulingBadgeCounts,
+    organizations,
+    activeMembership,
+  ] = await Promise.all([
     getAuthUser(),
     getApprovalSidebarCountsForCurrentUser(),
     getInboxUnreadCountForCurrentOrg(),
-    getAssignedApprovalsSchedulingCount(),
-    getChangeRequestsSchedulingCount(),
+    getSidebarSchedulingBadgeCounts(),
+    listActiveMemberships(),
+    getActiveMembership(),
   ]);
 
   const assignedApprovalsCount = Math.max(
     sidebarCounts.assignedApprovalsCount,
-    cb2AssignedCount,
+    schedulingBadgeCounts.assignedApprovalsCount,
   );
 
   const changeRequestsCount = Math.max(
     sidebarCounts.changeRequestsCount,
-    cb2ChangeRequestsCount,
+    schedulingBadgeCounts.changeRequestsCount,
   );
 
   return (
@@ -34,8 +47,13 @@ export default async function DashboardLayout({
       assignedApprovalsCount={assignedApprovalsCount}
       changeRequestsCount={changeRequestsCount}
       inboxUnreadCount={inboxUnreadCount}
+      organizations={organizations}
+      activeOrganizationId={
+        normalizeOrganizationId(activeMembership?.organizationId) ?? null
+      }
     >
       {children}
+      <ReportProblemHost />
     </DashboardShell>
   );
 }

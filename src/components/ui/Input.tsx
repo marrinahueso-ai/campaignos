@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils/cn";
-import { type InputHTMLAttributes, forwardRef } from "react";
+import { type InputHTMLAttributes, forwardRef, useId } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -10,7 +10,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, hint, id, variant = "default", ...props }, ref) => {
-    const inputId = id ?? props.name;
+    const generatedId = useId();
+    const inputId = id ?? props.name ?? (label ? generatedId : undefined);
 
     return (
       <div className="space-y-2">

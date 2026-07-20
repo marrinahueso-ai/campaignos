@@ -1,93 +1,109 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { OrganizationRosterImportBar } from "@/components/organization-workspace/OrganizationRosterImportBar";
+import { useMemo, useState, useTransition } from "react";
+import { ArrowLeft, Mail } from "lucide-react";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
-import { TeamAccessCommitteeDetailDrawer } from "@/components/settings-v2/team-access/TeamAccessCommitteeDetailDrawer";
-import { TeamAccessCreateRoleModal } from "@/components/settings-v2/team-access/TeamAccessCreateRoleModal";
-import { TeamAccessEditCommitteeModal } from "@/components/settings-v2/team-access/TeamAccessEditCommitteeModal";
+import { TeamAccessAccessTemplatesPanel } from "@/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel";
+import { TeamAccessAddRosterPersonModal } from "@/components/settings-v2/team-access/TeamAccessAddRosterPersonModal";
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
-import { TeamAccessEditRoleModal } from "@/components/settings-v2/team-access/TeamAccessEditRoleModal";
+import { TeamAccessGiveAppAccessModal } from "@/components/settings-v2/team-access/TeamAccessGiveAppAccessModal";
 import { TeamAccessInviteModal } from "@/components/settings-v2/team-access/TeamAccessInviteModal";
-import { TeamAccessMemberDrawer } from "@/components/settings-v2/team-access/TeamAccessMemberDrawer";
 import { TeamAccessMemberTable } from "@/components/settings-v2/team-access/TeamAccessMemberTable";
 import { TeamAccessMoreActionsMenu } from "@/components/settings-v2/team-access/TeamAccessMoreActionsMenu";
 import { TeamAccessOpenTasksDrawer } from "@/components/settings-v2/team-access/TeamAccessOpenTasksDrawer";
-import { TeamAccessRolesModal } from "@/components/settings-v2/team-access/TeamAccessRolesModal";
-import { TeamAccessSendMessageModal } from "@/components/settings-v2/team-access/TeamAccessSendMessageModal";
-import { TeamAccessSummaryCards } from "@/components/settings-v2/team-access/TeamAccessSummaryCards";
+import { TeamAccessPeopleSidebar } from "@/components/settings-v2/team-access/TeamAccessPeopleSidebar";
+import { teamAccessPersonProfilePath } from "@/components/settings-v2/team-access/TeamAccessPersonProfile";
 import {
-  buildUnifiedTeamMembers,
-  countOpenCommitteeRoles,
   accessLevelLabel,
+  buildUnifiedTeamMembers,
+  isCurrentUserTeamMember,
+  memberMatchesPeopleSearch,
+  peopleLoginStatus,
+  peopleRelatedEventIds,
   type UnifiedTeamMember,
 } from "@/components/settings-v2/team-access/team-access-utils";
-import { resolveMemberEditContext } from "@/components/settings-v2/team-access/member-edit-utils";
 import { Button } from "@/components/ui/Button";
 import {
-  cancelTeamInviteAction,
   claimOrganizationAccessAction,
   removeTeamMemberAction,
   resendTeamInviteAction,
-  setRosterMemberAccessLevelAction,
-  setTeamMemberAccessLevelAction,
   updateTeamMemberAction,
 } from "@/lib/auth/actions";
-import type { CampaignRole } from "@/lib/auth/campaign-roles";
-import {
-  updateOrganizationMemberAction,
-} from "@/lib/organization-workspace/actions";
+import type { AccessTemplate } from "@/lib/access-templates/types";
+import { accessTemplateLabelMap } from "@/lib/access-templates/merge";
+import { updateOrganizationMemberAction } from "@/lib/organization-workspace/actions";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationUser } from "@/types/auth";
-import type {
-  OrganizationCommittee,
-  OrganizationRole,
-  OrganizationWorkspaceData,
-} from "@/types/organization-workspace";
+import type { OrganizationWorkspaceData } from "@/types/organization-workspace";
+import { cn } from "@/lib/utils/cn";
+
+type PeopleHubTab = "people" | "access_templates";
 
 interface TeamAccessShellProps {
   members: OrganizationUser[];
   workspace: OrganizationWorkspaceData;
   workload: TeamAccessWorkloadIndex;
   canManage: boolean;
+  /** Admin/President only — edit access templates. */
+  canEditAccessTemplates: boolean;
+  accessTemplates: AccessTemplate[];
   showClaimBanner: boolean;
   currentUserEmail: string | null;
   siteOrigin: string;
   canProvisionAccounts: boolean;
+  events?: Array<{
+    id: string;
+    title: string;
+    date?: string | null;
+    status?: string | null;
+  }>;
   seatLimit?: number;
 }
-
-type DrawerTab = "overview" | "committees" | "permissions" | "activity";
 
 export function TeamAccessShell({
   members,
   workspace,
   workload,
   canManage,
+  canEditAccessTemplates,
+  accessTemplates,
   showClaimBanner,
   currentUserEmail,
   canProvisionAccounts,
-  seatLimit = 18,
+  events = [],
 }: TeamAccessShellProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [hubTab, setHubTab] = useState<PeopleHubTab>("people");
 
-  const unifiedMembers = useMemo(
-    () => buildUnifiedTeamMembers(members, workspace, workload),
-    [members, workspace, workload],
+  const accessLabels = useMemo(
+    () => accessTemplateLabelMap(accessTemplates),
+    [accessTemplates],
+  );
+
+  const unifiedMembers = useMemo(() => {
+    const built = buildUnifiedTeamMembers(members, workspace, workload);
+    return built.map((member) => ({
+      ...member,
+      accessLabel: accessLevelLabel(
+        member.accessTemplateId ?? member.accessLevel,
+        member.isRosterOnly,
+        accessLabels,
+      ),
+    }));
+  }, [members, workspace, workload, accessLabels]);
+
+  const eventTitlesById = useMemo(
+    () => new Map(events.map((event) => [event.id, event.title])),
+    [events],
   );
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const [accessFilter, setAccessFilter] = useState("");
+  const [eventFilter, setEventFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [vpPortfolioFilter, setVpPortfolioFilter] = useState("");
-  const [committeeFilter, setCommitteeFilter] = useState("");
-
-  const [selectedMember, setSelectedMember] = useState<UnifiedTeamMember | null>(null);
-  const [drawerTab, setDrawerTab] = useState<DrawerTab>("overview");
-  const [memberDrawerOpen, setMemberDrawerOpen] = useState(false);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePrefill, setInvitePrefill] = useState<{
@@ -95,104 +111,70 @@ export function TeamAccessShell({
     name?: string;
     committeeId?: string;
     organizationRoleId?: string;
+    campaignRole?: string;
   } | null>(null);
+  const [addRosterOpen, setAddRosterOpen] = useState(false);
+  const [giveAppAccessOpen, setGiveAppAccessOpen] = useState(false);
+  const [giveAppAccessMember, setGiveAppAccessMember] =
+    useState<UnifiedTeamMember | null>(null);
 
-  const [rolesOpen, setRolesOpen] = useState(false);
-  const [createRoleOpen, setCreateRoleOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editMember, setEditMember] = useState<UnifiedTeamMember | null>(null);
-  const [messageOpen, setMessageOpen] = useState(false);
-  const [messageMember, setMessageMember] = useState<UnifiedTeamMember | null>(null);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [tasksMember, setTasksMember] = useState<UnifiedTeamMember | null>(null);
-
-  const [committeeDetailOpen, setCommitteeDetailOpen] = useState(false);
-  const [selectedCommitteeId, setSelectedCommitteeId] = useState<string | null>(null);
-  const [committeeEditOpen, setCommitteeEditOpen] = useState(false);
-  const [editCommittee, setEditCommittee] = useState<OrganizationCommittee | null>(null);
-  const [committeeParentRoleId, setCommitteeParentRoleId] = useState("");
-  const [roleEditOpen, setRoleEditOpen] = useState(false);
-  const [editRole, setEditRole] = useState<OrganizationRole | null>(null);
 
   const [moreActionsMember, setMoreActionsMember] = useState<UnifiedTeamMember | null>(null);
   const [moreActionsAnchor, setMoreActionsAnchor] = useState<DOMRect | null>(null);
 
   const activeCount = unifiedMembers.filter(
-    (member) => member.status === "active" || member.status === "roster",
+    (member) => peopleLoginStatus(member) === "active",
   ).length;
-  const pendingCount = members.filter((member) => member.status === "invited").length;
-  const openRoleCount = countOpenCommitteeRoles(workspace.committees);
+  const invitedCount = unifiedMembers.filter(
+    (member) => peopleLoginStatus(member) === "invited",
+  ).length;
+  const notInvitedCount = unifiedMembers.filter(
+    (member) => peopleLoginStatus(member) === "not_invited",
+  ).length;
+  const inactiveCount = unifiedMembers.filter(
+    (member) => peopleLoginStatus(member) === "inactive",
+  ).length;
+
+  const mostAssigned = useMemo(
+    () =>
+      [...unifiedMembers]
+        .filter((member) => peopleRelatedEventIds(member).length > 0)
+        .sort(
+          (a, b) =>
+            peopleRelatedEventIds(b).length - peopleRelatedEventIds(a).length,
+        )
+        .slice(0, 5),
+    [unifiedMembers],
+  );
 
   const filteredMembers = useMemo(() => {
     return unifiedMembers.filter((member) => {
-      const searchLower = search.toLowerCase();
-      const matchesSearch =
-        !search ||
-        member.displayName.toLowerCase().includes(searchLower) ||
-        member.email.toLowerCase().includes(searchLower);
-
-      const matchesRole = !roleFilter || member.orgRoleLabel === roleFilter;
-      const matchesAccess = !accessFilter || member.accessLevel === accessFilter;
-      const matchesStatus = !statusFilter || member.status === statusFilter;
-      const matchesVpPortfolio =
-        !vpPortfolioFilter || member.vpPortfolioId === vpPortfolioFilter;
-      const matchesCommittee =
-        !committeeFilter ||
-        member.committees.some(
-          (assignment) => assignment.committee.id === committeeFilter,
-        );
-
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesAccess &&
-        matchesStatus &&
-        matchesVpPortfolio &&
-        matchesCommittee
+      const matchesSearch = memberMatchesPeopleSearch(
+        member,
+        search,
+        eventTitlesById,
       );
+      const matchesRole = !roleFilter || member.accessLabel === roleFilter;
+      const relatedEventIds = peopleRelatedEventIds(member);
+      const matchesEvent =
+        !eventFilter || relatedEventIds.includes(eventFilter);
+      const matchesStatus =
+        !statusFilter || peopleLoginStatus(member) === statusFilter;
+
+      return matchesSearch && matchesRole && matchesEvent && matchesStatus;
     });
-  }, [
-    unifiedMembers,
-    search,
-    roleFilter,
-    accessFilter,
-    statusFilter,
-    vpPortfolioFilter,
-    committeeFilter,
-  ]);
+  }, [unifiedMembers, search, roleFilter, eventFilter, statusFilter, eventTitlesById]);
 
-  useEffect(() => {
-    if (!selectedMember) {
-      return;
-    }
-
-    const refreshed = unifiedMembers.find(
-      (member) =>
-        member.id === selectedMember.id ||
-        (selectedMember.email &&
-          member.email.toLowerCase() === selectedMember.email.toLowerCase()) ||
-        (member.displayName === selectedMember.displayName &&
-          member.organizationRoleId === selectedMember.organizationRoleId),
-    );
-
-    if (
-      refreshed &&
-      (refreshed.accessLevel !== selectedMember.accessLevel ||
-        refreshed.raw?.id !== selectedMember.raw?.id ||
-        refreshed.status !== selectedMember.status)
-    ) {
-      setSelectedMember(refreshed);
-    }
-  }, [unifiedMembers, selectedMember]);
-
-  const selectedCommittee = selectedCommitteeId
-    ? workspace.committees.find((committee) => committee.id === selectedCommitteeId) ?? null
-    : null;
-
-  function openMemberDrawer(member: UnifiedTeamMember, tab: DrawerTab = "overview") {
-    setSelectedMember(member);
-    setDrawerTab(tab);
-    setMemberDrawerOpen(true);
+  function openPersonProfile(
+    member: UnifiedTeamMember,
+    tab?: "overview" | "events" | "access" | "activity",
+  ) {
+    const base = teamAccessPersonProfilePath(member.id);
+    router.push(tab && tab !== "overview" ? `${base}?tab=${tab}` : base);
   }
 
   function openInviteModal(prefill?: typeof invitePrefill) {
@@ -200,12 +182,31 @@ export function TeamAccessShell({
     setInviteOpen(true);
   }
 
+  function openGiveAppAccess(member: UnifiedTeamMember) {
+    if (!member.organizationMemberId) {
+      openInviteModal({
+        email: member.email || undefined,
+        name: member.displayName,
+        organizationRoleId: member.organizationRoleId ?? undefined,
+        campaignRole:
+          member.accessTemplateId ?? member.accessLevel ?? undefined,
+      });
+      return;
+    }
+    setGiveAppAccessMember(member);
+    setGiveAppAccessOpen(true);
+  }
+
   function handleDeactivate(member: UnifiedTeamMember) {
     startTransition(async () => {
       if (member.raw) {
-        await updateTeamMemberAction(member.raw.id, {
+        const result = await updateTeamMemberAction(member.raw.id, {
           status: member.status === "deactivated" ? "active" : "deactivated",
         });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -219,7 +220,6 @@ export function TeamAccessShell({
         }
       }
       router.refresh();
-      setMemberDrawerOpen(false);
     });
   }
 
@@ -229,7 +229,13 @@ export function TeamAccessShell({
     }
     startTransition(async () => {
       if (member.raw) {
-        await updateTeamMemberAction(member.raw.id, { status: "deactivated" });
+        const result = await updateTeamMemberAction(member.raw.id, {
+          status: "deactivated",
+        });
+        if (result.error) {
+          window.alert(result.error);
+          return;
+        }
       } else {
         const rosterMember = workspace.members.find(
           (entry) =>
@@ -241,7 +247,6 @@ export function TeamAccessShell({
         }
       }
       router.refresh();
-      setMemberDrawerOpen(false);
     });
   }
 
@@ -253,69 +258,13 @@ export function TeamAccessShell({
       return;
     }
     startTransition(async () => {
-      await removeTeamMemberAction(member.raw!.id);
+      const result = await removeTeamMemberAction(member.raw!.id);
+      if (result.error) {
+        window.alert(result.error);
+        return;
+      }
       router.refresh();
     });
-  }
-
-  function handleResendInvite(member: UnifiedTeamMember) {
-    if (!member.raw || member.status !== "invited") {
-      return;
-    }
-    startTransition(async () => {
-      await resendTeamInviteAction(member.raw!.id);
-      router.refresh();
-    });
-  }
-
-  function handleCancelInvite(member: UnifiedTeamMember) {
-    if (!member.raw || member.status !== "invited") {
-      return;
-    }
-    if (!window.confirm(`Cancel the pending invite for ${member.displayName}?`)) {
-      return;
-    }
-    startTransition(async () => {
-      await cancelTeamInviteAction(member.raw!.id);
-      router.refresh();
-    });
-  }
-
-  async function handleSaveAccessLevel(
-    member: UnifiedTeamMember,
-    campaignRole: CampaignRole,
-  ): Promise<string | null> {
-    const result = member.raw
-      ? await updateTeamMemberAction(member.raw.id, { campaignRole })
-      : member.email.trim()
-        ? await setTeamMemberAccessLevelAction({
-            email: member.email,
-            organizationRoleId: member.organizationRoleId,
-            campaignRole,
-          })
-        : await setRosterMemberAccessLevelAction({
-            source: resolveMemberEditContext(member, workspace).source,
-            campaignRole,
-          });
-
-    if (result.error) {
-      return result.error;
-    }
-
-    router.refresh();
-    setSelectedMember((current) =>
-      current?.id === member.id
-        ? {
-            ...current,
-            accessLevel: campaignRole,
-            accessLabel: accessLevelLabel(campaignRole),
-            status: current.raw?.status ?? current.status,
-            isRosterOnly: current.raw ? false : current.isRosterOnly,
-            raw: current.raw ? { ...current.raw, campaignRole } : current.raw,
-          }
-        : current,
-    );
-    return null;
   }
 
   function handleClaim() {
@@ -326,30 +275,67 @@ export function TeamAccessShell({
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsV2PageHeader
-        title="Team & Access"
-        description="Manage members, roles, permissions, and committee responsibilities in one place."
-        actions={
-          canManage ? (
-            <>
-              <Button type="button" size="sm" onClick={() => openInviteModal()}>
-                Invite member
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setRolesOpen(true)}
-              >
-                Manage roles & permissions
-              </Button>
-            </>
-          ) : null
-        }
-      />
+    <div className="space-y-8">
+      <div>
+        <Link
+          href="/settings"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+          Back to Settings
+        </Link>
+        <SettingsV2PageHeader
+          title="People & Responsibilities"
+          description="Manage people, event assignments, login access, and access templates."
+          className="mb-0"
+          actions={
+            canManage && hubTab === "people" ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setAddRosterOpen(true)}
+                >
+                  Add Person
+                </Button>
+                <Button type="button" size="md" onClick={() => openInviteModal()}>
+                  <Mail className="h-4 w-4" />
+                  Invite to Login
+                </Button>
+              </>
+            ) : null
+          }
+        />
+      </div>
 
-      {showClaimBanner && (
+      <div className="flex flex-wrap gap-2 border-b border-cos-border pb-px">
+        {(
+          [
+            { id: "people" as const, label: "People" },
+            { id: "access_templates" as const, label: "Access templates" },
+          ] as const
+        ).map((tab) => {
+          const active = hubTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setHubTab(tab.id)}
+              className={cn(
+                "rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "border border-b-0 border-cos-border bg-cos-card text-cos-text"
+                  : "text-cos-muted hover:text-cos-text",
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {showClaimBanner && hubTab === "people" ? (
         <div className="border border-amber-200 bg-amber-50/50 p-5">
           <h3 className="font-display text-xl text-amber-950">Link your account</h3>
           <p className="mt-1 text-sm text-amber-900">
@@ -366,114 +352,53 @@ export function TeamAccessShell({
             Claim admin access
           </Button>
         </div>
-      )}
-
-      <TeamAccessSummaryCards
-        activeCount={activeCount}
-        seatLimit={seatLimit}
-        pendingCount={pendingCount}
-        roleCount={workspace.roles.length}
-        committeeCount={workspace.committees.length}
-        openRoleCount={openRoleCount}
-        onViewInvites={() => setStatusFilter("invited")}
-        onViewRoles={() => setRolesOpen(true)}
-      />
-
-      {canManage ? (
-        <OrganizationRosterImportBar
-          roleCount={workspace.roles.length}
-          committeeCount={workspace.committees.length}
-        />
       ) : null}
 
-      <TeamAccessMemberTable
-        members={filteredMembers}
-        roles={workspace.roles}
-        committees={workspace.committees}
-        search={search}
-        roleFilter={roleFilter}
-        accessFilter={accessFilter}
-        statusFilter={statusFilter}
-        vpPortfolioFilter={vpPortfolioFilter}
-        committeeFilter={committeeFilter}
-        onSearchChange={setSearch}
-        onRoleFilterChange={setRoleFilter}
-        onAccessFilterChange={setAccessFilter}
-        onStatusFilterChange={setStatusFilter}
-        onVpPortfolioFilterChange={setVpPortfolioFilter}
-        onCommitteeFilterChange={setCommitteeFilter}
-        onSelectMember={(member) => openMemberDrawer(member)}
-        onEditMember={(member) => {
-          setEditMember(member);
-          setEditOpen(true);
-        }}
-        onMoreActions={(member, anchor) => {
-          setMoreActionsMember(member);
-          setMoreActionsAnchor(anchor);
-        }}
-        canManage={canManage}
-      />
+      {hubTab === "access_templates" ? (
+        <TeamAccessAccessTemplatesPanel
+          templates={accessTemplates}
+          canEdit={canEditAccessTemplates}
+        />
+      ) : (
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <TeamAccessMemberTable
+          members={filteredMembers}
+          search={search}
+          roleFilter={roleFilter}
+          eventFilter={eventFilter}
+          statusFilter={statusFilter}
+          eventOptions={events.map((event) => ({
+            id: event.id,
+            title: event.title,
+          }))}
+          eventTitlesById={eventTitlesById}
+          onSearchChange={setSearch}
+          onRoleFilterChange={setRoleFilter}
+          onEventFilterChange={setEventFilter}
+          onStatusFilterChange={setStatusFilter}
+          onSelectMember={(member) => openPersonProfile(member)}
+          onMoreActions={(member, anchor) => {
+            setMoreActionsMember(member);
+            setMoreActionsAnchor(anchor);
+          }}
+          canManage={canManage}
+          peopleCount={unifiedMembers.length}
+        />
 
-      <TeamAccessMemberDrawer
-        member={selectedMember}
-        open={memberDrawerOpen}
-        onClose={() => setMemberDrawerOpen(false)}
-        activeTab={drawerTab}
-        onTabChange={setDrawerTab}
-        workspace={workspace}
-        onEdit={() => {
-          if (selectedMember) {
-            setEditMember(selectedMember);
-            setEditOpen(true);
-          }
-        }}
-        onInvite={() => {
-          if (selectedMember) {
-            openInviteModal({
-              email: selectedMember.email || undefined,
-              name: selectedMember.displayName,
-              organizationRoleId: selectedMember.organizationRoleId ?? undefined,
-            });
-          }
-        }}
-        onResendInvite={() => {
-          if (selectedMember) handleResendInvite(selectedMember);
-        }}
-        onCancelInvite={() => {
-          if (selectedMember) handleCancelInvite(selectedMember);
-        }}
-        onSendMessage={() => {
-          if (selectedMember) {
-            setMessageMember(selectedMember);
-            setMessageOpen(true);
-          }
-        }}
-        onDeactivate={() => {
-          if (selectedMember) handleDeactivate(selectedMember);
-        }}
-        onArchive={() => {
-          if (selectedMember) handleArchive(selectedMember);
-        }}
-        onRemove={() => {
-          if (selectedMember) handleRemove(selectedMember);
-        }}
-        onViewTasks={() => {
-          if (selectedMember) {
-            setTasksMember(selectedMember);
-            setTasksOpen(true);
-          }
-        }}
-        onSelectCommittee={(committeeId) => {
-          setSelectedCommitteeId(committeeId);
-          setCommitteeDetailOpen(true);
-        }}
-        onSaveAccessLevel={
-          canManage && selectedMember
-            ? (campaignRole) => handleSaveAccessLevel(selectedMember, campaignRole)
-            : undefined
-        }
-        canManage={canManage}
-      />
+        <TeamAccessPeopleSidebar
+          totalCount={unifiedMembers.length}
+          activeCount={activeCount}
+          invitedCount={invitedCount}
+          notInvitedCount={notInvitedCount}
+          inactiveCount={inactiveCount}
+          mostAssigned={mostAssigned}
+          canManage={canManage}
+          onInvite={() => openInviteModal()}
+          onAddPerson={() => setAddRosterOpen(true)}
+          onSelectMember={(member) => openPersonProfile(member)}
+        />
+      </div>
+      )}
 
       <TeamAccessInviteModal
         open={inviteOpen}
@@ -483,24 +408,32 @@ export function TeamAccessShell({
         }}
         roles={workspace.roles}
         committees={workspace.committees}
+        events={events}
         canProvisionAccounts={canProvisionAccounts}
         prefill={invitePrefill}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
-      <TeamAccessRolesModal
-        open={rolesOpen}
-        onClose={() => setRolesOpen(false)}
-        members={members}
-        workspace={workspace}
-        onCreateRole={() => {
-          setRolesOpen(false);
-          setCreateRoleOpen(true);
+      <TeamAccessAddRosterPersonModal
+        open={addRosterOpen}
+        onClose={() => setAddRosterOpen(false)}
+        roles={workspace.roles}
+        committees={workspace.committees}
+        events={events}
+        accessTemplates={accessTemplates}
+        accessLabels={accessLabels}
+      />
+
+      <TeamAccessGiveAppAccessModal
+        open={giveAppAccessOpen}
+        onClose={() => {
+          setGiveAppAccessOpen(false);
+          setGiveAppAccessMember(null);
         }}
-      />
-
-      <TeamAccessCreateRoleModal
-        open={createRoleOpen}
-        onClose={() => setCreateRoleOpen(false)}
+        member={giveAppAccessMember}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
       />
 
       <TeamAccessEditMemberModal
@@ -510,64 +443,15 @@ export function TeamAccessShell({
         roles={workspace.roles}
         committees={workspace.committees}
         workspace={workspace}
-      />
-
-      <TeamAccessEditCommitteeModal
-        open={committeeEditOpen}
-        onClose={() => {
-          setCommitteeEditOpen(false);
-          setEditCommittee(null);
-        }}
-        committee={editCommittee}
-        roles={workspace.roles}
-        defaultParentRoleId={committeeParentRoleId}
-      />
-
-      <TeamAccessEditRoleModal
-        open={roleEditOpen}
-        onClose={() => {
-          setRoleEditOpen(false);
-          setEditRole(null);
-        }}
-        role={editRole}
-      />
-
-      <TeamAccessSendMessageModal
-        open={messageOpen}
-        onClose={() => setMessageOpen(false)}
-        member={messageMember}
+        accessLabels={accessLabels}
+        accessTemplates={accessTemplates}
+        currentUserEmail={currentUserEmail}
       />
 
       <TeamAccessOpenTasksDrawer
         open={tasksOpen}
         onClose={() => setTasksOpen(false)}
         member={tasksMember}
-      />
-
-      <TeamAccessCommitteeDetailDrawer
-        open={committeeDetailOpen}
-        onClose={() => setCommitteeDetailOpen(false)}
-        committee={selectedCommittee}
-        workload={workload}
-        canManage={canManage}
-        onEdit={() => {
-          if (selectedCommittee) {
-            setEditCommittee(selectedCommittee);
-            setCommitteeParentRoleId(selectedCommittee.parentRoleId ?? "");
-            setCommitteeEditOpen(true);
-          }
-        }}
-        onInvite={() => {
-          if (selectedCommittee) {
-            openInviteModal({ committeeId: selectedCommittee.id });
-          }
-        }}
-        onAddMember={() => {
-          if (selectedCommittee) {
-            setEditCommittee(selectedCommittee);
-            setCommitteeEditOpen(true);
-          }
-        }}
       />
 
       <TeamAccessMoreActionsMenu
@@ -577,8 +461,13 @@ export function TeamAccessShell({
           setMoreActionsMember(null);
           setMoreActionsAnchor(null);
         }}
+        isSelf={
+          moreActionsMember
+            ? isCurrentUserTeamMember(moreActionsMember, currentUserEmail)
+            : false
+        }
         onViewProfile={() => {
-          if (moreActionsMember) openMemberDrawer(moreActionsMember);
+          if (moreActionsMember) openPersonProfile(moreActionsMember);
         }}
         onEdit={() => {
           if (moreActionsMember) {
@@ -587,7 +476,9 @@ export function TeamAccessShell({
           }
         }}
         onAssignCommittee={() => {
-          if (moreActionsMember) openMemberDrawer(moreActionsMember, "committees");
+          if (moreActionsMember) {
+            openPersonProfile(moreActionsMember, "events");
+          }
         }}
         onViewTasks={() => {
           if (moreActionsMember) {
@@ -598,12 +489,6 @@ export function TeamAccessShell({
         onViewApprovals={() => {
           if (moreActionsMember) {
             window.location.href = "/approvals";
-          }
-        }}
-        onSendMessage={() => {
-          if (moreActionsMember) {
-            setMessageMember(moreActionsMember);
-            setMessageOpen(true);
           }
         }}
         onDeactivate={() => {
@@ -617,10 +502,21 @@ export function TeamAccessShell({
         }}
         onInvite={() => {
           if (moreActionsMember) {
-            openInviteModal({
-              email: moreActionsMember.email || undefined,
-              name: moreActionsMember.displayName,
-            });
+            openGiveAppAccess(moreActionsMember);
+          }
+        }}
+        onResendInvite={() => {
+          if (!moreActionsMember?.raw) {
+            return;
+          }
+          startTransition(async () => {
+            await resendTeamInviteAction(moreActionsMember.raw!.id);
+            router.refresh();
+          });
+        }}
+        onChangeAccess={() => {
+          if (moreActionsMember) {
+            openPersonProfile(moreActionsMember, "access");
           }
         }}
       />

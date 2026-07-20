@@ -5,7 +5,8 @@ import {
   isApprovedArtworkAsset,
 } from "@/lib/artwork-v2/campaign-phases";
 import { resolveWorkflowAsset } from "@/lib/creative-studio/artwork-workflow";
-import { isEmailConfigured, sendEmail } from "@/lib/email/send";
+import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
+import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
 import { mapEventAssetRows } from "@/lib/event-workspace/mappers";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { mapEventRow } from "@/lib/events/mappers";
@@ -14,7 +15,6 @@ import {
   getMetaSocialCaptionsForEvent,
   getStoryCaptionForMilestone,
 } from "@/lib/meta-captions/queries";
-import { buildStoryReminderEmail } from "@/lib/meta-publishing/story-reminder-email";
 import { resolveEventShareLink } from "@/lib/meta-publishing/post-kit";
 import { isManualStoryEmailMode, derivePublishMode } from "@/lib/meta-publishing/publish-mode";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -278,7 +278,7 @@ export async function sendStoryPostKitForMilestone(input: {
   const postKitUrl = `${siteBaseUrl}/events/${input.eventId}#publish`;
   const timezone = (organization.timezone as string) ?? "America/Chicago";
 
-  const emailContent = await buildStoryReminderEmail({
+  const emailContent = await buildSocialsManualUploadEmail({
     eventTitle: eventRow.title as string,
     milestoneTitle: step.title as string,
     scheduledLabel: formatScheduledLabel(scheduledFor.toISOString(), timezone),
@@ -296,6 +296,7 @@ export async function sendStoryPostKitForMilestone(input: {
     html: emailContent.html,
     text: emailContent.text,
     attachments: emailContent.attachments,
+    from: resolveSocialsFromAddress(),
   });
 
   if (!sendResult.success) {

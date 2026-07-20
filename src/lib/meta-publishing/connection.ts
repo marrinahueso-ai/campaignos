@@ -45,20 +45,34 @@ function connectionFromEnv(): MetaConnection | null {
   };
 }
 
+/** Org-scoped Meta row only — never falls back to shared env credentials. */
+export async function getStoredMetaConnectionForOrganization(
+  organizationId: string | null,
+): Promise<MetaConnection | null> {
+  if (!organizationId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("organization_meta_connections")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapMetaConnectionRow(data as MetaConnectionRow);
+}
+
 export async function getMetaConnectionForOrganization(
   organizationId: string | null,
 ): Promise<MetaConnection | null> {
-  if (organizationId) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("organization_meta_connections")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .maybeSingle();
-
-    if (!error && data) {
-      return mapMetaConnectionRow(data as MetaConnectionRow);
-    }
+  const stored = await getStoredMetaConnectionForOrganization(organizationId);
+  if (stored) {
+    return stored;
   }
 
   return connectionFromEnv();

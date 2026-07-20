@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import {
+  MILESTONE_STATUS_LABELS,
+  resolveMilestoneGenerationStatus,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import { PLATFORM_FORMAT_OPTIONS } from "@/lib/campaign-builder-v2/platform-utils";
+import { cn } from "@/lib/utils/cn";
 import type {
   CampaignBuilderMilestone,
   MilestoneCreativeOverrides,
+  MilestoneGenerationStatus,
+  MilestonePreviewContent,
   MilestoneStatusTag,
   PlatformFormat,
 } from "@/lib/campaign-builder-v2/types";
@@ -42,13 +49,46 @@ function buildCreativeOverridesPatch(formData: FormData): MilestoneCreativeOverr
   return overrides;
 }
 
+function statusTagFromGeneration(
+  status: MilestoneGenerationStatus,
+): MilestoneStatusTag {
+  switch (status) {
+    case "generated":
+    case "approved":
+    case "scheduled":
+    case "published":
+      return "complete";
+    case "queued":
+    case "generating":
+    case "needs_review":
+      return "in-progress";
+    case "changes_requested":
+      return "needs-review";
+    case "awaiting_approval":
+      return "pending";
+    default:
+      return "not-started";
+  }
+}
+
 export function readMilestoneEditorPatch(
   form: HTMLFormElement,
+  options?: {
+    preview?: MilestonePreviewContent | null;
+    platformFormatsFallback?: PlatformFormat[];
+  },
 ): Partial<CampaignBuilderMilestone> {
   const formData = new FormData(form);
   const platformFormats = PLATFORM_FORMAT_OPTIONS.filter((option) =>
     formData.getAll("platformFormats").includes(option.id),
   ).map((option) => option.id) as PlatformFormat[];
+
+  const generationStatus = resolveMilestoneGenerationStatus(
+    options?.preview,
+    platformFormats.length > 0
+      ? platformFormats
+      : (options?.platformFormatsFallback ?? []),
+  );
 
   return {
     name: String(formData.get("name") ?? ""),
@@ -56,22 +96,17 @@ export function readMilestoneEditorPatch(
     suggestedDate: String(formData.get("suggestedDate") ?? ""),
     artworkNotes: String(formData.get("artworkNotes") ?? ""),
     captionNotes: String(formData.get("captionNotes") ?? ""),
-    statusTag: String(formData.get("statusTag") ?? "not-started") as MilestoneStatusTag,
+    // Persist a tag aligned with the shared generation status — never trust a
+    // manual dropdown that stays "not-started" after content is generated.
+    statusTag: statusTagFromGeneration(generationStatus),
     platformFormats,
     creativeOverrides: buildCreativeOverridesPatch(formData),
   };
 }
 
-const STATUS_TAG_OPTIONS: Array<{ value: MilestoneStatusTag; label: string }> = [
-  { value: "complete", label: "Complete" },
-  { value: "in-progress", label: "In progress" },
-  { value: "needs-review", label: "Needs review" },
-  { value: "pending", label: "Pending" },
-  { value: "not-started", label: "Not started" },
-];
-
 interface MilestoneEditorModalProps {
   milestone: CampaignBuilderMilestone;
+  preview?: MilestonePreviewContent | null;
   onClose: () => void;
   onSave: (patch: Partial<CampaignBuilderMilestone>) => void;
   onDelete: () => void;
@@ -80,11 +115,17 @@ interface MilestoneEditorModalProps {
 
 export function MilestoneEditorModal({
   milestone,
+  preview = null,
   onClose,
   onSave,
   onDelete,
   formId = "milestone-editor-form",
 }: MilestoneEditorModalProps) {
+  const displayStatus = resolveMilestoneGenerationStatus(
+    preview,
+    milestone.platformFormats,
+  );
+
   return (
     <CampaignBuilderModal
       title="Edit milestone"
@@ -112,7 +153,12 @@ export function MilestoneEditorModal({
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
-          onSave(readMilestoneEditorPatch(event.currentTarget));
+          onSave(
+            readMilestoneEditorPatch(event.currentTarget, {
+              preview,
+              platformFormatsFallback: milestone.platformFormats,
+            }),
+          );
           onClose();
         }}
       >
@@ -209,17 +255,30 @@ export function MilestoneEditorModal({
           </div>
         </fieldset>
 
-        <Select
-          label="Status tag"
-          name="statusTag"
-          defaultValue={milestone.statusTag}
-        >
-          {STATUS_TAG_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
+        <div className="space-y-2">
+          <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+            Status
+          </p>
+          <p
+            className={cn(
+              "inline-block px-2 py-1 text-xs font-semibold tracking-wide uppercase",
+              displayStatus === "generated" ||
+                displayStatus === "approved" ||
+                displayStatus === "scheduled" ||
+                displayStatus === "published"
+                ? "bg-cos-success-bg text-cos-success-text"
+                : displayStatus === "ready_to_generate"
+                  ? "border border-cos-border bg-cos-bg text-cos-muted"
+                  : "bg-cos-warning text-cos-warning-text",
+            )}
+          >
+            {MILESTONE_STATUS_LABELS[displayStatus]}
+          </p>
+          <p className="text-xs text-cos-muted">
+            Based on generated artwork and captions for this milestone — same
+            status as the timeline.
+          </p>
+        </div>
       </form>
     </CampaignBuilderModal>
   );

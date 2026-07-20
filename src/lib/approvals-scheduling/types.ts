@@ -112,6 +112,10 @@ export interface ApprovalSchedulingItemRow {
   story_caption: string | null;
   feed_artwork_url: string | null;
   story_artwork_url: string | null;
+  manual_upload_link: string | null;
+  manual_email_to: string | null;
+  manual_email_send_at: string | null;
+  manual_upload_email_sent_at: string | null;
   notes: string | null;
   requested_at: string;
   resolved_at: string | null;

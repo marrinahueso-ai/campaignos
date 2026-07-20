@@ -18,7 +18,7 @@ import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { activateConceptAsAsset, snapshotAssetToVersion } from "@/lib/ai-artwork/versions";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { campaignRoleLabel } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getArtworkWorkflowItems } from "@/lib/creative-studio/artwork-defaults";
@@ -411,8 +411,7 @@ export async function generateArtworkV2Action(
   eventId: string,
   formData: FormData,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate artwork." };
   }
 
@@ -519,8 +518,7 @@ export async function generateStoryFromFeedAction(
   eventId: string,
   relativeDay: number,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate artwork." };
   }
 
@@ -676,8 +674,7 @@ export async function approveArtworkV2Action(
   conceptId: string,
   workflowItemId: string,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to approve artwork." };
   }
 
@@ -771,8 +768,7 @@ export async function denyArtworkV2Action(
   eventId: string,
   conceptId: string,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to deny artwork." };
   }
 
@@ -802,8 +798,7 @@ export async function prepareArtworkV2RegenerationAction(
   eventId: string,
   workflowItemId: string,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to update artwork." };
   }
 
@@ -841,8 +836,7 @@ export async function resetArtworkV2SlotAction(
   eventId: string,
   workflowItemId: string,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to delete artwork." };
   }
 
@@ -879,8 +873,7 @@ export async function adjustArtworkV2Action(
   eventId: string,
   formData: FormData,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to adjust artwork." };
   }
 
@@ -1005,8 +998,7 @@ export async function approveInspirationAsArtworkV2Action(
   eventId: string,
   formData: FormData,
 ): Promise<ArtworkV2GenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to approve artwork." };
   }
 
@@ -1156,8 +1148,7 @@ export async function importCanvaDesignAsInspirationV2Action(
     inspirationStoragePath: string;
   };
 }> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to import artwork." };
   }
 
@@ -1579,8 +1570,7 @@ export async function generateRemainingArtworkV2Action(
     phase?: "feed" | "story" | "all";
   },
 ): Promise<ArtworkV2BatchGenerationResult> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return {
       success: false,
       error: "You do not have permission to generate artwork.",

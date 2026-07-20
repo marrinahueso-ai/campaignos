@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { hasActiveOrganizationMembership } from "@/lib/auth/membership-queries";
+import {
+  ACCOUNT_DEACTIVATED_LOGIN_PATH,
+} from "@/lib/auth/membership-access";
+import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
 import {
   getPendingFoundingAccessCode,
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getAuthUser } from "@/lib/auth/queries";
+import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
 export const SCHOOL_SETUP_PATH = "/settings/school-setup";
@@ -17,6 +22,8 @@ export const LOGIN_PAGE_ERRORS = [
   "auth",
   "code_required",
   "org_required",
+  "invite_email",
+  "account_deactivated",
 ] as const;
 
 export type LoginPageError = (typeof LOGIN_PAGE_ERRORS)[number];
@@ -77,7 +84,20 @@ export async function getAuthenticatedAppPath(
   }
 
   const organization = await getCurrentOrganization();
-  return resolveAuthenticatedAppPath(organization !== null, next);
+  if (organization) {
+    return resolveAuthenticatedAppPath(true, next);
+  }
+
+  const user = await getAuthUser();
+  if (user) {
+    const supabase = await createClient();
+    const accessState = await getOrganizationAccessState(supabase, user.id);
+    if (accessState === "deactivated") {
+      return ACCOUNT_DEACTIVATED_LOGIN_PATH;
+    }
+  }
+
+  return resolveAuthenticatedAppPath(false, next);
 }
 
 /** For route handlers and middleware that already have a Supabase client. */
@@ -85,9 +105,15 @@ export async function resolvePostAuthPathForUser(
   supabase: SupabaseClient,
   userId: string,
   next?: string | null,
-  options?: { setupIntent?: boolean; pendingCode?: string | null },
+  options?: {
+    setupIntent?: boolean;
+    pendingCode?: string | null;
+    /** Keep invitees on the invite login path instead of founding/school setup. */
+    inviteToken?: string | null;
+  },
 ): Promise<string> {
   const setupIntent = options?.setupIntent ?? false;
+  const inviteToken = options?.inviteToken?.trim() || null;
   const pendingCode = setupIntent
     ? options?.pendingCode !== undefined
       ? options.pendingCode
@@ -98,11 +124,16 @@ export async function resolvePostAuthPathForUser(
     Boolean(pendingCode) &&
     validateFoundingAccessCode(pendingCode);
 
-  const hasMembership = await hasActiveOrganizationMembership(supabase, userId);
+  const accessState = await getOrganizationAccessState(supabase, userId);
+  const hasMembership = accessState === "active";
 
   if (hasValidPendingSetup) {
     if (hasMembership) {
       return "/login?error=existing_org";
+    }
+    // Deactivated members must not enter founding / school-setup via setup intent.
+    if (accessState === "deactivated") {
+      return ACCOUNT_DEACTIVATED_LOGIN_PATH;
     }
     return SCHOOL_SETUP_PATH;
   }
@@ -112,6 +143,17 @@ export async function resolvePostAuthPathForUser(
   }
 
   if (!hasMembership) {
+    if (accessState === "deactivated") {
+      return ACCOUNT_DEACTIVATED_LOGIN_PATH;
+    }
+    // Invited teammates must not fall into new-school / founding-access UX.
+    if (inviteToken) {
+      const params = new URLSearchParams({
+        invite: inviteToken,
+        error: "invite_email",
+      });
+      return `/login?${params.toString()}`;
+    }
     return SCHOOL_SETUP_PATH;
   }
 

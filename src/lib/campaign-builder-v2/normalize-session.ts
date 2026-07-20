@@ -1,8 +1,10 @@
+import { ensureSharedCaptionsForPlatforms } from "./caption-utils.ts";
 import {
   defaultEnabledFormats,
   normalizeMilestoneArtwork,
 } from "./platform-utils.ts";
 import {
+  captionPlatformsForFormats,
   generationStatusAfterContent,
   inferGenerationStatus,
   isStaleGeneration,
@@ -19,6 +21,8 @@ import {
   sanitizeSeedNotes,
   sanitizeSeedPurpose,
 } from "./stale-seed-migration.ts";
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
+import { normalizeMilestoneName } from "./milestone-names.ts";
 import type {
   CampaignBuilderMilestone,
   CampaignBuilderSession,
@@ -26,26 +30,6 @@ import type {
   MilestonePreviewContent,
   PreviewTabId,
 } from "./types.ts";
-
-const STALE_MILESTONE_NAME_FIXES: Record<string, string> = {
-  "Two-Week Reminder": "Two-Week Push",
-  "Two Week Reminder": "Two-Week Push",
-  "two-week reminder": "Two-Week Push",
-};
-
-function normalizeMilestoneName(name: string): string {
-  const trimmed = name.trim();
-  if (STALE_MILESTONE_NAME_FIXES[trimmed]) {
-    return STALE_MILESTONE_NAME_FIXES[trimmed];
-  }
-
-  const lower = trimmed.toLowerCase();
-  if (lower.includes("two") && lower.includes("week") && lower.includes("reminder")) {
-    return "Two-Week Push";
-  }
-
-  return trimmed;
-}
 
 function buildEmptyPreviewContent(
   milestone: CampaignBuilderMilestone,
@@ -67,6 +51,7 @@ function buildEmptyPreviewContent(
     emailSendDate: milestone.suggestedDate,
     emailSendTime: "09:00",
     manualEmailTo: "marrina@heyralli.com",
+    manualUploadLink: "",
     approvalStatuses: [],
   };
 }
@@ -121,6 +106,54 @@ function pickRicherPreview(
  * list — otherwise a stale server milestone list (different IDs after a playbook
  * rebuild) silently orphans local artwork and the next hydrate writes it away.
  */
+/**
+ * Prevent a poorer client snapshot (e.g. empty + "generating"/"failed") from
+ * overwriting richer server artwork/captions during persist. Used by
+ * saveCampaignBuilderSessionAction after Storage/table RLS hardening made
+ * mid-generation failures more visible.
+ */
+export function protectSessionFromRichnessDowngrade(
+  incoming: CampaignBuilderSession,
+  existing: CampaignBuilderSession | null | undefined,
+): CampaignBuilderSession {
+  if (!existing) {
+    return incoming;
+  }
+
+  const existingRichness = sessionPreviewRichness(existing);
+  const incomingRichness = sessionPreviewRichness(incoming);
+  if (existingRichness === 0 || incomingRichness >= existingRichness) {
+    // Still merge per-milestone so a partial incoming cannot blank one slot.
+    const merged = mergeCampaignBuilderSessions(existing, incoming);
+    return {
+      ...incoming,
+      inspiration: merged.inspiration ?? incoming.inspiration,
+      milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
+        incoming.milestones,
+      milestonesPlaybookId:
+        merged.milestonesPlaybookId ?? incoming.milestonesPlaybookId,
+      previewContents:
+        (merged.previewContents as MilestonePreviewContent[] | undefined) ??
+        incoming.previewContents,
+    };
+  }
+
+  const merged = mergeCampaignBuilderSessions(incoming, existing);
+  return {
+    ...incoming,
+    inspiration: merged.inspiration ?? existing.inspiration ?? incoming.inspiration,
+    milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
+      existing.milestones,
+    milestonesPlaybookId:
+      merged.milestonesPlaybookId ??
+      existing.milestonesPlaybookId ??
+      incoming.milestonesPlaybookId,
+    previewContents:
+      (merged.previewContents as MilestonePreviewContent[] | undefined) ??
+      existing.previewContents,
+  };
+}
+
 export function mergeCampaignBuilderSessions(
   primary: Partial<CampaignBuilderSession>,
   secondary: Partial<CampaignBuilderSession>,
@@ -266,17 +299,25 @@ export function reconcilePreviewContent(
         ? milestone.platformFormats
         : defaultEnabledFormats();
 
+  const rawCaptions = content.captions ?? [
+    { platform: "facebook", text: "" },
+    { platform: "instagram", text: "" },
+  ];
+  const captionPlatforms = captionPlatformsForFormats(enabledFormats);
+  const captions =
+    captionPlatforms.length > 0
+      ? ensureSharedCaptionsForPlatforms(rawCaptions, captionPlatforms)
+      : rawCaptions;
+
   const normalized: MilestonePreviewContent = {
     ...content,
     artwork: normalizeMilestoneArtwork(content.artwork),
     enabledFormats,
-    captions: content.captions ?? [
-      { platform: "facebook", text: "" },
-      { platform: "instagram", text: "" },
-    ],
+    captions,
     emailSendDate: content.emailSendDate ?? content.scheduleDate,
     emailSendTime: content.emailSendTime ?? content.scheduleTime,
     manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",
+    manualUploadLink: content.manualUploadLink ?? "",
     approvalStatuses: content.approvalStatuses ?? defaultApprovalStatuses,
     generationStartedAt: content.generationStartedAt ?? null,
   };
@@ -445,7 +486,10 @@ export function normalizeCampaignBuilderSession(
   const inspiration = migrateLegacyCreativeFields(
     {
       ...raw.inspiration,
-      campaignId: raw.inspiration?.campaignId ?? eventId,
+      // Bind identity to the route event — never keep another campaign's id/title
+      // from a corrupted local/server snapshot (e.g. old Inspiration dropdown rename).
+      campaignId: eventId,
+      campaignName: eventTitle || defaults.inspiration.campaignName,
       primarySchoolColor:
         raw.inspiration?.primarySchoolColor ?? defaults.inspiration.primarySchoolColor,
       secondarySchoolColor:
@@ -469,7 +513,6 @@ export function normalizeCampaignBuilderSession(
           milestone.platformFormats ?? defaultEnabledFormats(),
         artworkNotes: sanitizeSeedNotes(milestone.artworkNotes),
         captionNotes: sanitizeSeedNotes(milestone.captionNotes),
-        purpose: sanitizeSeedPurpose(milestone.purpose, name),
         statusTag: milestone.statusTag ?? "not-started",
         sortOrder: milestone.sortOrder ?? index,
         creativeOverrides: normalizeMilestoneCreativeOverrides(
@@ -478,7 +521,19 @@ export function normalizeCampaignBuilderSession(
       };
     })
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((milestone, index) => ({ ...milestone, sortOrder: index }));
+    .map((milestone, index) => {
+      const isFirstMilestone = isFirstCampaignMilestone(index);
+      const category = isFirstMilestone ? "awareness" : milestone.category;
+      return {
+        ...milestone,
+        sortOrder: index,
+        category,
+        purpose: sanitizeSeedPurpose(milestone.purpose, milestone.name, {
+          category,
+          isFirstMilestone,
+        }),
+      };
+    });
 
   const rawMilestones = raw.milestones ?? defaults.milestones;
   const rawPreviews = (raw.previewContents ?? defaults.previewContents).map(

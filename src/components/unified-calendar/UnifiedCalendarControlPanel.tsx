@@ -199,7 +199,9 @@ export function UnifiedCalendarControlPanel({
             );
           })}
 
-          {view === "week" && onShowPostingHeatmapChange && (
+          {view === "week" &&
+            postingHeatmap != null &&
+            onShowPostingHeatmapChange && (
             <>
               <span className="mx-1 hidden h-4 w-px bg-cos-border sm:inline-block" aria-hidden />
               <button
@@ -220,7 +222,7 @@ export function UnifiedCalendarControlPanel({
         </div>
       )}
 
-      {view === "week" && showPostingHeatmap && (
+      {view === "week" && showPostingHeatmap && postingHeatmap != null && (
         <div className="flex flex-wrap items-center gap-3 border-b border-cos-border bg-cos-bg/30 px-5 py-2.5 text-xs text-cos-muted">
           <span>Darker = families more likely to see posts</span>
           <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />

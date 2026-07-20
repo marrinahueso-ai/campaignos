@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import {
   MILESTONE_STATUS_LABELS,
-  inferGenerationStatus,
+  resolveMilestoneGenerationStatus,
   sortedMilestones,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import { cn } from "@/lib/utils/cn";
@@ -93,18 +93,15 @@ export function MilestoneRail({
       <ul className="divide-y divide-cos-border">
         {sortedMilestones(milestones).map((milestone) => {
           const preview = previewById.get(milestone.id);
-          const enabledFormats =
-            preview?.enabledFormats && preview.enabledFormats.length > 0
-              ? preview.enabledFormats
-              : milestone.platformFormats;
           const isGenerating =
             generatingMilestoneId === milestone.id ||
             preview?.generationStatus === "generating";
           const status: MilestoneGenerationStatus = isGenerating
             ? "generating"
-            : preview
-              ? inferGenerationStatus(preview, enabledFormats)
-              : "ready_to_generate";
+            : resolveMilestoneGenerationStatus(
+                preview,
+                milestone.platformFormats,
+              );
           const style = STATUS_STYLES[status];
           const StatusIcon = style.icon;
           const isSelected = milestone.id === selectedMilestoneId;

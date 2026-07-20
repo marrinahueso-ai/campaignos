@@ -5,26 +5,21 @@ import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
-import {
-  resolveMemberEditContext,
-  updateCommitteeChairNames,
-} from "@/components/settings-v2/team-access/member-edit-utils";
+import { resolveMemberEditContext } from "@/components/settings-v2/team-access/member-edit-utils";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
-import type { UnifiedTeamMember } from "@/components/settings-v2/team-access/team-access-utils";
 import {
-  setRosterMemberAccessLevelAction,
-  setTeamMemberAccessLevelAction,
-  updateTeamMemberAction,
-} from "@/lib/auth/actions";
+  isCurrentUserTeamMember,
+  type UnifiedTeamMember,
+} from "@/components/settings-v2/team-access/team-access-utils";
+import { updateTeamMemberAction } from "@/lib/auth/actions";
 import {
   CAMPAIGN_ROLES,
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { resolveAccessTemplateSelection } from "@/lib/access-templates/merge";
+import type { AccessTemplate } from "@/lib/access-templates/types";
 import {
-  createOrganizationMemberAction,
-  updateOrganizationCommitteeAction,
   updateOrganizationMemberAction,
   updateOrganizationRoleAction,
 } from "@/lib/organization-workspace/actions";
@@ -41,15 +36,19 @@ interface TeamAccessEditMemberModalProps {
   roles: OrganizationRole[];
   committees: OrganizationCommittee[];
   workspace: OrganizationWorkspaceData;
+  accessLabels?: Partial<Record<string, string>> | null;
+  accessTemplates?: AccessTemplate[];
+  currentUserEmail?: string | null;
 }
 
 export function TeamAccessEditMemberModal({
   open,
   onClose,
   member,
-  roles,
-  committees,
   workspace,
+  accessLabels = null,
+  accessTemplates = [],
+  currentUserEmail = null,
 }: TeamAccessEditMemberModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -65,7 +64,8 @@ export function TeamAccessEditMemberModal({
   }
 
   const canSave =
-    editContext.source.kind !== "org_member" || Boolean(editContext.source.memberId);
+    editContext.source.kind !== "org_member" ||
+    Boolean(editContext.source.memberId);
 
   if (!canSave) {
     return null;
@@ -74,29 +74,82 @@ export function TeamAccessEditMemberModal({
   const activeMember = member;
   const activeEditContext = editContext;
 
+  /** Access templates are the real assignable roles. */
+  const canEditAccessRole =
+    activeEditContext.canEditAccess ||
+    (activeEditContext.source.kind === "org_member" &&
+      Boolean(activeEditContext.source.memberId));
+
+  const accessSelectOptions =
+    accessTemplates.length > 0
+      ? accessTemplates.map((template) => ({
+          id: template.id,
+          label: template.displayName,
+        }))
+      : CAMPAIGN_ROLES.map((role) => ({
+          id: role,
+          label: accessLabels?.[role] ?? campaignRoleLabel(role as CampaignRole),
+        }));
+
+  const defaultRoleId =
+    activeMember.accessTemplateId ??
+    activeMember.accessLevel ??
+    "contributor";
+  const isSelf = isCurrentUserTeamMember(activeMember, currentUserEmail);
+  const canEditStatus = activeEditContext.canEditStatus && !isSelf;
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const fullName = formData.get("fullName")?.toString()?.trim() ?? activeMember.displayName;
-    const email = formData.get("email")?.toString()?.trim() ?? activeMember.email;
+    const fullName =
+      formData.get("fullName")?.toString()?.trim() ?? activeMember.displayName;
+    const emailRaw = formData.get("email")?.toString()?.trim() ?? "";
+    const email = emailRaw || null;
     const phone = formData.get("phone")?.toString()?.trim() || null;
-    const organizationRoleId = (formData.get("organizationRoleId") as string) || null;
-    const campaignRole = formData.get("campaignRole") as CampaignRole;
-    const status = formData.get("status") as "active" | "deactivated" | "archived";
-    const committeeId = (formData.get("committeeId") as string) || null;
-    const committeeRole =
-      (formData.get("committeeRole") as "chair" | "co_chair" | "member") || "member";
-    const notes = formData.get("notes")?.toString()?.trim() || null;
+    const roleSelectionRaw =
+      formData.get("accessRole")?.toString() ?? defaultRoleId;
+    const status = formData.get("status") as "active" | "deactivated";
+
+    const selection =
+      resolveAccessTemplateSelection(accessTemplates, roleSelectionRaw) ??
+      (CAMPAIGN_ROLES.includes(roleSelectionRaw as CampaignRole)
+        ? {
+            templateId: roleSelectionRaw,
+            campaignRole: roleSelectionRaw as CampaignRole,
+          }
+        : null);
 
     startTransition(async () => {
       const { source } = activeEditContext;
 
-      if (source.kind === "org_user") {
+      if (!selection && canEditAccessRole) {
+        setError("Choose a role from Access templates.");
+        return;
+      }
+
+      // Login seat: Role = access template (assigns real permissions).
+      if (activeMember.raw && selection) {
+        const result = await updateTeamMemberAction(activeMember.raw.id, {
+          campaignRole: selection.templateId,
+          status: canEditStatus
+            ? status === "deactivated"
+              ? "deactivated"
+              : "active"
+            : undefined,
+        });
+        if (result.error) {
+          setError(result.error);
+          return;
+        }
+      } else if (source.kind === "org_user" && selection) {
         const result = await updateTeamMemberAction(source.membershipId, {
-          organizationRoleId: organizationRoleId || null,
-          campaignRole,
-          status: status === "deactivated" ? "deactivated" : "active",
+          campaignRole: selection.templateId,
+          status: canEditStatus
+            ? status === "deactivated"
+              ? "deactivated"
+              : "active"
+            : undefined,
         });
         if (result.error) {
           setError(result.error);
@@ -104,33 +157,11 @@ export function TeamAccessEditMemberModal({
         }
       }
 
-      if (
-        activeEditContext.canEditAccess &&
-        !activeMember.raw &&
-        source.kind !== "org_user"
-      ) {
-        const accessResult = email
-          ? await setTeamMemberAccessLevelAction({
-              email,
-              organizationRoleId: organizationRoleId || activeMember.organizationRoleId,
-              campaignRole,
-            })
-          : await setRosterMemberAccessLevelAction({
-              source,
-              campaignRole,
-            });
-        if (accessResult.error) {
-          setError(accessResult.error);
-          return;
-        }
-      }
-
       if (source.kind === "org_role") {
         const result = await updateOrganizationRoleAction(source.roleId, {
           contactName: fullName,
-          contactEmail: email || null,
+          contactEmail: email,
           contactPhone: phone,
-          description: notes,
         });
         if (result.error) {
           setError(result.error);
@@ -139,11 +170,14 @@ export function TeamAccessEditMemberModal({
       }
 
       if (source.kind === "org_member") {
+        // Roster can store system campaign_role only (DB check). Custom
+        // templates resolve to their base role until invite.
         const result = await updateOrganizationMemberAction(source.memberId, {
           name: fullName,
-          email: email || activeMember.email,
-          organizationRoleId: organizationRoleId || null,
-          active: status !== "archived" && status !== "deactivated",
+          email,
+          phone,
+          active: status !== "deactivated",
+          campaignRole: selection?.campaignRole ?? null,
         });
         if (result.error) {
           setError(result.error);
@@ -152,65 +186,10 @@ export function TeamAccessEditMemberModal({
       }
 
       if (source.kind === "committee") {
-        const committee = committees.find((entry) => entry.id === source.committeeId);
-        if (!committee) {
-          setError("Committee not found.");
-          return;
-        }
-
-        const contactName = updateCommitteeChairNames(
-          committee,
-          fullName,
-          source.committeeRole,
+        setError(
+          "Manage this person’s role from their profile after they are on the roster.",
         );
-
-        const result = await updateOrganizationCommitteeAction(source.committeeId, {
-          contactName,
-          contactEmail: email || null,
-          contactPhone: phone,
-          parentRoleId: organizationRoleId,
-        });
-        if (result.error) {
-          setError(result.error);
-          return;
-        }
-      }
-
-      if (committeeId && committeeId !== activeEditContext.defaultCommitteeId) {
-        const committee = committees.find((entry) => entry.id === committeeId);
-        if (committee) {
-          const contactName = updateCommitteeChairNames(
-            committee,
-            fullName,
-            committeeRole,
-          );
-          const result = await updateOrganizationCommitteeAction(committeeId, {
-            contactName,
-            contactEmail: email || null,
-            contactPhone: phone,
-          });
-          if (result.error) {
-            setError(result.error);
-            return;
-          }
-        }
-      }
-
-      if (
-        !activeMember.raw &&
-        source.kind !== "org_member" &&
-        source.kind !== "committee" &&
-        source.kind !== "org_role" &&
-        email
-      ) {
-        await createOrganizationMemberAction({ error: null, success: false }, (() => {
-          const payload = new FormData();
-          payload.set("name", fullName);
-          payload.set("email", email);
-          payload.set("organizationRoleId", organizationRoleId ?? "");
-          payload.set("active", status === "active" ? "true" : "false");
-          return payload;
-        })());
+        return;
       }
 
       setError(null);
@@ -219,18 +198,25 @@ export function TeamAccessEditMemberModal({
     });
   }
 
+  const defaultStatus =
+    activeMember.status === "deactivated" ? "deactivated" : "active";
+
   return (
     <TeamAccessModal
       open={open}
       onClose={onClose}
-      title="Edit member"
+      title="Edit person"
       subtitle={activeMember.displayName}
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" form="edit-member-form" disabled={isPending || !canSave}>
+          <Button
+            type="submit"
+            form="edit-member-form"
+            disabled={isPending || !canSave}
+          >
             Save changes
           </Button>
         </div>
@@ -260,90 +246,50 @@ export function TeamAccessEditMemberModal({
           readOnly={!activeEditContext.canEditPhone}
           disabled={!activeEditContext.canEditPhone}
         />
-        {activeEditContext.canEditRole && !activeEditContext.canEditVpPortfolio ? (
-          <Select
-            name="organizationRoleId"
-            label="Role"
-            defaultValue={activeMember.organizationRoleId ?? ""}
-          >
-            <option value="">No org role</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </Select>
-        ) : null}
-        {activeEditContext.canEditAccess ? (
-          <Select
-            name="campaignRole"
-            label="Access level"
-            defaultValue={activeMember.accessLevel}
-          >
-            {CAMPAIGN_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {campaignRoleLabel(role as CampaignRole)}
-              </option>
-            ))}
-          </Select>
-        ) : null}
-        {activeEditContext.canEditVpPortfolio ? (
-          <Select
-            name="organizationRoleId"
-            label="VP portfolio"
-            defaultValue={activeEditContext.defaultVpPortfolioId ?? ""}
-          >
-            <option value="">None</option>
-            {roles
-              .filter((role) => role.roleKind === "vp" || role.roleKind === "president")
-              .map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-          </Select>
-        ) : null}
-        {activeEditContext.canEditCommittee ? (
-          <>
+
+        {canEditAccessRole ? (
+          <div className="space-y-1.5">
             <Select
-              name="committeeId"
-              label="Assigned committee"
-              defaultValue={activeEditContext.defaultCommitteeId ?? ""}
+              name="accessRole"
+              label="Role"
+              defaultValue={defaultRoleId}
+              required
             >
-              <option value="">None</option>
-              {committees.map((committee) => (
-                <option key={committee.id} value={committee.id}>
-                  {committee.name}
+              {accessSelectOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
                 </option>
               ))}
             </Select>
-            <Select
-              name="committeeRole"
-              label="Committee role"
-              defaultValue={activeEditContext.defaultCommitteeRole ?? "member"}
-            >
-              <option value="chair">Chair</option>
-              <option value="co_chair">Co-chair</option>
-              <option value="member">Member</option>
-            </Select>
-          </>
+            <p className="text-xs text-cos-muted">
+              From Access templates — this sets what they can do when they log
+              in. Rename roles under People → Access templates.
+            </p>
+          </div>
         ) : null}
-        {activeEditContext.canEditStatus ? (
-          <Select name="status" label="Status" defaultValue={activeMember.status}>
+
+        {canEditStatus ? (
+          <Select name="status" label="Login status" defaultValue={defaultStatus}>
             <option value="active">Active</option>
-            <option value="invited">Pending invite</option>
             <option value="deactivated">Deactivated</option>
-            <option value="archived">Archived</option>
-            <option value="roster">Roster</option>
           </Select>
+        ) : isSelf && activeEditContext.canEditStatus ? (
+          <p className="text-xs leading-relaxed text-cos-muted">
+            You cannot deactivate your own account. Ask another admin if you need
+            access removed.
+          </p>
         ) : null}
-        <Textarea
-          name="notes"
-          label="Notes"
-          rows={3}
-          placeholder="Optional notes about this member"
-        />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+        <p className="text-xs leading-relaxed text-cos-muted">
+          Event assignments are managed on the person&apos;s{" "}
+          <span className="font-medium">Events</span> tab.
+        </p>
+
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
       </form>
     </TeamAccessModal>
   );

@@ -5,12 +5,20 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/google-calendar-sync",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/cron/meta-publish",
       "schedule": "0 14 * * *"
     },
     {
       "path": "/api/cron/story-post-reminders",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/manual-upload-emails",
+      "schedule": "30 13 * * *"
     },
     {
       "path": "/api/cron/inbox-sync",

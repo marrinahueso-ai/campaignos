@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { VendorFieldSelect } from "@/components/vendors/VendorFieldSelect";
 import { Textarea } from "@/components/ui/Textarea";
-import { createVendorAction } from "@/lib/vendors/actions";
+import { createVendorAction, assignVendorToEventAction } from "@/lib/vendors/actions";
 import type {
   CreateVendorInput,
   VendorAssignmentStatus,
@@ -58,6 +58,7 @@ export function VendorAddModal({
     eventId: defaultEventId ?? null,
   });
   const [error, setError] = useState<string | null>(null);
+  const [existingVendorId, setExistingVendorId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const categoryOptions = useMemo(
@@ -80,19 +81,57 @@ export function VendorAddModal({
     setStep("basics");
     setForm({ ...EMPTY_FORM, eventId: defaultEventId ?? null });
     setError(null);
+    setExistingVendorId(null);
     onClose();
   }
 
   function handleSubmit() {
     setError(null);
+    setExistingVendorId(null);
     startTransition(async () => {
       const result = await createVendorAction(form);
       if (!result.success || !result.vendorId) {
         setError(result.error ?? "Unable to create vendor.");
+        setExistingVendorId(result.existingVendorId ?? null);
         return;
       }
       onCreated?.(result.vendorId);
       resetAndClose();
+    });
+  }
+
+  function handleLinkExisting() {
+    const eventId = form.eventId ?? defaultEventId ?? null;
+    if (!existingVendorId) {
+      setError(
+        "Could not identify the existing vendor to link. Close and use Add Existing, or change the email.",
+      );
+      return;
+    }
+    if (!eventId) {
+      setError(
+        "No event selected to link this vendor to. Go back and choose an event.",
+      );
+      return;
+    }
+
+    startTransition(async () => {
+      try {
+        const result = await assignVendorToEventAction(
+          existingVendorId,
+          eventId,
+          form.assignmentStatus ?? "pending",
+        );
+        if (!result.success) {
+          setError(result.error ?? "Unable to link existing vendor.");
+          return;
+        }
+        onCreated?.(existingVendorId);
+        resetAndClose();
+      } catch (linkError) {
+        console.error("Link existing vendor failed:", linkError);
+        setError("Unable to link existing vendor. Please try Add Existing instead.");
+      }
     });
   }
 
@@ -263,7 +302,10 @@ export function VendorAddModal({
               <ReviewItem
                 label="Event"
                 value={
-                  events.find((event) => event.id === form.eventId)?.title ?? "None"
+                  events.find(
+                    (event) =>
+                      event.id === (form.eventId ?? defaultEventId ?? ""),
+                  )?.title ?? "None"
                 }
               />
               <ReviewItem label="Notes" value={form.notes || "—"} />
@@ -271,9 +313,29 @@ export function VendorAddModal({
           )}
 
           {error && (
-            <p className="mt-4 text-sm text-red-600" role="alert">
-              {error}
-            </p>
+            <div className="mt-4 space-y-3" role="alert">
+              <p className="text-sm text-red-600">{error}</p>
+              {existingVendorId ? (
+                <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-3">
+                  <p className="text-sm text-cos-muted">
+                    {(form.eventId ?? defaultEventId)
+                      ? "Link the existing vendor to this event instead of creating a duplicate."
+                      : "An existing vendor matched. Go back and choose an event, then link them."}
+                  </p>
+                  {(form.eventId ?? defaultEventId) ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-2"
+                      onClick={handleLinkExisting}
+                      disabled={pending}
+                    >
+                      {pending ? "Linking..." : "Link existing vendor to event"}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
 
@@ -314,9 +376,21 @@ export function VendorAddModal({
               </Button>
             )}
             {step === "review" && (
-              <Button type="button" onClick={handleSubmit} disabled={pending}>
-                {pending ? "Saving..." : "Create Vendor"}
-              </Button>
+              <>
+                {existingVendorId && (form.eventId ?? defaultEventId) ? (
+                  <Button
+                    type="button"
+                    onClick={handleLinkExisting}
+                    disabled={pending}
+                  >
+                    {pending ? "Linking..." : "Link existing vendor to event"}
+                  </Button>
+                ) : (
+                  <Button type="button" onClick={handleSubmit} disabled={pending}>
+                    {pending ? "Saving..." : "Create Vendor"}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

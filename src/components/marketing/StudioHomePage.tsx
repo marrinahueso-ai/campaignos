@@ -69,6 +69,9 @@ export function StudioHomePage({
             alt=""
             fill
             priority
+            fetchPriority="high"
+            loading="eager"
+            quality={75}
             sizes="(max-width: 1024px) 100vw, 58vw"
             className="object-cover object-[center_40%]"
           />
@@ -81,7 +84,7 @@ export function StudioHomePage({
           <h1 className="font-display mt-5 max-w-xl text-[2.75rem] leading-[1.05] text-cos-text sm:text-6xl lg:text-[4.25rem]">
             Your campaign workspace, designed like a studio.
           </h1>
-          <p className="mt-6 max-w-lg text-base leading-relaxed text-cos-muted sm:text-lg">
+          <p className="mt-6 max-w-lg text-base leading-relaxed text-cos-text/75 sm:text-lg">
             Plan events, create artwork, draft captions, and publish — all in one
             warm, focused space built for busy PTO teams.
           </p>
@@ -89,7 +92,7 @@ export function StudioHomePage({
           <div className="mt-8 flex flex-wrap items-center gap-4">
             {!isSignedIn && showNewSchoolPath && (
               <Button href={startSchoolHref} size="lg">
-                Start your PTO workspace
+                Start your organization
                 <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
               </Button>
             )}
@@ -101,7 +104,7 @@ export function StudioHomePage({
             )}
             <Link
               href="/pricing"
-              className="text-sm tracking-wide text-cos-muted transition-colors hover:text-cos-text"
+              className="text-sm tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
             >
               Pricing from $29
             </Link>
@@ -111,7 +114,7 @@ export function StudioHomePage({
             <div className="mt-10 flex flex-wrap items-center gap-4">
               {needsSchoolSetup ? (
                 <Button href={SCHOOL_SETUP_PATH} size="lg">
-                  Start school setup
+                  Start organization setup
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               ) : (
@@ -131,7 +134,7 @@ export function StudioHomePage({
                 </div>
                 <div>
                   <p className="font-display text-xl text-cos-text">{title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-cos-muted">{description}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-cos-text/70">{description}</p>
                 </div>
               </li>
             ))}
@@ -162,28 +165,28 @@ export function StudioHomePage({
               <h2 className="font-display text-3xl text-[#f6f2eb] sm:text-4xl">
                 {isSignedIn
                   ? needsSchoolSetup
-                    ? "Start your school"
+                    ? "Start your organization"
                     : "Welcome back"
                   : invitePreview
                     ? "Join your team"
                     : showSetupForm
                       ? foundingCodeRetry
                         ? "Confirm your access code"
-                        : "Start your school"
+                        : "Start your organization"
                       : "Sign in"}
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-cos-dark-muted">
                 {isSignedIn
                   ? needsSchoolSetup
-                    ? "You're signed in. Set up your PTO workspace — school profile, brand kit, and calendar — in a few minutes."
+                    ? "You're signed in. Set up your organization workspace — profile, brand kit, and calendar — in a few minutes."
                     : "Your studio is ready. Pick up where you left off in your campaign workspace."
                   : invitePreview
                     ? `You're invited to ${invitePreview.organizationName}. Sign in to join your team.`
                     : showSetupForm
                       ? foundingCodeRetry
-                        ? "Your sign-in link worked. Re-enter your founding access code to continue to school setup."
-                        : "Enter your email and founding access code to create your account — then we'll walk you through school setup."
-                      : "Returning to your workspace? Sign in below. Starting a new school? Choose Start your PTO workspace above."}
+                        ? "Your sign-in link worked. Re-enter your founding access code to continue organization setup."
+                        : "Enter your email and founding access code to create your account — then we'll walk you through organization setup."
+                      : "Returning to your workspace? Sign in below. Starting a new organization? Choose Start your workspace above."}
               </p>
             </div>
 
@@ -201,11 +204,19 @@ export function StudioHomePage({
                     , or use an invite link to join another team.
                   </p>
                 )}
+                {authError === "account_deactivated" && (
+                  <p className="text-sm text-red-600">
+                    Your account has been deactivated for this workspace. Contact
+                    an admin to be reinvited — this is not a new organization signup.
+                  </p>
+                )}
                 <p className="text-sm text-cos-muted">{userEmail}</p>
-                <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
-                  {needsSchoolSetup ? "Start school setup" : "Go to your workspace"}
-                  <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
-                </Button>
+                {authError === "account_deactivated" ? null : (
+                  <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
+                    {needsSchoolSetup ? "Start organization setup" : "Go to your workspace"}
+                    <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
+                )}
                 <form action="/auth/signout" method="POST">
                   <button
                     type="submit"
@@ -240,12 +251,12 @@ export function StudioHomePage({
                     <p className="font-medium">
                       {foundingCodeRetry
                         ? "Almost there"
-                        : "Starting a new PTO workspace"}
+                        : "Starting a new organization"}
                     </p>
                     <p className="mt-1 text-cos-dark-muted">
                       {foundingCodeRetry
                         ? "Enter the same founding access code you used when requesting your sign-in link."
-                        : "Enter your email and founding partner access code below. We'll send you a link to create your account and start school setup. Need a code? "}
+                        : "Enter your email and founding partner access code below. We'll send you a link to create your account and set up your organization. Need a code? "}
                       {!foundingCodeRetry && (
                         <>
                           <a
@@ -264,9 +275,9 @@ export function StudioHomePage({
                 {!invitePreview && !showSetupForm && (
                   <div className="mb-6 border border-cos-dark-muted/25 bg-white/5 px-4 py-3 text-sm text-[#f6f2eb]">
                     <p>
-                      <span className="font-medium">New school?</span>{" "}
+                      <span className="font-medium">New organization?</span>{" "}
                       <Link href={startSchoolHref} className="text-cos-accent underline-offset-2 hover:underline">
-                        Start your PTO workspace
+                        Start your workspace
                       </Link>
                       .{" "}
                       <span className="font-medium">Joining a team?</span> Use the invite link your admin sent.
@@ -283,7 +294,7 @@ export function StudioHomePage({
                 {authError === "code_required" && (
                   <p className="mb-4 text-sm text-red-300">
                     A valid founding access code is required to start a new
-                    school workspace. Enter your email and code below.
+                    organization. Enter your email and code below.
                   </p>
                 )}
 
@@ -302,8 +313,31 @@ export function StudioHomePage({
 
                 {authError === "org_required" && (
                   <p className="mb-4 text-sm text-red-300">
-                    Finish creating your school workspace with a founding access
+                    Finish creating your organization with a founding access
                     code before using Hey Ralli.
+                  </p>
+                )}
+
+                {authError === "account_deactivated" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    Your account has been deactivated. Contact an admin to be
+                    reinvited — this is not a new organization signup.
+                  </p>
+                )}
+
+                {authError === "invite_email" && (
+                  <p className="mb-4 text-sm text-red-300">
+                    Sign in with the invited email
+                    {invitePreview?.email ? (
+                      <>
+                        {" "}
+                        (<span className="font-medium text-white">
+                          {invitePreview.email}
+                        </span>
+                      </>
+                    ) : null}{" "}
+                    (Google or Magic link) to join this team. This is not a new
+                    organization signup.
                   </p>
                 )}
 

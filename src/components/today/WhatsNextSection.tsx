@@ -64,6 +64,7 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
               artwork={artwork}
               eventTitle={eventTitle}
               variant="card"
+              priority
               caption={
                 artwork.source === "approved_asset" ? "Artwork ready" : null
               }

@@ -6,13 +6,14 @@ import {
   Eye,
   Heart,
   MessageCircle,
+  RefreshCw,
   Share2,
   TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { ConnectionHealthBanner } from "@/components/insights/ConnectionHealthBanner";
-import { InsightsAiFooter } from "@/components/insights/InsightsAiFooter";
+import { InsightsRecommendationsFooter } from "@/components/insights/InsightsRecommendationsFooter";
 import { InsightsDateRangeSelector } from "@/components/insights/InsightsDateRangeSelector";
 import { InsightsEmptyState } from "@/components/insights/InsightsEmptyState";
 import { InsightsKpiCards } from "@/components/insights/InsightsKpiCards";
@@ -23,10 +24,7 @@ import { PlatformComparison } from "@/components/insights/PlatformComparison";
 import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
-import {
-  formatDateRangeLabel,
-  getPreviousPeriod,
-} from "@/lib/insights/date-range";
+import { getInsightsDataNote } from "@/lib/insights/connection-messages";
 import { formatInsightsNumber } from "@/lib/insights/format";
 import type { InsightsPageData, InsightsPlatform } from "@/lib/insights/types";
 import { cn } from "@/lib/utils/cn";
@@ -49,12 +47,6 @@ export function InsightsHub({ data }: InsightsHubProps) {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const previousPeriod = useMemo(
-    () => getPreviousPeriod(data.dateRange.from, data.dateRange.to),
-    [data.dateRange.from, data.dateRange.to],
-  );
-  const previousLabel = formatDateRangeLabel(previousPeriod.from, previousPeriod.to);
-
   const exportHref = `/api/insights/export?from=${encodeURIComponent(data.dateRange.from)}&to=${encodeURIComponent(data.dateRange.to)}`;
 
   const showConnectEmpty = !data.connection.metaConnected;
@@ -62,6 +54,7 @@ export function InsightsHub({ data }: InsightsHubProps) {
     data.connection.metaConnected &&
     !data.hasAnyMetrics &&
     !data.syncInProgress;
+  const dataNote = getInsightsDataNote(data.connection);
 
   function handleSync() {
     startTransition(async () => {
@@ -84,30 +77,49 @@ export function InsightsHub({ data }: InsightsHubProps) {
   }
 
   return (
-    <div className="studio-page space-y-8 pb-12">
-      <header className="flex flex-col gap-6 border-b border-cos-border pb-8 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
+    <div className="studio-page space-y-6 pb-12">
+      <header className="flex flex-col gap-4 border-b border-cos-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 space-y-2">
           <p className="studio-eyebrow">Analytics</p>
-          <div className="flex items-center gap-3">
-            <BarChart3 className="h-6 w-6 text-cos-accent" strokeWidth={1.5} />
-            <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
-              Insights &amp; Analytics
+          <div className="flex items-center gap-2.5">
+            <BarChart3 className="h-6 w-6 text-cos-accent" strokeWidth={1.75} />
+            <h1 className="font-display text-3xl text-cos-text sm:text-4xl">
+              Insights
             </h1>
           </div>
-          <p className="max-w-2xl text-sm leading-relaxed text-cos-muted sm:text-base">
-            Track performance across your social channels and content.
+          <p className="max-w-xl text-sm text-cos-muted">
+            How your Facebook and Instagram posts performed for{" "}
+            {data.organizationName || "your organization"}.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <InsightsDateRangeSelector
             currentFrom={data.dateRange.from}
             currentTo={data.dateRange.to}
             currentLabel={data.dateRange.label}
           />
+          {!showConnectEmpty ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={handleSync}
+              disabled={isPending || data.syncInProgress || showSyncEmpty}
+            >
+              <RefreshCw
+                className={cn(
+                  "mr-2 h-4 w-4",
+                  (isPending || data.syncInProgress) && "animate-spin",
+                )}
+                strokeWidth={1.5}
+              />
+              {isPending || data.syncInProgress ? "Syncing…" : "Refresh"}
+            </Button>
+          ) : null}
           <Button href={exportHref} variant="primary" size="md">
             <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
-            Export Report
+            Export
           </Button>
         </div>
       </header>
@@ -115,7 +127,7 @@ export function InsightsHub({ data }: InsightsHubProps) {
       <ConnectionHealthBanner connection={data.connection} />
 
       {syncMessage ? (
-        <p className="text-sm text-cos-muted" role="status">
+        <p className="rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-muted" role="status">
           {syncMessage}
         </p>
       ) : null}
@@ -136,116 +148,94 @@ export function InsightsHub({ data }: InsightsHubProps) {
         />
       ) : null}
 
-      {!showConnectEmpty ? (
-        <>
+      {!showConnectEmpty && !showSyncEmpty ? (
+        <div className="space-y-6">
           <InsightsKpiCards
             kpis={data.kpis}
             icons={KPI_ICONS}
-            comparisonLabel={`vs ${previousLabel}`}
+            comparisonLabel="vs prior"
           />
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-            <InsightsSectionCard
-              title="Performance Over Time"
-              action={
-                <div className="flex items-center gap-1 rounded-full border border-cos-border bg-cos-bg p-1 text-xs">
-                  {(["all", "facebook", "instagram"] as const).map((platform) => (
-                    <button
-                      key={platform}
-                      type="button"
-                      onClick={() => setPlatformFilter(platform)}
-                      className={cn(
-                        "rounded-full px-3 py-1 capitalize transition-colors",
-                        platformFilter === platform
-                          ? "bg-cos-primary text-[#f6f2eb]"
-                          : "text-cos-muted hover:text-cos-text",
-                      )}
-                    >
-                      {platform}
-                    </button>
-                  ))}
-                </div>
-              }
-            >
-              <PerformanceChart
-                series={data.timeSeries}
-                platform={platformFilter}
-                emptyMessage={
-                  data.timeSeries.all.length === 0
-                    ? "No daily metrics stored for this period. Sync insights from Meta to populate this chart."
-                    : null
-                }
-              />
-            </InsightsSectionCard>
+          <InsightsRecommendationsFooter
+            recommendation={data.recommendation}
+            dataNote={dataNote}
+            pageName={data.connection.pageName}
+          />
 
-            <LiveActivityFeed events={data.activity} />
-          </div>
-
-          <div
-            className={cn(
-              "grid gap-6",
-              data.audienceAvailable ? "lg:grid-cols-3" : "lg:grid-cols-2",
-            )}
+          <InsightsSectionCard
+            title="Performance over time"
+            action={
+              <div className="flex items-center gap-0.5 rounded-full border border-cos-border bg-cos-bg p-0.5 text-xs">
+                {(["all", "facebook", "instagram"] as const).map((platform) => (
+                  <button
+                    key={platform}
+                    type="button"
+                    onClick={() => setPlatformFilter(platform)}
+                    className={cn(
+                      "rounded-full px-3 py-1 capitalize transition-colors",
+                      platformFilter === platform
+                        ? "bg-cos-dark text-[#f6f2eb]"
+                        : "text-cos-muted hover:text-cos-text",
+                    )}
+                  >
+                    {platform}
+                  </button>
+                ))}
+              </div>
+            }
           >
-            {data.audienceAvailable ? (
-              <InsightsSectionCard title="Audience Overview">
-                <p className="text-sm text-cos-muted">
-                  Audience demographics are not available for this account.
-                </p>
-              </InsightsSectionCard>
-            ) : null}
+            <PerformanceChart
+              series={data.timeSeries}
+              platform={platformFilter}
+              emptyMessage={
+                data.timeSeries.all.length === 0
+                  ? "No daily metrics stored for this period. Sync insights from Meta to populate this chart."
+                  : null
+              }
+            />
+          </InsightsSectionCard>
 
-            <InsightsSectionCard title="Content Breakdown">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <InsightsSectionCard title="Content breakdown">
               {data.contentBreakdown.length > 0 ? (
                 <div className="space-y-3">
                   {data.contentBreakdown.map((item) => (
-                    <div key={item.label} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-cos-text">{item.label}</span>
-                        <span className="text-cos-muted">
-                          {item.count} post{item.count === 1 ? "" : "s"} ·{" "}
-                          {formatInsightsNumber(item.engagement)} eng · {item.percent}%
+                    <div key={item.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span className="truncate font-medium text-cos-text">
+                          {item.label}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-cos-muted">
+                          {item.percent}%
                         </span>
                       </div>
-                      <div className="h-2 bg-cos-bg">
+                      <div className="h-2 overflow-hidden rounded-full bg-cos-bg">
                         <div
-                          className="h-full bg-cos-accent"
+                          className="h-full rounded-full bg-cos-accent"
                           style={{ width: `${item.percent}%` }}
                         />
                       </div>
+                      <p className="text-[11px] text-cos-muted">
+                        {item.count} post{item.count === 1 ? "" : "s"} ·{" "}
+                        {formatInsightsNumber(item.engagement)} eng
+                      </p>
                     </div>
                   ))}
-                  <p className="pt-2 text-[11px] text-cos-muted">
-                    Based on synced post insights in this date range.
-                  </p>
                 </div>
               ) : (
                 <p className="text-sm text-cos-muted">
-                  No post-level insights stored for this period.
+                  No post-level insights for this period.
                 </p>
               )}
             </InsightsSectionCard>
 
             <PlatformComparison platforms={data.platformComparison} />
+
+            <LiveActivityFeed events={data.activity} />
           </div>
 
           <TopPerformingPosts posts={data.topPosts} />
-
-          {!showSyncEmpty ? (
-            <div className="flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleSync}
-                disabled={isPending || data.syncInProgress}
-              >
-                {isPending || data.syncInProgress ? "Syncing…" : "Refresh from Meta"}
-              </Button>
-            </div>
-          ) : null}
-
-          <InsightsAiFooter recommendation={data.recommendation} />
-        </>
+        </div>
       ) : null}
     </div>
   );

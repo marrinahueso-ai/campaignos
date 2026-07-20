@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { defaultStrategyForCalendarImport } from "@/lib/events/communication-strategy";
@@ -5,6 +6,12 @@ import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
 import type { CalendarEventCategory, CalendarReviewEvent } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { EventType } from "@/types/playbooks";
+
+async function resolveDbClient(
+  client?: SupabaseClient,
+): Promise<SupabaseClient> {
+  return client ?? (await createClient());
+}
 
 export interface ImportEventPreference {
   eventNameKey: string;
@@ -19,8 +26,9 @@ export function normalizeEventNameKey(name: string): string {
 
 export async function getImportEventPreferencesMap(
   organizationId: string,
+  client?: SupabaseClient,
 ): Promise<Map<string, ImportEventPreference>> {
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(client);
   const { data, error } = await supabase
     .from("import_event_preferences")
     .select("event_name_key, category, event_type, communication_strategy")
@@ -79,8 +87,9 @@ export async function upsertImportEventPreference(input: {
   category: CalendarEventCategory;
   eventType: EventType | null;
   communicationStrategy: CommunicationStrategy;
+  client?: SupabaseClient;
 }): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(input.client);
   const now = new Date().toISOString();
   const eventNameKey = normalizeEventNameKey(input.eventName);
 
@@ -110,6 +119,7 @@ export async function upsertImportEventPreference(input: {
 export async function upsertImportPreferencesFromReviewEvents(
   organizationId: string,
   events: CalendarReviewEvent[],
+  client?: SupabaseClient,
 ): Promise<void> {
   await Promise.all(
     events.map((event) =>
@@ -122,6 +132,7 @@ export async function upsertImportPreferencesFromReviewEvents(
         communicationStrategy:
           event.communicationStrategy ??
           defaultStrategyForCalendarImport(event.name, event.category),
+        client,
       }),
     ),
   );

@@ -1,6 +1,7 @@
 import { MetaConnectionPanel } from "@/components/meta-publishing/MetaConnectionPanel";
 import { MetaInboxSettingsPanel } from "@/components/inbox/MetaInboxSettingsPanel";
 import { StudioPageHeader } from "@/components/layout/StudioPageHeader";
+import { Badge } from "@/components/ui/Badge";
 import {
   Card,
   CardDescription,
@@ -13,11 +14,12 @@ import {
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
+import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
 export const metadata = {
-  title: "Meta Publishing",
+  title: "Meta",
 };
 
 interface MetaPublishingSettingsPageProps {
@@ -28,6 +30,7 @@ interface MetaPublishingSettingsPageProps {
     scopes?: string;
     pages?: string;
     scope_warning?: string;
+    returnTo?: string;
   }>;
 }
 
@@ -42,36 +45,40 @@ export default async function MetaPublishingSettingsPage({
   const isConnected = isMetaConnectionConfigured(connection);
   const integrationConfigured = isMetaIntegrationConfigured();
 
+  const inboxNeedsAttention =
+    isConnected &&
+    (inboxConnection.metaReconnectRequired ||
+      (!inboxConnection.messagingReady && !inboxConnection.metaConfiguredViaEnv));
+
   const statusMessage =
     params.connected === "1"
-      ? params.scope_warning === "missing_engagement"
-        ? "Meta connected, but your Page token is still missing pages_manage_engagement for comment replies."
-        : "Meta connected successfully."
+      ? "You're connected. Publishing, inbox, and Insights are ready."
       : getMetaOAuthErrorMessage(params.error);
   const statusHint = params.error && params.hint ? params.hint : null;
-  const scopeWarningHint =
-    params.connected === "1" && params.scope_warning === "missing_engagement"
-      ? "Add pages_manage_engagement to your Login for Business configuration (campaignstudiopush2), set it to Ready for testing, then click Reconnect with Facebook once more. This is not a routine step — existing tokens never pick up new permissions automatically."
-      : null;
 
   return (
-    <div className="studio-page mx-auto max-w-2xl space-y-10 pb-12">
+    <div className="studio-page mx-auto max-w-xl space-y-8 pb-12">
       <StudioPageHeader
-        backHref="/settings"
-        title="Meta Publishing"
-        description={`Connect Facebook and Instagram once for ${organization?.name ?? "your PTO"}. Publishing, inbox DMs, and comments all use the same OAuth connection.`}
-        eyebrow="Configure"
+        backHref="/settings/integrations"
+        title="Facebook & Instagram"
+        description={
+          isConnected
+            ? `Connected for ${organization?.name ?? "your organization"}.`
+            : `Connect once for ${organization?.name ?? "your organization"}. Approve the list Facebook shows — that's it.`
+        }
+        eyebrow="Integrations"
       />
 
       {statusMessage && (
         <div
           className={
-            params.connected === "1" ? "text-sm text-emerald-700" : "space-y-2 text-sm text-red-600"
+            params.connected === "1"
+              ? "text-sm text-emerald-700"
+              : "space-y-2 text-sm text-red-600"
           }
           role="status"
         >
           <p>{statusMessage}</p>
-          {scopeWarningHint ? <p className="text-amber-800">{scopeWarningHint}</p> : null}
           {statusHint ? <p className="text-cos-muted">{statusHint}</p> : null}
           {params.error === "no_pages" && params.pages ? (
             <p className="text-cos-muted">
@@ -81,48 +88,50 @@ export default async function MetaPublishingSettingsPage({
               IDs on your server, then reconnect.
             </p>
           ) : null}
-          {params.error === "no_pages" ? (
-            <p className="text-cos-muted">
-              Next: in Vercel, add <code className="rounded bg-cos-bg px-1">META_FACEBOOK_PAGE_ID</code>{" "}
-              with your Page&apos;s numeric ID, redeploy, then click{" "}
-              <strong className="font-medium text-cos-text">Reconnect with Facebook</strong>.
-            </p>
-          ) : null}
         </div>
       )}
 
       <Card>
         <CardHeader>
-          <CardTitle>{isConnected ? "Connected" : "Connect Meta"}</CardTitle>
-          <CardDescription>
-            One Facebook sign-in covers auto-publishing and Unified Inbox. Approved milestones post
-            automatically; DMs and comments sync in the background.
-          </CardDescription>
+          {isConnected ? (
+            <Badge variant="success">Connected</Badge>
+          ) : (
+            <CardTitle>Connect</CardTitle>
+          )}
+          {!isConnected ? (
+            <CardDescription>
+              One button. Facebook shows what Hey Ralli can do. You approve — publishing, inbox, and
+              Insights all use this connection.
+            </CardDescription>
+          ) : null}
         </CardHeader>
         <div className="px-6 pb-6">
           <MetaConnectionPanel
             connection={connection}
             configuredViaEnv={configuredViaEnv}
             integrationConfigured={integrationConfigured}
+            returnTo={safeOAuthReturnTo(params.returnTo, "/settings/meta")}
             oauthError={params.error ?? null}
-            tokenNeverExpires={inboxConnection.metaTokenNeverExpires}
             reconnectRequired={inboxConnection.metaReconnectRequired}
           />
         </div>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Unified Inbox</CardTitle>
-          <CardDescription>
-            Webhooks deliver new messages automatically. Use manual sync below only if something
-            looks out of date.
-          </CardDescription>
-        </CardHeader>
-        <div className="px-6 pb-6">
-          <MetaInboxSettingsPanel connection={inboxConnection} />
-        </div>
-      </Card>
+      {isConnected ? (
+        <details
+          className="rounded-xl border border-cos-border bg-cos-card px-5 py-4"
+          open={inboxNeedsAttention}
+        >
+          <summary className="cursor-pointer text-sm font-medium text-cos-text">
+            {inboxNeedsAttention
+              ? "Inbox needs a quick fix"
+              : "Something not working? Troubleshoot"}
+          </summary>
+          <div className="mt-4 border-t border-cos-border pt-4">
+            <MetaInboxSettingsPanel connection={inboxConnection} compact />
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

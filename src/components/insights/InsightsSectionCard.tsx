@@ -15,9 +15,16 @@ export function InsightsSectionCard({
   className,
 }: InsightsSectionCardProps) {
   return (
-    <section className={cn("cos-card space-y-5", className)}>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="cos-section-title">{title}</h2>
+    <section
+      className={cn(
+        "rounded-xl border border-cos-border bg-cos-card p-5 shadow-sm sm:p-6",
+        className,
+      )}
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold tracking-tight text-cos-text">
+          {title}
+        </h2>
         {action}
       </div>
       {children}

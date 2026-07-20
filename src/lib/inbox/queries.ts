@@ -195,6 +195,7 @@ export const getInboxUnreadCountForCurrentOrg = cache(
 export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
+  // Settings / explicit connection panels may still want live Graph health.
   const tokenHealth =
     organization?.id && metaConnection?.pageAccessToken && metaConnection.id !== "env"
       ? await ensureMetaConnectionHealthyForOrganization(organization.id)
@@ -212,29 +213,27 @@ export async function getInboxConnectionStatus(): Promise<InboxConnectionStatus>
   );
 }
 
+/**
+ * Communications Hub initial load — stored inbox data only.
+ * Meta Graph health + page pictures are loaded after first paint via
+ * refreshInboxConnectionStatusAction so cold TTFB is not blocked on Graph.
+ */
 export async function getInboxPageData(options?: {
   oauthErrorCode?: string | null;
   connectedJustNow?: boolean;
 }): Promise<InboxPageData> {
   const organization = await getLatestOrganization();
   const metaConnection = await getMetaConnectionForCurrentOrg();
-  const tokenHealth =
-    organization?.id && metaConnection?.pageAccessToken && metaConnection.id !== "env"
-      ? await ensureMetaConnectionHealthyForOrganization(organization.id)
-      : null;
   const inboxSettings = organization?.id
     ? await getOrganizationInboxSettings(organization.id)
     : null;
 
-  const resolvedConnection = tokenHealth?.connection ?? metaConnection;
-  const pagePictureUrl = await resolveConnectionPagePictureUrl(resolvedConnection);
-
   const connection = buildConnectionStatus(
     organization?.name ?? null,
-    resolvedConnection,
+    metaConnection,
     inboxSettings,
-    pagePictureUrl,
-    tokenHealth,
+    null,
+    null,
   );
 
   if (!organization?.id) {
@@ -270,4 +269,9 @@ export async function getInboxPageData(options?: {
       : null,
     connectedJustNow: options?.connectedJustNow ?? false,
   };
+}
+
+/** Live Meta Graph health + page picture — call after Communications first paint. */
+export async function getLiveInboxConnectionStatus(): Promise<InboxConnectionStatus> {
+  return getInboxConnectionStatus();
 }

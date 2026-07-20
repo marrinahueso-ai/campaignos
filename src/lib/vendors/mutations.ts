@@ -9,7 +9,9 @@ import {
 import { mapVendorRow } from "@/lib/vendors/mappers";
 import {
   buildVendorDocumentStoragePath,
+  buildVendorLogoStoragePath,
   isAllowedVendorDocument,
+  isAllowedVendorLogo,
   VENDOR_DOCUMENTS_BUCKET,
 } from "@/lib/vendors/storage";
 import { getAllOrgVendorsForDedup } from "@/lib/vendors/queries";
@@ -54,7 +56,11 @@ export async function logVendorActivity(
 export async function createVendor(
   organizationId: string,
   input: CreateVendorInput,
-): Promise<{ id: string | null; error: string | null }> {
+): Promise<{
+  id: string | null;
+  error: string | null;
+  existingVendorId?: string | null;
+}> {
   const existing = await getAllOrgVendorsForDedup(organizationId);
   const duplicates = findVendorDuplicates(existing, {
     name: input.name,
@@ -64,7 +70,11 @@ export async function createVendor(
   });
 
   if (duplicates.length) {
-    return { id: null, error: formatDuplicateWarning(duplicates) };
+    return {
+      id: null,
+      error: formatDuplicateWarning(duplicates),
+      existingVendorId: duplicates[0]!.vendorId,
+    };
   }
 
   const supabase = await createClient();
@@ -252,6 +262,88 @@ export async function assignVendorToEvent(
 ): Promise<{ success: boolean; error: string | null; assignmentId?: string }> {
   const supabase = await createClient();
 
+  // Prefer restoring a soft-deleted link before inserting a new row.
+  const { data: existingRows, error: existingError } = await supabase
+    .from("vendor_event_assignments")
+    .select("id, deleted_at")
+    .eq("organization_id", organizationId)
+    .eq("vendor_id", vendorId)
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (existingError) {
+    console.error(
+      "Failed to look up vendor event assignment:",
+      existingError.message,
+    );
+  }
+
+  const active = (existingRows ?? []).find((row) => row.deleted_at == null);
+  if (active?.id) {
+    const { error: updateError } = await supabase
+      .from("vendor_event_assignments")
+      .update({
+        assignment_status: assignmentStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", active.id)
+      .eq("organization_id", organizationId);
+
+    if (updateError) {
+      console.error(
+        "Failed to refresh vendor event assignment:",
+        updateError.message,
+      );
+      return { success: false, error: "Unable to link vendor to event." };
+    }
+
+    await logVendorActivity(
+      organizationId,
+      vendorId,
+      "linked_event",
+      "Vendor already linked to event",
+      eventId,
+    );
+
+    return { success: true, error: null, assignmentId: active.id as string };
+  }
+
+  const softDeleted = (existingRows ?? []).find((row) => row.deleted_at != null);
+  if (softDeleted?.id) {
+    const { error: restoreError } = await supabase
+      .from("vendor_event_assignments")
+      .update({
+        deleted_at: null,
+        assignment_status: assignmentStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", softDeleted.id)
+      .eq("organization_id", organizationId);
+
+    if (restoreError) {
+      console.error(
+        "Failed to restore vendor event assignment:",
+        restoreError.message,
+      );
+      return { success: false, error: "Unable to link vendor to event." };
+    }
+
+    await logVendorActivity(
+      organizationId,
+      vendorId,
+      "linked_event",
+      "Re-linked vendor to event",
+      eventId,
+    );
+
+    return {
+      success: true,
+      error: null,
+      assignmentId: softDeleted.id as string,
+    };
+  }
+
   const { data, error } = await supabase
     .from("vendor_event_assignments")
     .insert({
@@ -265,32 +357,19 @@ export async function assignVendorToEvent(
 
   if (error) {
     if (isDuplicateKeyError(error)) {
-      const { data: existing } = await supabase
+      // Race: another request inserted between lookup and insert.
+      const { data: raced } = await supabase
         .from("vendor_event_assignments")
         .select("id")
+        .eq("organization_id", organizationId)
         .eq("vendor_id", vendorId)
         .eq("event_id", eventId)
+        .is("deleted_at", null)
+        .limit(1)
         .maybeSingle();
 
-      if (existing?.id) {
-        await supabase
-          .from("vendor_event_assignments")
-          .update({
-            deleted_at: null,
-            assignment_status: assignmentStatus,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-
-        await logVendorActivity(
-          organizationId,
-          vendorId,
-          "linked_event",
-          "Re-linked vendor to event",
-          eventId,
-        );
-
-        return { success: true, error: null, assignmentId: existing.id as string };
+      if (raced?.id) {
+        return { success: true, error: null, assignmentId: raced.id as string };
       }
     }
 
@@ -452,6 +531,73 @@ export async function getVendorDocumentSignedUrl(
   }
 
   return data.signedUrl;
+}
+
+export async function uploadVendorLogo(input: {
+  organizationId: string;
+  vendorId: string;
+  file: File;
+}): Promise<{ success: boolean; error: string | null; logoPath?: string }> {
+  if (!isAllowedVendorLogo(input.file)) {
+    return { success: false, error: "Upload PNG, JPG, or WebP images only." };
+  }
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("vendors")
+    .select("logo_path")
+    .eq("id", input.vendorId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  const storagePath = buildVendorLogoStoragePath(
+    input.organizationId,
+    input.vendorId,
+    input.file.name,
+  );
+  const buffer = Buffer.from(await input.file.arrayBuffer());
+
+  const { error: uploadError } = await supabase.storage
+    .from(VENDOR_DOCUMENTS_BUCKET)
+    .upload(storagePath, buffer, {
+      contentType: input.file.type || "image/png",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    console.error("Failed to upload vendor logo:", uploadError.message);
+    return { success: false, error: "Unable to upload logo." };
+  }
+
+  const { error } = await supabase
+    .from("vendors")
+    .update({
+      logo_path: storagePath,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.vendorId)
+    .eq("organization_id", input.organizationId);
+
+  if (error) {
+    await supabase.storage.from(VENDOR_DOCUMENTS_BUCKET).remove([storagePath]);
+    console.error("Failed to save vendor logo path:", error.message);
+    return { success: false, error: "Unable to save logo." };
+  }
+
+  const previousPath =
+    typeof existing?.logo_path === "string" ? existing.logo_path : null;
+  if (previousPath && previousPath !== storagePath) {
+    await supabase.storage.from(VENDOR_DOCUMENTS_BUCKET).remove([previousPath]);
+  }
+
+  await logVendorActivity(
+    input.organizationId,
+    input.vendorId,
+    "logo_updated",
+    "Updated vendor logo",
+  );
+
+  return { success: true, error: null, logoPath: storagePath };
 }
 
 export async function getVendorRowById(

@@ -2,26 +2,33 @@
 
 import { GripVertical, MessageSquare } from "lucide-react";
 import { TasksV2EventPill } from "@/components/tasks-v2/TasksV2EventPill";
-import { TasksV2OwnerAvatar } from "@/components/tasks-v2/TasksV2OwnerAvatar";
+import { TasksV2AssigneeSelect } from "@/components/tasks-v2/TasksV2AssigneeSelect";
+import { TasksV2DueDateCell } from "@/components/tasks-v2/TasksV2DueDateCell";
 import { TasksV2PriorityPill } from "@/components/tasks-v2/TasksV2PriorityPill";
 import { TasksV2StatusPill } from "@/components/tasks-v2/TasksV2StatusPill";
 import { setTasksV2DragData } from "@/components/tasks-v2/tasks-v2-dnd";
 import { deriveTaskPriority } from "@/lib/tasks-v2/derive-priority";
-import { formatEventDate } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 import type { TasksV2EventGroup } from "@/types/tasks-v2";
-import type { TaskHubTaskItem } from "@/types/task-hub";
+import type { TaskHubOrgMember, TaskHubTaskItem } from "@/types/task-hub";
 
 interface TasksV2TaskRowProps {
   task: TaskHubTaskItem;
   group: TasksV2EventGroup;
   status: EventPlaybookTaskStatus;
+  orgMembers: TaskHubOrgMember[];
   isPending?: boolean;
   canEdit?: boolean;
   draggable?: boolean;
   dragOver?: boolean;
   onStatusChange?: (status: EventPlaybookTaskStatus) => void;
+  onAssigneeChange?: (next: {
+    assigneeUserId: string | null;
+    assigneeName: string | null;
+    assigneeInitials: string | null;
+  }) => void;
+  onDueDateChange?: (dueDate: string | null) => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragOver?: (event: React.DragEvent) => void;
   onDragLeave?: () => void;
@@ -32,18 +39,20 @@ export function TasksV2TaskRow({
   task,
   group,
   status,
+  orgMembers,
   isPending,
   canEdit,
   draggable,
   dragOver,
   onStatusChange,
+  onAssigneeChange,
+  onDueDateChange,
   onDragStart,
   onDragOver,
   onDragLeave,
   onDrop,
 }: TasksV2TaskRowProps) {
   const priority = deriveTaskPriority({ ...task, status });
-  const displayDueDate = task.monday?.mondayDueDate ?? task.dueDate;
 
   return (
     <tr
@@ -108,10 +117,15 @@ export function TasksV2TaskRow({
           )}
         </div>
       </td>
-      <td className="w-12 px-3 py-2.5 align-middle">
-        <TasksV2OwnerAvatar
-          name={task.assigneeName}
-          initials={task.assigneeInitials}
+      <td className="min-w-[8rem] px-3 py-2.5 align-middle">
+        <TasksV2AssigneeSelect
+          assigneeUserId={task.assigneeUserId}
+          assigneeName={task.assigneeName}
+          assigneeInitials={task.assigneeInitials}
+          orgMembers={orgMembers}
+          canEdit={Boolean(canEdit && onAssigneeChange)}
+          disabled={isPending}
+          onChange={(next) => onAssigneeChange?.(next)}
         />
       </td>
       <td className="px-3 py-2.5 align-middle">
@@ -124,8 +138,13 @@ export function TasksV2TaskRow({
       <td className="px-3 py-2.5 align-middle">
         <TasksV2PriorityPill priority={priority} />
       </td>
-      <td className="px-3 py-2.5 align-middle whitespace-nowrap text-sm text-cos-muted">
-        {displayDueDate ? formatEventDate(displayDueDate) : "—"}
+      <td className="px-3 py-2.5 align-middle whitespace-nowrap">
+        <TasksV2DueDateCell
+          dueDate={task.dueDate}
+          canEdit={Boolean(canEdit && onDueDateChange)}
+          disabled={isPending}
+          onChange={(next) => onDueDateChange?.(next)}
+        />
       </td>
       <td className="px-3 py-2.5 align-middle">
         <TasksV2EventPill

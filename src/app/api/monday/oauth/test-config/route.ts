@@ -1,11 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getAuthUser } from "@/lib/auth/queries";
 import {
   getMondayOAuthConfigDiagnostics,
   resolveMondayOAuthOrigin,
 } from "@/lib/monday/config";
-import { canManageMondayIntegration } from "@/lib/monday/permissions";
 
 export const runtime = "nodejs";
 
@@ -15,8 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const role = await getCurrentCampaignRole();
-  if (!canManageMondayIntegration(role)) {
+  if (!(await hasPermission("manage_integrations"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

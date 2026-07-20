@@ -305,8 +305,29 @@ export function ExpandedMilestoneReview({
               <dl className="space-y-2 text-sm">
                 <div>
                   <dt className="text-cos-muted">Send to</dt>
-                  <dd className="font-medium text-cos-text">
-                    {preview.manualEmailTo}
+                  <dd>
+                    <Input
+                      type="email"
+                      value={preview.manualEmailTo}
+                      onChange={(e) =>
+                        onUpdatePreview({
+                          manualEmailTo: e.target.value,
+                        })
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-cos-muted">Link for Instagram</dt>
+                  <dd>
+                    <Input
+                      type="url"
+                      placeholder="https://…"
+                      value={preview.manualUploadLink}
+                      onChange={(e) =>
+                        onUpdatePreview({ manualUploadLink: e.target.value })
+                      }
+                    />
                   </dd>
                 </div>
                 <div>
@@ -375,10 +396,22 @@ export function ExpandedMilestoneReview({
                       </li>
                     ))
                   )}
+                  <li className="flex items-center gap-2">
+                    <Check
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        preview.manualUploadLink.trim()
+                          ? "text-cos-success"
+                          : "text-cos-border",
+                      )}
+                      strokeWidth={2.5}
+                    />
+                    <span className="text-cos-muted">Instagram link</span>
+                  </li>
                 </ul>
               </div>
               <p className="text-xs text-cos-muted">
-                This email will be sent at{" "}
+                After approval, this kit emails via Resend at{" "}
                 {formatScheduleLabel(
                   preview.emailSendDate,
                   preview.emailSendTime,

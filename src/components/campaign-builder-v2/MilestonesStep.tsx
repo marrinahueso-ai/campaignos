@@ -168,6 +168,11 @@ export function MilestonesStep() {
                   <CampaignBuilderMilestoneRow
                     key={milestone.id}
                     milestone={milestone}
+                    preview={
+                      session.previewContents.find(
+                        (content) => content.milestoneId === milestone.id,
+                      ) ?? null
+                    }
                     index={index}
                     menuOpenId={menuOpenId}
                     isGenerating={generatingMilestoneId === milestone.id}
@@ -234,6 +239,11 @@ export function MilestonesStep() {
           // edited milestone ever changed while the modal stayed mounted.
           key={editingMilestone.id}
           milestone={editingMilestone}
+          preview={
+            session.previewContents.find(
+              (content) => content.milestoneId === editingMilestone.id,
+            ) ?? null
+          }
           onClose={() => setEditingId(null)}
           onSave={(patch) => updateMilestone(editingMilestone.id, patch)}
           onDelete={() => {

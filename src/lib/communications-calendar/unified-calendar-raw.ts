@@ -2,6 +2,10 @@ import "server-only";
 
 import { cache } from "react";
 import { resolveCalendarPlanningWindow } from "@/lib/communications-calendar/planning-date-window";
+import {
+  PLANNING_EVENT_SELECT,
+  UNIFIED_META_SLOT_SELECT,
+} from "@/lib/communications-calendar/planning-selects";
 import { createClient } from "@/lib/supabase/server";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
 import type { MetaPublicationSlot, MetaPublicationSlotRow } from "@/lib/meta-publishing/types";
@@ -34,14 +38,14 @@ export const fetchUnifiedCalendarRawData = cache(
 
     const { data: eventRows } = await supabase
       .from("events")
-      .select("*")
+      .select(PLANNING_EVENT_SELECT)
       .gte("date", window.startDate)
       .lte("date", window.endDate)
       .neq("status", "archived")
       .in("school_year_id", schoolYearIds)
       .order("date", { ascending: true });
 
-    const scopedEventRows = (eventRows ?? []) as CoreEventRow[];
+    const scopedEventRows = (eventRows ?? []) as unknown as CoreEventRow[];
     const eventIds = scopedEventRows.map((row) => row.id);
 
     if (eventIds.length === 0) {
@@ -50,14 +54,14 @@ export const fetchUnifiedCalendarRawData = cache(
 
     const { data: metaSlotRows } = await supabase
       .from("meta_publication_slots")
-      .select("*")
+      .select(UNIFIED_META_SLOT_SELECT)
       .in("event_id", eventIds)
       .not("scheduled_for", "is", null)
       .order("scheduled_for", { ascending: true });
 
     return {
       eventRows: scopedEventRows,
-      metaSlots: ((metaSlotRows ?? []) as MetaPublicationSlotRow[]).map(
+      metaSlots: ((metaSlotRows ?? []) as unknown as MetaPublicationSlotRow[]).map(
         mapMetaPublicationSlotRow,
       ),
     };

@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PLATFORM_FORMAT_OPTIONS } from "@/lib/campaign-builder-v2/platform-utils";
 import type {
@@ -34,11 +35,17 @@ function formatScheduleDate(dateStr: string, timeStr: string): string {
 interface PreviewSettingsPanelProps {
   preview: MilestonePreviewContent;
   onUpdate: (patch: Partial<MilestonePreviewContent>) => void;
+  canUseDeveloperTools?: boolean;
+  onClearGeneratedContent?: () => void;
+  clearMessage?: string | null;
 }
 
 export function PreviewSettingsPanel({
   preview,
   onUpdate,
+  canUseDeveloperTools = false,
+  onClearGeneratedContent,
+  clearMessage,
 }: PreviewSettingsPanelProps) {
   const hasManualIgStory = preview.enabledFormats.includes(
     "instagram-story-manual",
@@ -97,18 +104,20 @@ export function PreviewSettingsPanel({
           Schedule
         </p>
         <Input
+          label="Publish date"
           type="date"
           value={preview.scheduleDate}
           onChange={(e) => onUpdate({ scheduleDate: e.target.value })}
         />
         <Input
+          label="Publish time"
           type="time"
           value={preview.scheduleTime}
           onChange={(e) => onUpdate({ scheduleTime: e.target.value })}
         />
         <button
           type="button"
-          className="flex items-center gap-1.5 text-xs font-medium text-cos-accent transition-colors hover:text-cos-text"
+          className="flex items-center gap-1.5 text-xs font-medium text-cos-text transition-colors hover:text-cos-muted"
         >
           <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
           Auto-suggest best time
@@ -124,25 +133,64 @@ export function PreviewSettingsPanel({
             Email send time (manual upload)
           </p>
           <p className="text-xs text-cos-muted">
-            Defaults to publish time. Updates when publish schedule changes.
+            After approval, Resend queues the story kit (image link, caption, and
+            Instagram link) to arrive at this send time. Keep Delivery as
+            &quot;Schedule to publish&quot; when feed should still auto-post to
+            Meta — Send-to alone does not cancel feed scheduling.
           </p>
           <Input
+            label="Email send date"
             type="date"
             value={preview.emailSendDate}
             onChange={(e) => onUpdate({ emailSendDate: e.target.value })}
           />
           <Input
+            label="Email send time"
             type="time"
             value={preview.emailSendTime}
             onChange={(e) => onUpdate({ emailSendTime: e.target.value })}
           />
           <Input
             label="Send to"
+            type="email"
             value={preview.manualEmailTo}
-            onChange={(e) => onUpdate({ manualEmailTo: e.target.value })}
+            onChange={(e) =>
+              onUpdate({
+                manualEmailTo: e.target.value,
+              })
+            }
           />
+          <Input
+            label="Link for Instagram"
+            type="url"
+            placeholder="https://…"
+            value={preview.manualUploadLink}
+            onChange={(e) => onUpdate({ manualUploadLink: e.target.value })}
+          />
+          <p className="text-xs text-cos-muted">
+            Optional. Included in the manual-upload email for link stickers.
+          </p>
         </div>
       )}
+
+      {canUseDeveloperTools && onClearGeneratedContent ? (
+        <div className="space-y-2 border-t border-cos-border pt-4">
+          <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+            Developer tools
+          </p>
+          <Button
+            type="button"
+            variant="danger"
+            size="sm"
+            onClick={onClearGeneratedContent}
+          >
+            Clear This Milestone
+          </Button>
+          {clearMessage ? (
+            <p className="text-xs text-cos-success-text">{clearMessage}</p>
+          ) : null}
+        </div>
+      ) : null}
     </aside>
   );
 }

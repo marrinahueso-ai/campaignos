@@ -17,6 +17,32 @@ export function buildVendorDocumentStoragePath(
   return `${prefix}/${Date.now()}-${safeName}`;
 }
 
+export function buildVendorLogoStoragePath(
+  organizationId: string,
+  vendorId: string,
+  filename: string,
+): string {
+  const safeName = sanitizeVendorDocumentFilename(filename);
+  return `${organizationId}/${vendorId}/logo/${Date.now()}-${safeName}`;
+}
+
+export function isAllowedVendorLogo(file: File): boolean {
+  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+  const allowedExtensions = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+  if (allowedExtensions.has(extension)) {
+    return true;
+  }
+
+  const allowedMimeTypes = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+  ]);
+
+  return allowedMimeTypes.has(file.type);
+}
+
 export function isAllowedVendorDocument(file: File): boolean {
   const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
   const allowedExtensions = new Set([

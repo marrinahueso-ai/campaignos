@@ -4,7 +4,8 @@ import {
   getPendingFoundingAccessCodeFromRequest,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
-import { hasActiveOrganizationMembership } from "@/lib/auth/membership-queries";
+import { ACCOUNT_DEACTIVATED_LOGIN_PATH } from "@/lib/auth/membership-access";
+import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
 import { SCHOOL_SETUP_PATH } from "@/lib/auth/post-auth-path";
 
 const ORG_SETUP_PATHS = ["/settings/school-setup", "/school-setup"];
@@ -26,9 +27,16 @@ export async function resolveOrgGateRedirect(
 ): Promise<string | null> {
   const { pathname } = request.nextUrl;
 
-  const hasMembership = await hasActiveOrganizationMembership(supabase, userId);
-  if (hasMembership) {
+  const accessState = await getOrganizationAccessState(supabase, userId);
+  if (accessState === "active") {
     return null;
+  }
+
+  if (accessState === "deactivated") {
+    if (pathname === "/login" || pathname === "/account/change-password") {
+      return null;
+    }
+    return ACCOUNT_DEACTIVATED_LOGIN_PATH;
   }
 
   const pendingCode = getPendingFoundingAccessCodeFromRequest(request);
@@ -39,7 +47,12 @@ export async function resolveOrgGateRedirect(
     return isOrgSetupPath(pathname) ? null : SCHOOL_SETUP_PATH;
   }
 
-  if (isOrgSetupPath(pathname) || pathname === "/login") {
+  if (
+    isOrgSetupPath(pathname) ||
+    pathname === "/login" ||
+    pathname.startsWith("/invite/") ||
+    pathname === "/account/change-password"
+  ) {
     return null;
   }
 

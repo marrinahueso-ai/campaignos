@@ -7,7 +7,20 @@ import {
   sendCampaignManualUploadEmail,
   sendScheduledDeliveryEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
-import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import {
+  previewWantsMetaFeedSchedule,
+  resolveFeedScheduleIso,
+  scheduleMetaFeedFromCampaignBuilderApproval,
+} from "@/lib/campaign-builder-v2/schedule-meta-from-approval";
+import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
+import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
+import {
+  applySchedulingOutcomeToPreview,
+  applySchedulingOutcomeToWorkflow,
+  applySchedulingRowsToSession,
+  type SchedulingSessionOutcome,
+} from "@/lib/campaign-builder-v2/sync-session-from-scheduling";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import {
   approveCommunicationAction,
@@ -15,12 +28,79 @@ import {
 } from "@/lib/event-workspace/actions";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
-import type { UnifiedWorkflowStatus } from "@/lib/approvals-scheduling/types";
+import {
+  deliveryMethodPatchAfterManualKitSend,
+  resolveRowManualEmailSendAt,
+  resolveRowMetaScheduleIntent,
+} from "@/lib/approvals-scheduling/approval-visibility";
+import type {
+  ApprovalSchedulingItemRow,
+  UnifiedApprovalItem,
+  UnifiedWorkflowStatus,
+} from "@/lib/approvals-scheduling/types";
 
 export type UnifiedApprovalActionResult = {
   success: boolean;
   error?: string;
+  /** Non-fatal notice (e.g. Meta schedule failed after approval already saved). */
+  warning?: string;
 };
+
+async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
+  eventId: string;
+  campaignMilestoneId: string | null;
+  milestoneName: string;
+  outcome: SchedulingSessionOutcome;
+}): Promise<void> {
+  const session = await loadCampaignBuilderSession(input.eventId);
+  if (!session) {
+    return;
+  }
+
+  const workflowStatus =
+    input.outcome === "approved"
+      ? "scheduled"
+      : input.outcome === "published"
+        ? "published"
+        : input.outcome;
+
+  const synced = applySchedulingRowsToSession(session, [
+    {
+      campaignMilestoneId: input.campaignMilestoneId,
+      milestoneName: input.milestoneName,
+      workflowStatus,
+    },
+  ]);
+
+  // Always stamp the matched milestone + workflow even if rows helper no-ops
+  // (e.g. name/id mismatch edge cases after playbook rebuilds).
+  const at = new Date().toISOString();
+  const previewContents = synced.previewContents.map((preview) => {
+    const matchesId =
+      Boolean(input.campaignMilestoneId) &&
+      preview.milestoneId === input.campaignMilestoneId;
+    const milestone = session.milestones.find(
+      (entry) => entry.id === preview.milestoneId,
+    );
+    const matchesName =
+      Boolean(milestone) &&
+      milestone!.name.trim().toLowerCase() ===
+        input.milestoneName.trim().toLowerCase();
+    if (!matchesId && !matchesName) {
+      return preview;
+    }
+    return applySchedulingOutcomeToPreview(preview, input.outcome, at);
+  });
+
+  await saveCampaignBuilderSessionAction({
+    ...synced,
+    previewContents,
+    approvalWorkflow: applySchedulingOutcomeToWorkflow(
+      synced.approvalWorkflow,
+      input.outcome,
+    ),
+  });
+}
 
 async function updateSchedulingItemStatus(
   schedulingItemId: string,
@@ -67,6 +147,35 @@ async function loadSchedulingItem(schedulingItemId: string) {
   return data;
 }
 
+function resolveManualEmailSendAt(row: ApprovalSchedulingItemRow): string | null {
+  return resolveRowManualEmailSendAt(row);
+}
+
+async function resolveMetaScheduleIntent(row: ApprovalSchedulingItemRow): Promise<{
+  wantsMetaFeedSchedule: boolean;
+  storyManual: boolean;
+  feedScheduleAt: string | null;
+}> {
+  const session = await loadCampaignBuilderSession(row.event_id);
+  const preview =
+    session?.previewContents.find(
+      (entry) => entry.milestoneId === row.campaign_milestone_id,
+    ) ?? null;
+
+  if (preview) {
+    return {
+      wantsMetaFeedSchedule: previewWantsMetaFeedSchedule(preview),
+      storyManual:
+        preview.enabledFormats.includes("instagram-story-manual") ||
+        Boolean(preview.manualEmailTo.trim()) ||
+        preview.deliveryMethod === "manual-email",
+      feedScheduleAt: resolveFeedScheduleIso(preview) ?? row.schedule_at,
+    };
+  }
+
+  return resolveRowMetaScheduleIntent(row);
+}
+
 async function resolveSchedulingCreatorEmail(
   schedulingItemId: string,
 ): Promise<string | null> {
@@ -93,6 +202,8 @@ export async function approveUnifiedItemAction(input: {
   milestoneName?: string | null;
   recipientEmail?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
+  let metaWarning: string | undefined;
+
   if (input.communicationItemId) {
     const result = await approveCommunicationAction(
       input.eventId,
@@ -111,6 +222,7 @@ export async function approveUnifiedItemAction(input: {
 
     if (
       !row.assigned_user_id &&
+      !(await hasPermission("approve_comms")) &&
       (row.workflow_status === "in_queue" ||
         row.workflow_status === "assigned_to_me")
     ) {
@@ -132,32 +244,123 @@ export async function approveUnifiedItemAction(input: {
       return { success: false, error: "Unable to update scheduling item." };
     }
 
+    const sessionOutcome: SchedulingSessionOutcome =
+      nextStatus === "published" ? "published" : "scheduled";
+    await syncCampaignBuilderSessionAfterSchedulingOutcome({
+      eventId: input.eventId,
+      campaignMilestoneId: row.campaign_milestone_id,
+      milestoneName: row.milestone_name,
+      outcome: sessionOutcome,
+    });
+
     const creatorEmail =
       (await resolveSchedulingCreatorEmail(input.schedulingItemId)) ??
       input.recipientEmail ??
       null;
 
-    if (creatorEmail && input.campaignName && input.milestoneName) {
-      await sendContentApprovedEmail({
-        eventId: input.eventId,
-        campaignName: input.campaignName,
-        milestoneName: input.milestoneName,
-        recipientEmail: creatorEmail,
-        schedulingItemId: input.schedulingItemId,
-      });
+    const manualRecipient =
+      row.manual_email_to?.trim() || creatorEmail || null;
+    const isManualUploadKit =
+      row.delivery_method === "manual-email" ||
+      Boolean(row.manual_email_to?.trim());
 
-      if (row.delivery_method === "manual-email") {
-        await sendCampaignManualUploadEmail({
+    const metaIntent = await resolveMetaScheduleIntent(row);
+    if (metaIntent.wantsMetaFeedSchedule) {
+      const metaResult = await scheduleMetaFeedFromCampaignBuilderApproval({
+        eventId: input.eventId,
+        milestoneName: row.milestone_name,
+        campaignMilestoneId: row.campaign_milestone_id,
+        feedArtworkUrl: row.feed_artwork_url,
+        storyArtworkUrl: row.story_artwork_url,
+        captionText: row.caption_text,
+        storyCaption: row.story_caption,
+        feedScheduleAt: metaIntent.feedScheduleAt,
+        wantsMetaFeedSchedule: true,
+        storyManual: metaIntent.storyManual,
+      });
+      if (metaResult.error) {
+        metaWarning = `Approved, but Meta feed scheduling failed: ${metaResult.error}`;
+        console.error(
+          "Meta feed schedule after CB2 approve failed:",
+          metaResult.error,
+        );
+      }
+    }
+
+    if (input.campaignName && input.milestoneName) {
+      if (creatorEmail) {
+        await sendContentApprovedEmail({
           eventId: input.eventId,
           campaignName: input.campaignName,
           milestoneName: input.milestoneName,
           recipientEmail: creatorEmail,
-          scheduleLabel: row.schedule_at
-            ? formatDateTime(row.schedule_at)
-            : "Manual upload",
           schedulingItemId: input.schedulingItemId,
+          feedArtworkUrl: row.feed_artwork_url,
+          storyArtworkUrl: row.story_artwork_url,
+          captionText: row.caption_text,
+          storyCaption: row.story_caption,
         });
-      } else if (row.schedule_at && nextStatus === "scheduled") {
+      }
+
+      if (isManualUploadKit && manualRecipient) {
+        const emailSendAt = resolveManualEmailSendAt(row);
+        const scheduleAtMs = emailSendAt ? new Date(emailSendAt).getTime() : NaN;
+        const dueNow =
+          !emailSendAt ||
+          Number.isNaN(scheduleAtMs) ||
+          scheduleAtMs <= Date.now();
+        // Resend allows scheduling up to 30 days ahead.
+        const withinResendWindow =
+          !dueNow &&
+          scheduleAtMs - Date.now() <= 30 * 24 * 60 * 60 * 1000;
+
+        if (dueNow || withinResendWindow) {
+          const sendResult = await sendCampaignManualUploadEmail({
+            eventId: input.eventId,
+            campaignName: input.campaignName,
+            milestoneName: input.milestoneName,
+            recipientEmail: manualRecipient,
+            scheduleLabel: emailSendAt
+              ? formatDateTime(emailSendAt)
+              : "Manual upload",
+            schedulingItemId: input.schedulingItemId,
+            storyArtworkUrl: row.story_artwork_url,
+            storyCaption: row.story_caption,
+            feedCaption: row.caption_text,
+            uploadLink: row.manual_upload_link,
+            scheduledAt: dueNow ? null : emailSendAt,
+          });
+
+          if (sendResult.success) {
+            const supabase = await createClient();
+            await supabase
+              .from("approval_scheduling_items")
+              .update({
+                // Keep schedule/auto-publish when Meta feed was also scheduled.
+                ...deliveryMethodPatchAfterManualKitSend(
+                  metaIntent.wantsMetaFeedSchedule,
+                ),
+                manual_upload_email_sent_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", input.schedulingItemId);
+          } else {
+            const emailWarning = `Approved, but manual upload email did not send: ${sendResult.message}`;
+            metaWarning = metaWarning
+              ? `${metaWarning} ${emailWarning}`
+              : emailWarning;
+            console.error(
+              "Manual upload email after approve failed:",
+              sendResult.message,
+            );
+          }
+        }
+        // Beyond 30 days → daily cron /api/cron/manual-upload-emails
+      } else if (
+        creatorEmail &&
+        row.schedule_at &&
+        nextStatus === "scheduled"
+      ) {
         await sendScheduledDeliveryEmail({
           eventId: input.eventId,
           campaignName: input.campaignName,
@@ -165,13 +368,18 @@ export async function approveUnifiedItemAction(input: {
           recipientEmail: creatorEmail,
           scheduleLabel: formatDateTime(row.schedule_at),
           schedulingItemId: input.schedulingItemId,
+          feedArtworkUrl: row.feed_artwork_url,
+          storyArtworkUrl: row.story_artwork_url,
+          captionText: row.caption_text,
+          storyCaption: row.story_caption,
         });
       }
     }
   }
 
   revalidatePath("/approvals");
-  return { success: true };
+  revalidatePath(`/events/${input.eventId}/campaign-builder`);
+  return { success: true, warning: metaWarning };
 }
 
 export async function requestUnifiedChangesAction(input: {
@@ -199,7 +407,11 @@ export async function requestUnifiedChangesAction(input: {
     }
   }
 
+  let schedulingRow: ApprovalSchedulingItemRow | null = null;
   if (input.schedulingItemId) {
+    schedulingRow = (await loadSchedulingItem(
+      input.schedulingItemId,
+    )) as ApprovalSchedulingItemRow | null;
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
       "changes_requested",
@@ -207,6 +419,15 @@ export async function requestUnifiedChangesAction(input: {
     );
     if (!updated) {
       return { success: false, error: "Unable to update scheduling item." };
+    }
+
+    if (schedulingRow) {
+      await syncCampaignBuilderSessionAfterSchedulingOutcome({
+        eventId: input.eventId,
+        campaignMilestoneId: schedulingRow.campaign_milestone_id,
+        milestoneName: schedulingRow.milestone_name,
+        outcome: "changes_requested",
+      });
     }
   }
 
@@ -224,10 +445,15 @@ export async function requestUnifiedChangesAction(input: {
       recipientEmail: creatorEmail,
       comment,
       schedulingItemId: input.schedulingItemId ?? null,
+      feedArtworkUrl: schedulingRow?.feed_artwork_url,
+      storyArtworkUrl: schedulingRow?.story_artwork_url,
+      captionText: schedulingRow?.caption_text,
+      storyCaption: schedulingRow?.story_caption,
     });
   }
 
   revalidatePath("/approvals");
+  revalidatePath(`/events/${input.eventId}/campaign-builder`);
   return { success: true };
 }
 
@@ -235,8 +461,9 @@ export async function reassignUnifiedItemAction(input: {
   schedulingItemId: string;
   assignedUserId: string;
 }): Promise<UnifiedApprovalActionResult> {
-  const role = await getCurrentCampaignRole();
-  if (role !== "admin" && role !== "president" && role !== "vp_communications") {
+  // Intentional: maps the former admin/president/vp_communications gate.
+  // manage_people would drop VP Communications, who historically could reassign.
+  if (!(await hasPermission("approve_comms"))) {
     return { success: false, error: "Only admins can reassign approvals." };
   }
 
@@ -275,4 +502,70 @@ export async function getReassignableUsersAction(): Promise<
       email: user.email,
       roleName: user.organizationRoleName,
     }));
+}
+
+/**
+ * Load rich preview fields for the opened Approvals hub item.
+ * Hub list uses lean columns; captions load here on demand.
+ */
+export async function enrichUnifiedApprovalItemPreviewAction(
+  item: UnifiedApprovalItem,
+): Promise<UnifiedApprovalItem> {
+  if (item.schedulingItemId) {
+    const { fetchSchedulingItemPreviewFields } = await import(
+      "@/lib/approvals-scheduling/queries"
+    );
+    const preview = await fetchSchedulingItemPreviewFields(item.schedulingItemId);
+    if (!preview) {
+      return item;
+    }
+    return {
+      ...item,
+      thumbnailUrl:
+        preview.feedArtworkUrl ??
+        preview.storyArtworkUrl ??
+        item.thumbnailUrl,
+      preview: {
+        captionText: preview.captionText ?? item.preview.captionText,
+        storyCaptionSnippet:
+          preview.storyCaptionSnippet ?? item.preview.storyCaptionSnippet,
+        feedArtworkUrl: preview.feedArtworkUrl ?? item.preview.feedArtworkUrl,
+        storyArtworkUrl:
+          preview.storyArtworkUrl ?? item.preview.storyArtworkUrl,
+      },
+    };
+  }
+
+  if (item.source === "classic" && item.approvalRequestId) {
+    const { getApprovalQueueOverviewForCurrentUser } = await import(
+      "@/lib/event-workspace/approval-routing-queries"
+    );
+    const { mapClassicApprovalItem } = await import(
+      "@/lib/approvals-scheduling/map-items"
+    );
+    const { getTodayDateString } = await import("@/lib/utils/dates");
+
+    const overview = await getApprovalQueueOverviewForCurrentUser(item.eventId, {
+      enrichPreviews: true,
+    });
+    const candidates = [
+      ...overview.assignedToMe,
+      ...overview.allPending,
+      ...overview.changesRequested,
+      ...overview.recentlyApproved,
+    ];
+    const match = candidates.find((entry) => entry.id === item.approvalRequestId);
+    if (!match) {
+      return item;
+    }
+    const mapped = mapClassicApprovalItem(match, getTodayDateString());
+    return {
+      ...item,
+      milestoneName: mapped.milestoneName || item.milestoneName,
+      thumbnailUrl: mapped.thumbnailUrl ?? item.thumbnailUrl,
+      preview: mapped.preview,
+    };
+  }
+
+  return item;
 }

@@ -1,4 +1,7 @@
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import { defaultEnabledFormats, emptyMilestoneArtwork } from "./platform-utils.ts";
+import { milestoneNameMatchKey, normalizeMilestoneName } from "./milestone-names.ts";
+import { defaultPurposeForMilestone } from "./milestone-purpose.ts";
 import type {
   CampaignBuilderMilestone,
   MilestoneCategory,
@@ -19,7 +22,14 @@ function createMilestoneId(): string {
   return `ms-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-function categoryForRelativeDay(relativeDay: number): MilestoneCategory {
+function categoryForRelativeDay(
+  relativeDay: number,
+  sortOrder: number,
+): MilestoneCategory {
+  // First campaign milestone is always a first-time flyer / announcement.
+  if (isFirstCampaignMilestone(sortOrder)) {
+    return "awareness";
+  }
   if (relativeDay < -14) return "awareness";
   if (relativeDay < 0) return "reminder";
   if (relativeDay === 0) return "event-day";
@@ -67,6 +77,7 @@ function buildPreviewForMilestone(
     emailSendDate: milestone.suggestedDate,
     emailSendTime: "09:00",
     manualEmailTo: "",
+    manualUploadLink: "",
     approvalStatuses: [
       { role: "creator", label: "Creator", status: "not-started", timestamp: null },
       {
@@ -91,13 +102,19 @@ function buildMilestoneFromPlaybookStep(
   sortOrder: number,
 ): CampaignBuilderMilestone {
   const platforms = platformsForChannel(step.channel);
+  const name = normalizeMilestoneName(step.title);
+  const isFirstMilestone = isFirstCampaignMilestone(sortOrder);
+  const category = categoryForRelativeDay(step.relativeDay, sortOrder);
   return {
     id: createMilestoneId(),
-    name: step.title,
-    category: categoryForRelativeDay(step.relativeDay),
-    // Playbook steps don't carry a description/prompt field today — leave
-    // purpose blank rather than inventing one; the user can add notes.
-    purpose: "",
+    name,
+    category,
+    purpose: defaultPurposeForMilestone({
+      name,
+      category,
+      relativeDay: step.relativeDay,
+      isFirstMilestone,
+    }),
     suggestedDate: dateForRelativeDay(eventDate, step.relativeDay),
     platforms,
     platformFormats: platformFormatsForPlatforms(platforms),
@@ -134,14 +151,14 @@ export function milestonesLostOnPlaybookSwitch(
   existingPreviewContents: MilestonePreviewContent[],
 ): CampaignBuilderMilestone[] {
   const newTitles = new Set(
-    newSteps.map((step) => step.title.trim().toLowerCase()),
+    newSteps.map((step) => milestoneNameMatchKey(step.title)),
   );
   const previewByMilestoneId = new Map(
     existingPreviewContents.map((preview) => [preview.milestoneId, preview]),
   );
 
   return existingMilestones.filter((milestone) => {
-    if (newTitles.has(milestone.name.trim().toLowerCase())) {
+    if (newTitles.has(milestoneNameMatchKey(milestone.name))) {
       return false;
     }
     return hasMeaningfulMilestoneWork(
@@ -171,7 +188,7 @@ export function reconcileMilestonesWithPlaybookSteps(
 } {
   const existingByName = new Map(
     existingMilestones.map((milestone) => [
-      milestone.name.trim().toLowerCase(),
+      milestoneNameMatchKey(milestone.name),
       milestone,
     ]),
   );
@@ -185,21 +202,40 @@ export function reconcileMilestonesWithPlaybookSteps(
   const sortedSteps = [...steps].sort((a, b) => a.sortOrder - b.sortOrder);
 
   sortedSteps.forEach((step, index) => {
-    const matched = existingByName.get(step.title.trim().toLowerCase());
+    const matched = existingByName.get(milestoneNameMatchKey(step.title));
 
     if (matched) {
+      const name = normalizeMilestoneName(step.title);
+      const isFirstMilestone = isFirstCampaignMilestone(index);
+      const category = categoryForRelativeDay(step.relativeDay, index);
+      const platforms = platformsForChannel(step.channel);
+      const platformFormats = platformFormatsForPlatforms(platforms);
       const milestone: CampaignBuilderMilestone = {
         ...matched,
-        name: step.title,
-        category: categoryForRelativeDay(step.relativeDay),
+        name,
+        category,
+        purpose: defaultPurposeForMilestone({
+          name,
+          category,
+          relativeDay: step.relativeDay,
+          isFirstMilestone,
+        }),
         suggestedDate: dateForRelativeDay(eventDate, step.relativeDay),
+        platforms,
+        platformFormats,
         sortOrder: index,
       };
       milestones.push(milestone);
       const existingPreview = previewByMilestoneId.get(matched.id);
       previewContents.push(
         existingPreview
-          ? { ...existingPreview, milestoneId: milestone.id }
+          ? {
+              ...existingPreview,
+              milestoneId: milestone.id,
+              enabledFormats: platformFormats,
+              scheduleDate: milestone.suggestedDate,
+              emailSendDate: milestone.suggestedDate,
+            }
           : buildPreviewForMilestone(milestone),
       );
     } else {
@@ -210,4 +246,16 @@ export function reconcileMilestonesWithPlaybookSteps(
   });
 
   return { milestones, previewContents };
+}
+
+/** Shared confirm copy when a playbook switch would drop milestones with work. */
+export function playbookSwitchConfirmMessage(
+  atRisk: CampaignBuilderMilestone[],
+): string {
+  const names = atRisk.map((milestone) => milestone.name).join(", ");
+  return (
+    "Changing the playbook will update this campaign’s milestone timeline. " +
+    "Existing content tied to milestones that no longer match may need to be reviewed.\n\n" +
+    `Milestones with existing work that would be removed (${atRisk.length}): ${names}`
+  );
 }

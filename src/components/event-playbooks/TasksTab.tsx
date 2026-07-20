@@ -54,7 +54,7 @@ export function TasksTab({
               </CardDescription>
             </div>
             <Link
-              href="/tasks"
+              href={`/tasks?event=${encodeURIComponent(eventId)}`}
               className="inline-flex shrink-0 items-center gap-1.5 text-sm text-cos-muted transition-colors hover:text-cos-text"
             >
               View all tasks

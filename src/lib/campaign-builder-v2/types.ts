@@ -195,6 +195,8 @@ export interface MilestonePreviewContent {
   emailSendDate: string;
   emailSendTime: string;
   manualEmailTo: string;
+  /** Optional link included in manual-upload emails (e.g. Instagram sticker URL). */
+  manualUploadLink: string;
   approvalStatuses: MilestoneApprovalStatus[];
 }
 

@@ -62,7 +62,7 @@ import type {
   ArtworkGenerationSettings,
   VariationPresetId,
 } from "@/lib/ai-artwork/types";
-import { canUploadCampaignAssets } from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { buildCreativeDirectorContext } from "@/lib/creative-director/build-context";
 import { buildCreativeBriefFromContext } from "@/lib/creative-director/build-brief";
@@ -218,8 +218,7 @@ export async function saveArtworkPromptAction(
   customPrompt: string,
   settings: ArtworkGenerationSettings,
 ): Promise<ArtworkActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to edit artwork prompts." };
   }
 
@@ -277,8 +276,7 @@ export async function generateArtworkConceptsAction(
     return { success: false, error: ARTWORK_GENERATION_DISABLED_MESSAGE };
   }
 
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate artwork." };
   }
 
@@ -487,8 +485,7 @@ export async function generateArtworkVariationAction(
     return { success: false, error: ARTWORK_GENERATION_DISABLED_MESSAGE };
   }
 
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to generate variations." };
   }
 
@@ -516,8 +513,7 @@ export async function approveArtworkConceptAction(
   assetId: string,
   conceptId: string,
 ): Promise<ArtworkActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to approve artwork." };
   }
 
@@ -560,8 +556,7 @@ export async function discardArtworkConceptAction(
   eventId: string,
   conceptId: string,
 ): Promise<ArtworkActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { success: false, error: "You do not have permission to delete concepts." };
   }
 

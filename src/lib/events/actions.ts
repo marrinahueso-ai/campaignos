@@ -18,7 +18,10 @@ import { parseCreateEventInput } from "@/lib/events/validation";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestones";
 import { assignPlaybookToEvent, reassignEventPlaybook } from "@/lib/playbooks/mutations";
-import { getDefaultPlaybookIdForEventType } from "@/lib/playbooks/queries";
+import {
+  getDefaultPlaybookIdForEventType,
+  getPlaybooksForOrganization,
+} from "@/lib/playbooks/queries";
 import type { EventType } from "@/types/playbooks";
 import { getEventById } from "@/lib/events/queries";
 import { updateEventCampaignSettings } from "@/lib/events/mutations";
@@ -45,7 +48,27 @@ export async function createEvent(
     return createEventErrorState(formData, parsed.error);
   }
 
-  const event = await insertEvent(parsed.data);
+  const organization = await getLatestOrganization();
+  const playbookIdRaw = formData.get("playbookId")?.toString().trim() ?? "";
+  let playbookId: string | undefined;
+  const eventInput = { ...parsed.data };
+
+  if (shouldAssignPlaybook(eventInput.communicationStrategy)) {
+    const playbooks = await getPlaybooksForOrganization(organization?.id ?? null);
+    const selected = playbooks.find((playbook) => playbook.id === playbookIdRaw);
+
+    if (!selected) {
+      return createEventErrorState(
+        formData,
+        "Please select a playbook from your Settings templates.",
+      );
+    }
+
+    playbookId = selected.id;
+    eventInput.eventType = selected.eventType;
+  }
+
+  const event = await insertEvent(eventInput);
 
   if (!event) {
     return createEventErrorState(
@@ -54,8 +77,7 @@ export async function createEvent(
     );
   }
 
-  const organization = await getLatestOrganization();
-  await assignPlaybookToEvent(event, undefined, organization?.id ?? null);
+  await assignPlaybookToEvent(event, playbookId, organization?.id ?? null);
 
   revalidatePath("/dashboard");
   revalidatePath("/events");

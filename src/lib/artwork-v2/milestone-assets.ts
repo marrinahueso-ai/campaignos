@@ -2,9 +2,15 @@ import {
   isApprovedArtworkAsset,
   type ArtworkPhaseWorkflowItem,
 } from "@/lib/artwork-v2/campaign-phases";
-import { resolveWorkflowAsset, type ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
+import {
+  pickPreferredArtworkAsset,
+  planLabelsEquivalent,
+  resolveWorkflowAsset,
+  type ArtworkWorkflowItem,
+} from "@/lib/creative-studio/artwork-workflow";
 import type { ImageSizePreset } from "@/lib/ai-artwork/types";
 import { resolveArtworkV2ImageSizePreset } from "@/lib/artwork-v2/image-size";
+import { sameMilestoneTitleAliases } from "@/lib/campaign-builder-v2/milestone-names";
 import type { EventAsset } from "@/types/event-workspace";
 
 function buildPhasePlanLabel(title: string, formatLabel: string): string {
@@ -26,35 +32,31 @@ export function resolveMilestonePhaseAsset(
     return null;
   }
 
-  const titles = [
-    item.label,
-    ...alternateTitles.filter((title) => title !== item.label),
-  ];
+  // Only rename aliases of this milestone — never pool other milestones at the same day.
+  const titles = sameMilestoneTitleAliases(item.label, alternateTitles);
+
+  const candidates: EventAsset[] = [];
 
   for (const title of titles) {
-    const candidate =
-      assets.find(
-        (asset) =>
-          asset.planLabel === buildPhasePlanLabel(title, item.formatLabel!) &&
-          asset.assetType === item.assetType,
-      ) ?? null;
-
-    if (!candidate) {
-      continue;
+    const expectedLabel = buildPhasePlanLabel(title, item.formatLabel);
+    for (const asset of assets) {
+      if (!planLabelsEquivalent(asset.planLabel, expectedLabel)) {
+        continue;
+      }
+      if (asset.assetType !== item.assetType) {
+        continue;
+      }
+      if (item.metaPlacement === "story" && asset.assetType !== "instagram_story") {
+        continue;
+      }
+      if (item.metaPlacement === "feed" && asset.assetType === "instagram_story") {
+        continue;
+      }
+      candidates.push(asset);
     }
-
-    if (item.metaPlacement === "story" && candidate.assetType !== "instagram_story") {
-      continue;
-    }
-
-    if (item.metaPlacement === "feed" && candidate.assetType === "instagram_story") {
-      continue;
-    }
-
-    return candidate;
   }
 
-  return null;
+  return pickPreferredArtworkAsset(candidates);
 }
 
 /** Story slot incorrectly holds the same file (or row) as feed — not a real 9:16 approval. */

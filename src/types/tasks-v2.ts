@@ -4,15 +4,19 @@ import type { TaskHubPageData, TaskHubTaskItem } from "@/types/task-hub";
 export type TasksV2ViewTab =
   | "main_table"
   | "my_tasks"
-  | "calendar"
   | "kanban"
-  | "timeline"
-  | "workload"
   | "files";
 
 export type TasksV2Priority = "high" | "medium" | "low";
 
 export type TasksV2DisplayStatus = EventPlaybookTaskStatus | "deferred";
+
+export interface TasksV2Viewer {
+  /** auth.users id — primary My Tasks match key */
+  userId: string | null;
+  displayName: string | null;
+  email: string | null;
+}
 
 export interface TasksV2SummaryStats {
   tasksDue: number;
@@ -34,6 +38,9 @@ export interface TasksV2EventGroup {
 export interface TasksV2PageData extends TaskHubPageData {
   eventGroups: TasksV2EventGroup[];
   summary: TasksV2SummaryStats;
+  aiAvailable: boolean;
+  aiUnavailableReason: string | null;
+  viewer: TasksV2Viewer;
 }
 
 export interface TasksV2AiInsight {

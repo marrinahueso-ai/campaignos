@@ -1,3 +1,9 @@
+import {
+  canAccessEvent,
+  filterEventsByAccess,
+  getEffectiveAccess,
+  type EffectiveAccess,
+} from "@/lib/access-templates/effective-access";
 import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
 import { mapEventRow, mapEventRows } from "@/lib/events/mappers";
@@ -5,8 +11,14 @@ import {
   getOrganizationSchoolYearIds,
   resolveScopedOrganizationId,
 } from "@/lib/events/org-scope";
+import { EVENT_SUMMARY_SELECT } from "@/lib/events/selects";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import type { Event, EventRow } from "@/types";
+
+async function applyAssignedEventsFilter(events: Event[]): Promise<Event[]> {
+  const access = await getEffectiveAccess();
+  return filterEventsByAccess(access, events);
+}
 
 async function scopedSchoolYearIds(
   organizationId?: string | null,
@@ -33,7 +45,7 @@ export async function getUpcomingEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", today)
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
@@ -45,7 +57,7 @@ export async function getUpcomingEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getEventsInDateRange(
@@ -62,7 +74,7 @@ export async function getEventsInDateRange(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", startDate)
     .lte("date", endDate)
     .neq("status", "archived")
@@ -74,7 +86,7 @@ export async function getEventsInDateRange(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getEventsInNextDays(
@@ -92,7 +104,7 @@ export async function getEventsInNextDays(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .gte("date", today)
     .lte("date", endDate)
     .neq("status", "archived")
@@ -104,7 +116,7 @@ export async function getEventsInNextDays(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getActiveEvents(
@@ -119,7 +131,7 @@ export async function getActiveEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
@@ -129,7 +141,7 @@ export async function getActiveEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export async function getAllEvents(
@@ -144,7 +156,7 @@ export async function getAllEvents(
 
   const { data, error } = await supabase
     .from("events")
-    .select("*")
+    .select(EVENT_SUMMARY_SELECT)
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });
 
@@ -153,31 +165,57 @@ export async function getAllEvents(
     return [];
   }
 
-  return mapEventRows((data ?? []) as EventRow[]);
+  return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
 export const getEventById = cache(async (id: string): Promise<Event | null> => {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .single();
+  // Overlap event fetch with school-year scope — sequential was adding a
+  // full round-trip on every event page (including Create with AI).
+  const [eventResult, schoolYearIds, access] = await Promise.all([
+    supabase.from("events").select("*").eq("id", id).single(),
+    scopedSchoolYearIds(undefined),
+    getEffectiveAccess(),
+  ]);
 
+  const { data, error } = eventResult;
   if (error || !data) {
     return null;
   }
 
-  const schoolYearIds = await scopedSchoolYearIds(undefined);
   if (!schoolYearIds?.length) {
     return null;
   }
 
-  const row = data as EventRow & { school_year_id?: string | null };
+  const row = data as unknown as EventRow & { school_year_id?: string | null };
   if (!row.school_year_id || !schoolYearIds.includes(row.school_year_id)) {
+    return null;
+  }
+
+  // Assigned-only members must not load unassigned events by id (IDOR).
+  if (access && !canAccessEvent(access, id)) {
     return null;
   }
 
   return mapEventRow(row);
 });
+
+/**
+ * Event-scoped gate for mutations/pages that take eventId.
+ * Wraps getEventById (org scope + assigned-only EffectiveAccess).
+ */
+export async function requireEventAccess(
+  eventId: string,
+): Promise<{ event: Event; access: EffectiveAccess | null } | { error: string }> {
+  const [event, access] = await Promise.all([
+    getEventById(eventId),
+    getEffectiveAccess(),
+  ]);
+
+  if (!event) {
+    return { error: "Event not found or you do not have access." };
+  }
+
+  return { event, access };
+}

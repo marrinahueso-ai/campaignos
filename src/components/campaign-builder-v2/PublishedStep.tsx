@@ -20,14 +20,14 @@ export function PublishedStep() {
               strokeWidth={1.25}
             />
             <h1 className="mt-6 font-display text-4xl text-cos-text">
-              Campaign published
+              Sent for approval
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-cos-muted">
               <span className="font-medium text-cos-text">
                 {session.inspiration.campaignName}
               </span>{" "}
-              milestones are scheduled and ready to go live. Monitor delivery in
-              Publishing or return to Create with AI to adjust inspiration and milestones.
+              is in the approval queue. Track status in Approvals &amp; Schedule,
+              or return to Create with AI to adjust inspiration and milestones.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { mapCalendarImportRow } from "@/lib/organizations/mappers";
 import { toEventInsert } from "@/lib/events/mappers";
@@ -23,6 +24,12 @@ import { getActiveSchoolYear } from "@/lib/school-years/queries";
 
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
 
+async function resolveDbClient(
+  client?: SupabaseClient,
+): Promise<SupabaseClient> {
+  return client ?? (await createClient());
+}
+
 export async function updateCalendarImportParseStatus(
   importId: string,
   patch: {
@@ -32,8 +39,9 @@ export async function updateCalendarImportParseStatus(
     parsedEvents?: CalendarReviewEvent[] | null;
     importedAt?: string | null;
   },
+  client?: SupabaseClient,
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(client);
 
   const { error } = await supabase
     .from("calendar_imports")
@@ -73,16 +81,22 @@ export async function insertImportedEvents(
   events: CalendarReviewEvent[],
   calendarImportId: string,
   existingKeys?: Set<string>,
+  client?: SupabaseClient,
 ): Promise<{ events: Event[]; skippedCount: number }> {
   if (events.length === 0) {
     return { events: [], skippedCount: 0 };
   }
 
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(client);
   const today = getTodayDateString();
-  const organizationId = await getImportOrganizationId(calendarImportId);
+  const organizationId = await getImportOrganizationId(
+    calendarImportId,
+    supabase,
+  );
   const activeSchoolYear = organizationId
-    ? await getActiveSchoolYear(organizationId)
+    ? client
+      ? await getActiveSchoolYearViaClient(organizationId, supabase)
+      : await getActiveSchoolYear(organizationId)
     : null;
 
   let dedupeKeys = existingKeys;
@@ -161,8 +175,9 @@ export async function insertImportedEvents(
 
 async function getImportOrganizationId(
   calendarImportId: string,
+  client?: SupabaseClient,
 ): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(client);
   const { data } = await supabase
     .from("calendar_imports")
     .select("organization_id")
@@ -170,6 +185,30 @@ async function getImportOrganizationId(
     .maybeSingle();
 
   return (data?.organization_id as string | undefined) ?? null;
+}
+
+async function getActiveSchoolYearViaClient(
+  organizationId: string,
+  supabase: SupabaseClient,
+): Promise<{ id: string } | null> {
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("active_school_year_id")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  const schoolYearId = org?.active_school_year_id as string | null | undefined;
+  if (!schoolYearId) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("school_years")
+    .select("id")
+    .eq("id", schoolYearId)
+    .maybeSingle();
+
+  return data ? { id: data.id as string } : null;
 }
 
 export async function deleteEventsByIds(
@@ -418,8 +457,9 @@ export async function createCalendarImportFromIcsText(
   organizationId: string,
   icsText: string,
   filename: string,
+  client?: SupabaseClient,
 ): Promise<{ importRecord: CalendarImport | null; error: string | null }> {
-  const supabase = await createClient();
+  const supabase = await resolveDbClient(client);
   const safeFilename = filename.trim() || "calendar-subscribe.ics";
   const storagePath = `${organizationId}/${Date.now()}-${safeFilename}`;
   const buffer = Buffer.from(icsText, "utf-8");

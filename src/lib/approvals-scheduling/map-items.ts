@@ -16,6 +16,7 @@ import type {
   UnifiedDeliveryMethod,
   UnifiedPlatform,
 } from "@/lib/approvals-scheduling/types";
+import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type { ApprovalQueueItem } from "@/types/event-workspace";
@@ -155,9 +156,19 @@ export function mapPlanningPublishingItem(
   item: PlanningCalendarItem,
   today: string,
   now = new Date(),
+  assets?: {
+    captionText?: string | null;
+    storyCaptionSnippet?: string | null;
+    feedArtworkUrl?: string | null;
+    storyArtworkUrl?: string | null;
+  },
 ): UnifiedApprovalItem {
   const workflowStatus = derivePlanningWorkflowStatus(item, today);
   const scheduleAt = item.scheduledAt ?? `${item.scheduledDate}T10:00:00.000Z`;
+  const feedArtworkUrl = assets?.feedArtworkUrl ?? null;
+  const storyArtworkUrl = assets?.storyArtworkUrl ?? null;
+  const captionText = assets?.captionText ?? item.draftContent ?? null;
+  const storyCaptionSnippet = assets?.storyCaptionSnippet ?? null;
 
   return {
     id: `planning-${item.id}`,
@@ -165,8 +176,10 @@ export function mapPlanningPublishingItem(
     eventId: item.eventId,
     eventTitle: item.eventTitle,
     campaignName: item.eventTitle,
-    milestoneName: item.timelineStepTitle ?? item.title,
-    thumbnailUrl: null,
+    milestoneName: normalizeMilestoneName(
+      item.timelineStepTitle ?? item.title,
+    ),
+    thumbnailUrl: feedArtworkUrl ?? storyArtworkUrl,
     workflowStatus,
     statusDetail: statusDetailForItem(
       workflowStatus,
@@ -194,10 +207,10 @@ export function mapPlanningPublishingItem(
     channel: item.channel,
     notes: null,
     preview: {
-      captionText: item.draftContent,
-      storyCaptionSnippet: null,
-      feedArtworkUrl: null,
-      storyArtworkUrl: null,
+      captionText,
+      storyCaptionSnippet,
+      feedArtworkUrl,
+      storyArtworkUrl,
     },
     requestedAt: scheduleAt,
     approvalHistory: [
@@ -248,8 +261,8 @@ export function mapSchedulingItemRow(
     eventId: row.event_id,
     eventTitle,
     campaignName: row.campaign_name ?? eventTitle,
-    milestoneName: row.milestone_name,
-    thumbnailUrl: row.feed_artwork_url,
+    milestoneName: normalizeMilestoneName(row.milestone_name),
+    thumbnailUrl: row.feed_artwork_url ?? row.story_artwork_url,
     workflowStatus,
     statusDetail: statusDetailForItem(
       workflowStatus,

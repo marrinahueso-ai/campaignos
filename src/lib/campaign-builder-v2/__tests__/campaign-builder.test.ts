@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { playbookRelativeDay } from "../campaign-timing.ts";
+import { describeAudienceFacingTiming, playbookRelativeDay } from "../campaign-timing.ts";
 import {
   hydrateCampaignBuilderSession,
   mergeCampaignBuilderSessions,
@@ -21,7 +21,11 @@ import {
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
 } from "../prompt-guardrails.ts";
-import { syncCaptionsToPlatforms, getSharedCaptionText } from "../caption-utils.ts";
+import {
+  ensureSharedCaptionsForPlatforms,
+  getSharedCaptionText,
+  syncCaptionsToPlatforms,
+} from "../caption-utils.ts";
 import { mergeInspirationImageUrls } from "../inspiration-utils.ts";
 import { isNoBrandKit, brandKitIdForAi, NO_BRAND_KIT_ID } from "../brand-kit.ts";
 import {
@@ -110,6 +114,15 @@ describe("validateMilestonesForGeneration", () => {
     ]);
     assert.equal(result.valid, false);
     assert.match(result.message ?? "", /purpose/i);
+  });
+
+  it("auto-fills blank purpose before generation", () => {
+    const result = validateBeforeGeneration({
+      inspiration: baseInspiration,
+      milestones: [{ ...baseMilestone, purpose: "" }],
+      milestoneIds: ["ms-1"],
+    });
+    assert.equal(result.valid, true);
   });
 });
 
@@ -202,6 +215,17 @@ describe("caption-utils", () => {
     ]);
     assert.equal(text, "Shared copy");
   });
+
+  it("mirrors a Facebook-only caption onto Instagram", () => {
+    const captions = ensureSharedCaptionsForPlatforms(
+      [{ platform: "facebook", text: "Tomorrow! See you there." }],
+      ["facebook", "instagram"],
+    );
+    assert.deepEqual(captions, [
+      { platform: "facebook", text: "Tomorrow! See you there." },
+      { platform: "instagram", text: "Tomorrow! See you there." },
+    ]);
+  });
 });
 
 describe("brand-kit helpers", () => {
@@ -236,6 +260,37 @@ describe("campaign timing", () => {
       -14,
     );
   });
+
+  it("describes audience-facing countdown language for common milestones", () => {
+    const twoWeeks = describeAudienceFacingTiming(-14);
+    assert.match(twoWeeks.scheduleSummary, /2 weeks away/i);
+    assert.ok(twoWeeks.onGraphicExamples.some((phrase) => /2 weeks/i.test(phrase)));
+    assert.match(twoWeeks.guidance, /2 weeks away/i);
+    assert.match(twoWeeks.guidance, /not .*Two-Week/i);
+
+    const oneWeek = describeAudienceFacingTiming(-7);
+    assert.ok(oneWeek.onGraphicExamples.some((phrase) => /1 week/i.test(phrase)));
+
+    const dayBefore = describeAudienceFacingTiming(-1);
+    assert.ok(dayBefore.onGraphicExamples.some((phrase) => /Tomorrow/i.test(phrase)));
+
+    const today = describeAudienceFacingTiming(0);
+    assert.ok(today.onGraphicExamples.some((phrase) => /Today/i.test(phrase)));
+  });
+
+  it("omits countdown language for the first campaign milestone", () => {
+    const firstAtOneWeek = describeAudienceFacingTiming(-7, {
+      isFirstMilestone: true,
+    });
+    assert.equal(firstAtOneWeek.onGraphicExamples.length, 0);
+    assert.match(firstAtOneWeek.guidance, /first-time flyer|first look/i);
+    assert.doesNotMatch(firstAtOneWeek.guidance, /1 week to go/i);
+
+    const laterAtOneWeek = describeAudienceFacingTiming(-7, {
+      isFirstMilestone: false,
+    });
+    assert.ok(laterAtOneWeek.onGraphicExamples.some((phrase) => /1 week/i.test(phrase)));
+  });
 });
 
 describe("stale seed migration", () => {
@@ -264,6 +319,35 @@ describe("stale seed migration", () => {
 });
 
 describe("normalizeCampaignBuilderSession", () => {
+  it("forces the first milestone category to awareness", () => {
+    const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const first = defaults.milestones[0];
+    assert.ok(first);
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        milestones: [
+          {
+            ...first,
+            category: "reminder",
+            purpose: "Drive attendance with schedule highlights",
+          },
+          ...defaults.milestones.slice(1),
+        ],
+      },
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+    );
+
+    assert.equal(normalized.milestones[0]?.sortOrder, 0);
+    assert.equal(normalized.milestones[0]?.category, "awareness");
+    // Existing non-blank purpose is preserved; prompts use first-milestone timing.
+    assert.equal(
+      normalized.milestones[0]?.purpose,
+      "Drive attendance with schedule highlights",
+    );
+  });
+
   it("renames Two-Week Reminder and strips stale volunteer notes", () => {
     const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
     const normalized = normalizeCampaignBuilderSession(
@@ -574,6 +658,7 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
           ...server.previewContents[0],
           milestoneId: "playbook-14-days",
           generationStatus: "generated" as const,
+          enabledFormats: ["facebook-feed", "instagram-feed"] as const,
           artwork: { feedUrl, storyUrl: null },
           captions: [
             { platform: "facebook" as const, text: "Fair in 14 days!" },
@@ -721,6 +806,16 @@ describe("stripStaleClearedArtwork — must not delete new generations", () => {
       ...buildDefaultSession(eventId, "Back to School Fair", "2026-08-17")
         .previewContents[0],
       generationStatus: "generated" as const,
+      enabledFormats: [
+        "facebook-feed",
+        "facebook-story",
+        "instagram-feed",
+        "instagram-story",
+      ] as const,
+      captions: [
+        { platform: "facebook" as const, text: "See you at the fair!" },
+        { platform: "instagram" as const, text: "See you at the fair!" },
+      ],
       artwork: { feedUrl, storyUrl },
     };
 
@@ -768,7 +863,15 @@ describe("prompt guardrails for artwork generation", () => {
   it("forbids reminder milestone copy on artwork", () => {
     assert.match(
       CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
-      /Never use the words reminder, two-week reminder, or milestone on the graphic/,
+      /Never paste milestone names/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+      /2 weeks away/,
+    );
+    assert.match(
+      CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
+      /Never use internal jargon like reminder/,
     );
   });
 

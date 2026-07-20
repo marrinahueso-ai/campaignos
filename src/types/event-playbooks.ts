@@ -24,6 +24,7 @@ export interface EventPlaybookTaskRow {
   due_date: string | null;
   assignee_name: string | null;
   assignee_initials: string | null;
+  assignee_user_id: string | null;
   group_id: string | null;
   sort_order: number;
   created_at: string;
@@ -74,6 +75,8 @@ export interface EventPlaybookTask {
   dueDate: string | null;
   assigneeName: string | null;
   assigneeInitials: string | null;
+  /** auth.users id — primary key for My Tasks matching */
+  assigneeUserId: string | null;
   groupId: string | null;
   sortOrder: number;
   createdAt: string;

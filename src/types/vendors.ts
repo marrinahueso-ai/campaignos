@@ -59,6 +59,7 @@ export interface Vendor {
   status: VendorStatus;
   isFavorite: boolean;
   notesSummary: string | null;
+  logoPath: string | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -80,6 +81,7 @@ export interface VendorRow {
   status: VendorStatus;
   is_favorite: boolean;
   notes_summary: string | null;
+  logo_path?: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -294,6 +296,8 @@ export interface EventVendorRow {
   category: VendorCategory | null;
   primaryContact: VendorContact | null;
   assignmentStatus: VendorAssignmentStatus;
+  /** Signed URL for logo display; resolved when loading event vendors. */
+  logoUrl: string | null;
 }
 
 export interface EventVendorsData {

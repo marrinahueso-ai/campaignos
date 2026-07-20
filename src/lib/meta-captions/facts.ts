@@ -1,6 +1,5 @@
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getEventById } from "@/lib/events/queries";
-import { hasVerifiedVolunteerNeeds } from "@/lib/events/volunteer-needs";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 
 function line(label: string, value: string | null | undefined): string | null {
@@ -36,9 +35,6 @@ export async function buildMetaCaptionFactsBlock(input: {
     line("Theme", event.theme),
     event.description?.trim() ? `About: ${event.description.trim()}` : null,
     line("School", organization?.name ?? null),
-    hasVerifiedVolunteerNeeds(event.volunteerNeeds)
-      ? line("Volunteer needs", event.volunteerNeeds)
-      : null,
     `Milestone: ${input.milestoneTitle} (${input.relativeDay} days from event)`,
   ].filter(Boolean);
 

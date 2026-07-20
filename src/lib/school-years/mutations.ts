@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { mapSchoolYearRow } from "@/lib/school-years/mappers";
@@ -182,8 +183,9 @@ export async function activateSchoolYear(
 export async function linkCalendarImportToSchoolYear(
   calendarImportId: string,
   schoolYearId: string | null,
+  client?: SupabaseClient,
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   await supabase
     .from("calendar_imports")
     .update({ school_year_id: schoolYearId })

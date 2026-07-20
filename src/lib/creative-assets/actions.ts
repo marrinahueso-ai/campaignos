@@ -6,12 +6,7 @@ import {
   campaignRoleLabel,
 } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import {
-  canDeleteCampaignAssets,
-  canManageBrandKit,
-  canRestoreAssetVersions,
-  canUploadCampaignAssets,
-} from "@/lib/creative-assets/permissions";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 import {
   createCampaignAsset,
   deleteCampaignAsset,
@@ -64,8 +59,7 @@ export async function uploadCampaignAssetAction(
   assetId: string,
   formData: FormData,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to upload assets.", success: false };
   }
 
@@ -94,8 +88,7 @@ export async function createAndUploadCampaignAssetAction(
   assetType: EventAssetType,
   formData: FormData,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to upload assets.", success: false };
   }
 
@@ -123,8 +116,7 @@ export async function deleteCampaignAssetAction(
   eventId: string,
   assetId: string,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canDeleteCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to delete assets.", success: false };
   }
 
@@ -142,8 +134,7 @@ export async function restoreCampaignAssetVersionAction(
   assetId: string,
   versionId: string,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canRestoreAssetVersions(role)) {
+  if (!(await hasPermission("approve_comms"))) {
     return { error: "Only board members can restore versions.", success: false };
   }
 
@@ -179,8 +170,7 @@ export async function duplicateInspirationAction(
   sourceAssetId: string,
   targetEventId: string,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to duplicate assets.", success: false };
   }
 
@@ -202,8 +192,7 @@ export async function createCampaignAssetSlotAction(
   eventId: string,
   assetType: EventAssetType,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to create assets.", success: false };
   }
 
@@ -221,8 +210,7 @@ export async function setCanvaUrlAction(
   assetId: string,
   canvaUrl: string,
 ): Promise<CreativeAssetActionState> {
-  const role = await getCurrentCampaignRole();
-  if (!canUploadCampaignAssets(role)) {
+  if (!(await hasPermission("upload_artwork"))) {
     return { error: "You do not have permission to update assets.", success: false };
   }
 
@@ -242,6 +230,5 @@ export async function setCanvaUrlAction(
 }
 
 export async function canManageBrandKitAction(): Promise<boolean> {
-  const role = await getCurrentCampaignRole();
-  return canManageBrandKit(role);
+  return hasPermission("approve_comms");
 }

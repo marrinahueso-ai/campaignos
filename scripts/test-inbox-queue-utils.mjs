@@ -78,9 +78,9 @@ function classifyThreadQueueState(thread, messages) {
   }
 
   const completed =
+    thread.status === "archived" ||
     replyTarget.status === "sent" ||
-    replyTarget.status === "archived" ||
-    thread.status === "sent";
+    replyTarget.status === "archived";
 
   const needsReply = !completed && replyTarget.status === "pending";
   const waitingOnAi =
@@ -104,9 +104,14 @@ function computeQueueCounts(threads, messagesByThreadId) {
     readyToSend: 0,
     assignedToMe: 0,
     completed: 0,
+    archived: 0,
   };
 
   for (const thread of threads) {
+    if (thread.status === "archived") {
+      counts.archived += 1;
+      continue;
+    }
     const messages = messagesByThreadId[thread.id] ?? [];
     const state = classifyThreadQueueState(thread, messages);
     if (state.needsReply) counts.needsReply += 1;
@@ -117,6 +122,29 @@ function computeQueueCounts(threads, messagesByThreadId) {
   }
 
   return counts;
+}
+
+function filterThreadsForCommunicationsHub({
+  threads,
+  messagesByThreadId,
+  queueFilter,
+}) {
+  return threads.filter((thread) => {
+    const messages = messagesByThreadId[thread.id] ?? [];
+    const state = classifyThreadQueueState(thread, messages);
+    switch (queueFilter) {
+      case "all":
+        return thread.status !== "archived";
+      case "archived":
+        return thread.status === "archived";
+      case "completed":
+        return thread.status !== "archived" && state.completed;
+      case "needs_reply":
+        return thread.status !== "archived" && state.needsReply;
+      default:
+        return true;
+    }
+  });
 }
 
 function assert(condition, message) {
@@ -158,13 +186,42 @@ const approvedState = classifyThreadQueueState(thread, [
 assert(approvedState.readyToSend === true, "expected readyToSend");
 
 const counts = computeQueueCounts(
-  [thread, { id: "thread-2", channelType: "facebook_message", unreadCount: 0, status: "sent" }],
+  [
+    thread,
+    { id: "thread-2", channelType: "facebook_message", unreadCount: 0, status: "sent" },
+    { id: "thread-3", channelType: "facebook_message", unreadCount: 0, status: "archived" },
+  ],
   {
     "thread-1": [message],
     "thread-2": [{ ...message, id: "msg-2", threadId: "thread-2", status: "sent" }],
+    "thread-3": [{ ...message, id: "msg-3", threadId: "thread-3", status: "pending" }],
   },
 );
 assert(counts.needsReply === 1, "expected one needsReply");
 assert(counts.completed === 1, "expected one completed");
+assert(counts.archived === 1, "expected one archived");
+
+const activeOnly = filterThreadsForCommunicationsHub({
+  threads: [
+    thread,
+    { id: "thread-3", channelType: "facebook_message", unreadCount: 0, status: "archived" },
+  ],
+  messagesByThreadId: {
+    "thread-1": [message],
+    "thread-3": [message],
+  },
+  queueFilter: "all",
+});
+assert(activeOnly.length === 1, "all conversations should exclude archived");
+assert(activeOnly[0].id === "thread-1", "expected active thread only");
+
+const reopenedAfterSend = classifyThreadQueueState(
+  { ...thread, status: "sent", unreadCount: 1 },
+  [message],
+);
+assert(
+  reopenedAfterSend.needsReply === true,
+  "sent thread with new pending inbound should need reply",
+);
 
 console.log("OK: inbox queue utils smoke tests passed");

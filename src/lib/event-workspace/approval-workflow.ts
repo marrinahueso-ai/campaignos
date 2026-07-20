@@ -1,8 +1,6 @@
 import { channelLabel } from "@/lib/ai/content";
-import {
-  canSubmitForApproval,
-  type CampaignRole,
-} from "@/lib/auth/campaign-roles";
+import { hasPermission } from "@/lib/access-templates/effective-access";
+import { type CampaignRole } from "@/lib/auth/campaign-roles";
 import { getEventById } from "@/lib/events/queries";
 import {
   canActOnAssignedApproval,
@@ -255,7 +253,7 @@ export async function sendCommunicationForApproval(
   role: CampaignRole,
   actor?: ApprovalActor | null,
 ): Promise<ApprovalWorkflowResult> {
-  if (!canSubmitForApproval(role)) {
+  if (!(await hasPermission("submit_approval"))) {
     return {
       success: false,
       error: "You do not have permission to send drafts for approval.",
@@ -384,7 +382,8 @@ export async function approveCommunicationDraft(
 ): Promise<ApprovalWorkflowResult> {
   const assignment = await getPendingApprovalAssignment(communicationItemId);
 
-  if (!canActOnAssignedApproval(role, actor ?? null, assignment)) {
+  const canApprove = await hasPermission("approve_comms");
+  if (!canActOnAssignedApproval(role, actor ?? null, assignment, canApprove)) {
     return {
       success: false,
       error: "You are not the assigned approver for this draft.",
@@ -475,7 +474,8 @@ export async function requestCommunicationChanges(
 ): Promise<ApprovalWorkflowResult> {
   const assignment = await getPendingApprovalAssignment(communicationItemId);
 
-  if (!canActOnAssignedApproval(role, actor ?? null, assignment)) {
+  const canApprove = await hasPermission("approve_comms");
+  if (!canActOnAssignedApproval(role, actor ?? null, assignment, canApprove)) {
     return {
       success: false,
       error: "You are not the assigned approver for this draft.",
@@ -573,7 +573,7 @@ export async function appendChangeRequestComment(
   comment: string,
   actor?: ApprovalActor | null,
 ): Promise<ApprovalWorkflowResult> {
-  if (!canSubmitForApproval(role)) {
+  if (!(await hasPermission("submit_approval"))) {
     return {
       success: false,
       error: "You do not have permission to comment on this draft.",

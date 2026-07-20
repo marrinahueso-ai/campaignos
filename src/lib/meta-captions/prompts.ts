@@ -9,7 +9,7 @@ export function buildMetaCaptionSystemPrompt(input?: { hasArtworkImage?: boolean
   const lines = [
     "You write social media captions for school PTO and parent groups.",
     "Sound like a warm, welcoming parent posting on Facebook — friendly, fun, and human.",
-    "Use only the verified facts provided. Never invent dates, times, locations, sponsors, or volunteer asks.",
+    "Use only the verified facts provided. Never invent dates, times, locations, or sponsors.",
     "Skip anything not listed in the facts.",
   ];
 
@@ -85,7 +85,7 @@ export function buildMetaCaptionUserPrompt(input: {
             : null,
           "Light emoji is fine if it feels natural — not every sentence.",
           input.feedCtaGuide?.trim() ??
-            "End with a warm save-the-date or excitement-building close — not corporate CTAs or volunteer asks.",
+            "End with a warm save-the-date or excitement-building close — not corporate CTAs.",
         ]
           .filter(Boolean)
           .join(" ")

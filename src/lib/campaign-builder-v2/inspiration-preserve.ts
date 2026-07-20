@@ -66,6 +66,43 @@ export function slimInspirationImagesForStorage(
     .filter((image): image is InspirationImage => image !== null);
 }
 
+/** Http(s) inspiration only — safe for localStorage / server session_data. */
+export function httpInspirationImagesForStorage(
+  images: InspirationImage[] | null | undefined,
+): InspirationImage[] {
+  return slimInspirationImagesForStorage(images ?? []).filter((image) =>
+    isHttpUrl(image.url),
+  );
+}
+
+/**
+ * Resolve which inspiration images to persist.
+ *
+ * Pending blob previews cannot be serialized. While an upload is in flight,
+ * keep previously stored http inspiration so slim/skip-unchanged paths cannot
+ * write `inspirationImages: []` and wipe Creative Setup on refresh.
+ * An intentional clear (no http, no blob) still persists as [].
+ */
+export function resolveInspirationImagesForStorage(
+  liveImages: InspirationImage[] | null | undefined,
+  previouslyStoredImages?: InspirationImage[] | null,
+): InspirationImage[] {
+  const live = liveImages ?? [];
+  const liveHttp = httpInspirationImagesForStorage(live);
+  if (liveHttp.length > 0) {
+    return liveHttp;
+  }
+
+  const hasPendingBlob = live.some((image) =>
+    Boolean(image.previewUrl?.startsWith("blob:")),
+  );
+  if (!hasPendingBlob) {
+    return [];
+  }
+
+  return httpInspirationImagesForStorage(previouslyStoredImages);
+}
+
 /**
  * Apply server-resolved inspiration after generation without ever wiping a
  * richer client-side inspiration set.

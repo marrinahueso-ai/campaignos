@@ -55,7 +55,9 @@ export function InsightsDateRangeSelector({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-muted",
         )}
       >
-        <option value="custom">{currentLabel}</option>
+        {!activePreset ? (
+          <option value="custom">Custom · {currentLabel}</option>
+        ) : null}
         {INSIGHTS_DATE_PRESETS.map((preset) => (
           <option key={preset.id} value={preset.id}>
             {preset.label}

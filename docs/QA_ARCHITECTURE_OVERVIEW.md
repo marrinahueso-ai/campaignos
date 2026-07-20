@@ -1,0 +1,249 @@
+# Hey Ralli — Architecture Overview for QA
+
+**Audience:** QA engineers reviewing the application  
+**Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
+**Production:** [heyralli.com](https://heyralli.com)  
+**Last updated:** July 20, 2026  
+
+This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
+
+Related detail: [ARCHITECTURE.md](./ARCHITECTURE.md) (engineering structure), [FEATURE_LIST.md](./FEATURE_LIST.md), [META_CONNECTION.md](./META_CONNECTION.md), [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md).
+
+---
+
+## 1. What Hey Ralli does
+
+Hey Ralli is an AI communications operating system for school PTO / PTA volunteers. It turns a school calendar into planned social campaigns: import dates (Google Calendar, ICS subscribe, or file upload), organize them as events, generate on-brand artwork and captions with AI, route posts through board approval, and publish or schedule to Facebook and Instagram via a connected Meta Page. Volunteers also get a Today dashboard, tasks, a Meta inbox with AI reply drafts, Insights, and team access controls — so communications stay calendar-first, human-approved, and in one place instead of scattered across Canva, Docs, and Facebook.
+
+---
+
+## 2. Tech stack
+
+| Layer | Technology | Notes for QA |
+|-------|------------|--------------|
+| App framework | **Next.js 15** (App Router) + **React 19** | Server Components for data load; Server Actions for writes |
+| Language | **TypeScript** | Strict typing across `src/` |
+| UI | **Tailwind CSS 4** + shared `src/components/ui` | Design tokens (`cos-*` classes) |
+| Auth & database | **Supabase** (Auth, PostgreSQL, Storage, RLS) | Org membership + RLS scopes data; service role used by some cron jobs |
+| Hosting | **Vercel** | Production + Preview; env vars per environment |
+| AI (text) | **OpenAI** Chat Completions (`OPENAI_API_KEY`) | Captions, calendar fix-up, inbox drafts, Ask Ralli, campaign copy |
+| AI (images) | **OpenAI Images** API | Feed (1:1) + Story (9:16) artwork |
+| Social publish / inbox / insights | **Meta Graph API** | Org OAuth → `organization_meta_connections` |
+| Calendar OAuth | **Google Calendar API** | Org OAuth → `organization_google_calendar_connections` |
+| Email | **Resend** | Invites / welcome magic links (config-dependent) |
+| Error monitoring | **Sentry** (`@sentry/nextjs`) | “Report a problem” + server/client capture |
+| Optional integrations | **Canva**, **Monday.com** | OAuth; not required for core publish path |
+| E2E smoke | **Playwright** (`tests/hey-ralli/smoke/`) | e.g. Tasks, Insights |
+
+**Typical request shape**
+
+1. Browser hits a dashboard route under `src/app/(dashboard)/…`
+2. Server Component loads data via `src/lib/*/queries.ts` (Supabase user session)
+3. User action → Server Action in `src/lib/*/actions.ts` → mutations → `revalidatePath`
+4. Background work: Vercel Cron → `/api/cron/*` (publish due posts, inbox sync, calendar sync, token health)
+
+**Environments QA should distinguish**
+
+- **Local:** `.env.local` (OpenAI, Supabase, Meta, Google, etc.)
+- **Preview / Production:** Vercel env; OAuth redirect URIs must match the host
+- **Meta / Google OAuth in Testing mode:** only allowlisted test users can complete Connect
+
+---
+
+## 3. AI workflow — event upload to published post
+
+Happy path for QA (calendar-first → Create with AI → Approvals → Meta).
+
+```
+Calendar import → Review → Events on Calendar
+       ↓
+Pick / open Event → Create with AI (campaign)
+       ↓
+AI artwork + captions per milestone
+       ↓
+Send to Approvals → Approve / request changes
+       ↓
+Schedule or Publish now → Meta (Facebook Page + Instagram)
+       ↓
+Appears on Calendar / Approvals “published” · feeds Insights & heatmap history
+```
+
+### Step-by-step
+
+| Step | What the user does | What the system does | Where to test |
+|------|--------------------|----------------------|---------------|
+| **1. School setup** | Complete School Setup (school, brand, timezone, optional calendar / Meta / team) | Creates `organizations`, brand assets, active school year | `/settings/school-setup` |
+| **2. Connect Meta** (required to publish) | Settings → Meta → Connect | OAuth → stores Page + tokens on `organization_meta_connections` | `/settings/meta` |
+| **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file | Parses / syncs into `calendar_imports` | `/settings/integrations/calendar`, `/calendar/import` |
+| **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
+| **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
+| **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |
+| **7. Create with AI** | Pick milestones, inspiration, logos; generate | OpenAI text + image APIs create feed/story artwork and captions; assets stored in Supabase Storage | `/create-with-ai` or event **Create with AI** |
+| **8. Human edit** | Regenerate, edit caption, adjust artwork | AI is assistive — nothing posts without later approval/publish | Campaign builder review steps |
+| **9. Send to Approvals** | Move ready bundles into the Approvals hub | Creates / updates approval + publication slot state | `/approvals` |
+| **10. Approve** | Approver accepts or requests changes | Status gates publishing; permissions enforced | `/approvals` |
+| **11. Publish or schedule** | Publish now or set schedule | Graph API publish (or cron picks up due scheduled slots) | Approvals / publish actions |
+| **12. After publish** | Optional: check Inbox, Insights, Calendar | Inbox sync, Insights metrics, heatmap uses published timestamps | `/inbox`, `/insights`, `/calendar` (week) |
+
+### Other AI touchpoints (not on the main publish path)
+
+- **Calendar AI fix** — improve parsed dates/titles during import review  
+- **Inbox AI drafts** — suggest replies; approve-then-send to Meta  
+- **Ask Ralli** — in-app assistant widget  
+- **Tasks AI suggestions** — optional task ideas  
+- **AI Brain** — org voice / style prefs that influence generation tone  
+
+**Principle for QA:** AI drafts; humans approve and publish. There is no silent auto-post of campaign creative without the Approvals / publish path.
+
+---
+
+## 4. System architecture diagram
+
+### High-level systems
+
+```mermaid
+flowchart TB
+  subgraph Clients["Clients"]
+    Browser["Browser<br/>heyralli.com"]
+  end
+
+  subgraph Vercel["Vercel — Next.js 15"]
+    App["App Router UI<br/>Server Components + Actions"]
+    API["API routes<br/>OAuth callbacks · webhooks · cron"]
+    AILayer["AI layer<br/>src/lib/ai · ai-artwork · campaign-builder"]
+  end
+
+  subgraph Supabase["Supabase"]
+    Auth["Auth"]
+    PG["PostgreSQL + RLS"]
+    Storage["Storage<br/>artwork · calendar uploads · logos"]
+  end
+
+  subgraph External["External services"]
+    OpenAI["OpenAI<br/>Chat + Images"]
+    Meta["Meta Graph API<br/>Publish · Inbox · Insights"]
+    Google["Google Calendar API"]
+    Canva["Canva OAuth"]
+    Monday["Monday.com OAuth"]
+    Resend["Resend email"]
+    Sentry["Sentry"]
+  end
+
+  Browser --> App
+  Browser --> API
+  App --> Auth
+  App --> PG
+  App --> Storage
+  App --> AILayer
+  AILayer --> OpenAI
+  API --> Meta
+  API --> Google
+  API --> Canva
+  API --> Monday
+  App --> Meta
+  App --> Resend
+  App --> Sentry
+  API --> PG
+  API --> Storage
+```
+
+### Core domain flow (calendar → publish)
+
+```mermaid
+flowchart LR
+  subgraph Intake["Calendar intake"]
+    GCal["Google OAuth sync"]
+    ICS["ICS subscribe / cron"]
+    Upload["File upload"]
+  end
+
+  Review["calendar_imports<br/>Review UI"]
+  Events["events"]
+  Campaign["Create with AI<br/>artwork + captions"]
+  Approvals["Approvals hub<br/>publication slots"]
+  MetaOut["Meta Page + Instagram"]
+
+  GCal --> Review
+  ICS --> Review
+  Upload --> Review
+  Review -->|"confirm import"| Events
+  Events --> Campaign
+  Campaign --> Approvals
+  Approvals -->|"publish / schedule"| MetaOut
+  MetaOut -->|"history"| Insights["Insights + heatmap"]
+```
+
+### Multi-tenant model (QA implication)
+
+- Users belong to one or more **organizations** via memberships.  
+- Almost all product data is **organization-scoped** (enforced in app queries + Postgres RLS).  
+- Integrations (Meta, Google Calendar, Canva, Monday) are stored **per organization**, not per user.  
+- Switching org (when the user has multiple) changes which calendar, Meta Page, and campaigns you see.
+
+### Background jobs (Vercel Cron)
+
+| Job (approx.) | Purpose |
+|---------------|---------|
+| Calendar ICS subscribe sync | Auto-import new feed events |
+| Google Calendar sync | Auto-import new Google events (connected orgs) |
+| Meta publish | Publish due scheduled slots |
+| Meta token health | Detect expired / unhealthy connections |
+| Inbox sync | Pull Meta DMs / comments / mentions |
+| Story / manual-upload reminders | Reminder emails for manual upload flows |
+
+---
+
+## 5. Known limitations and work in progress
+
+Use this as a **do-not-file-as-regression** / expected-gap list unless the ticket says otherwise. Source of truth for status: [FEATURE_LIST.md](./FEATURE_LIST.md).
+
+### Incomplete or stub
+
+| Area | Status | QA note |
+|------|--------|---------|
+| Create with AI → full Meta “published sync” step | **Stub / incomplete** | Main approve → publish path works; end-of-builder “sync published state” polish may be incomplete |
+| Stripe / real billing checkout | **Deferred** | Pricing page is marketing; paid plan gates not enforced |
+| Gmail inbox + Gmail OAuth | **Deferred** | Meta inbox only for now |
+| Insights demographics / LLM narrative | **Deferred** | KPIs + rule-based recommendations shipped |
+| Insights-weighted posting heatmap | **Deferred** | Heatmap uses preferred windows + local publish times when Meta is connected |
+| Tasks Calendar / Timeline / Workload tabs | **Deferred** | Hidden in UI |
+| Vendor payments / contracts depth | **Partial** | Directory + profile shipped; deep tabs are shells |
+| AI credits widget | **Stub** | Placeholder UI |
+| 2FA | **Deferred** | |
+| Shared connection-health framework polish | **Partial** | Per-provider Connect works; unified health contract still evolving |
+
+### Behavioral / product constraints
+
+1. **Human-in-the-loop** — Campaign posts require Approvals / explicit publish; AI does not auto-publish creative.  
+2. **Calendar review-first (manual import / Google first sync)** — Dates appear on `/calendar` after review confirm (daily Google/ICS cron may auto-import new deduped events).  
+3. **Meta required for publish, Inbox, Insights, heatmap toggle** — Without org Meta Connect, those surfaces empty or hide Meta-backed UI.  
+4. **Google / Meta OAuth “Testing”** — Only listed test users can Connect until apps are published / verified.  
+5. **Google Calendar = primary calendar** — No multi-calendar picker yet.  
+6. **Posting heatmap ≠ Meta Insights engagement** — Scores are prefs + when you published, not reach/engagement heat.  
+7. **Canva / Monday / OpenAI** — Features no-op or show “not configured” without env credentials.  
+8. **Legacy surfaces** — Old Creative Studio / Publishing Center redirect; prefer Create with AI + Approvals.  
+9. **Role permissions** — Artwork, approve, publish, people, integrations are gated; test with more than one role when validating access.  
+10. **Founding access / invites** — Sign-up may require access code; invite links set password via `/invite/[token]`.
+
+### Suggested QA focus areas (high value)
+
+1. **Happy path:** Calendar import → review → Create with AI → Approvals → schedule/publish (Meta connected).  
+2. **Integrations:** Meta Connect/reconnect; Google Calendar Connect + sync → review; expired-token messaging.  
+3. **Permissions:** Viewer vs Chair vs Owner on approve/publish/artwork.  
+4. **Empty / error states:** No Meta, no school year, AI key missing, OAuth cancel.  
+5. **Regression smokes:** `npm run test:hey-ralli` (Playwright); unit suites under `src/lib/**/__tests__` as needed.
+
+### Doc map for deeper review
+
+| Topic | Doc |
+|-------|-----|
+| Engineering architecture | [ARCHITECTURE.md](./ARCHITECTURE.md) |
+| Full feature status | [FEATURE_LIST.md](./FEATURE_LIST.md) |
+| Meta Connect model | [META_CONNECTION.md](./META_CONNECTION.md) |
+| Google Calendar | [GOOGLE_CONNECTION.md](./GOOGLE_CONNECTION.md) |
+| Access control phases | [ACCESS_CONTROL_PHASES_A_C.md](./ACCESS_CONTROL_PHASES_A_C.md) |
+| Storage / RLS notes | [STORAGE_RLS.md](./STORAGE_RLS.md) |
+
+---
+
+*End of QA architecture overview. Treat FEATURE_LIST + this doc as current product truth; RELEASE_0_5 / SPRINTS are historical.*
