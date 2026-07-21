@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Hey Ralli//Calendar Import Dedupe Sample//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:hey-ralli-dedupe-sample-a@heyralli.test
+DTSTART;VALUE=DATE:20261015
+SUMMARY:HR Dedupe Sample Event A
+END:VEVENT
+BEGIN:VEVENT
+UID:hey-ralli-dedupe-sample-b@heyralli.test
+DTSTART;VALUE=DATE:20261112
+SUMMARY:HR Dedupe Sample Event B
+END:VEVENT
+END:VCALENDAR

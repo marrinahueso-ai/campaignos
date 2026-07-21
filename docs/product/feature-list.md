@@ -94,7 +94,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
 - Calendar file upload + import review (incl. AI fix) — **shipped**
-- Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright deferred)
+- Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`)
 - Communications planning calendar — **shipped** (secondary)
 - Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))
 

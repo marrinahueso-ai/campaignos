@@ -52,14 +52,34 @@ Covers UID skip, UID date-change → update, title+date fallback, near-miss not 
 
 ---
 
-## Playwright (deferred — add later)
+## Playwright (Hey Ralli smokes)
 
-Outline for Hey Ralli smokes (not implemented yet):
+**Implemented:** `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`  
+**Helpers / fixtures:** `tests/hey-ralli/helpers/calendar-import.ts`, `tests/hey-ralli/fixtures/calendar-import-dedupe-*.ics`
 
-1. Upload ICS with UIDs → import → re-upload same ICS → duplicates skipped, no second events.
-2. Same UID, changed `DTSTART` → review shows **Update**; Apply patches date; Skip leaves old date.
-3. File with two identical SUMMARY+DTSTART → **Conflict** row.
-4. AI/PDF same title+date re-import → Duplicate / skip via fingerprint or title+date.
-5. (Optional / staging) Google or subscribe sync with unchanged feed → 0 new rows; date move on feed → update count.
+### Coverage
 
-Suggested filenames when added: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts` (and optionally `14b` for Google if credentials allow).
+1. Upload ICS with unique UID → **Import All** succeeds (New → created).
+2. Re-upload same ICS → **Duplicate** status + Duplicates stat; Import All reports already-on-calendar skip; calendar still has one row for that title.
+3. Same UID, changed `DTSTART` → **Update** status; Apply + Import All; re-upload of updated ICS is Duplicate; still one calendar row.
+4. Within-file two identical SUMMARY+DTSTART → **Conflict** visible in review (Import All not clicked — non-destructive).
+
+Not covered yet (optional follow-ups): AI/PDF fingerprint re-import; Google / subscribe cron auto-apply (`14b` if credentials allow).
+
+### How to run
+
+Requires staging credentials in `.env.local` (`HEY_RALLI_TEST_EMAIL` / `HEY_RALLI_TEST_PASSWORD`). Soft-skips when missing. Staging org must have school setup complete so `/calendar/import` accepts uploads. Migration `20260721195203_events_import_external_ids.sql` must be applied on the target DB.
+
+```bash
+npm run test:hey-ralli -- tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts
+```
+
+Or:
+
+```bash
+./scripts/hey-ralli-test.sh tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts
+```
+
+Each run uses timestamped event titles/UIDs (`HR Dedupe Smoke <ms>`) so staging collisions stay rare. Conflict case leaves review without importing.
+
+**Staging notes:** Assertions key off review status badges (New / Duplicate / Update / Conflict), stats cards, and Import All result copy. A best-effort check of the calendar **Import list** view is included but soft-skips when that view toggle does not stick under automation (month grid still showing); review messaging remains authoritative for “no second create.”

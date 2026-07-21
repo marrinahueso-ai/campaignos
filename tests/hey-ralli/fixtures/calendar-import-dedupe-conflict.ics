@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Hey Ralli//Calendar Import Dedupe Conflict Sample//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:hey-ralli-dedupe-conflict-1@heyralli.test
+DTSTART;VALUE=DATE:20261020
+SUMMARY:HR Dedupe Within-File Conflict Sample
+END:VEVENT
+BEGIN:VEVENT
+UID:hey-ralli-dedupe-conflict-2@heyralli.test
+DTSTART;VALUE=DATE:20261020
+SUMMARY:HR Dedupe Within-File Conflict Sample
+END:VEVENT
+END:VCALENDAR
