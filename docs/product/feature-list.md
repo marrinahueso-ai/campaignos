@@ -145,7 +145,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## AI Brain & assistant
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
-- Ask Ralli AI widget — **shipped** (Phase 1 event ops coach + Phase 2 org/role briefings + Phase 3 volunteers/communications depth: SignUpGenius shift gaps, committee chair coverage, playbook email/social/flyer status, draft emails, honest “can’t see yet” for non-responders / family views / Meta performance; ops/org intents always win over FAQ keyword collisions for “what’s next”, “today’s summary”, “what do I have this week”; product-help FAQ retained for how-to; Phases 4–5 content write tools, insights — **planned**)
+- Ask Ralli AI widget — **shipped** (Phase 1 event ops coach + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper: write tomorrow’s / volunteer reminders, rewrite captions shorter/more exciting/more professional, improve flyer / another version via existing meta-caption + grounding generators — draft text only with Create with AI / Communications deep links; ops/org intents still win for “what’s next” / “today’s summary”; product-help FAQ retained for how-to; Phase 5 insights — **planned**)
 - AI credits widget — **stub** (placeholder UI)
 
 ## Settings

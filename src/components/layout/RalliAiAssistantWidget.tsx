@@ -23,20 +23,21 @@ interface ChatMessage {
 }
 
 function assistantEyebrow(source: AskRalliSource | null): string {
+  if (source === "content") return "Draft helper";
   if (source === "ops" || source === "org") return "Your next steps";
   if (source === "faq" || source === "ai") return "Product how-tos";
   return "Next steps & how-tos";
 }
 
-/** Org briefings + event ops + Phase 3 volunteers/comms + a how-to (~8 chips). */
+/** Org/ops + Phase 3 volunteers/comms + Phase 4 drafts + a how-to. */
 const ASK_RALLI_SUGGESTIONS = [
   "What needs my approval?",
   "Give me today's summary",
   "Do I need more volunteers?",
   "What social posts are missing?",
-  "Have I emailed families yet?",
+  "Write tomorrow's reminder",
+  "Make this shorter",
   "What should I do next for this event?",
-  "What's publishing this week?",
   "How do I create a campaign?",
 ] as const;
 
@@ -128,8 +129,9 @@ export function RalliAiAssistantWidget({
           </div>
 
           <p className="mt-2.5 text-sm leading-relaxed text-cos-muted">
-            Ask for today’s org briefing, what’s next on an event, or how to
-            navigate Hey Ralli — not AI Brain training.
+            Ask for today’s org briefing, what’s next on an event, writing help
+            for reminders or captions, or how to navigate Hey Ralli — not AI
+            Brain training.
           </p>
 
           <button
@@ -171,8 +173,8 @@ export function RalliAiAssistantWidget({
                   Ask Ralli AI
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                  Org briefings, what’s next for an event, overdue work,
-                  approvals &amp; schedule — plus product how-tos.
+                  Org briefings, what’s next for an event, draft reminders &amp;
+                  caption rewrites — plus product how-tos.
                 </p>
               </div>
               <Button
@@ -258,7 +260,7 @@ export function RalliAiAssistantWidget({
                   id="ralli-ask-input"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="What's next… or How do I…?"
+                  placeholder="What's next… Write a reminder… or How do I…?"
                   disabled={pending}
                   className="h-10 flex-1 rounded-[10px] border border-cos-border bg-cos-bg px-3 text-sm text-cos-text outline-none placeholder:text-cos-muted focus:border-cos-text disabled:opacity-60"
                 />

@@ -1,4 +1,5 @@
 import { shouldPreferCommsOps } from "./comms-intent.ts";
+import { shouldPreferContentAsk } from "./content-intent.ts";
 import { resolveEventFromQuestion } from "./event-resolver.ts";
 import {
   extractEventIdFromPathname,
@@ -48,6 +49,14 @@ export function isVolunteersOrCommsOpsIntent(question: string): boolean {
 }
 
 /**
+ * Phase 4 content write/rewrite path.
+ * Wins over FAQ and the event-pathname ops catch-all; does not steal ops/org status asks.
+ */
+export function shouldRouteToContentAsk(question: string): boolean {
+  return shouldPreferContentAsk(question);
+}
+
+/**
  * Org / role briefing path — even without an event name.
  * Event-scoped phrasing (named event) stays on Phase 1 ops.
  * Phase 3 volunteer/comms without event scope also uses the enriched org pack.
@@ -57,6 +66,10 @@ export function shouldRouteToOrgBriefing(
   events?: ResolvableEventLite[],
   pathname?: string | null,
 ): boolean {
+  if (shouldRouteToContentAsk(question)) {
+    return false;
+  }
+
   if (shouldPreferOrgBriefing(question)) {
     if (events && questionNamesSpecificEvent(question, events)) {
       return false;
@@ -88,6 +101,9 @@ export function shouldRouteToOpsAsk(
   pathname?: string | null,
   events?: ResolvableEventLite[],
 ): boolean {
+  if (shouldRouteToContentAsk(question)) {
+    return false;
+  }
   if (shouldRouteToOrgBriefing(question, events, pathname)) {
     return false;
   }

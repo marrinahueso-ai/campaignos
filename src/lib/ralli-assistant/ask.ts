@@ -3,9 +3,11 @@ import { resolveFastDraftModel } from "@/lib/ai/models";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getActiveEvents } from "@/lib/events/queries";
 import {
+  shouldRouteToContentAsk,
   shouldRouteToOpsAsk,
   shouldRouteToOrgBriefing,
 } from "@/lib/ralli-assistant/ask-routing";
+import { askRalliContentCoach } from "@/lib/ralli-assistant/content-ask";
 import { askRalliOpsCoach } from "@/lib/ralli-assistant/ops-ask";
 import {
   extractEventIdFromPathname,
@@ -21,7 +23,7 @@ import {
   type ProductHelpLink,
 } from "@/lib/ralli-assistant/product-help-knowledge";
 
-export type AskRalliSource = "faq" | "ai" | "ops" | "org";
+export type AskRalliSource = "faq" | "ai" | "ops" | "org" | "content";
 
 export interface AskRalliAssistantResult {
   success: boolean;
@@ -32,6 +34,7 @@ export interface AskRalliAssistantResult {
 }
 
 export {
+  shouldRouteToContentAsk,
   shouldRouteToOpsAsk,
   shouldRouteToOrgBriefing,
 } from "@/lib/ralli-assistant/ask-routing";
@@ -71,6 +74,15 @@ export async function askRalliProductHelp(input: {
   }
 
   const events = await loadResolvableEvents();
+
+  // Phase 4 content drafts win over FAQ (e.g. Create with AI keywords)
+  // and the event-pathname ops catch-all — but not over ops/org status asks.
+  if (shouldRouteToContentAsk(question)) {
+    return askRalliContentCoach({
+      question,
+      pathname: input.pathname,
+    });
+  }
 
   // Ops / org coaches always win over FAQ keyword collisions
   // (e.g. "need to do" → tasks, "this week" → calendar).
