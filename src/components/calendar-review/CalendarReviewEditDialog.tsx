@@ -9,18 +9,23 @@ import type {
   CalendarEventReviewStatus,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
-import type { CommunicationStrategy } from "@/types/communication-strategy";
 import type { EventType } from "@/types/playbooks";
 import { CampaignPlanPreview } from "@/components/calendar-review/CampaignPlanPreview";
 import {
-  COMMUNICATION_STRATEGY_OPTIONS,
-  defaultStrategyForCalendarImport,
-} from "@/lib/events/communication-strategy";
+  buildCalendarReviewPlanOptions,
+  CALENDAR_ONLY_PLAN_VALUE,
+  defaultPlaybookIdForReview,
+  getSelectedReviewPlanValue,
+  resolveReviewPlanSelection,
+  type ReviewPlaybookOption,
+} from "@/lib/calendar-import/review-plan-options";
+import { defaultStrategyForCalendarImport } from "@/lib/events/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
 import { EVENT_TYPES } from "@/lib/playbooks/constants";
 
 interface CalendarReviewEditDialogProps {
   event: CalendarReviewEvent;
+  playbookOptions: ReviewPlaybookOption[];
   onClose: () => void;
   onSave: (event: CalendarReviewEvent) => void;
 }
@@ -50,44 +55,72 @@ const statusLabels: Record<CalendarEventReviewStatus, string> = {
 
 export function CalendarReviewEditDialog({
   event,
+  playbookOptions,
   onClose,
   onSave,
 }: CalendarReviewEditDialogProps) {
+  const planOptions = buildCalendarReviewPlanOptions(playbookOptions);
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date);
   const [category, setCategory] = useState<CalendarEventCategory>(event.category);
   const [status, setStatus] = useState<CalendarEventReviewStatus>(event.status);
-  const [communicationStrategy, setCommunicationStrategy] =
-    useState<CommunicationStrategy>(event.communicationStrategy);
   const [eventType, setEventType] = useState<EventType>(
     event.eventType ?? inferEventTypeFromTitle(event.name, event.category),
+  );
+  const [planValue, setPlanValue] = useState(() =>
+    getSelectedReviewPlanValue(event, playbookOptions),
   );
 
   function handleSubmit(submitEvent: React.FormEvent<HTMLFormElement>) {
     submitEvent.preventDefault();
+    const resolved = resolveReviewPlanSelection(planValue, playbookOptions);
     onSave({
       ...event,
       name,
       date,
       category,
       status,
-      communicationStrategy,
-      eventType,
+      eventType: resolved.eventType ?? eventType,
+      communicationStrategy: resolved.communicationStrategy,
+      playbookId: resolved.playbookId,
       planManuallySet: true,
     });
   }
 
   function handleCategoryChange(nextCategory: CalendarEventCategory) {
     setCategory(nextCategory);
-    setEventType(inferEventTypeFromTitle(name, nextCategory));
-    setCommunicationStrategy(defaultStrategyForCalendarImport(name, nextCategory));
+    const nextType = inferEventTypeFromTitle(name, nextCategory);
+    setEventType(nextType);
+    const strategy = defaultStrategyForCalendarImport(name, nextCategory);
+    const nextPlaybookId = defaultPlaybookIdForReview(
+      nextType,
+      strategy,
+      playbookOptions,
+    );
+    setPlanValue(
+      nextPlaybookId ??
+        (strategy === "calendar_only" ? CALENDAR_ONLY_PLAN_VALUE : planValue),
+    );
   }
 
   function handleNameChange(nextName: string) {
     setName(nextName);
-    const inferredType = inferEventTypeFromTitle(nextName, category);
-    setEventType(inferredType);
+    setEventType(inferEventTypeFromTitle(nextName, category));
   }
+
+  function handlePlanChange(nextValue: string) {
+    setPlanValue(nextValue);
+    const resolved = resolveReviewPlanSelection(nextValue, playbookOptions);
+    if (resolved.eventType) {
+      setEventType(resolved.eventType);
+    }
+  }
+
+  const selectedOption = planOptions.find((option) => option.value === planValue);
+  const previewStrategy = resolveReviewPlanSelection(
+    planValue,
+    playbookOptions,
+  ).communicationStrategy;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-dark/40 p-4">
@@ -147,15 +180,13 @@ export function CalendarReviewEditDialog({
             ))}
           </Select>
           <Select
-            label="How much communication does this event need?"
-            value={communicationStrategy}
-            onChange={(changeEvent) =>
-              setCommunicationStrategy(changeEvent.target.value as CommunicationStrategy)
-            }
+            label="Plan type"
+            value={planValue}
+            onChange={(changeEvent) => handlePlanChange(changeEvent.target.value)}
           >
-            {COMMUNICATION_STRATEGY_OPTIONS.map((option) => (
+            {planOptions.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {option.label} — {option.summary}
               </option>
             ))}
           </Select>
@@ -166,12 +197,17 @@ export function CalendarReviewEditDialog({
             <div className="mt-3">
               <CampaignPlanPreview
                 eventType={eventType}
-                communicationStrategy={communicationStrategy}
+                communicationStrategy={previewStrategy}
+                planSummary={
+                  selectedOption?.kind === "playbook"
+                    ? selectedOption.summary
+                    : undefined
+                }
               />
             </div>
             <p className="mt-3 text-xs text-cos-muted">
-              Adjust plan type or event type above — you can change these again after
-              import from the calendar import list.
+              Plan types come from Settings → Playbooks. You can change these again
+              after import from the event workspace.
             </p>
           </div>
           <Select

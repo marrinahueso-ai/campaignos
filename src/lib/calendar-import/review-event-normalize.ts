@@ -1,15 +1,16 @@
-import { formatRelativeTimingLabel } from "@/lib/communications/communication-plan-display";
+import {
+  defaultPlaybookIdForReview,
+  type ReviewPlaybookOption,
+} from "@/lib/calendar-import/review-plan-options";
 import {
   defaultStrategyForCalendarImport,
 } from "@/lib/events/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
-import { resolveTimingStepsForEvent } from "@/lib/playbooks/timing-presets";
 import type {
   CalendarEventCategory,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { EventType } from "@/types/playbooks";
 
 /** Pre–full-campaign-default category fallbacks stored in older parsed imports. */
 const LEGACY_CATEGORY_STRATEGY: Record<CalendarEventCategory, CommunicationStrategy> =
@@ -19,32 +20,6 @@ const LEGACY_CATEGORY_STRATEGY: Record<CalendarEventCategory, CommunicationStrat
     "Early Release": "reminder_only",
     Holiday: "reminder_only",
   };
-
-export function getStrategyPlanSummary(
-  eventType: EventType | null,
-  strategy: CommunicationStrategy,
-): string {
-  if (strategy === "calendar_only") {
-    return "No posts scheduled";
-  }
-
-  if (strategy === "custom") {
-    return "Configure in workspace";
-  }
-
-  const steps = resolveTimingStepsForEvent({
-    eventType,
-    communicationStrategy: strategy,
-  });
-
-  if (steps.length === 0) {
-    return "No posts scheduled";
-  }
-
-  return `${steps.length} posts · ${steps
-    .map((step) => formatRelativeTimingLabel(step.relativeDay))
-    .join(", ")}`;
-}
 
 export function normalizeCalendarReviewEvent(
   event: CalendarReviewEvent,
@@ -77,16 +52,28 @@ export function normalizeCalendarReviewEvents(
 
 export function applyRecommendedPlansToEvents(
   events: CalendarReviewEvent[],
+  playbooks: ReviewPlaybookOption[] = [],
 ): CalendarReviewEvent[] {
-  return events.map((event) => ({
-    ...event,
-    eventType: inferEventTypeFromTitle(event.name, event.category),
-    communicationStrategy: defaultStrategyForCalendarImport(
+  return events.map((event) => {
+    const eventType = inferEventTypeFromTitle(event.name, event.category);
+    const communicationStrategy = defaultStrategyForCalendarImport(
       event.name,
       event.category,
-    ),
-    planManuallySet: false,
-  }));
+    );
+    const playbookId = defaultPlaybookIdForReview(
+      eventType,
+      communicationStrategy,
+      playbooks,
+    );
+
+    return {
+      ...event,
+      eventType,
+      communicationStrategy,
+      playbookId,
+      planManuallySet: false,
+    };
+  });
 }
 
 export function reviewEventsNeedPlanRefresh(

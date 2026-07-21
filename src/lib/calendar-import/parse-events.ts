@@ -446,6 +446,8 @@ export function parseRawReviewEvents(value: unknown): CalendarReviewEvent[] {
         status: normalizeStatus(record.status),
         eventType: record.eventType ?? null,
         communicationStrategy: record.communicationStrategy ?? "full_campaign",
+        playbookId:
+          typeof record.playbookId === "string" ? record.playbookId : null,
         planManuallySet: record.planManuallySet === true,
         importSource: normalizeImportSource(record.importSource),
         importExternalId:

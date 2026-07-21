@@ -93,8 +93,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar daily sync cron (auto-import new events) — **shipped**
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
-- Calendar file upload + import review (incl. AI fix) — **shipped**
-- Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`)
+- Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: `/calendar/import` → `/calendar/review`; Settings → Google Calendar is connect/subscribe only)
+- Calendar import review plan type from org playbooks (Settings → Playbooks; stores `playbookId` on import) — **shipped**
+- Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (canonical: `/calendar/import` + `/calendar/review`; QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`)
 - Communications planning calendar — **shipped** (secondary)
 - Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))
 

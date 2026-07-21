@@ -28,6 +28,11 @@ export interface CalendarReviewEvent {
   category: CalendarEventCategory;
   status: CalendarEventReviewStatus;
   communicationStrategy: CommunicationStrategy;
+  /**
+   * Org playbook chosen on Calendar Review (Settings → Playbooks).
+   * Passed to `assignPlaybookToEvent` on import when strategy needs a playbook.
+   */
+  playbookId?: string | null;
   /** Inferred or manually chosen event type — drives playbook timing on import. */
   eventType?: EventType | null;
   /** When true, communication strategy was set manually and should not be auto-updated. */

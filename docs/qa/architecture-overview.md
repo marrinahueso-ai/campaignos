@@ -74,7 +74,7 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 |------|--------------------|----------------------|---------------|
 | **1. School setup** | Complete School Setup (school, brand, timezone, optional calendar / Meta / team) | Creates `organizations`, brand assets, active school year | `/settings/school-setup` |
 | **2. Connect Meta** (required to publish) | Settings → Meta → Connect | OAuth → stores Page + tokens on `organization_meta_connections` | `/settings/meta` |
-| **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file | Parses / syncs into `calendar_imports` | `/settings/integrations/calendar`, `/calendar/import` |
+| **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file | Parses / syncs into `calendar_imports` → review | Canonical: `/calendar/import` → `/calendar/review`; connect/manage: `/settings/integrations/calendar` |
 | **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
 | **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
 | **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |

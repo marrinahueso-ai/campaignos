@@ -14,7 +14,7 @@ export default async function CalendarReviewPage({
   searchParams,
 }: CalendarReviewPageProps) {
   const params = await searchParams;
-  const { importRecord, reviewData, importedEventCount } =
+  const { importRecord, reviewData, importedEventCount, playbookOptions } =
     await getCalendarReviewPageData(params.import);
 
   if (!importRecord || !reviewData) {
@@ -50,6 +50,7 @@ export default async function CalendarReviewPage({
       parseError={importRecord.parseError}
       data={reviewData}
       importedEventCount={importedEventCount}
+      playbookOptions={playbookOptions}
     />
   );
 }

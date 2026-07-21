@@ -35,9 +35,12 @@ import {
 import {
   applyRecommendedPlansToEvents,
 } from "@/lib/calendar-import/review-event-normalize";
+import {
+  resolveReviewPlanSelection,
+  type ReviewPlaybookOption,
+} from "@/lib/calendar-import/review-plan-options";
 import type { CalendarParseStatus } from "@/types";
 import type { CalendarReviewData, CalendarReviewEvent } from "@/types/calendar-review";
-import type { CommunicationStrategy } from "@/types/communication-strategy";
 
 interface CalendarImportReviewProps {
   importId: string;
@@ -45,6 +48,7 @@ interface CalendarImportReviewProps {
   parseError: string | null;
   data: CalendarReviewData;
   importedEventCount: number;
+  playbookOptions: ReviewPlaybookOption[];
 }
 
 export function CalendarImportReview({
@@ -53,6 +57,7 @@ export function CalendarImportReview({
   parseError: initialParseError,
   data,
   importedEventCount,
+  playbookOptions,
 }: CalendarImportReviewProps) {
   const [events, setEvents] = useState<CalendarReviewEvent[]>(data.events);
   const [parseStatus, setParseStatus] = useState(initialParseStatus);
@@ -152,11 +157,18 @@ export function CalendarImportReview({
     setEditingEvent(null);
   }
 
-  function handleStrategyChange(eventId: string, strategy: CommunicationStrategy) {
+  function handlePlanChange(eventId: string, planValue: string) {
+    const resolved = resolveReviewPlanSelection(planValue, playbookOptions);
     persistEvents(
       events.map((event) =>
         event.id === eventId
-          ? { ...event, communicationStrategy: strategy, planManuallySet: true }
+          ? {
+              ...event,
+              playbookId: resolved.playbookId,
+              communicationStrategy: resolved.communicationStrategy,
+              eventType: resolved.eventType ?? event.eventType,
+              planManuallySet: true,
+            }
           : event,
       ),
     );
@@ -171,7 +183,7 @@ export function CalendarImportReview({
   }
 
   function handleApplyRecommendedPlans() {
-    persistEvents(applyRecommendedPlansToEvents(events));
+    persistEvents(applyRecommendedPlansToEvents(events, playbookOptions));
     setSelectedIds(new Set());
   }
 
@@ -447,6 +459,7 @@ export function CalendarImportReview({
             ) : (
               <CalendarReviewTable
                 events={filteredEvents}
+                playbookOptions={playbookOptions}
                 highlightedEventId={highlightedEventId}
                 selectedIds={selectedIds}
                 onToggleSelect={(eventId) =>
@@ -469,7 +482,7 @@ export function CalendarImportReview({
                 }}
                 onEdit={setEditingEvent}
                 onDelete={handleDelete}
-                onStrategyChange={handleStrategyChange}
+                onPlanChange={handlePlanChange}
                 onApplyUpdateChange={handleApplyUpdateChange}
                 disabled={isPending || isImported || isParsing}
               />
@@ -502,6 +515,7 @@ export function CalendarImportReview({
       {editingEvent && (
         <CalendarReviewEditDialog
           event={editingEvent}
+          playbookOptions={playbookOptions}
           onClose={() => setEditingEvent(null)}
           onSave={handleSaveEdit}
         />

@@ -60,8 +60,8 @@ export default async function CalendarIntegrationPage({
         title="Google Calendar"
         description={
           googleConnected
-            ? `Connected for ${organization?.name ?? "your organization"}.`
-            : `Add your school calendar. Sign in with Google, use a subscribe link, or upload a file.`
+            ? `Connected for ${organization?.name ?? "your organization"}. Manage sync here; file upload and import review are on Calendar → Import.`
+            : `Connect Google Calendar or save a subscribe link. Upload a file and review New/Duplicate/Update/Conflict on Calendar → Import.`
         }
         eyebrow="Integrations"
       />
@@ -134,14 +134,15 @@ export default async function CalendarIntegrationPage({
           <div>
             <h3 className="text-sm font-medium text-cos-text">Upload a file</h3>
             <p className="mt-1 text-sm text-cos-muted">
-              One-time ICS, PDF, or spreadsheet import.
+              One-time ICS, PDF, or spreadsheet import with dedupe review
+              (New / Duplicate / Update / Conflict) on the Calendar Import page.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button href="/calendar/import" size="sm" variant="secondary">
-                Upload calendar file
+                Go to Calendar Import
               </Button>
               <Button href="/calendar/review" size="sm" variant="ghost">
-                Review imports
+                Review latest import
               </Button>
             </div>
           </div>

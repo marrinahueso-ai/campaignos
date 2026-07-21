@@ -47,6 +47,8 @@ import {
 } from "@/lib/calendar-import/import-preferences";
 import { parseIcsToReviewEvents } from "@/lib/calendar-import/parse-ics";
 import { normalizeCalendarReviewEvents } from "@/lib/calendar-import/review-event-normalize";
+import { applyPlaybookDefaultsToReviewEvents } from "@/lib/calendar-import/review-plan-options";
+import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import { linkCalendarImportToSchoolYear } from "@/lib/school-years/mutations";
 import type { CalendarReviewEvent } from "@/types/calendar-review";
@@ -84,6 +86,22 @@ async function classifyParsedEventsForReview(
   return classifyReviewEventsAgainstExisting(events, existing, {
     mode: "interactive",
   });
+}
+
+async function withOrgPlaybookDefaults(
+  events: CalendarReviewEvent[],
+  organizationId: string | null | undefined,
+): Promise<CalendarReviewEvent[]> {
+  const playbooks = await getPlaybooksForOrganization(organizationId ?? null);
+  return applyPlaybookDefaultsToReviewEvents(
+    events,
+    playbooks.map((playbook) => ({
+      id: playbook.id,
+      name: playbook.name,
+      eventType: playbook.eventType,
+      stepCount: playbook.stepCount,
+    })),
+  );
 }
 
 export async function parseCalendarImportAction(
@@ -153,6 +171,10 @@ export async function parseCalendarImportAction(
       organization?.schoolYear,
       activeSchoolYear?.label,
     );
+    normalizedEvents = await withOrgPlaybookDefaults(
+      normalizedEvents,
+      organization?.id,
+    );
 
     await updateCalendarImportParseStatus(importId, {
       parseStatus: "parsed",
@@ -191,6 +213,7 @@ export async function parseCalendarImportAction(
     organization?.schoolYear,
     activeSchoolYear?.label,
   );
+  events = await withOrgPlaybookDefaults(events, organization?.id);
 
   await updateCalendarImportParseStatus(importId, {
     parseStatus: "parsed",

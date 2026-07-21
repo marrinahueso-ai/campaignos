@@ -18,9 +18,15 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 - Subscribe cron + Google auto-import auto-apply field changes for known external ids
 - Unit suite + Playwright smoke `14-calendar-import-dedupe`
 
-**Surfaces:** `/calendar/import` → `/calendar/review` → confirm → `/calendar` (and Google/ICS cron auto-import paths).
+**Canonical import UX:** [`/calendar/import`](https://heyralli.com/calendar/import) (upload / Google sync into review / subscribe). Phase 2 review (New / Duplicate / Update / Conflict, Apply update) is [`/calendar/review`](https://heyralli.com/calendar/review).
 
-**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist).
+**Connect-only (not the review page):** [`/settings/integrations/calendar`](https://heyralli.com/settings/integrations/calendar) — Google OAuth + subscribe management; file upload and review CTAs deep-link to `/calendar/import` and `/calendar/review`.
+
+**Flow:** `/calendar/import` → `/calendar/review` → confirm → `/calendar` (and Google/ICS cron auto-import paths).
+
+**Plan type on review:** The **Plan type** column lists org playbooks from Settings → Playbooks (plus **On the calendar only**). Selection stores `playbookId` on the review row and assigns that playbook on import; `communicationStrategy` remains `full_campaign` / `calendar_only` for pipeline gates. Defaults follow import preferences (strategy) + event-type / system playbook when no playbook is stored yet. Duplicate / Update / Conflict status logic is unchanged.
+
+**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook).
 
 ---
 
@@ -69,6 +75,8 @@ npm run test:calendar-import
 ```
 
 Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID date-change → update, title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
+
+Also: `src/lib/calendar-import/__tests__/review-plan-options.test.ts` — plan type options from playbooks, selection → `playbookId` / strategy, defaults, status preserved.
 
 ---
 

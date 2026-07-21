@@ -21,6 +21,11 @@ import {
 } from "@/lib/calendar-import/parse-events";
 import { saveCalendarReviewEvents } from "@/lib/calendar-import/mutations";
 import { reviewEventsNeedPlanRefresh } from "@/lib/calendar-import/review-event-normalize";
+import {
+  applyPlaybookDefaultsToReviewEvents,
+  type ReviewPlaybookOption,
+} from "@/lib/calendar-import/review-plan-options";
+import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 import type { CalendarImport, CalendarImportRow } from "@/types";
 import type { CalendarReviewData } from "@/types/calendar-review";
 import type { CalendarImportedEventListItem } from "@/types/communications-calendar";
@@ -79,6 +84,7 @@ export const getCalendarReviewPageData = cache(async (
   importRecord: CalendarImport | null;
   reviewData: CalendarReviewData | null;
   importedEventCount: number;
+  playbookOptions: ReviewPlaybookOption[];
 }> => {
   const importRecord = importId?.trim()
     ? await getCalendarImportById(importId.trim())
@@ -89,11 +95,25 @@ export const getCalendarReviewPageData = cache(async (
       importRecord: null,
       reviewData: null,
       importedEventCount: 0,
+      playbookOptions: [],
     };
   }
 
+  const playbooks = await getPlaybooksForOrganization(
+    importRecord.organizationId,
+  );
+  const playbookOptions: ReviewPlaybookOption[] = playbooks.map((playbook) => ({
+    id: playbook.id,
+    name: playbook.name,
+    eventType: playbook.eventType,
+    stepCount: playbook.stepCount,
+  }));
+
   const rawEvents = parseRawReviewEvents(importRecord.parsedEvents);
-  const events = parseStoredReviewEvents(importRecord.parsedEvents);
+  const events = applyPlaybookDefaultsToReviewEvents(
+    parseStoredReviewEvents(importRecord.parsedEvents),
+    playbookOptions,
+  );
 
   if (
     rawEvents.length > 0 &&
@@ -119,6 +139,7 @@ export const getCalendarReviewPageData = cache(async (
     importRecord,
     reviewData,
     importedEventCount: count ?? 0,
+    playbookOptions,
   };
 });
 

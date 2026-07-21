@@ -11,8 +11,12 @@ import {
 } from "@/lib/events/communication-strategy";
 import {
   getDefaultPlaybookIdForEventType,
+  getPlaybookSteps,
 } from "@/lib/playbooks/queries";
-import { resolveTimingStepsForEvent } from "@/lib/playbooks/timing-presets";
+import {
+  resolveTimingStepsForEvent,
+  type TimingPresetStep,
+} from "@/lib/playbooks/timing-presets";
 import type {
   CommunicationPlaybookStepRow,
   EventType,
@@ -94,10 +98,18 @@ export async function assignPlaybookToEvent(
     return true;
   }
 
-  const timingSteps = resolveTimingStepsForEvent({
-    eventType,
-    communicationStrategy: event.communicationStrategy,
-  });
+  const playbookSteps = await getPlaybookSteps(resolvedPlaybookId);
+  const timingSteps: TimingPresetStep[] =
+    playbookSteps.length > 0
+      ? playbookSteps.map((step) => ({
+          relativeDay: step.relativeDay,
+          title: step.title,
+          channel: step.channel,
+        }))
+      : resolveTimingStepsForEvent({
+          eventType,
+          communicationStrategy: event.communicationStrategy,
+        });
 
   if (timingSteps.length === 0) {
     return true;

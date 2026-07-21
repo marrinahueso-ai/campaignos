@@ -6,6 +6,8 @@ import type { EventType } from "@/types/playbooks";
 interface CampaignPlanPreviewProps {
   eventType: EventType | null;
   communicationStrategy: CommunicationStrategy;
+  /** When set (e.g. org playbook step count), prefer over timing-preset summary. */
+  planSummary?: string;
   compact?: boolean;
   className?: string;
 }
@@ -13,6 +15,7 @@ interface CampaignPlanPreviewProps {
 export function CampaignPlanPreview({
   eventType,
   communicationStrategy,
+  planSummary,
   compact = false,
   className = "",
 }: CampaignPlanPreviewProps) {
@@ -25,6 +28,14 @@ export function CampaignPlanPreview({
         {communicationStrategy === "calendar_only"
           ? "Calendar only — no posts scheduled"
           : "Custom plan — configure in the event workspace"}
+      </p>
+    );
+  }
+
+  if (planSummary) {
+    return (
+      <p className={`text-xs text-cos-muted ${className}`.trim()}>
+        {planSummary}
       </p>
     );
   }

@@ -14,9 +14,11 @@ Calendar is critical, so Hey Ralli keeps **three import streams**:
 2. **Subscribe link** — ICS / webcal URL (no Google OAuth)
 3. **Upload a file** — ICS / PDF / spreadsheet → review
 
-Settings → Integrations → Google Calendar (`/settings/integrations/calendar`): primary Connect card, other streams under “Other ways to import.”
+**Canonical import + Phase 2 review:** `/calendar/import` → `/calendar/review` (file upload, Google sync into review, subscribe; New/Duplicate/Update/Conflict).
 
-Also surfaced on **Calendar → Import**, Calendar header, review empty state, and School Setup (post-setup connect note).
+**Connect / manage only:** Settings → Integrations → Google Calendar (`/settings/integrations/calendar`) — primary Connect card; subscribe + deep-links under “Other ways to import” (not the full review UI).
+
+Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, and School Setup (post-setup connect note).
 
 **Not** one forced “Google for Calendar + Gmail” button. Gmail scopes are restricted and would block shipping Calendar.
 

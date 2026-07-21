@@ -9,7 +9,6 @@ import {
   LayoutList,
   Plus,
   Search,
-  Upload,
 } from "lucide-react";
 import { CampaignRowActions } from "@/components/campaigns/CampaignRowActions";
 import {
@@ -199,10 +198,6 @@ export function EventsHomeContent({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button href="/calendar/import" variant="secondary">
-            <Upload className="h-4 w-4" />
-            Import from Calendar
-          </Button>
           <Button href="/events/create">
             <Plus className="h-4 w-4" />
             Create Event

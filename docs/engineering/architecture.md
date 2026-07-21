@@ -167,7 +167,7 @@ Playbooks still seed milestone timelines and health; campaign creative generatio
 | Provider | Connect surface | Storage | Docs |
 |----------|-----------------|---------|------|
 | Meta | `/settings/meta` (+ Inbox / Insights CTAs) | `organization_meta_connections` | [meta.md](../integrations/meta.md) |
-| Google Calendar | `/settings/integrations/calendar`, `/calendar/import` | `organization_google_calendar_connections` | [google-calendar.md](../integrations/google-calendar.md) |
+| Google Calendar | Connect: `/settings/integrations/calendar`; import/review: `/calendar/import` → `/calendar/review` | `organization_google_calendar_connections` | [google-calendar.md](../integrations/google-calendar.md) |
 | Canva | `/settings/canva` | `organization_canva_connections` | — |
 | Monday | `/settings/monday` | `organization_monday_connections` | — |
 

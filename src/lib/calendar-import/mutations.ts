@@ -10,6 +10,7 @@ import type { CalendarImport, CalendarImportRow, CreateEventInput, Event, EventR
 import type { CalendarReviewEvent } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
+import { normalizeEventNameKey } from "@/lib/calendar-import/import-preferences";
 import {
   classifyReviewEventsAgainstExisting,
   partitionClassifiedReviewEvents,
@@ -239,10 +240,23 @@ export async function insertImportedEvents(
   }
 
   const inserted = (data as EventRow[]).map(mapEventRow);
+  const reviewByKey = new Map(
+    toInsert.map((event) => [
+      `${normalizeEventNameKey(event.name)}|${event.date}`,
+      event,
+    ]),
+  );
 
   for (const event of inserted) {
     if (shouldAssignPlaybook(event.communicationStrategy)) {
-      await assignPlaybookToEvent(event, undefined, organizationId);
+      const reviewEvent = reviewByKey.get(
+        `${normalizeEventNameKey(event.title)}|${event.date}`,
+      );
+      await assignPlaybookToEvent(
+        event,
+        reviewEvent?.playbookId ?? undefined,
+        organizationId,
+      );
     }
 
     await supabase.from("activity_log").insert({
