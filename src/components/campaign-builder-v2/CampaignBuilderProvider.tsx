@@ -58,6 +58,7 @@ import {
 } from "@/lib/campaign-builder-v2/approval-workflow";
 import {
   hydrateCampaignBuilderSession,
+  localHasAuthoritativeMilestoneStructure,
   protectSessionFromRichnessDowngrade,
 } from "@/lib/campaign-builder-v2/normalize-session";
 import {
@@ -472,6 +473,11 @@ async function recoverSessionFromServerIfRicher(
   try {
     const server = await loadCampaignBuilderSessionAction(local.eventId);
     if (!server) {
+      return null;
+    }
+    // Never "recover" a longer server milestone list over intentional deletes
+    // just because deleted rows still have richer artwork on the server.
+    if (localHasAuthoritativeMilestoneStructure(local, server)) {
       return null;
     }
     if (previewSessionRichness(server) <= previewSessionRichness(local)) {

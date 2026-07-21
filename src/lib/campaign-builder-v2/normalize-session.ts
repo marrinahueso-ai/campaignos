@@ -117,10 +117,29 @@ function milestoneIdentityKey(
     .join("\0");
 }
 
+/** Local milestone ids are a non-empty subset of server — typical intentional delete. */
+export function milestonesAreSubsetOf(
+  local: CampaignBuilderMilestone[] | undefined,
+  server: CampaignBuilderMilestone[] | undefined,
+): boolean {
+  const localList = local ?? [];
+  const serverList = server ?? [];
+  if (localList.length === 0 || serverList.length === 0) {
+    return false;
+  }
+  if (localList.length >= serverList.length) {
+    return false;
+  }
+  const serverIds = new Set(serverList.map((milestone) => milestone.id));
+  return localList.every((milestone) => serverIds.has(milestone.id));
+}
+
 /**
  * True when local and server disagree on which milestones exist (deletes,
- * adds, or playbook rebuild IDs) while local is at least as rich — used so a
- * successful server load cannot resurrect milestones the user already removed.
+ * adds, or playbook rebuild IDs). Intentional deletes (local is a subset of
+ * server ids) win even when deleted rows held artwork — richness must not
+ * resurrect removed milestones. Playbook rebuild / new ids still require
+ * local to be at least as rich.
  */
 export function localHasAuthoritativeMilestoneStructure(
   local: Partial<CampaignBuilderSession>,
@@ -134,6 +153,12 @@ export function localHasAuthoritativeMilestoneStructure(
     milestoneIdentityKey(server.milestones)
   ) {
     return false;
+  }
+  if (milestonesAreSubsetOf(local.milestones, server.milestones)) {
+    // Truncated empty seeds must not beat a richer server session. Treat as an
+    // intentional delete only when milestonesPlaybookId is set (removeMilestone
+    // and playbook sync set this — inspiration.playbookId alone is not enough).
+    return Boolean(local.milestonesPlaybookId);
   }
   return (
     sessionArtworkCount(local) >= sessionArtworkCount(server) &&
@@ -157,10 +182,17 @@ export function protectSessionFromRichnessDowngrade(
 
   const existingRichness = sessionPreviewRichness(existing);
   const incomingRichness = sessionPreviewRichness(incoming);
-  if (existingRichness === 0 || incomingRichness >= existingRichness) {
+  const incomingOwnsStructure =
+    existingRichness === 0 ||
+    incomingRichness >= existingRichness ||
+    (milestonesAreSubsetOf(incoming.milestones, existing.milestones) &&
+      Boolean(incoming.milestonesPlaybookId));
+
+  if (incomingOwnsStructure) {
     // Incoming owns milestone structure (deletes/adds). Merge previews against
     // that list so we still absorb richer artwork for milestones that remain,
-    // without resurrecting rows the client intentionally removed.
+    // without resurrecting rows the client intentionally removed — including
+    // when deleted milestones had artwork (richness drops).
     const merged = mergeCampaignBuilderSessions(
       {
         ...existing,
@@ -170,6 +202,10 @@ export function protectSessionFromRichnessDowngrade(
       },
       incoming,
     );
+    const keepIds = new Set(incoming.milestones.map((milestone) => milestone.id));
+    const mergedPreviews =
+      (merged.previewContents as MilestonePreviewContent[] | undefined) ??
+      incoming.previewContents;
     return {
       ...incoming,
       inspiration: merged.inspiration ?? incoming.inspiration,
@@ -178,9 +214,9 @@ export function protectSessionFromRichnessDowngrade(
         incoming.milestonesPlaybookId ??
         merged.milestonesPlaybookId ??
         existing.milestonesPlaybookId,
-      previewContents:
-        (merged.previewContents as MilestonePreviewContent[] | undefined) ??
-        incoming.previewContents,
+      previewContents: mergedPreviews.filter((preview) =>
+        keepIds.has(preview.milestoneId),
+      ),
     };
   }
 
@@ -188,12 +224,12 @@ export function protectSessionFromRichnessDowngrade(
   return {
     ...incoming,
     inspiration: merged.inspiration ?? existing.inspiration ?? incoming.inspiration,
-    milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
-      existing.milestones,
+    // Same milestone ids, poorer content — keep richer previews, not a longer list.
+    milestones: incoming.milestones,
     milestonesPlaybookId:
+      incoming.milestonesPlaybookId ??
       merged.milestonesPlaybookId ??
-      existing.milestonesPlaybookId ??
-      incoming.milestonesPlaybookId,
+      existing.milestonesPlaybookId,
     previewContents:
       (merged.previewContents as MilestonePreviewContent[] | undefined) ??
       existing.previewContents,
@@ -211,9 +247,14 @@ export function mergeCampaignBuilderSessions(
   const primaryArtwork = sessionArtworkCount(primary);
   const secondaryArtwork = sessionArtworkCount(secondary);
 
-  // Artwork always wins over a larger empty server milestone list.
+  // Artwork can win over a larger empty server milestone list — but never
+  // resurrect milestones when primary is an intentional subset (user deletes).
+  const primaryIsAuthoritativeDelete =
+    milestonesAreSubsetOf(primary.milestones, secondary.milestones) &&
+    Boolean(primary.milestonesPlaybookId);
   const preferSecondaryMilestones =
     Boolean(secondary.milestones?.length) &&
+    !primaryIsAuthoritativeDelete &&
     (!primary.milestones?.length ||
       secondaryArtwork > primaryArtwork ||
       (secondaryArtwork === primaryArtwork &&

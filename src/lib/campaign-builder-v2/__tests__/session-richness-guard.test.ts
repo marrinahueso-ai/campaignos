@@ -133,6 +133,74 @@ describe("protectSessionFromRichnessDowngrade", () => {
     );
   });
 
+  it("persists milestone deletions even when deleted rows still have artwork on the server", () => {
+    const existing = session([
+      preview({
+        milestoneId: "ms-1",
+        artwork: {
+          feedUrl: "https://example.com/keep.png",
+          storyUrl: null,
+        },
+      }),
+      preview({
+        milestoneId: "ms-2",
+        artwork: {
+          feedUrl: "https://example.com/deleted.png",
+          storyUrl: null,
+        },
+        captions: [
+          { platform: "facebook", text: "Keep me off the list" },
+          { platform: "instagram", text: "" },
+        ],
+      }),
+      preview({ milestoneId: "ms-3" }),
+    ]);
+    existing.milestones = [
+      {
+        ...existing.milestones[0]!,
+        id: "ms-1",
+        name: "Announcement",
+        sortOrder: 0,
+      },
+      {
+        ...existing.milestones[0]!,
+        id: "ms-2",
+        name: "14 Days Out",
+        sortOrder: 1,
+      },
+      {
+        ...existing.milestones[0]!,
+        id: "ms-3",
+        name: "Thank You",
+        sortOrder: 2,
+      },
+    ];
+
+    const incoming = {
+      ...existing,
+      milestonesPlaybookId: "playbook-1",
+      inspiration: {
+        ...existing.inspiration,
+        playbookId: "playbook-1",
+      },
+      milestones: [existing.milestones[0]!],
+      previewContents: [existing.previewContents[0]!],
+    };
+
+    const protectedSession = protectSessionFromRichnessDowngrade(
+      incoming,
+      existing,
+    );
+
+    assert.equal(protectedSession.milestones.length, 1);
+    assert.equal(protectedSession.milestones[0]?.id, "ms-1");
+    assert.equal(protectedSession.previewContents.length, 1);
+    assert.equal(
+      protectedSession.previewContents[0]?.artwork.feedUrl,
+      "https://example.com/keep.png",
+    );
+  });
+
   it("persists milestone deletions when incoming and server are equally empty", () => {
     const existing = session([
       preview({ milestoneId: "ms-1" }),
