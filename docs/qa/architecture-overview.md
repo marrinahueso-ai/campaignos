@@ -241,7 +241,9 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 | Ask Ralli Assistant | [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md) |
 | Full feature status | [feature-list.md](../product/feature-list.md) |
 | Meta Connect model | [meta.md](../integrations/meta.md) |
+| Meta Calendar DnD / native schedule | [meta-calendar-dnd.md](./meta-calendar-dnd.md) |
 | Google Calendar | [google-calendar.md](../integrations/google-calendar.md) |
+| School calendar import dedupe | [calendar-import-dedupe.md](./calendar-import-dedupe.md) |
 | Access control phases | [access-control.md](../engineering/access-control.md) |
 | Storage / RLS notes | [storage-rls.md](../engineering/storage-rls.md) |
 

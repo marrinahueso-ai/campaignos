@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 **live in production** — Sign in with Google + ICS subscribe + file upload.  
 **Gmail inbox:** deferred (separate Connect later; same Google Cloud project, extra scopes).  
-**Last updated:** July 19, 2026
+**Last updated:** July 21, 2026
 
 ---
 
@@ -41,6 +41,8 @@ Sign in with Google
 | Manual Sync | Settings / Import page → same review path |
 | Daily cron | `/api/cron/google-calendar-sync` at 06:30 UTC — **auto-imports** new deduped events (like ICS subscribe) |
 | Calendar UI | Reads `events` only after review confirm (manual) or cron auto-import |
+
+**Import identity / re-import behavior** (UID / Google id / Update on date change): [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md). That path is school **events**, not Meta post scheduling — Meta Calendar DnD is [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md).
 
 ---
 

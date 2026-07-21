@@ -96,9 +96,15 @@ If those values are missing, login/dashboard/Create-with-AI/restricted-upload/in
 
 Artwork input matrix (what feeds AI artwork, Layer A vs C): [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md).
 
-Meta Calendar DnD / native Graph schedules (no re-approval): [meta-calendar-dnd.md](./meta-calendar-dnd.md). Unit: `npm run test:communications-calendar` and `npm run test:meta-publishing`.
+**School calendar import dedupe** (ICS UID / Google id / AI fingerprint; Update on date change) — not Meta post DnD: [calendar-import-dedupe.md](./calendar-import-dedupe.md).
 
-Calendar import dedupe (UID / Google id / Update-on-date-change): [calendar-import-dedupe.md](./calendar-import-dedupe.md). Unit: `npm run test:calendar-import`. Playwright: `npm run test:hey-ralli -- tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`.
+- Unit: `npm run test:calendar-import`
+- Playwright: `npm run test:hey-ralli -- tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`
+
+**Meta Calendar DnD / native Graph schedules** (Approve → `graph_schedule_id`; drag reschedule without re-approval) — not school-event import: [meta-calendar-dnd.md](./meta-calendar-dnd.md).
+
+- Unit: `npm run test:communications-calendar` and `npm run test:meta-publishing`
+- Playwright: none yet (manual checklist in that doc)
 
 ---
 

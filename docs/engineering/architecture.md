@@ -131,10 +131,10 @@ flowchart LR
 
 | Stage | Key modules | Persistence |
 |-------|-------------|-------------|
-| Calendar intake | `calendar-import`, `google-calendar`, school-year subscribe feeds | `calendar_imports`, `organization_google_calendar_connections`, `school_years.calendar_subscribe_url` |
+| Calendar intake | `calendar-import`, `google-calendar`, school-year subscribe feeds | `calendar_imports`, `organization_google_calendar_connections`, `school_years.calendar_subscribe_url` — dedupe: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) |
 | Events / year calendar | `events`, `communications-calendar`, `unified-calendar` UI | `events`, publication slots on calendar |
 | Campaign AI | `campaign-builder-v2`, `ai`, `ai-artwork`, `artwork-v2`, `meta-captions` | Creative assets in Storage; campaign/milestone state in DB |
-| Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` |
+| Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) |
 | Inbox / Insights | `inbox`, `insights`, `meta` | Synced Meta entities + analytics tables |
 | Access | `auth`, `access-templates`, `organization-workspace` | Memberships, templates, roster |
 | Tasks | `tasks-v2`, `task-hub` | Task rows (assignee_user_id, event scope) |
@@ -251,6 +251,8 @@ Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEA
 | [product/feature-list.md](../product/feature-list.md) | Shipped / partial / deferred inventory |
 | [integrations/meta.md](../integrations/meta.md) | Meta OAuth model |
 | [integrations/google-calendar.md](../integrations/google-calendar.md) | Google Calendar OAuth + sync |
+| [qa/meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) | Meta-native Graph schedule + Calendar DnD (no re-approval) |
+| [qa/calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) | School-event import identity / Update vs Duplicate |
 | [access-control.md](./access-control.md) | Membership + permissions |
 | [product/vision.md](../product/vision.md) · [blueprints](../product/blueprints/) | Product intent |
 

@@ -1,8 +1,26 @@
 # Calendar import dedupe + date-change updates
 
 **Status:** Living  
+**Owner:** Engineering  
 **Last updated:** July 21, 2026  
-**Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md)
+**Related:** [feature-list.md](../product/feature-list.md) · [testing-guide.md](./testing-guide.md) · [google-calendar.md](../integrations/google-calendar.md) · [architecture.md](../engineering/architecture.md)
+
+> **Not the same as Meta Calendar DnD.** This doc covers **school-year event intake** (ICS / Google / PDF → `events` rows). Rescheduling **approved Meta posts** on the calendar is a separate feature — see [meta-calendar-dnd.md](./meta-calendar-dnd.md).
+
+---
+
+## What shipped
+
+Stable import identity on `events` so re-imports do not create duplicate school dates:
+
+- Columns `import_source` + `import_external_id` with a partial unique index per school year
+- Review statuses: **New / Duplicate / Update / Conflict** (interactive Apply/Skip for Updates)
+- Subscribe cron + Google auto-import auto-apply field changes for known external ids
+- Unit suite + Playwright smoke `14-calendar-import-dedupe`
+
+**Surfaces:** `/calendar/import` → `/calendar/review` → confirm → `/calendar` (and Google/ICS cron auto-import paths).
+
+**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist).
 
 ---
 
@@ -25,7 +43,7 @@
 | Google Calendar sync | `google` | Google event id (UID `…@heyralli.google` stripped) |
 | PDF / AI parse | `ai_parse` | Content fingerprint of normalized title+date (not a fake ICS UID) |
 
-Org scoping: events are unique per **school year** (`school_year_id` + source + external id). Existing rows with null external ids keep title+date fallback.
+Org scoping: events are unique per **school year** (`school_year_id` + source + external id). Existing rows with null external ids keep title+date fallback. Allowed `import_source` values also include `manual` (constraint); dedupe keys still require a non-null external id for the unique index.
 
 ### Interactive review vs cron / auto-sync
 
@@ -40,6 +58,8 @@ Apply in Supabase SQL editor (or CLI):
 
 `supabase/migrations/20260721195203_events_import_external_ids.sql`
 
+Adds `events.import_source`, `events.import_external_id`, check constraint, and unique index `events_school_year_import_external_uidx` (where school year + source + external id are all non-null).
+
 ---
 
 ## Unit coverage
@@ -48,7 +68,7 @@ Apply in Supabase SQL editor (or CLI):
 npm run test:calendar-import
 ```
 
-Covers UID skip, UID date-change → update, title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
+Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID date-change → update, title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
 
 ---
 
@@ -83,3 +103,22 @@ Or:
 Each run uses timestamped event titles/UIDs (`HR Dedupe Smoke <ms>`) so staging collisions stay rare. Conflict case leaves review without importing.
 
 **Staging notes:** Assertions key off review status badges (New / Duplicate / Update / Conflict), stats cards, and Import All result copy. A best-effort check of the calendar **Import list** view is included but soft-skips when that view toggle does not stick under automation (month grid still showing); review messaging remains authoritative for “no second create.”
+
+---
+
+## Known limits
+
+- Title+date fallback cannot merge “same event, new date” without an external id (by design → **New**).
+- AI fingerprints change if normalized title or date changes → treated as a different external id (may create a new row rather than Update).
+- Unique index is partial; pre-migration or manually created rows with null external ids rely on title+date only.
+- Cross-source collisions (e.g. same school date from ICS and Google) are **not** auto-merged — different `import_source` keys.
+
+---
+
+## Related (do not confuse)
+
+| Feature | What it is | Living doc |
+|---------|------------|------------|
+| School calendar import / dedupe | Intake of school-year **events** | This page |
+| Meta Calendar DnD / native schedule | Reschedule **approved Meta posts** (Graph `scheduled_publish_time`) | [meta-calendar-dnd.md](./meta-calendar-dnd.md) |
+| Google Calendar OAuth + sync | Connect + sync stream into import/review | [google-calendar.md](../integrations/google-calendar.md) |

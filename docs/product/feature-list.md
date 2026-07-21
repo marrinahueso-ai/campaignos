@@ -71,8 +71,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Caption generation/editing — **shipped**
 - Meta connect (Facebook Page + Instagram) — **shipped**
 - Schedule / publish now / publish ready bundles — **shipped**
-- Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; see [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
-- Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback)
+- Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
+- Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Posting schedule preferences — **shipped**
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)
 
@@ -86,7 +86,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Calendar
 - School-year calendar (month / week / agenda) — **shipped**
 - Layer toggles, detail panel — **shipped**
-- Drag-and-drop Meta posts: schedule-only (approval preserved); Graph reschedule when a native schedule id exists — **shipped** (QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
+- Drag-and-drop Meta posts: schedule-only (approval preserved); Graph reschedule when a native schedule id exists — **shipped** (QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md); not school-event import)
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**
 - Insights-weighted engagement heatmap — **deferred** (current scores use preferred windows + local publish times, not Meta Insights metrics)
 - Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [google-calendar.md](../integrations/google-calendar.md))

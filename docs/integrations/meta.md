@@ -11,7 +11,11 @@ On **Approve**, CampignOS creates Meta-native unpublished Page feed posts (`publ
 
 **Calendar DnD** updates CampignOS `scheduled_for` without clearing approval, then calls Graph to move `scheduled_publish_time` when a schedule id exists. Graph failures warn the user but do **not** roll back the calendar.
 
-**Instagram** and **Facebook stories** do not get native Graph schedules (API limits); publish-when-due remains the delivery path. Details for QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md).
+**Instagram** and **Facebook stories** do not get native Graph schedules (API limits); publish-when-due remains the delivery path.
+
+**QA / engineer reference (behavior, migration, unit tests, manual checklist):** [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md).
+
+> School-year **event** import (ICS / Google / PDF dedupe) is a different feature — [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md).
 
 ---
 

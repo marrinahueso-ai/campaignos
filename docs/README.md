@@ -53,7 +53,8 @@ This is the documentation hub. Start here.
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
 | Artwork → approvals findings | [qa/artwork-approval-findings.md](./qa/artwork-approval-findings.md) |
 | Create with AI artwork inputs | [qa/create-with-ai-artwork-inputs.md](./qa/create-with-ai-artwork-inputs.md) |
-| Calendar import dedupe | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |
+| Calendar import dedupe (school events) | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |
+| Meta Calendar DnD / native schedule | [qa/meta-calendar-dnd.md](./qa/meta-calendar-dnd.md) |
 | Testing (Sentry / Playwright) | [qa/testing-guide.md](./qa/testing-guide.md) |
 | Report a Problem | [qa/report-a-problem.md](./qa/report-a-problem.md) |
 | Product blueprints | [product/blueprints/](./product/blueprints/) |
