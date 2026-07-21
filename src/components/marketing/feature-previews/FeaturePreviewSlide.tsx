@@ -88,7 +88,6 @@ function FeaturePreviewSlideContent({
             today={PREVIEW_TODAY}
             weather={previewWeather}
             weekEntries={previewWeekEntries}
-            waitingOnOthers={[]}
           />
         </div>
       );

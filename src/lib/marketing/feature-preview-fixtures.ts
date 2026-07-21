@@ -578,6 +578,14 @@ export const previewMetaScheduledEventIds = new Set([
 
 export const previewWeekEntries: TodayWeekEntry[] = [
   {
+    id: "w0",
+    date: "2026-07-02",
+    title: PREVIEW_EVENT_TITLE,
+    eventTitle: null,
+    kind: "event",
+    href: null,
+  },
+  {
     id: "w1",
     date: "2026-07-01",
     title: "Day Before",

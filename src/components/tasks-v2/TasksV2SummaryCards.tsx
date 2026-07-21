@@ -1,5 +1,3 @@
-import { Bell, Calendar, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils/cn";
 import type { TasksV2SummaryStats } from "@/types/tasks-v2";
 
 interface TasksV2SummaryCardsProps {
@@ -11,53 +9,36 @@ const CARDS = [
     key: "tasksDue" as const,
     label: "Tasks due",
     description: "In the next 7 days",
-    icon: Calendar,
-    iconClassName: "text-[#c87d3a]",
   },
   {
     key: "overdue" as const,
     label: "Overdue",
     description: "Needs attention",
-    icon: Bell,
-    iconClassName: "text-[#b14f4f]",
   },
   {
     key: "completedThisMonth" as const,
     label: "Completed",
     description: "This month",
-    icon: CheckCircle2,
-    iconClassName: "text-[#3f5240]",
   },
 ];
 
 export function TasksV2SummaryCards({ summary }: TasksV2SummaryCardsProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      {CARDS.map((card) => {
-        const Icon = card.icon;
-        const value = summary[card.key];
-
-        return (
-          <div
-            key={card.key}
-            className="border border-cos-border bg-cos-card px-4 py-3"
-          >
-            <div className="flex items-start gap-3">
-              <Icon
-                className={cn("mt-0.5 h-4 w-4 shrink-0", card.iconClassName)}
-                strokeWidth={1.5}
-              />
-              <div className="min-w-0">
-                <p className="text-xs text-cos-muted">{card.label}</p>
-                <p className="font-display mt-0.5 text-2xl text-cos-text">{value}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-cos-muted">
-                  {card.description}
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {CARDS.map((card) => (
+        <div
+          key={card.key}
+          className="flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"
+        >
+          <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+            {card.label}
+          </p>
+          <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
+            {summary[card.key]}
+          </p>
+          <p className="text-xs text-cos-muted">{card.description}</p>
+        </div>
+      ))}
     </div>
   );
 }

@@ -180,7 +180,7 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
     enrichedItems.find((entry) => entry.id === selectedItem.id);
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-5 pb-8">
+    <div className="mx-auto max-w-[1600px] space-y-3 pb-8">
       <UnifiedCalendarControlPanel
         view={view}
         periodLabel={periodLabel}

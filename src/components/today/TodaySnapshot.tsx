@@ -1,10 +1,7 @@
 import { getMockWeatherSnapshot } from "@/lib/weather/mock";
 import { SnapshotMiniCalendar } from "@/components/today/SnapshotMiniCalendar";
 import { WeekAheadStrip } from "@/components/today/WeekAheadStrip";
-import type {
-  TodayWaitingOnOthersItem,
-  TodayWeekEntry,
-} from "@/types/today";
+import type { TodayWeekEntry } from "@/types/today";
 import type {
   OrganizationLocation,
   TodayWeatherContext,
@@ -15,7 +12,6 @@ interface TodaySnapshotProps {
   today: string;
   weather: TodayWeatherContext;
   weekEntries: TodayWeekEntry[];
-  waitingOnOthers: TodayWaitingOnOthersItem[];
 }
 
 const FALLBACK_LOCATION: OrganizationLocation = {
@@ -29,7 +25,6 @@ export function TodaySnapshot({
   today,
   weather,
   weekEntries,
-  waitingOnOthers,
 }: TodaySnapshotProps) {
   const resolved = resolveSnapshotWeather(weather);
   const helperLine = weatherHelperLine(resolved.weather);
@@ -47,11 +42,7 @@ export function TodaySnapshot({
 
       <hr className="cos-divider" />
 
-      <SnapshotMiniCalendar
-        today={today}
-        entries={weekEntries}
-        approvalDates={waitingOnOthers.map((item) => item.dueDate)}
-      />
+      <SnapshotMiniCalendar today={today} entries={weekEntries} />
 
       <hr className="cos-divider" />
 

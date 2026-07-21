@@ -85,7 +85,6 @@ export default async function DashboardPage() {
             today={today}
             weather={weatherContext}
             weekEntries={todayData.thisWeek}
-            waitingOnOthers={todayData.waitingOnOthers}
           />
           {todayData.goodNews.fallbackMessage && recentPublished.length === 0 && (
             <p className="text-sm leading-relaxed text-cos-muted">

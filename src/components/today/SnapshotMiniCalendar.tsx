@@ -5,7 +5,6 @@ import type { TodayWeekEntry } from "@/types/today";
 interface SnapshotMiniCalendarProps {
   today: string;
   entries: TodayWeekEntry[];
-  approvalDates?: string[];
 }
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
@@ -14,7 +13,6 @@ const TOOLTIP_ITEM_LIMIT = 4;
 export function SnapshotMiniCalendar({
   today,
   entries,
-  approvalDates = [],
 }: SnapshotMiniCalendarProps) {
   const { year, month } = parseDate(today);
   const monthLabel = new Date(year, month, 1).toLocaleDateString("en-US", {
@@ -22,8 +20,9 @@ export function SnapshotMiniCalendar({
     year: "numeric",
   });
   const days = buildMonthDays(year, month);
-  const entriesByDate = groupEntriesByDate(entries);
-  const approvalDateSet = new Set(approvalDates);
+  // Dashboard mini calendar shows events only — not schedule, milestones, or posts.
+  const eventEntries = entries.filter((entry) => entry.kind === "event");
+  const entriesByDate = groupEntriesByDate(eventEntries);
 
   return (
     <div className="space-y-3">
@@ -43,10 +42,8 @@ export function SnapshotMiniCalendar({
           }
 
           const dayEntries = entriesByDate.get(day.date) ?? [];
-          const hasApproval = approvalDateSet.has(day.date);
-          const dots = dotKinds(dayEntries, hasApproval);
           const isToday = day.date === today;
-          const hasActivity = dayEntries.length > 0 || hasApproval;
+          const hasActivity = dayEntries.length > 0;
 
           return (
             <div
@@ -58,11 +55,7 @@ export function SnapshotMiniCalendar({
               }
             >
               {hasActivity && (
-                <DayTooltip
-                  date={day.date}
-                  entries={dayEntries}
-                  hasApproval={hasApproval}
-                />
+                <DayTooltip date={day.date} entries={dayEntries} />
               )}
 
               <span
@@ -77,14 +70,9 @@ export function SnapshotMiniCalendar({
                 {day.dayNumber}
               </span>
 
-              {dots.length > 0 && (
+              {hasActivity && (
                 <span className="flex gap-0.5" aria-hidden>
-                  {dots.map((color, dotIndex) => (
-                    <span
-                      key={`${day.date}-${color}-${dotIndex}`}
-                      className={`h-1 w-1 rounded-full ${dotColorClass(color)}`}
-                    />
-                  ))}
+                  <span className="h-1 w-1 rounded-full bg-cos-success" />
                 </span>
               )}
             </div>
@@ -98,10 +86,9 @@ export function SnapshotMiniCalendar({
 interface DayTooltipProps {
   date: string;
   entries: TodayWeekEntry[];
-  hasApproval: boolean;
 }
 
-function DayTooltip({ date, entries, hasApproval }: DayTooltipProps) {
+function DayTooltip({ date, entries }: DayTooltipProps) {
   const preview = entries.slice(0, TOOLTIP_ITEM_LIMIT);
   const remaining = entries.length - preview.length;
 
@@ -117,12 +104,9 @@ function DayTooltip({ date, entries, hasApproval }: DayTooltipProps) {
         <ul className="space-y-1">
           {preview.map((entry) => (
             <li key={entry.id} className="text-xs leading-snug text-cos-text">
-              {entryLabel(entry)}
+              {entry.title}
             </li>
           ))}
-          {hasApproval && (
-            <li className="text-xs leading-snug text-cos-muted">Approval in progress</li>
-          )}
           {remaining > 0 && (
             <li className="text-xs text-cos-muted">+{remaining} more</li>
           )}
@@ -130,56 +114,6 @@ function DayTooltip({ date, entries, hasApproval }: DayTooltipProps) {
       </div>
     </div>
   );
-}
-
-type DotColor = "sage" | "accent" | "sand";
-
-function dotKinds(entries: TodayWeekEntry[], hasApproval: boolean): DotColor[] {
-  const dots: DotColor[] = [];
-
-  if (entries.some((entry) => entry.kind === "event")) {
-    dots.push("sage");
-  }
-  if (
-    entries.some(
-      (entry) => entry.kind === "communication" || entry.kind === "publishing",
-    )
-  ) {
-    dots.push("accent");
-  }
-  if (hasApproval) {
-    dots.push("sand");
-  }
-
-  return dots.slice(0, 3);
-}
-
-function dotColorClass(color: DotColor): string {
-  switch (color) {
-    case "sage":
-      return "bg-cos-success";
-    case "accent":
-      return "bg-cos-accent";
-    case "sand":
-      return "bg-cos-warning-text/60";
-  }
-}
-
-function entryLabel(entry: TodayWeekEntry): string {
-  if (entry.kind === "event") return entry.title;
-  if (entry.kind === "publishing") return "Ready to publish";
-  if (entry.eventTitle && !entry.title.includes(entry.eventTitle)) {
-    return `${entry.title} · ${entry.eventTitle}`;
-  }
-  return entry.title.length > 48 ? `${entry.title.slice(0, 45)}…` : entry.title;
-}
-
-function tooltipDayLabel(date: string): string {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function groupEntriesByDate(entries: TodayWeekEntry[]): Map<string, TodayWeekEntry[]> {

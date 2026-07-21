@@ -58,7 +58,7 @@ interface UnifiedCalendarControlPanelProps {
   onToday: () => void;
   onLayersChange: (layers: Set<CalendarLayerId>) => void;
   onSelectUpcomingItem: (item: PlanningCalendarItem) => void;
-  /** Hides the hero title block and upcoming list — used for marketing screen capture. */
+  /** Hides Import/Review actions and the upcoming list — used for marketing screen capture. */
   compact?: boolean;
 }
 
@@ -101,77 +101,71 @@ export function UnifiedCalendarControlPanel({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
-      {/* Title row */}
-      {!compact && (
-      <div className="flex flex-col gap-4 border-b border-cos-border px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <p className="studio-eyebrow">Workspace</p>
-          <h1 className="font-display mt-1 text-3xl text-cos-text sm:text-4xl">{periodLabel}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-cos-muted">
-            Events and Meta posts on one timeline — filter layers, browse by month, or open
-            Agenda for the full list.
-            {importCleanup && importCleanup.eventCount > 0 && (
-              <>
-                {" "}
-                <span className="text-cos-muted/80">
-                  {importCleanup.eventCount} events on {importCleanup.schoolYearLabel}.
-                </span>
-              </>
-            )}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button href="/calendar/import" variant="secondary" size="sm">
-            <Upload className="h-4 w-4" />
-            Import
-          </Button>
-          <Button href="/calendar/review" variant="secondary" size="sm">
-            <FileSearch className="h-4 w-4" />
-            Review
-          </Button>
-        </div>
-      </div>
-      )}
-
-      {/* View + navigation */}
-      <div className="flex flex-col gap-3 border-b border-cos-border px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center border border-cos-border bg-cos-bg p-1">
-          {visibleViews.map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onViewChange(value)}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors",
-                view === value
-                  ? "bg-cos-card text-cos-text shadow-sm"
-                  : "text-cos-muted hover:text-cos-text",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {view !== "import-list" && (
-          <div className="flex items-center gap-1">
-            <Button variant="secondary" size="sm" onClick={onPrevious} aria-label="Previous period">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={onToday}>
-              Today
-            </Button>
-            <Button variant="secondary" size="sm" onClick={onNext} aria-label="Next period">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+      {/* Views + period + nav + actions — single dense toolbar */}
+      <div className="flex flex-col gap-2.5 border-b border-cos-border px-4 py-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex items-center border border-cos-border bg-cos-bg p-0.5">
+            {visibleViews.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onViewChange(value)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium transition-colors",
+                  view === value
+                    ? "bg-cos-card text-cos-text shadow-sm"
+                    : "text-cos-muted hover:text-cos-text",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
           </div>
-        )}
+          <div className="min-w-0">
+            <h1 className="font-display truncate text-lg leading-tight text-cos-text sm:text-xl">
+              {periodLabel}
+            </h1>
+            {!compact && importCleanup && importCleanup.eventCount > 0 && (
+              <p className="truncate text-xs text-cos-muted">
+                {importCleanup.eventCount} events on {importCleanup.schoolYearLabel}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {view !== "import-list" && (
+            <div className="flex items-center gap-1">
+              <Button variant="secondary" size="sm" onClick={onPrevious} aria-label="Previous period">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onToday}>
+                Today
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onNext} aria-label="Next period">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {!compact && (
+            <>
+              <Button href="/calendar/import" variant="secondary" size="sm">
+                <Upload className="h-4 w-4" />
+                Import
+              </Button>
+              <Button href="/calendar/review" variant="secondary" size="sm">
+                <FileSearch className="h-4 w-4" />
+                Review
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Layer filters — inline */}
       {view !== "import-list" && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-cos-border px-5 py-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-cos-border px-4 py-2">
           <span className="text-xs font-medium uppercase tracking-wide text-cos-muted">Show</span>
           {UNIFIED_CALENDAR_LAYERS.map((layer) => {
             const active = activeLayers.has(layer.id);
@@ -223,7 +217,7 @@ export function UnifiedCalendarControlPanel({
       )}
 
       {view === "week" && showPostingHeatmap && postingHeatmap != null && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-cos-border bg-cos-bg/30 px-5 py-2.5 text-xs text-cos-muted">
+        <div className="flex flex-wrap items-center gap-3 border-b border-cos-border bg-cos-bg/30 px-4 py-2 text-xs text-cos-muted">
           <span>Darker = families more likely to see posts</span>
           <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />
           <span className="inline-flex items-center gap-2">
@@ -250,7 +244,7 @@ export function UnifiedCalendarControlPanel({
           <button
             type="button"
             onClick={() => setUpcomingOpen((value) => !value)}
-            className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left"
+            className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left"
             aria-expanded={upcomingOpen}
           >
             <span className="flex items-center gap-2">
@@ -278,7 +272,7 @@ export function UnifiedCalendarControlPanel({
           </button>
 
           {upcomingOpen && upcomingItems.length > 0 && (
-            <ul className="space-y-1 border-t border-cos-border/60 px-5 py-3">
+            <ul className="space-y-1 border-t border-cos-border/60 px-4 py-2.5">
               {previewItems.map((item) => (
                 <li key={item.id}>
                   <button
@@ -309,7 +303,7 @@ export function UnifiedCalendarControlPanel({
           )}
 
           {upcomingOpen && upcomingItems.length === 0 && (
-            <p className="border-t border-cos-border/60 px-5 py-3 text-sm text-cos-muted">
+            <p className="border-t border-cos-border/60 px-4 py-2.5 text-sm text-cos-muted">
               No campaign events in the next 7 days.
             </p>
           )}
