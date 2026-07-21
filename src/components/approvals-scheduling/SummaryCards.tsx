@@ -77,21 +77,37 @@ export function SummaryCards({
             onClick={() => handleCardClick(card.tabId)}
             aria-pressed={isActive}
             className={cn(
-              "flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-5 text-center transition-colors",
-              "shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)]",
+              "flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-5 text-center transition-all duration-200",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-bg",
               isActive
-                ? "bg-cos-card ring-2 ring-cos-dark"
-                : "bg-cos-bg-alt ring-1 ring-black/[0.04] hover:ring-cos-accent/40",
+                ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
+                : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:ring-cos-accent/40",
             )}
           >
-            <span className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+            <span
+              className={cn(
+                "text-xs font-medium tracking-wide uppercase",
+                isActive ? "text-white/70" : "text-cos-muted",
+              )}
+            >
               {card.label}
             </span>
-            <span className="font-display text-3xl leading-none text-cos-text tabular-nums">
+            <span
+              className={cn(
+                "font-display text-3xl leading-none tabular-nums",
+                isActive ? "text-white" : "text-cos-text",
+              )}
+            >
               {summary[card.key]}
             </span>
-            <span className="text-xs text-cos-muted">{card.description}</span>
+            <span
+              className={cn(
+                "text-xs",
+                isActive ? "text-white/70" : "text-cos-muted",
+              )}
+            >
+              {card.description}
+            </span>
           </button>
         );
       })}

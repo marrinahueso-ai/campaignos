@@ -6,10 +6,7 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { askRalliAssistantAction } from "@/lib/ralli-assistant/actions";
-import {
-  PRODUCT_HELP_SUGGESTIONS,
-  type ProductHelpLink,
-} from "@/lib/ralli-assistant/product-help-knowledge";
+import { type ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 import { cn } from "@/lib/utils/cn";
 
 interface RalliAiAssistantWidgetProps {
@@ -22,6 +19,16 @@ interface ChatMessage {
   text: string;
   links?: ProductHelpLink[];
 }
+
+/** Phase 1 ops chips + a few product how-tos. */
+const ASK_RALLI_SUGGESTIONS = [
+  "What should I do next for this event?",
+  "What's overdue?",
+  "What's waiting for approval?",
+  "What's publishing this week?",
+  "How do I create a campaign?",
+  "Where do I find my approvals?",
+] as const;
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -108,8 +115,8 @@ export function RalliAiAssistantWidget({
           </div>
 
           <p className="mt-2.5 text-sm leading-relaxed text-cos-muted">
-            How do I create a campaign? Where are approvals? Ask product
-            questions — not AI Brain training.
+            Ask what to do next on an event, or how to navigate Hey Ralli — not
+            AI Brain training.
           </p>
 
           <button
@@ -142,7 +149,7 @@ export function RalliAiAssistantWidget({
             <div className="flex items-start justify-between gap-3 border-b border-cos-border px-5 py-4">
               <div>
                 <p className="text-[11px] font-medium tracking-wide text-cos-muted uppercase">
-                  In-app guide
+                  Ops coach + guide
                 </p>
                 <h2
                   id="ralli-ask-title"
@@ -151,8 +158,8 @@ export function RalliAiAssistantWidget({
                   Ask Ralli AI
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                  Product how-tos — campaigns, approvals, Create with AI, and
-                  more.
+                  What’s next for an event, what’s overdue, approvals &amp;
+                  schedule — plus product how-tos.
                 </p>
               </div>
               <Button
@@ -176,7 +183,7 @@ export function RalliAiAssistantWidget({
                     Try a question to get started:
                   </p>
                   <div className="flex flex-col gap-2">
-                    {PRODUCT_HELP_SUGGESTIONS.map((suggestion) => (
+                    {ASK_RALLI_SUGGESTIONS.map((suggestion) => (
                       <button
                         key={suggestion}
                         type="button"
@@ -231,14 +238,14 @@ export function RalliAiAssistantWidget({
               className="border-t border-cos-border px-5 py-4"
             >
               <label htmlFor="ralli-ask-input" className="sr-only">
-                Ask a product question
+                Ask Ralli a question
               </label>
               <div className="flex gap-2">
                 <input
                   id="ralli-ask-input"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="How do I…?"
+                  placeholder="What should I do next…?"
                   disabled={pending}
                   className="h-10 flex-1 rounded-[10px] border border-cos-border bg-cos-bg px-3 text-sm text-cos-text outline-none placeholder:text-cos-muted focus:border-cos-text disabled:opacity-60"
                 />

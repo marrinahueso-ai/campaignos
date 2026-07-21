@@ -1,14 +1,17 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { askRalliProductHelp } from "@/lib/ralli-assistant/ask";
+import {
+  askRalliProductHelp,
+  type AskRalliSource,
+} from "@/lib/ralli-assistant/ask";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 
 export type AskRalliAssistantActionResult = {
   success: boolean;
   answer: string | null;
   links: ProductHelpLink[];
-  source: "faq" | "ai" | null;
+  source: AskRalliSource | null;
   error: string | null;
 };
 
