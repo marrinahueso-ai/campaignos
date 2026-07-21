@@ -326,7 +326,7 @@ export function ReportProblemButton({
           setSubmitState({ status: "idle" });
           setOpen(true);
         }}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:bottom-6 sm:right-6"
+        className="fixed bottom-36 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:bottom-24 sm:right-6"
         aria-haspopup="dialog"
       >
         <Bug className="h-3.5 w-3.5 text-cos-muted" strokeWidth={1.5} aria-hidden />
