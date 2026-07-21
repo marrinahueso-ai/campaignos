@@ -116,6 +116,14 @@ function DayTooltip({ date, entries }: DayTooltipProps) {
   );
 }
 
+function tooltipDayLabel(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function groupEntriesByDate(entries: TodayWeekEntry[]): Map<string, TodayWeekEntry[]> {
   const map = new Map<string, TodayWeekEntry[]>();
   for (const entry of entries) {
