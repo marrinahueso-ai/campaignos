@@ -35,6 +35,8 @@ export const SAMPLE_CALENDAR_REVIEW: CalendarReviewData = {
     holidays: 4,
     earlyReleaseDays: 2,
     conflictsFound: 2,
+    duplicatesFound: 0,
+    updatesFound: 0,
   },
   events: [
     reviewEvent("evt-001", "First Day of School", "2025-08-18", "School Event", "ready"),

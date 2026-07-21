@@ -33,16 +33,21 @@ export function PlanningCalendarMonthView({
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [toastVariant, setToastVariant] = useState<"error" | "success">("error");
+  const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
+    "error",
+  );
   const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = groupItemsByDate(items);
 
-  const showToast = useCallback((message: string, variant: "error" | "success") => {
-    setToastVariant(variant);
-    setToastMessage(message);
-  }, []);
+  const showToast = useCallback(
+    (message: string, variant: "error" | "success" | "warning") => {
+      setToastVariant(variant);
+      setToastMessage(message);
+    },
+    [],
+  );
 
   const handleDrop = useCallback(
     (date: string, event: React.DragEvent<HTMLDivElement>) => {
@@ -61,6 +66,7 @@ export function PlanningCalendarMonthView({
           payload,
           onRescheduled,
           onSuccess: (message) => showToast(message, "success"),
+          onWarning: (message) => showToast(message, "warning"),
           onError: (message) => showToast(message, "error"),
         });
       });

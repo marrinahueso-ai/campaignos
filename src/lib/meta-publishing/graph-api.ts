@@ -186,6 +186,89 @@ export async function publishFacebookFeedPhoto(input: {
   return { postId: postId || null, error: null };
 }
 
+/**
+ * Create an unpublished Facebook Page photo scheduled for Graph to publish
+ * (`published=false` + `scheduled_publish_time`). Returns the Graph object id.
+ */
+export async function scheduleFacebookFeedPhoto(input: {
+  pageId: string;
+  accessToken: string;
+  imageUrl: string;
+  caption: string;
+  scheduledPublishTimeUnix: number;
+}): Promise<{ scheduleId: string | null; error: string | null }> {
+  const prepared = await prepareFacebookFeedImageBytes(input.imageUrl);
+  if ("error" in prepared) {
+    return { scheduleId: null, error: prepared.error };
+  }
+
+  const result = await graphPostMultipart(
+    `/${input.pageId}/photos`,
+    {
+      caption: input.caption,
+      published: "false",
+      scheduled_publish_time: String(input.scheduledPublishTimeUnix),
+      access_token: input.accessToken,
+    },
+    {
+      bytes: prepared.bytes,
+      filename: "facebook-feed.jpg",
+      contentType: prepared.contentType,
+    },
+  );
+
+  if (!result.ok) {
+    return { scheduleId: null, error: result.error };
+  }
+
+  const scheduleId = String(result.data.id ?? result.data.post_id ?? "");
+  return {
+    scheduleId: scheduleId || null,
+    error: scheduleId ? null : "Meta scheduled photo did not return an id.",
+  };
+}
+
+/** Update `scheduled_publish_time` on an unpublished scheduled Page post/photo. */
+export async function updateFacebookScheduledPublishTime(input: {
+  postId: string;
+  accessToken: string;
+  scheduledPublishTimeUnix: number;
+}): Promise<{ ok: boolean; error: string | null }> {
+  const result = await graphPost(`/${input.postId}`, {
+    scheduled_publish_time: String(input.scheduledPublishTimeUnix),
+    access_token: input.accessToken,
+  });
+
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  return { ok: true, error: null };
+}
+
+export async function deleteFacebookGraphObject(input: {
+  objectId: string;
+  accessToken: string;
+}): Promise<{ ok: boolean; error: string | null }> {
+  const url = new URL(graphUrl(`/${input.objectId}`));
+  url.searchParams.set("access_token", input.accessToken);
+
+  const response = await fetch(url.toString(), { method: "DELETE" });
+  const payload = (await response.json()) as {
+    success?: boolean;
+    error?: GraphErrorPayload;
+  };
+
+  if (!response.ok || payload.error) {
+    return {
+      ok: false,
+      error: formatGraphError(payload.error ?? {}, response.status),
+    };
+  }
+
+  return { ok: true, error: null };
+}
+
 export async function publishFacebookPhotoStory(input: {
   pageId: string;
   accessToken: string;

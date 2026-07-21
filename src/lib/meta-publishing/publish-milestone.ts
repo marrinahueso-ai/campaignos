@@ -22,6 +22,8 @@ import {
   publishFacebookPhotoStory,
   publishInstagramImage,
 } from "@/lib/meta-publishing/graph-api";
+import { clearNativeMetaSchedulesForSlots } from "@/lib/meta-publishing/native-schedule";
+import { shouldSkipCampignOsCronPublish } from "@/lib/meta-publishing/native-schedule-utils";
 import { getMetaPublicationSlotsForEvent } from "@/lib/meta-publishing/sync-slots";
 import type {
   MetaConnection,
@@ -263,14 +265,69 @@ export async function publishMetaMilestoneBundle(input: {
     }
   }
 
-  const slots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
+  const allEligibleSlots = (
+    await getMetaPublicationSlotsForEvent(input.eventId)
+  ).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
       slotMatchesSurfaces(slot, surfaces, storyManualPublish) &&
       (slot.status === "approved" || slot.status === "failed"),
   );
 
+  // Meta-native scheduled posts: Meta publishes them. After due time, mark
+  // published in CampignOS without calling Graph publish again.
+  if (!input.immediate) {
+    const dueNative = allEligibleSlots.filter(
+      (slot) =>
+        shouldSkipCampignOsCronPublish(slot) &&
+        slot.scheduledFor &&
+        new Date(slot.scheduledFor).getTime() <= Date.now(),
+    );
+    await Promise.all(
+      dueNative.map((slot) =>
+        updateSlotPublishResult({
+          slotId: slot.id,
+          status: "published",
+          externalPostId: slot.graphScheduleId,
+          publishError: null,
+        }),
+      ),
+    );
+  }
+
+  let slots = input.immediate
+    ? allEligibleSlots
+    : allEligibleSlots.filter((slot) => !shouldSkipCampignOsCronPublish(slot));
+
+  if (input.immediate && slots.some((slot) => slot.graphScheduleId)) {
+    await clearNativeMetaSchedulesForSlots({
+      slots: slots.filter((slot) => Boolean(slot.graphScheduleId)),
+      connection: connection!,
+    });
+    slots = slots.map((slot) =>
+      slot.graphScheduleId ? { ...slot, graphScheduleId: null } : slot,
+    );
+  }
+
   if (slots.length === 0) {
+    const nativeDueCount = !input.immediate
+      ? allEligibleSlots.filter(
+          (slot) =>
+            shouldSkipCampignOsCronPublish(slot) &&
+            slot.scheduledFor &&
+            new Date(slot.scheduledFor).getTime() <= Date.now(),
+        ).length
+      : 0;
+
+    if (nativeDueCount > 0) {
+      return {
+        success: true,
+        error: null,
+        publishedCount: nativeDueCount,
+        failedCount: 0,
+      };
+    }
+
     return {
       success: false,
       error: input.immediate

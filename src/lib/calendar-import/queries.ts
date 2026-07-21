@@ -1,7 +1,11 @@
 import { cache } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { mapCalendarImportRow } from "@/lib/organizations/mappers";
-import { buildCalendarEventDedupeKeySet } from "@/lib/calendar-import/event-dedup";
+import {
+  buildCalendarEventDedupeKeySet,
+  type ExistingCalendarEventForDedup,
+} from "@/lib/calendar-import/event-dedup";
 import {
   getCalendarPlanningWindow,
   resolveCalendarSchoolYearLabel,
@@ -162,13 +166,32 @@ export async function getExistingCalendarEventKeysForSchoolYear(
   );
 }
 
+function mapDedupRows(
+  data: {
+    id?: string;
+    title: string;
+    date: string;
+    import_source?: string | null;
+    import_external_id?: string | null;
+  }[],
+): ExistingCalendarEventForDedup[] {
+  return data.map((row) => ({
+    id: (row.id as string | undefined) ?? "",
+    title: row.title as string,
+    date: row.date as string,
+    importSource: (row.import_source as string | null | undefined) ?? null,
+    importExternalId:
+      (row.import_external_id as string | null | undefined) ?? null,
+  }));
+}
+
 export async function getSchoolYearCalendarEventsForDedup(
   schoolYearId: string,
-): Promise<{ title: string; date: string }[]> {
+): Promise<ExistingCalendarEventForDedup[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("title, date")
+    .select("id, title, date, import_source, import_external_id")
     .eq("school_year_id", schoolYearId)
     .neq("status", "archived")
     .order("date", { ascending: true });
@@ -177,17 +200,14 @@ export async function getSchoolYearCalendarEventsForDedup(
     return [];
   }
 
-  return data.map((row) => ({
-    title: row.title as string,
-    date: row.date as string,
-  }));
+  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
 }
 
 /** Events currently on the calendar — used for import dedup. */
 export async function getCalendarWindowEventsForDedup(
   schoolYearLabel: string | null | undefined,
   organizationId?: string | null,
-): Promise<{ title: string; date: string }[]> {
+): Promise<ExistingCalendarEventForDedup[]> {
   const scope = await resolveOrganizationCalendarWindowScope(
     schoolYearLabel,
     organizationId,
@@ -199,7 +219,7 @@ export async function getCalendarWindowEventsForDedup(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
-    .select("title, date")
+    .select("id, title, date, import_source, import_external_id")
     .gte("date", scope.window.startDate)
     .lte("date", scope.window.endDate)
     .neq("status", "archived")
@@ -210,10 +230,24 @@ export async function getCalendarWindowEventsForDedup(
     return [];
   }
 
-  return data.map((row) => ({
-    title: row.title as string,
-    date: row.date as string,
-  }));
+  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
+}
+
+export async function getSchoolYearEventsForDedupViaClient(
+  schoolYearId: string,
+  supabase: SupabaseClient,
+): Promise<ExistingCalendarEventForDedup[]> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, title, date, import_source, import_external_id")
+    .eq("school_year_id", schoolYearId)
+    .neq("status", "archived");
+
+  if (error || !data) {
+    return [];
+  }
+
+  return mapDedupRows(data as Parameters<typeof mapDedupRows>[0]);
 }
 
 export async function getExistingCalendarEventKeysForWindow(

@@ -79,9 +79,7 @@ export function summarizeArtworkPromptSections(input: {
   if (input.inspiration.inspirationOverallComment?.trim()) {
     sections.push("inspiration_overall_comment");
   }
-  if (input.inspiration.globalAiGuidance.trim()) {
-    sections.push("global_ai_guidance");
-  }
+  // Legacy globalAiGuidance is not fed into artwork prompts.
   if (input.milestone.artworkNotes.trim() || input.extraInstructions?.trim()) {
     sections.push("user_art_direction");
   }

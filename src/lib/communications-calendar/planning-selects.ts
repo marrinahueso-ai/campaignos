@@ -100,6 +100,8 @@ export const UNIFIED_META_SLOT_SELECT = [
   "scheduled_for",
   "status",
   "external_post_id",
+  "graph_schedule_id",
+  "graph_schedule_error",
   "publish_error",
   "published_at",
   "created_at",

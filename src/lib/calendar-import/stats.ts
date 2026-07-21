@@ -17,5 +17,8 @@ export function buildCalendarReviewStats(
     holidays: countByCategory("Holiday"),
     earlyReleaseDays: countByCategory("Early Release"),
     conflictsFound: events.filter((event) => event.status === "conflict").length,
+    duplicatesFound: events.filter((event) => event.status === "duplicate")
+      .length,
+    updatesFound: events.filter((event) => event.status === "update").length,
   };
 }

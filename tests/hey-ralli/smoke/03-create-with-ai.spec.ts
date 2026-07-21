@@ -39,10 +39,13 @@ test.describe("Create with AI creative workflow", () => {
     await expectCreateWithAiLoaded(page);
 
     const main = mainContent(page);
-    const notes = main.getByLabel(/notes to ai|global|guidance/i).first();
-    if (await notes.count()) {
+    // Creative Setup art direction: Overall inspiration comment (not legacy Notes to AI).
+    const overallComment = main
+      .getByLabel(/overall inspiration comment/i)
+      .first();
+    if (await overallComment.count()) {
       const marker = `hey-ralli-smoke-${Date.now()}`;
-      await notes.fill(marker);
+      await overallComment.fill(marker);
       const continueButton = main.getByRole("button", {
         name: /save & continue to milestones|continue to milestones/i,
       });
@@ -53,12 +56,12 @@ test.describe("Create with AI creative workflow", () => {
       }
       await page.goto(`/events/${eventId}/campaign-builder#inspiration`);
       await expectCreateWithAiLoaded(page);
-      await expect(notes).toHaveValue(new RegExp(marker));
+      await expect(overallComment).toHaveValue(new RegExp(marker));
     } else {
       test.info().annotations.push({
         type: "note",
         description:
-          "Notes field not found; verified Create with AI page remained reachable.",
+          "Overall inspiration comment not found; verified Create with AI page remained reachable.",
       });
       await expect(page.locator("body")).toBeVisible();
     }

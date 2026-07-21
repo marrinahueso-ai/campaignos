@@ -117,6 +117,7 @@ export type RescheduleDropInput = {
   payload: PlanningDragPayload;
   onRescheduled: () => void;
   onSuccess: (message: string) => void;
+  onWarning?: (message: string) => void;
   onError: (message: string) => void;
 };
 
@@ -149,6 +150,13 @@ export async function executeRescheduleDrop(
 
   if (result.success) {
     input.onRescheduled();
+    if (result.warning) {
+      input.onWarning?.(result.warning);
+      if (!input.onWarning) {
+        input.onSuccess(result.warning);
+      }
+      return;
+    }
     input.onSuccess("Item rescheduled successfully.");
     return;
   }

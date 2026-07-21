@@ -6,11 +6,25 @@ import { Badge } from "@/components/ui/Badge";
 
 const statusConfig: Record<
   CalendarEventReviewStatus,
-  { label: string; variant: "default" | "success" | "warning" | "info" }
+  { label: string; variant: "default" | "success" | "warning" | "info"; className?: string }
 > = {
-  ready: { label: "Ready", variant: "success" },
+  ready: { label: "New", variant: "success" },
   needs_review: { label: "Needs Review", variant: "warning" },
-  conflict: { label: "Conflict", variant: "default" },
+  conflict: {
+    label: "Conflict",
+    variant: "default",
+    className: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-100",
+  },
+  duplicate: {
+    label: "Duplicate",
+    variant: "info",
+    className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
+  },
+  update: {
+    label: "Update",
+    variant: "warning",
+    className: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-100",
+  },
 };
 
 interface CalendarReviewStatusBadgeProps {
@@ -23,14 +37,7 @@ export function CalendarReviewStatusBadge({
   const config = statusConfig[status];
 
   return (
-    <Badge
-      variant={config.variant}
-      className={
-        status === "conflict"
-          ? "bg-red-50 text-red-700 ring-1 ring-inset ring-red-100"
-          : undefined
-      }
-    >
+    <Badge variant={config.variant} className={config.className}>
       {config.label}
     </Badge>
   );

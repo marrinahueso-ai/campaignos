@@ -7,7 +7,19 @@ export type CalendarEventCategory =
   | "Holiday"
   | "Early Release";
 
-export type CalendarEventReviewStatus = "ready" | "needs_review" | "conflict";
+export type CalendarImportSource =
+  | "ics"
+  | "google"
+  | "subscribe"
+  | "ai_parse"
+  | "manual";
+
+export type CalendarEventReviewStatus =
+  | "ready"
+  | "needs_review"
+  | "conflict"
+  | "duplicate"
+  | "update";
 
 export interface CalendarReviewEvent {
   id: string;
@@ -20,6 +32,18 @@ export interface CalendarReviewEvent {
   eventType?: EventType | null;
   /** When true, communication strategy was set manually and should not be auto-updated. */
   planManuallySet?: boolean;
+  importSource?: CalendarImportSource | null;
+  /** ICS UID, Google event id, or AI content fingerprint. */
+  importExternalId?: string | null;
+  /** Matched existing event for duplicate / update rows. */
+  existingEventId?: string | null;
+  /** Human-readable why this row is New / Duplicate / Update / Conflict. */
+  matchReason?: string | null;
+  /**
+   * When status is `update`: true = apply title/date patch on import (default).
+   * Interactive review can set false to Skip.
+   */
+  applyUpdate?: boolean;
 }
 
 export interface CalendarReviewStats {
@@ -29,6 +53,8 @@ export interface CalendarReviewStats {
   holidays: number;
   earlyReleaseDays: number;
   conflictsFound: number;
+  duplicatesFound: number;
+  updatesFound: number;
 }
 
 export interface CalendarReviewData {

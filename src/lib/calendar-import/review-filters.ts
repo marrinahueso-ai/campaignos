@@ -4,7 +4,12 @@ import type {
   CalendarReviewStats,
 } from "@/types/calendar-review";
 
-export type CalendarReviewFilter = "all" | "conflicts" | CalendarEventCategory;
+export type CalendarReviewFilter =
+  | "all"
+  | "conflicts"
+  | "duplicates"
+  | "updates"
+  | CalendarEventCategory;
 
 export type CalendarReviewStatKey = keyof CalendarReviewStats;
 
@@ -15,6 +20,8 @@ const STAT_KEY_TO_FILTER: Record<CalendarReviewStatKey, CalendarReviewFilter> = 
   holidays: "Holiday",
   earlyReleaseDays: "Early Release",
   conflictsFound: "conflicts",
+  duplicatesFound: "duplicates",
+  updatesFound: "updates",
 };
 
 export function statKeyToFilter(key: CalendarReviewStatKey): CalendarReviewFilter {
@@ -33,6 +40,14 @@ export function filterReviewEvents(
     return events.filter((event) => event.status === "conflict");
   }
 
+  if (filter === "duplicates") {
+    return events.filter((event) => event.status === "duplicate");
+  }
+
+  if (filter === "updates") {
+    return events.filter((event) => event.status === "update");
+  }
+
   return events.filter((event) => event.category === filter);
 }
 
@@ -42,6 +57,10 @@ export function getReviewFilterLabel(filter: CalendarReviewFilter): string {
       return "All events";
     case "conflicts":
       return "Conflicts";
+    case "duplicates":
+      return "Duplicates";
+    case "updates":
+      return "Updates";
     case "PTO Event":
       return "PTO events";
     case "School Event":

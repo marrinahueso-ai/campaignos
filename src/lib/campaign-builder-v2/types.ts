@@ -89,8 +89,15 @@ export interface CampaignBuilderInspiration {
   eventDate: string;
   playbookId: string;
   inspirationImages: InspirationImage[];
-  /** Overall note applied when inspiration images are present. */
+  /**
+   * Creative Setup “Overall inspiration comment (optional)” — primary campaign-level
+   * art direction for artwork prompts (with per-image comments).
+   */
   inspirationOverallComment: string;
+  /**
+   * Brand kit id. Selector UI is deferred until org setup; defaults to none /
+   * school-friendly guidance. Not a current Creative Setup test target.
+   */
   brandKitId: string;
   /** Joined voice tones for prompts; empty string = None. */
   voiceTone: string;
@@ -111,7 +118,10 @@ export interface CampaignBuilderInspiration {
   useSchoolColors: boolean;
   primarySchoolColor: string | null;
   secondarySchoolColor: string | null;
-  /** Notes to AI — blank means null/unused downstream. */
+  /**
+   * Legacy “Notes to AI”. No Creative Setup control; not fed into artwork prompts.
+   * Prefer `inspirationOverallComment` + per-image comments for artwork direction.
+   */
   globalAiGuidance: string;
 }
 

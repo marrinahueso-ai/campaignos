@@ -2,7 +2,9 @@ import {
   AlertTriangle,
   CalendarDays,
   Clock,
+  Copy,
   GraduationCap,
+  RefreshCw,
   Sun,
   Users,
 } from "lucide-react";
@@ -61,6 +63,18 @@ const statItems: {
     label: "Conflicts Found",
     icon: AlertTriangle,
     accentClassName: "bg-cos-error-bg text-cos-error-text",
+  },
+  {
+    key: "duplicatesFound" as const,
+    label: "Duplicates",
+    icon: Copy,
+    accentClassName: "bg-slate-100 text-slate-700",
+  },
+  {
+    key: "updatesFound" as const,
+    label: "Updates",
+    icon: RefreshCw,
+    accentClassName: "bg-amber-50 text-amber-800",
   },
 ];
 

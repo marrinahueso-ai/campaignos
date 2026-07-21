@@ -162,6 +162,14 @@ export function CalendarImportReview({
     );
   }
 
+  function handleApplyUpdateChange(eventId: string, applyUpdate: boolean) {
+    persistEvents(
+      events.map((event) =>
+        event.id === eventId ? { ...event, applyUpdate } : event,
+      ),
+    );
+  }
+
   function handleApplyRecommendedPlans() {
     persistEvents(applyRecommendedPlansToEvents(events));
     setSelectedIds(new Set());
@@ -203,14 +211,18 @@ export function CalendarImportReview({
         return;
       }
 
-      if (result.importedCount === 0 && result.skippedCount > 0) {
+      if (
+        result.importedCount === 0 &&
+        result.updatedCount === 0 &&
+        result.skippedCount > 0
+      ) {
         setActionError(
           `${result.skippedCount} event${result.skippedCount === 1 ? "" : "s"} already on your calendar — nothing new to import.`,
         );
         return;
       }
 
-      setImportedCount(result.importedCount);
+      setImportedCount(result.importedCount + result.updatedCount);
       setImportComplete(true);
       setParseStatus("imported");
     });
@@ -458,6 +470,7 @@ export function CalendarImportReview({
                 onEdit={setEditingEvent}
                 onDelete={handleDelete}
                 onStrategyChange={handleStrategyChange}
+                onApplyUpdateChange={handleApplyUpdateChange}
                 disabled={isPending || isImported || isParsing}
               />
             )}

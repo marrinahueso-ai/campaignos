@@ -50,6 +50,10 @@ export interface MetaPublicationSlot {
   scheduledFor: string | null;
   status: MetaPublicationSlotStatus;
   externalPostId: string | null;
+  /** Graph id for Meta-native unpublished schedule (FB feed). */
+  graphScheduleId: string | null;
+  /** Soft-fail detail for native schedule create/update. */
+  graphScheduleError: string | null;
   publishError: string | null;
   publishedAt: string | null;
   createdAt: string;
@@ -68,6 +72,8 @@ export interface MetaPublicationSlotRow {
   scheduled_for: string | null;
   status: MetaPublicationSlotStatus;
   external_post_id: string | null;
+  graph_schedule_id?: string | null;
+  graph_schedule_error?: string | null;
   publish_error: string | null;
   published_at: string | null;
   created_at: string;

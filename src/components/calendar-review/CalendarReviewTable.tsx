@@ -33,6 +33,7 @@ interface CalendarReviewTableProps {
   onEdit: (event: CalendarReviewEvent) => void;
   onDelete: (eventId: string) => void;
   onStrategyChange: (eventId: string, strategy: CommunicationStrategy) => void;
+  onApplyUpdateChange?: (eventId: string, applyUpdate: boolean) => void;
   disabled?: boolean;
 }
 
@@ -45,6 +46,7 @@ export function CalendarReviewTable({
   onEdit,
   onDelete,
   onStrategyChange,
+  onApplyUpdateChange,
   disabled = false,
 }: CalendarReviewTableProps) {
   const allSelected = events.length > 0 && selectedIds.size === events.length;
@@ -93,13 +95,20 @@ export function CalendarReviewTable({
                 type="checkbox"
                 checked={selectedIds.has(event.id)}
                 onChange={() => onToggleSelect(event.id)}
-                disabled={disabled}
+                disabled={disabled || event.status === "duplicate"}
                 aria-label={`Select ${event.name}`}
                 className="h-4 w-4 rounded border-cos-border"
               />
             </TableCell>
             <TableCell className="font-medium text-cos-text">
-              {event.name}
+              <div className="space-y-1">
+                <div>{event.name}</div>
+                {event.matchReason ? (
+                  <p className="text-xs font-normal text-cos-muted">
+                    {event.matchReason}
+                  </p>
+                ) : null}
+              </div>
             </TableCell>
             <TableCell>{formatEventDate(event.date)}</TableCell>
             <TableCell>
@@ -121,7 +130,7 @@ export function CalendarReviewTable({
                           changeEvent.target.value as CommunicationStrategy,
                         )
                       }
-                      disabled={disabled}
+                      disabled={disabled || event.status === "duplicate"}
                       aria-label={`Plan type for ${event.name}`}
                     >
                       {COMMUNICATION_STRATEGY_OPTIONS.map((option) => (
@@ -142,7 +151,29 @@ export function CalendarReviewTable({
               })()}
             </TableCell>
             <TableCell>
-              <CalendarReviewStatusBadge status={event.status} />
+              <div className="space-y-2">
+                <CalendarReviewStatusBadge status={event.status} />
+                {event.status === "update" && onApplyUpdateChange ? (
+                  <div className="flex flex-wrap gap-1">
+                    <Button
+                      variant={event.applyUpdate !== false ? "secondary" : "ghost"}
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() => onApplyUpdateChange(event.id, true)}
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      variant={event.applyUpdate === false ? "secondary" : "ghost"}
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() => onApplyUpdateChange(event.id, false)}
+                    >
+                      Skip
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </TableCell>
             <TableCell>
               <div className="flex justify-end gap-2">

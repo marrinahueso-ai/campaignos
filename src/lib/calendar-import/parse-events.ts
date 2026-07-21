@@ -9,6 +9,10 @@ import {
 } from "@/lib/calendar-import/extract-date-lines";
 import type { ParsedAiEvent } from "@/lib/calendar-import/parse-types";
 import {
+  buildAiParseFingerprint,
+  markWithinFileConflicts,
+} from "@/lib/calendar-import/event-dedup";
+import {
   normalizeCalendarReviewEvent,
   normalizeCalendarReviewEvents,
 } from "@/lib/calendar-import/review-event-normalize";
@@ -16,6 +20,7 @@ import { defaultStrategyForCalendarImport } from "@/lib/events/communication-str
 import type {
   CalendarEventCategory,
   CalendarEventReviewStatus,
+  CalendarImportSource,
   CalendarReviewEvent,
 } from "@/types/calendar-review";
 
@@ -69,10 +74,30 @@ function normalizeCategory(value: string | undefined): CalendarEventCategory {
 }
 
 function normalizeStatus(value: string | undefined): CalendarEventReviewStatus {
-  if (value === "conflict" || value === "needs_review") {
+  if (
+    value === "conflict" ||
+    value === "needs_review" ||
+    value === "duplicate" ||
+    value === "update"
+  ) {
     return value;
   }
   return "ready";
+}
+
+function normalizeImportSource(
+  value: string | null | undefined,
+): CalendarImportSource | null {
+  if (
+    value === "ics" ||
+    value === "google" ||
+    value === "subscribe" ||
+    value === "ai_parse" ||
+    value === "manual"
+  ) {
+    return value;
+  }
+  return null;
 }
 
 function recoverTruncatedEventsJson(text: string): ParsedAiEvent[] | null {
@@ -135,7 +160,6 @@ export function mapParsedEvents(
   rawEvents: ParsedAiEvent[],
   schoolYear?: string | null,
 ): CalendarReviewEvent[] {
-  const seen = new Set<string>();
   const events: CalendarReviewEvent[] = [];
 
   for (const raw of rawEvents) {
@@ -144,13 +168,11 @@ export function mapParsedEvents(
       continue;
     }
 
-    const dedupeKey = `${normalized.date}::${normalized.name.toLowerCase()}`;
-    const status: CalendarEventReviewStatus = seen.has(dedupeKey)
-      ? "conflict"
-      : normalizeStatus(normalized.status);
-    seen.add(dedupeKey);
-
     const category = normalizeCategory(normalized.category);
+    const fingerprint = buildAiParseFingerprint(
+      normalized.name,
+      normalized.date,
+    );
 
     events.push(
       normalizeCalendarReviewEvent({
@@ -158,16 +180,21 @@ export function mapParsedEvents(
         name: normalized.name,
         date: normalized.date,
         category,
-        status,
+        status: normalizeStatus(normalized.status),
         communicationStrategy: defaultStrategyForCalendarImport(
           normalized.name,
           category,
         ),
+        importSource: "ai_parse",
+        importExternalId: fingerprint,
+        matchReason: null,
       }),
     );
   }
 
-  return events.sort((left, right) => left.date.localeCompare(right.date));
+  return markWithinFileConflicts(events).sort((left, right) =>
+    left.date.localeCompare(right.date),
+  );
 }
 
 function splitCalendarText(text: string): string[] {
@@ -420,6 +447,21 @@ export function parseRawReviewEvents(value: unknown): CalendarReviewEvent[] {
         eventType: record.eventType ?? null,
         communicationStrategy: record.communicationStrategy ?? "full_campaign",
         planManuallySet: record.planManuallySet === true,
+        importSource: normalizeImportSource(record.importSource),
+        importExternalId:
+          typeof record.importExternalId === "string"
+            ? record.importExternalId
+            : null,
+        existingEventId:
+          typeof record.existingEventId === "string"
+            ? record.existingEventId
+            : null,
+        matchReason:
+          typeof record.matchReason === "string" ? record.matchReason : null,
+        applyUpdate:
+          normalizeStatus(record.status) === "update"
+            ? record.applyUpdate !== false
+            : record.applyUpdate === true,
       } satisfies CalendarReviewEvent,
     ];
   });

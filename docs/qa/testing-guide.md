@@ -34,7 +34,9 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Can a test user sign in?
 - Do Dashboard and Team & Access load?
 - Does Create with AI load?
+- Create with AI Creative Setup wiring (playbook, Overall inspiration comment, logo/colors/voice, Your Selections persistence)? (`13-create-with-ai-artwork-inputs`) — see [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md)
 - (Optional / longer) Artwork generate → Send for approval notice → Approvals hub badges? (`09-artwork-generation-approval`)
+- (Optional / longer) Golden artwork inputs generate / Edit Artwork regenerate? (`13b-create-with-ai-artwork-generation-inputs`, gated by `HEY_RALLI_SKIP_ARTWORK_GENERATION`)
 - Ask Ralli Assistant: sidebar open, org/ops vs FAQ routing, Approvals how-to (`12-ask-ralli-assistant`) — see [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md)
 - Does an invalid invite link show a clear error?
 - (Optional) Does a pending invite show password setup?
@@ -86,9 +88,17 @@ HEY_RALLI_TEST_NO_UPLOAD_EMAIL=restricted-staging-user@example.com
 HEY_RALLI_TEST_NO_UPLOAD_PASSWORD=their-staging-password
 # Optional — pending invite token from Team & Access (staging only)
 HEY_RALLI_TEST_INVITE_TOKEN=paste-pending-invite-token-here
+# Optional — keep true in CI to avoid burning AI credits (smokes 09 / 13b)
+HEY_RALLI_SKIP_ARTWORK_GENERATION=true
 ```
 
 If those values are missing, login/dashboard/Create-with-AI/restricted-upload/invite-form tests will be **skipped** instead of failing against production. The invalid-invite smoke test always runs.
+
+Artwork input matrix (what feeds AI artwork, Layer A vs C): [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md).
+
+Meta Calendar DnD / native Graph schedules (no re-approval): [meta-calendar-dnd.md](./meta-calendar-dnd.md). Unit: `npm run test:communications-calendar` and `npm run test:meta-publishing`.
+
+Calendar import dedupe (UID / Google id / Update-on-date-change): [calendar-import-dedupe.md](./calendar-import-dedupe.md). Unit: `npm run test:calendar-import`. Playwright smokes deferred (outline in that QA doc).
 
 ---
 

@@ -33,6 +33,8 @@ export function mapEventRow(row: EventRow): Event {
     approvedSquareImageStatus:
       row.approved_square_image_status === "filled" ? "filled" : "open",
     schoolYearId: row.school_year_id ?? null,
+    importSource: row.import_source ?? null,
+    importExternalId: row.import_external_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? null,
   };
@@ -57,5 +59,11 @@ export function toEventInsert(input: CreateEventInput) {
       calendar_import_id: input.calendarImportId,
     }),
     ...(input.category !== undefined && { category: input.category }),
+    ...(input.importSource !== undefined && {
+      import_source: input.importSource,
+    }),
+    ...(input.importExternalId !== undefined && {
+      import_external_id: input.importExternalId,
+    }),
   };
 }

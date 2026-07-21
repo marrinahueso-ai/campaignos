@@ -439,6 +439,29 @@ export async function approveAllScheduledMetaBundlesAction(
   });
 
   if (updatedCount > 0) {
+    const { createNativeMetaSchedulesForMilestone } = await import(
+      "@/lib/meta-publishing/native-schedule"
+    );
+    for (const relativeDay of scheduledDays) {
+      try {
+        const native = await createNativeMetaSchedulesForMilestone({
+          eventId,
+          relativeDay,
+        });
+        if (native.warnings.length > 0) {
+          console.warn(
+            `Meta-native schedule after approve day ${relativeDay} (soft):`,
+            native.warnings.join("; "),
+          );
+        }
+      } catch (error) {
+        console.warn(
+          `Meta-native schedule after approve day ${relativeDay} failed (soft):`,
+          error,
+        );
+      }
+    }
+
     await publishDueMetaMilestonesForEvent(eventId);
   }
 

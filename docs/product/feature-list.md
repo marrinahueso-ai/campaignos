@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Event detail hero stats rewired + linked; Create with AI Review approval workflow uses real Team Access approvers
+**Last updated:** July 21, 2026 — Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Event detail hero stats; Review approval workflow uses Team Access approvers
 
 ---
 
@@ -53,6 +53,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Create with AI (Campaign Builder)
 - Hub to pick/create an event — **shipped**
 - Inspiration / creative setup, logos, milestones — **shipped**
+- Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); brand kit selector deferred to org setup — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
@@ -70,6 +71,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Caption generation/editing — **shipped**
 - Meta connect (Facebook Page + Instagram) — **shipped**
 - Schedule / publish now / publish ready bundles — **shipped**
+- Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; see [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
+- Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback)
 - Posting schedule preferences — **shipped**
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)
 
@@ -83,6 +86,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Calendar
 - School-year calendar (month / week / agenda) — **shipped**
 - Layer toggles, detail panel — **shipped**
+- Drag-and-drop Meta posts: schedule-only (approval preserved); Graph reschedule when a native schedule id exists — **shipped** (QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**
 - Insights-weighted engagement heatmap — **deferred** (current scores use preferred windows + local publish times, not Meta Insights metrics)
 - Google Calendar Sign-in (OAuth → auto-sync → review → `/calendar` + dashboard) — **shipped** (live; see [google-calendar.md](../integrations/google-calendar.md))
@@ -90,6 +94,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
 - Calendar file upload + import review (incl. AI fix) — **shipped**
+- Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright deferred)
 - Communications planning calendar — **shipped** (secondary)
 - Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))
 

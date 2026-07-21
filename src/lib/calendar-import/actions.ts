@@ -17,6 +17,7 @@ import {
 } from "@/lib/calendar-import/mutations";
 import {
   buildCalendarEventDedupeKeySet,
+  classifyReviewEventsAgainstExisting,
   filterDuplicateReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
 import {
@@ -66,6 +67,25 @@ function revalidateCalendarPaths() {
   revalidatePath("/approvals");
 }
 
+async function classifyParsedEventsForReview(
+  events: CalendarReviewEvent[],
+  organizationId?: string | null,
+  organizationSchoolYear?: string | null,
+  activeSchoolYearLabel?: string | null,
+): Promise<CalendarReviewEvent[]> {
+  const schoolYearLabel = resolveCalendarSchoolYearLabel({
+    activeSchoolYearLabel: activeSchoolYearLabel ?? null,
+    organizationSchoolYear: organizationSchoolYear ?? null,
+  });
+  const existing = await getCalendarWindowEventsForDedup(
+    schoolYearLabel,
+    organizationId ?? null,
+  );
+  return classifyReviewEventsAgainstExisting(events, existing, {
+    mode: "interactive",
+  });
+}
+
 export async function parseCalendarImportAction(
   importId: string,
 ): Promise<{ events: CalendarReviewEvent[]; error: string | null }> {
@@ -101,11 +121,15 @@ export async function parseCalendarImportAction(
   }
 
   const organization = await getLatestOrganization();
+  const activeSchoolYear = organization
+    ? await getActiveSchoolYear(organization.id)
+    : null;
 
   if (importRecord.fileType === "ics") {
     const events = parseIcsToReviewEvents(
       extracted.text,
       organization?.schoolYear,
+      "ics",
     );
 
     if (!events.length) {
@@ -122,6 +146,13 @@ export async function parseCalendarImportAction(
       const preferences = await getImportEventPreferencesMap(organization.id);
       normalizedEvents = applyImportPreferencesToEvents(events, preferences);
     }
+
+    normalizedEvents = await classifyParsedEventsForReview(
+      normalizedEvents,
+      organization?.id,
+      organization?.schoolYear,
+      activeSchoolYear?.label,
+    );
 
     await updateCalendarImportParseStatus(importId, {
       parseStatus: "parsed",
@@ -153,6 +184,13 @@ export async function parseCalendarImportAction(
     const preferences = await getImportEventPreferencesMap(organization.id);
     events = applyImportPreferencesToEvents(events, preferences);
   }
+
+  events = await classifyParsedEventsForReview(
+    events,
+    organization?.id,
+    organization?.schoolYear,
+    activeSchoolYear?.label,
+  );
 
   await updateCalendarImportParseStatus(importId, {
     parseStatus: "parsed",
@@ -220,32 +258,55 @@ export async function refineCalendarReviewAction(
 export async function importCalendarEventsAction(
   importId: string,
   events: CalendarReviewEvent[],
-): Promise<{ importedCount: number; skippedCount: number; error: string | null }> {
+): Promise<{
+  importedCount: number;
+  skippedCount: number;
+  updatedCount: number;
+  error: string | null;
+}> {
   const importRecord = await getCalendarImportById(importId);
 
   if (!importRecord) {
-    return { importedCount: 0, skippedCount: 0, error: "Calendar upload not found." };
+    return {
+      importedCount: 0,
+      skippedCount: 0,
+      updatedCount: 0,
+      error: "Calendar upload not found.",
+    };
   }
 
   if (importRecord.parseStatus === "imported") {
     return {
       importedCount: 0,
       skippedCount: 0,
+      updatedCount: 0,
       error: "This calendar has already been imported.",
     };
   }
 
   if (events.length === 0) {
-    return { importedCount: 0, skippedCount: 0, error: "No events selected to import." };
+    return {
+      importedCount: 0,
+      skippedCount: 0,
+      updatedCount: 0,
+      error: "No events selected to import.",
+    };
   }
 
-  const { events: inserted, skippedCount } = await insertImportedEvents(events, importId);
+  const {
+    events: inserted,
+    skippedCount,
+    updatedCount,
+  } = await insertImportedEvents(events, importId, undefined, undefined, {
+    autoApplyUpdates: false,
+  });
 
-  if (!inserted.length) {
+  if (!inserted.length && updatedCount === 0) {
     if (skippedCount > 0) {
       return {
         importedCount: 0,
         skippedCount,
+        updatedCount: 0,
         error: null,
       };
     }
@@ -253,6 +314,7 @@ export async function importCalendarEventsAction(
     return {
       importedCount: 0,
       skippedCount: 0,
+      updatedCount: 0,
       error: "Unable to import events. Please try again.",
     };
   }
@@ -270,7 +332,12 @@ export async function importCalendarEventsAction(
   }
 
   revalidateCalendarPaths();
-  return { importedCount: inserted.length, skippedCount, error: null };
+  return {
+    importedCount: inserted.length,
+    skippedCount,
+    updatedCount,
+    error: null,
+  };
 }
 
 export async function deleteImportedCalendarEventsAction(

@@ -80,7 +80,9 @@ export function PlanningCalendarWeekView({
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [toastVariant, setToastVariant] = useState<"error" | "success">("error");
+  const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
+    "error",
+  );
   const { setIsDragging, handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
@@ -90,10 +92,13 @@ export function PlanningCalendarWeekView({
     [itemsByDate, timezone],
   );
 
-  const showToast = useCallback((message: string, variant: "error" | "success") => {
-    setToastVariant(variant);
-    setToastMessage(message);
-  }, []);
+  const showToast = useCallback(
+    (message: string, variant: "error" | "success" | "warning") => {
+      setToastVariant(variant);
+      setToastMessage(message);
+    },
+    [],
+  );
 
   const handleDrop = useCallback(
     (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
@@ -113,6 +118,7 @@ export function PlanningCalendarWeekView({
           ...(typeof hour === "number" ? { hour, timezone } : {}),
           onRescheduled,
           onSuccess: (message) => showToast(message, "success"),
+          onWarning: (message) => showToast(message, "warning"),
           onError: (message) => showToast(message, "error"),
         });
       });

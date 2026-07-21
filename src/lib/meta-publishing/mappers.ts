@@ -16,6 +16,8 @@ export function mapMetaPublicationSlotRow(row: MetaPublicationSlotRow): MetaPubl
     scheduledFor: row.scheduled_for,
     status: row.status,
     externalPostId: row.external_post_id ?? null,
+    graphScheduleId: row.graph_schedule_id ?? null,
+    graphScheduleError: row.graph_schedule_error ?? null,
     publishError: row.publish_error ?? null,
     publishedAt: row.published_at ?? null,
     createdAt: row.created_at,

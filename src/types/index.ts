@@ -33,6 +33,8 @@ export interface Event {
   approvedSquareImageUrl: string | null;
   approvedSquareImageStatus: "open" | "filled";
   schoolYearId?: string | null;
+  importSource?: string | null;
+  importExternalId?: string | null;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -62,6 +64,8 @@ export interface EventRow {
   approved_square_image_url?: string | null;
   approved_square_image_status?: "open" | "filled" | null;
   school_year_id?: string | null;
+  import_source?: string | null;
+  import_external_id?: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -79,6 +83,8 @@ export interface CreateEventInput {
   communicationStrategy: CommunicationStrategy;
   calendarImportId?: string | null;
   category?: string | null;
+  importSource?: string | null;
+  importExternalId?: string | null;
 }
 
 export interface NavItem {

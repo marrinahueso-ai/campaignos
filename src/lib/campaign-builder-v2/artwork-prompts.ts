@@ -1,21 +1,21 @@
-import { resolveCampaignStage } from "@/lib/ai-strategy/campaign-stage";
+import { resolveCampaignStage } from "../ai-strategy/campaign-stage.ts";
 import {
   describeAudienceFacingTiming,
   playbookRelativeDay,
-} from "@/lib/campaign-builder-v2/campaign-timing";
-import { isFirstCampaignMilestone } from "@/lib/campaign-builder-v2/first-milestone";
+} from "./campaign-timing.ts";
+import { isFirstCampaignMilestone } from "./first-milestone.ts";
 import {
   CAMPAIGN_BUILDER_ANTI_HALLUCINATION_RULES,
   CAMPAIGN_BUILDER_INTERPRET_DIRECTION_RULES,
   CAMPAIGN_BUILDER_LOGO_RULES,
   CAMPAIGN_BUILDER_MILESTONE_LABEL_RULES,
   CAMPAIGN_BUILDER_ON_GRAPHIC_TEXT_RULES,
-} from "@/lib/campaign-builder-v2/prompt-guardrails";
+} from "./prompt-guardrails.ts";
 import type {
   ArtworkView,
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
-} from "@/lib/campaign-builder-v2/types";
+} from "./types.ts";
 
 function styleStrengthLabel(styleStrength: number): string {
   if (styleStrength < 35) {
@@ -103,19 +103,12 @@ export function buildCampaignBuilderArtworkPrompt(input: {
     input.inspiration.includeLogoInArtwork && input.hasAttachedLogo
       ? "Include the attached logo image as a visual brand element in the design."
       : null,
-    input.inspiration.inspirationOverallComment?.trim() &&
-      input.hasInspirationImages
+    // Overall inspiration comment is the Creative Setup art-direction field.
+    // Legacy globalAiGuidance (Notes to AI) is intentionally not fed into artwork prompts.
+    input.inspiration.inspirationOverallComment?.trim()
       ? `Inspiration notes (interpret — do not paste on graphic): ${input.inspiration.inspirationOverallComment.trim()}`
       : null,
   ].filter((line): line is string => Boolean(line));
-
-  if (input.inspiration.globalAiGuidance.trim()) {
-    lines.push(
-      "",
-      "Global creative direction (interpret intent — do not paste verbatim on the graphic):",
-      input.inspiration.globalAiGuidance.trim(),
-    );
-  }
 
   if (userArtDirection.length > 0) {
     lines.push(

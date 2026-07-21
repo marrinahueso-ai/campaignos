@@ -11,8 +11,9 @@ import type { CalendarReviewEvent } from "@/types/calendar-review";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
 import { inferEventTypeFromTitle } from "@/lib/events/event-type-inference";
 import {
-  buildCalendarEventDedupeKeySet,
-  filterDuplicateReviewEvents,
+  classifyReviewEventsAgainstExisting,
+  partitionClassifiedReviewEvents,
+  type ExistingCalendarEventForDedup,
 } from "@/lib/calendar-import/event-dedup";
 import {
   getOrganizationSchoolYearIds,
@@ -77,14 +78,52 @@ export async function saveCalendarReviewEvents(
   });
 }
 
+export type InsertImportedEventsResult = {
+  events: Event[];
+  skippedCount: number;
+  updatedCount: number;
+  insertedCount: number;
+};
+
+async function loadExistingEventsForImportDedup(
+  schoolYearId: string,
+  supabase: SupabaseClient,
+): Promise<ExistingCalendarEventForDedup[]> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, title, date, import_source, import_external_id")
+    .eq("school_year_id", schoolYearId)
+    .neq("status", "archived");
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    id: row.id as string,
+    title: row.title as string,
+    date: row.date as string,
+    importSource: (row.import_source as string | null) ?? null,
+    importExternalId: (row.import_external_id as string | null) ?? null,
+  }));
+}
+
 export async function insertImportedEvents(
   events: CalendarReviewEvent[],
   calendarImportId: string,
-  existingKeys?: Set<string>,
+  existingEvents?: ExistingCalendarEventForDedup[],
   client?: SupabaseClient,
-): Promise<{ events: Event[]; skippedCount: number }> {
+  options?: { autoApplyUpdates?: boolean },
+): Promise<InsertImportedEventsResult> {
+  const empty: InsertImportedEventsResult = {
+    events: [],
+    skippedCount: 0,
+    updatedCount: 0,
+    insertedCount: 0,
+  };
+
   if (events.length === 0) {
-    return { events: [], skippedCount: 0 };
+    return empty;
   }
 
   const supabase = await resolveDbClient(client);
@@ -99,32 +138,70 @@ export async function insertImportedEvents(
       : await getActiveSchoolYear(organizationId)
     : null;
 
-  let dedupeKeys = existingKeys;
-  if (!dedupeKeys && activeSchoolYear) {
-    const { data: existingRows } = await supabase
-      .from("events")
-      .select("title, date")
-      .eq("school_year_id", activeSchoolYear.id)
-      .neq("status", "archived");
-
-    dedupeKeys = buildCalendarEventDedupeKeySet(
-      (existingRows ?? []).map((row) => ({
-        title: row.title as string,
-        date: row.date as string,
-      })),
+  let existing = existingEvents;
+  if (!existing && activeSchoolYear) {
+    existing = await loadExistingEventsForImportDedup(
+      activeSchoolYear.id,
+      supabase,
     );
   }
 
-  const { newEvents, skippedCount } = filterDuplicateReviewEvents(
+  const classified = classifyReviewEventsAgainstExisting(
     events,
-    dedupeKeys ?? new Set(),
+    existing ?? [],
+    { mode: options?.autoApplyUpdates ? "auto" : "interactive" },
   );
+  const { toInsert, toUpdate, skippedDuplicates } =
+    partitionClassifiedReviewEvents(classified);
 
-  if (newEvents.length === 0) {
-    return { events: [], skippedCount };
+  let updatedCount = 0;
+  for (const event of toUpdate) {
+    if (!event.existingEventId) {
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from("events")
+      .update({
+        title: event.name,
+        date: event.date,
+        category: event.category,
+        import_source: event.importSource ?? null,
+        import_external_id: event.importExternalId ?? null,
+        calendar_import_id: calendarImportId,
+        updated_at: new Date().toISOString(),
+        status: event.date >= today ? "scheduled" : "draft",
+      })
+      .eq("id", event.existingEventId);
+
+    if (updateError) {
+      console.error(
+        "Failed to update imported event:",
+        updateError.message,
+      );
+      continue;
+    }
+
+    updatedCount += 1;
+    await supabase.from("activity_log").insert({
+      event_id: event.existingEventId,
+      activity_type: "calendar_imported",
+      title: "Updated from school calendar",
+      description: `Updated from import (${event.matchReason ?? "external id match"}).`,
+      occurred_at: new Date().toISOString(),
+    });
   }
 
-  const rows = newEvents.map((event) => {
+  if (toInsert.length === 0) {
+    return {
+      events: [],
+      skippedCount: skippedDuplicates.length,
+      updatedCount,
+      insertedCount: 0,
+    };
+  }
+
+  const rows = toInsert.map((event) => {
     const input: CreateEventInput = {
       title: event.name,
       description: `Imported from school calendar (${event.category}).`,
@@ -139,6 +216,8 @@ export async function insertImportedEvents(
       communicationStrategy: event.communicationStrategy,
       calendarImportId,
       category: event.category,
+      importSource: event.importSource ?? null,
+      importExternalId: event.importExternalId ?? null,
     };
 
     return toEventInsert(input);
@@ -151,7 +230,12 @@ export async function insertImportedEvents(
 
   if (error || !data) {
     console.error("Failed to insert imported events:", error?.message);
-    return { events: [], skippedCount };
+    return {
+      events: [],
+      skippedCount: skippedDuplicates.length,
+      updatedCount,
+      insertedCount: 0,
+    };
   }
 
   const inserted = (data as EventRow[]).map(mapEventRow);
@@ -170,7 +254,12 @@ export async function insertImportedEvents(
     });
   }
 
-  return { events: inserted, skippedCount };
+  return {
+    events: inserted,
+    skippedCount: skippedDuplicates.length,
+    updatedCount,
+    insertedCount: inserted.length,
+  };
 }
 
 async function getImportOrganizationId(

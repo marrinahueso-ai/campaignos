@@ -10,6 +10,8 @@
     "lint": "eslint src",
     "test:campaign-builder-v2": "node --experimental-strip-types --test 'src/lib/campaign-builder-v2/__tests__/*.test.ts'",
     "test:communications-calendar": "node --experimental-strip-types --test 'src/lib/communications-calendar/__tests__/*.test.ts'",
+    "test:calendar-import": "npx tsx --test 'src/lib/calendar-import/__tests__/*.test.ts'",
+    "test:meta-publishing": "node --experimental-strip-types --test 'src/lib/meta-publishing/__tests__/*.test.ts'",
     "test:dev-tools": "node --experimental-strip-types --test 'src/lib/dev-tools/__tests__/*.test.ts'",
     "test:events-phase3": "node --experimental-strip-types --test 'src/lib/events/__tests__/events-phase3.test.ts' 'src/lib/events-phase3/__tests__/*.test.ts'",
     "test:event-volunteers": "npx tsx --test 'src/lib/event-volunteers/__tests__/*.test.ts'",

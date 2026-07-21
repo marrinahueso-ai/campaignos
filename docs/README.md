@@ -52,6 +52,8 @@ This is the documentation hub. Start here.
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
 | Artwork → approvals findings | [qa/artwork-approval-findings.md](./qa/artwork-approval-findings.md) |
+| Create with AI artwork inputs | [qa/create-with-ai-artwork-inputs.md](./qa/create-with-ai-artwork-inputs.md) |
+| Calendar import dedupe | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |
 | Testing (Sentry / Playwright) | [qa/testing-guide.md](./qa/testing-guide.md) |
 | Report a Problem | [qa/report-a-problem.md](./qa/report-a-problem.md) |
 | Product blueprints | [product/blueprints/](./product/blueprints/) |

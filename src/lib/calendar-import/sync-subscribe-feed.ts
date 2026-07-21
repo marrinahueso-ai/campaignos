@@ -5,9 +5,12 @@ import {
   insertImportedEvents,
   updateCalendarImportParseStatus,
 } from "@/lib/calendar-import/mutations";
-import { filterDuplicateReviewEvents } from "@/lib/calendar-import/event-dedup";
+import {
+  classifyReviewEventsAgainstExisting,
+  partitionClassifiedReviewEvents,
+} from "@/lib/calendar-import/event-dedup";
 import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
-import { getExistingCalendarEventKeysForWindow } from "@/lib/calendar-import/queries";
+import { getCalendarWindowEventsForDedup } from "@/lib/calendar-import/queries";
 import {
   fetchSubscribeFeedIcs,
 } from "@/lib/calendar-import/fetch-subscribe-feed";
@@ -29,6 +32,7 @@ export interface SyncSubscribeFeedResult {
   importId: string | null;
   added: number;
   imported: number;
+  updated: number;
   skipped: number;
   autoImported: boolean;
 }
@@ -48,6 +52,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
     importId: null as string | null,
     added: 0,
     imported: 0,
+    updated: 0,
     skipped: 0,
     autoImported: autoImport,
   };
@@ -89,7 +94,11 @@ export async function syncSchoolYearSubscribeFeed(input: {
     parseError: null,
   });
 
-  const events = parseIcsToReviewEvents(fetched.text, schoolYear.label);
+  const events = parseIcsToReviewEvents(
+    fetched.text,
+    schoolYear.label,
+    "subscribe",
+  );
   if (!events.length) {
     await updateCalendarImportParseStatus(importId, {
       parseStatus: "failed",
@@ -111,50 +120,70 @@ export async function syncSchoolYearSubscribeFeed(input: {
     activeSchoolYearLabel: schoolYear.label,
     organizationSchoolYear,
   });
-  const existingKeys = await getExistingCalendarEventKeysForWindow(schoolYearLabel);
-  const { newEvents, skippedCount } = filterDuplicateReviewEvents(
-    normalizedEvents,
-    existingKeys,
+  const existing = await getCalendarWindowEventsForDedup(
+    schoolYearLabel,
+    organizationId,
   );
+  const classified = classifyReviewEventsAgainstExisting(
+    normalizedEvents,
+    existing,
+    { mode: autoImport ? "auto" : "interactive" },
+  );
+  const { toInsert, toUpdate, skippedDuplicates } =
+    partitionClassifiedReviewEvents(classified);
+  const reviewEvents = autoImport
+    ? classified.filter(
+        (event) =>
+          event.status === "ready" ||
+          event.status === "needs_review" ||
+          event.status === "update",
+      )
+    : classified;
 
-  if (!newEvents.length) {
+  if (toInsert.length === 0 && toUpdate.length === 0) {
     await updateCalendarImportParseStatus(importId, {
       parseStatus: "parsed",
       parseError: null,
       extractedText: fetched.text,
-      parsedEvents: [],
+      parsedEvents: autoImport ? [] : classified,
     });
     return {
       ...base,
       importId,
       success: true,
       error: null,
-      skipped: skippedCount,
+      skipped: skippedDuplicates.length,
     };
   }
 
   if (autoImport) {
-    const { events: inserted, skippedCount: importSkipped } =
-      await insertImportedEvents(newEvents, importId, existingKeys);
+    const {
+      events: inserted,
+      skippedCount: importSkipped,
+      updatedCount,
+    } = await insertImportedEvents(classified, importId, existing, undefined, {
+      autoApplyUpdates: true,
+    });
 
     await updateCalendarImportParseStatus(importId, {
       parseStatus: "imported",
       parseError: null,
       extractedText: fetched.text,
-      parsedEvents: newEvents,
+      parsedEvents: reviewEvents,
       importedAt: new Date().toISOString(),
     });
 
-    await upsertImportPreferencesFromReviewEvents(organizationId, newEvents);
+    await upsertImportPreferencesFromReviewEvents(organizationId, reviewEvents);
 
     return {
       ...base,
       importId,
       success: true,
       error: null,
-      added: newEvents.length,
+      added: toInsert.length,
       imported: inserted.length,
-      skipped: skippedCount + importSkipped,
+      updated: updatedCount,
+      skipped: skippedDuplicates.length + importSkipped,
     };
   }
 
@@ -162,7 +191,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
     parseStatus: "parsed",
     parseError: null,
     extractedText: fetched.text,
-    parsedEvents: newEvents,
+    parsedEvents: reviewEvents,
   });
 
   return {
@@ -170,7 +199,7 @@ export async function syncSchoolYearSubscribeFeed(input: {
     importId,
     success: true,
     error: null,
-    added: newEvents.length,
-    skipped: skippedCount,
+    added: toInsert.length + toUpdate.length,
+    skipped: skippedDuplicates.length,
   };
 }

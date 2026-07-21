@@ -1,7 +1,17 @@
 # Meta connection — one-click for every surface
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
-**Last updated:** July 19, 2026
+**Last updated:** July 21, 2026
+
+---
+
+## Native scheduling (Facebook feed)
+
+On **Approve**, CampignOS creates Meta-native unpublished Page feed posts (`published=false` + `scheduled_publish_time`) when the org Meta connection is healthy and the time is inside Graph’s window (~10 minutes–75 days). Graph ids live on `meta_publication_slots.graph_schedule_id`.
+
+**Calendar DnD** updates CampignOS `scheduled_for` without clearing approval, then calls Graph to move `scheduled_publish_time` when a schedule id exists. Graph failures warn the user but do **not** roll back the calendar.
+
+**Instagram** and **Facebook stories** do not get native Graph schedules (API limits); publish-when-due remains the delivery path. Details for QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md).
 
 ---
 

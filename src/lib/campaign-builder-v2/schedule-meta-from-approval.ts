@@ -420,6 +420,26 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
       .in("status", ["draft", "scheduled", "approved", "failed"]);
   }
 
+  if ((data?.length ?? 0) > 0) {
+    try {
+      const { createNativeMetaSchedulesForMilestone } = await import(
+        "@/lib/meta-publishing/native-schedule"
+      );
+      const native = await createNativeMetaSchedulesForMilestone({
+        eventId: input.eventId,
+        relativeDay,
+      });
+      if (native.warnings.length > 0) {
+        console.warn(
+          "Meta-native schedule after CB2 approve (soft):",
+          native.warnings.join("; "),
+        );
+      }
+    } catch (error) {
+      console.warn("Meta-native schedule after CB2 approve failed (soft):", error);
+    }
+  }
+
   revalidateEventPaths(input.eventId);
 
   return {

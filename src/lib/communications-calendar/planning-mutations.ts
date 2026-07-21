@@ -3,6 +3,7 @@ import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestone
 import { computeDueDate } from "@/lib/playbooks/mappers";
 import { localDateHourToIso } from "@/lib/posting-analytics/timezone-utils";
 import { ASSET_CHANNEL_MAP } from "@/lib/communications-calendar/channel-styles";
+import { buildMetaMilestoneRescheduleSlotUpdate } from "@/lib/meta-publishing/native-schedule-utils";
 import type { PlanningItemType } from "@/types/communications-calendar";
 import type { EventAssetType } from "@/types/event-workspace";
 
@@ -281,9 +282,10 @@ export async function reschedulePlanningItem(
         .eq("event_id", eventId)
         .eq("relative_day", relativeDay);
 
+      // Schedule-only: never touch status (keeps approved / publish eligibility).
       const { error: updateError } = await supabase
         .from("meta_publication_slots")
-        .update({ scheduled_for: scheduledFor, updated_at: now })
+        .update(buildMetaMilestoneRescheduleSlotUpdate(scheduledFor, now))
         .eq("event_id", eventId)
         .eq("relative_day", relativeDay)
         .in("status", [...RESCHEDULABLE_META_SLOT_STATUSES]);

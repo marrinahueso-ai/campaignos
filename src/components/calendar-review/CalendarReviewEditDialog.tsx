@@ -36,12 +36,16 @@ const statuses: CalendarEventReviewStatus[] = [
   "ready",
   "needs_review",
   "conflict",
+  "duplicate",
+  "update",
 ];
 
 const statusLabels: Record<CalendarEventReviewStatus, string> = {
-  ready: "Ready",
+  ready: "New",
   needs_review: "Needs Review",
   conflict: "Conflict",
+  duplicate: "Duplicate",
+  update: "Update",
 };
 
 export function CalendarReviewEditDialog({

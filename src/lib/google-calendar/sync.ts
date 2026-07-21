@@ -7,11 +7,14 @@ import {
   updateCalendarImportParseStatus,
 } from "@/lib/calendar-import/mutations";
 import {
-  buildCalendarEventDedupeKeySet,
-  filterDuplicateReviewEvents,
+  classifyReviewEventsAgainstExisting,
+  partitionClassifiedReviewEvents,
 } from "@/lib/calendar-import/event-dedup";
 import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
-import { getExistingCalendarEventKeysForWindow } from "@/lib/calendar-import/queries";
+import {
+  getCalendarWindowEventsForDedup,
+  getSchoolYearEventsForDedupViaClient,
+} from "@/lib/calendar-import/queries";
 import {
   applyImportPreferencesToEvents,
   getImportEventPreferencesMap,
@@ -40,6 +43,7 @@ export interface SyncGoogleCalendarResult {
   importId: string | null;
   added: number;
   imported: number;
+  updated: number;
   skipped: number;
   autoImported: boolean;
 }
@@ -67,6 +71,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
     importId: null as string | null,
     added: 0,
     imported: 0,
+    updated: 0,
     skipped: 0,
     autoImported: autoImport,
   };
@@ -138,7 +143,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
     db,
   );
 
-  const events = parseIcsToReviewEvents(icsText, schoolYear.label);
+  const events = parseIcsToReviewEvents(icsText, schoolYear.label, "google");
   if (!events.length) {
     await updateCalendarImportParseStatus(
       importId,
@@ -161,28 +166,40 @@ export async function syncSchoolYearGoogleCalendar(input: {
   const preferences = await getImportEventPreferencesMap(organizationId, db);
   const normalizedEvents = applyImportPreferencesToEvents(events, preferences);
 
-  const existingKeys = useServiceRole
-    ? await getExistingKeysForSchoolYear(schoolYear.id, db!)
-    : await getExistingCalendarEventKeysForWindow(
+  const existing = useServiceRole
+    ? await getSchoolYearEventsForDedupViaClient(schoolYear.id, db!)
+    : await getCalendarWindowEventsForDedup(
         resolveCalendarSchoolYearLabel({
           activeSchoolYearLabel: schoolYear.label,
           organizationSchoolYear,
         }),
+        organizationId,
       );
 
-  const { newEvents, skippedCount } = filterDuplicateReviewEvents(
+  const classified = classifyReviewEventsAgainstExisting(
     normalizedEvents,
-    existingKeys,
+    existing,
+    { mode: autoImport ? "auto" : "interactive" },
   );
+  const { toInsert, toUpdate, skippedDuplicates } =
+    partitionClassifiedReviewEvents(classified);
+  const reviewEvents = autoImport
+    ? classified.filter(
+        (event) =>
+          event.status === "ready" ||
+          event.status === "needs_review" ||
+          event.status === "update",
+      )
+    : classified;
 
-  if (!newEvents.length) {
+  if (toInsert.length === 0 && toUpdate.length === 0) {
     await updateCalendarImportParseStatus(
       importId,
       {
         parseStatus: "parsed",
         parseError: null,
         extractedText: icsText,
-        parsedEvents: [],
+        parsedEvents: autoImport ? [] : classified,
       },
       db,
     );
@@ -191,13 +208,22 @@ export async function syncSchoolYearGoogleCalendar(input: {
       importId,
       success: true,
       error: null,
-      skipped: skippedCount,
+      skipped: skippedDuplicates.length,
     };
   }
 
   if (autoImport) {
-    const { events: inserted, skippedCount: importSkipped } =
-      await insertImportedEvents(newEvents, importId, existingKeys, db);
+    const {
+      events: inserted,
+      skippedCount: importSkipped,
+      updatedCount,
+    } = await insertImportedEvents(
+      classified,
+      importId,
+      existing,
+      db,
+      { autoApplyUpdates: true },
+    );
 
     await updateCalendarImportParseStatus(
       importId,
@@ -205,7 +231,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
         parseStatus: "imported",
         parseError: null,
         extractedText: icsText,
-        parsedEvents: newEvents,
+        parsedEvents: reviewEvents,
         importedAt: new Date().toISOString(),
       },
       db,
@@ -213,7 +239,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
 
     await upsertImportPreferencesFromReviewEvents(
       organizationId,
-      newEvents,
+      reviewEvents,
       db,
     );
 
@@ -222,9 +248,10 @@ export async function syncSchoolYearGoogleCalendar(input: {
       importId,
       success: true,
       error: null,
-      added: newEvents.length,
+      added: toInsert.length,
       imported: inserted.length,
-      skipped: skippedCount + importSkipped,
+      updated: updatedCount,
+      skipped: skippedDuplicates.length + importSkipped,
     };
   }
 
@@ -234,7 +261,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
       parseStatus: "parsed",
       parseError: null,
       extractedText: icsText,
-      parsedEvents: newEvents,
+      parsedEvents: reviewEvents,
     },
     db,
   );
@@ -244,31 +271,9 @@ export async function syncSchoolYearGoogleCalendar(input: {
     importId,
     success: true,
     error: null,
-    added: newEvents.length,
-    skipped: skippedCount,
+    added: toInsert.length + toUpdate.length,
+    skipped: skippedDuplicates.length,
   };
-}
-
-async function getExistingKeysForSchoolYear(
-  schoolYearId: string,
-  supabase: SupabaseClient,
-): Promise<Set<string>> {
-  const { data, error } = await supabase
-    .from("events")
-    .select("title, date")
-    .eq("school_year_id", schoolYearId)
-    .neq("status", "archived");
-
-  if (error || !data) {
-    return new Set();
-  }
-
-  return buildCalendarEventDedupeKeySet(
-    data.map((row) => ({
-      title: row.title as string,
-      date: row.date as string,
-    })),
-  );
 }
 
 function googleSyncWindow(): { timeMin: string; timeMax: string } {
