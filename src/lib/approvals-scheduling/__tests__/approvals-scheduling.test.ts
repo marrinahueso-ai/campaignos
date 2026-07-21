@@ -5,7 +5,9 @@ import { describe, it } from "node:test";
 import {
   deriveClassicWorkflowStatus,
   deriveSchedulingWorkflowStatus,
+  nextApprovalSortState,
   searchMatchesItem,
+  sortApprovalItems,
   summarizeCounts,
   tabMatchesItem,
 } from "../status.ts";
@@ -87,6 +89,53 @@ describe("searchMatchesItem", () => {
     const item = buildItem();
     assert.equal(searchMatchesItem(item, "save the"), true);
     assert.equal(searchMatchesItem(item, "winter gala"), false);
+  });
+});
+
+describe("sortApprovalItems", () => {
+  it("defaults schedule ascending and keeps unscheduled last", () => {
+    const sorted = sortApprovalItems(
+      [
+        buildItem({ id: "c", scheduleAt: "2026-06-10T12:00:00.000Z" }),
+        buildItem({ id: "a", scheduleAt: null }),
+        buildItem({ id: "b", scheduleAt: "2026-06-01T12:00:00.000Z" }),
+      ],
+      "schedule",
+      "asc",
+    );
+
+    assert.deepEqual(
+      sorted.map((item) => item.id),
+      ["b", "c", "a"],
+    );
+  });
+
+  it("sorts by workflow status order", () => {
+    const sorted = sortApprovalItems(
+      [
+        buildItem({ id: "pub", workflowStatus: "published" }),
+        buildItem({ id: "queue", workflowStatus: "in_queue" }),
+        buildItem({ id: "sched", workflowStatus: "scheduled" }),
+      ],
+      "status",
+      "asc",
+    );
+
+    assert.deepEqual(
+      sorted.map((item) => item.id),
+      ["queue", "sched", "pub"],
+    );
+  });
+
+  it("toggles direction when the same column is selected again", () => {
+    assert.deepEqual(nextApprovalSortState("schedule", "asc", "schedule"), {
+      field: "schedule",
+      direction: "desc",
+    });
+    assert.deepEqual(nextApprovalSortState("schedule", "asc", "status"), {
+      field: "status",
+      direction: "asc",
+    });
   });
 });
 

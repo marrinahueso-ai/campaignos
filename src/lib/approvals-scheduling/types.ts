@@ -19,6 +19,16 @@ export type UnifiedTabId =
 
 export type UnifiedViewScope = "assigned_to_me" | "all";
 
+export type ApprovalSortField =
+  | "campaign"
+  | "status"
+  | "assignee"
+  | "nextAction"
+  | "delivery"
+  | "schedule";
+
+export type ApprovalSortDirection = "asc" | "desc";
+
 export type UnifiedDeliveryMethod =
   | "auto-publish"
   | "schedule"

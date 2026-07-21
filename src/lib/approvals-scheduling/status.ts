@@ -2,10 +2,140 @@ import type { ApprovalQueueItem } from "@/types/event-workspace";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 import type {
   ApprovalSchedulingItemRow,
+  ApprovalSortDirection,
+  ApprovalSortField,
   UnifiedApprovalItem,
   UnifiedTabId,
   UnifiedWorkflowStatus,
 } from "@/lib/approvals-scheduling/types";
+
+const WORKFLOW_STATUS_SORT_ORDER: Record<UnifiedWorkflowStatus, number> = {
+  in_queue: 0,
+  assigned_to_me: 1,
+  changes_requested: 2,
+  scheduled: 3,
+  posted: 4,
+  published: 5,
+};
+
+export const DEFAULT_APPROVAL_SORT_FIELD: ApprovalSortField = "schedule";
+export const DEFAULT_APPROVAL_SORT_DIRECTION: ApprovalSortDirection = "asc";
+
+function compareText(left: string, right: string): number {
+  return left.localeCompare(right, undefined, { sensitivity: "base" });
+}
+
+function compareNullableIso(
+  left: string | null,
+  right: string | null,
+): number {
+  if (!left && !right) {
+    return 0;
+  }
+  if (!left) {
+    return 1;
+  }
+  if (!right) {
+    return -1;
+  }
+  return left.localeCompare(right);
+}
+
+function deliverySortKey(item: UnifiedApprovalItem): string {
+  return [
+    item.deliveryMethod ?? "",
+    ...[...item.platforms].sort(),
+  ].join("|");
+}
+
+function campaignSortKey(item: UnifiedApprovalItem): string {
+  return `${item.campaignName}\u0000${item.milestoneName}`;
+}
+
+export function compareApprovalItems(
+  left: UnifiedApprovalItem,
+  right: UnifiedApprovalItem,
+  field: ApprovalSortField,
+  direction: ApprovalSortDirection = "asc",
+): number {
+  const directionFactor = direction === "asc" ? 1 : -1;
+
+  switch (field) {
+    case "campaign":
+      return (
+        compareText(campaignSortKey(left), campaignSortKey(right)) *
+        directionFactor
+      );
+    case "status":
+      return (
+        (WORKFLOW_STATUS_SORT_ORDER[left.workflowStatus] -
+          WORKFLOW_STATUS_SORT_ORDER[right.workflowStatus]) *
+        directionFactor
+      );
+    case "assignee":
+      return (
+        compareText(left.assigneeName, right.assigneeName) * directionFactor
+      );
+    case "nextAction":
+      return compareText(left.nextAction, right.nextAction) * directionFactor;
+    case "delivery":
+      return (
+        compareText(deliverySortKey(left), deliverySortKey(right)) *
+        directionFactor
+      );
+    case "schedule": {
+      // Unscheduled rows always sink to the bottom.
+      if (!left.scheduleAt && !right.scheduleAt) {
+        return 0;
+      }
+      if (!left.scheduleAt) {
+        return 1;
+      }
+      if (!right.scheduleAt) {
+        return -1;
+      }
+      return left.scheduleAt.localeCompare(right.scheduleAt) * directionFactor;
+    }
+    default:
+      return 0;
+  }
+}
+
+export function sortApprovalItems(
+  items: UnifiedApprovalItem[],
+  field: ApprovalSortField,
+  direction: ApprovalSortDirection,
+): UnifiedApprovalItem[] {
+  return [...items].sort((left, right) => {
+    const primary = compareApprovalItems(left, right, field, direction);
+    if (primary !== 0) {
+      return primary;
+    }
+    const scheduleTie = compareNullableIso(left.scheduleAt, right.scheduleAt);
+    if (scheduleTie !== 0) {
+      return scheduleTie;
+    }
+    return right.requestedAt.localeCompare(left.requestedAt);
+  });
+}
+
+export function nextApprovalSortState(
+  currentField: ApprovalSortField,
+  currentDirection: ApprovalSortDirection,
+  nextField: ApprovalSortField,
+): { field: ApprovalSortField; direction: ApprovalSortDirection } {
+  if (currentField === nextField) {
+    return {
+      field: currentField,
+      direction: currentDirection === "asc" ? "desc" : "asc",
+    };
+  }
+
+  return {
+    field: nextField,
+    direction: "asc",
+  };
+}
 
 export function initialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);

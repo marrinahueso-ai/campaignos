@@ -73,6 +73,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
 - Status summary cards as clickable workflow filters (click again to clear to All); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
+- Event detail Approvals tab: same table without status filter tabs/search chrome; sortable column headers (default schedule ascending) — **shipped**
 - Change-requested items show the approver comment + Edit artwork CTA (Approvals drawer + email); Edit Artwork supports Resend for approval — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 

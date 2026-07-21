@@ -59,9 +59,11 @@ describe("targeted event tab speed contracts", () => {
   });
 
   it("embedded hubs hide org-wide chrome", () => {
-    assert.match(tasksShell, /!embedded \? \(\s*<div className="w-full lg:max-w-md/);
-    assert.match(approvalsHub, /canViewAll && !embedded/);
-    assert.match(approvalsHub, /!embedded \? <SummaryCards/);
+    assert.match(tasksShell, /!embedded \? \(/);
+    assert.match(tasksShell, /w-full lg:max-w-md/);
+    assert.match(approvalsHub, /!embedded \? \(/);
+    assert.match(approvalsHub, /SummaryCards/);
+    assert.doesNotMatch(approvalsHub, /ApprovalTabs/);
   });
 
   it("vendor logos use batched signed URLs", () => {

@@ -6,10 +6,7 @@ import {
   ApprovalFlowGuide,
   ReviewDrawer,
 } from "@/components/approvals-scheduling/ReviewDrawer";
-import {
-  ApprovalsTable,
-  ApprovalTabs,
-} from "@/components/approvals-scheduling/ApprovalsTable";
+import { ApprovalsTable } from "@/components/approvals-scheduling/ApprovalsTable";
 import { SummaryCards } from "@/components/approvals-scheduling/SummaryCards";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
@@ -96,8 +93,6 @@ export function ApprovalsSchedulingHub({
 
     return next;
   }, [viewScopedItems, eventFilter, searchQuery, activeTab, lockedId]);
-
-  const tabCounts = useMemo(() => summarizeCounts(viewScopedItems), [viewScopedItems]);
 
   const scopedSummary = useMemo(() => {
     const counts = summarizeCounts(viewScopedItems);
@@ -270,38 +265,24 @@ export function ApprovalsSchedulingHub({
         />
       ) : null}
 
-      <div className="space-y-4">
-        {embedded ? (
-          <div className="flex flex-col gap-3 border-b border-cos-border lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-            <ApprovalTabs
-              activeTab={activeTab}
-              counts={tabCounts}
-              onChange={(tab) => setActiveTab(tab as UnifiedTabId)}
-              className="border-b-0"
-            />
-            <div className="pb-2 lg:pb-0">{searchField}</div>
-          </div>
-        ) : null}
-
-        <ApprovalsTable
-          items={scopedItems}
-          canApproveComms={canViewAll}
-          actorEmail={actorEmail}
-          onReview={(item) => {
-            setReviewItem(item);
-            setComment("");
-            if (!unifiedItemNeedsPreviewEnrichment(item)) {
-              return;
-            }
-            void enrichUnifiedApprovalItemPreviewAction(item).then((enriched) => {
-              setReviewItem((current) =>
-                current?.id === enriched.id ? enriched : current,
-              );
-            });
-          }}
-          onActionError={setActionError}
-        />
-      </div>
+      <ApprovalsTable
+        items={scopedItems}
+        canApproveComms={canViewAll}
+        actorEmail={actorEmail}
+        onReview={(item) => {
+          setReviewItem(item);
+          setComment("");
+          if (!unifiedItemNeedsPreviewEnrichment(item)) {
+            return;
+          }
+          void enrichUnifiedApprovalItemPreviewAction(item).then((enriched) => {
+            setReviewItem((current) =>
+              current?.id === enriched.id ? enriched : current,
+            );
+          });
+        }}
+        onActionError={setActionError}
+      />
 
       {!embedded ? <ApprovalFlowGuide /> : null}
 

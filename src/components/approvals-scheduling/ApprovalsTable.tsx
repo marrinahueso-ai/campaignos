@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Loader2, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, MoreHorizontal } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   AssigneeAvatar,
   DeliveryIcons,
@@ -14,9 +14,31 @@ import {
   approveUnifiedItemAction,
 } from "@/lib/approvals-scheduling/actions";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
-import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import {
+  DEFAULT_APPROVAL_SORT_DIRECTION,
+  DEFAULT_APPROVAL_SORT_FIELD,
+  nextApprovalSortState,
+  sortApprovalItems,
+} from "@/lib/approvals-scheduling/status";
+import type {
+  ApprovalSortDirection,
+  ApprovalSortField,
+  UnifiedApprovalItem,
+} from "@/lib/approvals-scheduling/types";
 import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
 import { cn } from "@/lib/utils/cn";
+
+const SORTABLE_COLUMNS: {
+  key: ApprovalSortField;
+  label: string;
+}[] = [
+  { key: "campaign", label: "Campaign / Milestone" },
+  { key: "status", label: "Status" },
+  { key: "assignee", label: "Assigned To" },
+  { key: "nextAction", label: "Next Action" },
+  { key: "delivery", label: "Delivery" },
+  { key: "schedule", label: "Schedule" },
+];
 
 interface ApprovalsTableProps {
   items: UnifiedApprovalItem[];
@@ -24,6 +46,26 @@ interface ApprovalsTableProps {
   actorEmail: string | null;
   onReview: (item: UnifiedApprovalItem) => void;
   onActionError: (message: string) => void;
+}
+
+function SortIcon({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: ApprovalSortField;
+  sortField: ApprovalSortField;
+  sortDirection: ApprovalSortDirection;
+}) {
+  if (sortField !== field) {
+    return <ArrowUpDown className="h-3 w-3 opacity-40" strokeWidth={1.5} />;
+  }
+
+  return sortDirection === "asc" ? (
+    <ArrowUp className="h-3 w-3" strokeWidth={1.5} />
+  ) : (
+    <ArrowDown className="h-3 w-3" strokeWidth={1.5} />
+  );
 }
 
 export function ApprovalsTable({
@@ -36,6 +78,23 @@ export function ApprovalsTable({
   const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [expandedActionsId, setExpandedActionsId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<ApprovalSortField>(
+    DEFAULT_APPROVAL_SORT_FIELD,
+  );
+  const [sortDirection, setSortDirection] = useState<ApprovalSortDirection>(
+    DEFAULT_APPROVAL_SORT_DIRECTION,
+  );
+
+  const sortedItems = useMemo(
+    () => sortApprovalItems(items, sortField, sortDirection),
+    [items, sortField, sortDirection],
+  );
+
+  function handleSort(field: ApprovalSortField) {
+    const next = nextApprovalSortState(sortField, sortDirection, field);
+    setSortField(next.field);
+    setSortDirection(next.direction);
+  }
 
   async function runAction(
     item: UnifiedApprovalItem,
@@ -64,7 +123,7 @@ export function ApprovalsTable({
       <div className="border border-cos-border bg-cos-card px-6 py-16 text-center">
         <p className="font-display text-2xl text-cos-text">No approvals found</p>
         <p className="mt-2 text-sm text-cos-muted">
-          Try another filter or search term.
+          Nothing to show in this view yet.
         </p>
       </div>
     );
@@ -75,26 +134,42 @@ export function ApprovalsTable({
       <table className="min-w-[1080px] w-full border-collapse text-left">
         <thead>
           <tr className="border-b border-cos-border bg-cos-bg/60">
-            {[
-              "Campaign / Milestone",
-              "Status",
-              "Assigned To",
-              "Next Action",
-              "Delivery",
-              "Schedule",
-              "Actions",
-            ].map((heading) => (
+            {SORTABLE_COLUMNS.map((column) => (
               <th
-                key={heading}
+                key={column.key}
                 className="px-4 py-3 text-[10px] font-semibold tracking-[0.14em] text-cos-muted uppercase"
+                aria-sort={
+                  sortField === column.key
+                    ? sortDirection === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
               >
-                {heading}
+                <button
+                  type="button"
+                  onClick={() => handleSort(column.key)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 transition-colors hover:text-cos-text",
+                    sortField === column.key && "text-cos-text",
+                  )}
+                >
+                  {column.label}
+                  <SortIcon
+                    field={column.key}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                  />
+                </button>
               </th>
             ))}
+            <th className="px-4 py-3 text-[10px] font-semibold tracking-[0.14em] text-cos-muted uppercase">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => {
+          {sortedItems.map((item) => {
             const canAct = canActOnUnifiedItem(item, canApproveComms);
             const isPending = pendingId === item.id;
             const showReview =
@@ -233,58 +308,6 @@ export function ApprovalsTable({
           })}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-export function ApprovalTabs({
-  activeTab,
-  counts,
-  onChange,
-  className,
-}: {
-  activeTab: string;
-  counts: Record<string, number>;
-  onChange: (tab: string) => void;
-  className?: string;
-}) {
-  const tabs = [
-    { id: "all", label: "All" },
-    { id: "in_queue", label: "In Queue", count: counts.in_queue },
-    { id: "assigned_to_me", label: "Assigned to Me", count: counts.assigned_to_me },
-    { id: "scheduled", label: "Scheduled", count: counts.scheduled },
-    { id: "posted", label: "Posted", count: counts.posted },
-    { id: "published", label: "Published", count: counts.published },
-    {
-      id: "changes_requested",
-      label: "Changes Requested",
-      count: counts.changes_requested,
-    },
-  ];
-
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 flex-1 gap-1 overflow-x-auto border-b border-cos-border",
-        className,
-      )}
-    >
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={cn(
-            "shrink-0 px-4 py-3 text-sm font-medium transition-colors",
-            activeTab === tab.id
-              ? "border-b-2 border-cos-dark text-cos-text"
-              : "text-cos-muted hover:text-cos-text",
-          )}
-        >
-          {tab.label}
-          {tab.count !== undefined ? ` (${tab.count})` : ""}
-        </button>
-      ))}
     </div>
   );
 }
