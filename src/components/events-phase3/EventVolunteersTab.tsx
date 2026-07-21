@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Copy,
-  ExternalLink,
   Link2,
   Lock,
   RefreshCw,
@@ -728,30 +727,25 @@ function VolunteerOverview({
 
   return (
     <div className="space-y-4">
-      <header className="rounded-2xl border border-cos-border/70 bg-cos-bg-alt p-4 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+      <header className="rounded-2xl border border-cos-border/70 bg-cos-bg-alt px-4 py-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="success" className="gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Connected to SignUpGenius
+            </Badge>
+            {source.syncStatus === "error" ? (
+              <Badge variant="warning">Refresh failed</Badge>
+            ) : null}
+            {source.syncStatus === "syncing" || isPending ? (
+              <Badge variant="info">Syncing…</Badge>
+            ) : null}
             <p className="text-xs text-cos-muted">
               Last updated:{" "}
               {source.lastSuccessfulSyncAt
                 ? formatSyncTime(source.lastSuccessfulSyncAt)
                 : "Not yet synced"}
             </p>
-            <h2 className="mt-1 font-display text-2xl text-cos-text sm:text-3xl">
-              {event.title} – Volunteer Overview
-            </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant="success" className="gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Connected to SignUpGenius
-              </Badge>
-              {source.syncStatus === "error" ? (
-                <Badge variant="warning">Refresh failed</Badge>
-              ) : null}
-              {source.syncStatus === "syncing" || isPending ? (
-                <Badge variant="info">Syncing…</Badge>
-              ) : null}
-            </div>
           </div>
           {canManage ? (
             <div className="flex flex-wrap gap-2">
@@ -764,16 +758,6 @@ function VolunteerOverview({
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh Stats
-              </Button>
-              <Button
-                href={source.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="secondary"
-                size="sm"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Open SignUpGenius
               </Button>
               <Button
                 type="button"
@@ -794,18 +778,7 @@ function VolunteerOverview({
                 Disconnect
               </Button>
             </div>
-          ) : (
-            <Button
-              href={source.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="secondary"
-              size="sm"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Open SignUpGenius
-            </Button>
-          )}
+          ) : null}
         </div>
 
         {ai?.staleNote || error ? (
