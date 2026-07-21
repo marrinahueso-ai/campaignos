@@ -55,7 +55,6 @@ import {
   getEventVendorsData,
   getVendorDirectoryPageData,
 } from "@/lib/vendors/queries";
-import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-overview-queries";
 import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
@@ -71,9 +70,6 @@ export async function renderPlanningHubDetail(
 
   const tablesAvailable = await areEventPlaybookTablesAvailable();
   const taskGroupsAvailable = await areEventPlaybookTaskGroupsAvailable();
-  if (tablesAvailable) {
-    await seedDefaultPlaybookTasks(event.id);
-  }
 
   const [organization, workspace, userRole, authUser, sidebarCounts, inboxUnreadCount] =
     await Promise.all([

@@ -19,7 +19,6 @@ import {
 import { listCommitteeAssignmentsByOrg } from "@/lib/organization-workspace/roster-assignments";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { areEventPlaybookTablesAvailable } from "@/lib/event-playbooks/queries";
-import { seedDefaultPlaybookTasks } from "@/lib/event-playbooks/mutations";
 import { getEventDetailHeroStats } from "@/lib/events-phase3/hero-stats";
 import {
   getEventPlaybookName,
@@ -32,10 +31,6 @@ export async function renderEventsPhase3Detail(
   initialTab: string | null,
 ) {
   const organization = await getLatestOrganization();
-  const tablesAvailable = await areEventPlaybookTablesAvailable();
-  if (tablesAvailable) {
-    await seedDefaultPlaybookTasks(event.id);
-  }
 
   const [
     userRole,

@@ -140,7 +140,7 @@ function buildFallbackInsights(input: GenerateInsightsInput): EventPlaybookInsig
       "Capture lessons learned in the Notes tab after the event — insights will improve with each cycle.",
     );
     checklistItems.push(
-      "Review default planning checklist and customize for this event",
+      "Add planning checklist items for this event in the Tasks tab",
     );
   }
 

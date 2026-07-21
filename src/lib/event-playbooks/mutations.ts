@@ -251,45 +251,6 @@ export async function createEventPlaybookFilePlaceholder(
   return data.id as string;
 }
 
-export async function seedDefaultPlaybookTasks(eventId: string): Promise<void> {
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("event_playbook_tasks")
-    .select("id")
-    .eq("event_id", eventId)
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    return;
-  }
-
-  const defaults = [
-    "Confirm venue & date",
-    "Set budget & get approval",
-    "Recruit volunteers",
-    "Order supplies & materials",
-    "Finalize marketing plan",
-    "Day-of run sheet",
-  ];
-
-  const rows = defaults.map((title, index) => ({
-    event_id: eventId,
-    title,
-    status: "todo" as const,
-    sort_order: index,
-  }));
-
-  const { error } = await supabase.from("event_playbook_tasks").insert(rows);
-
-  if (error && !isMissingSchemaError(error)) {
-    console.error("Failed to seed default playbook tasks:", error.message);
-    return;
-  }
-
-  await logActivity(eventId, "Started planning checklist");
-}
-
 export async function createEventPlaybookTaskGroup(
   eventId: string,
   name: string,
