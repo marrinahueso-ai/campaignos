@@ -252,8 +252,7 @@ export function ReviewStep() {
                         {step.role}
                       </p>
                       <p className="text-xs text-cos-muted">
-                        {step.assigneeName ??
-                          (step.status === "pending" ? "Pending" : "—")}
+                        {step.assigneeName ?? "—"}
                       </p>
                     </div>
                   </li>

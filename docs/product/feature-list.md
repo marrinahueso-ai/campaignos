@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 19, 2026 — Posting heatmap verified with org Meta connection; Google Calendar wired end-to-end
+**Last updated:** July 21, 2026 — Create with AI Review approval workflow uses real Team Access approvers
 
 ---
 
@@ -54,6 +54,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Generate artwork + captions per milestone — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
+- Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
 - Sent for approval confirmation notice (not a stepper step); returns to Review — **shipped**
 - Full Meta slot sync after approval — **stub** / incomplete
 

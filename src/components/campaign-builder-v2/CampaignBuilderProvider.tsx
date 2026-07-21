@@ -53,6 +53,10 @@ import {
   localSessionKey,
 } from "@/lib/campaign-builder-v2/seed-data";
 import {
+  applyResolvedApproverToWorkflow,
+  type ResolvedWorkflowApprover,
+} from "@/lib/campaign-builder-v2/approval-workflow";
+import {
   hydrateCampaignBuilderSession,
   protectSessionFromRichnessDowngrade,
 } from "@/lib/campaign-builder-v2/normalize-session";
@@ -118,6 +122,8 @@ interface CampaignBuilderProviderProps {
   schoolColors: CampaignBuilderSchoolColors;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
+  /** Org-resolved default approver for Review sidebar (same path as send-for-approval). */
+  resolvedWorkflowApprover?: ResolvedWorkflowApprover | null;
   children: ReactNode;
 }
 
@@ -391,6 +397,22 @@ function loadLocalSession(eventId: string): CampaignBuilderSession | null {
   }
 }
 
+function applyResolvedApproverToSession(
+  session: CampaignBuilderSession,
+  resolved: ResolvedWorkflowApprover | null | undefined,
+): CampaignBuilderSession {
+  if (!resolved) {
+    return session;
+  }
+  return {
+    ...session,
+    approvalWorkflow: applyResolvedApproverToWorkflow(
+      session.approvalWorkflow,
+      resolved,
+    ),
+  };
+}
+
 function hydrateWithArtworkBackup(
   base: CampaignBuilderSession | Partial<CampaignBuilderSession>,
   local: CampaignBuilderSession | null,
@@ -398,6 +420,7 @@ function hydrateWithArtworkBackup(
   eventTitle: string,
   eventDate: string,
   restoredFromServer: boolean,
+  resolvedWorkflowApprover?: ResolvedWorkflowApprover | null,
 ): CampaignBuilderSession {
   const hydrated = hydrateCampaignBuilderSession(
     base,
@@ -407,7 +430,10 @@ function hydrateWithArtworkBackup(
     eventDate,
     restoredFromServer,
   );
-  return applyArtworkBackup(hydrated, loadArtworkBackup(eventId));
+  const withArtwork = applyArtworkBackup(hydrated, loadArtworkBackup(eventId));
+  // Always re-apply org approvers after local merge so persisted "Sarah M."
+  // (or other stale demo names) cannot win over Team Access resolution.
+  return applyResolvedApproverToSession(withArtwork, resolvedWorkflowApprover);
 }
 
 function stepSessionKey(eventId: string): string {
@@ -478,6 +504,7 @@ export function CampaignBuilderProvider({
   schoolColors,
   initialSession,
   restoredFromServer,
+  resolvedWorkflowApprover = null,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
@@ -489,6 +516,7 @@ export function CampaignBuilderProvider({
       eventTitle,
       eventDate,
       restoredFromServer,
+      resolvedWorkflowApprover,
     ),
   );
   const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() => {
@@ -732,6 +760,7 @@ export function CampaignBuilderProvider({
       eventTitle,
       eventDate,
       restoredFromServer,
+      resolvedWorkflowApprover,
     );
 
     setSession((prev) => {
@@ -752,8 +781,12 @@ export function CampaignBuilderProvider({
           hydratedRichness,
         })
       ) {
-        persistLocalSession(prev);
-        return prev;
+        const retained = applyResolvedApproverToSession(
+          prev,
+          resolvedWorkflowApprover,
+        );
+        persistLocalSession(retained);
+        return retained;
       }
 
       if (
@@ -768,6 +801,7 @@ export function CampaignBuilderProvider({
           eventTitle,
           eventDate,
           false,
+          resolvedWorkflowApprover,
         );
         sessionRef.current = keepLocal;
         persistLocalSession(keepLocal);
@@ -788,21 +822,29 @@ export function CampaignBuilderProvider({
         );
       });
 
-      if (!changed && hydrated.previewContents.length === prev.previewContents.length) {
+      const workflowChanged =
+        JSON.stringify(prev.approvalWorkflow) !==
+        JSON.stringify(hydrated.approvalWorkflow);
+
+      if (
+        !changed &&
+        !workflowChanged &&
+        hydrated.previewContents.length === prev.previewContents.length
+      ) {
         return prev;
       }
 
       sessionRef.current = hydrated;
       // Only write back when hydrated is at least as rich as what we already
       // have locally — never clobber a good local cache with an empty merge.
-      if (hydratedRichness >= localRichness) {
+      if (hydratedRichness >= localRichness || workflowChanged) {
         persistLocalSession(hydrated);
       }
       return hydrated;
     });
     // Reconcile persisted milestone statuses once per mount after hydration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [eventId, resolvedWorkflowApprover]);
 
   // If the client is stuck on an empty/failed Preview while the server has
   // richer artwork (common after Storage RLS errors), pull it back once.
@@ -821,14 +863,18 @@ export function CampaignBuilderProvider({
       if (cancelled || !recovered) {
         return;
       }
-      sessionRef.current = recovered;
-      setSession(recovered);
-      persistLocalSession(recovered);
+      const withApprover = applyResolvedApproverToSession(
+        recovered,
+        resolvedWorkflowApprover,
+      );
+      sessionRef.current = withApprover;
+      setSession(withApprover);
+      persistLocalSession(withApprover);
     })();
     return () => {
       cancelled = true;
     };
-  }, [eventId, eventTitle, eventDate]);
+  }, [eventId, eventTitle, eventDate, resolvedWorkflowApprover]);
 
   const reconcilePreviewStatuses = useCallback(() => {
     setSession((prev) => {
@@ -839,6 +885,7 @@ export function CampaignBuilderProvider({
         eventTitle,
         eventDate,
         true,
+        resolvedWorkflowApprover,
       );
 
       if (previewSessionRichness(prev) > previewSessionRichness(next)) {
@@ -863,7 +910,13 @@ export function CampaignBuilderProvider({
       scheduleSave(next);
       return next;
     });
-  }, [eventId, eventTitle, eventDate, scheduleSave]);
+  }, [
+    eventId,
+    eventTitle,
+    eventDate,
+    resolvedWorkflowApprover,
+    scheduleSave,
+  ]);
 
   const syncStepFromLocationHash = useCallback(() => {
     const normalized = normalizeLocationHash(getLocationHash());
@@ -1525,9 +1578,13 @@ export function CampaignBuilderProvider({
             eventDate,
           );
           if (recovered && previewSessionRichness(recovered) > 0) {
-            sessionRef.current = recovered;
-            setSession(recovered);
-            persistLocalSession(recovered);
+            const withApprover = applyResolvedApproverToSession(
+              recovered,
+              resolvedWorkflowApprover,
+            );
+            sessionRef.current = withApprover;
+            setSession(withApprover);
+            persistLocalSession(withApprover);
             return {
               success: true,
               message:
@@ -1652,9 +1709,13 @@ export function CampaignBuilderProvider({
           eventDate,
         );
         if (recovered && previewSessionRichness(recovered) > 0) {
-          sessionRef.current = recovered;
-          setSession(recovered);
-          persistLocalSession(recovered);
+          const withApprover = applyResolvedApproverToSession(
+            recovered,
+            resolvedWorkflowApprover,
+          );
+          sessionRef.current = withApprover;
+          setSession(withApprover);
+          persistLocalSession(withApprover);
           return {
             success: true,
             message: interrupted

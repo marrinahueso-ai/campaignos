@@ -5,12 +5,17 @@ import {
   getCachedCampaignBuilderCampaignOptions,
   getCachedCampaignBuilderPlaybookOptions,
 } from "@/lib/campaign-builder-v2/page-queries";
+import {
+  applyResolvedApproverToWorkflow,
+  toResolvedWorkflowApprover,
+} from "@/lib/campaign-builder-v2/approval-workflow";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { canUseDeveloperClearTools } from "@/lib/dev-tools/access";
 import { getEventById } from "@/lib/events/queries";
+import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
@@ -70,6 +75,18 @@ export default async function CampaignBuilderPage({
       : Promise.resolve([]),
   );
 
+  const approvalAssigneePromise = Promise.all([
+    organizationPromise,
+    eventPromise,
+  ]).then(([organization, event]) =>
+    organization && event
+      ? resolveApprovalAssignee(
+          organization.id,
+          event.approvalOrganizationRoleId ?? null,
+        )
+      : null,
+  );
+
   const [
     event,
     savedSession,
@@ -79,6 +96,7 @@ export default async function CampaignBuilderPage({
     organization,
     canUseDeveloperTools,
     canUploadArtwork,
+    approvalAssignee,
   ] = await Promise.all([
     eventPromise,
     sessionPromise,
@@ -88,6 +106,7 @@ export default async function CampaignBuilderPage({
     organizationPromise,
     canUseDeveloperClearTools(),
     hasPermission("upload_artwork"),
+    approvalAssigneePromise,
   ]);
 
   if (!event) {
@@ -126,6 +145,16 @@ export default async function CampaignBuilderPage({
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
 
+  const resolvedWorkflowApprover = approvalAssignee
+    ? toResolvedWorkflowApprover(approvalAssignee)
+    : null;
+  if (resolvedWorkflowApprover) {
+    initialSession.approvalWorkflow = applyResolvedApproverToWorkflow(
+      initialSession.approvalWorkflow,
+      resolvedWorkflowApprover,
+    );
+  }
+
   return (
     <CampaignBuilderShell
       eventId={event.id}
@@ -141,6 +170,7 @@ export default async function CampaignBuilderPage({
       schoolColors={schoolColors}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
+      resolvedWorkflowApprover={resolvedWorkflowApprover}
     />
   );
 }

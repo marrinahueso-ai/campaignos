@@ -10,6 +10,7 @@ import { CampaignHealthGauge } from "@/components/campaign-builder-v2/CampaignHe
 // fallback remounts flashed a pulse skeleton on every Soft refresh / context
 // churn and felt like the Inspiration screen was blinking.
 import { InspirationStep } from "@/components/campaign-builder-v2/InspirationStep";
+import type { ResolvedWorkflowApprover } from "@/lib/campaign-builder-v2/approval-workflow";
 import type {
   BrandKitOption,
   CampaignBuilderSession,
@@ -74,6 +75,7 @@ interface CampaignBuilderShellProps {
   schoolColors: CampaignBuilderSchoolColors;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
+  resolvedWorkflowApprover?: ResolvedWorkflowApprover | null;
 }
 
 function renderActiveStep(step: CampaignBuilderStepId) {
@@ -173,6 +175,7 @@ export function CampaignBuilderShell({
   schoolColors,
   initialSession,
   restoredFromServer,
+  resolvedWorkflowApprover = null,
 }: CampaignBuilderShellProps) {
   return (
     <CampaignBuilderProvider
@@ -190,6 +193,7 @@ export function CampaignBuilderShell({
       schoolColors={schoolColors}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
+      resolvedWorkflowApprover={resolvedWorkflowApprover}
     >
       <CampaignBuilderContent eventId={eventId} eventTitle={eventTitle} />
     </CampaignBuilderProvider>

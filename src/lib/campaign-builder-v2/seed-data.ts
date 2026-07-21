@@ -214,9 +214,9 @@ export function buildDefaultApprovalWorkflow(): ApprovalWorkflowStep[] {
     {
       id: "committee-chair",
       role: "Committee Chair",
-      assigneeName: "Sarah M.",
-      assigneeInitials: "SM",
-      status: "pending",
+      assigneeName: null,
+      assigneeInitials: null,
+      status: "empty",
     },
     {
       id: "vp-comms",

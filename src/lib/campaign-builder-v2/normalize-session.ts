@@ -10,6 +10,7 @@ import {
   isStaleGeneration,
   milestoneHasArtwork,
 } from "./milestone-status.ts";
+import { sanitizeApprovalWorkflowDemoAssignees } from "./approval-workflow.ts";
 import { buildDefaultSession } from "./seed-data.ts";
 import {
   migrateLegacyCreativeFields,
@@ -553,6 +554,10 @@ export function normalizeCampaignBuilderSession(
     defaults,
   );
 
+  const approvalWorkflow = sanitizeApprovalWorkflowDemoAssignees(
+    raw.approvalWorkflow ?? defaults.approvalWorkflow,
+  );
+
   return {
     ...defaults,
     ...raw,
@@ -561,6 +566,7 @@ export function normalizeCampaignBuilderSession(
     milestones,
     milestonesPlaybookId: raw.milestonesPlaybookId ?? defaults.milestonesPlaybookId ?? null,
     previewContents,
+    approvalWorkflow,
     expandedReviewMilestoneIds: raw.expandedReviewMilestoneIds ?? [],
     previewTab: normalizePreviewTab(raw.previewTab),
     currentStep: raw.currentStep ?? defaults.currentStep,

@@ -9,6 +9,8 @@ export type ApprovalAssignee = {
   organizationRoleName: string | null;
   assignedUserId: string | null;
   assigneeDisplayName: string;
+  /** True when Team Access has a contact name or linked user for the role. */
+  hasAssignedPerson: boolean;
 };
 
 function formatAssigneeDisplayName(
@@ -47,6 +49,7 @@ export async function resolveApprovalAssignee(
       organizationRoleName: null,
       assignedUserId: null,
       assigneeDisplayName: "Board",
+      hasAssignedPerson: false,
     };
   }
 
@@ -63,6 +66,7 @@ export async function resolveApprovalAssignee(
       organizationRoleName: approvalsEntry?.defaultRoleName ?? null,
       assignedUserId: null,
       assigneeDisplayName: approvalsEntry?.defaultRoleName ?? "Board",
+      hasAssignedPerson: false,
     };
   }
 
@@ -87,10 +91,14 @@ export async function resolveApprovalAssignee(
     preferredMember?.organizationRoleName ?? null,
   );
 
+  const hasAssignedPerson =
+    Boolean(preferredMember) || Boolean(role?.contactName?.trim());
+
   return {
     organizationRoleId: resolvedRoleId,
     organizationRoleName: role?.name ?? approvalsEntry?.defaultRoleName ?? null,
     assignedUserId: preferredMember?.id ?? null,
     assigneeDisplayName,
+    hasAssignedPerson,
   };
 }
