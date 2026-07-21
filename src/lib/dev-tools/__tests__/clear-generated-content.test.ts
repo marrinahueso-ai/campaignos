@@ -5,6 +5,7 @@ import { buildDefaultSession } from "../../campaign-builder-v2/seed-data.ts";
 import { MILESTONE_STATUS_LABELS } from "../../campaign-builder-v2/milestone-status.ts";
 import { STALE_CONTENT_NOTE } from "../constants.ts";
 import {
+  changeRequestDisplayComment,
   clearSessionGeneratedContent,
   hasStaleContentNote,
   isGeneratedPathForEvent,
@@ -146,5 +147,14 @@ describe("clear generated content helpers", () => {
 
     const twice = withStaleContentNote(once);
     assert.equal(twice, once);
+  });
+
+  it("strips stale marker from change-request display comments", () => {
+    assert.equal(
+      changeRequestDisplayComment(`Please use warmer colors.\n${STALE_CONTENT_NOTE}`),
+      "Please use warmer colors.",
+    );
+    assert.equal(changeRequestDisplayComment(STALE_CONTENT_NOTE), null);
+    assert.equal(changeRequestDisplayComment(null), null);
   });
 });

@@ -43,3 +43,24 @@ export function campaignBuilderHref(
 ): string {
   return `/events/${eventId}/campaign-builder#${step}`;
 }
+
+/** Deep link that opens Preview and the Edit Artwork modal for a milestone. */
+export function campaignBuilderEditArtworkHref(
+  eventId: string,
+  milestoneId: string,
+): string {
+  const params = new URLSearchParams({
+    milestone: milestoneId,
+    editArtwork: "1",
+  });
+  return `/events/${eventId}/campaign-builder?${params.toString()}#preview`;
+}
+
+export function absoluteCampaignBuilderEditArtworkHref(
+  eventId: string,
+  milestoneId: string,
+): string {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  return `${base.replace(/\/$/, "")}${campaignBuilderEditArtworkHref(eventId, milestoneId)}`;
+}

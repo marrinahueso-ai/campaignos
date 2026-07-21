@@ -86,6 +86,9 @@ describe("mutation refresh wiring (source contract)", () => {
   const vendors = readSrc(
     "../../../components/vendors/EventVendorsSection.tsx",
   );
+  const notesTab = readSrc(
+    "../../../components/event-playbooks/NotesTab.tsx",
+  );
   const actions = readSrc("../actions.ts");
 
   it("shell exposes invalidateEventTab and keeps content during refresh", () => {
@@ -126,6 +129,12 @@ describe("mutation refresh wiring (source contract)", () => {
     assert.match(vendors, /await refreshVendorsTab\(\)/);
     assert.match(vendors, /void refreshVendorsTab\(\)/);
     assert.doesNotMatch(vendors, /router\.refresh\(\)/);
+  });
+
+  it("Notes save refreshes the notes tab", () => {
+    assert.match(notesTab, /useEventTabMutationRefresh\("notes"\)/);
+    assert.match(notesTab, /await refreshNotesTab\(\)/);
+    assert.doesNotMatch(notesTab, /router\.refresh\(\)/);
   });
 
   it("hero stats refresh action is available", () => {

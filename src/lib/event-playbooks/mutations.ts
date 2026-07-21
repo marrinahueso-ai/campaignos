@@ -192,7 +192,7 @@ export async function createEventPlaybookNote(
     noteType: EventPlaybookNoteType;
     authorName?: string | null;
   },
-): Promise<string | null> {
+): Promise<{ id: string | null; error: string | null }> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -208,12 +208,21 @@ export async function createEventPlaybookNote(
 
   if (error || !data) {
     console.error("Failed to create event playbook note:", error?.message);
-    return null;
+    if (error && isMissingSchemaError(error)) {
+      return {
+        id: null,
+        error: "Notes are unavailable. Run migration 031_event_playbook_tables.sql.",
+      };
+    }
+    return {
+      id: null,
+      error: error?.message?.trim() || "Unable to save note.",
+    };
   }
 
   const label = input.noteType === "lesson" ? "lesson learned" : "note";
   await logActivity(eventId, `Added a ${label}`);
-  return data.id as string;
+  return { id: data.id as string, error: null };
 }
 
 export async function createEventPlaybookFilePlaceholder(

@@ -115,6 +115,7 @@ function buildItem(
     approvalRequestId: null,
     communicationItemId: null,
     schedulingItemId: "sched-1",
+    campaignMilestoneId: "ms-1",
     channel: null,
     notes: null,
     preview: {

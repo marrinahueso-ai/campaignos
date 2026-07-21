@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Copy, Trash2 } from "lucide-react";
@@ -18,7 +18,10 @@ import {
   downloadArtworkImage,
 } from "@/lib/artwork-v2/download";
 import { brandKitIdForAi } from "@/lib/campaign-builder-v2/brand-kit";
-import { syncAppliedMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
+import {
+  sendForApprovalAction,
+  syncAppliedMilestoneArtworkAction,
+} from "@/lib/campaign-builder-v2/actions";
 import {
   getSharedCaptionText,
   syncCaptionsToPlatforms,
@@ -33,6 +36,7 @@ import {
   inferGenerationStatus,
   isMilestoneContentComplete,
   milestoneHasPartialContent,
+  resolveMilestoneGenerationStatus,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
   ARTWORK_VIEW_OPTIONS,
@@ -44,6 +48,7 @@ import {
 import { cn } from "@/lib/utils/cn";
 import type {
   ArtworkView,
+  MilestoneArtwork,
   PlatformFormat,
   PreviewTabId,
 } from "@/lib/campaign-builder-v2/types";
@@ -115,6 +120,7 @@ export function PreviewStep() {
   const [artworkModalOpen, setArtworkModalOpen] = useState(false);
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearSubmitting, setClearSubmitting] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
@@ -122,6 +128,7 @@ export function PreviewStep() {
   const [downloadingView, setDownloadingView] = useState<ArtworkView | null>(
     null,
   );
+  const handledEditArtworkDeepLink = useRef(false);
 
   async function handleDownloadArtwork(
     view: ArtworkView,
@@ -147,6 +154,39 @@ export function PreviewStep() {
   const selectedPreview = session.previewContents.find(
     (c) => c.milestoneId === selectedId,
   );
+
+  useEffect(() => {
+    if (handledEditArtworkDeepLink.current) {
+      return;
+    }
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (session.milestones.length === 0) {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const milestoneId = params.get("milestone");
+    const editArtwork = params.get("editArtwork");
+    if (!milestoneId || editArtwork !== "1") {
+      return;
+    }
+
+    handledEditArtworkDeepLink.current = true;
+
+    if (session.milestones.some((milestone) => milestone.id === milestoneId)) {
+      setSelectedMilestoneId(milestoneId);
+      setArtworkModalOpen(true);
+    }
+
+    params.delete("milestone");
+    params.delete("editArtwork");
+    const search = params.toString();
+    const hash = window.location.hash || "#preview";
+    const nextUrl = `${window.location.pathname}${search ? `?${search}` : ""}${hash}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  }, [session.milestones, setSelectedMilestoneId]);
 
   const progress = useMemo(
     () => countCompleteMilestones(session.milestones, session.previewContents),
@@ -251,6 +291,97 @@ export function PreviewStep() {
     } finally {
       setClearSubmitting(false);
     }
+  }
+
+  function handleApplyArtwork(artwork: MilestoneArtwork) {
+    if (!selectedPreview) {
+      return;
+    }
+    updatePreviewContent(selectedPreview.milestoneId, {
+      artwork,
+      status: "needs-review",
+      generationStatus: "needs_review",
+    });
+    setArtworkModalOpen(false);
+    void syncAppliedMilestoneArtworkAction({
+      eventId: session.eventId,
+      milestones: session.milestones,
+      milestoneId: selectedPreview.milestoneId,
+      artwork,
+    }).then(() => router.refresh());
+  }
+
+  async function handleResendForApproval(artwork: MilestoneArtwork) {
+    if (!selectedPreview || !selectedMilestone) {
+      throw new Error("Select a milestone before resending for approval.");
+    }
+
+    setResendMessage(null);
+
+    // Apply pending regenerated artwork before resubmitting.
+    updatePreviewContent(selectedPreview.milestoneId, {
+      artwork,
+    });
+    const syncResult = await syncAppliedMilestoneArtworkAction({
+      eventId: session.eventId,
+      milestones: session.milestones,
+      milestoneId: selectedPreview.milestoneId,
+      artwork,
+    });
+    if (!syncResult.success) {
+      throw new Error(syncResult.message);
+    }
+
+    const previewForSubmit = {
+      ...selectedPreview,
+      artwork,
+    };
+    const result = await sendForApprovalAction({
+      eventId: session.eventId,
+      campaignName: session.inspiration.campaignName,
+      milestones: [selectedMilestone],
+      previewContents: [previewForSubmit],
+    });
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+
+    const submittedAt = new Date().toISOString();
+    const approvalStatuses =
+      previewForSubmit.approvalStatuses.length > 0
+        ? previewForSubmit.approvalStatuses.map((entry) =>
+            entry.role === "creator"
+              ? entry
+              : {
+                  ...entry,
+                  status: "pending" as const,
+                  timestamp: submittedAt,
+                },
+          )
+        : [
+            {
+              role: "creator" as const,
+              label: "Creator",
+              status: "not-started" as const,
+              timestamp: null,
+            },
+            {
+              role: "committee-chair" as const,
+              label: "Committee Chair",
+              status: "pending" as const,
+              timestamp: submittedAt,
+            },
+          ];
+
+    updatePreviewContent(selectedPreview.milestoneId, {
+      artwork,
+      generationStatus: "awaiting_approval",
+      status: "ready",
+      approvalStatuses,
+    });
+    setArtworkModalOpen(false);
+    setResendMessage(result.message || "Sent for approval.");
+    router.refresh();
   }
 
   const generatingName = generatingMilestoneId
@@ -506,6 +637,12 @@ export function PreviewStep() {
         }
       />
 
+      {resendMessage ? (
+        <p className="px-4 py-2 text-sm text-cos-success lg:px-8" role="status">
+          {resendMessage}
+        </p>
+      ) : null}
+
       {artworkModalOpen && selectedPreview && selectedMilestone && (
         <EditArtworkModal
           // Remount per milestone — instructions/preview state is local to
@@ -520,21 +657,13 @@ export function PreviewStep() {
           previewContent={selectedPreview}
           milestones={session.milestones}
           artworkNotes={selectedMilestone.artworkNotes}
+          generationStatus={resolveMilestoneGenerationStatus(
+            selectedPreview,
+            selectedMilestone.platformFormats,
+          )}
           onClose={() => setArtworkModalOpen(false)}
-          onApply={(artwork) => {
-            updatePreviewContent(selectedPreview.milestoneId, {
-              artwork,
-              status: "needs-review",
-              generationStatus: "needs_review",
-            });
-            setArtworkModalOpen(false);
-            void syncAppliedMilestoneArtworkAction({
-              eventId: session.eventId,
-              milestones: session.milestones,
-              milestoneId: selectedPreview.milestoneId,
-              artwork,
-            }).then(() => router.refresh());
-          }}
+          onApply={(artwork) => handleApplyArtwork(artwork)}
+          onResendForApproval={handleResendForApproval}
         />
       )}
 

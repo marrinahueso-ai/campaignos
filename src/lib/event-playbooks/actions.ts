@@ -229,9 +229,19 @@ export async function createEventPlaybookNoteAction(
     return { success: false, error: "Note content is required." };
   }
 
-  const id = await createEventPlaybookNote(eventId, { content: trimmed, noteType });
-  if (!id) {
-    return { success: false, error: "Unable to save note." };
+  if (noteType !== "note" && noteType !== "lesson") {
+    return { success: false, error: "Invalid note type." };
+  }
+
+  const result = await createEventPlaybookNote(eventId, {
+    content: trimmed,
+    noteType,
+  });
+  if (!result.id) {
+    return {
+      success: false,
+      error: result.error ?? "Unable to save note.",
+    };
   }
 
   revalidatePlaybookPaths(eventId);

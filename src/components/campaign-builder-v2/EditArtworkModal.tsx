@@ -13,6 +13,7 @@ import type {
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
   MilestoneArtwork,
+  MilestoneGenerationStatus,
   MilestonePreviewContent,
 } from "@/lib/campaign-builder-v2/types";
 
@@ -34,8 +35,10 @@ interface EditArtworkModalProps {
   previewContent: MilestonePreviewContent;
   milestones: CampaignBuilderMilestone[];
   artworkNotes?: string;
+  generationStatus?: MilestoneGenerationStatus;
   onClose: () => void;
   onApply: (artwork: MilestoneArtwork) => void;
+  onResendForApproval?: (artwork: MilestoneArtwork) => Promise<void>;
 }
 
 export function EditArtworkModal({
@@ -47,8 +50,10 @@ export function EditArtworkModal({
   previewContent,
   milestones,
   artworkNotes,
+  generationStatus,
   onClose,
   onApply,
+  onResendForApproval,
 }: EditArtworkModalProps) {
   const [instructions, setInstructions] = useState(artworkNotes ?? "");
   const [styleStrength, setStyleStrength] = useState(50);
@@ -56,11 +61,17 @@ export function EditArtworkModal({
     previewContent.artwork,
   );
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const showResend =
+    generationStatus === "changes_requested" && Boolean(onResendForApproval);
 
   async function handleRegenerate() {
     setIsGenerating(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
     try {
       const inspirationImages = await prepareInspirationImagesForServer(
         inspiration.inspirationImages,
@@ -95,12 +106,34 @@ export function EditArtworkModal({
     onApply(previewArtwork);
   }
 
+  async function handleResendForApproval() {
+    if (!onResendForApproval) {
+      return;
+    }
+    setIsResending(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      // Parent applies pending regenerated artwork, then resubmits for approval.
+      await onResendForApproval(previewArtwork);
+      setSuccessMessage("Sent for approval.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to resend for approval.",
+      );
+    } finally {
+      setIsResending(false);
+    }
+  }
+
   const styleLabel =
     styleStrength < 35
       ? "More creative"
       : styleStrength > 65
         ? "More similar"
         : "Balanced";
+
+  const busy = isGenerating || isResending;
 
   return (
     <CampaignBuilderModal
@@ -124,9 +157,10 @@ export function EditArtworkModal({
               onChange={(e) => setStyleStrength(Number(e.target.value))}
               className="w-full accent-cos-text"
               aria-label="Style strength"
+              disabled={busy}
             />
           </div>
-          <Button onClick={() => void handleRegenerate()} disabled={isGenerating}>
+          <Button onClick={() => void handleRegenerate()} disabled={busy}>
             <Sparkles className="h-4 w-4" strokeWidth={1.5} />
             {isGenerating ? "Generating…" : "Regenerate artwork"}
           </Button>
@@ -205,13 +239,25 @@ export function EditArtworkModal({
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {errorMessage ? (
               <p className="mr-auto text-sm text-red-600">{errorMessage}</p>
             ) : null}
-            <Button variant="secondary" onClick={handleApply}>
+            {successMessage ? (
+              <p className="mr-auto text-sm text-cos-success">{successMessage}</p>
+            ) : null}
+            <Button variant="secondary" onClick={handleApply} disabled={busy}>
               Apply artwork
             </Button>
+            {showResend ? (
+              <Button
+                variant="primary"
+                disabled={busy}
+                onClick={() => void handleResendForApproval()}
+              >
+                {isResending ? "Sending…" : "Resend for approval"}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

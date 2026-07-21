@@ -39,6 +39,7 @@ function buildItem(
     approvalRequestId: "req-1",
     communicationItemId: "comm-1",
     schedulingItemId: null,
+    campaignMilestoneId: null,
     channel: "facebook",
     notes: null,
     preview: {

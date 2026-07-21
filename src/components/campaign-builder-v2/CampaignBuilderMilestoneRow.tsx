@@ -9,6 +9,7 @@ import {
   Pencil,
   Sparkles,
 } from "lucide-react";
+import { MetaPlatformBadges } from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import { cn } from "@/lib/utils/cn";
 import {
   MILESTONE_STATUS_LABELS,
@@ -44,19 +45,6 @@ const STATUS_STYLES: Record<MilestoneGenerationStatus, string> = {
   published: "bg-cos-success-bg text-cos-success-text",
   failed: "bg-cos-warning/20 text-cos-warning-text border border-cos-warning/40",
 };
-
-function PlatformIcons() {
-  return (
-    <span className="flex items-center gap-1.5" aria-label="Facebook and Instagram">
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1877F2] text-[10px] font-bold text-white">
-        f
-      </span>
-      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888] text-[10px] font-bold text-white">
-        ig
-      </span>
-    </span>
-  );
-}
 
 function formatDate(dateStr: string): string {
   try {
@@ -169,7 +157,7 @@ export function CampaignBuilderMilestoneRow({
       </span>
 
       <div className="self-start">
-        <PlatformIcons />
+        <MetaPlatformBadges size="md" />
       </div>
 
       <div className="relative flex items-center gap-1 self-start">

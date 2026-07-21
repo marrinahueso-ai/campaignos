@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { Mic, MicOff, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { useSpeechToText } from "@/lib/speech/use-speech-to-text";
 import { updateTaskHubTaskAction } from "@/lib/task-hub/actions";
 import { cn } from "@/lib/utils/cn";
 import type { TaskHubTaskItem } from "@/types/task-hub";
@@ -32,6 +33,28 @@ export function TasksV2TaskDetailDrawer({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef(task?.notes ?? "");
   const taskIdRef = useRef(task?.id ?? null);
+  const draftRef = useRef(draft);
+  const scheduleSaveRef = useRef<(nextDraft: string) => void>(() => {});
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
+
+  const {
+    voiceSupported,
+    isListening,
+    error: voiceError,
+    toggleVoice,
+    stopListening,
+    clearError: clearVoiceError,
+  } = useSpeechToText({
+    getBaseText: () => draftRef.current,
+    onTextChange: (text) => {
+      setDraft(text);
+      setSaveState("idle");
+      scheduleSaveRef.current(text);
+    },
+  });
 
   useEffect(() => {
     taskIdRef.current = task?.id ?? null;
@@ -40,11 +63,13 @@ export function TasksV2TaskDetailDrawer({
     lastSavedRef.current = notes;
     setSaveState("idle");
     setError(null);
+    clearVoiceError();
+    stopListening();
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
     }
-  }, [task?.id, task?.notes]);
+  }, [task?.id, task?.notes, clearVoiceError, stopListening]);
 
   useEffect(() => {
     return () => {
@@ -121,6 +146,8 @@ export function TasksV2TaskDetailDrawer({
     }, NOTES_SAVE_DEBOUNCE_MS);
   }
 
+  scheduleSaveRef.current = scheduleSave;
+
   function flushSave() {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -140,9 +167,15 @@ export function TasksV2TaskDetailDrawer({
         ? "Saved"
         : saveState === "error"
           ? (error ?? "Could not save")
-          : canEdit
-            ? "Changes save automatically"
-            : "View only";
+          : voiceError
+            ? voiceError
+            : isListening
+              ? "Listening… click the mic again to stop."
+              : canEdit
+                ? "Changes save automatically"
+                : "View only";
+
+  const showMic = canEdit && voiceSupported;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-cos-text/20 backdrop-blur-sm">
@@ -151,6 +184,7 @@ export function TasksV2TaskDetailDrawer({
         aria-label="Close task details"
         className="flex-1"
         onClick={() => {
+          stopListening();
           flushSave();
           onClose();
         }}
@@ -181,6 +215,7 @@ export function TasksV2TaskDetailDrawer({
             variant="ghost"
             size="sm"
             onClick={() => {
+              stopListening();
               flushSave();
               onClose();
             }}
@@ -191,25 +226,61 @@ export function TasksV2TaskDetailDrawer({
         </div>
 
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-5">
-          <Textarea
-            label="Notes"
-            value={draft}
-            onChange={(event) => {
-              const value = event.target.value;
-              setDraft(value);
-              setSaveState("idle");
-              scheduleSave(value);
-            }}
-            onBlur={flushSave}
-            disabled={!canEdit}
-            placeholder="Add notes for this task…"
-            rows={10}
-            className="min-h-48"
-          />
+          <div className="space-y-2">
+            <label
+              htmlFor="tasks-v2-detail-notes"
+              className="block text-xs font-medium tracking-[0.12em] text-cos-muted uppercase"
+            >
+              Notes
+            </label>
+            <div className="flex gap-2">
+              <div className="min-w-0 flex-1">
+                <Textarea
+                  id="tasks-v2-detail-notes"
+                  value={draft}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setDraft(value);
+                    setSaveState("idle");
+                    clearVoiceError();
+                    scheduleSave(value);
+                  }}
+                  onBlur={flushSave}
+                  disabled={!canEdit}
+                  placeholder="Add notes for this task…"
+                  rows={10}
+                  className="min-h-48"
+                />
+              </div>
+              {showMic ? (
+                <button
+                  type="button"
+                  aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                  aria-pressed={isListening}
+                  title={isListening ? "Stop voice input" : "Dictate notes"}
+                  onClick={toggleVoice}
+                  className={cn(
+                    "inline-flex h-10 w-10 shrink-0 items-center justify-center border transition-colors",
+                    isListening
+                      ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
+                      : "border-cos-border bg-cos-card text-cos-muted hover:text-cos-text",
+                  )}
+                >
+                  {isListening ? (
+                    <MicOff className="h-4 w-4" strokeWidth={1.75} />
+                  ) : (
+                    <Mic className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                </button>
+              ) : null}
+            </div>
+          </div>
           <p
             className={cn(
               "text-xs",
-              saveState === "error" ? "text-cos-error-text" : "text-cos-muted",
+              saveState === "error" || voiceError
+                ? "text-cos-error-text"
+                : "text-cos-muted",
             )}
             aria-live="polite"
           >

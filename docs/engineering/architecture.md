@@ -156,7 +156,7 @@ Legacy Engine 4 / `communications-brain` placeholder-draft paths still exist in 
 
 ### 5.3 Event workspace
 
-`/events/[id]` is the event home (tabs: Responsibilities, Create with AI, Approvals, Tasks, Files, Notes, Volunteers, Vendors, Activity). Phase 3 workspace is default; older planning-hub UI is fallback / partial.
+`/events/[id]` is the event home (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals). Phase 3 workspace is default; older planning-hub UI is fallback / partial.
 
 Playbooks still seed milestone timelines and health; campaign creative generation is centered on **Create with AI** (`/create-with-ai` and event campaign builder).
 

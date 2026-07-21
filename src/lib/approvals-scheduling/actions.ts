@@ -444,6 +444,7 @@ export async function requestUnifiedChangesAction(input: {
       milestoneName: input.milestoneName,
       recipientEmail: creatorEmail,
       comment,
+      campaignMilestoneId: schedulingRow?.campaign_milestone_id ?? null,
       schedulingItemId: input.schedulingItemId ?? null,
       feedArtworkUrl: schedulingRow?.feed_artwork_url,
       storyArtworkUrl: schedulingRow?.story_artwork_url,

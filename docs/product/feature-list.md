@@ -44,7 +44,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Events
 - Events list, create, edit — **shipped**
-- Event detail workspace (tabs: Responsibilities, Create with AI, Approvals, Tasks, Files, Notes, Volunteers, Vendors, Activity) — **shipped**
+- Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Volunteers (SignUpGenius URL) — **shipped**
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
@@ -73,6 +73,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
 - Status summary cards as clickable workflow filters (click again to clear to All); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
+- Change-requested items show the approver comment + Edit artwork CTA (Approvals drawer + email); Edit Artwork supports Resend for approval — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 
 ## Calendar

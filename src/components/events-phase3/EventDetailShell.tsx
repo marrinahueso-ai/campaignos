@@ -128,13 +128,13 @@ export type EventDetailTab =
   | "activity";
 
 const TABS: { id: EventDetailTab; label: string }[] = [
-  { id: "responsibilities", label: "Responsibilities" },
-  { id: "create-with-ai", label: "Create with AI" },
   { id: "approvals", label: "Approvals" },
   { id: "tasks", label: "Tasks" },
-  { id: "files", label: "Files" },
-  { id: "notes", label: "Notes" },
+  { id: "create-with-ai", label: "Create with AI" },
   { id: "volunteers", label: "Volunteers" },
+  { id: "responsibilities", label: "Responsibilities" },
+  { id: "notes", label: "Notes" },
+  { id: "files", label: "Files" },
   { id: "vendors", label: "Vendors" },
   { id: "activity", label: "Activity" },
 ];
@@ -351,7 +351,7 @@ export function EventDetailShell({
     ) {
       return initialTab as EventDetailTab;
     }
-    return "responsibilities";
+    return "approvals";
   });
   const [panelData, setPanelData] = useState<EventDetailWorkspacePanels>(workspace);
   const [loadedTabs, setLoadedTabs] = useState<Set<EventDetailTab>>(() =>
@@ -441,7 +441,7 @@ export function EventDetailShell({
     ) {
       setTab(initialTab as EventDetailTab);
     } else {
-      setTab("responsibilities");
+      setTab("approvals");
     }
   }, [event.id, initialTab]);
 

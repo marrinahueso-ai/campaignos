@@ -65,6 +65,8 @@ export interface UnifiedApprovalItem {
   approvalRequestId: string | null;
   communicationItemId: string | null;
   schedulingItemId: string | null;
+  /** Create with AI milestone id — used for Edit Artwork deep links. */
+  campaignMilestoneId: string | null;
   channel: CommunicationChannel | null;
   notes: string | null;
   preview: UnifiedApprovalPreview;

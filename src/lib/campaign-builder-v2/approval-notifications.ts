@@ -8,6 +8,7 @@ import {
 import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
 import type { EmailAttachment } from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
+import { absoluteCampaignBuilderEditArtworkHref } from "@/lib/campaign-builder-v2/navigation";
 import { resolveSiteOrigin } from "@/lib/site/url";
 import { escapeHtml } from "@/lib/utils/html";
 import { createClient } from "@/lib/supabase/server";
@@ -94,10 +95,18 @@ function buildApprovalEmailHtml(input: {
   body: string;
   ctaLabel: string;
   ctaHref: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
   content?: ApprovalEmailContentPreview;
 }): string {
   const emailPrimaryUrl = `${resolveSiteOrigin()}/go/email-primary`;
   const contentPreview = buildApprovalContentPreviewHtml(input.content ?? {});
+  const secondaryCta =
+    input.secondaryCtaLabel && input.secondaryCtaHref
+      ? `<a href="${escapeHtml(input.secondaryCtaHref)}" style="display: inline-block; color: #2a2622; padding: 10px 0 0 4px; text-decoration: underline; font-size: 13px; margin-top: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+        ${escapeHtml(input.secondaryCtaLabel)}
+      </a>`
+      : "";
   return `
     <div style="font-family: Georgia, serif; color: #2a2622; background: #f6f2eb; padding: 24px; max-width: 560px;">
       <p style="margin:0 0 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5c554c;">Hey Ralli</p>
@@ -107,6 +116,7 @@ function buildApprovalEmailHtml(input: {
       <a href="${escapeHtml(input.ctaHref)}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px; margin-top: 8px;">
         ${escapeHtml(input.ctaLabel)}
       </a>
+      ${secondaryCta}
       <p style="margin: 28px 0 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; line-height: 1.5; color: #5c554c;">
         <a href="${escapeHtml(emailPrimaryUrl)}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
         — one-time Gmail setup so approvals, reminders, and post kits aren’t filed under Promotions.
@@ -233,17 +243,31 @@ export async function sendChangeRequestedEmail(
     milestoneName: string;
     recipientEmail: string;
     comment: string;
+    campaignMilestoneId?: string | null;
     schedulingItemId?: string | null;
     approvalRequestId?: string | null;
   },
 ): Promise<CampaignApprovalNotificationResult> {
-  const href = approvalsPageUrl(input.eventId);
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
+  const editArtworkHref = input.campaignMilestoneId
+    ? absoluteCampaignBuilderEditArtworkHref(
+        input.eventId,
+        input.campaignMilestoneId,
+      )
+    : null;
+  const primaryHref = editArtworkHref ?? reviewHref;
+  const primaryLabel = editArtworkHref ? "Edit artwork" : "View in Create with AI";
   const content = contentPreviewFromInput(input);
+  const commentBox = `<div style="margin:16px 0;padding:12px 14px;border:1px solid #f0c4c4;background:#fdf2f2;color:#8b3f3f;font-size:14px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><strong style="display:block;margin-bottom:6px;">Change request</strong>${escapeHtml(input.comment)}</div>`;
   const html = buildApprovalEmailHtml({
     heading: "Changes requested",
-    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}.<br /><br /><strong>Comment:</strong> ${escapeHtml(input.comment)}`,
-    ctaLabel: "View in Create with AI",
-    ctaHref: `${process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"}/events/${input.eventId}/campaign-builder#review`,
+    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}.${commentBox}`,
+    ctaLabel: primaryLabel,
+    ctaHref: primaryHref,
+    secondaryCtaLabel: editArtworkHref ? "Open Review step" : undefined,
+    secondaryCtaHref: editArtworkHref ? reviewHref : undefined,
     content,
   });
 
@@ -253,7 +277,7 @@ export async function sendChangeRequestedEmail(
     recipientEmail: input.recipientEmail,
     subject: `Changes requested: ${input.milestoneName}`,
     html,
-    text: `Changes requested for ${input.milestoneName}: ${input.comment}. Open ${href}${buildApprovalContentPreviewText(content)}`,
+    text: `Changes requested for ${input.milestoneName}: ${input.comment}. ${editArtworkHref ? `Edit artwork: ${editArtworkHref}` : `Open ${reviewHref}`}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });

@@ -5,6 +5,13 @@ interface MetaPlatformIconsProps {
   size?: "xs" | "sm";
 }
 
+interface MetaPlatformBadgesProps {
+  className?: string;
+  /** Default `md` = h-6 w-6 (Campaign Builder milestone rows). */
+  size?: "sm" | "md" | "lg";
+}
+
+/** Brand-colored Facebook glyph (no badge background). */
 export function FacebookPlatformIcon({ className }: { className?: string }) {
   return (
     <svg aria-hidden className={className} viewBox="0 0 24 24" fill="#1877F2">
@@ -13,6 +20,7 @@ export function FacebookPlatformIcon({ className }: { className?: string }) {
   );
 }
 
+/** Brand-colored Instagram glyph (no badge background). */
 export function InstagramPlatformIcon({ className }: { className?: string }) {
   return (
     <svg aria-hidden className={className} viewBox="0 0 24 24" fill="#E4405F">
@@ -20,6 +28,59 @@ export function InstagramPlatformIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/**
+ * Official-style Facebook badge: blue circle (#1877F2) with white "f" glyph.
+ * Prefer this over a plain text letter in a circle.
+ */
+export function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden className={className} viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="12" fill="#1877F2" />
+      <path
+        fill="#fff"
+        d="M13.28 20.5v-6.9h2.32l.35-2.68h-2.67V9.2c0-.78.21-1.3 1.36-1.3h1.45V5.52c-.24-.03-1.06-.12-2.02-.12-2 0-3.37 1.22-3.37 3.47v1.93H8.1v2.68h2.25v6.94h2.93z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Official-style Instagram badge: brand gradient circle with white camera glyph.
+ * Prefer this over "ig" text in a circle.
+ * Uses a CSS gradient so gradient ids stay unique without a client hook.
+ */
+export function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f09433] via-[#dc2743] to-[#bc1888]",
+        className,
+      )}
+    >
+      <svg viewBox="0 0 24 24" className="h-[58%] w-[58%]" fill="none">
+        <rect
+          x="5.5"
+          y="5.5"
+          width="13"
+          height="13"
+          rx="3.5"
+          stroke="#fff"
+          strokeWidth="2"
+        />
+        <circle cx="12" cy="12" r="3.35" stroke="#fff" strokeWidth="2" />
+        <circle cx="16.2" cy="7.85" r="1.2" fill="#fff" />
+      </svg>
+    </span>
+  );
+}
+
+/** Alias for {@link FacebookIcon}. */
+export const FacebookBadgeIcon = FacebookIcon;
+
+/** Alias for {@link InstagramIcon}. */
+export const InstagramBadgeIcon = InstagramIcon;
 
 export function MetaPlatformIcons({ className, size = "xs" }: MetaPlatformIconsProps) {
   const iconClass = size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5";
@@ -32,6 +93,22 @@ export function MetaPlatformIcons({ className, size = "xs" }: MetaPlatformIconsP
     >
       <FacebookPlatformIcon className={iconClass} />
       <InstagramPlatformIcon className={iconClass} />
+    </span>
+  );
+}
+
+/** Paired circle badges (Facebook + Instagram), sized for milestone / platform chips. */
+export function MetaPlatformBadges({ className, size = "md" }: MetaPlatformBadgesProps) {
+  const iconClass =
+    size === "sm" ? "h-5 w-5" : size === "lg" ? "h-7 w-7" : "h-6 w-6";
+
+  return (
+    <span
+      className={cn("inline-flex shrink-0 items-center gap-1.5", className)}
+      aria-label="Facebook and Instagram"
+    >
+      <FacebookIcon className={iconClass} />
+      <InstagramIcon className={iconClass} />
     </span>
   );
 }

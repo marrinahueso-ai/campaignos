@@ -9,7 +9,11 @@ import {
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
 import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Button } from "@/components/ui/Button";
-import { hasStaleContentNote } from "@/lib/dev-tools/clear-generated-content";
+import { campaignBuilderEditArtworkHref } from "@/lib/campaign-builder-v2/navigation";
+import {
+  changeRequestDisplayComment,
+  hasStaleContentNote,
+} from "@/lib/dev-tools/clear-generated-content";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 
@@ -58,6 +62,13 @@ export function ReviewDrawer({
     return null;
   }
 
+  const changeRequestComment = changeRequestDisplayComment(item.notes);
+  const showChangeRequestBanner = item.workflowStatus === "changes_requested";
+  const editArtworkHref =
+    item.campaignMilestoneId != null
+      ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
+      : null;
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-cos-text/20 backdrop-blur-sm">
       <button
@@ -95,6 +106,30 @@ export function ReviewDrawer({
             platforms={item.platforms}
             deliveryMethod={item.deliveryMethod}
           />
+
+          {showChangeRequestBanner ? (
+            <div className="rounded border border-red-200 bg-red-50 px-4 py-3">
+              <p className="text-xs font-semibold tracking-[0.12em] text-red-800 uppercase">
+                Changes requested
+              </p>
+              {changeRequestComment ? (
+                <p className="mt-2 text-sm leading-relaxed text-red-900">
+                  {changeRequestComment}
+                </p>
+              ) : (
+                <p className="mt-2 text-sm leading-relaxed text-red-800">
+                  An approver requested changes to this content.
+                </p>
+              )}
+              {editArtworkHref ? (
+                <div className="mt-3">
+                  <Button href={editArtworkHref} variant="secondary" size="sm">
+                    Edit artwork
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div>
             <p className="cos-section-title">Approval history</p>

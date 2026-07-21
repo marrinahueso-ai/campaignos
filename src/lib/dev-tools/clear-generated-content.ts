@@ -23,6 +23,24 @@ export function hasStaleContentNote(notes: string | null | undefined): boolean {
   return Boolean(notes?.includes(STALE_CONTENT_NOTE));
 }
 
+/** Human-facing change-request comment with the stale-content marker removed. */
+export function changeRequestDisplayComment(
+  notes: string | null | undefined,
+): string | null {
+  if (!notes?.trim()) {
+    return null;
+  }
+
+  const stripped = notes
+    .split("\n")
+    .map((line) => line.replaceAll(STALE_CONTENT_NOTE, "").trimEnd())
+    .filter((line) => line.trim().length > 0)
+    .join("\n")
+    .trim();
+
+  return stripped || null;
+}
+
 export function countArtworkUrls(preview: MilestonePreviewContent): number {
   let count = 0;
   if (preview.artwork.feedUrl?.trim() && !isPlaceholderArtworkUrl(preview.artwork.feedUrl)) {

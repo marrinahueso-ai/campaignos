@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { BookOpen, Mic, MicOff, StickyNote } from "lucide-react";
+import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { createEventPlaybookNoteAction } from "@/lib/event-playbooks/actions";
@@ -44,7 +44,7 @@ interface NotesTabProps {
 }
 
 export function NotesTab({ eventId, notes, tablesAvailable }: NotesTabProps) {
-  const router = useRouter();
+  const refreshNotesTab = useEventTabMutationRefresh("notes");
   const [pending, startTransition] = useTransition();
   const [content, setContent] = useState("");
   const [noteType, setNoteType] = useState<EventPlaybookNoteType>("note");
@@ -119,13 +119,29 @@ export function NotesTab({ eventId, notes, tablesAvailable }: NotesTabProps) {
     setError(null);
     stopListening();
     startTransition(async () => {
-      const result = await createEventPlaybookNoteAction(eventId, content, noteType);
-      if (!result.success) {
-        setError(result.error);
-        return;
+      try {
+        const result = await createEventPlaybookNoteAction(
+          eventId,
+          content,
+          noteType,
+        );
+        if (!result.success) {
+          setError(result.error ?? "Unable to save note.");
+          return;
+        }
+        setContent("");
+        const refresh = await refreshNotesTab();
+        if (!refresh.success) {
+          setError(
+            refresh.error ??
+              "Saved, but the Notes list could not refresh. Use Retry above.",
+          );
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Unable to save note.",
+        );
       }
-      setContent("");
-      router.refresh();
     });
   }
 

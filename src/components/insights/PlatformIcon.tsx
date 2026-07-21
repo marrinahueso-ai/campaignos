@@ -1,3 +1,7 @@
+import {
+  FacebookIcon,
+  InstagramIcon,
+} from "@/components/communications-planning-calendar/MetaPlatformIcons";
 import { cn } from "@/lib/utils/cn";
 
 interface PlatformIconProps {
@@ -6,17 +10,11 @@ interface PlatformIconProps {
 }
 
 export function PlatformIcon({ platform, className }: PlatformIconProps) {
-  const label = platform === "instagram" ? "IG" : "FB";
+  const Icon = platform === "instagram" ? InstagramIcon : FacebookIcon;
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-cos-border bg-cos-bg text-[10px] font-semibold tracking-wide text-cos-muted",
-        className,
-      )}
-      aria-label={platform}
-    >
-      {label}
+    <span className={cn("inline-flex shrink-0", className)} aria-label={platform}>
+      <Icon className="h-7 w-7" />
     </span>
   );
 }
