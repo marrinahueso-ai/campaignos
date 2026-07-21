@@ -145,7 +145,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## AI Brain & assistant
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
-- Ask Ralli AI widget — **shipped** (Phase 1 ops coach: event “what next” / overdue / approvals / publishing this week from grounded event context + deep links; product-help FAQ retained for how-to)
+- Ask Ralli AI widget — **shipped** (Phase 1 event ops coach + Phase 2 org/role briefings: “what needs my approval”, events needing attention, behind schedule, today’s summary / week review from grounded org context + deep links; product-help FAQ retained for how-to; Phases 3–5 volunteers/comms depth, content write tools, insights — **planned**)
 - AI credits widget — **stub** (placeholder UI)
 
 ## Settings

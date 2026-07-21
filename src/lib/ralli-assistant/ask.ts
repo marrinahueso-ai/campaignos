@@ -2,13 +2,17 @@ import { generateText, isAiConfigured } from "@/lib/ai/provider";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getActiveEvents } from "@/lib/events/queries";
-import { shouldRouteToOpsAsk } from "@/lib/ralli-assistant/ask-routing";
+import {
+  shouldRouteToOpsAsk,
+  shouldRouteToOrgBriefing,
+} from "@/lib/ralli-assistant/ask-routing";
 import { askRalliOpsCoach } from "@/lib/ralli-assistant/ops-ask";
 import {
   extractEventIdFromPathname,
   isOpsIntent,
   shouldPreferProductHelpFaq,
 } from "@/lib/ralli-assistant/ops-intent";
+import { askRalliOrgBriefing } from "@/lib/ralli-assistant/org-ask";
 import {
   buildProductHelpSystemPrompt,
   formatTopicAnswer,
@@ -16,7 +20,7 @@ import {
   type ProductHelpLink,
 } from "@/lib/ralli-assistant/product-help-knowledge";
 
-export type AskRalliSource = "faq" | "ai" | "ops";
+export type AskRalliSource = "faq" | "ai" | "ops" | "org";
 
 export interface AskRalliAssistantResult {
   success: boolean;
@@ -26,26 +30,27 @@ export interface AskRalliAssistantResult {
   error: string | null;
 }
 
-export { shouldRouteToOpsAsk } from "@/lib/ralli-assistant/ask-routing";
+export {
+  shouldRouteToOpsAsk,
+  shouldRouteToOrgBriefing,
+} from "@/lib/ralli-assistant/ask-routing";
 
-async function questionMentionsOrgEvent(
-  question: string,
-  pathname?: string | null,
-): Promise<boolean> {
+async function loadResolvableEvents(): Promise<
+  Array<{ id: string; title: string; date: string; status: string }>
+> {
   try {
     const membership = await getActiveMembership();
-    if (!membership) return false;
+    if (!membership) return [];
     const active = await getActiveEvents(membership.organizationId);
-    const events = active.map((event) => ({
+    return active.map((event) => ({
       id: event.id,
       title: event.title,
       date: event.date,
       status: event.status,
     }));
-    return shouldRouteToOpsAsk(question, pathname, events);
   } catch (error) {
-    console.error("Ask Ralli: event mention probe failed", error);
-    return false;
+    console.error("Ask Ralli: failed to load events for routing", error);
+    return [];
   }
 }
 
@@ -78,13 +83,25 @@ export async function askRalliProductHelp(input: {
     };
   }
 
-  const pathOrOpsIntent =
-    isOpsIntent(question) ||
-    Boolean(extractEventIdFromPathname(input.pathname));
+  const events = await loadResolvableEvents();
 
+  // Phase 2: org / role briefings without requiring an event name.
+  // Named-event phrasing still takes the Phase 1 event ops path.
+  if (shouldRouteToOrgBriefing(question, events)) {
+    return askRalliOrgBriefing({ question });
+  }
+
+  if (shouldRouteToOpsAsk(question, input.pathname, events)) {
+    return askRalliOpsCoach({
+      question,
+      pathname: input.pathname,
+    });
+  }
+
+  // Ops intent or event page even when event list failed to load.
   if (
-    pathOrOpsIntent ||
-    (await questionMentionsOrgEvent(question, input.pathname))
+    isOpsIntent(question) ||
+    Boolean(extractEventIdFromPathname(input.pathname))
   ) {
     return askRalliOpsCoach({
       question,
@@ -107,12 +124,13 @@ export async function askRalliProductHelp(input: {
       success: true,
       answer: [
         "I can help with how to use Hey Ralli — creating campaigns, finding Approvals, Create with AI, Calendar, and more.",
-        "I can also answer operational questions like “What should I do next for Back to School Fair?” when you name an event or open an event page.",
+        "I can also brief your org (“What needs my approval?”, “Give me today’s summary”) or answer event questions when you name an event or open an event page.",
         "Try one of the suggested questions, or ask something like “Where do I find my approvals?”",
         "AI Brain is separate: use Settings → AI Brain for brand voice and training content.",
       ].join(" "),
       links: [
         { label: "Approvals", href: "/approvals" },
+        { label: "Today", href: "/dashboard" },
         { label: "Create Campaign", href: "/events/create" },
         { label: "AI Brain", href: "/settings/ai-brain" },
       ],
