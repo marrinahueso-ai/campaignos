@@ -4,10 +4,12 @@ import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getActiveEvents } from "@/lib/events/queries";
 import {
   shouldRouteToContentAsk,
+  shouldRouteToInsightsAsk,
   shouldRouteToOpsAsk,
   shouldRouteToOrgBriefing,
 } from "@/lib/ralli-assistant/ask-routing";
 import { askRalliContentCoach } from "@/lib/ralli-assistant/content-ask";
+import { askRalliInsightsCoach } from "@/lib/ralli-assistant/insights-ask";
 import { askRalliOpsCoach } from "@/lib/ralli-assistant/ops-ask";
 import {
   extractEventIdFromPathname,
@@ -23,7 +25,13 @@ import {
   type ProductHelpLink,
 } from "@/lib/ralli-assistant/product-help-knowledge";
 
-export type AskRalliSource = "faq" | "ai" | "ops" | "org" | "content";
+export type AskRalliSource =
+  | "faq"
+  | "ai"
+  | "ops"
+  | "org"
+  | "content"
+  | "insights";
 
 export interface AskRalliAssistantResult {
   success: boolean;
@@ -35,6 +43,7 @@ export interface AskRalliAssistantResult {
 
 export {
   shouldRouteToContentAsk,
+  shouldRouteToInsightsAsk,
   shouldRouteToOpsAsk,
   shouldRouteToOrgBriefing,
 } from "@/lib/ralli-assistant/ask-routing";
@@ -79,6 +88,15 @@ export async function askRalliProductHelp(input: {
   // and the event-pathname ops catch-all — but not over ops/org status asks.
   if (shouldRouteToContentAsk(question)) {
     return askRalliContentCoach({
+      question,
+      pathname: input.pathname,
+    });
+  }
+
+  // Phase 5 insights / health / risk — before org/ops so risk/health
+  // questions are not swallowed by pathname ops catch-all.
+  if (shouldRouteToInsightsAsk(question)) {
+    return askRalliInsightsCoach({
       question,
       pathname: input.pathname,
     });

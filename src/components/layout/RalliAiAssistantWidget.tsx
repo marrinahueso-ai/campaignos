@@ -23,20 +23,21 @@ interface ChatMessage {
 }
 
 function assistantEyebrow(source: AskRalliSource | null): string {
+  if (source === "insights") return "Insights";
   if (source === "content") return "Draft helper";
   if (source === "ops" || source === "org") return "Your next steps";
   if (source === "faq" || source === "ai") return "Product how-tos";
   return "Next steps & how-tos";
 }
 
-/** Org/ops + Phase 3 volunteers/comms + Phase 4 drafts + a how-to. */
+/** Curated chips across ops/org, volunteers/comms, drafts, insights, how-to. */
 const ASK_RALLI_SUGGESTIONS = [
   "What needs my approval?",
   "Give me today's summary",
+  "What's my biggest risk?",
+  "Is my event healthy?",
   "Do I need more volunteers?",
-  "What social posts are missing?",
   "Write tomorrow's reminder",
-  "Make this shorter",
   "What should I do next for this event?",
   "How do I create a campaign?",
 ] as const;

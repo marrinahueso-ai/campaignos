@@ -60,10 +60,20 @@ export function isContentIntent(question: string): boolean {
 /**
  * Prefer content actions over FAQ / pathname ops catch-all.
  * Clear how-tos (“How do I generate captions?”) stay product-help.
+ * “What should I improve?” with pasted draft text is a rewrite (Phase 5 yields).
  */
 export function shouldPreferContentAsk(question: string): boolean {
-  if (!isContentIntent(question)) return false;
   if (isHowToNavigationQuestion(question)) return false;
+
+  const normalized = normalizeAskText(question);
+  if (
+    /\bwhat should i improve\b/i.test(normalized) &&
+    extractPastedDraftText(question)
+  ) {
+    return true;
+  }
+
+  if (!isContentIntent(question)) return false;
   return true;
 }
 

@@ -1,6 +1,7 @@
 import { shouldPreferCommsOps } from "./comms-intent.ts";
 import { shouldPreferContentAsk } from "./content-intent.ts";
 import { resolveEventFromQuestion } from "./event-resolver.ts";
+import { shouldPreferInsightsAsk } from "./insights-intent.ts";
 import {
   extractEventIdFromPathname,
   isHowToNavigationQuestion,
@@ -57,6 +58,18 @@ export function shouldRouteToContentAsk(question: string): boolean {
 }
 
 /**
+ * Phase 5 insights / health / risk / performance path.
+ * Wins over FAQ and pathname ops catch-all; yields to content drafts.
+ * Does not steal classic ops (“what’s next”) or org briefing (“today’s summary”).
+ */
+export function shouldRouteToInsightsAsk(question: string): boolean {
+  if (shouldRouteToContentAsk(question)) {
+    return false;
+  }
+  return shouldPreferInsightsAsk(question);
+}
+
+/**
  * Org / role briefing path — even without an event name.
  * Event-scoped phrasing (named event) stays on Phase 1 ops.
  * Phase 3 volunteer/comms without event scope also uses the enriched org pack.
@@ -67,6 +80,9 @@ export function shouldRouteToOrgBriefing(
   pathname?: string | null,
 ): boolean {
   if (shouldRouteToContentAsk(question)) {
+    return false;
+  }
+  if (shouldRouteToInsightsAsk(question)) {
     return false;
   }
 
@@ -102,6 +118,9 @@ export function shouldRouteToOpsAsk(
   events?: ResolvableEventLite[],
 ): boolean {
   if (shouldRouteToContentAsk(question)) {
+    return false;
+  }
+  if (shouldRouteToInsightsAsk(question)) {
     return false;
   }
   if (shouldRouteToOrgBriefing(question, events, pathname)) {
