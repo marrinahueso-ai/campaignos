@@ -202,13 +202,14 @@ const navItems: {
   isActive?: (pathname: string, hash: string) => boolean;
 }[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Calendar", href: "/calendar", icon: CalendarRange },
   {
     label: "Events",
     href: "/events",
     icon: Megaphone,
     isActive: isCampaignsActive,
   },
-      ...(isCampaignBuilderV2Enabled()
+  ...(isCampaignBuilderV2Enabled()
     ? [
         {
           label: "Create with AI",
@@ -219,12 +220,16 @@ const navItems: {
         } as const,
       ]
     : []),
+  { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Tasks", href: "/tasks", icon: ListChecks },
+  {
+    label: "Communications Hub",
+    href: "/communications",
+    icon: Inbox,
+    isActive: isCommunicationsHubActive,
+  },
   { label: "Files", href: "/files", icon: FolderOpen },
   { label: "Vendors", href: "/vendors", icon: Store },
-  { label: "Calendar", href: "/calendar", icon: CalendarRange },
-  { label: "Communications Hub", href: "/communications", icon: Inbox, isActive: isCommunicationsHubActive },
-  { label: "Approvals", href: "/approvals", icon: CheckCircle2 },
   { label: "Insights", href: "/insights", icon: BarChart3 },
 ];
 

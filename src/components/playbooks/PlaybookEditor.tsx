@@ -80,12 +80,14 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
   useEffect(() => {
     if (!state.success) return;
 
-    if (!isEditing && state.playbookId) {
+    // New playbook, or system template forked into an org-editable copy.
+    if (state.playbookId && state.playbookId !== playbook?.id) {
       router.push(`/settings/playbooks/${state.playbookId}`);
-    } else {
-      router.refresh();
+      return;
     }
-  }, [state.success, state.playbookId, isEditing, router]);
+
+    router.refresh();
+  }, [state.success, state.playbookId, playbook?.id, router]);
 
   function moveStep(index: number, direction: -1 | 1) {
     const nextIndex = index + direction;
@@ -162,6 +164,13 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
       {state.error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {state.error}
+        </div>
+      )}
+
+      {playbook?.isSystem && (
+        <div className="rounded-lg border border-cos-border bg-cos-bg/60 px-4 py-3 text-sm text-cos-muted">
+          This is a system template. Saving creates an editable copy for your
+          organization with your milestone changes.
         </div>
       )}
 
@@ -370,7 +379,13 @@ export function PlaybookEditor({ playbook, initialSteps = [] }: PlaybookEditorPr
             Cancel
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : isEditing ? "Save Playbook" : "Create Playbook"}
+            {isPending
+              ? "Saving..."
+              : !isEditing
+                ? "Create Playbook"
+                : playbook?.isSystem
+                  ? "Save as my playbook"
+                  : "Save Playbook"}
           </Button>
         </div>
       </div>

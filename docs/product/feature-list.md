@@ -132,6 +132,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Playbooks
 - Playbook library, assign by event type, milestone timelines — **shipped**
+- System template save forks an org-editable copy (RLS blocks editing globals) — **shipped**
 - Standalone Event Playbooks nav → redirects to Events
 
 ## AI Brain & assistant
@@ -158,7 +159,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ---
 
 ## Primary nav
-Dashboard · Events · Create with AI · Tasks · Files · Vendors · Calendar · Communications Hub · Approvals · Insights  
+Dashboard · Calendar · Events · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights
 
 Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · School Setup · Billing · Advanced
 

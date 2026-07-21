@@ -245,7 +245,8 @@ export async function updatePlaybook(
 ): Promise<boolean> {
   const supabase = await createClient();
 
-  const { error } = await supabase
+  // Require a returned row — RLS can silently no-op updates on system playbooks.
+  const { data, error } = await supabase
     .from("communication_playbooks")
     .update({
       name: input.name,
@@ -253,9 +254,17 @@ export async function updatePlaybook(
       event_type: input.eventType,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", playbookId);
+    .eq("id", playbookId)
+    .eq("is_system", false)
+    .select("id")
+    .maybeSingle();
 
-  return !error;
+  if (error) {
+    console.error("Failed to update playbook:", error.message);
+    return false;
+  }
+
+  return Boolean(data?.id);
 }
 
 export async function archivePlaybook(playbookId: string): Promise<boolean> {

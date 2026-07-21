@@ -25,7 +25,7 @@ export default async function EditPlaybookPage({ params }: EditPlaybookPageProps
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link
-          href="/settings/playbooks"
+          href="/settings/playbooks-milestones"
           className="text-sm font-medium text-cos-accent hover:text-cos-muted"
         >
           ← Back to Playbooks

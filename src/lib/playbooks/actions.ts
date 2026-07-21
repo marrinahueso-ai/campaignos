@@ -19,6 +19,7 @@ import {
 import { resyncCampaignPlanDownstream } from "@/lib/campaign-plan/plan-milestones";
 import { applyMilestoneScheduleTimesFromSteps } from "@/lib/meta-publishing/sync-slots";
 import { getEventById } from "@/lib/events/queries";
+import { createClient } from "@/lib/supabase/server";
 import { getPlaybookWithSteps } from "@/lib/playbooks/queries";
 import type {
   EventType,
@@ -31,6 +32,16 @@ export interface PlaybookActionState {
   error: string | null;
   success: boolean;
   playbookId?: string;
+  /** True when a system template was copied into an org-editable playbook. */
+  forkedFromSystem?: boolean;
+}
+
+function revalidatePlaybookPaths(playbookId?: string) {
+  revalidatePath("/settings/playbooks");
+  revalidatePath("/settings/playbooks-milestones");
+  if (playbookId) {
+    revalidatePath(`/settings/playbooks/${playbookId}`);
+  }
 }
 
 function parsePlaybookInput(formData: FormData): PlaybookEditorInput | { error: string } {
@@ -86,10 +97,17 @@ export async function createPlaybookAction(
 
   const steps = parseStepsFromFormData(formData);
   if (steps.length > 0) {
-    await replacePlaybookSteps(playbookId, steps);
+    const stepsOk = await replacePlaybookSteps(playbookId, steps);
+    if (!stepsOk) {
+      return {
+        error: "Playbook created but milestones could not be saved.",
+        success: false,
+        playbookId,
+      };
+    }
   }
 
-  revalidatePath("/settings/playbooks");
+  revalidatePlaybookPaths(playbookId);
   return { error: null, success: true, playbookId };
 }
 
@@ -103,16 +121,74 @@ export async function updatePlaybookAction(
     return { error: parsed.error, success: false };
   }
 
-  const success = await updatePlaybook(playbookId, parsed);
-  if (!success) {
-    return { error: "Unable to update playbook.", success: false };
+  const steps = parseStepsFromFormData(formData);
+  const supabase = await createClient();
+  const { data: existing, error: existingError } = await supabase
+    .from("communication_playbooks")
+    .select("id, is_system, organization_id")
+    .eq("id", playbookId)
+    .maybeSingle();
+
+  if (existingError || !existing) {
+    return { error: "Playbook not found.", success: false };
   }
 
-  const steps = parseStepsFromFormData(formData);
-  await replacePlaybookSteps(playbookId, steps);
+  // System templates are global read-only (RLS). Saving forks an org copy.
+  if (existing.is_system) {
+    const organization = await getLatestOrganization();
+    if (!organization?.id) {
+      return {
+        error: "Complete School Setup before customizing playbooks.",
+        success: false,
+      };
+    }
 
-  revalidatePath("/settings/playbooks");
-  revalidatePath(`/settings/playbooks/${playbookId}`);
+    const forkedId = await createPlaybook(organization.id, parsed);
+    if (!forkedId) {
+      return {
+        error: "Unable to create an editable copy of this system playbook.",
+        success: false,
+      };
+    }
+
+    const stepsOk = await replacePlaybookSteps(forkedId, steps);
+    if (!stepsOk) {
+      return {
+        error: "Unable to save milestones on the new playbook copy.",
+        success: false,
+        playbookId: forkedId,
+      };
+    }
+
+    revalidatePlaybookPaths(forkedId);
+    revalidatePlaybookPaths(playbookId);
+    return {
+      error: null,
+      success: true,
+      playbookId: forkedId,
+      forkedFromSystem: true,
+    };
+  }
+
+  const success = await updatePlaybook(playbookId, parsed);
+  if (!success) {
+    return {
+      error:
+        "Unable to update playbook. You can only edit playbooks owned by your organization.",
+      success: false,
+    };
+  }
+
+  const stepsOk = await replacePlaybookSteps(playbookId, steps);
+  if (!stepsOk) {
+    return {
+      error: "Playbook details saved, but milestones could not be updated.",
+      success: false,
+      playbookId,
+    };
+  }
+
+  revalidatePlaybookPaths(playbookId);
   return { error: null, success: true, playbookId };
 }
 
@@ -126,7 +202,7 @@ export async function duplicatePlaybookAction(
     return { error: "Unable to duplicate playbook.", success: false };
   }
 
-  revalidatePath("/settings/playbooks");
+  revalidatePlaybookPaths(newId);
   return { error: null, success: true, playbookId: newId };
 }
 
@@ -142,8 +218,7 @@ export async function archivePlaybookAction(
     };
   }
 
-  revalidatePath("/settings/playbooks");
-  revalidatePath("/settings/playbooks-milestones");
+  revalidatePlaybookPaths(playbookId);
   return { error: null, success: true };
 }
 
@@ -157,8 +232,7 @@ export async function deletePlaybookAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath("/settings/playbooks");
-  revalidatePath("/settings/playbooks-milestones");
+  revalidatePlaybookPaths(playbookId);
   return { error: null, success: true };
 }
 
@@ -177,9 +251,7 @@ export async function hideSystemPlaybookAction(
     return { error: result.error, success: false };
   }
 
-  revalidatePath("/settings/playbooks");
-  revalidatePath("/settings/playbooks-milestones");
-  revalidatePath(`/settings/playbooks/${playbookId}`);
+  revalidatePlaybookPaths(playbookId);
   return { error: null, success: true };
 }
 
