@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 20, 2026  
+**Last updated:** July 21, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -43,6 +43,7 @@ This is the documentation hub. Start here.
 | Topic | Path |
 |-------|------|
 | Architecture | [engineering/architecture.md](./engineering/architecture.md) |
+| Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |

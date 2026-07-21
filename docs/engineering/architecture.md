@@ -5,9 +5,9 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  
-**Last updated:** July 20, 2026  
+**Last updated:** July 21, 2026  
 
-This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For feature status, see [feature list](../product/feature-list.md).
+This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
 ---
 
@@ -187,7 +187,7 @@ AI is **shipped**, not a future stub.
 | Artwork feed + story | `ai-artwork`, `artwork-v2` | OpenAI Images |
 | Calendar parse / AI fix | `calendar-import` | OpenAI chat |
 | Inbox reply drafts | `inbox` | OpenAI chat |
-| Ask Ralli | `ralli-assistant` | OpenAI chat |
+| Ask Ralli | `ralli-assistant` | OpenAI chat (+ deterministic packs when AI off) — detail: [ask-ralli-assistant.md](./ask-ralli-assistant.md) |
 | Org tone | AI Brain settings → prompt grounding | DB prefs |
 
 Pattern: `isAiConfigured()` / missing `OPENAI_API_KEY` → clear “not configured” behavior rather than silent success.

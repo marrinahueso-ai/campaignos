@@ -3,11 +3,11 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** July 20, 2026  
+**Last updated:** July 21, 2026  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
-Related detail: [architecture.md](../engineering/architecture.md) (engineering structure), [feature-list.md](../product/feature-list.md), [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md).
+Related detail: [architecture.md](../engineering/architecture.md) (engineering structure), [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md) (coach routing + QA matrix; Playwright `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`), [feature-list.md](../product/feature-list.md), [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md).
 
 ---
 
@@ -33,7 +33,7 @@ Hey Ralli is an AI communications operating system for school PTO / PTA voluntee
 | Email | **Resend** | Invites / welcome magic links (config-dependent) |
 | Error monitoring | **Sentry** (`@sentry/nextjs`) | “Report a problem” + server/client capture |
 | Optional integrations | **Canva**, **Monday.com** | OAuth; not required for core publish path |
-| E2E smoke | **Playwright** (`tests/hey-ralli/smoke/`) | e.g. Tasks, Insights |
+| E2E smoke | **Playwright** (`tests/hey-ralli/smoke/`) | e.g. Tasks, Insights, Ask Ralli (`12-ask-ralli-assistant`) |
 
 **Typical request shape**
 
@@ -238,6 +238,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 | Topic | Doc |
 |-------|-----|
 | Engineering architecture | [architecture.md](../engineering/architecture.md) |
+| Ask Ralli Assistant | [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md) |
 | Full feature status | [feature-list.md](../product/feature-list.md) |
 | Meta Connect model | [meta.md](../integrations/meta.md) |
 | Google Calendar | [google-calendar.md](../integrations/google-calendar.md) |

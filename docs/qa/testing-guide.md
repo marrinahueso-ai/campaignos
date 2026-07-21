@@ -35,6 +35,7 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Do Dashboard and Team & Access load?
 - Does Create with AI load?
 - (Optional / longer) Artwork generate → Send for approval notice → Approvals hub badges? (`09-artwork-generation-approval`)
+- Ask Ralli Assistant: sidebar open, org/ops vs FAQ routing, Approvals how-to (`12-ask-ralli-assistant`) — see [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md)
 - Does an invalid invite link show a clear error?
 - (Optional) Does a pending invite show password setup?
 - (Optional) Are Inspiration uploads hidden when `upload_artwork` is off?
