@@ -755,24 +755,6 @@ export function InspirationStep() {
                   })}
                 </div>
               </section>
-
-              {/* 5. Notes to AI */}
-              <section className="space-y-4 border border-cos-border bg-cos-card p-5">
-                <SectionHeader
-                  number={5}
-                  title="Notes to AI"
-                  description="Optional. Extra guidance for this campaign — left blank means unused."
-                />
-                <Textarea
-                  label="Notes to AI"
-                  value={inspiration.globalAiGuidance}
-                  onChange={(e) =>
-                    updateInspiration({ globalAiGuidance: e.target.value })
-                  }
-                  rows={5}
-                  placeholder="Anything else AI should know for this campaign…"
-                />
-              </section>
             </div>
 
             {/* Summary sidebar */}
@@ -806,12 +788,6 @@ export function InspirationStep() {
                       {summary.voiceTone}
                     </dd>
                   </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-cos-muted">Notes to AI</dt>
-                    <dd className="text-right font-medium text-cos-text">
-                      {summary.notesToAI}
-                    </dd>
-                  </div>
                 </dl>
 
                 {!showClearConfirm ? (
@@ -825,7 +801,7 @@ export function InspirationStep() {
                 ) : (
                   <div className="mt-5 space-y-2 border border-cos-border bg-cos-bg/40 p-3">
                     <p className="text-xs text-cos-muted">
-                      Reset inspiration, logo, colors, tone, and notes to None?
+                      Reset inspiration, logo, colors, and tone to None?
                     </p>
                     <div className="flex gap-2">
                       <button
