@@ -1,13 +1,5 @@
 import Link from "next/link";
 import {
-  CheckCircle2,
-  ChevronRight,
-  ClipboardList,
-  FileText,
-  ListChecks,
-  Milestone,
-} from "lucide-react";
-import {
   createWithAiHref,
   eventDetailApprovalsHref,
   eventFilesHref,
@@ -28,7 +20,6 @@ export type EventDetailHeroStatTab = "approvals" | "tasks" | "files";
 const STATS: Array<{
   key: keyof EventDetailHeroStats;
   label: string;
-  icon: typeof ListChecks;
   href: (eventId: string) => string;
   /** In-page event tab; omit for route handoffs (e.g. Create with AI). */
   tab?: EventDetailHeroStatTab;
@@ -38,35 +29,30 @@ const STATS: Array<{
   {
     key: "milestones",
     label: "Milestones",
-    icon: Milestone,
     href: createWithAiHref,
     hardNavigate: true,
   },
   {
     key: "pendingApprovals",
     label: "Pending Approvals",
-    icon: CheckCircle2,
     href: eventDetailApprovalsHref,
     tab: "approvals",
   },
   {
     key: "scheduledPosts",
     label: "Scheduled Posts",
-    icon: ClipboardList,
     href: eventDetailApprovalsHref,
     tab: "approvals",
   },
   {
     key: "tasks",
     label: "Tasks",
-    icon: ListChecks,
     href: eventTasksHref,
     tab: "tasks",
   },
   {
     key: "files",
     label: "Files",
-    icon: FileText,
     href: eventFilesHref,
     tab: "files",
   },
@@ -94,7 +80,6 @@ export function EventDetailHeroStatsStrip({
       )}
     >
       {STATS.map((stat) => {
-        const Icon = stat.icon;
         const href = stat.href(eventId);
         return (
           <Link
@@ -113,38 +98,23 @@ export function EventDetailHeroStatsStrip({
               }
             }}
             className={cn(
-              "group flex min-w-0 cursor-pointer items-start gap-2 rounded-lg border border-cos-border bg-cos-bg px-2.5 py-2",
+              "group flex min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-cos-border bg-cos-bg px-2.5 py-2 text-center",
               "outline-none transition-colors",
               "hover:border-cos-accent hover:bg-cos-card",
               "focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-card",
             )}
           >
-            <span
+            <p className="font-display text-lg leading-none text-cos-text tabular-nums">
+              {stats[stat.key]}
+            </p>
+            <p
               className={cn(
-                "mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-cos-border bg-cos-card text-cos-muted",
-                "transition-colors group-hover:border-cos-accent group-hover:text-cos-accent",
+                "mt-0.5 text-[11px] leading-snug text-cos-muted",
+                "transition-colors group-hover:text-cos-text group-hover:underline group-hover:decoration-cos-accent/50 group-hover:underline-offset-2",
               )}
             >
-              <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-display text-lg leading-none text-cos-text tabular-nums">
-                {stats[stat.key]}
-              </p>
-              <p
-                className={cn(
-                  "mt-0.5 inline-flex max-w-full items-center gap-0.5 text-[11px] leading-snug text-cos-muted",
-                  "transition-colors group-hover:text-cos-text group-hover:underline group-hover:decoration-cos-accent/50 group-hover:underline-offset-2",
-                )}
-              >
-                <span className="truncate">{stat.label}</span>
-                <ChevronRight
-                  className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              </p>
-            </div>
+              {stat.label}
+            </p>
           </Link>
         );
       })}
