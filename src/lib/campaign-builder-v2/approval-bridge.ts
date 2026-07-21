@@ -5,6 +5,7 @@ import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
   sendApprovalAssignedEmail,
+  sendApprovalResubmittedEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
 import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
@@ -50,6 +51,16 @@ function resolveScheduleIso(preview: MilestonePreviewContent): string | null {
     preview.scheduleDate,
     preview.scheduleTime,
   );
+}
+
+function emailForUserId(
+  orgUsers: Awaited<ReturnType<typeof getOrganizationUsers>>,
+  userId: string | null | undefined,
+): string | null {
+  if (!userId) {
+    return null;
+  }
+  return orgUsers.find((member) => member.id === userId)?.email ?? null;
 }
 
 export async function sendCampaignBuilderForApproval(
@@ -108,10 +119,13 @@ export async function sendCampaignBuilderForApproval(
   const supabase = await createClient();
   const now = new Date().toISOString();
   let createdCount = 0;
+  let emailsSent = 0;
+  let emailSkippedReason: string | null = null;
   const orgUsers = await getOrganizationUsers(organization.id);
-  const recipientEmail = assignee.assignedUserId
-    ? orgUsers.find((member) => member.id === assignee.assignedUserId)?.email ?? null
-    : null;
+  const currentAssigneeEmail = emailForUserId(
+    orgUsers,
+    assignee.assignedUserId,
+  );
 
   for (const milestone of milestonesToSubmit) {
     const preview = previewByMilestone.get(milestone.id);
@@ -127,7 +141,7 @@ export async function sendCampaignBuilderForApproval(
 
     const { data: existing } = await supabase
       .from("approval_scheduling_items")
-      .select("id, workflow_status")
+      .select("id, workflow_status, assigned_user_id")
       .eq("event_id", input.eventId)
       .eq("campaign_milestone_id", milestone.id)
       .maybeSingle();
@@ -137,6 +151,8 @@ export async function sendCampaignBuilderForApproval(
       "assigned_to_me",
       "changes_requested",
     ]);
+    const isResubmitAfterChanges =
+      existing?.workflow_status === "changes_requested";
 
     const rowPayload = {
       event_id: input.eventId,
@@ -166,6 +182,7 @@ export async function sendCampaignBuilderForApproval(
     };
 
     let schedulingItemId: string | null = null;
+    let shouldNotify = false;
 
     if (existing?.id && resubmitStatuses.has(existing.workflow_status)) {
       const { data: updated, error } = await supabase
@@ -191,6 +208,7 @@ export async function sendCampaignBuilderForApproval(
       }
 
       schedulingItemId = updated?.id ?? existing.id;
+      shouldNotify = true;
     } else if (!existing?.id) {
       const { data: inserted, error } = await supabase
         .from("approval_scheduling_items")
@@ -231,6 +249,7 @@ export async function sendCampaignBuilderForApproval(
       }
 
       schedulingItemId = inserted.id;
+      shouldNotify = true;
     } else if (existing?.id) {
       // Keep workflow status, but refresh display snapshot (name/artwork/caption/schedule).
       const { error } = await supabase
@@ -266,20 +285,42 @@ export async function sendCampaignBuilderForApproval(
 
     createdCount += 1;
 
-    if (recipientEmail && schedulingItemId) {
-      await sendApprovalAssignedEmail({
-        eventId: input.eventId,
-        campaignName: input.campaignName,
-        milestoneName,
-        recipientEmail,
-        approverRole: assignee.organizationRoleName ?? "committee-chair",
-        schedulingItemId,
-        feedArtworkUrl: preview.artwork.feedUrl,
-        storyArtworkUrl: preview.artwork.storyUrl,
-        captionText,
-        storyCaption:
-          preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
-      });
+    if (!shouldNotify || !schedulingItemId) {
+      continue;
+    }
+
+    const recipientEmail =
+      currentAssigneeEmail ??
+      emailForUserId(orgUsers, existing?.assigned_user_id);
+
+    if (!recipientEmail) {
+      emailSkippedReason =
+        "No approver email — assign an approver in Team Access or on the event.";
+      continue;
+    }
+
+    const emailInput = {
+      eventId: input.eventId,
+      campaignName: input.campaignName,
+      milestoneName,
+      recipientEmail,
+      approverRole: assignee.organizationRoleName ?? "committee-chair",
+      schedulingItemId,
+      feedArtworkUrl: preview.artwork.feedUrl,
+      storyArtworkUrl: preview.artwork.storyUrl,
+      captionText,
+      storyCaption:
+        preview.captions.find((c) => c.platform === "instagram")?.text ?? null,
+    };
+
+    const notifyResult = isResubmitAfterChanges
+      ? await sendApprovalResubmittedEmail(emailInput)
+      : await sendApprovalAssignedEmail(emailInput);
+
+    if (notifyResult.wired) {
+      emailsSent += 1;
+    } else if (!emailSkippedReason) {
+      emailSkippedReason = notifyResult.message;
     }
   }
 
@@ -298,9 +339,16 @@ export async function sendCampaignBuilderForApproval(
       ? ` Skipped without artwork: ${skippedWithoutArtwork.join(", ")}.`
       : "";
 
+  const emailNote =
+    emailsSent > 0
+      ? ` Approver notified by email.`
+      : emailSkippedReason
+        ? ` Approver email skipped: ${emailSkippedReason}`
+        : "";
+
   return {
     success: true,
-    message: `${createdCount} milestone${createdCount === 1 ? "" : "s"} sent for approval.${skippedNote}`,
+    message: `${createdCount} milestone${createdCount === 1 ? "" : "s"} sent for approval.${skippedNote}${emailNote}`,
     createdCount,
   };
 }

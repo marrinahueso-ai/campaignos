@@ -51,6 +51,7 @@ export interface CampaignManualUploadEmailInput {
 
 type NotificationType =
   | "approval_assigned"
+  | "approval_resubmitted"
   | "change_requested"
   | "content_approved"
   | "scheduled_delivery";
@@ -234,6 +235,32 @@ export async function sendApprovalAssignedEmail(
     subject: `Approval needed: ${input.milestoneName}`,
     html,
     text: `Approval assigned: ${input.milestoneName} in ${input.campaignName}. Review at ${href}${buildApprovalContentPreviewText(content)}`,
+    schedulingItemId: input.schedulingItemId,
+    approvalRequestId: input.approvalRequestId,
+  });
+}
+
+/** After changes_requested — creator resent; notify approver again with clear subject. */
+export async function sendApprovalResubmittedEmail(
+  input: CampaignApprovalNotificationInput,
+): Promise<CampaignApprovalNotificationResult> {
+  const href = approvalsPageUrl(input.eventId);
+  const content = contentPreviewFromInput(input);
+  const html = buildApprovalEmailHtml({
+    heading: "Resubmitted for your approval",
+    body: `<strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)} was updated and sent back for review.`,
+    ctaLabel: "Review in Approvals",
+    ctaHref: href,
+    content,
+  });
+
+  return dispatchApprovalEmail({
+    eventId: input.eventId,
+    notificationType: "approval_resubmitted",
+    recipientEmail: input.recipientEmail,
+    subject: `Resubmitted for approval: ${input.milestoneName}`,
+    html,
+    text: `Resubmitted for approval: ${input.milestoneName} in ${input.campaignName}. Review at ${href}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });

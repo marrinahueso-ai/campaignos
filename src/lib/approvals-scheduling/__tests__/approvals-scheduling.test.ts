@@ -269,6 +269,20 @@ describe("approval routing source checks", () => {
     assert.match(source, /assignee\.assignedUserId \? "assigned_to_me" : "in_queue"/);
     assert.match(source, /resubmitStatuses/);
   });
+
+  it("emails approver on changes_requested resubmit with prior-assignee fallback", () => {
+    const source = readFileSync(
+      new URL("../../campaign-builder-v2/approval-bridge.ts", import.meta.url),
+      "utf8",
+    );
+
+    assert.match(source, /sendApprovalResubmittedEmail/);
+    assert.match(source, /sendApprovalAssignedEmail/);
+    assert.match(source, /isResubmitAfterChanges/);
+    assert.match(source, /existing\?\.assigned_user_id/);
+    assert.match(source, /Approver notified by email/);
+    assert.match(source, /Approver email skipped/);
+  });
 });
 
 describe("approval notification hooks", () => {
@@ -279,6 +293,9 @@ describe("approval notification hooks", () => {
     );
 
     assert.match(source, /export async function sendApprovalAssignedEmail/);
+    assert.match(source, /export async function sendApprovalResubmittedEmail/);
+    assert.match(source, /approval_resubmitted/);
+    assert.match(source, /Resubmitted for approval/);
     assert.match(source, /export async function sendChangeRequestedEmail/);
     assert.match(source, /export async function sendContentApprovedEmail/);
     assert.match(source, /export async function sendScheduledDeliveryEmail/);

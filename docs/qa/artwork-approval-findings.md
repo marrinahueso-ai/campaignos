@@ -90,6 +90,7 @@ Approvals hub → Review drawer → **Request changes** (comment required):
 | Event | Channel | Implementation |
 |-------|---------|----------------|
 | Sent for approval | **Email** to assignee (if email resolved) | `sendApprovalAssignedEmail` → Resend via `sendEmail`; CTA `/approvals?event=` |
+| Resubmitted after changes_requested | **Email** to assignee (current, else prior `assigned_user_id`) | `sendApprovalResubmittedEmail` (subject `Resubmitted for approval: …`); UI success message reports emailed vs skipped |
 | Changes requested | **Email** to creator (`requested_by_user_id`) | `sendChangeRequestedEmail`; primary CTA **Edit & resend** → Preview for that milestone; secondary Edit artwork |
 | Content approved | **Email** to creator | `sendContentApprovedEmail` |
 | Scheduled / manual kit | **Email** | `sendScheduledDeliveryEmail` / `sendCampaignManualUploadEmail` |
