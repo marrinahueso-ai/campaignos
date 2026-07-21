@@ -33,6 +33,8 @@ import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
   resolveEventFromQuestion,
+  toEventOptions,
+  type AskRalliEventOption,
   type ResolvableEvent,
 } from "@/lib/ralli-assistant/event-resolver";
 import {
@@ -50,6 +52,7 @@ export interface AskRalliContentResult {
   success: boolean;
   answer: string | null;
   links: ProductHelpLink[];
+  eventOptions?: AskRalliEventOption[];
   source: "content";
   error: string | null;
 }
@@ -409,6 +412,7 @@ function aiNotConfiguredAnswer(eventId?: string | null): AskRalliContentResult {
 export async function askRalliContentCoach(input: {
   question: string;
   pathname?: string | null;
+  eventId?: string | null;
 }): Promise<AskRalliContentResult> {
   const question = input.question.trim();
   if (!question) {
@@ -462,16 +466,15 @@ export async function askRalliContentCoach(input: {
       question,
       events,
       input.pathname,
+      input.eventId,
     );
 
     if (resolution.kind === "ambiguous") {
       return {
         success: true,
         answer: formatAmbiguousEventAnswer(resolution.candidates),
-        links: resolution.candidates.slice(0, 3).map((item) => ({
-          label: item.title,
-          href: `/events/${item.id}`,
-        })),
+        links: [],
+        eventOptions: toEventOptions(resolution.candidates),
         source: "content",
         error: null,
       };

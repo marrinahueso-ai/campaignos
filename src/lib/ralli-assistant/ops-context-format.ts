@@ -87,7 +87,7 @@ export function emptyOpsVolunteersAndComms(): {
 export function formatDeterministicOpsAnswer(pack: OpsContextPack): string {
   const lines: string[] = [];
   lines.push(
-    `Here’s the operational snapshot for ${pack.event.title} (${pack.event.date}, ${pack.event.status}).`,
+    `Here’s the operational snapshot for “${pack.event.title}” (${pack.event.date}, ${pack.event.status}).`,
   );
   lines.push("");
 
@@ -96,60 +96,62 @@ export function formatDeterministicOpsAnswer(pack: OpsContextPack): string {
       ? ` — ${pack.nextAction.dueMessage}`
       : "";
     lines.push(`Next: ${pack.nextAction.action}${due}`);
+    lines.push("");
   }
 
+  lines.push("Tasks & approvals");
   if (pack.tasks.overdueCount > 0) {
     lines.push(
-      `Overdue tasks (${pack.tasks.overdueCount}): ${
+      `• Overdue tasks (${pack.tasks.overdueCount}): ${
         pack.tasks.overdue.map((task) => task.title).join("; ") ||
-        "see Tasks tab"
+        "see Tasks"
       }.`,
     );
   } else if (pack.tasks.incompleteCount > 0) {
     lines.push(
-      `Open tasks: ${pack.tasks.incompleteCount} incomplete (none overdue in the loaded list).`,
+      `• Open tasks: ${pack.tasks.incompleteCount} incomplete (none overdue in the loaded list).`,
     );
   } else {
-    lines.push("Tasks: no incomplete playbook tasks found.");
+    lines.push("• Tasks: no incomplete playbook tasks found.");
   }
 
   const approvalTotal =
     pack.approvals.pendingCount + pack.approvals.changesRequestedCount;
   if (approvalTotal > 0) {
     lines.push(
-      `Approvals: ${pack.approvals.pendingCount} pending, ${pack.approvals.changesRequestedCount} changes requested.`,
+      `• Approvals: ${pack.approvals.pendingCount} pending, ${pack.approvals.changesRequestedCount} changes requested.`,
     );
   } else {
-    lines.push("Approvals: nothing pending or changes-requested right now.");
+    lines.push(
+      "• Approvals: nothing pending or changes-requested right now.",
+    );
   }
 
+  lines.push("");
+  lines.push("Publishing");
   if (pack.schedule.today.length > 0) {
     lines.push(
-      `Publishing today: ${pack.schedule.today
+      `• Publishing today: ${pack.schedule.today
         .map((item) => item.milestoneName)
         .join("; ")}.`,
     );
   } else {
-    lines.push("Publishing today: none scheduled.");
+    lines.push("• Publishing today: none scheduled.");
   }
 
   if (pack.schedule.thisWeek.length > 0) {
     lines.push(
-      `This week: ${pack.schedule.thisWeek.length} scheduled item${
+      `• This week: ${pack.schedule.thisWeek.length} scheduled item${
         pack.schedule.thisWeek.length === 1 ? "" : "s"
       }.`,
     );
   }
 
-  lines.push(`Readiness: ${pack.readiness.summary}`);
+  lines.push(`• Readiness: ${pack.readiness.summary}`);
   lines.push("");
   lines.push(...formatVolunteersSectionLines(pack.volunteers));
   lines.push("");
   lines.push(...formatCommunicationsSectionLines(pack.communications));
-  lines.push("");
-  lines.push(
-    "Use the links below to jump into Tasks, Approvals, Volunteers, or Communications.",
-  );
 
   return lines.join("\n");
 }

@@ -23,6 +23,7 @@ import type {
   OpsTaskSummary,
 } from "@/lib/ralli-assistant/ops-context-format";
 import { emptyOpsVolunteersAndComms } from "@/lib/ralli-assistant/ops-context-format";
+import { formatEventChipLabel } from "@/lib/ralli-assistant/answer-display";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 import { loadVolunteersContextForEvent } from "@/lib/ralli-assistant/volunteers-context";
 import {
@@ -48,14 +49,21 @@ function isAbsentTable(error: { code?: string; message?: string } | null): boole
   return isMissingSchemaError(error) || error.code === "42P01";
 }
 
-function buildOpsLinks(eventId: string): ProductHelpLink[] {
+function buildOpsLinks(event: {
+  id: string;
+  title: string;
+  date: string;
+}): ProductHelpLink[] {
   return [
-    { label: "Event tasks", href: eventTasksHref(eventId) },
-    { label: "Approvals", href: eventApprovalsHref(eventId) },
-    { label: "Volunteers", href: eventVolunteersHref(eventId) },
-    { label: "Create with AI", href: campaignBuilderHref(eventId) },
+    { label: "Event tasks", href: eventTasksHref(event.id) },
+    { label: "Approvals", href: eventApprovalsHref(event.id) },
+    { label: "Volunteers", href: eventVolunteersHref(event.id) },
+    { label: "Create with AI", href: campaignBuilderHref(event.id) },
     { label: "Communications Hub", href: "/communications" },
-    { label: "Event page", href: `/events/${eventId}` },
+    {
+      label: formatEventChipLabel(event.title, event.date),
+      href: `/events/${event.id}`,
+    },
     { label: "Calendar", href: "/calendar" },
   ];
 }
@@ -106,7 +114,7 @@ export async function buildOpsContextPack(
     },
     volunteers: phase3Empty.volunteers,
     communications: phase3Empty.communications,
-    links: buildOpsLinks(event.id),
+    links: buildOpsLinks(event),
   };
 
   const membership = await getActiveMembership().catch(() => null);
@@ -305,6 +313,6 @@ export async function buildOpsContextPack(
     },
     volunteers,
     communications,
-    links: buildOpsLinks(event.id),
+    links: buildOpsLinks(event),
   };
 }

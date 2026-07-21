@@ -18,6 +18,8 @@ import {
 } from "@/lib/ralli-assistant/ops-intent";
 import { shouldPreferOrgBriefing } from "@/lib/ralli-assistant/org-intent";
 import { askRalliOrgBriefing } from "@/lib/ralli-assistant/org-ask";
+import { prepareAnswerForDisplay } from "@/lib/ralli-assistant/answer-display";
+import type { AskRalliEventOption } from "@/lib/ralli-assistant/event-resolver";
 import {
   buildProductHelpSystemPrompt,
   formatTopicAnswer,
@@ -33,12 +35,43 @@ export type AskRalliSource =
   | "content"
   | "insights";
 
+export type { AskRalliEventOption };
+
 export interface AskRalliAssistantResult {
   success: boolean;
   answer: string | null;
   links: ProductHelpLink[];
+  /** When set, widget shows dated chips that re-ask with that eventId. */
+  eventOptions: AskRalliEventOption[];
   source: AskRalliSource | null;
   error: string | null;
+}
+
+function withDisplayPolish(result: {
+  success: boolean;
+  answer: string | null;
+  links: ProductHelpLink[];
+  eventOptions?: AskRalliEventOption[];
+  source: AskRalliSource | null;
+  error: string | null;
+}): AskRalliAssistantResult {
+  const eventOptions = result.eventOptions ?? emptyEventOptions();
+  const links = result.links ?? [];
+  const hasChips = links.length > 0 || eventOptions.length > 0;
+  return {
+    success: result.success,
+    answer: result.answer
+      ? prepareAnswerForDisplay(result.answer, { hasLinkChips: hasChips })
+      : result.answer,
+    links,
+    eventOptions,
+    source: result.source,
+    error: result.error,
+  };
+}
+
+function emptyEventOptions(): AskRalliEventOption[] {
+  return [];
 }
 
 export {
@@ -70,6 +103,8 @@ async function loadResolvableEvents(): Promise<
 export async function askRalliProductHelp(input: {
   question: string;
   pathname?: string | null;
+  /** When set (e.g. user picked an ambiguous match), skip fuzzy resolve. */
+  eventId?: string | null;
 }): Promise<AskRalliAssistantResult> {
   const question = input.question.trim();
   if (!question) {
@@ -77,82 +112,98 @@ export async function askRalliProductHelp(input: {
       success: false,
       answer: null,
       links: [],
+      eventOptions: emptyEventOptions(),
       source: null,
       error: "Ask a question about using Hey Ralli.",
     };
   }
 
   const events = await loadResolvableEvents();
+  const eventId = input.eventId?.trim() || null;
 
   // Phase 4 content drafts win over FAQ (e.g. Create with AI keywords)
   // and the event-pathname ops catch-all — but not over ops/org status asks.
   if (shouldRouteToContentAsk(question)) {
-    return askRalliContentCoach({
-      question,
-      pathname: input.pathname,
-    });
+    return withDisplayPolish(
+      await askRalliContentCoach({
+        question,
+        pathname: input.pathname,
+        eventId,
+      }),
+    );
   }
 
   // Phase 5 insights / health / risk — before org/ops so risk/health
   // questions are not swallowed by pathname ops catch-all.
   if (shouldRouteToInsightsAsk(question)) {
-    return askRalliInsightsCoach({
-      question,
-      pathname: input.pathname,
-    });
+    return withDisplayPolish(
+      await askRalliInsightsCoach({
+        question,
+        pathname: input.pathname,
+        eventId,
+      }),
+    );
   }
 
   // Ops / org coaches always win over FAQ keyword collisions
   // (e.g. "need to do" → tasks, "this week" → calendar).
   if (shouldRouteToOrgBriefing(question, events, input.pathname)) {
-    return askRalliOrgBriefing({ question });
+    return withDisplayPolish(await askRalliOrgBriefing({ question }));
   }
 
-  if (shouldRouteToOpsAsk(question, input.pathname, events)) {
-    return askRalliOpsCoach({
-      question,
-      pathname: input.pathname,
-    });
+  if (shouldRouteToOpsAsk(question, input.pathname, events) || eventId) {
+    return withDisplayPolish(
+      await askRalliOpsCoach({
+        question,
+        pathname: input.pathname,
+        eventId,
+      }),
+    );
   }
 
   // Intent-only fallbacks when event list failed to load or name didn't resolve.
   if (shouldPreferOrgBriefing(question)) {
-    return askRalliOrgBriefing({ question });
+    return withDisplayPolish(await askRalliOrgBriefing({ question }));
   }
 
   if (
     isOpsIntent(question) ||
     Boolean(extractEventIdFromPathname(input.pathname))
   ) {
-    return askRalliOpsCoach({
-      question,
-      pathname: input.pathname,
-    });
+    return withDisplayPolish(
+      await askRalliOpsCoach({
+        question,
+        pathname: input.pathname,
+        eventId,
+      }),
+    );
   }
 
   const matched = matchProductHelpTopic(question);
   if (matched && shouldPreferProductHelpFaq(question)) {
-    return {
+    return withDisplayPolish({
       success: true,
       answer: formatTopicAnswer(matched),
       links: matched.links,
+      eventOptions: emptyEventOptions(),
       source: "faq",
       error: null,
-    };
+    });
   }
 
   if (matched) {
-    return {
+    return withDisplayPolish({
       success: true,
       answer: formatTopicAnswer(matched),
       links: matched.links,
+      eventOptions: emptyEventOptions(),
       source: "faq",
       error: null,
-    };
+    });
   }
 
   if (!isAiConfigured()) {
-    return {
+    return withDisplayPolish({
       success: true,
       answer: [
         "I can help with how to use Hey Ralli — creating campaigns, finding Approvals, Create with AI, Calendar, and more.",
@@ -167,9 +218,10 @@ export async function askRalliProductHelp(input: {
         { label: "Create Campaign", href: "/events/create" },
         { label: "AI Brain", href: "/settings/ai-brain" },
       ],
+      eventOptions: emptyEventOptions(),
       source: "faq",
       error: null,
-    };
+    });
   }
 
   const result = await generateText({
@@ -185,6 +237,7 @@ export async function askRalliProductHelp(input: {
       success: false,
       answer: null,
       links: [],
+      eventOptions: emptyEventOptions(),
       source: null,
       error:
         result.error ??
@@ -192,11 +245,12 @@ export async function askRalliProductHelp(input: {
     };
   }
 
-  return {
+  return withDisplayPolish({
     success: true,
     answer: result.text.trim(),
     links: [],
+    eventOptions: emptyEventOptions(),
     source: "ai",
     error: null,
-  };
+  });
 }

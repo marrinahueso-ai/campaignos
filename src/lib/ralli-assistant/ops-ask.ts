@@ -3,9 +3,15 @@ import { resolveFastDraftModel } from "@/lib/ai/models";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getActiveEvents } from "@/lib/events/queries";
 import {
+  formatEventChipLabel,
+  formatEventDateLabel,
+} from "@/lib/ralli-assistant/answer-display";
+import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
   resolveEventFromQuestion,
+  toEventOptions,
+  type AskRalliEventOption,
   type ResolvableEvent,
 } from "@/lib/ralli-assistant/event-resolver";
 import { buildOpsContextPack } from "@/lib/ralli-assistant/ops-context";
@@ -19,6 +25,7 @@ export interface AskRalliOpsResult {
   success: boolean;
   answer: string | null;
   links: ProductHelpLink[];
+  eventOptions: AskRalliEventOption[];
   source: "ops";
   error: string | null;
 }
@@ -28,10 +35,10 @@ function buildOpsSystemPrompt(): string {
     "You are Ask Ralli AI — an operational coach for Hey Ralli (CampaignOS).",
     "Answer ONLY from the provided EVENT CONTEXT JSON. Do not invent tasks, approvals, schedules, volunteer counts, posts, or readiness facts.",
     "Use volunteers and communications sections when the question is about shifts, SignUpGenius, email, Facebook, flyers, or drafts.",
-    "If unavailable lists a gap (e.g. who hasn’t responded, family view counts, Meta performance), say “I can’t see that yet” and link to the right tab.",
+    "If unavailable lists a gap (e.g. who hasn’t responded, family view counts, Meta performance), say “I can’t see that yet” and name the right area (Tasks, Approvals, Volunteers).",
     "If a section is empty, say so plainly. Prefer concrete next steps and name real items from the context.",
-    "Keep answers to 3–6 short sentences or a tight bullet list.",
-    "When recommending an action, point to the matching deep link from context.links (label + href).",
+    "Keep answers to 3–6 short sentences or a tight bullet list. Use short paragraphs or bullets — easy to scan.",
+    "Do NOT write markdown links like [Approvals](/approvals). Destinations appear as separate buttons — refer to areas by name only.",
     "You are not drafting social posts or artwork — only operational guidance.",
   ].join("\n");
 }
@@ -39,6 +46,7 @@ function buildOpsSystemPrompt(): string {
 export async function askRalliOpsCoach(input: {
   question: string;
   pathname?: string | null;
+  eventId?: string | null;
 }): Promise<AskRalliOpsResult> {
   const question = input.question.trim();
   if (!question) {
@@ -46,6 +54,7 @@ export async function askRalliOpsCoach(input: {
       success: false,
       answer: null,
       links: [],
+      eventOptions: [],
       source: "ops",
       error: "Ask an operational question about an event.",
     };
@@ -57,6 +66,7 @@ export async function askRalliOpsCoach(input: {
       success: false,
       answer: null,
       links: [],
+      eventOptions: [],
       source: "ops",
       error: "Join or select an organization to ask about event status.",
     };
@@ -80,16 +90,15 @@ export async function askRalliOpsCoach(input: {
     question,
     events,
     input.pathname,
+    input.eventId,
   );
 
   if (resolution.kind === "ambiguous") {
     return {
       success: true,
       answer: formatAmbiguousEventAnswer(resolution.candidates),
-      links: resolution.candidates.slice(0, 3).map((event) => ({
-        label: event.title,
-        href: `/events/${event.id}`,
-      })),
+      links: [],
+      eventOptions: toEventOptions(resolution.candidates),
       source: "ops",
       error: null,
     };
@@ -104,6 +113,7 @@ export async function askRalliOpsCoach(input: {
         { label: "Tasks", href: "/tasks" },
         { label: "Approvals", href: "/approvals" },
       ],
+      eventOptions: [],
       source: "ops",
       error: null,
     };
@@ -117,14 +127,21 @@ export async function askRalliOpsCoach(input: {
     return {
       success: true,
       answer: [
-        `I found ${resolution.event.title}, but couldn’t load its operational details just now.`,
+        `I found “${resolution.event.title}” (${formatEventDateLabel(resolution.event.date)}), but couldn’t load its operational details just now.`,
         "Open the event page and try Tasks or Approvals, or ask again in a moment.",
       ].join(" "),
       links: [
-        { label: "Event page", href: `/events/${resolution.event.id}` },
+        {
+          label: formatEventChipLabel(
+            resolution.event.title,
+            resolution.event.date,
+          ),
+          href: `/events/${resolution.event.id}`,
+        },
         { label: "Approvals", href: "/approvals" },
         { label: "Tasks", href: "/tasks" },
       ],
+      eventOptions: [],
       source: "ops",
       error: null,
     };
@@ -135,6 +152,7 @@ export async function askRalliOpsCoach(input: {
       success: true,
       answer: formatDeterministicOpsAnswer(pack),
       links: pack.links,
+      eventOptions: [],
       source: "ops",
       error: null,
     };
@@ -158,6 +176,7 @@ export async function askRalliOpsCoach(input: {
       success: true,
       answer: formatDeterministicOpsAnswer(pack),
       links: pack.links,
+      eventOptions: [],
       source: "ops",
       error: null,
     };
@@ -167,6 +186,7 @@ export async function askRalliOpsCoach(input: {
     success: true,
     answer: result.text.trim(),
     links: pack.links,
+    eventOptions: [],
     source: "ops",
     error: null,
   };

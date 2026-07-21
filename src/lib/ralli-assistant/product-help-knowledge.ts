@@ -29,7 +29,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "make a campaign",
     ],
     answer: [
-      "Open Campaigns in the left nav, then click Create Campaign (or go to /events/create).",
+      "Open Campaigns in the left nav, then click Create Campaign.",
       "Add the event name, date, and choose a playbook so milestones are ready.",
       "After you create it, open Create with AI on that campaign to generate artwork and captions for each milestone.",
     ].join(" "),
@@ -51,7 +51,7 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "review content",
     ],
     answer: [
-      "Open Approvals in the left nav (/approvals).",
+      "Open Approvals in the left nav.",
       "You’ll see items waiting for you, other pending reviews, approved work, and anything with changes requested.",
       "You can also jump into Approvals from a campaign’s planning overview.",
     ].join(" "),
@@ -214,13 +214,8 @@ export function matchProductHelpTopic(
 }
 
 export function formatTopicAnswer(topic: ProductHelpTopic): string {
-  const linkLines =
-    topic.links.length > 0
-      ? `\n\nQuick links:\n${topic.links
-          .map((link) => `• ${link.label}: ${link.href}`)
-          .join("\n")}`
-      : "";
-  return `${topic.answer}${linkLines}`;
+  // Destinations render as chips in the widget — keep the body prose-only.
+  return topic.answer;
 }
 
 export function buildProductHelpSystemPrompt(pathname?: string | null): string {
@@ -237,8 +232,8 @@ export function buildProductHelpSystemPrompt(pathname?: string | null): string {
     "You are NOT the AI Brain content generator. Do not draft social posts, captions, or artwork prompts unless the user explicitly asks how those features work.",
     "If they ask about brand voice training, point them to Settings → AI Brain (/settings/ai-brain).",
     "Do NOT invent that you cannot summarize today/this week. For operational asks (today’s summary, what’s next for an event, what do I have this week), tell them to rephrase as “Give me today’s summary” or “What’s next for [event name]?” so the ops coach can answer from live campaign data.",
-    "Answer in 2–5 short sentences. Be concrete. Prefer real nav labels and paths.",
-    "When relevant, include one or two markdown-style path references like /approvals.",
+    "Answer in 2–5 short sentences. Be concrete. Prefer real nav labels.",
+    "Do NOT write markdown links like [Approvals](/approvals). Name areas plainly (Approvals, Campaigns) — chips show destinations separately.",
     "If you are unsure, say what you know and suggest the closest nav area — never invent screens that do not exist.",
     pathname ? `The user is currently on: ${pathname}` : null,
     "",

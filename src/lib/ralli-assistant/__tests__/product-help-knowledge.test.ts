@@ -16,7 +16,8 @@ describe("matchProductHelpTopic", () => {
   it("matches approvals questions", () => {
     const topic = matchProductHelpTopic("where do I find my approvals?");
     assert.equal(topic?.id, "find-approvals");
-    assert.match(formatTopicAnswer(topic!), /\/approvals/);
+    assert.match(formatTopicAnswer(topic!), /Approvals/i);
+    assert.ok(topic!.links.some((link) => link.href === "/approvals"));
   });
 
   it("matches after-approval questions", () => {

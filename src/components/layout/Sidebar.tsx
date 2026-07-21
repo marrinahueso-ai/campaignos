@@ -391,7 +391,13 @@ export function Sidebar({
         </div>
       )}
 
-      <nav className={cn("flex-1 space-y-0.5", showLabels ? "px-4 py-6" : "px-2 py-4")}>
+      {/* Scrollable primary nav; Insights is last so Ask Ralli sits directly under it. */}
+      <nav
+        className={cn(
+          "min-h-0 flex-1 space-y-0.5 overflow-y-auto",
+          showLabels ? "px-4 py-6" : "px-2 py-4",
+        )}
+      >
         {navItems.map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
           const linkHref = resolveHref ? resolveHref(pathname, lastEventId) : href;
           const isActive = isActiveFn
@@ -492,24 +498,16 @@ export function Sidebar({
         })}
       </nav>
 
+      {/* Pinned under Insights — stays in the sidebar viewport while nav scrolls. */}
       <div
         className={cn(
-          "space-y-3",
-          showLabels ? "px-4 pb-4" : "flex flex-col items-center gap-3 px-2 pb-4",
+          "shrink-0 border-t border-cos-border bg-cos-card",
+          showLabels ? "space-y-3 px-4 py-3" : "flex flex-col items-center gap-3 px-2 py-3",
         )}
       >
         {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
         {showLabels ? <AiCreditsWidget /> : <AiCreditsWidget compact />}
       </div>
-
-      {showLabels && (
-        <div className="border-t border-cos-border p-5">
-          <p className="font-display text-base text-cos-text">ORGANIZE. CREATE. CONNECT.</p>
-          <p className="mt-2 text-xs leading-relaxed text-cos-muted">
-            Drafts, deadlines, and publishing — organized around your campaign lifecycle.
-          </p>
-        </div>
-      )}
     </aside>
   );
 }

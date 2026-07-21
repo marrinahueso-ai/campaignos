@@ -1,3 +1,4 @@
+import { formatEventChipLabel } from "./answer-display.ts";
 import {
   extractEventIdFromPathname,
   extractQueryTokens,
@@ -8,6 +9,13 @@ export interface ResolvableEvent {
   title: string;
   date: string;
   status: string;
+}
+
+/** Structured choice when fuzzy match finds more than one event. */
+export interface AskRalliEventOption {
+  eventId: string;
+  title: string;
+  date: string;
 }
 
 export type EventResolution =
@@ -49,14 +57,24 @@ function scoreEventTitle(title: string, tokens: string[]): number {
 }
 
 /**
- * Resolve an event from the current pathname and/or fuzzy title match.
- * Pathname `/events/{id}` wins when that id is in the candidate list.
+ * Resolve an event from an explicit override, pathname, and/or fuzzy title match.
+ * `forcedEventId` wins (skips ambiguity). Otherwise pathname `/events/{id}` wins
+ * when that id is in the candidate list.
  */
 export function resolveEventFromQuestion(
   question: string,
   events: ResolvableEvent[],
   pathname?: string | null,
+  forcedEventId?: string | null,
 ): EventResolution {
+  if (forcedEventId) {
+    const forced = events.find((event) => event.id === forcedEventId);
+    if (forced) {
+      return { kind: "matched", event: forced };
+    }
+    return { kind: "none", reason: "no_match" };
+  }
+
   const pathEventId = extractEventIdFromPathname(pathname);
   if (pathEventId) {
     const fromPath = events.find((event) => event.id === pathEventId);
@@ -133,18 +151,34 @@ export function resolveEventFromQuestion(
   return { kind: "matched", event: best.event };
 }
 
+export function toEventOptions(
+  candidates: ResolvableEvent[],
+  limit = 5,
+): AskRalliEventOption[] {
+  return candidates.slice(0, limit).map((event) => ({
+    eventId: event.id,
+    title: event.title,
+    date: event.date,
+  }));
+}
+
+/** Chip label including date so duplicate titles are distinguishable. */
+export function formatEventOptionChipLabel(option: AskRalliEventOption): string {
+  return formatEventChipLabel(option.title, option.date);
+}
+
 export function formatAmbiguousEventAnswer(
   candidates: ResolvableEvent[],
 ): string {
   const lines = candidates.map(
-    (event) => `• ${event.title} (${event.date})`,
+    (event) => `• ${formatEventChipLabel(event.title, event.date)}`,
   );
   return [
     "I found more than one matching event. Which one did you mean?",
     "",
     ...lines,
     "",
-    "Open that event page or ask again with the full event name.",
+    "Pick one below to continue with your question.",
   ].join("\n");
 }
 

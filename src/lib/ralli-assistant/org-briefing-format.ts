@@ -123,6 +123,7 @@ export function formatDeterministicOrgBriefingAnswer(
   lines.push(`${who}${org}.`);
   lines.push("");
 
+  lines.push("Approvals");
   const { approvalQueue } = pack;
   if (approvalQueue.assignedToMeCount > 0) {
     const samples = approvalQueue.assignedToMe
@@ -130,18 +131,20 @@ export function formatDeterministicOrgBriefingAnswer(
       .map((item) => `${item.label} (${item.eventTitle})`)
       .join("; ");
     lines.push(
-      `Needs your approval (${approvalQueue.assignedToMeCount}): ${samples}.`,
+      `• Needs your approval (${approvalQueue.assignedToMeCount}): ${samples}.`,
     );
   } else {
-    lines.push("Needs your approval: nothing assigned to you right now.");
+    lines.push("• Needs your approval: nothing assigned to you right now.");
   }
 
   if (approvalQueue.changesRequestedCount > 0) {
     lines.push(
-      `Changes requested across the org: ${approvalQueue.changesRequestedCount}.`,
+      `• Changes requested across the org: ${approvalQueue.changesRequestedCount}.`,
     );
   }
 
+  lines.push("");
+  lines.push("Attention");
   if (pack.eventsNeedingAttention.length > 0) {
     const samples = pack.eventsNeedingAttention
       .slice(0, 4)
@@ -151,10 +154,12 @@ export function formatDeterministicOrgBriefingAnswer(
       )
       .join("; ");
     lines.push(
-      `Events needing attention (${pack.eventsNeedingAttention.length}): ${samples}.`,
+      `• Events needing attention (${pack.eventsNeedingAttention.length}): ${samples}.`,
     );
   } else {
-    lines.push("Events needing attention: none flagged from overdue tasks or pending approvals.");
+    lines.push(
+      "• Events needing attention: none flagged from overdue tasks or pending approvals.",
+    );
   }
 
   if (pack.behindSchedule.overdueTaskCount > 0) {
@@ -163,36 +168,38 @@ export function formatDeterministicOrgBriefingAnswer(
       .map((task) => `${task.title} (${task.eventTitle})`)
       .join("; ");
     lines.push(
-      `Behind schedule: ${pack.behindSchedule.overdueTaskCount} overdue task${
+      `• Behind schedule: ${pack.behindSchedule.overdueTaskCount} overdue task${
         pack.behindSchedule.overdueTaskCount === 1 ? "" : "s"
       }${samples ? ` — ${samples}` : ""}.`,
     );
   } else {
-    lines.push("Behind schedule: no overdue playbook tasks in the loaded list.");
+    lines.push(
+      "• Behind schedule: no overdue playbook tasks in the loaded list.",
+    );
   }
 
+  lines.push("");
+  lines.push("Today & this week");
   lines.push(
-    `Today: ${pack.todaySummary.waitingOnMeCount} waiting on you, ${pack.todaySummary.publishingTodayCount} publishing today, ${pack.todaySummary.eventsThisWeek.length} campaign${pack.todaySummary.eventsThisWeek.length === 1 ? "" : "s"} this week.`,
+    `• Today: ${pack.todaySummary.waitingOnMeCount} waiting on you, ${pack.todaySummary.publishingTodayCount} publishing today, ${pack.todaySummary.eventsThisWeek.length} campaign${pack.todaySummary.eventsThisWeek.length === 1 ? "" : "s"} this week.`,
   );
 
   if (pack.thisWeek.scheduledCount > 0) {
     lines.push(
-      `This week: ${pack.thisWeek.scheduledCount} scheduled post${
+      `• This week: ${pack.thisWeek.scheduledCount} scheduled post${
         pack.thisWeek.scheduledCount === 1 ? "" : "s"
       }.`,
     );
   } else {
-    lines.push("This week: no scheduled posts found in the loaded window.");
+    lines.push(
+      "• This week: no scheduled posts found in the loaded window.",
+    );
   }
 
   lines.push("");
   lines.push(...formatOrgVolunteersSectionLines(pack.volunteers));
   lines.push("");
   lines.push(...formatOrgCommunicationsSectionLines(pack.communications));
-  lines.push("");
-  lines.push(
-    "Use the links below for Approvals, Today, Tasks, Campaigns, Communications, or Calendar.",
-  );
 
   return lines.join("\n");
 }

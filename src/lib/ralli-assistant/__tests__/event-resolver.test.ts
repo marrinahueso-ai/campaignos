@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 
 import {
   formatAmbiguousEventAnswer,
+  formatEventOptionChipLabel,
   formatNoEventAnswer,
   resolveEventFromQuestion,
+  toEventOptions,
   type ResolvableEvent,
 } from "../event-resolver.ts";
 
@@ -33,6 +35,12 @@ const EVENTS: ResolvableEvent[] = [
     date: "2026-09-01",
     status: "draft",
   },
+  {
+    id: "evt-bts-dup",
+    title: "Back to School Fair",
+    date: "2026-08-05",
+    status: "draft",
+  },
 ];
 
 describe("resolveEventFromQuestion", () => {
@@ -49,14 +57,29 @@ describe("resolveEventFromQuestion", () => {
   });
 
   it("fuzzy matches event title tokens", () => {
+    const withoutDup = EVENTS.filter((event) => event.id !== "evt-bts-dup");
     const result = resolveEventFromQuestion(
       "What should I do next for Back to School Fair?",
-      EVENTS,
+      withoutDup,
       null,
     );
     assert.equal(result.kind, "matched");
     if (result.kind === "matched") {
       assert.equal(result.event.id, "evt-bts");
+    }
+  });
+
+  it("returns ambiguous for identical titles with different dates", () => {
+    const result = resolveEventFromQuestion(
+      "What's next for Back to School Fair?",
+      EVENTS,
+      null,
+    );
+    assert.equal(result.kind, "ambiguous");
+    if (result.kind === "ambiguous") {
+      const ids = result.candidates.map((event) => event.id);
+      assert.ok(ids.includes("evt-bts"));
+      assert.ok(ids.includes("evt-bts-dup"));
     }
   });
 
@@ -95,8 +118,66 @@ describe("resolveEventFromQuestion", () => {
     assert.match(ambiguous, /more than one matching event/i);
     assert.match(ambiguous, /Back to School Fair/);
     assert.match(ambiguous, /Back to School Night/);
+    assert.match(ambiguous, /Pick one below/i);
 
     const none = formatNoEventAnswer("no_match");
     assert.match(none, /couldn’t match/i);
+  });
+
+  it("returns dated event options for multi-match UI chips", () => {
+    const candidates = [EVENTS[0]!, EVENTS[4]!];
+    const options = toEventOptions(candidates);
+    assert.equal(options.length, 2);
+    assert.deepEqual(options[0], {
+      eventId: "evt-bts",
+      title: "Back to School Fair",
+      date: "2026-08-20",
+    });
+    assert.deepEqual(options[1], {
+      eventId: "evt-bts-dup",
+      title: "Back to School Fair",
+      date: "2026-08-05",
+    });
+    assert.equal(
+      formatEventOptionChipLabel(options[0]!),
+      "Back to School Fair · Aug 20, 2026",
+    );
+    assert.equal(
+      formatEventOptionChipLabel(options[1]!),
+      "Back to School Fair · Aug 5, 2026",
+    );
+  });
+
+  it("forced eventId skips ambiguity and matches that event", () => {
+    const ambiguous = resolveEventFromQuestion(
+      "What's next for Back to School Fair?",
+      EVENTS,
+      null,
+    );
+    assert.equal(ambiguous.kind, "ambiguous");
+
+    const forced = resolveEventFromQuestion(
+      "What's next for Back to School Fair?",
+      EVENTS,
+      null,
+      "evt-bts-dup",
+    );
+    assert.equal(forced.kind, "matched");
+    if (forced.kind === "matched") {
+      assert.equal(forced.event.id, "evt-bts-dup");
+      assert.equal(forced.event.date, "2026-08-05");
+    }
+
+    // Forced id wins over pathname too.
+    const overPath = resolveEventFromQuestion(
+      "What's next?",
+      EVENTS,
+      "/events/evt-spring",
+      "evt-bts",
+    );
+    assert.equal(overPath.kind, "matched");
+    if (overPath.kind === "matched") {
+      assert.equal(overPath.event.id, "evt-bts");
+    }
   });
 });

@@ -6,6 +6,11 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { askRalliAssistantAction } from "@/lib/ralli-assistant/actions";
+import {
+  formatEventOptionChipLabel,
+  type AskRalliEventOption,
+} from "@/lib/ralli-assistant/event-resolver";
+import { prepareAnswerForDisplay } from "@/lib/ralli-assistant/answer-display";
 import type { AskRalliSource } from "@/lib/ralli-assistant/ask";
 import { type ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 import { cn } from "@/lib/utils/cn";
@@ -19,7 +24,10 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   links?: ProductHelpLink[];
+  eventOptions?: AskRalliEventOption[];
   source?: AskRalliSource | null;
+  /** Original question for regenerating after an event pick. */
+  sourceQuestion?: string;
 }
 
 function assistantEyebrow(source: AskRalliSource | null): string {
@@ -46,6 +54,72 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function AnswerBody({ text }: { text: string }) {
+  const display = prepareAnswerForDisplay(text, { hasLinkChips: true });
+  const blocks = display.split(/\n{2,}/);
+
+  return (
+    <div className="space-y-2.5">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split("\n").filter((line) => line.length > 0);
+        const bulletLines = lines.filter((line) => /^[•*-]\s+/.test(line));
+        const isBulletBlock =
+          bulletLines.length > 0 && bulletLines.length === lines.length;
+
+        if (isBulletBlock) {
+          return (
+            <ul key={blockIndex} className="list-none space-y-1 pl-0">
+              {lines.map((line, lineIndex) => (
+                <li key={lineIndex} className="flex gap-2">
+                  <span className="mt-0.5 shrink-0 text-cos-muted" aria-hidden>
+                    •
+                  </span>
+                  <span>{line.replace(/^[•*-]\s+/, "")}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        const looksLikeHeader =
+          lines.length === 1 &&
+          lines[0]!.length < 48 &&
+          !/[.!?]$/.test(lines[0]!) &&
+          !/^[•*-]\s+/.test(lines[0]!);
+
+        if (looksLikeHeader && blockIndex > 0) {
+          return (
+            <p
+              key={blockIndex}
+              className="text-xs font-semibold tracking-wide text-cos-muted uppercase"
+            >
+              {lines[0]}
+            </p>
+          );
+        }
+
+        return (
+          <div key={blockIndex} className="space-y-1">
+            {lines.map((line, lineIndex) => {
+              if (/^[•*-]\s+/.test(line)) {
+                return (
+                  <p key={lineIndex} className="flex gap-2">
+                    <span className="mt-0.5 shrink-0 text-cos-muted" aria-hidden>
+                      •
+                    </span>
+                    <span>{line.replace(/^[•*-]\s+/, "")}</span>
+                  </p>
+                );
+              }
+              return <p key={lineIndex}>{line}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function RalliAiAssistantWidget({
   compact = false,
 }: RalliAiAssistantWidgetProps) {
@@ -66,7 +140,7 @@ export function RalliAiAssistantWidget({
     });
   }, [messages, open, pending]);
 
-  function ask(nextQuestion: string) {
+  function ask(nextQuestion: string, eventId?: string | null) {
     const trimmed = nextQuestion.trim();
     if (!trimmed || pending) return;
 
@@ -78,7 +152,11 @@ export function RalliAiAssistantWidget({
     ]);
 
     startTransition(async () => {
-      const result = await askRalliAssistantAction(trimmed, pathname);
+      const result = await askRalliAssistantAction(
+        trimmed,
+        pathname,
+        eventId ?? null,
+      );
       if (!result.success || !result.answer) {
         setError(result.error ?? "Something went wrong. Try again.");
         return;
@@ -91,7 +169,9 @@ export function RalliAiAssistantWidget({
           role: "assistant",
           text: result.answer!,
           links: result.links,
+          eventOptions: result.eventOptions,
           source: result.source,
+          sourceQuestion: trimmed,
         },
       ]);
     });
@@ -102,13 +182,19 @@ export function RalliAiAssistantWidget({
     ask(question);
   }
 
+  function pickEventOption(message: ChatMessage, option: AskRalliEventOption) {
+    const sourceQuestion = message.sourceQuestion?.trim();
+    if (!sourceQuestion || pending) return;
+    ask(sourceQuestion, option.eventId);
+  }
+
   return (
     <>
       {compact ? (
         <button
           type="button"
-          title="Ask Ralli AI"
-          aria-label="Ask Ralli AI"
+          title="Hey Ralli Assistant"
+          aria-label="Hey Ralli Assistant"
           onClick={() => setOpen(true)}
           className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-cos-border bg-cos-bg/60 transition-colors hover:bg-cos-bg"
         >
@@ -122,7 +208,7 @@ export function RalliAiAssistantWidget({
               strokeWidth={1.5}
             />
             <h3 className="font-display text-base text-cos-text">
-              Ralli AI Assistant
+              Hey Ralli Assistant
             </h3>
             <span className="rounded-full bg-cos-dark px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
               Ask
@@ -143,7 +229,7 @@ export function RalliAiAssistantWidget({
               "bg-cos-bg-alt px-4 py-2.5 text-sm font-semibold text-cos-text transition-colors hover:bg-cos-bg",
             )}
           >
-            Ask Ralli AI →
+            Ask Ralli →
           </button>
         </div>
       )}
@@ -152,7 +238,7 @@ export function RalliAiAssistantWidget({
         <div className="fixed inset-0 z-50 flex justify-end bg-cos-text/20 backdrop-blur-sm">
           <button
             type="button"
-            aria-label="Close Ask Ralli AI"
+            aria-label="Close Hey Ralli Assistant"
             className="flex-1"
             onClick={() => setOpen(false)}
           />
@@ -171,7 +257,7 @@ export function RalliAiAssistantWidget({
                   id="ralli-ask-title"
                   className="font-display mt-1 text-2xl text-cos-text"
                 >
-                  Ask Ralli AI
+                  Hey Ralli Assistant
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
                   Org briefings, what’s next for an event, draft reminders &amp;
@@ -223,7 +309,26 @@ export function RalliAiAssistantWidget({
                         : "mr-4 border border-cos-border bg-cos-bg text-cos-text",
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
+                    {message.role === "user" ? (
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                    ) : (
+                      <AnswerBody text={message.text} />
+                    )}
+                    {message.eventOptions && message.eventOptions.length > 0 ? (
+                      <div className="mt-2.5 flex flex-col gap-1.5">
+                        {message.eventOptions.map((option) => (
+                          <button
+                            key={option.eventId}
+                            type="button"
+                            disabled={pending}
+                            onClick={() => pickEventOption(message, option)}
+                            className="rounded-full border border-cos-border bg-cos-card px-2.5 py-1.5 text-left text-xs font-medium text-cos-text hover:bg-cos-bg-alt disabled:opacity-60"
+                          >
+                            {formatEventOptionChipLabel(option)} →
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     {message.links && message.links.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {message.links.map((link) => (

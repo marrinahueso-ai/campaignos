@@ -145,7 +145,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## AI Brain & assistant
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
-- Ask Ralli AI widget — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week”; product-help FAQ retained for how-to)
+- Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week”; product-help FAQ retained for how-to; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen)
 - AI credits widget — **stub** (placeholder UI)
 
 ## Settings
@@ -166,7 +166,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ---
 
 ## Primary nav
-Dashboard · Calendar · Events · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights
+Dashboard · Calendar · Events · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights · Hey Ralli Assistant (pinned under Insights)
 
 Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · School Setup · Billing · Advanced
 

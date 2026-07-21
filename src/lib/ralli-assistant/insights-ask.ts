@@ -6,6 +6,8 @@ import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
   resolveEventFromQuestion,
+  toEventOptions,
+  type AskRalliEventOption,
   type ResolvableEvent,
 } from "@/lib/ralli-assistant/event-resolver";
 import {
@@ -26,6 +28,7 @@ export interface AskRalliInsightsResult {
   success: boolean;
   answer: string | null;
   links: ProductHelpLink[];
+  eventOptions: AskRalliEventOption[];
   source: "insights";
   error: string | null;
 }
@@ -36,8 +39,8 @@ function buildInsightsSystemPrompt(): string {
     "Answer ONLY from the provided INSIGHTS CONTEXT JSON. Do not invent risks, health scores, Meta metrics, or missing pieces.",
     "When meta.available is false, say you don’t have performance data yet and fall back to highestImpactOpsAction / nextAction.",
     "Prefer concrete risks and the single highest-impact next step. Name real events and items from the context.",
-    "Keep answers to 3–6 short sentences or a tight bullet list.",
-    "When recommending an action, point to a matching deep link from context.links (label + href).",
+    "Keep answers to 3–6 short sentences or a tight bullet list. Use short paragraphs or bullets — easy to scan.",
+    "Do NOT write markdown links like [Insights](/insights). Destinations appear as separate buttons — refer to areas by name only.",
     "You are not drafting social posts — only health, risk, and performance guidance.",
   ].join("\n");
 }
@@ -70,6 +73,7 @@ async function answerFromPack(
       success: true,
       answer: formatDeterministicInsightsAnswer(pack),
       links: pack.links,
+      eventOptions: [],
       source: "insights",
       error: null,
     };
@@ -93,6 +97,7 @@ async function answerFromPack(
       success: true,
       answer: formatDeterministicInsightsAnswer(pack),
       links: pack.links,
+      eventOptions: [],
       source: "insights",
       error: null,
     };
@@ -102,6 +107,7 @@ async function answerFromPack(
     success: true,
     answer: result.text.trim(),
     links: pack.links,
+    eventOptions: [],
     source: "insights",
     error: null,
   };
@@ -110,6 +116,7 @@ async function answerFromPack(
 export async function askRalliInsightsCoach(input: {
   question: string;
   pathname?: string | null;
+  eventId?: string | null;
 }): Promise<AskRalliInsightsResult> {
   const question = input.question.trim();
   if (!question) {
@@ -117,6 +124,7 @@ export async function askRalliInsightsCoach(input: {
       success: false,
       answer: null,
       links: [],
+      eventOptions: [],
       source: "insights",
       error: "Ask a health, risk, or performance question.",
     };
@@ -128,6 +136,7 @@ export async function askRalliInsightsCoach(input: {
       success: false,
       answer: null,
       links: buildInsightsLinks(null),
+      eventOptions: [],
       source: "insights",
       error: "Join or select an organization to ask for insights.",
     };
@@ -147,21 +156,24 @@ export async function askRalliInsightsCoach(input: {
     events = [];
   }
 
-  if (shouldUseEventInsightsPack(question, input.pathname, events)) {
+  const useEventPack =
+    Boolean(input.eventId) ||
+    shouldUseEventInsightsPack(question, input.pathname, events);
+
+  if (useEventPack) {
     const resolution = resolveEventFromQuestion(
       question,
       events,
       input.pathname,
+      input.eventId,
     );
 
     if (resolution.kind === "ambiguous") {
       return {
         success: true,
         answer: formatAmbiguousEventAnswer(resolution.candidates),
-        links: resolution.candidates.slice(0, 3).map((event) => ({
-          label: event.title,
-          href: `/events/${event.id}`,
-        })),
+        links: [],
+        eventOptions: toEventOptions(resolution.candidates),
         source: "insights",
         error: null,
       };
@@ -180,6 +192,7 @@ export async function askRalliInsightsCoach(input: {
             "Open the event page or Insights, or ask again in a moment.",
           ].join(" "),
           links: buildInsightsLinks(resolution.event.id),
+          eventOptions: [],
           source: "insights",
           error: null,
         };
@@ -187,7 +200,7 @@ export async function askRalliInsightsCoach(input: {
     }
 
     // Event-shaped question without a resolvable event.
-    if (isEventScopedInsightsQuestion(question)) {
+    if (isEventScopedInsightsQuestion(question) && !input.eventId) {
       return {
         success: true,
         answer: [
@@ -199,6 +212,7 @@ export async function askRalliInsightsCoach(input: {
           { label: "Insights", href: "/insights" },
           { label: "Today", href: "/dashboard" },
         ],
+        eventOptions: [],
         source: "insights",
         error: null,
       };
@@ -213,6 +227,7 @@ export async function askRalliInsightsCoach(input: {
           { label: "Insights", href: "/insights" },
           { label: "Approvals", href: "/approvals" },
         ],
+        eventOptions: [],
         source: "insights",
         error: null,
       };
@@ -228,9 +243,10 @@ export async function askRalliInsightsCoach(input: {
       success: true,
       answer: [
         "I couldn’t load organization insights just now.",
-        "Try Insights or Today from the links below, or ask again shortly.",
+        "Try Insights or Today, or ask again shortly.",
       ].join(" "),
       links: buildInsightsLinks(null),
+      eventOptions: [],
       source: "insights",
       error: null,
     };
