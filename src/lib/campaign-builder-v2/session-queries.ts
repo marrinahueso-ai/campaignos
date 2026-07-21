@@ -38,7 +38,7 @@ async function loadCampaignBuilderSessionUncached(
   // awaiting_approval / Pending labels left in the CB2 session JSON.
   const { data: schedulingRows } = await supabase
     .from("approval_scheduling_items")
-    .select("campaign_milestone_id, milestone_name, workflow_status")
+    .select("campaign_milestone_id, milestone_name, workflow_status, notes")
     .eq("event_id", eventId)
     .in("workflow_status", [
       "scheduled",
@@ -57,6 +57,7 @@ async function loadCampaignBuilderSessionUncached(
       campaignMilestoneId: (row.campaign_milestone_id as string | null) ?? null,
       milestoneName: String(row.milestone_name ?? ""),
       workflowStatus: String(row.workflow_status ?? ""),
+      notes: (row.notes as string | null) ?? null,
     })),
   );
 }

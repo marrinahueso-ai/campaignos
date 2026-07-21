@@ -1,9 +1,16 @@
 "use client";
 
 import { Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { ChangeRequestBanner } from "@/components/campaign-builder-v2/ChangeRequestBanner";
 import { Input } from "@/components/ui/Input";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
 import {
+  campaignBuilderEditArtworkHref,
+  campaignBuilderPreviewMilestoneHref,
+} from "@/lib/campaign-builder-v2/navigation";
+import {
+  canResendMilestoneForApproval,
+  resolveMilestoneGenerationStatus,
   reviewApprovalPill,
   type ReviewApprovalPillTone,
 } from "@/lib/campaign-builder-v2/milestone-status";
@@ -71,25 +78,46 @@ function formatApprovalTimestamp(value: string | null): string {
 
 interface ExpandedMilestoneReviewProps {
   index: number;
+  eventId: string;
   milestone: CampaignBuilderMilestone;
   preview: MilestonePreviewContent;
   isExpanded: boolean;
   onToggle: () => void;
   onUpdatePreview: (patch: Partial<MilestonePreviewContent>) => void;
+  onResendForApproval?: () => void;
+  isResending?: boolean;
+  resendMessage?: string | null;
 }
 
 export function ExpandedMilestoneReview({
   index,
+  eventId,
   milestone,
   preview,
   isExpanded,
   onToggle,
   onUpdatePreview,
+  onResendForApproval,
+  isResending = false,
+  resendMessage = null,
 }: ExpandedMilestoneReviewProps) {
   const showManualDetails =
     preview.deliveryMethod === "manual-email" ||
     preview.enabledFormats.includes("instagram-story-manual");
   const approvalPill = reviewApprovalPill(preview);
+  const generationStatus = resolveMilestoneGenerationStatus(preview);
+  const canResend = canResendMilestoneForApproval(preview);
+  const scheduleEditable =
+    generationStatus === "changes_requested" ||
+    generationStatus === "awaiting_approval";
+  const previewHref = campaignBuilderPreviewMilestoneHref(
+    eventId,
+    milestone.id,
+  );
+  const editArtworkHref = campaignBuilderEditArtworkHref(
+    eventId,
+    milestone.id,
+  );
 
   const emailAssets = preview.enabledFormats.map((format) => {
     const view = artworkViewForFormat(format);
@@ -158,7 +186,21 @@ export function ExpandedMilestoneReview({
       </button>
 
       {isExpanded && (
-        <div className="grid gap-0 border-t border-cos-border bg-cos-bg/20 lg:grid-cols-4">
+        <div className="space-y-0 border-t border-cos-border bg-cos-bg/20">
+          {canResend ? (
+            <div className="border-b border-cos-border p-4">
+              <ChangeRequestBanner
+                comment={preview.changeRequestComment}
+                awaitingApproval={generationStatus === "awaiting_approval"}
+                editCaptionHref={previewHref}
+                editArtworkHref={editArtworkHref}
+                onResendForApproval={onResendForApproval}
+                isResending={isResending}
+                message={resendMessage}
+              />
+            </div>
+          ) : null}
+        <div className="grid gap-0 lg:grid-cols-4">
           <section className="space-y-3 border-b border-cos-border p-4 lg:border-b-0 lg:border-r">
             <h3 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
               Content summary
@@ -255,22 +297,54 @@ export function ExpandedMilestoneReview({
             <h3 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
               Schedule
             </h3>
-            <dl className="space-y-2 text-sm">
-              <div>
-                <dt className="text-cos-muted">Publish date</dt>
-                <dd className="font-medium text-cos-text">{preview.scheduleDate}</dd>
+            {scheduleEditable ? (
+              <div className="space-y-2">
+                <Input
+                  label="Publish date"
+                  type="date"
+                  value={preview.scheduleDate}
+                  onChange={(e) =>
+                    onUpdatePreview({ scheduleDate: e.target.value })
+                  }
+                />
+                <Input
+                  label="Publish time"
+                  type="time"
+                  value={preview.scheduleTime}
+                  onChange={(e) =>
+                    onUpdatePreview({ scheduleTime: e.target.value })
+                  }
+                />
+                <p className="text-xs text-cos-muted">
+                  {DELIVERY_LABELS[preview.deliveryMethod]} ·{" "}
+                  {formatScheduleLabel(
+                    preview.scheduleDate,
+                    preview.scheduleTime,
+                  )}
+                </p>
               </div>
-              <div>
-                <dt className="text-cos-muted">Publish time</dt>
-                <dd className="font-medium text-cos-text">{preview.scheduleTime}</dd>
-              </div>
-              <div>
-                <dt className="text-cos-muted">Status</dt>
-                <dd className="font-medium text-cos-text">
-                  {DELIVERY_LABELS[preview.deliveryMethod]}
-                </dd>
-              </div>
-            </dl>
+            ) : (
+              <dl className="space-y-2 text-sm">
+                <div>
+                  <dt className="text-cos-muted">Publish date</dt>
+                  <dd className="font-medium text-cos-text">
+                    {preview.scheduleDate}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-cos-muted">Publish time</dt>
+                  <dd className="font-medium text-cos-text">
+                    {preview.scheduleTime}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-cos-muted">Status</dt>
+                  <dd className="font-medium text-cos-text">
+                    {DELIVERY_LABELS[preview.deliveryMethod]}
+                  </dd>
+                </div>
+              </dl>
+            )}
             {showManualDetails && (
               <div className="space-y-2 border-t border-cos-border pt-3">
                 <p className="flex items-center gap-1.5 text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
@@ -443,6 +517,7 @@ export function ExpandedMilestoneReview({
               ))}
             </ul>
           </section>
+        </div>
         </div>
       )}
     </div>

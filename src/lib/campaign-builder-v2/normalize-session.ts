@@ -407,6 +407,7 @@ export function reconcilePreviewContent(
     manualUploadLink: content.manualUploadLink ?? "",
     approvalStatuses: content.approvalStatuses ?? defaultApprovalStatuses,
     generationStartedAt: content.generationStartedAt ?? null,
+    changeRequestComment: content.changeRequestComment ?? null,
   };
 
   let generationStatus: MilestoneGenerationStatus =

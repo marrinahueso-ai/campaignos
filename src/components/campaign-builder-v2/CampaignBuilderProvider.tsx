@@ -77,6 +77,7 @@ import {
   GENERATION_STALL_WARNING_MS,
   inferGenerationStatus,
   isStaleGeneration,
+  preserveApprovalWorkflowStatus,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
   campaignBuilderHref,
@@ -1951,6 +1952,12 @@ export function CampaignBuilderProvider({
             next.generationStatus = inferGenerationStatus(
               next,
               next.enabledFormats,
+            );
+          } else if (patch.generationStatus != null) {
+            // Caption/artwork edits must not wipe changes_requested / awaiting_approval.
+            next.generationStatus = preserveApprovalWorkflowStatus(
+              content.generationStatus,
+              patch.generationStatus,
             );
           }
           return next;

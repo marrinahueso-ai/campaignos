@@ -11,6 +11,7 @@ import { MilestoneEmptyState } from "@/components/campaign-builder-v2/MilestoneE
 import { MilestoneRail } from "@/components/campaign-builder-v2/MilestoneRail";
 import { PreviewSettingsPanel } from "@/components/campaign-builder-v2/PreviewSettingsPanel";
 import { ArtworkPlaceholder } from "@/components/campaign-builder-v2/ArtworkPlaceholder";
+import { ChangeRequestBanner } from "@/components/campaign-builder-v2/ChangeRequestBanner";
 import { ClearGeneratedContentModal } from "@/components/dev-tools/ClearGeneratedContentModal";
 import { Button } from "@/components/ui/Button";
 import {
@@ -28,6 +29,7 @@ import {
 } from "@/lib/campaign-builder-v2/caption-utils";
 import {
   allMilestonesGenerated,
+  canResendMilestoneForApproval,
   captionPlatformsForFormats,
   countCompleteMilestones,
   findMilestoneAfter,
@@ -36,6 +38,8 @@ import {
   inferGenerationStatus,
   isMilestoneContentComplete,
   milestoneHasPartialContent,
+  preserveApprovalWorkflowStatus,
+  previewAfterResendForApproval,
   resolveMilestoneGenerationStatus,
 } from "@/lib/campaign-builder-v2/milestone-status";
 import {
@@ -121,6 +125,8 @@ export function PreviewStep() {
   const [captionModalOpen, setCaptionModalOpen] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendIsError, setResendIsError] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [clearModalOpen, setClearModalOpen] = useState(false);
   const [clearSubmitting, setClearSubmitting] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
@@ -128,7 +134,7 @@ export function PreviewStep() {
   const [downloadingView, setDownloadingView] = useState<ArtworkView | null>(
     null,
   );
-  const handledEditArtworkDeepLink = useRef(false);
+  const handledMilestoneDeepLink = useRef(false);
 
   async function handleDownloadArtwork(
     view: ArtworkView,
@@ -156,7 +162,7 @@ export function PreviewStep() {
   );
 
   useEffect(() => {
-    if (handledEditArtworkDeepLink.current) {
+    if (handledMilestoneDeepLink.current) {
       return;
     }
     if (typeof window === "undefined") {
@@ -168,16 +174,18 @@ export function PreviewStep() {
 
     const params = new URLSearchParams(window.location.search);
     const milestoneId = params.get("milestone");
-    const editArtwork = params.get("editArtwork");
-    if (!milestoneId || editArtwork !== "1") {
+    if (!milestoneId) {
       return;
     }
 
-    handledEditArtworkDeepLink.current = true;
+    const editArtwork = params.get("editArtwork");
+    handledMilestoneDeepLink.current = true;
 
     if (session.milestones.some((milestone) => milestone.id === milestoneId)) {
       setSelectedMilestoneId(milestoneId);
-      setArtworkModalOpen(true);
+      if (editArtwork === "1") {
+        setArtworkModalOpen(true);
+      }
     }
 
     params.delete("milestone");
@@ -210,6 +218,10 @@ export function PreviewStep() {
   const selectedStatus = selectedPreview
     ? inferGenerationStatus(selectedPreview, selectedPreview.enabledFormats)
     : "ready_to_generate";
+  const selectedCanResend = selectedPreview
+    ? canResendMilestoneForApproval(selectedPreview)
+    : false;
+  const selectedIsAwaitingApproval = selectedStatus === "awaiting_approval";
 
   const hasCompleteContent =
     selectedPreview && selectedMilestone
@@ -297,10 +309,17 @@ export function PreviewStep() {
     if (!selectedPreview) {
       return;
     }
+    const currentStatus = resolveMilestoneGenerationStatus(
+      selectedPreview,
+      selectedMilestone?.platformFormats,
+    );
     updatePreviewContent(selectedPreview.milestoneId, {
       artwork,
       status: "needs-review",
-      generationStatus: "needs_review",
+      generationStatus: preserveApprovalWorkflowStatus(
+        currentStatus,
+        "needs_review",
+      ),
     });
     setArtworkModalOpen(false);
     void syncAppliedMilestoneArtworkAction({
@@ -311,77 +330,70 @@ export function PreviewStep() {
     }).then(() => router.refresh());
   }
 
-  async function handleResendForApproval(artwork: MilestoneArtwork) {
+  async function resendSelectedMilestone(artwork?: MilestoneArtwork) {
     if (!selectedPreview || !selectedMilestone) {
       throw new Error("Select a milestone before resending for approval.");
     }
 
     setResendMessage(null);
+    setResendIsError(false);
+    setIsResending(true);
 
-    // Apply pending regenerated artwork before resubmitting.
-    updatePreviewContent(selectedPreview.milestoneId, {
-      artwork,
-    });
-    const syncResult = await syncAppliedMilestoneArtworkAction({
-      eventId: session.eventId,
-      milestones: session.milestones,
-      milestoneId: selectedPreview.milestoneId,
-      artwork,
-    });
-    if (!syncResult.success) {
-      throw new Error(syncResult.message);
+    try {
+      const artworkToSubmit = artwork ?? selectedPreview.artwork;
+
+      // Optional: apply regenerated/uploaded artwork before resubmitting.
+      // Caption/schedule-only resend keeps existing artwork URLs.
+      if (artwork) {
+        updatePreviewContent(selectedPreview.milestoneId, {
+          artwork: artworkToSubmit,
+        });
+        const syncResult = await syncAppliedMilestoneArtworkAction({
+          eventId: session.eventId,
+          milestones: session.milestones,
+          milestoneId: selectedPreview.milestoneId,
+          artwork: artworkToSubmit,
+        });
+        if (!syncResult.success) {
+          throw new Error(syncResult.message);
+        }
+      }
+
+      const previewForSubmit = {
+        ...selectedPreview,
+        artwork: artworkToSubmit,
+      };
+      const result = await sendForApprovalAction({
+        eventId: session.eventId,
+        campaignName: session.inspiration.campaignName,
+        milestones: [selectedMilestone],
+        previewContents: [previewForSubmit],
+      });
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      updatePreviewContent(selectedPreview.milestoneId, {
+        artwork: artworkToSubmit,
+        ...previewAfterResendForApproval(previewForSubmit),
+      });
+      setArtworkModalOpen(false);
+      setResendIsError(false);
+      setResendMessage(result.message || "Sent for approval.");
+      router.refresh();
+    } catch (error) {
+      setResendIsError(true);
+      setResendMessage(
+        error instanceof Error ? error.message : "Unable to resend for approval.",
+      );
+      throw error;
+    } finally {
+      setIsResending(false);
     }
+  }
 
-    const previewForSubmit = {
-      ...selectedPreview,
-      artwork,
-    };
-    const result = await sendForApprovalAction({
-      eventId: session.eventId,
-      campaignName: session.inspiration.campaignName,
-      milestones: [selectedMilestone],
-      previewContents: [previewForSubmit],
-    });
-    if (!result.success) {
-      throw new Error(result.message);
-    }
-
-    const submittedAt = new Date().toISOString();
-    const approvalStatuses =
-      previewForSubmit.approvalStatuses.length > 0
-        ? previewForSubmit.approvalStatuses.map((entry) =>
-            entry.role === "creator"
-              ? entry
-              : {
-                  ...entry,
-                  status: "pending" as const,
-                  timestamp: submittedAt,
-                },
-          )
-        : [
-            {
-              role: "creator" as const,
-              label: "Creator",
-              status: "not-started" as const,
-              timestamp: null,
-            },
-            {
-              role: "committee-chair" as const,
-              label: "Committee Chair",
-              status: "pending" as const,
-              timestamp: submittedAt,
-            },
-          ];
-
-    updatePreviewContent(selectedPreview.milestoneId, {
-      artwork,
-      generationStatus: "awaiting_approval",
-      status: "ready",
-      approvalStatuses,
-    });
-    setArtworkModalOpen(false);
-    setResendMessage(result.message || "Sent for approval.");
-    router.refresh();
+  async function handleResendForApproval(artwork: MilestoneArtwork) {
+    await resendSelectedMilestone(artwork);
   }
 
   const generatingName = generatingMilestoneId
@@ -479,6 +491,24 @@ export function PreviewStep() {
           ) : selectedMilestone && selectedPreview ? (
             <div className="grid flex-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_300px] lg:px-8">
               <div className="space-y-6">
+                {selectedCanResend ? (
+                  <ChangeRequestBanner
+                    comment={selectedPreview.changeRequestComment}
+                    awaitingApproval={selectedIsAwaitingApproval}
+                    onEditCaption={() => setCaptionModalOpen(true)}
+                    onEditSchedule={() => setPreviewTab("schedule")}
+                    onEditArtwork={() => setArtworkModalOpen(true)}
+                    onResendForApproval={() => {
+                      void resendSelectedMilestone().catch(() => {
+                        // Error message set inside resendSelectedMilestone.
+                      });
+                    }}
+                    isResending={isResending}
+                    message={resendMessage}
+                    messageIsError={resendIsError}
+                  />
+                ) : null}
+
                 {showArtwork && (
                   <section className="cos-card space-y-4">
                     <h2 className="font-display text-xl text-cos-text">
@@ -637,7 +667,7 @@ export function PreviewStep() {
         }
       />
 
-      {resendMessage ? (
+      {resendMessage && !selectedCanResend ? (
         <p className="px-4 py-2 text-sm text-cos-success lg:px-8" role="status">
           {resendMessage}
         </p>
@@ -699,12 +729,20 @@ export function PreviewStep() {
                 : (["facebook", "instagram"] as const);
             })();
             const captions = syncCaptionsToPlatforms(text, [...captionPlatforms]);
+            const contentStatus = generationStatusAfterContent(
+              { ...selectedPreview, captions },
+              selectedPreview.enabledFormats,
+            );
+            const currentStatus = resolveMilestoneGenerationStatus(
+              selectedPreview,
+              selectedMilestone.platformFormats,
+            );
             updatePreviewContent(selectedPreview.milestoneId, {
               captions,
               status: "ready",
-              generationStatus: generationStatusAfterContent(
-                { ...selectedPreview, captions },
-                selectedPreview.enabledFormats,
+              generationStatus: preserveApprovalWorkflowStatus(
+                currentStatus,
+                contentStatus,
               ),
             });
             setCaptionModalOpen(false);

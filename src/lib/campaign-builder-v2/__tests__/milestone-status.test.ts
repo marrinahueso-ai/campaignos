@@ -3,14 +3,18 @@ import { describe, it } from "node:test";
 
 import {
   allMilestonesGenerated,
+  canResendMilestoneForApproval,
   countCompleteMilestones,
   derivedPreviewStatus,
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isMilestoneContentComplete,
+  isMilestoneEligibleForApprovalSubmit,
   milestoneHasArtwork,
   milestoneHasPartialContent,
   MILESTONE_STATUS_LABELS,
+  preserveApprovalWorkflowStatus,
+  previewAfterResendForApproval,
   resolveMilestoneGenerationStatus,
 } from "../milestone-status.ts";
 import { emptyMilestoneArtwork, normalizeMilestoneArtwork } from "../platform-utils.ts";
@@ -404,6 +408,67 @@ describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () =>
     });
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
+      "awaiting_approval",
+    );
+  });
+});
+
+describe("changes_requested resend eligibility", () => {
+  it("allows resend for changes_requested and awaiting_approval with artwork", () => {
+    const changesRequested = completeFeedPreview({
+      generationStatus: "changes_requested",
+      changeRequestComment: "Warm the colors",
+    });
+    const awaiting = completeFeedPreview({
+      generationStatus: "awaiting_approval",
+    });
+    const ready = completeFeedPreview({
+      generationStatus: "generated",
+    });
+
+    assert.equal(canResendMilestoneForApproval(changesRequested), true);
+    assert.equal(canResendMilestoneForApproval(awaiting), true);
+    assert.equal(canResendMilestoneForApproval(ready), false);
+  });
+
+  it("bulk submit includes changes_requested and ready, skips awaiting", () => {
+    const changesRequested = completeFeedPreview({
+      generationStatus: "changes_requested",
+    });
+    const awaiting = completeFeedPreview({
+      generationStatus: "awaiting_approval",
+    });
+    const ready = completeFeedPreview({
+      generationStatus: "generated",
+      status: "ready",
+    });
+
+    assert.equal(isMilestoneEligibleForApprovalSubmit(changesRequested), true);
+    assert.equal(isMilestoneEligibleForApprovalSubmit(awaiting), false);
+    assert.equal(isMilestoneEligibleForApprovalSubmit(ready), true);
+  });
+
+  it("clears change-request comment after resend patch", () => {
+    const preview = completeFeedPreview({
+      generationStatus: "changes_requested",
+      changeRequestComment: "Fix caption",
+    });
+    const next = previewAfterResendForApproval(preview, "2026-07-21T12:00:00.000Z");
+    assert.equal(next.generationStatus, "awaiting_approval");
+    assert.equal(next.changeRequestComment, null);
+  });
+
+  it("preserves changes_requested while editing caption/artwork content status", () => {
+    assert.equal(
+      preserveApprovalWorkflowStatus("changes_requested", "generated"),
+      "changes_requested",
+    );
+    assert.equal(
+      preserveApprovalWorkflowStatus("changes_requested", "needs_review"),
+      "changes_requested",
+    );
+    assert.equal(
+      preserveApprovalWorkflowStatus("changes_requested", "awaiting_approval"),
       "awaiting_approval",
     );
   });

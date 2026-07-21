@@ -51,6 +51,7 @@ async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
   campaignMilestoneId: string | null;
   milestoneName: string;
   outcome: SchedulingSessionOutcome;
+  changeRequestComment?: string | null;
 }): Promise<void> {
   const session = await loadCampaignBuilderSession(input.eventId);
   if (!session) {
@@ -69,6 +70,10 @@ async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
       campaignMilestoneId: input.campaignMilestoneId,
       milestoneName: input.milestoneName,
       workflowStatus,
+      notes:
+        input.outcome === "changes_requested"
+          ? (input.changeRequestComment ?? null)
+          : null,
     },
   ]);
 
@@ -89,7 +94,14 @@ async function syncCampaignBuilderSessionAfterSchedulingOutcome(input: {
     if (!matchesId && !matchesName) {
       return preview;
     }
-    return applySchedulingOutcomeToPreview(preview, input.outcome, at);
+    return applySchedulingOutcomeToPreview(
+      preview,
+      input.outcome,
+      at,
+      input.outcome === "changes_requested"
+        ? (input.changeRequestComment ?? null)
+        : null,
+    );
   });
 
   await saveCampaignBuilderSessionAction({
@@ -427,6 +439,7 @@ export async function requestUnifiedChangesAction(input: {
         campaignMilestoneId: schedulingRow.campaign_milestone_id,
         milestoneName: schedulingRow.milestone_name,
         outcome: "changes_requested",
+        changeRequestComment: comment,
       });
     }
   }

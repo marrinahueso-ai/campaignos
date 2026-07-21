@@ -8,7 +8,10 @@ import {
 import { isEmailConfigured, resolveSocialsFromAddress, sendEmail } from "@/lib/email/send";
 import type { EmailAttachment } from "@/lib/email/send";
 import { buildSocialsManualUploadEmail } from "@/lib/email/socials-manual-upload-email";
-import { absoluteCampaignBuilderEditArtworkHref } from "@/lib/campaign-builder-v2/navigation";
+import {
+  absoluteCampaignBuilderEditArtworkHref,
+  absoluteCampaignBuilderPreviewMilestoneHref,
+} from "@/lib/campaign-builder-v2/navigation";
 import { resolveSiteOrigin } from "@/lib/site/url";
 import { escapeHtml } from "@/lib/utils/html";
 import { createClient } from "@/lib/supabase/server";
@@ -251,23 +254,33 @@ export async function sendChangeRequestedEmail(
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
   const reviewHref = `${base.replace(/\/$/, "")}/events/${input.eventId}/campaign-builder#review`;
+  const editPreviewHref = input.campaignMilestoneId
+    ? absoluteCampaignBuilderPreviewMilestoneHref(
+        input.eventId,
+        input.campaignMilestoneId,
+      )
+    : null;
   const editArtworkHref = input.campaignMilestoneId
     ? absoluteCampaignBuilderEditArtworkHref(
         input.eventId,
         input.campaignMilestoneId,
       )
     : null;
-  const primaryHref = editArtworkHref ?? reviewHref;
-  const primaryLabel = editArtworkHref ? "Edit artwork" : "View in Create with AI";
+  const primaryHref = editPreviewHref ?? editArtworkHref ?? reviewHref;
+  const primaryLabel = editPreviewHref
+    ? "Edit & resend"
+    : editArtworkHref
+      ? "Edit artwork"
+      : "View in Create with AI";
   const content = contentPreviewFromInput(input);
   const commentBox = `<div style="margin:16px 0;padding:12px 14px;border:1px solid #f0c4c4;background:#fdf2f2;color:#8b3f3f;font-size:14px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><strong style="display:block;margin-bottom:6px;">Change request</strong>${escapeHtml(input.comment)}</div>`;
   const html = buildApprovalEmailHtml({
     heading: "Changes requested",
-    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}.${commentBox}`,
+    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}. Edit caption, schedule, or artwork on that milestone, then send for re-approval — regenerating artwork is optional.${commentBox}`,
     ctaLabel: primaryLabel,
     ctaHref: primaryHref,
-    secondaryCtaLabel: editArtworkHref ? "Open Review step" : undefined,
-    secondaryCtaHref: editArtworkHref ? reviewHref : undefined,
+    secondaryCtaLabel: editArtworkHref ? "Edit artwork" : "Open Review step",
+    secondaryCtaHref: editArtworkHref ?? reviewHref,
     content,
   });
 
@@ -277,7 +290,7 @@ export async function sendChangeRequestedEmail(
     recipientEmail: input.recipientEmail,
     subject: `Changes requested: ${input.milestoneName}`,
     html,
-    text: `Changes requested for ${input.milestoneName}: ${input.comment}. ${editArtworkHref ? `Edit artwork: ${editArtworkHref}` : `Open ${reviewHref}`}${buildApprovalContentPreviewText(content)}`,
+    text: `Changes requested for ${input.milestoneName}: ${input.comment}. ${editPreviewHref ? `Edit & resend: ${editPreviewHref}` : editArtworkHref ? `Edit artwork: ${editArtworkHref}` : `Open ${reviewHref}`}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });

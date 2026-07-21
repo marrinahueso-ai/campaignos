@@ -44,6 +44,17 @@ export function campaignBuilderHref(
   return `/events/${eventId}/campaign-builder#${step}`;
 }
 
+/** Deep link that opens Preview with a milestone selected (edit caption/schedule/artwork). */
+export function campaignBuilderPreviewMilestoneHref(
+  eventId: string,
+  milestoneId: string,
+): string {
+  const params = new URLSearchParams({
+    milestone: milestoneId,
+  });
+  return `/events/${eventId}/campaign-builder?${params.toString()}#preview`;
+}
+
 /** Deep link that opens Preview and the Edit Artwork modal for a milestone. */
 export function campaignBuilderEditArtworkHref(
   eventId: string,
@@ -54,6 +65,15 @@ export function campaignBuilderEditArtworkHref(
     editArtwork: "1",
   });
   return `/events/${eventId}/campaign-builder?${params.toString()}#preview`;
+}
+
+export function absoluteCampaignBuilderPreviewMilestoneHref(
+  eventId: string,
+  milestoneId: string,
+): string {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  return `${base.replace(/\/$/, "")}${campaignBuilderPreviewMilestoneHref(eventId, milestoneId)}`;
 }
 
 export function absoluteCampaignBuilderEditArtworkHref(

@@ -77,9 +77,11 @@ Approvals hub → Review drawer → **Request changes** (comment required):
 
 ### Re-approval (after edits)
 
-1. Creator edits / regenerates in Create with AI (`#review` CTA email points here).
-2. Creator **Send for approval** again → bridge resubmitStatuses include `changes_requested` → back to `in_queue` / `assigned_to_me`.
-3. Approver can Approve again (may schedule Meta feed / send manual upload kit — smoke tests must not click Approve carelessly).
+1. Creator opens Create with AI from Approvals (**Edit & resend** → Preview for that milestone) or email CTA. Session stores `changeRequestComment` from `approval_scheduling_items.notes`.
+2. On Preview / Review, the changes-requested milestone shows the approver comment plus edit paths for **caption**, **schedule date/time**, and **artwork** (optional regenerate or upload). Edits apply to **that milestone only** — no generate-all / regenerate of sibling milestones.
+3. Creator clicks **Send for re-approval** / **Resend for approval** (banner, Review row, or Edit Artwork modal). `sendForApprovalAction` submits the current artwork URLs + captions + schedule for that milestone via the approval bridge (resubmit statuses include `changes_requested` → `in_queue` / `assigned_to_me`). Regenerating artwork is **not** required for caption- or schedule-only fixes.
+4. Bulk Review **Send for approval** only submits ready-to-send + changes_requested rows (skips milestones already awaiting approval).
+5. Approver can Approve again (may schedule Meta feed / send manual upload kit — smoke tests must not click Approve carelessly).
 
 ---
 
@@ -88,7 +90,7 @@ Approvals hub → Review drawer → **Request changes** (comment required):
 | Event | Channel | Implementation |
 |-------|---------|----------------|
 | Sent for approval | **Email** to assignee (if email resolved) | `sendApprovalAssignedEmail` → Resend via `sendEmail`; CTA `/approvals?event=` |
-| Changes requested | **Email** to creator (`requested_by_user_id`) | `sendChangeRequestedEmail`; CTA Create with AI `#review` |
+| Changes requested | **Email** to creator (`requested_by_user_id`) | `sendChangeRequestedEmail`; primary CTA **Edit & resend** → Preview for that milestone; secondary Edit artwork |
 | Content approved | **Email** to creator | `sendContentApprovedEmail` |
 | Scheduled / manual kit | **Email** | `sendScheduledDeliveryEmail` / `sendCampaignManualUploadEmail` |
 | All of the above | **Audit log** | `approval_notification_log` (`sent` / `failed` / `skipped`) |

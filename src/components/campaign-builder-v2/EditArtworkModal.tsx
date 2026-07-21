@@ -66,7 +66,9 @@ export function EditArtworkModal({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const showResend =
-    generationStatus === "changes_requested" && Boolean(onResendForApproval);
+    Boolean(onResendForApproval) &&
+    (generationStatus === "changes_requested" ||
+      generationStatus === "awaiting_approval");
 
   async function handleRegenerate() {
     setIsGenerating(true);
@@ -138,7 +140,11 @@ export function EditArtworkModal({
   return (
     <CampaignBuilderModal
       title="Edit artwork"
-      subtitle="Regenerate feed (1:1) and story (9:16) together — describe changes below"
+      subtitle={
+        showResend
+          ? "Optional: regenerate feed (1:1) and story (9:16), or apply / resend with current artwork"
+          : "Regenerate feed (1:1) and story (9:16) together — describe changes below"
+      }
       onClose={onClose}
       size="xl"
       footer={
@@ -255,7 +261,11 @@ export function EditArtworkModal({
                 disabled={busy}
                 onClick={() => void handleResendForApproval()}
               >
-                {isResending ? "Sending…" : "Resend for approval"}
+                {isResending
+                  ? "Sending…"
+                  : generationStatus === "changes_requested"
+                    ? "Send for re-approval"
+                    : "Resend for approval"}
               </Button>
             ) : null}
           </div>

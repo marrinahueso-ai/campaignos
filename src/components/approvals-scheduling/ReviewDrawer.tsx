@@ -9,7 +9,10 @@ import {
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
 import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
 import { Button } from "@/components/ui/Button";
-import { campaignBuilderEditArtworkHref } from "@/lib/campaign-builder-v2/navigation";
+import {
+  campaignBuilderEditArtworkHref,
+  campaignBuilderPreviewMilestoneHref,
+} from "@/lib/campaign-builder-v2/navigation";
 import {
   changeRequestDisplayComment,
   hasStaleContentNote,
@@ -64,6 +67,13 @@ export function ReviewDrawer({
 
   const changeRequestComment = changeRequestDisplayComment(item.notes);
   const showChangeRequestBanner = item.workflowStatus === "changes_requested";
+  const editPreviewHref =
+    item.campaignMilestoneId != null
+      ? campaignBuilderPreviewMilestoneHref(
+          item.eventId,
+          item.campaignMilestoneId,
+        )
+      : null;
   const editArtworkHref =
     item.campaignMilestoneId != null
       ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
@@ -121,13 +131,24 @@ export function ReviewDrawer({
                   An approver requested changes to this content.
                 </p>
               )}
-              {editArtworkHref ? (
-                <div className="mt-3">
-                  <Button href={editArtworkHref} variant="secondary" size="sm">
-                    Edit artwork
-                  </Button>
+              {editPreviewHref || editArtworkHref ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {editPreviewHref ? (
+                    <Button href={editPreviewHref} variant="primary" size="sm">
+                      Edit & resend
+                    </Button>
+                  ) : null}
+                  {editArtworkHref ? (
+                    <Button href={editArtworkHref} variant="secondary" size="sm">
+                      Edit artwork
+                    </Button>
+                  ) : null}
                 </div>
               ) : null}
+              <p className="mt-2 text-xs text-red-800/80">
+                Caption, schedule, and artwork can be updated without regenerating
+                other milestones.
+              </p>
             </div>
           ) : null}
 

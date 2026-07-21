@@ -208,6 +208,11 @@ export interface MilestonePreviewContent {
   /** Optional link included in manual-upload emails (e.g. Instagram sticker URL). */
   manualUploadLink: string;
   approvalStatuses: MilestoneApprovalStatus[];
+  /**
+   * Approver comment when generationStatus is changes_requested.
+   * Synced from approval_scheduling_items.notes; cleared on resubmit/approve.
+   */
+  changeRequestComment?: string | null;
 }
 
 export type ApprovalWorkflowStepStatus = "complete" | "pending" | "empty";

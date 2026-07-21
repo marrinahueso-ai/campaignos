@@ -128,6 +128,112 @@ export function milestoneHasArtwork(preview: MilestonePreviewContent): boolean {
 }
 
 /**
+ * Per-milestone Resend / re-approval after edits (caption, schedule, or artwork).
+ * Does not require regenerating artwork — existing URLs are enough.
+ */
+export function canResendMilestoneForApproval(
+  preview: MilestonePreviewContent,
+): boolean {
+  if (!milestoneHasArtwork(preview)) {
+    return false;
+  }
+  const status = resolveMilestoneGenerationStatus(preview);
+  return status === "changes_requested" || status === "awaiting_approval";
+}
+
+/**
+ * Bulk Review "Send for approval" eligibility.
+ * Includes first-time ready content and changes_requested resubmits.
+ * Skips milestones already awaiting approval so bulk send does not re-bump every row.
+ */
+export function isMilestoneEligibleForApprovalSubmit(
+  preview: MilestonePreviewContent,
+): boolean {
+  if (!milestoneHasArtwork(preview)) {
+    return false;
+  }
+  const status = resolveMilestoneGenerationStatus(preview);
+  if (status === "changes_requested") {
+    return true;
+  }
+  if (
+    status === "awaiting_approval" ||
+    status === "approved" ||
+    status === "scheduled" ||
+    status === "published"
+  ) {
+    return false;
+  }
+  return derivedPreviewStatus(preview) === "ready";
+}
+
+/**
+ * Keep changes_requested / awaiting_approval while the creator edits caption,
+ * schedule, or artwork. Content-derived statuses (generated / needs_review)
+ * must not wipe the approval workflow until an explicit resubmit/approve.
+ */
+export function preserveApprovalWorkflowStatus(
+  current: MilestoneGenerationStatus | undefined,
+  next: MilestoneGenerationStatus,
+): MilestoneGenerationStatus {
+  if (current === "changes_requested" || current === "awaiting_approval") {
+    if (
+      next === "awaiting_approval" ||
+      next === "approved" ||
+      next === "scheduled" ||
+      next === "published" ||
+      next === "changes_requested"
+    ) {
+      return next;
+    }
+    return current;
+  }
+  return next;
+}
+
+/** Session patch after a successful single-milestone resubmit. */
+export function previewAfterResendForApproval(
+  preview: MilestonePreviewContent,
+  submittedAt: string = new Date().toISOString(),
+): Pick<
+  MilestonePreviewContent,
+  "generationStatus" | "status" | "approvalStatuses" | "changeRequestComment"
+> {
+  const approvalStatuses =
+    preview.approvalStatuses.length > 0
+      ? preview.approvalStatuses.map((entry) =>
+          entry.role === "creator"
+            ? entry
+            : {
+                ...entry,
+                status: "pending" as const,
+                timestamp: submittedAt,
+              },
+        )
+      : [
+          {
+            role: "creator" as const,
+            label: "Creator",
+            status: "not-started" as const,
+            timestamp: null,
+          },
+          {
+            role: "committee-chair" as const,
+            label: "Committee Chair",
+            status: "pending" as const,
+            timestamp: submittedAt,
+          },
+        ];
+
+  return {
+    generationStatus: "awaiting_approval",
+    status: "ready",
+    approvalStatuses,
+    changeRequestComment: null,
+  };
+}
+
+/**
  * Caption platforms required for completeness — derived from enabled formats,
  * not milestone.platforms. Generation must write captions for this set or
  * Preview stays incomplete ("In progress") even when artwork exists.

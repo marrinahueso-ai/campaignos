@@ -33,6 +33,7 @@ export function applySchedulingOutcomeToPreview(
   preview: MilestonePreviewContent,
   outcome: SchedulingSessionOutcome,
   at: string = new Date().toISOString(),
+  changeRequestComment?: string | null,
 ): MilestonePreviewContent {
   if (outcome === "changes_requested") {
     const approvalStatuses =
@@ -61,10 +62,16 @@ export function applySchedulingOutcomeToPreview(
             },
           ];
 
+    const nextComment =
+      changeRequestComment !== undefined
+        ? changeRequestComment?.trim() || null
+        : (preview.changeRequestComment ?? null);
+
     return {
       ...preview,
       generationStatus: "changes_requested",
       approvalStatuses,
+      changeRequestComment: nextComment,
     };
   }
 
@@ -102,6 +109,7 @@ export function applySchedulingOutcomeToPreview(
     generationStatus,
     status: "ready",
     approvalStatuses,
+    changeRequestComment: null,
   };
 }
 
@@ -155,6 +163,8 @@ export type SchedulingStatusRow = {
   campaignMilestoneId: string | null;
   milestoneName: string;
   workflowStatus: string;
+  /** Approver notes when workflow_status is changes_requested. */
+  notes?: string | null;
 };
 
 /**
@@ -169,21 +179,31 @@ export function applySchedulingRowsToSession(
     return session;
   }
 
-  const byMilestoneId = new Map<string, SchedulingSessionOutcome>();
-  const byNameKey = new Map<string, SchedulingSessionOutcome>();
+  const byMilestoneId = new Map<
+    string,
+    { outcome: SchedulingSessionOutcome; notes: string | null }
+  >();
+  const byNameKey = new Map<
+    string,
+    { outcome: SchedulingSessionOutcome; notes: string | null }
+  >();
 
   for (const row of rows) {
     const outcome = schedulingWorkflowToSessionOutcome(row.workflowStatus);
     if (!outcome) {
       continue;
     }
+    const entry = {
+      outcome,
+      notes: row.notes?.trim() || null,
+    };
     const milestoneId = row.campaignMilestoneId?.trim();
     if (milestoneId) {
-      byMilestoneId.set(milestoneId, outcome);
+      byMilestoneId.set(milestoneId, entry);
     }
     const nameKey = milestoneNameMatchKey(row.milestoneName);
     if (nameKey) {
-      byNameKey.set(nameKey, outcome);
+      byNameKey.set(nameKey, entry);
     }
   }
 
@@ -202,21 +222,27 @@ export function applySchedulingRowsToSession(
     const byName = milestone
       ? byNameKey.get(milestoneNameMatchKey(milestone.name))
       : undefined;
-    const outcome = byId ?? byName;
-    if (!outcome) {
+    const match = byId ?? byName;
+    if (!match) {
       return preview;
     }
 
     // Don't pull a published milestone back to awaiting via stale local flags.
-    const next = applySchedulingOutcomeToPreview(preview, outcome);
+    const next = applySchedulingOutcomeToPreview(
+      preview,
+      match.outcome,
+      undefined,
+      match.outcome === "changes_requested" ? match.notes : null,
+    );
     if (
       next.generationStatus !== preview.generationStatus ||
+      next.changeRequestComment !== preview.changeRequestComment ||
       next.approvalStatuses.some(
         (entry, index) => entry.status !== preview.approvalStatuses[index]?.status,
       )
     ) {
       touched = true;
-      workflowOutcome = outcome;
+      workflowOutcome = match.outcome;
     }
     return next;
   });

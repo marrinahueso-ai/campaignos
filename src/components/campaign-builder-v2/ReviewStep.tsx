@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Circle } from "lucide-react";
 import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBuilderProvider";
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
@@ -12,8 +13,9 @@ import {
   sendForApprovalAction,
 } from "@/lib/campaign-builder-v2/actions";
 import {
-  derivedPreviewStatus,
+  isMilestoneEligibleForApprovalSubmit,
   matchesReviewApprovalFilter,
+  previewAfterResendForApproval,
   resolveMilestoneGenerationStatus,
   type ReviewApprovalFilter,
 } from "@/lib/campaign-builder-v2/milestone-status";
@@ -55,8 +57,15 @@ export function ReviewStep() {
     toggleExpandedReview,
     updatePreviewContent,
   } = useCampaignBuilder();
+  const router = useRouter();
   const [isSending, setIsSending] = useState(false);
+  const [resendingMilestoneId, setResendingMilestoneId] = useState<string | null>(
+    null,
+  );
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [resendMessages, setResendMessages] = useState<Record<string, string>>(
+    {},
+  );
 
   const sortedMilestones = [...session.milestones].sort(
     (a, b) => a.sortOrder - b.sortOrder,
@@ -83,57 +92,99 @@ export function ReviewStep() {
     (c) => resolveMilestoneGenerationStatus(c) === "changes_requested",
   ).length;
 
+  const eligibleSubmitMilestones = sortedMilestones.filter((milestone) => {
+    const preview = session.previewContents.find(
+      (c) => c.milestoneId === milestone.id,
+    );
+    return preview ? isMilestoneEligibleForApprovalSubmit(preview) : false;
+  });
+  const eligibleSubmitPreviews = eligibleSubmitMilestones
+    .map((milestone) =>
+      session.previewContents.find((c) => c.milestoneId === milestone.id),
+    )
+    .filter((preview): preview is NonNullable<typeof preview> => Boolean(preview));
+  const bulkIsReapprovalOnly =
+    eligibleSubmitPreviews.length > 0 &&
+    eligibleSubmitPreviews.every(
+      (preview) =>
+        resolveMilestoneGenerationStatus(preview) === "changes_requested",
+    );
+
   async function handleSendForApproval() {
+    if (eligibleSubmitMilestones.length === 0) {
+      setActionMessage(
+        changesRequestedCount > 0
+          ? "Use Send for re-approval on each changes-requested milestone after edits."
+          : "No milestones are ready to send for approval.",
+      );
+      return;
+    }
+
     setIsSending(true);
     try {
       const result = await sendForApprovalAction({
         eventId: session.eventId,
         campaignName: session.inspiration.campaignName,
-        milestones: session.milestones,
-        previewContents: session.previewContents,
+        milestones: eligibleSubmitMilestones,
+        previewContents: eligibleSubmitPreviews,
       });
       setActionMessage(result.message);
       if (result.success) {
-        const submittedAt = new Date().toISOString();
-        for (const preview of session.previewContents) {
-          if (derivedPreviewStatus(preview) !== "ready") {
-            continue;
-          }
-          const approvalStatuses =
-            preview.approvalStatuses.length > 0
-              ? preview.approvalStatuses.map((entry) =>
-                  entry.role === "creator"
-                    ? entry
-                    : {
-                        ...entry,
-                        status: "pending" as const,
-                        timestamp: submittedAt,
-                      },
-                )
-              : [
-                  {
-                    role: "creator" as const,
-                    label: "Creator",
-                    status: "not-started" as const,
-                    timestamp: null,
-                  },
-                  {
-                    role: "committee-chair" as const,
-                    label: "Committee Chair",
-                    status: "pending" as const,
-                    timestamp: submittedAt,
-                  },
-                ];
-          updatePreviewContent(preview.milestoneId, {
-            generationStatus: "awaiting_approval",
-            status: "ready",
-            approvalStatuses,
-          });
+        for (const preview of eligibleSubmitPreviews) {
+          updatePreviewContent(
+            preview.milestoneId,
+            previewAfterResendForApproval(preview),
+          );
         }
         goToStep("published");
       }
     } finally {
       setIsSending(false);
+    }
+  }
+
+  async function handleResendMilestone(milestoneId: string) {
+    const milestone = session.milestones.find((entry) => entry.id === milestoneId);
+    const preview = session.previewContents.find(
+      (c) => c.milestoneId === milestoneId,
+    );
+    if (!milestone || !preview) {
+      return;
+    }
+
+    setResendingMilestoneId(milestoneId);
+    setResendMessages((prev) => {
+      const next = { ...prev };
+      delete next[milestoneId];
+      return next;
+    });
+
+    try {
+      const result = await sendForApprovalAction({
+        eventId: session.eventId,
+        campaignName: session.inspiration.campaignName,
+        milestones: [milestone],
+        previewContents: [preview],
+      });
+      if (!result.success) {
+        setResendMessages((prev) => ({
+          ...prev,
+          [milestoneId]: result.message,
+        }));
+        return;
+      }
+
+      updatePreviewContent(
+        milestoneId,
+        previewAfterResendForApproval(preview),
+      );
+      setResendMessages((prev) => ({
+        ...prev,
+        [milestoneId]: result.message || "Sent for approval.",
+      }));
+      router.refresh();
+    } finally {
+      setResendingMilestoneId(null);
     }
   }
 
@@ -221,6 +272,7 @@ export function ReviewStep() {
                     <ExpandedMilestoneReview
                       key={milestone.id}
                       index={index}
+                      eventId={session.eventId}
                       milestone={milestone}
                       preview={preview}
                       isExpanded={isExpanded}
@@ -228,6 +280,11 @@ export function ReviewStep() {
                       onUpdatePreview={(patch) =>
                         updatePreviewContent(milestone.id, patch)
                       }
+                      onResendForApproval={() => {
+                        void handleResendMilestone(milestone.id);
+                      }}
+                      isResending={resendingMilestoneId === milestone.id}
+                      resendMessage={resendMessages[milestone.id] ?? null}
                     />
                   );
                 })}
@@ -263,7 +320,9 @@ export function ReviewStep() {
 
           <div className="rounded border border-cos-border bg-cos-bg/40 px-4 py-3 text-sm text-cos-muted">
             Content must be approved before publishing. Creator → Committee Chair →
-            VP Communications → Scheduled/Delivered.
+            VP Communications → Scheduled/Delivered. Changes-requested milestones
+            can be edited (caption, schedule, artwork) and resent without
+            regenerating other milestones.
             {actionMessage && (
               <span className="mt-1 block font-medium text-cos-text">
                 {actionMessage}
@@ -290,8 +349,15 @@ export function ReviewStep() {
             >
               Approve all & schedule
             </Button>
-            <Button onClick={handleSendForApproval} disabled={isSending}>
-              {isSending ? "Sending…" : "Send for approval"}
+            <Button
+              onClick={handleSendForApproval}
+              disabled={isSending || eligibleSubmitMilestones.length === 0}
+            >
+              {isSending
+                ? "Sending…"
+                : bulkIsReapprovalOnly
+                  ? "Send for re-approval"
+                  : "Send for approval"}
             </Button>
           </>
         }
