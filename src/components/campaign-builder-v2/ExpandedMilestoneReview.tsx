@@ -3,7 +3,10 @@
 import { Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
-import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
+import {
+  reviewApprovalPill,
+  type ReviewApprovalPillTone,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import {
   ARTWORK_VIEW_OPTIONS,
   PLATFORM_FORMAT_LABELS,
@@ -17,19 +20,14 @@ import type {
   CampaignBuilderMilestone,
   DeliveryMethod,
   MilestonePreviewContent,
-  MilestonePreviewStatus,
 } from "@/lib/campaign-builder-v2/types";
 
-const STATUS_LABELS: Record<MilestonePreviewStatus, string> = {
-  ready: "Ready",
-  "needs-review": "Needs review",
-  draft: "Draft",
-};
-
-const STATUS_STYLES: Record<MilestonePreviewStatus, string> = {
-  ready: "bg-cos-success-bg text-cos-success-text",
-  "needs-review": "bg-cos-warning text-cos-warning-text",
-  draft: "bg-cos-info text-cos-info-text",
+const REVIEW_PILL_STYLES: Record<ReviewApprovalPillTone, string> = {
+  "pending-review": "bg-cos-warning text-cos-warning-text",
+  approved: "bg-cos-success-bg text-cos-success-text",
+  "changes-requested": "bg-cos-error-bg text-cos-error-text",
+  "ready-to-send": "bg-cos-info text-cos-info-text",
+  incomplete: "bg-cos-bg text-cos-muted",
 };
 
 const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
@@ -91,7 +89,7 @@ export function ExpandedMilestoneReview({
   const showManualDetails =
     preview.deliveryMethod === "manual-email" ||
     preview.enabledFormats.includes("instagram-story-manual");
-  const contentStatus = derivedPreviewStatus(preview);
+  const approvalPill = reviewApprovalPill(preview);
 
   const emailAssets = preview.enabledFormats.map((format) => {
     const view = artworkViewForFormat(format);
@@ -127,10 +125,10 @@ export function ExpandedMilestoneReview({
         <span
           className={cn(
             "shrink-0 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
-            STATUS_STYLES[contentStatus],
+            REVIEW_PILL_STYLES[approvalPill.tone],
           )}
         >
-          {STATUS_LABELS[contentStatus]}
+          {approvalPill.label}
         </span>
         <select
           value={preview.deliveryMethod}

@@ -142,13 +142,15 @@ function CampaignBuilderContent({
         </div>
       </div>
 
-      <CampaignBuilderStepper
-        currentStep={currentStep}
-        stepStates={stepperStates}
-        warnings={stepWarnings}
-        onStepClick={goToStep}
-        onWarningClick={navigateToWarning}
-      />
+      {currentStep !== "published" && (
+        <CampaignBuilderStepper
+          currentStep={currentStep}
+          stepStates={stepperStates}
+          warnings={stepWarnings}
+          onStepClick={goToStep}
+          onWarningClick={navigateToWarning}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1 flex-col bg-cos-bg">
         {renderActiveStep(currentStep)}

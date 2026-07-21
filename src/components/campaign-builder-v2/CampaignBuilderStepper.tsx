@@ -2,14 +2,17 @@
 
 import { AlertTriangle, Check } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { CAMPAIGN_BUILDER_STEPS } from "@/lib/campaign-builder-v2/navigation";
+import {
+  CAMPAIGN_BUILDER_STEPS,
+  type CampaignBuilderStepperStepId,
+} from "@/lib/campaign-builder-v2/navigation";
 import type { CampaignBuilderStepId } from "@/lib/campaign-builder-v2/types";
 import type { StepperStepState } from "@/lib/campaign-builder-v2/health";
 import type { StepWarning } from "@/lib/campaign-builder-v2/types";
 
 interface CampaignBuilderStepperProps {
   currentStep: CampaignBuilderStepId;
-  stepStates: Record<CampaignBuilderStepId, StepperStepState>;
+  stepStates: Record<CampaignBuilderStepperStepId, StepperStepState>;
   warnings: StepWarning[];
   onStepClick?: (step: CampaignBuilderStepId) => void;
   onWarningClick?: (warning: StepWarning) => void;

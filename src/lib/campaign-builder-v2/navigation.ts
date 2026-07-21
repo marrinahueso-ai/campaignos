@@ -1,7 +1,8 @@
 import type { CampaignBuilderStepId } from "@/lib/campaign-builder-v2/types";
 
+/** Numbered progress steps (excludes the post-submit confirmation view). */
 export const CAMPAIGN_BUILDER_STEPS: Array<{
-  id: CampaignBuilderStepId;
+  id: Exclude<CampaignBuilderStepId, "published">;
   label: string;
   subtitle?: string;
 }> = [
@@ -9,12 +10,18 @@ export const CAMPAIGN_BUILDER_STEPS: Array<{
   { id: "milestones", label: "Campaign Milestones" },
   { id: "preview", label: "Preview Campaign", subtitle: "Create content one milestone at a time" },
   { id: "review", label: "Review & Approve" },
-  { id: "published", label: "Published" },
 ];
+
+export type CampaignBuilderStepperStepId =
+  (typeof CAMPAIGN_BUILDER_STEPS)[number]["id"];
 
 export const DEFAULT_CAMPAIGN_BUILDER_STEP: CampaignBuilderStepId = "inspiration";
 
-const VALID_STEPS = new Set<string>(CAMPAIGN_BUILDER_STEPS.map((step) => step.id));
+/** Stepper steps plus the Sent-for-approval confirmation hash/view. */
+const VALID_STEPS = new Set<string>([
+  ...CAMPAIGN_BUILDER_STEPS.map((step) => step.id),
+  "published",
+]);
 
 export function isValidCampaignBuilderStep(
   step: string,

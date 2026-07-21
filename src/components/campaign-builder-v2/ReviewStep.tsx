@@ -11,16 +11,21 @@ import {
   saveDraftAction,
   sendForApprovalAction,
 } from "@/lib/campaign-builder-v2/actions";
-import { derivedPreviewStatus } from "@/lib/campaign-builder-v2/milestone-status";
+import {
+  derivedPreviewStatus,
+  matchesReviewApprovalFilter,
+  resolveMilestoneGenerationStatus,
+  type ReviewApprovalFilter,
+} from "@/lib/campaign-builder-v2/milestone-status";
 import { cn } from "@/lib/utils/cn";
 import type { ApprovalWorkflowStepStatus } from "@/lib/campaign-builder-v2/types";
 
-const REVIEW_TABS = [
+const REVIEW_TABS: Array<{ id: ReviewApprovalFilter; label: string }> = [
   { id: "all", label: "All Milestones" },
   { id: "needs-review", label: "Needs review" },
   { id: "approved", label: "Approved" },
   { id: "changes-requested", label: "Changes requested" },
-] as const;
+];
 
 function WorkflowStepIcon({ status }: { status: ApprovalWorkflowStepStatus }) {
   if (status === "complete") {
@@ -62,16 +67,21 @@ export function ReviewStep() {
       (c) => c.milestoneId === milestone.id,
     );
     if (!preview) return false;
-    if (session.reviewFilter === "all") return true;
-    const status = derivedPreviewStatus(preview);
-    if (session.reviewFilter === "needs-review") {
-      return status === "needs-review";
-    }
-    if (session.reviewFilter === "approved") {
-      return status === "ready";
-    }
-    return status === "draft";
+    return matchesReviewApprovalFilter(preview, session.reviewFilter);
   });
+
+  const pendingReviewCount = session.previewContents.filter(
+    (c) => resolveMilestoneGenerationStatus(c) === "awaiting_approval",
+  ).length;
+  const approvedCount = session.previewContents.filter((c) => {
+    const status = resolveMilestoneGenerationStatus(c);
+    return (
+      status === "approved" || status === "scheduled" || status === "published"
+    );
+  }).length;
+  const changesRequestedCount = session.previewContents.filter(
+    (c) => resolveMilestoneGenerationStatus(c) === "changes_requested",
+  ).length;
 
   async function handleSendForApproval() {
     setIsSending(true);
@@ -171,18 +181,8 @@ export function ReviewStep() {
               </p>
             </div>
             <p className="text-sm text-cos-muted">
-              {
-                session.previewContents.filter(
-                  (c) => derivedPreviewStatus(c) === "ready",
-                ).length
-              }{" "}
-              ready ·{" "}
-              {
-                session.previewContents.filter(
-                  (c) => derivedPreviewStatus(c) === "needs-review",
-                ).length
-              }{" "}
-              need review
+              {pendingReviewCount} pending review · {approvedCount} approved ·{" "}
+              {changesRequestedCount} changes requested
             </p>
           </div>
 

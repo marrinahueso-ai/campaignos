@@ -40,6 +40,61 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneGenerationStatus, string> 
   failed: "Failed",
 };
 
+/** Review-step filter tabs (approval lifecycle, not content readiness). */
+export type ReviewApprovalFilter =
+  | "all"
+  | "needs-review"
+  | "approved"
+  | "changes-requested";
+
+export type ReviewApprovalPillTone =
+  | "pending-review"
+  | "approved"
+  | "changes-requested"
+  | "ready-to-send"
+  | "incomplete";
+
+export function matchesReviewApprovalFilter(
+  preview: MilestonePreviewContent,
+  filter: ReviewApprovalFilter,
+): boolean {
+  const status = resolveMilestoneGenerationStatus(preview);
+  if (filter === "all") return true;
+  if (filter === "needs-review") return status === "awaiting_approval";
+  if (filter === "approved") {
+    return (
+      status === "approved" || status === "scheduled" || status === "published"
+    );
+  }
+  if (filter === "changes-requested") return status === "changes_requested";
+  return true;
+}
+
+/** Pill shown on Review milestone rows after / before send. */
+export function reviewApprovalPill(preview: MilestonePreviewContent): {
+  label: string;
+  tone: ReviewApprovalPillTone;
+} {
+  const status = resolveMilestoneGenerationStatus(preview);
+  if (status === "awaiting_approval") {
+    return { label: "Pending Review", tone: "pending-review" };
+  }
+  if (
+    status === "approved" ||
+    status === "scheduled" ||
+    status === "published"
+  ) {
+    return { label: "Approved", tone: "approved" };
+  }
+  if (status === "changes_requested") {
+    return { label: "Changes requested", tone: "changes-requested" };
+  }
+  if (derivedPreviewStatus(preview) === "ready") {
+    return { label: "Ready to send", tone: "ready-to-send" };
+  }
+  return { label: "Incomplete", tone: "incomplete" };
+}
+
 /**
  * Shared milestone status for timeline rows, preview rail, and edit modal.
  * Always derive from preview content via inferGenerationStatus — never trust

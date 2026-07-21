@@ -9,7 +9,10 @@ import {
   countCompleteMilestones,
   derivedPreviewStatus,
 } from "./milestone-status.ts";
-import { CAMPAIGN_BUILDER_STEPS } from "./navigation.ts";
+import {
+  CAMPAIGN_BUILDER_STEPS,
+  type CampaignBuilderStepperStepId,
+} from "./navigation.ts";
 
 export function computeCampaignHealthPercent(
   milestones: CampaignBuilderMilestone[],
@@ -56,7 +59,7 @@ export function computeStepperStates(
   milestones: CampaignBuilderMilestone[],
   previewContents: MilestonePreviewContent[],
   currentStep: CampaignBuilderStepId,
-): Record<CampaignBuilderStepId, StepperStepState> {
+): Record<CampaignBuilderStepperStepId, StepperStepState> {
   const readyCount = previewContents.filter(
     (c) => derivedPreviewStatus(c) === "ready",
   ).length;
@@ -92,17 +95,20 @@ export function computeStepperStates(
       derivedPreviewStatus(c) === "needs-review",
   );
 
-  const stepOrder: CampaignBuilderStepId[] = [
+  const stepOrder: CampaignBuilderStepperStepId[] = [
     "inspiration",
     "milestones",
     "preview",
     "review",
-    "published",
   ];
-  const currentIndex = stepOrder.indexOf(currentStep);
+  // Confirmation view sits after Review — treat as past the last stepper step.
+  const currentIndex =
+    currentStep === "published"
+      ? stepOrder.length
+      : stepOrder.indexOf(currentStep as CampaignBuilderStepperStepId);
 
   function statusForStep(
-    step: CampaignBuilderStepId,
+    step: CampaignBuilderStepperStepId,
     complete: boolean,
     inProgress: boolean,
     warning: boolean,
@@ -171,17 +177,11 @@ export function computeStepperStates(
     ),
     review: statusForStep(
       "review",
-      !reviewPending && readyCount === milestones.length,
+      (!reviewPending && readyCount === milestones.length) ||
+        currentStep === "published",
       currentStep === "review",
       reviewPending && currentStep !== "published",
       reviewPending ? "Pending" : "Ready to publish",
-    ),
-    published: statusForStep(
-      "published",
-      currentStep === "published",
-      false,
-      false,
-      currentStep === "published" ? "Complete" : "Not started",
     ),
   };
 }
@@ -254,6 +254,5 @@ export function computeStepperSubtitles(
             ? `${draftCount} drafts`
             : "Not started",
     review: "Pending",
-    published: "Not started",
   };
 }

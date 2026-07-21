@@ -23,6 +23,7 @@ import {
   computeStepperStates,
   type StepperStepState,
 } from "@/lib/campaign-builder-v2/health";
+import type { CampaignBuilderStepperStepId } from "@/lib/campaign-builder-v2/navigation";
 import {
   loadCampaignBuilderSessionAction,
   saveCampaignBuilderSessionAction,
@@ -124,7 +125,7 @@ interface CampaignBuilderContextValue {
   session: CampaignBuilderSession;
   currentStep: CampaignBuilderStepId;
   healthPercent: number;
-  stepperStates: Record<CampaignBuilderStepId, StepperStepState>;
+  stepperStates: Record<CampaignBuilderStepperStepId, StepperStepState>;
   stepWarnings: StepWarning[];
   playbookOptions: PlaybookOption[];
   brandKitOptions: BrandKitOption[];

@@ -52,8 +52,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Hub to pick/create an event — **shipped**
 - Inspiration / creative setup, logos, milestones — **shipped**
 - Generate artwork + captions per milestone — **shipped**
-- Review, edit, regenerate, send to approvals — **shipped**
-- Published / full Meta slot sync step — **stub** / incomplete
+- 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
+- Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
+- Sent for approval confirmation notice (not a stepper step); returns to Review — **shipped**
+- Full Meta slot sync after approval — **stub** / incomplete
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
