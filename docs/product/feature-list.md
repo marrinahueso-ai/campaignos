@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Create with AI Review approval workflow uses real Team Access approvers
+**Last updated:** July 21, 2026 — Event detail hero stats rewired + linked; Create with AI Review approval workflow uses real Team Access approvers
 
 ---
 
@@ -45,6 +45,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Events
 - Events list, create, edit — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
+- Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks/Files from playbook tables) — clickable to Create with AI / Approvals / Tasks / Files — **shipped**
 - Volunteers (SignUpGenius URL) — **shipped**
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 

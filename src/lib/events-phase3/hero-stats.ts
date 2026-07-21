@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { areEventPlaybookTablesAvailable } from "@/lib/event-playbooks/queries";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
+import {
+  countMilestonesFromSessionData,
+  resolveHeroMilestoneCount,
+} from "@/lib/events-phase3/hero-stats-utils";
 
 function isAbsentTable(error: { code?: string; message?: string } | null): boolean {
   if (!error) {
@@ -19,13 +23,20 @@ export const getEventDetailHeroStats = cache(
     const tablesAvailable = await areEventPlaybookTablesAvailable();
 
     const [
-      milestonesResult,
+      builderSessionResult,
+      communicationStepsResult,
       classicApprovalsResult,
       schedulingApprovalsResult,
-      scheduledSlotsResult,
+      scheduledPostsResult,
       tasksResult,
       filesResult,
     ] = await Promise.all([
+      // Focused select only — avoids full session load + scheduling sync side effects.
+      supabase
+        .from("campaign_builder_sessions")
+        .select("session_data")
+        .eq("event_id", eventId)
+        .maybeSingle(),
       supabase
         .from("event_communication_steps")
         .select("id", { count: "exact", head: true })
@@ -45,10 +56,10 @@ export const getEventDetailHeroStats = cache(
           "changes_requested",
         ]),
       supabase
-        .from("meta_publication_slots")
-        .select("relative_day")
+        .from("approval_scheduling_items")
+        .select("id", { count: "exact", head: true })
         .eq("event_id", eventId)
-        .in("status", ["scheduled", "approved"]),
+        .eq("workflow_status", "scheduled"),
       tablesAvailable
         ? supabase
             .from("event_playbook_tasks")
@@ -63,10 +74,28 @@ export const getEventDetailHeroStats = cache(
         : Promise.resolve({ count: 0, error: null }),
     ]);
 
-    const milestones =
-      milestonesResult.error && !isAbsentTable(milestonesResult.error)
+    let sessionMilestoneCount: number | null = null;
+    if (
+      !builderSessionResult.error ||
+      isAbsentTable(builderSessionResult.error)
+    ) {
+      if (!builderSessionResult.error && builderSessionResult.data) {
+        sessionMilestoneCount = countMilestonesFromSessionData(
+          builderSessionResult.data.session_data,
+        );
+      }
+    }
+
+    const communicationSteps =
+      communicationStepsResult.error &&
+      !isAbsentTable(communicationStepsResult.error)
         ? 0
-        : (milestonesResult.count ?? 0);
+        : (communicationStepsResult.count ?? 0);
+
+    const milestones = resolveHeroMilestoneCount(
+      sessionMilestoneCount,
+      communicationSteps,
+    );
 
     const classicApprovals =
       classicApprovalsResult.error && !isAbsentTable(classicApprovalsResult.error)
@@ -79,22 +108,10 @@ export const getEventDetailHeroStats = cache(
         ? 0
         : (schedulingApprovalsResult.count ?? 0);
 
-    let scheduledPosts = 0;
-    if (
-      !scheduledSlotsResult.error ||
-      isAbsentTable(scheduledSlotsResult.error)
-    ) {
-      if (!scheduledSlotsResult.error) {
-        const days = new Set<number>();
-        for (const row of scheduledSlotsResult.data ?? []) {
-          const day = (row as { relative_day: number | null }).relative_day;
-          if (typeof day === "number") {
-            days.add(day);
-          }
-        }
-        scheduledPosts = days.size;
-      }
-    }
+    const scheduledPosts =
+      scheduledPostsResult.error && !isAbsentTable(scheduledPostsResult.error)
+        ? 0
+        : (scheduledPostsResult.count ?? 0);
 
     const tasks =
       "error" in tasksResult && tasksResult.error && !isAbsentTable(tasksResult.error)

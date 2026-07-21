@@ -285,6 +285,11 @@ export function eventApprovalsHref(eventId: string): string {
   return `/approvals?event=${encodeURIComponent(eventId)}`;
 }
 
+/** Event Detail Approvals tab (embedded Approvals hub). */
+export function eventDetailApprovalsHref(eventId: string): string {
+  return `/events/${encodeURIComponent(eventId)}?tab=approvals`;
+}
+
 /** Event Detail Tasks tab (embedded Tasks V2). */
 export function eventTasksHref(eventId: string): string {
   return `/events/${encodeURIComponent(eventId)}?tab=tasks`;

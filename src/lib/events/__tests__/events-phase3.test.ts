@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   createWithAiHref,
   eventApprovalsHref,
+  eventDetailApprovalsHref,
   eventFilesHref,
   eventNotesHref,
   eventTasksGlobalHref,
@@ -316,6 +317,10 @@ describe("Phase 3 deep links and fallback flag", () => {
   });
 
   it("scopes tasks, files, notes, and volunteers to the event detail tabs", () => {
+    assert.equal(
+      eventDetailApprovalsHref("evt-123"),
+      "/events/evt-123?tab=approvals",
+    );
     assert.equal(eventTasksHref("evt-123"), "/events/evt-123?tab=tasks");
     assert.equal(eventTasksGlobalHref("evt-123"), "/tasks?event=evt-123");
     assert.equal(eventFilesHref("evt-123"), "/events/evt-123?tab=files");

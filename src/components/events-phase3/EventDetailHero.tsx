@@ -51,7 +51,12 @@ export function EventDetailHero({
             <EventDetailHeroSummary event={event} />
           </div>
         </div>
-        <EventDetailHeroStatsStrip stats={stats} className="mt-4" />
+        <EventDetailHeroStatsStrip
+          eventId={event.id}
+          stats={stats}
+          className="mt-4"
+        />
+
       </div>
 
       <div className="min-w-0 w-full lg:col-span-2 xl:col-span-1">
