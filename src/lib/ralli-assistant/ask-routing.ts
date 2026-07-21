@@ -1,6 +1,12 @@
+import { shouldPreferCommsOps } from "./comms-intent.ts";
 import { resolveEventFromQuestion } from "./event-resolver.ts";
-import { extractEventIdFromPathname, isOpsIntent } from "./ops-intent.ts";
+import {
+  extractEventIdFromPathname,
+  isHowToNavigationQuestion,
+  isOpsIntent,
+} from "./ops-intent.ts";
 import { shouldPreferOrgBriefing } from "./org-intent.ts";
+import { shouldPreferVolunteersOps } from "./volunteers-intent.ts";
 
 export type ResolvableEventLite = {
   id: string;
@@ -22,21 +28,55 @@ export function questionNamesSpecificEvent(
   return resolution.kind === "matched";
 }
 
+function hasEventScope(
+  question: string,
+  pathname: string | null | undefined,
+  events?: ResolvableEventLite[],
+): boolean {
+  if (extractEventIdFromPathname(pathname)) {
+    return true;
+  }
+  if (events && questionNamesSpecificEvent(question, events)) {
+    return true;
+  }
+  return false;
+}
+
+/** Phase 3 volunteers / communications status intents (not how-to). */
+export function isVolunteersOrCommsOpsIntent(question: string): boolean {
+  return shouldPreferVolunteersOps(question) || shouldPreferCommsOps(question);
+}
+
 /**
  * Org / role briefing path — even without an event name.
  * Event-scoped phrasing (named event) stays on Phase 1 ops.
+ * Phase 3 volunteer/comms without event scope also uses the enriched org pack.
  */
 export function shouldRouteToOrgBriefing(
   question: string,
   events?: ResolvableEventLite[],
+  pathname?: string | null,
 ): boolean {
-  if (!shouldPreferOrgBriefing(question)) {
-    return false;
+  if (shouldPreferOrgBriefing(question)) {
+    if (events && questionNamesSpecificEvent(question, events)) {
+      return false;
+    }
+    return true;
   }
-  if (events && questionNamesSpecificEvent(question, events)) {
-    return false;
+
+  // Phase 3: org-level volunteers/comms when not event-scoped.
+  if (isVolunteersOrCommsOpsIntent(question)) {
+    if (hasEventScope(question, pathname, events)) {
+      return false;
+    }
+    // Navigation how-tos (“Where do I find volunteers?”) stay FAQ.
+    if (isHowToNavigationQuestion(question) && !isOpsIntent(question)) {
+      return false;
+    }
+    return true;
   }
-  return true;
+
+  return false;
 }
 
 /**
@@ -48,8 +88,11 @@ export function shouldRouteToOpsAsk(
   pathname?: string | null,
   events?: ResolvableEventLite[],
 ): boolean {
-  if (shouldRouteToOrgBriefing(question, events)) {
+  if (shouldRouteToOrgBriefing(question, events, pathname)) {
     return false;
+  }
+  if (isVolunteersOrCommsOpsIntent(question)) {
+    return true;
   }
   if (isOpsIntent(question)) {
     return true;

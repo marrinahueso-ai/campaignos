@@ -6,12 +6,15 @@ import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { getEventPlaybookTasksForEvents } from "@/lib/event-playbooks/queries";
 import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
 import { getEventNextStep } from "@/lib/event-workspace/get-next-helpful-action";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
 import {
   eventApprovalsHref,
   eventTasksHref,
+  eventVolunteersHref,
 } from "@/lib/events/event-responsibility";
 import { countMilestonesFromSessionData } from "@/lib/events-phase3/hero-stats-utils";
 import { getEventCommunicationSteps } from "@/lib/playbooks/queries";
+import { loadCommunicationsContextForEvent } from "@/lib/ralli-assistant/communications-context";
 import type { ResolvableEvent } from "@/lib/ralli-assistant/event-resolver";
 import type {
   OpsApprovalSummary,
@@ -19,7 +22,9 @@ import type {
   OpsScheduleItem,
   OpsTaskSummary,
 } from "@/lib/ralli-assistant/ops-context-format";
+import { emptyOpsVolunteersAndComms } from "@/lib/ralli-assistant/ops-context-format";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
+import { loadVolunteersContextForEvent } from "@/lib/ralli-assistant/volunteers-context";
 import {
   addDaysToDateOnly,
   getTodayDateString,
@@ -47,7 +52,9 @@ function buildOpsLinks(eventId: string): ProductHelpLink[] {
   return [
     { label: "Event tasks", href: eventTasksHref(eventId) },
     { label: "Approvals", href: eventApprovalsHref(eventId) },
+    { label: "Volunteers", href: eventVolunteersHref(eventId) },
     { label: "Create with AI", href: campaignBuilderHref(eventId) },
+    { label: "Communications Hub", href: "/communications" },
     { label: "Event page", href: `/events/${eventId}` },
     { label: "Calendar", href: "/calendar" },
   ];
@@ -76,6 +83,7 @@ export async function buildOpsContextPack(
   const tomorrow = addDaysToDateOnly(today, 1);
   const weekEnd = addDaysToDateOnly(today, 7);
 
+  const phase3Empty = emptyOpsVolunteersAndComms();
   const emptyPack: OpsContextPack = {
     event,
     nextAction: null,
@@ -96,8 +104,13 @@ export async function buildOpsContextPack(
       builderStep: null,
       summary: "No Create with AI session data available yet.",
     },
+    volunteers: phase3Empty.volunteers,
+    communications: phase3Empty.communications,
     links: buildOpsLinks(event.id),
   };
+
+  const membership = await getActiveMembership().catch(() => null);
+  const organizationId = membership?.organizationId ?? null;
 
   const [
     steps,
@@ -106,6 +119,8 @@ export async function buildOpsContextPack(
     schedulingPendingResult,
     scheduledItemsResult,
     builderSessionResult,
+    volunteers,
+    communications,
   ] = await Promise.all([
     getEventCommunicationSteps(event.id).catch(() => []),
     getEventPlaybookTasksForEvents([event.id]).catch(() => []),
@@ -136,6 +151,15 @@ export async function buildOpsContextPack(
       .select("current_step, session_data")
       .eq("event_id", event.id)
       .maybeSingle(),
+    organizationId
+      ? loadVolunteersContextForEvent({
+          eventId: event.id,
+          organizationId,
+        }).catch(() => phase3Empty.volunteers)
+      : Promise.resolve(phase3Empty.volunteers),
+    loadCommunicationsContextForEvent(event.id).catch(
+      () => phase3Empty.communications,
+    ),
   ]);
 
   const nextAction =
@@ -279,6 +303,8 @@ export async function buildOpsContextPack(
       builderStep,
       summary: readinessSummary,
     },
+    volunteers,
+    communications,
     links: buildOpsLinks(event.id),
   };
 }

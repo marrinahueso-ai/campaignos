@@ -1,4 +1,16 @@
+import type { OrgCommunicationsContextSection } from "./communications-format.ts";
+import {
+  emptyOrgCommunicationsSection,
+  formatOrgCommunicationsSectionLines,
+  serializeOrgCommunicationsForPrompt,
+} from "./communications-format.ts";
 import type { ProductHelpLink } from "./product-help-knowledge.ts";
+import type { OrgVolunteersContextSection } from "./volunteers-format.ts";
+import {
+  emptyOrgVolunteersSection,
+  formatOrgVolunteersSectionLines,
+  serializeOrgVolunteersForPrompt,
+} from "./volunteers-format.ts";
 
 export interface OrgApprovalItem {
   id: string;
@@ -67,6 +79,8 @@ export interface OrgBriefingContextPack {
     scheduled: OrgScheduleItem[];
     events: Array<{ id: string; title: string; date: string }>;
   };
+  volunteers: OrgVolunteersContextSection;
+  communications: OrgCommunicationsContextSection;
   links: ProductHelpLink[];
 }
 
@@ -76,8 +90,25 @@ export function buildOrgBriefingLinks(): ProductHelpLink[] {
     { label: "Today", href: "/dashboard" },
     { label: "Tasks", href: "/tasks" },
     { label: "Campaigns", href: "/events" },
+    { label: "Communications Hub", href: "/communications" },
     { label: "Calendar", href: "/calendar" },
   ];
+}
+
+export function emptyOrgPhase3Sections(): {
+  volunteers: OrgVolunteersContextSection;
+  communications: OrgCommunicationsContextSection;
+} {
+  return {
+    volunteers: emptyOrgVolunteersSection([
+      "Individual volunteer response status (who hasn’t responded)",
+      "Family / parent view counts for volunteer pages",
+    ]),
+    communications: emptyOrgCommunicationsSection([
+      "Family / parent email open or view counts",
+      "Meta post performance (reach, best-performing post) — Insights later",
+    ]),
+  };
 }
 
 /** Deterministic answer when AI is unavailable — grounded in the pack only. */
@@ -155,8 +186,12 @@ export function formatDeterministicOrgBriefingAnswer(
   }
 
   lines.push("");
+  lines.push(...formatOrgVolunteersSectionLines(pack.volunteers));
+  lines.push("");
+  lines.push(...formatOrgCommunicationsSectionLines(pack.communications));
+  lines.push("");
   lines.push(
-    "Use the links below for Approvals, Today, Tasks, Campaigns, or Calendar.",
+    "Use the links below for Approvals, Today, Tasks, Campaigns, Communications, or Calendar.",
   );
 
   return lines.join("\n");
@@ -219,6 +254,8 @@ export function serializeOrgBriefingForPrompt(
         })),
         events: pack.thisWeek.events,
       },
+      volunteers: serializeOrgVolunteersForPrompt(pack.volunteers),
+      communications: serializeOrgCommunicationsForPrompt(pack.communications),
       links: pack.links,
     },
     null,

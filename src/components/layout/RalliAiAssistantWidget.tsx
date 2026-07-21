@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { askRalliAssistantAction } from "@/lib/ralli-assistant/actions";
+import type { AskRalliSource } from "@/lib/ralli-assistant/ask";
 import { type ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 import { cn } from "@/lib/utils/cn";
 
@@ -18,18 +19,25 @@ interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   links?: ProductHelpLink[];
+  source?: AskRalliSource | null;
 }
 
-/** Org briefings + event ops + a few product how-tos (~8 chips). */
+function assistantEyebrow(source: AskRalliSource | null): string {
+  if (source === "ops" || source === "org") return "Your next steps";
+  if (source === "faq" || source === "ai") return "Product how-tos";
+  return "Next steps & how-tos";
+}
+
+/** Org briefings + event ops + Phase 3 volunteers/comms + a how-to (~8 chips). */
 const ASK_RALLI_SUGGESTIONS = [
   "What needs my approval?",
   "Give me today's summary",
-  "Which events need attention?",
+  "Do I need more volunteers?",
+  "What social posts are missing?",
+  "Have I emailed families yet?",
   "What should I do next for this event?",
-  "What's overdue?",
   "What's publishing this week?",
   "How do I create a campaign?",
-  "Where do I find my approvals?",
 ] as const;
 
 function newId(): string {
@@ -44,6 +52,7 @@ export function RalliAiAssistantWidget({
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [lastSource, setLastSource] = useState<AskRalliSource | null>(null);
   const [pending, startTransition] = useTransition();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +81,7 @@ export function RalliAiAssistantWidget({
         setError(result.error ?? "Something went wrong. Try again.");
         return;
       }
+      setLastSource(result.source);
       setMessages((prev) => [
         ...prev,
         {
@@ -79,6 +89,7 @@ export function RalliAiAssistantWidget({
           role: "assistant",
           text: result.answer!,
           links: result.links,
+          source: result.source,
         },
       ]);
     });
@@ -151,7 +162,7 @@ export function RalliAiAssistantWidget({
             <div className="flex items-start justify-between gap-3 border-b border-cos-border px-5 py-4">
               <div>
                 <p className="text-[11px] font-medium tracking-wide text-cos-muted uppercase">
-                  Ops coach + guide
+                  {assistantEyebrow(lastSource)}
                 </p>
                 <h2
                   id="ralli-ask-title"
@@ -247,7 +258,7 @@ export function RalliAiAssistantWidget({
                   id="ralli-ask-input"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="What needs my approval…?"
+                  placeholder="What's next… or How do I…?"
                   disabled={pending}
                   className="h-10 flex-1 rounded-[10px] border border-cos-border bg-cos-bg px-3 text-sm text-cos-text outline-none placeholder:text-cos-muted focus:border-cos-text disabled:opacity-60"
                 />

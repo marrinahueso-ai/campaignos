@@ -133,3 +133,29 @@ describe("Phase 2 org routing fixtures", () => {
     assert.equal(matchProductHelpTopic(question)?.id, "find-approvals");
   });
 });
+
+describe("heyralli reproduction: org briefing vs Calendar/AI", () => {
+  it('routes "what do I have this week?" to org', () => {
+    const question = "what do I have this week?";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldPreferOrgBriefing(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question), true);
+    assert.equal(shouldRouteToOpsAsk(question, null), false);
+    assert.equal(shouldPreferProductHelpFaq(question), false);
+  });
+
+  it('routes "give me todays summary?" (missing apostrophe) to org', () => {
+    const question = "give me todays summary?";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldPreferOrgBriefing(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question), true);
+    assert.equal(shouldRouteToOpsAsk(question, null), false);
+    assert.equal(shouldPreferProductHelpFaq(question), false);
+  });
+
+  it("routes today's summary with curly apostrophe to org", () => {
+    const question = "give me today’s summary?";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question), true);
+  });
+});

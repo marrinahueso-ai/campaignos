@@ -7,14 +7,17 @@ import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
 import { getApprovalQueueOverviewForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getActiveEvents } from "@/lib/events/queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { loadCommunicationsContextForOrg } from "@/lib/ralli-assistant/communications-context";
 import {
   buildOrgBriefingLinks,
+  emptyOrgPhase3Sections,
   type OrgApprovalItem,
   type OrgBriefingContextPack,
   type OrgEventAttention,
   type OrgOverdueTask,
   type OrgScheduleItem,
 } from "@/lib/ralli-assistant/org-briefing-format";
+import { loadVolunteersContextForOrg } from "@/lib/ralli-assistant/volunteers-context";
 import { createClient } from "@/lib/supabase/server";
 import {
   addDaysToDateOnly,
@@ -61,6 +64,7 @@ export async function buildOrgBriefingContextPack(): Promise<OrgBriefingContextP
   const today = getTodayDateString();
   const weekEnd = addDaysToDateOnly(today, 7);
   const links = buildOrgBriefingLinks();
+  const phase3Empty = emptyOrgPhase3Sections();
 
   const empty: OrgBriefingContextPack = {
     organizationName: null,
@@ -90,6 +94,8 @@ export async function buildOrgBriefingContextPack(): Promise<OrgBriefingContextP
       scheduled: [],
       events: [],
     },
+    volunteers: phase3Empty.volunteers,
+    communications: phase3Empty.communications,
     links,
   };
 
@@ -121,8 +127,14 @@ export async function buildOrgBriefingContextPack(): Promise<OrgBriefingContextP
 
   const eventIds = events.map((event) => event.id);
 
-  const [approvalQueue, taskRows, schedulingPendingResult, scheduledItemsResult] =
-    await Promise.all([
+  const [
+    approvalQueue,
+    taskRows,
+    schedulingPendingResult,
+    scheduledItemsResult,
+    volunteers,
+    communications,
+  ] = await Promise.all([
       getApprovalQueueOverviewForCurrentUser(undefined, {
         enrichPreviews: false,
       }).catch(() => null),
@@ -157,6 +169,15 @@ export async function buildOrgBriefingContextPack(): Promise<OrgBriefingContextP
           .eq("workflow_status", "scheduled")
           .limit(80);
       })(),
+      loadVolunteersContextForOrg({
+        organizationId: membership.organizationId,
+        events,
+        limit: 8,
+      }).catch(() => phase3Empty.volunteers),
+      loadCommunicationsContextForOrg({
+        events,
+        limit: 8,
+      }).catch(() => phase3Empty.communications),
     ]);
 
   const assignedToMe: OrgApprovalItem[] = (approvalQueue?.assignedToMe ?? [])
@@ -365,6 +386,8 @@ export async function buildOrgBriefingContextPack(): Promise<OrgBriefingContextP
       scheduled: scheduledWeek.slice(0, 12),
       events: eventsThisWeek,
     },
+    volunteers,
+    communications,
     links,
   };
 }

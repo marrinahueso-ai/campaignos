@@ -116,6 +116,22 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
     links: [{ label: "Communications Hub", href: "/communications" }],
   },
   {
+    id: "find-volunteers",
+    title: "Where do I find volunteers?",
+    keywords: [
+      "find volunteers",
+      "volunteers tab",
+      "signupgenius",
+      "sign up genius",
+      "volunteer shifts",
+    ],
+    answer: [
+      "Open a campaign → Volunteers tab to connect SignUpGenius and review open shifts.",
+      "Ask Ralli can also summarize volunteer coverage when SignUpGenius is connected (“Do I need more volunteers?”).",
+    ].join(" "),
+    links: [{ label: "Campaigns", href: "/events" }],
+  },
+  {
     id: "calendar",
     title: "How do I use the calendar?",
     keywords: ["calendar", "schedule", "when posting", "workload"],
@@ -146,7 +162,8 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
   {
     id: "tasks",
     title: "Where are my tasks?",
-    keywords: ["tasks", "to do", "checklist", "my tasks"],
+    // Avoid bare "to do" — it false-matches “what … need to do” ops questions.
+    keywords: ["tasks", "todo", "to-do", "checklist", "my tasks", "my to do"],
     answer: [
       "Open Tasks in the left nav (/tasks) for campaign work across events.",
       "Individual campaign workspaces also have planning tasks for that event.",
@@ -162,6 +179,7 @@ export const PRODUCT_HELP_SUGGESTIONS = PRODUCT_HELP_TOPICS.slice(0, 4).map(
 function normalizeQuestion(question: string): string {
   return question
     .toLowerCase()
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
     .replace(/[^\p{L}\p{N}\s?/'-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -218,6 +236,7 @@ export function buildProductHelpSystemPrompt(pathname?: string | null): string {
     "Help school PTO users navigate the product: campaigns, Create with AI, approvals, calendar, communications, tasks, and settings.",
     "You are NOT the AI Brain content generator. Do not draft social posts, captions, or artwork prompts unless the user explicitly asks how those features work.",
     "If they ask about brand voice training, point them to Settings → AI Brain (/settings/ai-brain).",
+    "Do NOT invent that you cannot summarize today/this week. For operational asks (today’s summary, what’s next for an event, what do I have this week), tell them to rephrase as “Give me today’s summary” or “What’s next for [event name]?” so the ops coach can answer from live campaign data.",
     "Answer in 2–5 short sentences. Be concrete. Prefer real nav labels and paths.",
     "When relevant, include one or two markdown-style path references like /approvals.",
     "If you are unsure, say what you know and suggest the closest nav area — never invent screens that do not exist.",

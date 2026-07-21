@@ -12,6 +12,7 @@ import {
   isOpsIntent,
   shouldPreferProductHelpFaq,
 } from "@/lib/ralli-assistant/ops-intent";
+import { shouldPreferOrgBriefing } from "@/lib/ralli-assistant/org-intent";
 import { askRalliOrgBriefing } from "@/lib/ralli-assistant/org-ask";
 import {
   buildProductHelpSystemPrompt,
@@ -69,25 +70,11 @@ export async function askRalliProductHelp(input: {
     };
   }
 
-  const matched = matchProductHelpTopic(question);
-  const preferFaq = Boolean(matched && shouldPreferProductHelpFaq(question));
-
-  // How-to / navigation FAQ wins only when clearly not operational.
-  if (preferFaq && matched) {
-    return {
-      success: true,
-      answer: formatTopicAnswer(matched),
-      links: matched.links,
-      source: "faq",
-      error: null,
-    };
-  }
-
   const events = await loadResolvableEvents();
 
-  // Phase 2: org / role briefings without requiring an event name.
-  // Named-event phrasing still takes the Phase 1 event ops path.
-  if (shouldRouteToOrgBriefing(question, events)) {
+  // Ops / org coaches always win over FAQ keyword collisions
+  // (e.g. "need to do" → tasks, "this week" → calendar).
+  if (shouldRouteToOrgBriefing(question, events, input.pathname)) {
     return askRalliOrgBriefing({ question });
   }
 
@@ -98,7 +85,11 @@ export async function askRalliProductHelp(input: {
     });
   }
 
-  // Ops intent or event page even when event list failed to load.
+  // Intent-only fallbacks when event list failed to load or name didn't resolve.
+  if (shouldPreferOrgBriefing(question)) {
+    return askRalliOrgBriefing({ question });
+  }
+
   if (
     isOpsIntent(question) ||
     Boolean(extractEventIdFromPathname(input.pathname))
@@ -107,6 +98,17 @@ export async function askRalliProductHelp(input: {
       question,
       pathname: input.pathname,
     });
+  }
+
+  const matched = matchProductHelpTopic(question);
+  if (matched && shouldPreferProductHelpFaq(question)) {
+    return {
+      success: true,
+      answer: formatTopicAnswer(matched),
+      links: matched.links,
+      source: "faq",
+      error: null,
+    };
   }
 
   if (matched) {
@@ -124,13 +126,14 @@ export async function askRalliProductHelp(input: {
       success: true,
       answer: [
         "I can help with how to use Hey Ralli — creating campaigns, finding Approvals, Create with AI, Calendar, and more.",
-        "I can also brief your org (“What needs my approval?”, “Give me today’s summary”) or answer event questions when you name an event or open an event page.",
+        "I can also brief your org (“What needs my approval?”, “Do I need more volunteers?”) or answer event questions when you name an event or open an event page.",
         "Try one of the suggested questions, or ask something like “Where do I find my approvals?”",
         "AI Brain is separate: use Settings → AI Brain for brand voice and training content.",
       ].join(" "),
       links: [
         { label: "Approvals", href: "/approvals" },
         { label: "Today", href: "/dashboard" },
+        { label: "Communications Hub", href: "/communications" },
         { label: "Create Campaign", href: "/events/create" },
         { label: "AI Brain", href: "/settings/ai-brain" },
       ],

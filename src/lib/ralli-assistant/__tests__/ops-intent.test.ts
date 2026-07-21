@@ -151,3 +151,32 @@ describe("Phase 1 ops routing fixtures", () => {
     assert.equal(matchProductHelpTopic(question)?.id, "find-approvals");
   });
 });
+
+describe("heyralli reproduction: event ops vs Tasks FAQ", () => {
+  const events = [
+    {
+      id: "evt-1",
+      title: "Back to School Fair",
+      date: "2026-08-20",
+      status: "scheduled",
+    },
+  ];
+
+  const question =
+    "what's next for back to school fair that I need to do?";
+
+  it("routes the exact user string to ops, not Tasks FAQ", () => {
+    assert.equal(isOpsIntent(question), true);
+    assert.equal(shouldPreferProductHelpFaq(question), false);
+    assert.equal(shouldRouteToOpsAsk(question, null, events), true);
+    // Must not treat “need to do” as the Tasks how-to topic.
+    assert.notEqual(matchProductHelpTopic(question)?.id, "tasks");
+  });
+
+  it("still routes with curly apostrophe in what's", () => {
+    const curly = "what’s next for back to school fair that I need to do?";
+    assert.equal(isOpsIntent(curly), true);
+    assert.equal(shouldRouteToOpsAsk(curly, null, events), true);
+    assert.equal(shouldPreferProductHelpFaq(curly), false);
+  });
+});

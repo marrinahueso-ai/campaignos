@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { emptyOrgCommunicationsSection } from "../communications-format.ts";
 import {
   formatDeterministicOrgBriefingAnswer,
   serializeOrgBriefingForPrompt,
   type OrgBriefingContextPack,
 } from "../org-briefing-format.ts";
+import { emptyOrgVolunteersSection } from "../volunteers-format.ts";
 
 function samplePack(
   overrides: Partial<OrgBriefingContextPack> = {},
@@ -108,6 +110,44 @@ function samplePack(
         { id: "evt-2", title: "Spring Carnival", date: "2026-07-24" },
       ],
     },
+    volunteers: {
+      ...emptyOrgVolunteersSection([
+        "Individual volunteer response status (who hasn’t responded)",
+      ]),
+      eventsWithVolunteerData: 1,
+      eventsNeedingVolunteers: [
+        {
+          eventId: "evt-1",
+          eventTitle: "Back to School Fair",
+          connected: true,
+          openSpots: 6,
+          needsHelpCount: 2,
+          signupReminderSuggested: true,
+        },
+      ],
+      committeesMissingChairs: [],
+    },
+    communications: {
+      ...emptyOrgCommunicationsSection([
+        "Family / parent email open or view counts",
+      ]),
+      eventsWithPlaybooks: 2,
+      eventsWithGaps: [
+        {
+          eventId: "evt-1",
+          eventTitle: "Back to School Fair",
+          socialMissingCount: 2,
+          draftEmailCount: 1,
+          missingFlyerCount: 1,
+          nextDueTitle: "Facebook save-the-date",
+          nextDueDate: "2026-07-22",
+        },
+      ],
+      socialMissingTotal: 2,
+      draftEmailTotal: 1,
+      missingFlyerTotal: 1,
+      dueTodayTotal: 0,
+    },
     links: [
       { label: "Approvals", href: "/approvals" },
       { label: "Today", href: "/dashboard" },
@@ -129,6 +169,8 @@ describe("formatDeterministicOrgBriefingAnswer", () => {
     assert.match(answer, /Events needing attention/);
     assert.match(answer, /Behind schedule: 2 overdue/);
     assert.match(answer, /Confirm volunteer leads/);
+    assert.match(answer, /Volunteers needing attention/);
+    assert.match(answer, /Communications gaps/);
     assert.match(answer, /Approvals|Today|Tasks/i);
   });
 

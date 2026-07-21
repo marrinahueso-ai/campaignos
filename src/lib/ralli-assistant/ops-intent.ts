@@ -16,9 +16,11 @@ const HOW_TO_PATTERNS: RegExp[] = [
 
 const OPS_PATTERNS: RegExp[] = [
   /\bwhat (should|do) i (have to )?do next\b/i,
-  /\bwhat('s| is) next\b/i,
+  // what's / whats / what is next (ASCII or after curly→ASCII normalize)
+  /\bwhat('?s|s| is) next\b/i,
   /\bnext (step|action|thing)\b/i,
   /\bwhat (do|should) i (focus|work) on\b/i,
+  /\bwhat .+ (do i|i) need to do\b/i,
   /\boverdue\b/i,
   /\bbehind schedule\b/i,
   /\bon schedule\b/i,
@@ -26,9 +28,9 @@ const OPS_PATTERNS: RegExp[] = [
   /\bneeds? approval\b/i,
   /\bpending approval\b/i,
   /\bchanges requested\b/i,
-  /\bwhat('s| is) (still )?waiting\b/i,
+      /\bwhat('?s|s| is) (still )?waiting\b/i,
   /\bpublishing (today|tomorrow|this week)\b/i,
-  /\b(what('s| is)|anything) publishing\b/i,
+  /\b(what('?s|s| is)|anything) publishing\b/i,
   /\bscheduled (today|tomorrow|this week|for today)\b/i,
   /\bgoing out (today|tomorrow|this week)\b/i,
   /\bevent ready\b/i,
@@ -38,8 +40,8 @@ const OPS_PATTERNS: RegExp[] = [
   /\btasks? (still )?(incomplete|open|left|remaining)\b/i,
   /\bwhat tasks?\b/i,
   /\bstatus (of|for|on)\b/i,
-  /\bhow('s| is) .+ (going|looking)\b/i,
-  /\bwhat('s| is) (left|outstanding|remaining)\b/i,
+  /\bhow('?s|s| is) .+ (going|looking)\b/i,
+  /\bwhat('?s|s| is) (left|outstanding|remaining)\b/i,
   /\bam i (on track|ready|caught up)\b/i,
   /\battention\b/i,
 ];
@@ -94,6 +96,8 @@ const STOP_WORDS = new Set([
 export function normalizeAskText(question: string): string {
   return question
     .toLowerCase()
+    // Smart/curly quotes → ASCII so "what's" / "today's" keep matching intents
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
     .replace(/[^\p{L}\p{N}\s?/'-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();

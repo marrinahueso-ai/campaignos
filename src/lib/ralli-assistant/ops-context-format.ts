@@ -1,5 +1,17 @@
+import type { CommunicationsContextSection } from "./communications-format.ts";
+import {
+  emptyCommunicationsSection,
+  formatCommunicationsSectionLines,
+  serializeCommunicationsForPrompt,
+} from "./communications-format.ts";
 import type { ResolvableEvent } from "./event-resolver.ts";
 import type { ProductHelpLink } from "./product-help-knowledge.ts";
+import type { VolunteersContextSection } from "./volunteers-format.ts";
+import {
+  emptyVolunteersSection,
+  formatVolunteersSectionLines,
+  serializeVolunteersForPrompt,
+} from "./volunteers-format.ts";
 
 export interface OpsTaskSummary {
   id: string;
@@ -50,7 +62,25 @@ export interface OpsContextPack {
     builderStep: string | null;
     summary: string;
   };
+  volunteers: VolunteersContextSection;
+  communications: CommunicationsContextSection;
   links: ProductHelpLink[];
+}
+
+export function emptyOpsVolunteersAndComms(): {
+  volunteers: VolunteersContextSection;
+  communications: CommunicationsContextSection;
+} {
+  return {
+    volunteers: emptyVolunteersSection([
+      "Individual volunteer response status (who hasn’t responded)",
+      "Family / parent view counts for volunteer pages",
+    ]),
+    communications: emptyCommunicationsSection([
+      "Family / parent email open or view counts",
+      "Meta post performance (reach, best-performing post) — Insights later",
+    ]),
+  };
 }
 
 /** Deterministic answer when AI is unavailable — still grounded in the pack. */
@@ -113,8 +143,12 @@ export function formatDeterministicOpsAnswer(pack: OpsContextPack): string {
 
   lines.push(`Readiness: ${pack.readiness.summary}`);
   lines.push("");
+  lines.push(...formatVolunteersSectionLines(pack.volunteers));
+  lines.push("");
+  lines.push(...formatCommunicationsSectionLines(pack.communications));
+  lines.push("");
   lines.push(
-    "Use the links below to jump into Tasks, Approvals, or Create with AI.",
+    "Use the links below to jump into Tasks, Approvals, Volunteers, or Communications.",
   );
 
   return lines.join("\n");
@@ -156,6 +190,8 @@ export function serializeOpsContextForPrompt(pack: OpsContextPack): string {
         })),
       },
       readiness: pack.readiness,
+      volunteers: serializeVolunteersForPrompt(pack.volunteers),
+      communications: serializeCommunicationsForPrompt(pack.communications),
       links: pack.links,
     },
     null,
