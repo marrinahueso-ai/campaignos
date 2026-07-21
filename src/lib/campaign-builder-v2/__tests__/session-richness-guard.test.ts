@@ -132,4 +132,47 @@ describe("protectSessionFromRichnessDowngrade", () => {
       "https://example.com/new.png",
     );
   });
+
+  it("persists milestone deletions when incoming and server are equally empty", () => {
+    const existing = session([
+      preview({ milestoneId: "ms-1" }),
+      preview({ milestoneId: "ms-2" }),
+      preview({ milestoneId: "ms-3" }),
+    ]);
+    existing.milestones = [
+      {
+        ...existing.milestones[0]!,
+        id: "ms-1",
+        name: "Announcement",
+        sortOrder: 0,
+      },
+      {
+        ...existing.milestones[0]!,
+        id: "ms-2",
+        name: "14 Days Out",
+        sortOrder: 1,
+      },
+      {
+        ...existing.milestones[0]!,
+        id: "ms-3",
+        name: "Thank You",
+        sortOrder: 2,
+      },
+    ];
+
+    const incoming = {
+      ...existing,
+      milestones: existing.milestones.slice(0, 1),
+      previewContents: existing.previewContents.slice(0, 1),
+    };
+
+    const protectedSession = protectSessionFromRichnessDowngrade(
+      incoming,
+      existing,
+    );
+
+    assert.equal(protectedSession.milestones.length, 1);
+    assert.equal(protectedSession.milestones[0]?.id, "ms-1");
+    assert.equal(protectedSession.previewContents.length, 1);
+  });
 });

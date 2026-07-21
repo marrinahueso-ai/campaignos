@@ -107,6 +107,40 @@ function pickRicherPreview(
  * list — otherwise a stale server milestone list (different IDs after a playbook
  * rebuild) silently orphans local artwork and the next hydrate writes it away.
  */
+function milestoneIdentityKey(
+  milestones: CampaignBuilderMilestone[] | undefined,
+): string {
+  return (milestones ?? [])
+    .map((milestone) => milestone.id)
+    .slice()
+    .sort()
+    .join("\0");
+}
+
+/**
+ * True when local and server disagree on which milestones exist (deletes,
+ * adds, or playbook rebuild IDs) while local is at least as rich — used so a
+ * successful server load cannot resurrect milestones the user already removed.
+ */
+export function localHasAuthoritativeMilestoneStructure(
+  local: Partial<CampaignBuilderSession>,
+  server: Partial<CampaignBuilderSession>,
+): boolean {
+  if (local.milestones === undefined) {
+    return false;
+  }
+  if (
+    milestoneIdentityKey(local.milestones) ===
+    milestoneIdentityKey(server.milestones)
+  ) {
+    return false;
+  }
+  return (
+    sessionArtworkCount(local) >= sessionArtworkCount(server) &&
+    sessionPreviewRichness(local) >= sessionPreviewRichness(server)
+  );
+}
+
 /**
  * Prevent a poorer client snapshot (e.g. empty + "generating"/"failed") from
  * overwriting richer server artwork/captions during persist. Used by
@@ -124,15 +158,26 @@ export function protectSessionFromRichnessDowngrade(
   const existingRichness = sessionPreviewRichness(existing);
   const incomingRichness = sessionPreviewRichness(incoming);
   if (existingRichness === 0 || incomingRichness >= existingRichness) {
-    // Still merge per-milestone so a partial incoming cannot blank one slot.
-    const merged = mergeCampaignBuilderSessions(existing, incoming);
+    // Incoming owns milestone structure (deletes/adds). Merge previews against
+    // that list so we still absorb richer artwork for milestones that remain,
+    // without resurrecting rows the client intentionally removed.
+    const merged = mergeCampaignBuilderSessions(
+      {
+        ...existing,
+        milestones: incoming.milestones,
+        milestonesPlaybookId:
+          incoming.milestonesPlaybookId ?? existing.milestonesPlaybookId,
+      },
+      incoming,
+    );
     return {
       ...incoming,
       inspiration: merged.inspiration ?? incoming.inspiration,
-      milestones: (merged.milestones as CampaignBuilderMilestone[] | undefined) ??
-        incoming.milestones,
+      milestones: incoming.milestones,
       milestonesPlaybookId:
-        merged.milestonesPlaybookId ?? incoming.milestonesPlaybookId,
+        incoming.milestonesPlaybookId ??
+        merged.milestonesPlaybookId ??
+        existing.milestonesPlaybookId,
       previewContents:
         (merged.previewContents as MilestonePreviewContent[] | undefined) ??
         incoming.previewContents,
@@ -444,8 +489,13 @@ export function hydrateCampaignBuilderSession(
   const localHasRicherContent =
     sessionArtworkCount(local) === sessionArtworkCount(base) &&
     sessionPreviewRichness(local) > sessionPreviewRichness(base);
+  // Equal-richness deletes must win over a stale longer server list — otherwise
+  // remount / Preview hydrate resurrects milestones the user already removed.
   const preferLocal =
-    !serverLoadSucceeded || localHasMoreArtwork || localHasRicherContent;
+    !serverLoadSucceeded ||
+    localHasMoreArtwork ||
+    localHasRicherContent ||
+    localHasAuthoritativeMilestoneStructure(local, base);
 
   const merged = preferLocal
     ? mergeCampaignBuilderSessions(local, base)

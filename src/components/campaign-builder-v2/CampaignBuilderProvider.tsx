@@ -744,6 +744,9 @@ export function CampaignBuilderProvider({
     (updater: (prev: CampaignBuilderSession) => CampaignBuilderSession) => {
       setSession((prev) => {
         const next = updater(prev);
+        // Keep sessionRef in lockstep — goToStep / sync read sessionRef and
+        // must not race a pending React effect after removeMilestone.
+        sessionRef.current = next;
         scheduleSave(next);
         return next;
       });
@@ -970,24 +973,31 @@ export function CampaignBuilderProvider({
     (step: CampaignBuilderStepId) => {
       void (async () => {
         const leavingInspiration = currentStepRef.current === "inspiration";
-        const enteringMilestoneFlow =
-          step === "milestones" || step === "preview" || step === "review";
+        const playbookId = sessionRef.current.inspiration.playbookId;
+        const playbookNeedsSync = Boolean(
+          playbookId &&
+            playbookId !== (sessionRef.current.milestonesPlaybookId ?? null),
+        );
+        // Only reconcile when leaving Creative Setup or when the selected
+        // playbook has not been applied yet. Re-running on every Preview entry
+        // resurrects milestones the user deleted on the Milestones step.
         let syncChanged = false;
-        if (leavingInspiration || enteringMilestoneFlow) {
+        if (leavingInspiration || playbookNeedsSync) {
           const syncResult = await syncMilestonesToSelectedPlaybook();
           if (!syncResult.success) {
             return;
           }
           syncChanged = syncResult.changed;
         }
-        // Drop step-local UI noise when leaving so context stays lean.
         if (leavingInspiration) {
           setInspirationUploadError(null);
-          // Flush debounced server save so inspiration http URLs are not lost
-          // if the user navigates away before the 800ms timer fires.
-          await flushSave();
-        } else if (syncChanged) {
+        }
+        // Always flush before step changes so deletions persist before Preview
+        // mounts (debounce alone can lose the race with navigate).
+        if (syncChanged) {
           await persistSession(sessionRef.current);
+        } else {
+          await flushSave();
         }
         if (step !== "preview" && step !== "review") {
           setGenerationProgress(null);
@@ -1371,6 +1381,10 @@ export function CampaignBuilderProvider({
           milestones: sorted,
           previewContents,
           selectedMilestoneId,
+          // Mark the current playbook as applied so goToStep sync does not
+          // rebuild from playbook steps and resurrect this deletion.
+          milestonesPlaybookId:
+            prev.inspiration.playbookId ?? prev.milestonesPlaybookId,
           expandedReviewMilestoneIds: prev.expandedReviewMilestoneIds.filter(
             (expandedId) => expandedId !== id,
           ),

@@ -627,6 +627,31 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
     assert.equal(hydrated.milestones.length, 2);
   });
 
+  it("keeps local milestone deletions when server still has the longer equal-richness list", () => {
+    const server = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const local = {
+      ...server,
+      milestones: server.milestones.slice(0, 2),
+      previewContents: server.previewContents.slice(0, 2),
+      milestonesPlaybookId: "pb-school",
+    };
+
+    const hydrated = hydrateCampaignBuilderSession(
+      server,
+      local,
+      "evt-1",
+      "Back to School Fair",
+      "2026-08-17",
+      true,
+    );
+
+    assert.equal(hydrated.milestones.length, 2);
+    assert.deepEqual(
+      hydrated.milestones.map((milestone) => milestone.id),
+      local.milestones.map((milestone) => milestone.id),
+    );
+  });
+
   it("preserves local generated artwork when a stale server session loads successfully on remount", () => {
     const eventId = "723f85ce-e44f-43f6-97b5-723aa33ba7f8";
     const server = buildDefaultSession(eventId, "Back to School Fair", "2026-08-17");
@@ -682,14 +707,28 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
     assert.equal(hydrated.previewContents[0]?.generationStatus, "generated");
   });
 
-  it("trusts the server copy over local when the server read succeeded", () => {
+  it("trusts a richer server copy over empty local when the server read succeeded", () => {
     const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
     const serverCopy = {
       ...defaults,
       milestones: defaults.milestones.slice(0, 3),
-      previewContents: defaults.previewContents.slice(0, 3),
+      previewContents: defaults.previewContents.slice(0, 3).map((content, index) =>
+        index === 0
+          ? {
+              ...content,
+              artwork: {
+                feedUrl: "https://cdn.example/server-feed.png",
+                storyUrl: null,
+              },
+              captions: [
+                { platform: "facebook" as const, text: "From server" },
+                { platform: "instagram" as const, text: "From server" },
+              ],
+            }
+          : content,
+      ),
     };
-    const staleLocal = {
+    const emptyLocal = {
       ...defaults,
       milestones: defaults.milestones.slice(0, 1),
       previewContents: defaults.previewContents.slice(0, 1),
@@ -697,7 +736,7 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
 
     const hydrated = hydrateCampaignBuilderSession(
       serverCopy,
-      staleLocal,
+      emptyLocal,
       "evt-1",
       "Back to School Fair",
       "2026-08-17",
@@ -705,6 +744,10 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
     );
 
     assert.equal(hydrated.milestones.length, 3);
+    assert.equal(
+      hydrated.previewContents[0]?.artwork.feedUrl,
+      "https://cdn.example/server-feed.png",
+    );
   });
 
   it("legacy campaign migration: a saved session predating Creative Setup fields normalizes to explicit None, not invented defaults", () => {
