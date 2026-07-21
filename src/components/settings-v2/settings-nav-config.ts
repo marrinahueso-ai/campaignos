@@ -5,6 +5,22 @@ export interface SettingsV2NavItem {
   exact?: boolean;
 }
 
+export function isSettingsNavActive(
+  pathname: string,
+  href: string,
+  exact?: boolean,
+): boolean {
+  if (exact) {
+    return pathname === href;
+  }
+
+  if (href === "/settings/billing-plan") {
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
   {
     href: "/settings",

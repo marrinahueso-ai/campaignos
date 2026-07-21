@@ -141,6 +141,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - AI credits widget — **stub** (placeholder UI)
 
 ## Settings
+- Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · School Setup · Billing · Advanced) — **shipped**
 - Overview, Organization (branding, timezone, logos, etc.) — **shipped**
 - Board roster / committees / responsibility matrix — **shipped**
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
@@ -152,6 +153,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Support & shell
 - Report a problem (Sentry) — **shipped**
 - Nav badges, collapsible sidebar — **shipped**
+- Settings sections via header gear menu (no settings left sidebar) — **shipped**
 
 ---
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { Home, Menu, Settings, X } from "lucide-react";
+import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OrganizationSwitcher } from "@/components/layout/OrganizationSwitcher";
+import { SettingsMenuDropdown } from "@/components/layout/SettingsMenuDropdown";
 import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
 import { cn } from "@/lib/utils/cn";
 
@@ -51,7 +52,6 @@ export function DashboardHeader({
   activeOrganizationId = null,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
-  const onSettings = pathname.startsWith("/settings");
 
   return (
     <header className="sticky top-0 z-40 border-b border-cos-border/80 bg-cos-card/90 backdrop-blur-md">
@@ -83,9 +83,7 @@ export function DashboardHeader({
           >
             <Home className="h-4 w-4" strokeWidth={1.5} />
           </UtilityIconLink>
-          <UtilityIconLink href="/settings" label="Settings" active={onSettings}>
-            <Settings className="h-4 w-4" strokeWidth={1.5} />
-          </UtilityIconLink>
+          <SettingsMenuDropdown />
 
           {userEmail && (
             <div className="hidden border-l border-cos-border pl-3 text-right sm:block">
