@@ -44,10 +44,6 @@ interface UnifiedCalendarControlPanelProps {
   periodLabel: string;
   activeLayers: Set<CalendarLayerId>;
   upcomingItems: PlanningCalendarItem[];
-  importCleanup?: {
-    schoolYearLabel: string;
-    eventCount: number;
-  } | null;
   showImportList?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
   showPostingHeatmap?: boolean;
@@ -67,7 +63,6 @@ export function UnifiedCalendarControlPanel({
   periodLabel,
   activeLayers,
   upcomingItems,
-  importCleanup,
   showImportList = true,
   postingHeatmap = null,
   showPostingHeatmap = false,
@@ -101,10 +96,43 @@ export function UnifiedCalendarControlPanel({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
-      {/* Views + period + nav + actions — single dense toolbar */}
-      <div className="flex flex-col gap-2.5 border-b border-cos-border px-4 py-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <div className="flex items-center border border-cos-border bg-cos-bg p-0.5">
+      {/* Period + nav/actions; view switcher under Today / Import / Review */}
+      <div className="flex flex-col gap-2.5 border-b border-cos-border px-4 py-2.5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display truncate text-2xl leading-tight text-cos-text sm:text-3xl">
+            {periodLabel}
+          </h1>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            {view !== "import-list" && (
+              <div className="flex items-center gap-1">
+                <Button variant="secondary" size="sm" onClick={onPrevious} aria-label="Previous period">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" size="sm" onClick={onToday}>
+                  Today
+                </Button>
+                <Button variant="secondary" size="sm" onClick={onNext} aria-label="Next period">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {!compact && (
+              <>
+                <Button href="/calendar/import" variant="secondary" size="sm">
+                  <Upload className="h-4 w-4" />
+                  Import
+                </Button>
+                <Button href="/calendar/review" variant="secondary" size="sm">
+                  <FileSearch className="h-4 w-4" />
+                  Review
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center self-start border border-cos-border bg-cos-bg p-0.5 sm:self-end">
             {visibleViews.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
@@ -122,44 +150,6 @@ export function UnifiedCalendarControlPanel({
               </button>
             ))}
           </div>
-          <div className="min-w-0">
-            <h1 className="font-display truncate text-lg leading-tight text-cos-text sm:text-xl">
-              {periodLabel}
-            </h1>
-            {!compact && importCleanup && importCleanup.eventCount > 0 && (
-              <p className="truncate text-xs text-cos-muted">
-                {importCleanup.eventCount} events on {importCleanup.schoolYearLabel}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {view !== "import-list" && (
-            <div className="flex items-center gap-1">
-              <Button variant="secondary" size="sm" onClick={onPrevious} aria-label="Previous period">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="secondary" size="sm" onClick={onToday}>
-                Today
-              </Button>
-              <Button variant="secondary" size="sm" onClick={onNext} aria-label="Next period">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {!compact && (
-            <>
-              <Button href="/calendar/import" variant="secondary" size="sm">
-                <Upload className="h-4 w-4" />
-                Import
-              </Button>
-              <Button href="/calendar/review" variant="secondary" size="sm">
-                <FileSearch className="h-4 w-4" />
-                Review
-              </Button>
-            </>
-          )}
         </div>
       </div>
 

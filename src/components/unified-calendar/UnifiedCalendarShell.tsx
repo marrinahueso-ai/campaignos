@@ -186,7 +186,6 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
         periodLabel={periodLabel}
         activeLayers={activeLayers}
         upcomingItems={upcomingItems}
-        importCleanup={data.importCleanup}
         onViewChange={setView}
         onPrevious={goPrevious}
         onNext={goNext}
