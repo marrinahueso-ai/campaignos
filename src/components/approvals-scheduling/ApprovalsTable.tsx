@@ -64,7 +64,7 @@ export function ApprovalsTable({
       <div className="border border-cos-border bg-cos-card px-6 py-16 text-center">
         <p className="font-display text-2xl text-cos-text">No approvals found</p>
         <p className="mt-2 text-sm text-cos-muted">
-          Try another tab, filter, or search term.
+          Try another filter or search term.
         </p>
       </div>
     );

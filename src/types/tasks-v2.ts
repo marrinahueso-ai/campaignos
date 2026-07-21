@@ -4,8 +4,7 @@ import type { TaskHubPageData, TaskHubTaskItem } from "@/types/task-hub";
 export type TasksV2ViewTab =
   | "main_table"
   | "my_tasks"
-  | "kanban"
-  | "files";
+  | "kanban";
 
 export type TasksV2Priority = "high" | "medium" | "low";
 

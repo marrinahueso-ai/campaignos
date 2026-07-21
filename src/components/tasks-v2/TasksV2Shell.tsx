@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FolderOpen, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
 import { TasksV2FooterLegend } from "@/components/tasks-v2/TasksV2FooterLegend";
 import { TasksV2Kanban } from "@/components/tasks-v2/TasksV2Kanban";
 import { TasksV2MainTable } from "@/components/tasks-v2/TasksV2MainTable";
@@ -100,10 +99,6 @@ export function TasksV2Shell({
     searchParams.get("event") ??
     (initialEventFilter?.trim() || null);
 
-  const filesHref = eventFilter
-    ? `/files?event=${encodeURIComponent(eventFilter)}`
-    : "/files";
-
   const replaceParams = useCallback(
     (updates: Record<string, string | null>) => {
       if (embedded) {
@@ -125,11 +120,6 @@ export function TasksV2Shell({
 
   const handleTabChange = useCallback(
     (tab: TasksV2ViewTab) => {
-      if (tab === "files") {
-        router.push(filesHref);
-        return;
-      }
-
       if (embedded) {
         setLocalTab(tab);
         if (tab === "my_tasks" && !localMyView) {
@@ -155,15 +145,7 @@ export function TasksV2Shell({
         mview: null,
       });
     },
-    [
-      activeTab,
-      embedded,
-      filesHref,
-      localMyView,
-      myViewFilter,
-      replaceParams,
-      router,
-    ],
+    [activeTab, embedded, localMyView, myViewFilter, replaceParams],
   );
 
   const handleMyViewSelect = useCallback(
@@ -188,12 +170,12 @@ export function TasksV2Shell({
     [embedded, replaceParams],
   );
 
-  // Legacy ?tab=files deep links
+  // Legacy ?tab=files deep links → strip tab (Files lives on /files sidebar)
   useEffect(() => {
     if (!embedded && searchParams.get("tab") === "files") {
-      router.replace(filesHref);
+      replaceParams({ tab: null });
     }
-  }, [embedded, filesHref, router, searchParams]);
+  }, [embedded, replaceParams, searchParams]);
 
   const eventsWithLocked = useMemo(() => {
     if (!lockedId) {
@@ -271,25 +253,6 @@ export function TasksV2Shell({
       );
     }
 
-    if (activeTab === "files") {
-      return (
-        <Card padding="lg" className="border border-cos-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FolderOpen className="h-5 w-5" />
-              Files
-            </CardTitle>
-            <CardDescription>
-              Campaign files live on the Files page.
-            </CardDescription>
-          </CardHeader>
-          <Button href={filesHref} className="mt-2">
-            Open Files
-          </Button>
-        </Card>
-      );
-    }
-
     if (activeTab === "kanban") {
       return (
         <TasksV2Kanban
@@ -338,7 +301,6 @@ export function TasksV2Shell({
     displayEventGroups,
     eventFilter,
     eventsWithLocked,
-    filesHref,
     myViewFilter,
   ]);
 

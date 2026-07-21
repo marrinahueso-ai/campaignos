@@ -13,6 +13,7 @@ export const PLAYBOOK_TASK_SELECT = [
   "assignee_initials",
   "assignee_user_id",
   "group_id",
+  "notes",
   "sort_order",
   "created_at",
   "updated_at",

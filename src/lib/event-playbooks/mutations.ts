@@ -100,6 +100,7 @@ export async function updateEventPlaybookTask(
     assigneeName?: string | null;
     assigneeInitials?: string | null;
     assigneeUserId?: string | null;
+    notes?: string | null;
   },
   taskTitleForActivity?: string,
 ): Promise<boolean> {
@@ -125,6 +126,9 @@ export async function updateEventPlaybookTask(
   }
   if (input.assigneeUserId !== undefined) {
     updates.assignee_user_id = input.assigneeUserId;
+  }
+  if (input.notes !== undefined) {
+    updates.notes = input.notes;
   }
 
   const { error } = await supabase
@@ -152,6 +156,8 @@ export async function updateEventPlaybookTask(
   } else if (input.dueDate !== undefined) {
     const dueLabel = input.dueDate ?? "none";
     await logActivity(eventId, `Set due date for "${title}" to ${dueLabel}`);
+  } else if (input.notes !== undefined) {
+    await logActivity(eventId, `Updated notes for "${title}"`);
   }
 
   return true;

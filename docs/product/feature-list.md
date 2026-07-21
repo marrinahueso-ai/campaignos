@@ -72,7 +72,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
-- Approve / request changes, filters, search, badges — **shipped**
+- Status summary cards as clickable workflow filters (click again to clear to All); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 
 ## Calendar
@@ -103,8 +103,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Kanban board (by status) — **shipped**
 - Focus board (To-do / This week / In progress / Done) — **shipped**
 - Due date picker wired to task update — **shipped**
-- Files tab → `/files` (preserves `?event=` when scoped) — **shipped**
+- Task detail drawer with notes (add/edit, autosave) — **shipped**
 - Calendar / Timeline / Workload tabs — **deferred** (hidden from Tasks UI)
+- Files tab on Tasks — **removed** (use sidebar Files → `/files`)
 - Monday.com sync — **partial** (optional org integration; not required for Tasks)
 - Smoke: `tests/hey-ralli/smoke/10-tasks.spec.ts` — **shipped**
 

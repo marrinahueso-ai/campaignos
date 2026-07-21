@@ -36,6 +36,7 @@ export function mapEventPlaybookTaskRow(row: EventPlaybookTaskRow): EventPlayboo
     assigneeInitials: row.assignee_initials,
     assigneeUserId: row.assignee_user_id ?? null,
     groupId: row.group_id ?? null,
+    notes: row.notes ?? null,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -29,6 +29,7 @@ interface TasksV2TaskRowProps {
     assigneeInitials: string | null;
   }) => void;
   onDueDateChange?: (dueDate: string | null) => void;
+  onOpen?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragOver?: (event: React.DragEvent) => void;
   onDragLeave?: () => void;
@@ -47,12 +48,14 @@ export function TasksV2TaskRow({
   onStatusChange,
   onAssigneeChange,
   onDueDateChange,
+  onOpen,
   onDragStart,
   onDragOver,
   onDragLeave,
   onDrop,
 }: TasksV2TaskRowProps) {
   const priority = deriveTaskPriority({ ...task, status });
+  const hasNotes = Boolean(task.notes?.trim());
 
   return (
     <tr
@@ -60,7 +63,20 @@ export function TasksV2TaskRow({
         "border-b border-cos-border/60 transition-colors hover:bg-cos-bg/40",
         isPending && "opacity-60",
         dragOver && "bg-cos-bg",
+        onOpen && "cursor-pointer",
       )}
+      onClick={(event) => {
+        if (!onOpen) return;
+        const target = event.target as HTMLElement;
+        if (
+          target.closest(
+            "button, a, input, select, textarea, label, [role='menu'], [role='listbox']",
+          )
+        ) {
+          return;
+        }
+        onOpen();
+      }}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
@@ -101,18 +117,31 @@ export function TasksV2TaskRow({
       </td>
       <td className="min-w-[14rem] px-3 py-2.5 align-middle">
         <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "text-sm font-medium text-cos-text",
-              status === "done" && "text-cos-muted line-through",
-            )}
-          >
-            {task.title}
-          </span>
-          {task.groupId && (
+          {onOpen ? (
+            <button
+              type="button"
+              onClick={onOpen}
+              className={cn(
+                "text-left text-sm font-medium text-cos-text hover:underline",
+                status === "done" && "text-cos-muted line-through",
+              )}
+            >
+              {task.title}
+            </button>
+          ) : (
+            <span
+              className={cn(
+                "text-sm font-medium text-cos-text",
+                status === "done" && "text-cos-muted line-through",
+              )}
+            >
+              {task.title}
+            </span>
+          )}
+          {(hasNotes || task.groupId) && (
             <MessageSquare
               className="h-3.5 w-3.5 shrink-0 text-cos-muted"
-              aria-label="Has comments"
+              aria-label={hasNotes ? "Has notes" : "Has comments"}
             />
           )}
         </div>

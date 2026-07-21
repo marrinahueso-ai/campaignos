@@ -133,6 +133,7 @@ export async function updateTaskHubTaskAction(
     assigneeName?: string | null;
     assigneeInitials?: string | null;
     assigneeUserId?: string | null;
+    notes?: string | null;
   },
   taskTitleForActivity?: string,
 ): Promise<{ success: boolean; error: string | null }> {
@@ -164,6 +165,10 @@ export async function updateTaskHubTaskAction(
       input.assigneeUserId === undefined
         ? undefined
         : input.assigneeUserId?.trim() || null,
+    notes:
+      input.notes === undefined
+        ? undefined
+        : input.notes?.trim() || null,
   };
 
   const ok = await updateEventPlaybookTask(

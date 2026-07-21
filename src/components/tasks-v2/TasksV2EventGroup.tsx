@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TasksV2AddTaskRow } from "@/components/tasks-v2/TasksV2AddTaskRow";
+import { TasksV2TaskDetailDrawer } from "@/components/tasks-v2/TasksV2TaskDetailDrawer";
 import { TasksV2TaskRow } from "@/components/tasks-v2/TasksV2TaskRow";
 import { readTasksV2DragPayload } from "@/components/tasks-v2/tasks-v2-dnd";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
@@ -47,11 +48,12 @@ export function TasksV2EventGroupSection({
     Record<string, EventPlaybookTaskStatus>
   >({});
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const tasksSyncKey = initialGroup.tasks
     .map(
       (task) =>
-        `${task.id}:${task.status}:${task.sortOrder}:${task.title}:${task.assigneeUserId ?? ""}:${task.assigneeName ?? ""}:${task.dueDate ?? ""}`,
+        `${task.id}:${task.status}:${task.sortOrder}:${task.title}:${task.assigneeUserId ?? ""}:${task.assigneeName ?? ""}:${task.dueDate ?? ""}:${task.notes ?? ""}`,
     )
     .join("|");
 
@@ -207,6 +209,17 @@ export function TasksV2EventGroupSection({
     });
   }
 
+  const selectedTask =
+    selectedTaskId == null
+      ? null
+      : (tasks.find((task) => task.id === selectedTaskId) ?? null);
+
+  function handleNotesSaved(taskId: string, notes: string | null) {
+    setTasks((current) =>
+      current.map((item) => (item.id === taskId ? { ...item, notes } : item)),
+    );
+  }
+
   function handleDrop(targetTaskId: string, event: React.DragEvent) {
     event.preventDefault();
     setDragOverTaskId(null);
@@ -288,6 +301,7 @@ export function TasksV2EventGroupSection({
                   canEdit={canEdit}
                   draggable
                   dragOver={dragOverTaskId === task.id}
+                  onOpen={() => setSelectedTaskId(task.id)}
                   onStatusChange={(status) => handleStatusChange(task, status)}
                   onAssigneeChange={(next) => handleAssigneeChange(task, next)}
                   onDueDateChange={(dueDate) =>
@@ -312,6 +326,13 @@ export function TasksV2EventGroupSection({
           </table>
         </div>
       )}
+
+      <TasksV2TaskDetailDrawer
+        task={selectedTask}
+        canEdit={canEdit}
+        onClose={() => setSelectedTaskId(null)}
+        onNotesSaved={handleNotesSaved}
+      />
     </section>
   );
 }

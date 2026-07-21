@@ -262,20 +262,26 @@ export function ApprovalsSchedulingHub({
         </header>
       ) : null}
 
-      {!embedded ? <SummaryCards summary={scopedSummary} /> : null}
+      {!embedded ? (
+        <SummaryCards
+          summary={scopedSummary}
+          activeFilter={activeTab}
+          onFilterChange={setActiveTab}
+        />
+      ) : null}
 
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 border-b border-cos-border lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <ApprovalTabs
-            activeTab={activeTab}
-            counts={tabCounts}
-            onChange={(tab) => setActiveTab(tab as UnifiedTabId)}
-            className="border-b-0"
-          />
-          {embedded ? (
+        {embedded ? (
+          <div className="flex flex-col gap-3 border-b border-cos-border lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+            <ApprovalTabs
+              activeTab={activeTab}
+              counts={tabCounts}
+              onChange={(tab) => setActiveTab(tab as UnifiedTabId)}
+              className="border-b-0"
+            />
             <div className="pb-2 lg:pb-0">{searchField}</div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <ApprovalsTable
           items={scopedItems}

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  FolderOpen,
   Kanban,
   Table2,
   User,
@@ -17,7 +16,6 @@ const TABS: {
   { id: "main_table", label: "Main Table", icon: Table2 },
   { id: "my_tasks", label: "My Tasks", icon: User },
   { id: "kanban", label: "Board", icon: Kanban },
-  { id: "files", label: "Files", icon: FolderOpen },
 ];
 
 interface TasksV2TabsProps {

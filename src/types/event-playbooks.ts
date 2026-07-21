@@ -26,6 +26,7 @@ export interface EventPlaybookTaskRow {
   assignee_initials: string | null;
   assignee_user_id: string | null;
   group_id: string | null;
+  notes: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -78,6 +79,8 @@ export interface EventPlaybookTask {
   /** auth.users id — primary key for My Tasks matching */
   assigneeUserId: string | null;
   groupId: string | null;
+  /** Freeform task notes (Tasks detail drawer) */
+  notes: string | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

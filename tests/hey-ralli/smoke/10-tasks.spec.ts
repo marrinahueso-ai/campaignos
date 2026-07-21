@@ -33,10 +33,11 @@ test.describe("Tasks workspace", () => {
     ).toBeVisible();
     await expect(main.getByRole("button", { name: /generate tasks/i })).toBeVisible();
 
-    // Deferred views stay hidden.
+    // Deferred / removed views stay hidden (Files lives on the sidebar route).
     await expect(main.getByRole("tab", { name: /^calendar$/i })).toHaveCount(0);
     await expect(main.getByRole("tab", { name: /^timeline$/i })).toHaveCount(0);
     await expect(main.getByRole("tab", { name: /^workload$/i })).toHaveCount(0);
+    await expect(main.getByRole("tab", { name: /^files$/i })).toHaveCount(0);
   });
 
   test("My Tasks tab opens personal view", async ({ page }) => {
@@ -86,14 +87,20 @@ test.describe("Tasks workspace", () => {
     await expect(main.getByRole("heading", { name: /^done$/i })).toBeVisible();
   });
 
-  test("Files tab routes to the Files page", async ({ page }) => {
+  test("Opening a task shows the notes drawer", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
 
-    await main.getByRole("tab", { name: /^files$/i }).click();
-    await expect(page).toHaveURL(/\/files/, { timeout: 30_000 });
-    await expectNoBlankScreen(page);
-    await expect(page).not.toHaveURL(/\/login/);
-    await expect(mainContent(page)).not.toContainText("Internal Server Error");
+    const taskTitle = main.locator("table tbody tr td button").first();
+    if ((await taskTitle.count()) === 0) {
+      test.skip(true, "No tasks available to open in this environment.");
+      return;
+    }
+
+    await taskTitle.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await expect(dialog.getByLabel(/^notes$/i)).toBeVisible();
+    await expect(main).not.toContainText("Internal Server Error");
   });
 });
