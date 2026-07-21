@@ -2,6 +2,7 @@ import { EventDetailHeroArtwork } from "@/components/events-phase3/EventDetailHe
 import { EventDetailHeroCountdown } from "@/components/events-phase3/EventDetailHeroCountdown";
 import {
   EventDetailHeroStatsStrip,
+  type EventDetailHeroStatTab,
   type EventDetailHeroStats,
 } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 import { EventDetailHeroSummary } from "@/components/events-phase3/EventDetailHeroSummary";
@@ -17,6 +18,7 @@ interface EventDetailHeroProps {
   eventLeadName: string;
   createWithAiHref: string;
   stats: EventDetailHeroStats;
+  onSelectTab?: (tab: EventDetailHeroStatTab) => void;
 }
 
 export function EventDetailHero({
@@ -27,6 +29,7 @@ export function EventDetailHero({
   eventLeadName,
   createWithAiHref,
   stats,
+  onSelectTab,
 }: EventDetailHeroProps) {
   return (
     <section
@@ -55,6 +58,7 @@ export function EventDetailHero({
           eventId={event.id}
           stats={stats}
           className="mt-4"
+          onSelectTab={onSelectTab}
         />
 
       </div>

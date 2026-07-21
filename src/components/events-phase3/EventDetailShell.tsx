@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -20,6 +21,7 @@ import {
 import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
 import { EventDetailHero } from "@/components/events-phase3/EventDetailHero";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
+import type { EventDetailHeroStatTab } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 import {
   EventDetailTabInvalidationProvider,
 } from "@/components/events-phase3/EventDetailTabInvalidation";
@@ -342,6 +344,7 @@ export function EventDetailShell({
   workspace = {},
   initialTab = null,
 }: EventDetailShellProps) {
+  const router = useRouter();
   const [tab, setTab] = useState<EventDetailTab>(() => {
     // create-with-ai is a route handoff, not an in-page panel.
     if (
@@ -445,12 +448,34 @@ export function EventDetailShell({
     }
   }, [event.id, initialTab]);
 
+  // Same-event deep links (?tab=) must update the active panel — cache effect above
+  // early-returns when event.id is unchanged, so sync tab separately.
+  useEffect(() => {
+    if (
+      initialTab &&
+      initialTab !== "create-with-ai" &&
+      VALID_TABS.has(initialTab as EventDetailTab)
+    ) {
+      setTab(initialTab as EventDetailTab);
+    }
+  }, [initialTab]);
+
   useEffect(() => {
     if (initialTab === "create-with-ai") {
       // Hard navigate so we never soft-prefetch the heavy builder onto the event page.
       window.location.replace(createWithAiUrl);
     }
   }, [initialTab, event.id, createWithAiUrl]);
+
+  const selectHeroStatTab = useCallback(
+    (nextTab: EventDetailHeroStatTab) => {
+      setTab(nextTab);
+      router.replace(`/events/${encodeURIComponent(event.id)}?tab=${nextTab}`, {
+        scroll: false,
+      });
+    },
+    [event.id, router],
+  );
 
   const ensureTabLoaded = useCallback(
     (nextTab: EventDetailTab) => {
@@ -692,6 +717,7 @@ export function EventDetailShell({
         }
         createWithAiHref={createWithAiUrl}
         stats={liveHeroStats}
+        onSelectTab={selectHeroStatTab}
       />
 
       <div className="border-b border-cos-border">
