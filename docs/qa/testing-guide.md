@@ -34,6 +34,7 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Can a test user sign in?
 - Do Dashboard and Team & Access load?
 - Does Create with AI load?
+- (Optional / longer) Artwork generate → Send for approval notice → Approvals hub badges? (`09-artwork-generation-approval`)
 - Does an invalid invite link show a clear error?
 - (Optional) Does a pending invite show password setup?
 - (Optional) Are Inspiration uploads hidden when `upload_artwork` is off?

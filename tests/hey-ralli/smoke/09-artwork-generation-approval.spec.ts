@@ -316,8 +316,9 @@ async function observeApprovalsAndBadges(
   }
 
   await viewButtons.first().click();
+  // Exact names — avoid matching the disabled "Approved" footer on scheduled rows.
   const drawer = page.locator("aside").filter({
-    has: page.getByRole("button", { name: /approve|request changes/i }),
+    has: page.getByRole("button", { name: /^(approve|request changes)$/i }),
   });
   const drawerVisible = await drawer
     .first()
@@ -327,10 +328,13 @@ async function observeApprovalsAndBadges(
   if (!drawerVisible) {
     // View may open a read-only drawer without act buttons.
     const anyDrawer = page.getByText(/approval history|comment/i);
+    const alreadyApproved = page.getByRole("button", { name: /^approved$/i });
     observations.push(
-      (await anyDrawer.first().isVisible().catch(() => false))
-        ? "- Opened review drawer (read-only / no act buttons for this user or status)."
-        : "- View click did not expose Approve / Request changes (item may be non-pending).",
+      (await alreadyApproved.first().isVisible().catch(() => false))
+        ? "- Opened review drawer for an already-approved / scheduled item (no Request changes)."
+        : (await anyDrawer.first().isVisible().catch(() => false))
+          ? "- Opened review drawer (read-only / no act buttons for this user or status)."
+          : "- View click did not expose Approve / Request changes (item may be non-pending).",
     );
     return;
   }
@@ -492,28 +496,40 @@ test.describe("Artwork generation → request changes / re-approval", () => {
 
       // Safe when the staging event has few ready milestones (this suite's event has 1).
       await sendApproval.click();
-      // Success navigates to Published; failures stay on Review with actionMessage.
+      // Success shows Sent-for-approval notice (#published view); failures stay on Review.
       const sendOutcome = main.getByText(
         /\d+\s+milestones?\s+sent for approval|unable to create approval|generate artwork before sending|campaign session not found/i,
       );
-      const publishedCue = main.getByText(/published|scheduled|delivery/i);
+      const sentNotice = main.getByRole("heading", {
+        name: /sent for approval/i,
+      });
+      const reviewReturnCta = main.getByRole("button", {
+        name: /view milestones in review/i,
+      });
       await Promise.race([
         sendOutcome.first().waitFor({ state: "visible", timeout: 90_000 }),
         page.waitForURL(/#published/, { timeout: 90_000 }).catch(() => undefined),
-        publishedCue.first().waitFor({ state: "visible", timeout: 90_000 }),
+        sentNotice.first().waitFor({ state: "visible", timeout: 90_000 }),
+        reviewReturnCta.first().waitFor({ state: "visible", timeout: 90_000 }),
       ]);
       const feedbackText = (await sendOutcome.first().innerText().catch(() => "")).trim();
-      const onPublished = /published/i.test(page.url()) || (await publishedCue.count()) > 0;
+      const onSentNotice =
+        /#published/i.test(page.url()) ||
+        (await sentNotice.count()) > 0 ||
+        (await reviewReturnCta.count()) > 0;
       observations.push(
         `- Clicked Send for approval — ${
           feedbackText
             ? `message: ${feedbackText}`
-            : onPublished
-              ? "navigated toward Published (success path)"
+            : onSentNotice
+              ? "showed Sent for approval notice (success path)"
               : "no explicit success message (item may already be scheduled — resubmit keeps status)"
         }`,
       );
-      note(page, `Send for approval: ${feedbackText || (onPublished ? "published" : "unclear")}`);
+      note(
+        page,
+        `Send for approval: ${feedbackText || (onSentNotice ? "sent-notice" : "unclear")}`,
+      );
     }
 
     // --- Part 2: approvals / badges / request-changes ---

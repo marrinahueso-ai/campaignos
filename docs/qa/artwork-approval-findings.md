@@ -8,22 +8,39 @@
 
 ## 1. Workflow steps (how changes go)
 
+Create with AI is a **4-step** stepper (Creative Setup → Milestones → Preview → Review & Approve). After send, a **Sent for approval** notice appears (`#published` hash — not a numbered step); primary CTA returns to Review with the **Needs review** tab.
+
 ```mermaid
 flowchart TD
   A[Create with AI Preview] -->|Generate This / Next Milestone| B[generateAllContentAction]
   B -->|persist session + hero sync| C[Artwork + captions ready]
   C --> D[Review step: Send for approval]
   D -->|approval-bridge| E[approval_scheduling_items]
+  D --> N[Sent for approval notice]
+  N -->|View milestones in Review| R[Review tabs + Pending Review pills]
   E -->|assigned user?| F{Assignee}
   F -->|yes| G[workflow_status: assigned_to_me]
   F -->|no| H[workflow_status: in_queue]
   G --> I[Approver: Approve or Request changes]
   H --> I
   I -->|Approve| J[scheduled / published + optional Meta / email kit]
+  J -->|session sync| R
   I -->|Request changes + comment| K[workflow_status: changes_requested]
+  K -->|session sync| R
   K --> L[Creator regenerates / edits in Create with AI]
   L --> D
 ```
+
+### Review tabs (approval lifecycle)
+
+| Tab | Milestone `generationStatus` | Row pill |
+|-----|------------------------------|----------|
+| All Milestones | any with preview | Ready to send / Pending Review / Approved / Changes requested / Incomplete |
+| Needs review | `awaiting_approval` | **Pending Review** |
+| Approved | `approved` · `scheduled` · `published` | **Approved** |
+| Changes requested | `changes_requested` | **Changes requested** |
+
+Hub outcomes sync back into the campaign session (`sync-session-from-scheduling.ts` + load heal) so milestones move between tabs after Approvals actions.
 
 ### Generate artwork (does **not** create an approval row by itself)
 
@@ -45,6 +62,7 @@ flowchart TD
 - Initial `workflow_status`:
   - `assigned_to_me` if org/event approval assignee resolves to a user
   - else `in_queue`
+- Client sets submitted milestones to `generationStatus: "awaiting_approval"` (Review pill **Pending Review**) and navigates to the **Sent for approval** notice (`#published` — not a stepper step).
 - **Resubmit / re-approval** when an existing row is in `in_queue` | `assigned_to_me` | `changes_requested`: full row refresh + status reset to assignee-based pending status, `notes`/`resolved_at` cleared, `requested_at` bumped.
 - If row is already `scheduled` / `posted` / `published`: status is kept; display snapshot (artwork/caption) may still refresh.
 
@@ -152,21 +170,32 @@ Stability P0: sidebar uses `{ count: "exact", head: true }` — not full row mat
 
 ---
 
-## 7. Runtime results (2026-07-18)
+## 7. Runtime results
 
-See also `test-results/hey-ralli/artwork-generation-approval-observations.md` and `hey-ralli-report.txt`.
+See also `test-results/hey-ralli/hey-ralli-report.txt` (and observations markdown when written by the smoke).
+
+### 2026-07-20 (4-step builder + approval-aware Review)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| Spec `09` | **PASS** (~23s this run) | Staging artwork already present; send + Approvals observe path |
+| Spec `05` | **PASS** | Approvals routing + badges + calendar intact |
+| Send for approval | **success** | Expect **Sent for approval** notice (`#published`); not a stepper step |
+| Approvals drawer | **PASS** | Soft-skip when row already Approved/scheduled (do not match disabled “Approved” as act buttons) |
+| Approve | **not clicked** | Avoids Meta / manual kit side effects |
+
+### 2026-07-18 (prior)
 
 | Check | Result | Notes |
 |-------|--------|-------|
 | Spec `09` | **PASS** (~3.3 min) | Real regenerate via Edit artwork → Regenerate artwork |
 | Generation wait | **success** | Feed+story regenerate completed under 10 min |
-| Send for approval | **success** | Navigated toward Published |
+| Send for approval | **success** | Navigated to post-send confirmation |
 | Approvals summary cards | **visible** | Including Changes requested |
 | Sidebar pending badge | **visible** | `{n} approvals waiting` |
 | Sidebar change-request badge | not shown | Count 0 for this user (creator-scoped) |
-| Review drawer / Request changes | **observed** | View opened drawer with Request changes; submit opt-in via `HEY_RALLI_EXERCISE_REQUEST_CHANGES=true` |
-| Approve | **not clicked** | Avoids Meta / manual kit side effects |
+| Review drawer / Request changes | **observed** | Submit opt-in via `HEY_RALLI_EXERCISE_REQUEST_CHANGES=true` |
 
 ### Product insight from the run
 
-Staging event **Stock the Fridge** already had complete artwork. Smoke regenerates via the Edit artwork modal (not only empty-state Generate). Approvals hub defaults to **Assigned to Me**; smoke switches to **All**. Resubmit after Send for approval refreshes pending rows when status ∈ `{in_queue, assigned_to_me, changes_requested}`.
+Staging event **Stock the Fridge** often already has complete artwork. Smoke regenerates via the Edit artwork modal when needed. Approvals hub defaults to **Assigned to Me**; smoke switches to **All**. Resubmit after Send for approval refreshes pending rows when status ∈ `{in_queue, assigned_to_me, changes_requested}`. Create with AI Review tabs track approval lifecycle after send (Pending Review → Approved / Changes requested).

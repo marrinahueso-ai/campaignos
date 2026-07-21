@@ -24,7 +24,8 @@ export function InsightsDateRangeSelector({
     const start = addDays(end, -(days - 1));
     const from = formatDateYmd(start);
     const to = formatDateYmd(end);
-    router.push(`/insights?from=${from}&to=${to}`);
+    const href = `/insights?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    router.push(href);
   }
 
   const activePreset = INSIGHTS_DATE_PRESETS.find((preset) => {

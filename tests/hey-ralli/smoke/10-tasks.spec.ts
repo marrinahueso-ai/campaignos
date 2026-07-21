@@ -60,11 +60,12 @@ test.describe("Tasks workspace", () => {
     ).toBeVisible({ timeout: 20_000 });
   });
 
-  test("Kanban shows status and Focus board layouts", async ({ page }) => {
+  test("Board shows status and Focus board layouts", async ({ page }) => {
     await gotoTasks(page);
     const main = mainContent(page);
 
-    await main.getByRole("tab", { name: /^kanban$/i }).click();
+    // Tab label is "Board"; URL param remains tab=kanban.
+    await main.getByRole("tab", { name: /^board$/i }).click();
     await expect(page).toHaveURL(/tab=kanban/);
     await expect(main).not.toContainText("Internal Server Error");
 

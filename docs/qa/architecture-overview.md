@@ -78,10 +78,10 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 | **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
 | **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
 | **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |
-| **7. Create with AI** | Pick milestones, inspiration, logos; generate | OpenAI text + image APIs create feed/story artwork and captions; assets stored in Supabase Storage | `/create-with-ai` or event **Create with AI** |
-| **8. Human edit** | Regenerate, edit caption, adjust artwork | AI is assistive — nothing posts without later approval/publish | Campaign builder review steps |
-| **9. Send to Approvals** | Move ready bundles into the Approvals hub | Creates / updates approval + publication slot state | `/approvals` |
-| **10. Approve** | Approver accepts or requests changes | Status gates publishing; permissions enforced | `/approvals` |
+| **7. Create with AI** | 4 steps: Creative Setup → Milestones → Preview → Review & Approve; generate artwork + captions | OpenAI text + image APIs; assets in Supabase Storage | `/create-with-ai` or event **Create with AI** |
+| **8. Human edit** | Regenerate, edit caption, adjust artwork | AI is assistive — nothing posts without later approval/publish | Campaign builder Preview / Review |
+| **9. Send to Approvals** | Send for approval from Review | Creates / updates `approval_scheduling_items`; **Sent for approval** notice then back to Review tabs (Pending Review pills) | Campaign builder `#review` / notice; `/approvals` |
+| **10. Approve** | Approver accepts or requests changes | Status gates publishing; session sync moves Review pills to Approved / Changes requested | `/approvals` |
 | **11. Publish or schedule** | Publish now or set schedule | Graph API publish (or cron picks up due scheduled slots) | Approvals / publish actions |
 | **12. After publish** | Optional: check Inbox, Insights, Calendar | Inbox sync, Insights metrics, heatmap uses published timestamps | `/inbox`, `/insights`, `/calendar` (week) |
 
@@ -201,7 +201,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 
 | Area | Status | QA note |
 |------|--------|---------|
-| Create with AI → full Meta “published sync” step | **Stub / incomplete** | Main approve → publish path works; end-of-builder “sync published state” polish may be incomplete |
+| Create with AI → full Meta slot sync after approval | **Stub / incomplete** | Send → Approvals → schedule/publish works; deep Meta “published state” sync polish may be incomplete |
 | Stripe / real billing checkout | **Deferred** | Pricing page is marketing; paid plan gates not enforced |
 | Gmail inbox + Gmail OAuth | **Deferred** | Meta inbox only for now |
 | Insights demographics / LLM narrative | **Deferred** | KPIs + rule-based recommendations shipped |
