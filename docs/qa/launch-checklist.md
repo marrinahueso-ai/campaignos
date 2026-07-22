@@ -40,10 +40,13 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release). Note envir
 |---|--------|--------|-------|
 | 1.1 | Sign in / sign out works | | |
 | 1.2 | Org switcher works when user has >1 membership | | |
-| 1.3 | `/onboarding` Welcome → Create my first event → lands on event page under ~60s | | |
-| 1.4 | After first event: calendar / brand / invite prompts are skippable; skipped items appear on Today + Settings → Get started | | |
-| 1.5 | Legacy wizard still opens via Get started / `?view=wizard` if needed; brand opens `/onboarding/brand` (not a second brand form) | | |
-| 1.6 | Deactivated / no-membership user sees a clear gate, not a blank app | | |
+| 1.3 | `/onboarding` Welcome → Create my first event (`?onboarding=1`) → lands on event page under ~60s | | |
+| 1.4 | Event overlay stepper Calendar → Brand → Team: primary CTAs work; **Do this later** advances in place (stays on event); **Stay on event** dismisses only | | |
+| 1.5 | Calendar primary → `/calendar/import` (Google + ICS + file); Brand → `/onboarding/brand` (save stays, then Continue); Invite → `/onboarding/invite` | | |
+| 1.6 | Skipped / unfinished items appear on Today + Settings → **Get started** checklist; Restart onboarding replays Welcome (`?welcome=1`) for finished orgs | | |
+| 1.7 | Legacy wizard via Get started / `?view=wizard` if needed; `?step=brand` opens `/onboarding/brand` (not a second brand form); calendar step → `/calendar/import` | | |
+| 1.8 | Deactivated / no-membership user sees a clear gate, not a blank app | | |
+| 1.9 | Org welcome email CTA reads **Let's get started** (not Continue setup) | | |
 
 ## 2. Organization settings
 
@@ -176,7 +179,7 @@ Unit packs as needed: `test:event-volunteers`, `test:calendar-import`, `test:app
 - Insights demographics / LLM narrative / year-end board report
 - Insights-weighted posting heatmap
 - Full Create-with-AI → Meta published slot sync
-- School Setup grades/rooms/hours “Coming soon” cards (until Get started home replaces them)
+- Legacy wizard re-entry polish (primary first-run is value-first `/onboarding` + Get started checklist)
 
 ---
 

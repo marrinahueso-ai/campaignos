@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Event onboarding overlay: Do this later advances stepper in place; Get started calendar → `/calendar/import`; Single brand kit path (`/onboarding/brand`; Get started checklist deep-links; legacy wizard brand step removed); multi-logo upload + preview; Value-first onboarding; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
+**Last updated:** July 22, 2026 — Value-first onboarding done-for-now (state, restart, overlay, single brand path, Get started checklist); artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
 
 ---
 
@@ -17,11 +17,18 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Auth & onboarding
 - Sign in / sign up — **shipped**
-- Founding access code + org welcome magic-link email — **shipped**
+- Founding access code + org welcome magic-link email (CTA **Let's get started** → `/auth/callback` → `/onboarding`) — **shipped** (eng: [auth-welcome-email.md](../engineering/auth-welcome-email.md))
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
-- Value-first onboarding (`/onboarding`: Welcome → create first event → skippable calendar / brand / invite overlay on the first event; **Do this later** advances the stepper in place without leaving the event; skipped items on Today + Settings **Get started**) — **shipped**
+- Value-first onboarding — **shipped** (done for now):
+  - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → event-page overlay stepper **Calendar → Brand → Team**; also `/onboarding/brand`, `/onboarding/invite`
+  - Overlay CTAs: primary action · **Do this later** (advances stepper **in place**, stays on event) · **Stay on event** (dismisses overlay only)
+  - Calendar primary → canonical `/calendar/import` (Google + ICS + file)
+  - Brand: single path `/onboarding/brand` (PTO + school + extra logos, preview; save stays on page then Continue) — Get started deep-links here; **not** a second wizard brand step
+  - Skipped / unfinished items surface on Today + Settings → **Get started** checklist (`/settings/school-setup`, labeled Get started; eyebrow **Get started** not School setup)
+  - Progress persisted on `organizations.onboarding_state` (migration `072`)
+  - Restart / replay Welcome for finished orgs (`RestartOnboardingButton` → `/onboarding?welcome=1`)
 - Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; save stays on page with Continue to invite; Get started checklist + Organization → Edit branding deep-link here — **shipped**
-- Legacy School Setup wizard (Welcome → School → Calendar → Meta → Team → Finish) — **partial** (labeled **Get started**; brand step removed / `?step=brand` redirects to `/onboarding/brand`; calendar step deep-links to `/calendar/import` when org exists; reopen via Get started / `?view=wizard`; first-time path prefers `/onboarding`)
+- Legacy wizard (School → Calendar → Meta → Team → Finish) — **partial** (re-entry via Get started / `?view=wizard`; brand step removed / `?step=brand` → `/onboarding/brand`; calendar step → `/calendar/import` when org exists; first-time path prefers `/onboarding`)
 - Change password — **shipped**
 - Deactivated-account handling — **shipped**
 
@@ -49,6 +56,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
+- Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
 - Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
@@ -57,6 +65,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Inspiration / creative setup, logos, milestones — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); brand kit selector deferred to org setup — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
+- Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**

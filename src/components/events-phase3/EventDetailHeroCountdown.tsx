@@ -81,7 +81,7 @@ export function EventDetailHeroCountdown({
   return (
     <div
       className={cn(
-        "min-w-0 rounded-lg bg-gradient-to-r from-cos-brand-mustard-soft/55 via-transparent to-cos-brand-sage-soft/40 px-3 py-2.5 -mx-1",
+        "min-w-0 rounded-lg bg-cos-brand-sage-soft/30 px-3 py-2.5 -mx-1",
         className,
       )}
     >
@@ -98,15 +98,15 @@ export function EventDetailHeroCountdown({
       ) : (
         <div className="mt-2 flex min-w-0 items-end gap-1 sm:gap-1.5">
           <CountdownUnit value={String(parts.days)} label="Days" />
-          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+          <span className="pb-4 font-display text-xl text-cos-brand-sage/55">
             :
           </span>
           <CountdownUnit value={pad(parts.hours)} label="Hrs" />
-          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+          <span className="pb-4 font-display text-xl text-cos-brand-sage/55">
             :
           </span>
           <CountdownUnit value={pad(parts.minutes)} label="Mins" />
-          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+          <span className="pb-4 font-display text-xl text-cos-brand-sage/55">
             :
           </span>
           <CountdownUnit value={pad(parts.seconds)} label="Secs" />

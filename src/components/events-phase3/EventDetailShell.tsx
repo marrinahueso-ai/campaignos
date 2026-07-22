@@ -744,7 +744,7 @@ export function EventDetailShell({
                   }}
                   className={cn(
                     "rounded-t-md border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-cos-muted transition-colors",
-                    "hover:bg-cos-brand-mustard-soft/50 hover:text-cos-brand-navy",
+                    "hover:bg-cos-brand-sage-soft/35 hover:text-cos-brand-navy",
                   )}
                 >
                   {entry.label}
@@ -763,8 +763,8 @@ export function EventDetailShell({
                 className={cn(
                   "rounded-t-md border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "border-cos-brand-mustard bg-cos-brand-mustard-soft/60 text-cos-brand-navy"
-                    : "border-transparent text-cos-muted hover:bg-cos-brand-sage-soft/40 hover:text-cos-brand-navy",
+                    ? "border-cos-brand-mustard bg-transparent text-cos-brand-navy"
+                    : "border-transparent text-cos-muted hover:bg-cos-brand-sage-soft/35 hover:text-cos-brand-navy",
                 )}
               >
                 {entry.label}

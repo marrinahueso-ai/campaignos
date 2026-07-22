@@ -1,7 +1,7 @@
 # Engineering
 
 **Purpose:** System structure, database, access control, auth emails.  
-**Last updated:** July 21, 2026
+**Last updated:** July 22, 2026
 
 | Doc | Status |
 |-----|--------|

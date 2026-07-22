@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 **live in production** — Sign in with Google + ICS subscribe + file upload.  
 **Gmail inbox:** deferred (separate Connect later; same Google Cloud project, extra scopes).  
-**Last updated:** July 21, 2026
+**Last updated:** July 22, 2026
 
 ---
 
@@ -18,7 +18,7 @@ Calendar is critical, so Hey Ralli keeps **three import streams**:
 
 **Connect / manage only:** Settings → Integrations → Google Calendar (`/settings/integrations/calendar`) — primary Connect card; subscribe + deep-links under “Other ways to import” (not the full review UI).
 
-Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, and Get started (legacy wizard calendar step deep-links to `/calendar/import` when an org already exists; founding setup still accepts file/ICS inline and then routes to Import).
+Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, value-first onboarding (event overlay + Get started checklist → `/calendar/import`), and the legacy Get started wizard calendar step (same Import path when an org already exists; founding-without-org still accepts file/ICS inline then routes to Import).
 
 **Not** one forced “Google for Calendar + Gmail” button. Gmail scopes are restricted and would block shipping Calendar.
 

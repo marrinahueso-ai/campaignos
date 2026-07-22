@@ -127,7 +127,7 @@ body {
     max-width: 88rem;
   }
 
-  /* Soft logo-tinted wash for the event detail workspace only */
+  /* Soft cream / navy / sage wash for the event detail workspace only */
   .event-detail-atmosphere {
     position: relative;
     isolation: isolate;
@@ -143,19 +143,19 @@ body {
     border-radius: 0 0 2rem 2rem;
     background:
       radial-gradient(
-        120% 80% at 12% 0%,
-        color-mix(in srgb, var(--cos-brand-mustard-soft) 70%, transparent),
+        110% 75% at 50% 0%,
+        color-mix(in srgb, var(--cos-bg-alt) 55%, transparent),
+        transparent 58%
+      ),
+      radial-gradient(
+        85% 65% at 92% 6%,
+        color-mix(in srgb, var(--cos-brand-sage-soft) 40%, transparent),
+        transparent 52%
+      ),
+      radial-gradient(
+        70% 50% at 8% 4%,
+        color-mix(in srgb, var(--cos-brand-navy-soft) 35%, transparent),
         transparent 55%
-      ),
-      radial-gradient(
-        90% 70% at 88% 8%,
-        color-mix(in srgb, var(--cos-brand-sage-soft) 65%, transparent),
-        transparent 50%
-      ),
-      radial-gradient(
-        70% 50% at 55% 0%,
-        color-mix(in srgb, var(--cos-brand-navy-soft) 45%, transparent),
-        transparent 60%
       );
   }
 

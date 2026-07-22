@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  
-**Last updated:** July 21, 2026  
+**Last updated:** July 22, 2026  
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
@@ -13,7 +13,7 @@ This document describes how the application is structured today. For a QA-orient
 
 ## 1. What the product is
 
-Hey Ralli is a calendar-first AI communications OS for school PTO / PTA volunteers: import school dates, turn them into events, generate artwork and captions with AI, approve, and publish or schedule to Facebook / Instagram. Surrounding surfaces include Today dashboard, Tasks, Meta Inbox, Insights, Files, Vendors, and team access control.
+Hey Ralli is a calendar-first AI communications OS for school PTO / PTA volunteers: value-first onboarding (first event, then skippable calendar / brand / team), import school dates, generate artwork and captions with AI, approve, and publish or schedule to Facebook / Instagram. Surrounding surfaces include Today dashboard, Tasks, Meta Inbox, Insights, Files, Vendors, and team access control.
 
 ---
 
@@ -137,13 +137,14 @@ flowchart LR
 | Approvals & publish | `approvals-scheduling`, `meta-publishing` | Approval items + `meta_publication_slots` — native schedule + Calendar DnD: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) |
 | Inbox / Insights | `inbox`, `insights`, `meta` | Synced Meta entities + analytics tables |
 | Access | `auth`, `access-templates`, `organization-workspace` | Memberships, templates, roster |
+| Onboarding | `onboarding`, `school-setup` (legacy wizard re-entry) | `organizations.onboarding_state` (migration `072`); routes `/onboarding`, `/onboarding/brand`, `/onboarding/invite`; checklist under Settings → Get started |
 | Tasks | `tasks-v2`, `task-hub` | Task rows (assignee_user_id, event scope) |
 
 ### 5.2 Major `src/lib` domains (non-exhaustive)
 
 | Area | Packages |
 |------|----------|
-| Auth / tenancy | `auth`, `organizations`, `organization-workspace`, `access-templates`, `school-years` |
+| Auth / tenancy | `auth`, `organizations`, `organization-workspace`, `access-templates`, `school-years`, `onboarding` |
 | Calendar | `calendar-import`, `google-calendar`, `communications-calendar`, `posting-analytics` |
 | Events / campaigns | `events`, `events-phase3`, `event-workspace`, `campaign-builder-v2`, `playbooks` |
 | Creative | `ai`, `ai-artwork`, `artwork-v2`, `creative-assets`, `canva` |

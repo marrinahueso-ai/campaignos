@@ -101,8 +101,8 @@ export function EventDetailHeroStatsStrip({
               "group flex min-w-0 cursor-pointer flex-col items-center justify-center rounded-lg px-2.5 py-2 text-center",
               "border border-cos-border/80 bg-cos-brand-navy-soft/35",
               "outline-none transition-colors",
-              "hover:border-cos-brand-mustard/50 hover:bg-cos-brand-mustard-soft/50",
-              "focus-visible:ring-2 focus-visible:ring-cos-brand-mustard focus-visible:ring-offset-2 focus-visible:ring-offset-cos-card",
+              "hover:border-cos-brand-sage/45 hover:bg-cos-brand-sage-soft/40",
+              "focus-visible:ring-2 focus-visible:ring-cos-brand-navy/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cos-card",
             )}
           >
             <p className="font-display text-lg leading-none text-cos-brand-navy tabular-nums">
@@ -111,7 +111,7 @@ export function EventDetailHeroStatsStrip({
             <p
               className={cn(
                 "mt-0.5 text-[11px] leading-snug text-cos-muted",
-                "transition-colors group-hover:text-cos-brand-navy group-hover:underline group-hover:decoration-cos-brand-mustard/60 group-hover:underline-offset-2",
+                "transition-colors group-hover:text-cos-brand-navy group-hover:underline group-hover:decoration-cos-brand-sage/50 group-hover:underline-offset-2",
               )}
             >
               {stat.label}

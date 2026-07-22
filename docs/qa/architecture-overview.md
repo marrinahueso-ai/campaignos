@@ -3,7 +3,7 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** July 21, 2026  
+**Last updated:** July 22, 2026  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
@@ -13,7 +13,7 @@ Related detail: [architecture.md](../engineering/architecture.md) (engineering s
 
 ## 1. What Hey Ralli does
 
-Hey Ralli is an AI communications operating system for school PTO / PTA volunteers. It turns a school calendar into planned social campaigns: import dates (Google Calendar, ICS subscribe, or file upload), organize them as events, generate on-brand artwork and captions with AI, route posts through board approval, and publish or schedule to Facebook and Instagram via a connected Meta Page. Volunteers also get a Today dashboard, tasks, a Meta inbox with AI reply drafts, Insights, and team access controls — so communications stay calendar-first, human-approved, and in one place instead of scattered across Canva, Docs, and Facebook.
+Hey Ralli is an AI communications operating system for school PTO / PTA volunteers. New orgs start value-first (Welcome → create a first event → optional calendar / brand / team prompts, with a Get started checklist for anything skipped). From there it turns a school calendar into planned social campaigns: import dates (Google Calendar, ICS subscribe, or file upload), organize them as events, generate on-brand artwork and captions with AI, route posts through board approval, and publish or schedule to Facebook and Instagram via a connected Meta Page. Volunteers also get a Today dashboard, tasks, a Meta inbox with AI reply drafts, Insights, and team access controls — so communications stay calendar-first, human-approved, and in one place instead of scattered across Canva, Docs, and Facebook.
 
 ---
 
@@ -72,9 +72,9 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 
 | Step | What the user does | What the system does | Where to test |
 |------|--------------------|----------------------|---------------|
-| **1. School setup** | Complete School Setup (school, brand, timezone, optional calendar / Meta / team) | Creates `organizations`, brand assets, active school year | `/settings/school-setup` |
+| **1. Value-first onboarding** | Welcome → create first event → skippable Calendar / Brand / Team overlay (or finish later from Get started) | Bootstraps org + school year; persists progress on `organizations.onboarding_state`; brand at `/onboarding/brand` | `/onboarding` → event `?onboarding=…`; checklist: Settings → **Get started** (`/settings/school-setup`) |
 | **2. Connect Meta** (required to publish) | Settings → Meta → Connect | OAuth → stores Page + tokens on `organization_meta_connections` | `/settings/meta` |
-| **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file | Parses / syncs into `calendar_imports` → review | Canonical: `/calendar/import` → `/calendar/review`; connect/manage: `/settings/integrations/calendar` |
+| **3. Import calendar** | Sign in with Google, ICS subscribe URL, or upload file (same screen as onboarding calendar CTA) | Parses / syncs into `calendar_imports` → review | Canonical: `/calendar/import` → `/calendar/review`; connect/manage: `/settings/integrations/calendar` |
 | **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
 | **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
 | **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |
