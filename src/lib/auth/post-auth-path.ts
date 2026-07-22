@@ -14,6 +14,8 @@ import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 
 export const SCHOOL_SETUP_PATH = "/settings/school-setup";
+/** Value-first first-time onboarding (Welcome → create event). */
+export const ONBOARDING_PATH = "/onboarding";
 export const DEFAULT_AUTH_PATH = "/dashboard";
 
 /** Known login errors with dedicated UI copy. */
@@ -49,11 +51,11 @@ export function resolveAuthenticatedAppPath(
   options?: { pendingSetup?: boolean },
 ): string {
   if (options?.pendingSetup) {
-    return SCHOOL_SETUP_PATH;
+    return ONBOARDING_PATH;
   }
 
   if (!hasOrganization) {
-    return SCHOOL_SETUP_PATH;
+    return ONBOARDING_PATH;
   }
 
   return safeNextPath(next) ?? DEFAULT_AUTH_PATH;
@@ -75,7 +77,7 @@ export async function getAuthenticatedAppPath(
       if (organization) {
         return "/login?error=existing_org";
       }
-      return SCHOOL_SETUP_PATH;
+      return ONBOARDING_PATH;
     }
 
     if (isFoundingAccessCodeRequired()) {
@@ -135,7 +137,7 @@ export async function resolvePostAuthPathForUser(
     if (accessState === "deactivated") {
       return ACCOUNT_DEACTIVATED_LOGIN_PATH;
     }
-    return SCHOOL_SETUP_PATH;
+    return ONBOARDING_PATH;
   }
 
   if (setupIntent && !hasValidPendingSetup) {
@@ -154,7 +156,7 @@ export async function resolvePostAuthPathForUser(
       });
       return `/login?${params.toString()}`;
     }
-    return SCHOOL_SETUP_PATH;
+    return ONBOARDING_PATH;
   }
 
   return resolveAuthenticatedAppPath(true, next);

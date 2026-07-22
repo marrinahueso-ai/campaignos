@@ -80,8 +80,13 @@ export function SchoolSetupWizard({
   const setupComplete = state.success || resumePostSetup;
 
   useEffect(() => {
-    if (searchParams.get("step") === "meta") {
+    const stepParam = searchParams.get("step");
+    if (stepParam === "meta") {
       setStep(5);
+    } else if (stepParam === "school") {
+      setStep(2);
+    } else if (stepParam === "brand") {
+      setStep(3);
     }
   }, [searchParams]);
 

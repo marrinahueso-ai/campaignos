@@ -17,6 +17,7 @@ import {
   toOrganizationInsert,
 } from "@/lib/organizations/mappers";
 import type { FoundingAccessResolution } from "@/lib/auth/founding-access";
+import { defaultSchoolYearLabel } from "@/lib/onboarding/state";
 import type {
   BrandAssetsRow,
   OrganizationRow,
@@ -199,6 +200,184 @@ export async function createSchoolProfile(
     organization: mapOrganizationRow(organization as OrganizationRow),
     brandAssets: mapBrandAssetsRow(brandAssets as BrandAssetsRow),
   };
+}
+
+/**
+ * Minimal org for value-first onboarding — name/timezone defaults, seeds, empty brand row.
+ * Does not require the full school-setup wizard.
+ */
+export async function bootstrapMinimalOrganization(input: {
+  name?: string;
+  timezone?: string;
+  foundingAccess?: FoundingAccessResolution;
+}): Promise<{ organizationId: string } | { error: string }> {
+  const foundingAccess = input.foundingAccess ?? {
+    valid: true,
+    billingExempt: false,
+    normalizedCode: null,
+    error: null,
+  };
+
+  const supabase = await createClient();
+  const timezone = input.timezone?.trim() || "America/Chicago";
+  const name = input.name?.trim() || "My school";
+  const schoolYear = defaultSchoolYearLabel();
+  const now = new Date().toISOString();
+
+  const { data: organization, error: organizationError } = await supabase
+    .from("organizations")
+    .insert({
+      name,
+      district: null,
+      school_year: schoolYear,
+      mascot: null,
+      principal: null,
+      school_website: null,
+      pto_website: null,
+      timezone,
+      founding_access_code: foundingAccess.billingExempt
+        ? foundingAccess.normalizedCode
+        : null,
+      billing_exempt_at: foundingAccess.billingExempt ? now : null,
+      onboarding_state: {
+        version: 1,
+        startedAt: now,
+      },
+    })
+    .select("id")
+    .single();
+
+  if (organizationError || !organization) {
+    console.error(
+      "Failed to bootstrap organization:",
+      organizationError?.message,
+    );
+    return { error: "Unable to create your workspace. Please try again." };
+  }
+
+  const organizationId = organization.id as string;
+  const authUser = await getAuthUser();
+  if (authUser) {
+    const membership = await createOrganizationMembership({
+      organizationId,
+      userId: authUser.id,
+      email: authUser.email,
+      campaignRole: "admin",
+      status: "active",
+    });
+    if ("error" in membership) {
+      console.error("Failed to create founding membership:", membership.error);
+      return {
+        error: "Unable to create your team membership. Please try again.",
+      };
+    }
+  }
+
+  await seedOrganizationPlaybookDefaults(organizationId);
+  await seedOrganizationWorkspace(organizationId);
+  await ensureSchoolYearForOrganization({
+    organizationId,
+    label: schoolYear,
+    activate: true,
+  });
+
+  const { error: brandError } = await supabase.from("brand_assets").insert({
+    organization_id: organizationId,
+    pto_logo: null,
+    school_logo: null,
+    primary_color: "#0F2E38",
+    secondary_color: "#DDBA4C",
+    font_family: "Modern",
+  });
+
+  if (brandError) {
+    console.error("Failed to create default brand assets:", brandError.message);
+    return { error: "Unable to finish workspace setup. Please try again." };
+  }
+
+  return { organizationId };
+}
+
+export async function updateOrganizationBrand(input: {
+  organizationId: string;
+  mascot?: string | null;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  ptoLogo?: File | null;
+}): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  if (input.mascot !== undefined) {
+    const { error } = await supabase
+      .from("organizations")
+      .update({ mascot: input.mascot?.trim() || null })
+      .eq("id", input.organizationId);
+    if (error) {
+      console.error("Failed to update mascot:", error.message);
+      return { error: "Unable to save mascot." };
+    }
+  }
+
+  let ptoLogoUrl: string | undefined;
+  if (input.ptoLogo && input.ptoLogo.size > 0) {
+    const extension = input.ptoLogo.name.split(".").pop() ?? "png";
+    const uploaded = await uploadFile(
+      SCHOOL_ASSETS_BUCKET,
+      `${input.organizationId}/pto-logo.${extension}`,
+      input.ptoLogo,
+    );
+    if (!uploaded) {
+      return { error: "Unable to upload logo." };
+    }
+    ptoLogoUrl = uploaded;
+  }
+
+  const brandPatch: Record<string, string | null> = {};
+  if (input.primaryColor !== undefined) {
+    brandPatch.primary_color = input.primaryColor;
+  }
+  if (input.secondaryColor !== undefined) {
+    brandPatch.secondary_color = input.secondaryColor;
+  }
+  if (ptoLogoUrl !== undefined) {
+    brandPatch.pto_logo = ptoLogoUrl;
+  }
+
+  if (Object.keys(brandPatch).length > 0) {
+    const { data: existing } = await supabase
+      .from("brand_assets")
+      .select("id")
+      .eq("organization_id", input.organizationId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from("brand_assets")
+        .update(brandPatch)
+        .eq("id", existing.id);
+      if (error) {
+        console.error("Failed to update brand assets:", error.message);
+        return { error: "Unable to save brand kit." };
+      }
+    } else {
+      const { error } = await supabase.from("brand_assets").insert({
+        organization_id: input.organizationId,
+        pto_logo: brandPatch.pto_logo ?? null,
+        school_logo: null,
+        primary_color: brandPatch.primary_color ?? "#0F2E38",
+        secondary_color: brandPatch.secondary_color ?? "#DDBA4C",
+        font_family: "Modern",
+      });
+      if (error) {
+        console.error("Failed to insert brand assets:", error.message);
+        return { error: "Unable to save brand kit." };
+      }
+    }
+  }
+
+  return { error: null };
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {

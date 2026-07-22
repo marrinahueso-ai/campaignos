@@ -2,8 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 20, 2026  
-**Related:** [Ops](./README.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
+**Last updated:** July 22, 2026  
+**Related:** [Ops](./README.md) · [Env & secrets](./env-and-secrets.md) · [Launch QA checklist](../qa/launch-checklist.md) · [Documentation home](../README.md)
 
 ## Project
 
@@ -35,7 +35,7 @@ After changing Environment Variables, **redeploy** Production so new serverless 
 
 1. PR into `main` (merge commit preferred for large history-preserving merges).
 2. Confirm Vercel Production deployment is **Ready** for the merge SHA.
-3. Spot-check: login, Calendar Google CTA, Meta settings, Tasks, Insights, one Create-with-AI path if AI changed.
+3. Spot-check: login, Calendar Google CTA, Meta settings, Tasks, Insights, one Create-with-AI path if AI changed. For full soft-launch sign-off use [Launch QA checklist](../qa/launch-checklist.md) §12.
 4. If schema changed: confirm Supabase migrations applied **before** or **with** the deploy that needs them (see [database.md](../engineering/database.md)).
 5. If env changed: update Vercel Production → redeploy → re-test the related integration.
 

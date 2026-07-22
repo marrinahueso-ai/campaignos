@@ -1,3 +1,4 @@
+import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
 import { TodayCompanionSection } from "@/components/today/TodayCompanionSection";
 import { TodayHero } from "@/components/today/TodayHero";
 import { TodayPulseSection } from "@/components/today/TodayPulseSection";
@@ -5,6 +6,8 @@ import { TodaySnapshot } from "@/components/today/TodaySnapshot";
 import { WhatsNextSectionSuspense } from "@/components/today/WhatsNextSectionSuspense";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getApprovalQueueForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
+import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
+import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
@@ -32,11 +35,11 @@ export default async function DashboardPage() {
       <div className="studio-page pb-12">
         <EmptyState
           icon={GraduationCap}
-          title="Set up your school"
-          description="Add your school name, brand colors, and calendar so Hey Ralli can plan campaigns with you."
+          title="Welcome to Hey Ralli"
+          description="Create your first event in under a minute — calendar, brand, and team can wait."
           action={{
-            label: "Set up your school — takes about 5 minutes",
-            href: "/settings/school-setup",
+            label: "Create my first event",
+            href: "/onboarding",
           }}
           className="cos-card py-20"
         />
@@ -44,11 +47,13 @@ export default async function DashboardPage() {
     );
   }
 
-  const [todayData, weatherContext, approvalQueue] = await Promise.all([
-    getTodayPageData(organization),
-    getTodayWeatherContext(organization),
-    getApprovalQueueForCurrentUser(),
-  ]);
+  const [todayData, weatherContext, approvalQueue, onboardingChecklist] =
+    await Promise.all([
+      getTodayPageData(organization),
+      getTodayWeatherContext(organization),
+      getApprovalQueueForCurrentUser(),
+      getOnboardingChecklistForCurrentOrg(),
+    ]);
 
   const today = getTodayDateString();
   const recentPublished = todayData.goodNews.items.filter(
@@ -66,6 +71,10 @@ export default async function DashboardPage() {
             timezone={organization?.timezone ?? "America/Chicago"}
           />
           <div className="mt-6 flex flex-col gap-8 lg:mt-7 lg:gap-10">
+            {onboardingChecklist?.show &&
+            checklistNeedsAttention(onboardingChecklist.items) ? (
+              <OnboardingChecklistCards items={onboardingChecklist.items} />
+            ) : null}
             <WhatsNextSectionSuspense whatsNext={todayData.whatsNext} />
             <TodayPulseSection
               pendingApprovals={approvalQueue.assignedToMe}

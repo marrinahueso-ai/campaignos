@@ -72,7 +72,7 @@ import { buildFoundingSetupEmailUrl } from "@/lib/auth/founding-setup-link";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";
 import {
   getAuthenticatedAppPath,
-  SCHOOL_SETUP_PATH,
+  ONBOARDING_PATH,
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import {
@@ -640,7 +640,7 @@ export async function submitFoundingAccessCodeAction(
     await setPendingFoundingAccessCookie(foundingAccess.normalizedCode);
   }
 
-  redirect(SCHOOL_SETUP_PATH);
+  redirect(ONBOARDING_PATH);
 }
 
 export async function completeAuthSessionAction(): Promise<void> {

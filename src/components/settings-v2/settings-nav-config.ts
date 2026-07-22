@@ -60,8 +60,8 @@ export const SETTINGS_V2_NAV_ITEMS: SettingsV2NavItem[] = [
   },
   {
     href: "/settings/school-setup",
-    label: "School Setup",
-    description: "School info and resources",
+    label: "Get started",
+    description: "First event, calendar, brand, and team",
   },
   {
     href: "/settings/billing-plan",

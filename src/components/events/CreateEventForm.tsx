@@ -36,6 +36,8 @@ export interface CreateEventPlaybookOption {
 
 interface CreateEventFormProps {
   playbookOptions: CreateEventPlaybookOption[];
+  /** Value-first onboarding — after save, continue calendar/brand/invite prompts */
+  onboarding?: boolean;
 }
 
 function defaultPlaybookId(options: CreateEventPlaybookOption[]): string {
@@ -68,7 +70,10 @@ function buildDefaultFields(
 
 const initialState: CreateEventFormState = { error: null };
 
-export function CreateEventForm({ playbookOptions }: CreateEventFormProps) {
+export function CreateEventForm({
+  playbookOptions,
+  onboarding = false,
+}: CreateEventFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [fields, setFields] = useState<CreateEventFields>(() =>
@@ -158,6 +163,7 @@ export function CreateEventForm({ playbookOptions }: CreateEventFormProps) {
       </CardHeader>
 
       <form ref={formRef} action={formAction} className="space-y-6">
+        {onboarding ? <input type="hidden" name="onboarding" value="1" /> : null}
         {state.error && (
           <div
             role="alert"

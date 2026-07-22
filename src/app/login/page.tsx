@@ -8,7 +8,7 @@ import {
 import {
   getAuthenticatedAppPath,
   shouldAllowAuthenticatedLoginView,
-  SCHOOL_SETUP_PATH,
+  ONBOARDING_PATH,
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import { redirect } from "next/navigation";
@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const setupIntent = params.intent === "setup";
   const nextPath =
-    safeNextPath(params.next) ?? (setupIntent ? SCHOOL_SETUP_PATH : null);
+    safeNextPath(params.next) ?? (setupIntent ? ONBOARDING_PATH : null);
 
   const user = await getAuthUser();
   const pendingCode = user ? await getPendingFoundingAccessCode() : null;

@@ -79,6 +79,26 @@ export async function createEvent(
 
   await assignPlaybookToEvent(event, playbookId, organization?.id ?? null);
 
+  const onboardingCreate =
+    formData.get("onboarding")?.toString() === "1" ||
+    formData.get("onboarding")?.toString() === "true";
+
+  if (onboardingCreate && organization?.id) {
+    const { patchOrganizationOnboardingState } = await import(
+      "@/lib/onboarding/mutations"
+    );
+    const now = new Date().toISOString();
+    await patchOrganizationOnboardingState(organization.id, {
+      firstEventId: event.id,
+      firstEventCompletedAt: now,
+      startedAt: now,
+    });
+    revalidatePath("/dashboard");
+    revalidatePath("/events");
+    revalidatePath("/onboarding");
+    redirect(`/events/${event.id}?onboarding=calendar`);
+  }
+
   revalidatePath("/dashboard");
   revalidatePath("/events");
   redirect(`/events/${event.id}`);

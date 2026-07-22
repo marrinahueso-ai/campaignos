@@ -1,10 +1,11 @@
+import { EventOnboardingPrompt } from "@/components/onboarding/EventOnboardingPrompt";
 import { notFound } from "next/navigation";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
 import { getEventById } from "@/lib/events/queries";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; onboarding?: string }>;
 }
 
 export async function generateMetadata({ params }: EventWorkspacePageProps) {
@@ -27,16 +28,30 @@ export default async function EventWorkspacePage({
   searchParams,
 }: EventWorkspacePageProps) {
   const { id } = await params;
-  const { tab } = await searchParams;
+  const { tab, onboarding } = await searchParams;
   const event = await getEventById(id);
 
   if (!event) {
     notFound();
   }
 
+  const onboardingStep =
+    onboarding === "calendar" ||
+    onboarding === "brand" ||
+    onboarding === "invite"
+      ? onboarding
+      : null;
+
   if (isEventsPhase3UiEnabled()) {
     const { renderEventsPhase3Detail } = await import("./render-events-phase3");
-    return renderEventsPhase3Detail(event, tab ?? null);
+    return (
+      <>
+        {renderEventsPhase3Detail(event, tab ?? null)}
+        {onboardingStep ? (
+          <EventOnboardingPrompt step={onboardingStep} />
+        ) : null}
+      </>
+    );
   }
 
   const { renderPlanningHubDetail } = await import("./render-planning-hub");

@@ -26,6 +26,7 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
     preferredPostingHours: row.preferred_posting_hours ?? null,
     foundingAccessCode: row.founding_access_code ?? null,
     billingExemptAt: row.billing_exempt_at ?? null,
+    onboardingState: row.onboarding_state ?? null,
     createdAt: row.created_at,
   };
 }

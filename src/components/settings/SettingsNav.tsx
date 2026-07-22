@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils/cn";
 
 const SETTINGS_TABS = [
   { href: "/settings", label: "General", exact: true },
-  { href: "/settings/school-setup", label: "School Setup" },
+  { href: "/settings/school-setup", label: "Get started" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/organization", label: "Organization" },
   { href: "/settings/meta", label: "Meta" },

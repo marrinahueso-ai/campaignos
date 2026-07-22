@@ -6,9 +6,16 @@ import {
 } from "@/lib/auth/founding-access";
 import { ACCOUNT_DEACTIVATED_LOGIN_PATH } from "@/lib/auth/membership-access";
 import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
-import { SCHOOL_SETUP_PATH } from "@/lib/auth/post-auth-path";
+import {
+  ONBOARDING_PATH,
+  SCHOOL_SETUP_PATH,
+} from "@/lib/auth/post-auth-path";
 
-const ORG_SETUP_PATHS = ["/settings/school-setup", "/school-setup"];
+const ORG_SETUP_PATHS = [
+  "/onboarding",
+  "/settings/school-setup",
+  "/school-setup",
+];
 
 function isOrgSetupPath(pathname: string): boolean {
   return ORG_SETUP_PATHS.some(
@@ -44,7 +51,7 @@ export async function resolveOrgGateRedirect(
     Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
 
   if (hasValidPendingCode) {
-    return isOrgSetupPath(pathname) ? null : SCHOOL_SETUP_PATH;
+    return isOrgSetupPath(pathname) ? null : ONBOARDING_PATH;
   }
 
   if (

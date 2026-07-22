@@ -21,9 +21,9 @@ export default async function OrganizationSettingsPage() {
         />
         <EmptyState
           icon={GraduationCap}
-          title="Set up your school first"
-          description="Complete School Setup so Hey Ralli knows which organization to configure."
-          action={{ label: "Go to School Setup", href: "/settings/school-setup" }}
+          title="Create your workspace first"
+          description="Start with your first event — takes about a minute."
+          action={{ label: "Get started", href: "/onboarding" }}
           className="cos-card py-16"
         />
       </div>

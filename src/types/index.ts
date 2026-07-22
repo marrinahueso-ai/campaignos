@@ -121,6 +121,7 @@ export interface Organization {
   preferredPostingHours: PreferredPostingWindow[] | null;
   foundingAccessCode: string | null;
   billingExemptAt: string | null;
+  onboardingState?: unknown;
   createdAt: string;
 }
 
@@ -141,6 +142,7 @@ export interface OrganizationRow {
   preferred_posting_hours?: PreferredPostingWindow[] | null;
   founding_access_code?: string | null;
   billing_exempt_at?: string | null;
+  onboarding_state?: unknown;
   created_at: string;
 }
 

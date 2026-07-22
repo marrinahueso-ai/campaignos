@@ -1,57 +1,48 @@
-import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
+import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
+import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 
-const SCHOOL_SETUP_CARDS = [
-  {
-    title: "School details",
-    description: "Name, district, principal, and mascot.",
-  },
-  {
-    title: "Important dates",
-    description: "School year boundaries and key calendar dates.",
-  },
-  {
-    title: "Contacts",
-    description: "Board roster and committee chair contacts.",
-  },
-  {
-    title: "Grades & rooms",
-    description: "Grade levels and classroom organization.",
-  },
-  {
-    title: "Resources",
-    description: "Handbooks, FAQs, and helpful links.",
-  },
-  {
-    title: "School hours",
-    description: "Daily schedule and early dismissal days.",
-  },
-] as const;
+export async function SchoolSetupShellContent() {
+  const checklist = await getOnboardingChecklistForCurrentOrg();
+  const items = checklist?.items ?? [];
 
-export function SchoolSetupShellContent() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <SettingsV2PageHeader
-        title="School Setup"
-        description="Configure school-specific details and resources for your workspace."
+        title="Get started"
+        description="Value first — create an event, then finish calendar, brand, and team when you’re ready."
         actions={
-          <Button href="/settings/school-setup?view=wizard" size="sm">
-            Open setup wizard
+          <Button href="/events/create?onboarding=1" size="sm">
+            Create an event
           </Button>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SCHOOL_SETUP_CARDS.map((card) => (
-          <SettingsV2Card key={card.title} title={card.title}>
-            <p className="text-sm leading-relaxed text-cos-muted">{card.description}</p>
-            <p className="mt-3 text-xs font-medium text-amber-700">Coming soon</p>
-          </SettingsV2Card>
-        ))}
-      </div>
+      {items.length > 0 ? (
+        <OnboardingChecklistCards
+          items={items}
+          title="Your checklist"
+          description="Skipped steps show up here until they’re done."
+        />
+      ) : (
+        <p className="text-sm text-cos-muted">
+          You’re all set. Open Organization settings anytime to edit profile
+          details.
+        </p>
+      )}
 
-      <p className="text-center text-sm text-cos-muted">More settings coming soon</p>
+      <div className="flex flex-wrap gap-3">
+        <Button href="/settings/organization" variant="secondary" size="sm">
+          Organization settings
+        </Button>
+        <Button href="/calendar/import" variant="secondary" size="sm">
+          Calendar import
+        </Button>
+        <Button href="/settings/team-access" variant="secondary" size="sm">
+          Team & Access
+        </Button>
+      </div>
     </div>
   );
 }

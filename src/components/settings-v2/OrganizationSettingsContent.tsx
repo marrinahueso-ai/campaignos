@@ -39,7 +39,11 @@ export async function OrganizationSettingsContent({
           title="Organization Details"
           description="Basic information used across Hey Ralli."
           actions={
-            <Button variant="secondary" size="sm" href="/settings/school-setup">
+            <Button
+              variant="secondary"
+              size="sm"
+              href="/settings/school-setup?view=wizard&step=school"
+            >
               Edit profile
             </Button>
           }
@@ -56,7 +60,7 @@ export async function OrganizationSettingsContent({
           title="Branding"
           description="Colors and visual identity for generated content."
           actions={
-            <Button variant="secondary" size="sm" href="/settings/school-setup">
+            <Button variant="secondary" size="sm" href="/onboarding/brand">
               Edit branding
             </Button>
           }

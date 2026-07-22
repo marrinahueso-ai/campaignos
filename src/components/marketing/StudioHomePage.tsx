@@ -5,7 +5,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
-import { SCHOOL_SETUP_PATH } from "@/lib/auth/post-auth-path";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
 
 type InvitePreview = Awaited<ReturnType<typeof getInvitePreview>>;
 
@@ -49,11 +49,11 @@ export function StudioHomePage({
   foundingCodeRetry = false,
 }: StudioHomePageProps) {
   const isSignedIn = Boolean(userEmail);
-  const needsSchoolSetup = workspaceHref === SCHOOL_SETUP_PATH;
+  const needsSchoolSetup = workspaceHref === ONBOARDING_PATH;
   const showSetupForm = setupIntent && (!isSignedIn || foundingCodeRetry);
   const startSchoolHref = isSignedIn
-    ? SCHOOL_SETUP_PATH
-    : `/login?intent=setup&next=${encodeURIComponent(SCHOOL_SETUP_PATH)}`;
+    ? ONBOARDING_PATH
+    : `/login?intent=setup&next=${encodeURIComponent(ONBOARDING_PATH)}`;
   const showNewSchoolPath = setupIntent || (!invitePreview && !isSignedIn);
 
   return (
@@ -113,7 +113,7 @@ export function StudioHomePage({
           {isSignedIn && (
             <div className="mt-10 flex flex-wrap items-center gap-4">
               {needsSchoolSetup ? (
-                <Button href={SCHOOL_SETUP_PATH} size="lg">
+                <Button href={ONBOARDING_PATH} size="lg">
                   Start organization setup
                   <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
@@ -212,7 +212,7 @@ export function StudioHomePage({
                 )}
                 <p className="text-sm text-cos-muted">{userEmail}</p>
                 {authError === "account_deactivated" ? null : (
-                  <Button href={needsSchoolSetup ? SCHOOL_SETUP_PATH : workspaceHref} size="lg" className="w-full">
+                  <Button href={needsSchoolSetup ? ONBOARDING_PATH : workspaceHref} size="lg" className="w-full">
                     {needsSchoolSetup ? "Start organization setup" : "Go to your workspace"}
                     <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
@@ -346,7 +346,7 @@ export function StudioHomePage({
                     inviteToken={inviteToken}
                     defaultEmail={invitePreview?.email ?? userEmail ?? ""}
                     variant="studio"
-                    nextPath={nextPath ?? (setupIntent ? SCHOOL_SETUP_PATH : null)}
+                    nextPath={nextPath ?? (setupIntent ? ONBOARDING_PATH : null)}
                     setupIntent={setupIntent}
                     foundingCodeRetry={foundingCodeRetry}
                   />

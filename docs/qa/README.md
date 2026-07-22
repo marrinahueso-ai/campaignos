@@ -1,10 +1,11 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** July 21, 2026
+**Last updated:** July 22, 2026
 
 | Doc | Status |
 |-----|--------|
+| [launch-checklist.md](./launch-checklist.md) | **Living** — soft launch / Production pass-fail checklist |
 | [architecture-overview.md](./architecture-overview.md) | **Living** |
 | [testing-guide.md](./testing-guide.md) | **Living** |
 | [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md) | **Living** — Creative Setup → artwork input matrix; Playwright `13` / `13b` |

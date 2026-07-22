@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 21, 2026  
+**Last updated:** July 22, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -14,7 +14,7 @@ This is the documentation hub. Start here.
 | You are… | Open first |
 |----------|------------|
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Local setup](./getting-started/local-setup.md) |
-| **QA** | [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
+| **QA** | [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
 | **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
@@ -45,6 +45,7 @@ This is the documentation hub. Start here.
 | Architecture | [engineering/architecture.md](./engineering/architecture.md) |
 | Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
+| Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |
 | Google Calendar | [integrations/google-calendar.md](./integrations/google-calendar.md) |

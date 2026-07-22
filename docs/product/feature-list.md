@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Volunteers SignUpGenius sticky date allowlist on review/confirm/refresh; Events Home list thumbnails use promoted approved-square URL when artwork prefetch misses a row; Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
+**Last updated:** July 22, 2026 — Value-first onboarding (Welcome → create first event → skippable calendar/brand/invite; Today + Get started checklist); Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
 
 ---
 
@@ -19,7 +19,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Sign in / sign up — **shipped**
 - Founding access code + org welcome magic-link email — **shipped**
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
-- School Setup wizard (Welcome → School → Brand → Calendar → Meta → Team → Finish) — **shipped**
+- Value-first onboarding (`/onboarding`: Welcome → create first event → skippable calendar / brand / invite; skipped items on Today + Settings **Get started**) — **shipped**
+- Legacy School Setup wizard (Welcome → School → Brand → Calendar → Meta → Team → Finish) — **partial** (reopen via Get started / `?view=wizard`; first-time path prefers `/onboarding`)
 - Change password — **shipped**
 - Deactivated-account handling — **shipped**
 
@@ -157,7 +158,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - AI credits widget — **stub** (placeholder UI)
 
 ## Settings
-- Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · School Setup · Billing · Advanced) — **shipped**
+- Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**
 - Overview, Organization (branding, timezone, logos, etc.) — **shipped**
 - Board roster / committees / responsibility matrix — **shipped**
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
@@ -176,7 +177,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Primary nav
 Dashboard · Calendar · Events · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights · Hey Ralli Assistant (pinned under Insights)
 
-Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · School Setup · Billing · Advanced
+Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced
 
 ---
 

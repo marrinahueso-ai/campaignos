@@ -15,7 +15,7 @@ import { SchoolSetupWizard } from "@/components/school-setup/SchoolSetupWizard";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "School Setup",
+  title: "Get started",
 };
 
 interface SettingsSchoolSetupPageProps {
@@ -57,14 +57,18 @@ export default async function SettingsSchoolSetupPage({
   const accessCodeRequired = isFoundingAccessCodeRequired();
   const params = await searchParams;
   const showWizard =
-    isPostSetupContinuation(params) || params.view === "wizard" || !membership;
-
-  if (membership && !hasValidPendingCode && !showWizard) {
-    return <SchoolSetupShellContent />;
-  }
+    isPostSetupContinuation(params) || params.view === "wizard";
 
   if (accessCodeRequired && !hasValidPendingCode && !membership) {
     redirect("/login?intent=setup&error=code_required");
+  }
+
+  if (!membership && !showWizard) {
+    redirect("/onboarding");
+  }
+
+  if (membership && !hasValidPendingCode && !showWizard) {
+    return <SchoolSetupShellContent />;
   }
 
   const [metaConnection, workspace] = membership
