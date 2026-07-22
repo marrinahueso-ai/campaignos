@@ -29,6 +29,14 @@ import {
   formatSyncTime,
   type VolunteerAiSummary,
 } from "@/lib/event-volunteers/ai-summary";
+import {
+  filterAndSortAssignments,
+  formatAssignmentDateLabel,
+  listAssignmentDateOptions,
+  type AssignmentDateFilter,
+  type AssignmentSortId,
+  type AssignmentStatusFilter,
+} from "@/lib/event-volunteers/assignment-list";
 import { availabilityStatusLabel } from "@/lib/event-volunteers/stats";
 import type {
   VolunteerAssignmentView,
@@ -48,13 +56,8 @@ type OverviewPayload = Awaited<
   ReturnType<typeof getEventVolunteerOverviewAction>
 >;
 
-type FilterId = "all" | VolunteerAvailabilityStatus;
-type SortId =
-  | "most_needed"
-  | "least_filled"
-  | "most_filled"
-  | "date"
-  | "name";
+type FilterId = AssignmentStatusFilter;
+type SortId = AssignmentSortId;
 
 function formatEventWhen(event: {
   date: string;
@@ -98,17 +101,7 @@ function statusBadgeClass(status: VolunteerAvailabilityStatus): string {
 function formatAssignmentWhen(assignment: VolunteerAssignmentView): string {
   const parts: string[] = [];
   if (assignment.date) {
-    try {
-      parts.push(
-        new Date(`${assignment.date}T12:00:00`).toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        }),
-      );
-    } catch {
-      parts.push(assignment.date);
-    }
+    parts.push(formatAssignmentDateLabel(assignment.date));
   }
   if (assignment.startTime || assignment.endTime) {
     parts.push(
@@ -151,6 +144,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
   const [isPending, startTransition] = useTransition();
   const [phase, setPhase] = useState<"loading" | "idle">("loading");
   const [filter, setFilter] = useState<FilterId>("all");
+  const [dateFilter, setDateFilter] = useState<AssignmentDateFilter>("all");
   const [sort, setSort] = useState<SortId>("most_needed");
   const [selected, setSelected] = useState<VolunteerAssignmentView | null>(null);
   const [showReplace, setShowReplace] = useState(false);
@@ -355,6 +349,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
       isPending={isPending}
       error={error || payload.autoRefreshError}
       filter={filter}
+      dateFilter={dateFilter}
       sort={sort}
       selected={selected}
       showReplace={showReplace}
@@ -362,6 +357,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
       replaceUrl={url}
       copyNote={copyNote}
       onFilterChange={setFilter}
+      onDateFilterChange={setDateFilter}
       onSortChange={setSort}
       onSelect={setSelected}
       onRefresh={handleRefresh}
@@ -644,6 +640,7 @@ function VolunteerOverview({
   isPending,
   error,
   filter,
+  dateFilter,
   sort,
   selected,
   showReplace,
@@ -651,6 +648,7 @@ function VolunteerOverview({
   replaceUrl,
   copyNote,
   onFilterChange,
+  onDateFilterChange,
   onSortChange,
   onSelect,
   onRefresh,
@@ -671,6 +669,7 @@ function VolunteerOverview({
   isPending: boolean;
   error: string | null;
   filter: FilterId;
+  dateFilter: AssignmentDateFilter;
   sort: SortId;
   selected: VolunteerAssignmentView | null;
   showReplace: boolean;
@@ -678,6 +677,7 @@ function VolunteerOverview({
   replaceUrl: string;
   copyNote: string | null;
   onFilterChange: (value: FilterId) => void;
+  onDateFilterChange: (value: AssignmentDateFilter) => void;
   onSortChange: (value: SortId) => void;
   onSelect: (assignment: VolunteerAssignmentView | null) => void;
   onRefresh: () => void;
@@ -693,35 +693,26 @@ function VolunteerOverview({
   const needs = describeNeedsSnapshot(snapshot.assignments);
   const days = daysUntil(event.date);
 
-  const rows = useMemo(() => {
-    let list = [...snapshot.assignments];
-    if (filter === "needs_help") {
-      list = list.filter(
-        (a) =>
-          a.availabilityStatus === "needs_help" ||
-          a.availabilityStatus === "high_need",
-      );
-    } else if (filter !== "all") {
-      list = list.filter((a) => a.availabilityStatus === filter);
-    }
-    list.sort((a, b) => {
-      switch (sort) {
-        case "most_needed":
-          return (b.quantityOpen ?? -1) - (a.quantityOpen ?? -1);
-        case "least_filled":
-          return (a.quantityFilled ?? 999) - (b.quantityFilled ?? 999);
-        case "most_filled":
-          return (b.quantityFilled ?? -1) - (a.quantityFilled ?? -1);
-        case "date":
-          return `${a.date ?? ""} ${a.startTime ?? ""}`.localeCompare(
-            `${b.date ?? ""} ${b.startTime ?? ""}`,
-          );
-        case "name":
-          return a.name.localeCompare(b.name);
-      }
-    });
-    return list;
-  }, [snapshot.assignments, filter, sort]);
+  const dateOptions = useMemo(
+    () => listAssignmentDateOptions(snapshot.assignments),
+    [snapshot.assignments],
+  );
+
+  const activeDateFilter =
+    dateFilter === "all" ||
+    dateOptions.some((option) => option.value === dateFilter)
+      ? dateFilter
+      : "all";
+
+  const rows = useMemo(
+    () =>
+      filterAndSortAssignments(snapshot.assignments, {
+        filter,
+        dateFilter: activeDateFilter,
+        sort,
+      }),
+    [snapshot.assignments, filter, activeDateFilter, sort],
+  );
 
   const campaignBuilderHref = `/events/${event.id}/campaign-builder`;
 
@@ -964,6 +955,20 @@ function VolunteerOverview({
                   <option value="nearly_full">Nearly Full</option>
                   <option value="full">Full</option>
                   <option value="unknown">Unknown</option>
+                </Select>
+                <Select
+                  label="Date"
+                  value={activeDateFilter}
+                  onChange={(e) =>
+                    onDateFilterChange(e.target.value as AssignmentDateFilter)
+                  }
+                >
+                  <option value="all">All dates</option>
+                  {dateOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </Select>
                 <Select
                   label="Sort"

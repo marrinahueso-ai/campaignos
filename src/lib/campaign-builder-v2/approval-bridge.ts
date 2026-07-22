@@ -4,6 +4,7 @@ import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
+  logApprovalNotificationSkipped,
   sendApprovalAssignedEmail,
   sendApprovalResubmittedEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
@@ -120,6 +121,7 @@ export async function sendCampaignBuilderForApproval(
   const now = new Date().toISOString();
   let createdCount = 0;
   let emailsSent = 0;
+  let lastNotifiedEmail: string | null = null;
   let emailSkippedReason: string | null = null;
   const orgUsers = await getOrganizationUsers(organization.id);
   const currentAssigneeEmail = emailForUserId(
@@ -289,13 +291,28 @@ export async function sendCampaignBuilderForApproval(
       continue;
     }
 
-    const recipientEmail =
-      currentAssigneeEmail ??
-      emailForUserId(orgUsers, existing?.assigned_user_id);
+    // existing.assigned_user_id is captured BEFORE update — do not rely on
+    // rowPayload.assigned_user_id, which may be null when Team Access has a
+    // role but no linked user (would overwrite the prior assignee).
+    const priorAssigneeEmail = emailForUserId(
+      orgUsers,
+      existing?.assigned_user_id,
+    );
+    const recipientEmail = currentAssigneeEmail ?? priorAssigneeEmail;
+    const notificationType = isResubmitAfterChanges
+      ? ("approval_resubmitted" as const)
+      : ("approval_assigned" as const);
 
     if (!recipientEmail) {
       emailSkippedReason =
         "No approver email — assign an approver in Team Access or on the event.";
+      await logApprovalNotificationSkipped({
+        eventId: input.eventId,
+        notificationType,
+        recipientEmail: null,
+        errorMessage: emailSkippedReason,
+        schedulingItemId,
+      });
       continue;
     }
 
@@ -319,6 +336,7 @@ export async function sendCampaignBuilderForApproval(
 
     if (notifyResult.wired) {
       emailsSent += 1;
+      lastNotifiedEmail = recipientEmail;
     } else if (!emailSkippedReason) {
       emailSkippedReason = notifyResult.message;
     }
@@ -341,7 +359,7 @@ export async function sendCampaignBuilderForApproval(
 
   const emailNote =
     emailsSent > 0
-      ? ` Approver notified by email.`
+      ? ` Approver notified at ${lastNotifiedEmail ?? "their email"}.`
       : emailSkippedReason
         ? ` Approver email skipped: ${emailSkippedReason}`
         : "";

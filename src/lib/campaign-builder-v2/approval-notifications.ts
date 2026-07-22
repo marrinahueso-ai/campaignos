@@ -56,6 +56,26 @@ type NotificationType =
   | "content_approved"
   | "scheduled_delivery";
 
+/** Persist a skipped notification attempt (e.g. no resolvable approver email). */
+export async function logApprovalNotificationSkipped(input: {
+  eventId: string;
+  notificationType: NotificationType;
+  recipientEmail?: string | null;
+  errorMessage: string;
+  schedulingItemId?: string | null;
+  approvalRequestId?: string | null;
+}): Promise<void> {
+  await logApprovalNotification({
+    eventId: input.eventId,
+    notificationType: input.notificationType,
+    recipientEmail: input.recipientEmail ?? null,
+    status: "skipped",
+    errorMessage: input.errorMessage,
+    schedulingItemId: input.schedulingItemId,
+    approvalRequestId: input.approvalRequestId,
+  });
+}
+
 async function logApprovalNotification(input: {
   eventId: string;
   notificationType: NotificationType;

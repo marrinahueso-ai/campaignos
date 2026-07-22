@@ -280,8 +280,10 @@ describe("approval routing source checks", () => {
     assert.match(source, /sendApprovalAssignedEmail/);
     assert.match(source, /isResubmitAfterChanges/);
     assert.match(source, /existing\?\.assigned_user_id/);
-    assert.match(source, /Approver notified by email/);
+    assert.match(source, /Approver notified at/);
     assert.match(source, /Approver email skipped/);
+    assert.match(source, /logApprovalNotificationSkipped/);
+    assert.match(source, /priorAssigneeEmail/);
   });
 });
 
