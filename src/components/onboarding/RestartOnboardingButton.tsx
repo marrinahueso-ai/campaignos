@@ -19,7 +19,7 @@ export function RestartOnboardingButton() {
         })
       }
     >
-      {isPending ? "Starting…" : "Replay welcome"}
+      {isPending ? "Starting…" : "Start from the welcome screen"}
     </Button>
   );
 }

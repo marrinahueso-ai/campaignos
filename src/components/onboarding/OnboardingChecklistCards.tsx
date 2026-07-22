@@ -11,8 +11,8 @@ interface OnboardingChecklistCardsProps {
 
 export function OnboardingChecklistCards({
   items,
-  title = "Get started",
-  description = "Finish these when you’re ready — everything is optional after your first event.",
+  title = "Helpful next steps",
+  description = "Optional — do these whenever you’re ready.",
 }: OnboardingChecklistCardsProps) {
   const pending = items.filter((item) => !item.done);
   if (pending.length === 0) {
