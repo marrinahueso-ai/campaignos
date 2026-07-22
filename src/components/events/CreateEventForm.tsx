@@ -155,10 +155,11 @@ export function CreateEventForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Event Details</CardTitle>
+        <CardTitle>{onboarding ? "Your event" : "Event Details"}</CardTitle>
         <CardDescription>
-          Choose a playbook and communication strategy. Playbooks come from your
-          Settings templates (including custom milestones).
+          {onboarding
+            ? "Title and date are enough to get started. You can add the rest later."
+            : "Choose a playbook and communication strategy. Playbooks come from your Settings templates (including custom milestones)."}
         </CardDescription>
       </CardHeader>
 
@@ -182,62 +183,83 @@ export function CreateEventForm({
           required
         />
 
-        <Select
-          name="communicationStrategy"
-          label="How much communication does this event need?"
-          value={fields.communicationStrategy}
-          onChange={(changeEvent) => updateStrategy(changeEvent.target.value)}
-        >
-          {COMMUNICATION_STRATEGY_OPTIONS.map(({ value, label, description: optionDescription }) => (
-            <option key={value} value={value}>
-              {label} — {optionDescription}
-            </option>
-          ))}
-        </Select>
-
-        {showPlaybook ? (
-          <div className="space-y-2">
+        {onboarding ? (
+          <>
+            <input type="hidden" name="communicationStrategy" value="full_campaign" />
+            <input type="hidden" name="playbookId" value={fields.playbookId} />
+            <input type="hidden" name="eventType" value={fields.eventType} />
+            <input type="hidden" name="status" value="draft" />
+            <input
+              type="hidden"
+              name="description"
+              value={
+                fields.description.trim() ||
+                "Created during Get started — add details anytime."
+              }
+            />
+          </>
+        ) : (
+          <>
             <Select
-              name="playbookId"
-              label="Playbook"
-              value={fields.playbookId}
-              onChange={(changeEvent) => selectPlaybook(changeEvent.target.value)}
-              required
+              name="communicationStrategy"
+              label="How much communication does this event need?"
+              value={fields.communicationStrategy}
+              onChange={(changeEvent) => updateStrategy(changeEvent.target.value)}
             >
-              {playbookOptions.length === 0 ? (
-                <option value="">No playbooks available</option>
-              ) : (
-                playbookOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
+              {COMMUNICATION_STRATEGY_OPTIONS.map(
+                ({ value, label, description: optionDescription }) => (
+                  <option key={value} value={value}>
+                    {label} — {optionDescription}
                   </option>
-                ))
+                ),
               )}
             </Select>
-            <input type="hidden" name="eventType" value={fields.eventType} />
-            <p className="text-xs text-cos-muted">
-              Options match{" "}
-              <Link
-                href="/settings/playbooks-milestones"
-                className="font-medium text-cos-text underline underline-offset-2 hover:text-cos-primary"
-              >
-                Settings → Playbooks / Milestones
-              </Link>
-              .
-            </p>
-          </div>
-        ) : (
-          <input type="hidden" name="eventType" value={fields.eventType} />
-        )}
 
-        <EventBriefDescriptionSection
-          description={fields.description}
-          onDescriptionChange={(value) => updateField("description", value)}
-          getBriefInput={getBriefInput}
-          disabled={isPending}
-          required
-          textareaId="create-event-description"
-        />
+            {showPlaybook ? (
+              <div className="space-y-2">
+                <Select
+                  name="playbookId"
+                  label="Playbook"
+                  value={fields.playbookId}
+                  onChange={(changeEvent) => selectPlaybook(changeEvent.target.value)}
+                  required
+                >
+                  {playbookOptions.length === 0 ? (
+                    <option value="">No playbooks available</option>
+                  ) : (
+                    playbookOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))
+                  )}
+                </Select>
+                <input type="hidden" name="eventType" value={fields.eventType} />
+                <p className="text-xs text-cos-muted">
+                  Options match{" "}
+                  <Link
+                    href="/settings/playbooks-milestones"
+                    className="font-medium text-cos-text underline underline-offset-2 hover:text-cos-primary"
+                  >
+                    Settings → Playbooks / Milestones
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : (
+              <input type="hidden" name="eventType" value={fields.eventType} />
+            )}
+
+            <EventBriefDescriptionSection
+              description={fields.description}
+              onDescriptionChange={(value) => updateField("description", value)}
+              getBriefInput={getBriefInput}
+              disabled={isPending}
+              required
+              textareaId="create-event-description"
+            />
+          </>
+        )}
 
         <div className="grid gap-6 sm:grid-cols-2">
           <Input
@@ -260,41 +282,51 @@ export function CreateEventForm({
           />
         </div>
 
-        <Input
-          name="location"
-          label="Location"
-          placeholder="School gymnasium"
-          value={fields.location}
-          onChange={(changeEvent) => updateField("location", changeEvent.target.value)}
-        />
+        {!onboarding ? (
+          <>
+            <Input
+              name="location"
+              label="Location"
+              placeholder="School gymnasium"
+              value={fields.location}
+              onChange={(changeEvent) =>
+                updateField("location", changeEvent.target.value)
+              }
+            />
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <Input
-            name="audience"
-            label="Audience"
-            placeholder="Families, teachers, community"
-            value={fields.audience}
-            onChange={(changeEvent) => updateField("audience", changeEvent.target.value)}
-          />
-          <Input
-            name="theme"
-            label="Theme"
-            placeholder="Spring celebration, community fun"
-            value={fields.theme}
-            onChange={(changeEvent) => updateField("theme", changeEvent.target.value)}
-          />
-        </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <Input
+                name="audience"
+                label="Audience"
+                placeholder="Families, teachers, community"
+                value={fields.audience}
+                onChange={(changeEvent) =>
+                  updateField("audience", changeEvent.target.value)
+                }
+              />
+              <Input
+                name="theme"
+                label="Theme"
+                placeholder="Spring celebration, community fun"
+                value={fields.theme}
+                onChange={(changeEvent) =>
+                  updateField("theme", changeEvent.target.value)
+                }
+              />
+            </div>
 
-        <Select
-          name="status"
-          label="Status"
-          value={fields.status}
-          onChange={(changeEvent) => updateField("status", changeEvent.target.value)}
-        >
-          <option value="draft">Draft</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="published">Published</option>
-        </Select>
+            <Select
+              name="status"
+              label="Status"
+              value={fields.status}
+              onChange={(changeEvent) => updateField("status", changeEvent.target.value)}
+            >
+              <option value="draft">Draft</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="published">Published</option>
+            </Select>
+          </>
+        ) : null}
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
@@ -306,7 +338,7 @@ export function CreateEventForm({
             Cancel
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Creating..." : "Create Event"}
+            {isPending ? "Creating..." : onboarding ? "Save & continue" : "Create Event"}
           </Button>
         </div>
       </form>

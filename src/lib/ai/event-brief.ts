@@ -2,91 +2,22 @@ import { buildOrganizationVoiceProfile } from "@/lib/brand-voice/organization-vo
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
 import { logAiUsage } from "@/lib/ai/usage";
 import { resolveFastDraftModel } from "@/lib/ai/models";
+import {
+  EVENT_BRIEF_MAX_TOKENS,
+  buildEventBriefSystemPrompt,
+  buildEventBriefUserPrompt,
+  clampBriefToMaxSentences,
+  normalizeBriefText,
+} from "@/lib/ai/event-brief-prompt";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
-import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import type { EventBriefInput, GenerateEventBriefResult } from "@/lib/ai/types";
 
-const EVENT_BRIEF_MAX_TOKENS = 350;
-
-export function buildEventBriefSystemPrompt(): string {
-  return [
-    "You write internal event briefs for school PTO communications teams.",
-    "This is NOT a parent-facing announcement, email, or social post.",
-    "Write 3–5 sentences maximum — clear, warm, and useful as a source of truth for future drafts.",
-    "Answer implicitly: what is this event, why it matters, what families should feel, what communications should emphasize, and what must not be invented.",
-    "Use the organization's brand voice — welcoming and genuine, never corporate or generic AI marketing.",
-    "Return only the brief text — no headings, labels, markdown, or preamble.",
-  ].join(" ");
-}
-
-export function buildEventBriefUserPrompt(input: {
-  briefInput: EventBriefInput;
-  organizationName: string | null;
-  brandVoiceSummary: string;
-}): string {
-  const { briefInput } = input;
-  const lines = [
-    "Turn the rough notes below into a polished internal event brief.",
-    "",
-    "EVENT CONTEXT",
-    `- Title: ${briefInput.title.trim() || "(untitled)"}`,
-    briefInput.date
-      ? `- Date: ${formatEventDate(briefInput.date)}`
-      : "- Date: (not provided)",
-    briefInput.time
-      ? `- Start time: ${formatEventTime(briefInput.time) ?? briefInput.time}`
-      : null,
-    briefInput.location?.trim()
-      ? `- Location: ${briefInput.location.trim()}`
-      : "- Location: (not provided)",
-    briefInput.audience?.trim()
-      ? `- Audience: ${briefInput.audience.trim()}`
-      : "- Audience: (not provided)",
-    briefInput.theme?.trim() ? `- Theme: ${briefInput.theme.trim()}` : null,
-    briefInput.category?.trim()
-      ? `- Category: ${briefInput.category.trim()}`
-      : null,
-    briefInput.eventTypeLabel?.trim()
-      ? `- Event type: ${briefInput.eventTypeLabel.trim()}`
-      : null,
-    briefInput.communicationStrategyLabel?.trim()
-      ? `- Communication plan: ${briefInput.communicationStrategyLabel.trim()}`
-      : null,
-    briefInput.volunteerNeeds?.trim()
-      ? `- Confirmed volunteer needs: ${briefInput.volunteerNeeds.trim()}`
-      : "- Confirmed volunteer needs: none on file",
-    "",
-    "ORGANIZATION BRAND VOICE",
-    input.organizationName
-      ? `- School / organization: ${input.organizationName}`
-      : "- School / organization: (not provided)",
-    `- Voice guidance: ${input.brandVoiceSummary}`,
-    "",
-    "ROUGH NOTES",
-    briefInput.roughDescription.trim() || "(none — infer from title and context only)",
-    "",
-    "BRIEF REQUIREMENTS",
-    "- 3–5 sentences only.",
-    "- Internal planning tone — for communicators, not families reading a final message.",
-    "- State what communications should emphasize and the feeling to aim for.",
-    briefInput.volunteerNeeds?.trim()
-      ? "- Volunteer needs are confirmed — mention them as part of what communications may emphasize."
-      : "- Do NOT mention volunteer needs unless they appear in confirmed volunteer needs above.",
-    "- Do NOT invent dates, times, locations, activities, or logistics not supported by the context above.",
-    "- Do NOT write opening lines like 'Save the date' or 'Friendly reminder'.",
-  ].filter(Boolean);
-
-  return lines.join("\n");
-}
-
-function normalizeBriefText(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^```(?:markdown|text)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-}
+export {
+  buildEventBriefSystemPrompt,
+  buildEventBriefUserPrompt,
+  clampBriefToMaxSentences,
+} from "@/lib/ai/event-brief-prompt";
 
 export async function generateEventBrief(input: {
   eventId?: string | null;
@@ -154,7 +85,7 @@ export async function generateEventBrief(input: {
     };
   }
 
-  const brief = normalizeBriefText(result.text);
+  const brief = clampBriefToMaxSentences(normalizeBriefText(result.text));
   if (!brief) {
     return {
       success: false,
