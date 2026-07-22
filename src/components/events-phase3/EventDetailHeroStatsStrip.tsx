@@ -2,8 +2,8 @@ import Link from "next/link";
 import {
   createWithAiHref,
   eventDetailApprovalsHref,
-  eventFilesHref,
   eventTasksHref,
+  eventVolunteersHref,
 } from "@/lib/events/event-responsibility";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,10 +12,10 @@ export type EventDetailHeroStats = {
   pendingApprovals: number;
   scheduledPosts: number;
   tasks: number;
-  files: number;
+  filledSpots: number;
 };
 
-export type EventDetailHeroStatTab = "approvals" | "tasks" | "files";
+export type EventDetailHeroStatTab = "approvals" | "tasks" | "volunteers";
 
 const STATS: Array<{
   key: keyof EventDetailHeroStats;
@@ -51,10 +51,10 @@ const STATS: Array<{
     tab: "tasks",
   },
   {
-    key: "files",
-    label: "Files",
-    href: eventFilesHref,
-    tab: "files",
+    key: "filledSpots",
+    label: "Filled",
+    href: eventVolunteersHref,
+    tab: "volunteers",
   },
 ];
 

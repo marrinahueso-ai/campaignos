@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { filterAndSortAssignments } from "@/lib/event-volunteers/assignment-list";
 import {
   buildSnapshotFromAssignments,
   classifyAssignments,
   computeTotalsFromAssignments,
   resolveAvailabilityStatus,
+  summarizeAssignmentList,
 } from "@/lib/event-volunteers/stats";
+import type { VolunteerAssignmentView } from "@/lib/event-volunteers/types";
 import { normalizeSignUpGeniusPayload } from "@/lib/event-volunteers/signupgenius-normalize";
 import { validateSignUpGeniusUrl } from "@/lib/event-volunteers/url";
 
@@ -83,6 +86,73 @@ describe("volunteer stats", () => {
       ],
     });
     assert.equal(summary.overallFilledPercent, null);
+  });
+
+  it("summarizes a filtered assignment list for summary cards", () => {
+    const assignments: VolunteerAssignmentView[] = [
+      {
+        externalKey: "a",
+        name: "Day 1 Setup",
+        date: "2026-09-09",
+        quantityRequested: 4,
+        quantityFilled: 1,
+        quantityOpen: 3,
+        availabilityStatus: "high_need",
+        sourceOrder: 0,
+      },
+      {
+        externalKey: "b",
+        name: "Day 1 Full",
+        date: "2026-09-09",
+        quantityRequested: 2,
+        quantityFilled: 2,
+        quantityOpen: 0,
+        availabilityStatus: "full",
+        sourceOrder: 1,
+      },
+      {
+        externalKey: "c",
+        name: "Day 2 Cleanup",
+        date: "2026-09-17",
+        quantityRequested: 10,
+        quantityFilled: 0,
+        quantityOpen: 10,
+        availabilityStatus: "high_need",
+        sourceOrder: 2,
+      },
+    ];
+
+    const filtered = filterAndSortAssignments(assignments, {
+      filter: "all",
+      dateFilter: "2026-09-09",
+      sort: "name",
+    });
+    const summary = summarizeAssignmentList(filtered);
+
+    assert.equal(summary.assignmentCount, 2);
+    assert.equal(summary.totalSpots, 6);
+    assert.equal(summary.filledSpots, 3);
+    assert.equal(summary.openSpots, 3);
+    assert.equal(summary.overallFilledPercent, 50);
+    assert.equal(summary.fullAssignmentCount, 1);
+    assert.equal(summary.needsHelpCount, 1);
+    assert.equal(summary.quantitiesComplete, true);
+  });
+
+  it("returns zeros for an empty filtered assignment list", () => {
+    const summary = summarizeAssignmentList([]);
+    assert.deepEqual(summary, {
+      totalSpots: 0,
+      filledSpots: 0,
+      openSpots: 0,
+      overallFilledPercent: 0,
+      fullAssignmentCount: 0,
+      needsHelpCount: 0,
+      nearlyFullCount: 0,
+      unknownAssignmentCount: 0,
+      assignmentCount: 0,
+      quantitiesComplete: true,
+    });
   });
 
   it("marks high need for zero filled and largest open", () => {

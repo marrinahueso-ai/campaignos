@@ -94,7 +94,7 @@ export async function loadEventDetailTabAction(
   }
 }
 
-/** Refresh hero strip counts after Approvals/Tasks/Files mutations. */
+/** Refresh hero strip counts after Approvals/Tasks/Volunteers mutations. */
 export async function refreshEventDetailHeroStatsAction(
   eventId: string,
 ): Promise<

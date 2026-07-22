@@ -92,6 +92,57 @@ export async function getLatestConfirmedVolunteerSnapshot(
   return getVolunteerSnapshotById(String(data.id), organizationId);
 }
 
+/**
+ * Lightweight filled-spot count for event hero stats.
+ * Same snapshot preference as getLatestConfirmedVolunteerSnapshot, without
+ * loading assignments. Returns 0 when disconnected or quantities unknown.
+ */
+export async function getLatestConfirmedVolunteerFilledSpots(
+  eventId: string,
+): Promise<number> {
+  const supabase = await createClient();
+
+  const { data: source } = await supabase
+    .from("event_volunteer_sources")
+    .select("latest_confirmed_snapshot_id")
+    .eq("event_id", eventId)
+    .in("status", ["pending_review", "connected", "error"])
+    .maybeSingle();
+
+  const snapshotId =
+    source && typeof source.latest_confirmed_snapshot_id === "string"
+      ? source.latest_confirmed_snapshot_id
+      : null;
+
+  if (snapshotId) {
+    const { data, error } = await supabase
+      .from("event_volunteer_snapshots")
+      .select("filled_spots")
+      .eq("id", snapshotId)
+      .maybeSingle();
+    if (!error && data) {
+      const filled = data.filled_spots;
+      return typeof filled === "number" && Number.isFinite(filled) ? filled : 0;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("event_volunteer_snapshots")
+    .select("filled_spots")
+    .eq("event_id", eventId)
+    .eq("confirmed", true)
+    .order("captured_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return 0;
+  }
+
+  const filled = data.filled_spots;
+  return typeof filled === "number" && Number.isFinite(filled) ? filled : 0;
+}
+
 export async function getPendingVolunteerSnapshot(
   sourceId: string,
   organizationId: string,

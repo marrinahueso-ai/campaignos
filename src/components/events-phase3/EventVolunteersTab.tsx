@@ -37,7 +37,10 @@ import {
   type AssignmentSortId,
   type AssignmentStatusFilter,
 } from "@/lib/event-volunteers/assignment-list";
-import { availabilityStatusLabel } from "@/lib/event-volunteers/stats";
+import {
+  availabilityStatusLabel,
+  summarizeAssignmentList,
+} from "@/lib/event-volunteers/stats";
 import type {
   VolunteerAssignmentView,
   VolunteerAvailabilityStatus,
@@ -689,7 +692,6 @@ function VolunteerOverview({
   onCopyUrl: () => void;
   onCopyMessage: () => void;
 }) {
-  const summary = snapshot.summary;
   const needs = describeNeedsSnapshot(snapshot.assignments);
   const days = daysUntil(event.date);
 
@@ -713,6 +715,9 @@ function VolunteerOverview({
       }),
     [snapshot.assignments, filter, activeDateFilter, sort],
   );
+
+  const summary = useMemo(() => summarizeAssignmentList(rows), [rows]);
+  const filtersActive = filter !== "all" || activeDateFilter !== "all";
 
   const campaignBuilderHref = `/events/${event.id}/campaign-builder`;
 
@@ -824,7 +829,11 @@ function VolunteerOverview({
               : `${summary.overallFilledPercent}%`
           }
           hint={
-            summary.quantitiesComplete ? "From latest snapshot" : "Partial data"
+            summary.quantitiesComplete
+              ? filtersActive
+                ? "From filtered assignments"
+                : "From latest snapshot"
+              : "Partial data"
           }
         />
         <StatCard

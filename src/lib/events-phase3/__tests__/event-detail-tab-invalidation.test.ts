@@ -59,10 +59,11 @@ describe("invalidateEventTabCacheEntry", () => {
     ]);
   });
 
-  it("marks approvals/tasks/files as hero-stat refresh tabs", () => {
+  it("marks approvals/tasks/volunteers as hero-stat refresh tabs", () => {
     assert.equal(tabAffectsHeroStats("approvals"), true);
     assert.equal(tabAffectsHeroStats("tasks"), true);
-    assert.equal(tabAffectsHeroStats("files"), true);
+    assert.equal(tabAffectsHeroStats("volunteers"), true);
+    assert.equal(tabAffectsHeroStats("files"), false);
     assert.equal(tabAffectsHeroStats("vendors"), false);
     assert.equal(tabAffectsHeroStats("notes"), false);
   });

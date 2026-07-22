@@ -48,8 +48,8 @@ export function eventTabCacheHas(
   return cache.has(eventTabCacheKey(eventId, tab));
 }
 
-export type HeroStatsRefreshTab = "approvals" | "tasks" | "files";
+export type HeroStatsRefreshTab = "approvals" | "tasks" | "volunteers";
 
 export function tabAffectsHeroStats(tab: string): tab is HeroStatsRefreshTab {
-  return tab === "approvals" || tab === "tasks" || tab === "files";
+  return tab === "approvals" || tab === "tasks" || tab === "volunteers";
 }

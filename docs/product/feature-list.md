@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Event detail hero stats; Review approval workflow uses Team Access approvers
+**Last updated:** July 21, 2026 — Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
 
 ---
 
@@ -46,8 +46,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Events list, create, edit — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
-- Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks/Files from playbook tables) — clickable to Create with AI / Approvals / Tasks / Files — **shipped**
-- Volunteers (SignUpGenius URL; assignment table Filter + Date + Sort) — **shipped**
+- Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
+- Volunteers (SignUpGenius URL; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped**
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Create with AI (Campaign Builder)

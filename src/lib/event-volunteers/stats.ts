@@ -212,6 +212,40 @@ export function summarizeAssignments(
   };
 }
 
+/**
+ * Card metrics for a (possibly filtered) assignment list.
+ * Empty list → zeros / 0% so Filter/Date UI can clear cards gracefully.
+ */
+export function summarizeAssignmentList(
+  assignments: VolunteerAssignmentView[],
+): VolunteerStatsSummary {
+  if (assignments.length === 0) {
+    return {
+      totalSpots: 0,
+      filledSpots: 0,
+      openSpots: 0,
+      overallFilledPercent: 0,
+      fullAssignmentCount: 0,
+      needsHelpCount: 0,
+      nearlyFullCount: 0,
+      unknownAssignmentCount: 0,
+      assignmentCount: 0,
+      quantitiesComplete: true,
+    };
+  }
+
+  const totals = computeTotalsFromAssignments(assignments);
+  return summarizeAssignments(
+    assignments,
+    {
+      totalSpots: totals.totalSpots,
+      filledSpots: totals.filledSpots,
+      openSpots: totals.openSpots,
+    },
+    totals.quantitiesComplete,
+  );
+}
+
 export function buildSnapshotFromAssignments(
   base: Omit<VolunteerSignupSnapshot, "totals" | "assignments" | "quantitiesComplete"> & {
     assignments: VolunteerSignupAssignment[];

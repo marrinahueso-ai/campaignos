@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
 import { areEventPlaybookTablesAvailable } from "@/lib/event-playbooks/queries";
+import { getLatestConfirmedVolunteerFilledSpots } from "@/lib/event-volunteers/queries";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 import {
   countMilestonesFromSessionData,
@@ -29,7 +30,7 @@ export const getEventDetailHeroStats = cache(
       schedulingApprovalsResult,
       scheduledPostsResult,
       tasksResult,
-      filesResult,
+      filledSpots,
     ] = await Promise.all([
       // Focused select only — avoids full session load + scheduling sync side effects.
       supabase
@@ -66,12 +67,7 @@ export const getEventDetailHeroStats = cache(
             .select("id", { count: "exact", head: true })
             .eq("event_id", eventId)
         : Promise.resolve({ count: 0, error: null }),
-      tablesAvailable
-        ? supabase
-            .from("event_playbook_files")
-            .select("id", { count: "exact", head: true })
-            .eq("event_id", eventId)
-        : Promise.resolve({ count: 0, error: null }),
+      getLatestConfirmedVolunteerFilledSpots(eventId).catch(() => 0),
     ]);
 
     let sessionMilestoneCount: number | null = null;
@@ -118,17 +114,12 @@ export const getEventDetailHeroStats = cache(
         ? 0
         : ((tasksResult as { count: number | null }).count ?? 0);
 
-    const files =
-      "error" in filesResult && filesResult.error && !isAbsentTable(filesResult.error)
-        ? 0
-        : ((filesResult as { count: number | null }).count ?? 0);
-
     return {
       milestones,
       pendingApprovals: classicApprovals + schedulingApprovals,
       scheduledPosts,
       tasks,
-      files,
+      filledSpots,
     };
   },
 );
