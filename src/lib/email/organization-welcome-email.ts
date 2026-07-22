@@ -79,7 +79,7 @@ export function buildOrganizationWelcomeEmail(
           <tr>
             <td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif;">
               <a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;">
-                Continue setup
+                Let's get started
               </a>
               <p style="margin:14px 0 0;font-size:13px;line-height:1.5;color:#5c554c;">
                 This link expires soon. If you didn’t request it, you can ignore this email.
@@ -110,7 +110,7 @@ export function buildOrganizationWelcomeEmail(
     "",
     `Continue with: ${email}`,
     "",
-    "Continue setup:",
+    "Let's get started:",
     actionUrl,
     "",
     "This link expires soon. If you didn’t request it, ignore this email.",

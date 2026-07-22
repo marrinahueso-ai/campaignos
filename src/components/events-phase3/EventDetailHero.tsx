@@ -44,13 +44,13 @@ export function EventDetailHero({
         />
       </div>
 
-      <div className="flex min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-4 sm:p-5">
+      <div className="flex min-w-0 w-full flex-col rounded-xl border border-cos-border/90 bg-cos-card p-4 sm:p-5">
         <div className="flex min-w-0 flex-col gap-3">
           <EventDetailHeroCountdown
             eventDate={event.date}
             eventTime={event.time}
           />
-          <div className="min-w-0 border-t border-cos-border pt-3">
+          <div className="min-w-0 border-t border-cos-border/80 pt-3">
             <EventDetailHeroSummary event={event} />
           </div>
         </div>

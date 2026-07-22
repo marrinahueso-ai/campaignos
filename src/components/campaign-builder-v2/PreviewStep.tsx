@@ -114,6 +114,7 @@ export function PreviewStep() {
     reconcilePreviewStatuses,
     canUseDeveloperTools,
     clearMilestoneGeneratedContent,
+    flushSave,
   } = useCampaignBuilder();
 
   useEffect(() => {
@@ -305,7 +306,7 @@ export function PreviewStep() {
     }
   }
 
-  function handleApplyArtwork(artwork: MilestoneArtwork) {
+  async function handleApplyArtwork(artwork: MilestoneArtwork) {
     if (!selectedPreview) {
       return;
     }
@@ -313,7 +314,8 @@ export function PreviewStep() {
       selectedPreview,
       selectedMilestone?.platformFormats,
     );
-    updatePreviewContent(selectedPreview.milestoneId, {
+    const milestoneId = selectedPreview.milestoneId;
+    updatePreviewContent(milestoneId, {
       artwork,
       status: "needs-review",
       generationStatus: preserveApprovalWorkflowStatus(
@@ -322,12 +324,28 @@ export function PreviewStep() {
       ),
     });
     setArtworkModalOpen(false);
-    void syncAppliedMilestoneArtworkAction({
-      eventId: session.eventId,
-      milestones: session.milestones,
-      milestoneId: selectedPreview.milestoneId,
-      artwork,
-    }).then(() => router.refresh());
+
+    // Flush session to server before sync/revalidate. Apply used to only update
+    // client state + debounce the upsert; router.refresh() then remounted with a
+    // stale server snapshot that tied on artwork richness and reverted URLs.
+    try {
+      await flushSave();
+      const syncResult = await syncAppliedMilestoneArtworkAction({
+        eventId: session.eventId,
+        milestones: session.milestones,
+        milestoneId,
+        artwork,
+      });
+      if (!syncResult.success) {
+        console.error(
+          "Failed to sync applied artwork to event assets:",
+          syncResult.message,
+        );
+      }
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to persist applied artwork:", error);
+    }
   }
 
   async function resendSelectedMilestone(artwork?: MilestoneArtwork) {
@@ -692,7 +710,7 @@ export function PreviewStep() {
             selectedMilestone.platformFormats,
           )}
           onClose={() => setArtworkModalOpen(false)}
-          onApply={(artwork) => handleApplyArtwork(artwork)}
+          onApply={(artwork) => void handleApplyArtwork(artwork)}
           onResendForApproval={handleResendForApproval}
         />
       )}

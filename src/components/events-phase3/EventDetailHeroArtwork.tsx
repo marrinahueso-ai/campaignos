@@ -36,18 +36,33 @@ export function EventDetailHeroArtwork({
 
   return (
     <div className={cn("min-w-0 w-full", className)}>
-      <div className="flex aspect-square w-full max-w-[200px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-cos-border bg-cos-card px-3 py-4 text-center">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cos-bg">
-          <ImageIcon className="h-4 w-4 text-cos-muted" strokeWidth={1.5} />
+      <div
+        className={cn(
+          "flex aspect-square w-full max-w-[200px] flex-col items-center justify-center gap-2 rounded-xl px-3 py-4 text-center",
+          "border-2 border-dashed border-cos-brand-mustard/45",
+          "bg-gradient-to-br from-cos-brand-mustard-soft/80 via-cos-card to-cos-brand-sage-soft/70",
+        )}
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-cos-brand-navy-soft">
+          <ImageIcon
+            className="h-4 w-4 text-cos-brand-navy"
+            strokeWidth={1.5}
+          />
         </div>
         <div>
-          <p className="text-xs font-semibold text-cos-text">No artwork yet</p>
+          <p className="text-xs font-semibold text-cos-brand-navy">
+            No artwork yet
+          </p>
           <p className="mt-0.5 text-[11px] text-cos-muted">
             Create in Create with AI
           </p>
         </div>
-        <Button href={createWithAiHref} size="sm" variant="secondary">
-          <Sparkles className="h-3.5 w-3.5" />
+        <Button
+          href={createWithAiHref}
+          size="sm"
+          className="bg-cos-brand-navy text-[#f6f2eb] hover:bg-cos-brand-navy/90 focus-visible:ring-cos-brand-navy"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-cos-brand-mustard" />
           Open Create with AI
         </Button>
       </div>

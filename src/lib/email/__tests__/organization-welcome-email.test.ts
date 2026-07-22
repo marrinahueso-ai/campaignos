@@ -15,6 +15,8 @@ describe("organization-welcome-email", () => {
     const blob = `${email.subject}\n${email.html}\n${email.text}`.toLowerCase();
     assert.match(blob, /organization/);
     assert.match(blob, /welcome to hey ralli/);
+    assert.match(email.html, /Let's get started/);
+    assert.match(email.text, /Let's get started:/);
     assert.doesNotMatch(blob, /\bschool\b/);
     assert.doesNotMatch(blob, /\bpto\b/);
   });

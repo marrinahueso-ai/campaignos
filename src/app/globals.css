@@ -28,6 +28,16 @@
   --cos-error-text: #8f4a38;
   --cos-change-request: #f6e7b7;
 
+  /* Hey Ralli logo mark accents (sunburst capsules) — sampled; use sparingly */
+  --cos-brand-navy: #18243b;
+  --cos-brand-navy-soft: #e8ebf0;
+  --cos-brand-mustard: #cc9c48;
+  --cos-brand-mustard-soft: #f5ecd8;
+  --cos-brand-sage: #6b8171;
+  --cos-brand-sage-soft: #e8eee9;
+  --cos-brand-terracotta: #d06650;
+  --cos-brand-terracotta-soft: #f6e8e4;
+
   /* Task hub status pills — Monday-like hues on warm palette */
   --cos-status-todo: #4a7fb5;
   --cos-status-todo-bg: #e4eef8;
@@ -77,6 +87,14 @@
   --color-cos-error-bg: var(--cos-error-bg);
   --color-cos-error-text: var(--cos-error-text);
   --color-cos-change-request: var(--cos-change-request);
+  --color-cos-brand-navy: var(--cos-brand-navy);
+  --color-cos-brand-navy-soft: var(--cos-brand-navy-soft);
+  --color-cos-brand-mustard: var(--cos-brand-mustard);
+  --color-cos-brand-mustard-soft: var(--cos-brand-mustard-soft);
+  --color-cos-brand-sage: var(--cos-brand-sage);
+  --color-cos-brand-sage-soft: var(--cos-brand-sage-soft);
+  --color-cos-brand-terracotta: var(--cos-brand-terracotta);
+  --color-cos-brand-terracotta-soft: var(--cos-brand-terracotta-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-cormorant);
@@ -107,6 +125,38 @@ body {
     margin-inline: auto;
     width: 100%;
     max-width: 88rem;
+  }
+
+  /* Soft logo-tinted wash for the event detail workspace only */
+  .event-detail-atmosphere {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .event-detail-atmosphere::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: -1.5rem -1rem auto;
+    height: min(28rem, 55vh);
+    z-index: -1;
+    border-radius: 0 0 2rem 2rem;
+    background:
+      radial-gradient(
+        120% 80% at 12% 0%,
+        color-mix(in srgb, var(--cos-brand-mustard-soft) 70%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        90% 70% at 88% 8%,
+        color-mix(in srgb, var(--cos-brand-sage-soft) 65%, transparent),
+        transparent 50%
+      ),
+      radial-gradient(
+        70% 50% at 55% 0%,
+        color-mix(in srgb, var(--cos-brand-navy-soft) 45%, transparent),
+        transparent 60%
+      );
   }
 
   .cos-card {

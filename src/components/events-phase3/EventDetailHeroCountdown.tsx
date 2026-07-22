@@ -79,23 +79,36 @@ export function EventDetailHeroCountdown({
       : computeCountdown(targetMs, nowMs);
 
   return (
-    <div className={cn("min-w-0", className)}>
-      <p className="text-[10px] font-semibold tracking-[0.14em] text-cos-muted uppercase">
+    <div
+      className={cn(
+        "min-w-0 rounded-lg bg-gradient-to-r from-cos-brand-mustard-soft/55 via-transparent to-cos-brand-sage-soft/40 px-3 py-2.5 -mx-1",
+        className,
+      )}
+    >
+      <p className="text-[10px] font-semibold tracking-[0.14em] text-cos-brand-sage uppercase">
         Countdown to event
       </p>
 
       {parts == null ? (
         <div className="mt-2 h-10 animate-pulse rounded-lg bg-cos-bg" aria-hidden />
       ) : parts.isPast ? (
-        <p className="mt-2 font-display text-xl text-cos-text">Event completed</p>
+        <p className="mt-2 font-display text-xl text-cos-brand-navy">
+          Event completed
+        </p>
       ) : (
         <div className="mt-2 flex min-w-0 items-end gap-1 sm:gap-1.5">
           <CountdownUnit value={String(parts.days)} label="Days" />
-          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+            :
+          </span>
           <CountdownUnit value={pad(parts.hours)} label="Hrs" />
-          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+            :
+          </span>
           <CountdownUnit value={pad(parts.minutes)} label="Mins" />
-          <span className="pb-4 font-display text-xl text-cos-muted">:</span>
+          <span className="pb-4 font-display text-xl text-cos-brand-mustard/70">
+            :
+          </span>
           <CountdownUnit value={pad(parts.seconds)} label="Secs" />
         </div>
       )}
@@ -106,7 +119,7 @@ export function EventDetailHeroCountdown({
 function CountdownUnit({ value, label }: { value: string; label: string }) {
   return (
     <div className="min-w-[2rem] text-center sm:min-w-[2.25rem]">
-      <p className="font-display text-xl leading-none text-cos-text tabular-nums sm:text-2xl">
+      <p className="font-display text-xl leading-none text-cos-brand-navy tabular-nums sm:text-2xl">
         {value}
       </p>
       <p className="mt-1 text-[10px] font-medium tracking-wide text-cos-muted uppercase">

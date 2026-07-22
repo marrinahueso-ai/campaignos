@@ -670,33 +670,40 @@ export function EventDetailShell({
 
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
-    <div className="studio-page space-y-6 pb-12">
+    <div className="studio-page event-detail-atmosphere space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <Link
             href="/events"
-            className="inline-flex items-center gap-1.5 text-sm text-cos-muted hover:text-cos-primary"
+            className="inline-flex items-center gap-1.5 text-sm text-cos-muted hover:text-cos-brand-navy"
           >
             <ArrowLeft className="h-4 w-4" />
             Events
             <span className="text-cos-border">›</span>
             <span className="truncate text-cos-text">{event.title}</span>
           </Link>
-          <h1 className="mt-3 font-display text-3xl text-cos-text sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl text-cos-brand-navy sm:text-4xl">
             {event.title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-cos-muted">
             <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-4 w-4 text-cos-brand-sage" />
               {formatEventDate(event.date)}
             </span>
             {event.time ? (
               <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 text-cos-brand-sage" />
                 {formatEventTime(event.time)}
               </span>
             ) : null}
-            {eventTypeLabel ? <Badge variant="default">{eventTypeLabel}</Badge> : null}
+            {eventTypeLabel ? (
+              <Badge
+                variant="default"
+                className="bg-cos-brand-navy-soft text-cos-brand-navy"
+              >
+                {eventTypeLabel}
+              </Badge>
+            ) : null}
             <EventStatusBadge status={event.status} />
           </div>
         </div>
@@ -736,7 +743,8 @@ export function EventDetailShell({
                     window.location.assign(createWithAiUrl);
                   }}
                   className={cn(
-                    "border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-cos-muted transition-colors hover:text-cos-text",
+                    "rounded-t-md border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-cos-muted transition-colors",
+                    "hover:bg-cos-brand-mustard-soft/50 hover:text-cos-brand-navy",
                   )}
                 >
                   {entry.label}
@@ -744,6 +752,7 @@ export function EventDetailShell({
               );
             }
 
+            const isActive = tab === entry.id;
             return (
               <button
                 key={entry.id}
@@ -752,10 +761,10 @@ export function EventDetailShell({
                   setTab(entry.id);
                 }}
                 className={cn(
-                  "border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  tab === entry.id
-                    ? "border-cos-text text-cos-text"
-                    : "border-transparent text-cos-muted hover:text-cos-text",
+                  "rounded-t-md border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "border-cos-brand-mustard bg-cos-brand-mustard-soft/60 text-cos-brand-navy"
+                    : "border-transparent text-cos-muted hover:bg-cos-brand-sage-soft/40 hover:text-cos-brand-navy",
                 )}
               >
                 {entry.label}

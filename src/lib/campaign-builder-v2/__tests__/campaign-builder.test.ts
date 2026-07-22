@@ -750,6 +750,63 @@ describe("hydrateCampaignBuilderSession — persistence, reload, and isolation",
     );
   });
 
+  it("keeps locally applied regenerated artwork when server still has the previous URLs", () => {
+    // Regenerate → Apply updates localStorage immediately, but the server
+    // session upsert can lag. Remount / router.refresh must not revert.
+    const defaults = buildDefaultSession("evt-apply", "Carnival Tester 2", "2026-08-17");
+    const milestone = defaults.milestones[0]!;
+    const server = {
+      ...defaults,
+      milestones: [milestone],
+      previewContents: [
+        {
+          ...defaults.previewContents[0]!,
+          milestoneId: milestone.id,
+          generationStatus: "generated" as const,
+          artwork: {
+            feedUrl: "https://cdn.example/old-feed.png",
+            storyUrl: "https://cdn.example/old-story.png",
+          },
+          captions: [
+            { platform: "facebook" as const, text: "Carnival time" },
+            { platform: "instagram" as const, text: "Carnival time" },
+          ],
+        },
+      ],
+    };
+    const local = {
+      ...server,
+      previewContents: [
+        {
+          ...server.previewContents[0]!,
+          generationStatus: "needs_review" as const,
+          artwork: {
+            feedUrl: "https://cdn.example/new-feed-with-logo.png",
+            storyUrl: "https://cdn.example/new-story-with-logo.png",
+          },
+        },
+      ],
+    };
+
+    const hydrated = hydrateCampaignBuilderSession(
+      server,
+      local,
+      "evt-apply",
+      "Carnival Tester 2",
+      "2026-08-17",
+      true,
+    );
+
+    assert.equal(
+      hydrated.previewContents[0]?.artwork.feedUrl,
+      "https://cdn.example/new-feed-with-logo.png",
+    );
+    assert.equal(
+      hydrated.previewContents[0]?.artwork.storyUrl,
+      "https://cdn.example/new-story-with-logo.png",
+    );
+  });
+
   it("legacy campaign migration: a saved session predating Creative Setup fields normalizes to explicit None, not invented defaults", () => {
     const legacyRaw = {
       inspiration: {

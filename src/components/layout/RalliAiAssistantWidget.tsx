@@ -196,21 +196,21 @@ export function RalliAiAssistantWidget({
           title="Hey Ralli Assistant"
           aria-label="Hey Ralli Assistant"
           onClick={() => setOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-cos-border bg-cos-bg/60 transition-colors hover:bg-cos-bg"
+          className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-cos-brand-mustard/35 bg-cos-brand-mustard-soft/60 transition-colors hover:bg-cos-brand-mustard-soft"
         >
-          <Sparkles className="h-4 w-4 text-cos-accent" strokeWidth={1.5} />
+          <Sparkles className="h-4 w-4 text-cos-brand-navy" strokeWidth={1.5} />
         </button>
       ) : (
-        <div className="rounded-[12px] border border-cos-border bg-cos-card p-4 shadow-[0_1px_2px_rgba(42,38,34,0.04)]">
+        <div className="rounded-[12px] border border-cos-brand-mustard/30 bg-gradient-to-br from-cos-brand-mustard-soft/70 via-cos-card to-cos-card p-4 shadow-[0_1px_2px_rgba(42,38,34,0.04)]">
           <div className="flex items-center gap-2">
             <Sparkles
-              className="h-4 w-4 shrink-0 text-cos-accent"
+              className="h-4 w-4 shrink-0 text-cos-brand-mustard"
               strokeWidth={1.5}
             />
-            <h3 className="font-display text-base text-cos-text">
+            <h3 className="font-display text-base text-cos-brand-navy">
               Hey Ralli Assistant
             </h3>
-            <span className="rounded-full bg-cos-dark px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
+            <span className="rounded-full bg-cos-brand-navy px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#f6f2eb] uppercase">
               Ask
             </span>
           </div>
@@ -225,8 +225,8 @@ export function RalliAiAssistantWidget({
             type="button"
             onClick={() => setOpen(true)}
             className={cn(
-              "mt-4 flex w-full items-center justify-center rounded-[10px] border border-cos-border",
-              "bg-cos-bg-alt px-4 py-2.5 text-sm font-semibold text-cos-text transition-colors hover:bg-cos-bg",
+              "mt-4 flex w-full items-center justify-center rounded-[10px] border border-cos-brand-mustard/35",
+              "bg-cos-brand-navy px-4 py-2.5 text-sm font-semibold text-[#f6f2eb] transition-colors hover:bg-cos-brand-navy/90",
             )}
           >
             Ask Ralli →

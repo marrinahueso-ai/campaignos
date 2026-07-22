@@ -10,7 +10,7 @@ When someone starts a new organization with a founding code:
 1. App validates the founding access code
 2. Supabase Admin `generateLink({ type: "magiclink" })` creates the secure setup URL
 3. Resend sends the published **`organization-welcome`** template with that URL
-4. User clicks **Continue setup** → `/auth/callback` → organization setup
+4. User clicks **Let's get started** → `/auth/callback` → organization setup
 
 Requires `RESEND_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY`. If either is missing, founding signup falls back to Supabase Auth’s built-in `signInWithOtp` email.
 

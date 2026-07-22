@@ -86,6 +86,51 @@ function sessionPreviewRichness(
   );
 }
 
+function normalizedArtworkUrl(url: string | null | undefined): string | null {
+  const trimmed = url?.trim() || null;
+  return trimmed || null;
+}
+
+/**
+ * True when local and server both have artwork for the same milestones but the
+ * URLs differ (regenerate → Apply). Richness scoring only counts presence, so
+ * without this check a stale server snapshot wins the tie and remounts revert
+ * the applied artwork.
+ */
+export function localHasReplacementArtwork(
+  local: Partial<CampaignBuilderSession>,
+  server: Partial<CampaignBuilderSession>,
+): boolean {
+  const serverById = new Map(
+    (server.previewContents ?? []).map((preview) => [
+      preview.milestoneId,
+      preview,
+    ]),
+  );
+
+  for (const preview of local.previewContents ?? []) {
+    const other = serverById.get(preview.milestoneId);
+    if (!other) {
+      continue;
+    }
+
+    const localFeed = normalizedArtworkUrl(preview.artwork?.feedUrl);
+    const localStory = normalizedArtworkUrl(preview.artwork?.storyUrl);
+    const serverFeed = normalizedArtworkUrl(other.artwork?.feedUrl);
+    const serverStory = normalizedArtworkUrl(other.artwork?.storyUrl);
+
+    if (!localFeed && !localStory) {
+      continue;
+    }
+
+    if (localFeed !== serverFeed || localStory !== serverStory) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function pickRicherPreview(
   left: MilestonePreviewContent | undefined,
   right: MilestonePreviewContent | undefined,
@@ -518,8 +563,9 @@ export function hydrateCampaignBuilderSession(
   // milestones and discard other local-only edits.
   //
   // Even when the server read succeeds, local wins the merge if it has more
-  // generated artwork. Server upserts often lag or fail, and a stale server
-  // snapshot must never wipe freshly generated Preview artwork on remount.
+  // generated artwork, or replacement artwork URLs after regenerate → Apply.
+  // Server upserts often lag or fail, and a stale server snapshot must never
+  // wipe freshly generated / applied Preview artwork on remount.
   serverLoadSucceeded: boolean = true,
 ): CampaignBuilderSession {
   if (!local) {
@@ -531,12 +577,14 @@ export function hydrateCampaignBuilderSession(
   const localHasRicherContent =
     sessionArtworkCount(local) === sessionArtworkCount(base) &&
     sessionPreviewRichness(local) > sessionPreviewRichness(base);
+  const localHasReplacedArtwork = localHasReplacementArtwork(local, base);
   // Equal-richness deletes must win over a stale longer server list — otherwise
   // remount / Preview hydrate resurrects milestones the user already removed.
   const preferLocal =
     !serverLoadSucceeded ||
     localHasMoreArtwork ||
     localHasRicherContent ||
+    localHasReplacedArtwork ||
     localHasAuthoritativeMilestoneStructure(local, base);
 
   const merged = preferLocal

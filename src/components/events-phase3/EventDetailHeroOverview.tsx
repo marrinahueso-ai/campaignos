@@ -22,10 +22,13 @@ export function EventDetailHeroOverview({
     <div
       className={cn(
         "flex min-w-0 w-full flex-col rounded-xl border border-cos-border bg-cos-card p-4 sm:p-5",
+        "border-l-[3px] border-l-cos-brand-sage",
         className,
       )}
     >
-      <h2 className="font-display text-base text-cos-text">Event Overview</h2>
+      <h2 className="font-display text-base text-cos-brand-navy">
+        Event Overview
+      </h2>
       <dl className="mt-3 space-y-2.5 text-sm">
         <OverviewRow label="Status">
           <EventStatusBadge status={event.status} />
