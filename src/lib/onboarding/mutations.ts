@@ -31,6 +31,14 @@ export async function patchOrganizationOnboardingState(
 ): Promise<OrganizationOnboardingState | null> {
   const current = await getOrganizationOnboardingState(organizationId);
   const next = mergeOnboardingState(current, patch);
+  return writeOrganizationOnboardingState(organizationId, next);
+}
+
+/** Replace onboarding state entirely (used by restart). */
+export async function writeOrganizationOnboardingState(
+  organizationId: string,
+  next: OrganizationOnboardingState,
+): Promise<OrganizationOnboardingState | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase

@@ -15,6 +15,7 @@ import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
   getOrganizationOnboardingState,
   patchOrganizationOnboardingState,
+  writeOrganizationOnboardingState,
 } from "@/lib/onboarding/mutations";
 import {
   buildOnboardingChecklist,
@@ -23,6 +24,7 @@ import {
   parseOnboardingState,
 } from "@/lib/onboarding/state";
 import type { OnboardingChecklistItem } from "@/lib/onboarding/types";
+import { EMPTY_ONBOARDING_STATE } from "@/lib/onboarding/types";
 import {
   bootstrapMinimalOrganization,
   updateOrganizationBrand,
@@ -38,6 +40,23 @@ function revalidateOnboardingPaths() {
   revalidatePath("/events");
 }
 
+/** Clear first-time progress so Welcome → create event can run again (same org). */
+export async function restartOnboardingAction() {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    redirect("/onboarding?welcome=1");
+  }
+
+  const now = new Date().toISOString();
+  await writeOrganizationOnboardingState(organization.id, {
+    ...EMPTY_ONBOARDING_STATE,
+    startedAt: now,
+  });
+
+  revalidateOnboardingPaths();
+  redirect("/onboarding?welcome=1");
+}
+
 export async function startValueFirstOnboardingAction(formData: FormData) {
   const membership = await getActiveMembership();
   if (membership) {
@@ -47,7 +66,8 @@ export async function startValueFirstOnboardingAction(formData: FormData) {
     if (!hasCompletedFirstEvent(state)) {
       redirect("/events/create?onboarding=1");
     }
-    redirect("/dashboard");
+    // Org already onboarded — go create another event in onboarding mode.
+    redirect("/events/create?onboarding=1");
   }
 
   const timezone =

@@ -1,4 +1,5 @@
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
+import { RestartOnboardingButton } from "@/components/onboarding/RestartOnboardingButton";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
@@ -42,6 +43,7 @@ export async function SchoolSetupShellContent() {
         <Button href="/settings/team-access" variant="secondary" size="sm">
           Team & Access
         </Button>
+        <RestartOnboardingButton />
       </div>
     </div>
   );
