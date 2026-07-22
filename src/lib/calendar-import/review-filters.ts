@@ -1,3 +1,7 @@
+import {
+  getTodayDateString,
+  normalizeDateOnly,
+} from "@/lib/utils/dates";
 import type {
   CalendarEventCategory,
   CalendarReviewEvent,
@@ -10,6 +14,8 @@ export type CalendarReviewFilter =
   | "duplicates"
   | "updates"
   | CalendarEventCategory;
+
+export type CalendarReviewDateFilter = "all" | "upcoming" | "past";
 
 export type CalendarReviewStatKey = keyof CalendarReviewStats;
 
@@ -26,6 +32,29 @@ const STAT_KEY_TO_FILTER: Record<CalendarReviewStatKey, CalendarReviewFilter> = 
 
 export function statKeyToFilter(key: CalendarReviewStatKey): CalendarReviewFilter {
   return STAT_KEY_TO_FILTER[key];
+}
+
+export function isPastReviewEvent(
+  event: CalendarReviewEvent,
+  today: string = getTodayDateString(),
+): boolean {
+  return normalizeDateOnly(event.date) < normalizeDateOnly(today);
+}
+
+export function matchesReviewSearch(
+  event: CalendarReviewEvent,
+  query: string,
+): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  return (
+    event.name.toLowerCase().includes(normalized) ||
+    event.category.toLowerCase().includes(normalized) ||
+    (event.matchReason?.toLowerCase().includes(normalized) ?? false)
+  );
 }
 
 export function filterReviewEvents(
@@ -51,6 +80,64 @@ export function filterReviewEvents(
   return events.filter((event) => event.category === filter);
 }
 
+export function filterReviewEventsByDate(
+  events: CalendarReviewEvent[],
+  dateFilter: CalendarReviewDateFilter,
+  today: string = getTodayDateString(),
+): CalendarReviewEvent[] {
+  if (dateFilter === "all") {
+    return events;
+  }
+
+  if (dateFilter === "past") {
+    return events.filter((event) => isPastReviewEvent(event, today));
+  }
+
+  return events.filter((event) => !isPastReviewEvent(event, today));
+}
+
+export function filterReviewEventsBySearch(
+  events: CalendarReviewEvent[],
+  query: string,
+): CalendarReviewEvent[] {
+  if (!query.trim()) {
+    return events;
+  }
+
+  return events.filter((event) => matchesReviewSearch(event, query));
+}
+
+export function applyReviewEventFilters(
+  events: CalendarReviewEvent[],
+  options: {
+    filter?: CalendarReviewFilter;
+    dateFilter?: CalendarReviewDateFilter;
+    search?: string;
+    today?: string;
+  },
+): CalendarReviewEvent[] {
+  const {
+    filter = "all",
+    dateFilter = "all",
+    search = "",
+    today = getTodayDateString(),
+  } = options;
+
+  return filterReviewEventsBySearch(
+    filterReviewEventsByDate(filterReviewEvents(events, filter), dateFilter, today),
+    search,
+  );
+}
+
+export function getPastReviewEventIds(
+  events: CalendarReviewEvent[],
+  today: string = getTodayDateString(),
+): string[] {
+  return events
+    .filter((event) => isPastReviewEvent(event, today))
+    .map((event) => event.id);
+}
+
 export function getReviewFilterLabel(filter: CalendarReviewFilter): string {
   switch (filter) {
     case "all":
@@ -69,5 +156,18 @@ export function getReviewFilterLabel(filter: CalendarReviewFilter): string {
       return "Holidays";
     case "Early Release":
       return "Early release days";
+  }
+}
+
+export function getReviewDateFilterLabel(
+  dateFilter: CalendarReviewDateFilter,
+): string {
+  switch (dateFilter) {
+    case "all":
+      return "All dates";
+    case "upcoming":
+      return "Upcoming";
+    case "past":
+      return "Past";
   }
 }

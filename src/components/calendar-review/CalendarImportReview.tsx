@@ -7,6 +7,7 @@ import { CalendarReviewActions } from "@/components/calendar-review/CalendarRevi
 import { CalendarReviewBulkActions } from "@/components/calendar-review/CalendarReviewBulkActions";
 import { CalendarReviewChatPanel } from "@/components/calendar-review/CalendarReviewChatPanel";
 import { CalendarReviewEditDialog } from "@/components/calendar-review/CalendarReviewEditDialog";
+import { CalendarReviewFilters } from "@/components/calendar-review/CalendarReviewFilters";
 import { CalendarReviewHeader } from "@/components/calendar-review/CalendarReviewHeader";
 import { CalendarReviewStats } from "@/components/calendar-review/CalendarReviewStats";
 import { CalendarReviewTable } from "@/components/calendar-review/CalendarReviewTable";
@@ -26,9 +27,13 @@ import {
 } from "@/lib/calendar-import/actions";
 import { buildCalendarReviewStats } from "@/lib/calendar-import/stats";
 import {
-  filterReviewEvents,
+  applyReviewEventFilters,
+  getPastReviewEventIds,
+  getReviewDateFilterLabel,
   getReviewFilterLabel,
+  isPastReviewEvent,
   statKeyToFilter,
+  type CalendarReviewDateFilter,
   type CalendarReviewFilter,
   type CalendarReviewStatKey,
 } from "@/lib/calendar-import/review-filters";
@@ -39,6 +44,7 @@ import {
   resolveReviewPlanSelection,
   type ReviewPlaybookOption,
 } from "@/lib/calendar-import/review-plan-options";
+import { getTodayDateString } from "@/lib/utils/dates";
 import type { CalendarParseStatus } from "@/types";
 import type { CalendarReviewData, CalendarReviewEvent } from "@/types/calendar-review";
 
@@ -71,16 +77,33 @@ export function CalendarImportReview({
   const [importedCount, setImportedCount] = useState(importedEventCount);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<CalendarReviewFilter>("all");
+  const [dateFilter, setDateFilter] = useState<CalendarReviewDateFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
   const tableRef = useRef<HTMLDivElement>(null);
   const parseStartedRef = useRef(false);
 
+  const today = getTodayDateString();
   const stats = buildCalendarReviewStats(events);
-  const filteredEvents = useMemo(
-    () => filterReviewEvents(events, activeFilter),
-    [events, activeFilter],
+  const pastCount = useMemo(
+    () => events.filter((event) => isPastReviewEvent(event, today)).length,
+    [events, today],
   );
-  const isFiltered = activeFilter !== "all";
+  const upcomingCount = events.length - pastCount;
+  const filteredEvents = useMemo(
+    () =>
+      applyReviewEventFilters(events, {
+        filter: activeFilter,
+        dateFilter,
+        search: searchQuery,
+        today,
+      }),
+    [events, activeFilter, dateFilter, searchQuery, today],
+  );
+  const isTypeFiltered = activeFilter !== "all";
+  const isDateFiltered = dateFilter !== "all";
+  const isSearchFiltered = searchQuery.trim().length > 0;
+  const isFiltered = isTypeFiltered || isDateFiltered || isSearchFiltered;
   const isImported = parseStatus === "imported" || importComplete;
   const isParsing = parseStatus === "parsing" || (isPending && parseStatus === "pending");
 
@@ -146,6 +169,22 @@ export function CalendarImportReview({
     setSelectedIds(new Set());
   }
 
+  function handleRemovePastEvents() {
+    const pastIds = getPastReviewEventIds(events, today);
+    if (pastIds.length === 0) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Remove ${pastIds.length} past event${pastIds.length === 1 ? "" : "s"} from this import list? They will not be added to your calendar. This only affects the review queue.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    handleBulkDelete(pastIds);
+  }
+
   function handleSaveEdit(updatedEvent: CalendarReviewEvent) {
     persistEvents(
       events.map((event) =>
@@ -196,9 +235,35 @@ export function CalendarImportReview({
     });
   }
 
+  function handleDateFilterChange(next: CalendarReviewDateFilter) {
+    setDateFilter(next);
+    setSelectedIds(new Set());
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+    setSelectedIds(new Set());
+  }
+
   function handleClearFilter() {
     setActiveFilter("all");
+    setDateFilter("all");
+    setSearchQuery("");
     setSelectedIds(new Set());
+  }
+
+  function getActiveFilterSummary(): string {
+    const parts: string[] = [];
+    if (isTypeFiltered) {
+      parts.push(getReviewFilterLabel(activeFilter).toLowerCase());
+    }
+    if (isDateFiltered) {
+      parts.push(getReviewDateFilterLabel(dateFilter).toLowerCase());
+    }
+    if (isSearchFiltered) {
+      parts.push(`matching “${searchQuery.trim()}”`);
+    }
+    return parts.join(" · ");
   }
 
   function handleReviewIndividually() {
@@ -361,12 +426,6 @@ export function CalendarImportReview({
 
       {parseStatus === "parsed" && !isImported && (
         <>
-          <CalendarReviewStats
-            stats={stats}
-            activeFilter={activeFilter}
-            onFilterChange={handleStatFilterChange}
-          />
-
           <CalendarReviewChatPanel
             importId={importId}
             events={events}
@@ -389,20 +448,34 @@ export function CalendarImportReview({
 
       {(parseStatus === "parsed" || isImported) && events.length > 0 && (
         <div ref={tableRef} className="space-y-3">
-          {isImported && (
-            <CalendarReviewStats
-              stats={stats}
-              activeFilter={activeFilter}
-              onFilterChange={handleStatFilterChange}
-            />
-          )}
+          <CalendarReviewStats
+            stats={stats}
+            activeFilter={activeFilter}
+            onFilterChange={handleStatFilterChange}
+          />
+
+          <CalendarReviewFilters
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
+            dateFilter={dateFilter}
+            onDateFilterChange={handleDateFilterChange}
+            pastCount={pastCount}
+            upcomingCount={upcomingCount}
+            disabled={isPending || isParsing}
+          />
 
           {isFiltered && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cos-border bg-cos-accent-soft px-4 py-3">
               <p className="text-sm text-cos-text">
                 Showing{" "}
-                <span className="font-semibold">{filteredEvents.length}</span>{" "}
-                {getReviewFilterLabel(activeFilter).toLowerCase()}
+                <span className="font-semibold">{filteredEvents.length}</span> of{" "}
+                {events.length}
+                {getActiveFilterSummary() ? (
+                  <>
+                    {" "}
+                    — {getActiveFilterSummary()}
+                  </>
+                ) : null}
               </p>
               <Button type="button" variant="secondary" size="sm" onClick={handleClearFilter}>
                 Show all {events.length} events
@@ -414,12 +487,14 @@ export function CalendarImportReview({
             <CalendarReviewBulkActions
               selectedCount={selectedIds.size}
               totalCount={filteredEvents.length}
+              pastCount={pastCount}
               onSelectAll={() =>
                 setSelectedIds(new Set(filteredEvents.map((event) => event.id)))
               }
               onClearSelection={() => setSelectedIds(new Set())}
               onDeleteSelected={() => handleBulkDelete(Array.from(selectedIds))}
               onDeleteAll={() => handleBulkDelete(filteredEvents.map((event) => event.id))}
+              onRemovePastEvents={handleRemovePastEvents}
               onApplyRecommendedPlans={handleApplyRecommendedPlans}
               disabled={isPending || isParsing}
             />
@@ -428,21 +503,23 @@ export function CalendarImportReview({
           <Card padding="none" className="overflow-hidden">
             <CardHeader className="border-b border-cos-border px-6 py-5">
               <CardTitle>
-                {isFiltered
+                {isTypeFiltered
                   ? getReviewFilterLabel(activeFilter)
-                  : "Imported events"}
+                  : isDateFiltered
+                    ? getReviewDateFilterLabel(dateFilter)
+                    : "Imported events"}
               </CardTitle>
               <CardDescription>
                 {isImported
                   ? "These events are on your calendar. Delete them all above if the import had errors."
                   : isFiltered
                     ? `Edit each row below, then import when ready. ${filteredEvents.length} of ${events.length} events shown.`
-                    : "Review each row before importing. Click a summary card above to filter by type."}
+                    : "Review each row before importing. Use summary cards, search, or date filters to narrow the list."}
               </CardDescription>
             </CardHeader>
             {filteredEvents.length === 0 ? (
               <div className="px-6 py-12 text-center text-sm text-cos-muted">
-                No events in this group.
+                No events match these filters.
                 {isFiltered && (
                   <>
                     {" "}

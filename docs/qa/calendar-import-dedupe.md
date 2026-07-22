@@ -26,7 +26,9 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 
 **Plan type on review:** The **Plan type** column lists org playbooks from Settings → Playbooks (plus **On the calendar only**). Selection stores `playbookId` on the review row and assigns that playbook on import; `communicationStrategy` remains `full_campaign` / `calendar_only` for pipeline gates. Defaults follow import preferences (strategy) + event-type / system playbook when no playbook is stored yet. Duplicate / Update / Conflict status logic is unchanged.
 
-**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook).
+**Review filters + past cleanup:** Summary cards filter by category / Conflicts / Duplicates / Updates. A toolbar above the table supports **search** (name, category, match reason) and **All dates / Upcoming / Past** (local calendar date; today counts as upcoming). **Remove past events** bulk-removes every review row with a date before today from the import queue (same persistence as Delete selected — not a separate DB archive). Confirm dialog before remove. Search, type filter, and date filter combine; Select all / Delete all apply to the visible filtered rows.
+
+**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook), `review-filters.ts` (type / date / search).
 
 ---
 
@@ -77,6 +79,8 @@ npm run test:calendar-import
 Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID date-change → update, title+date fallback, near-miss not skipped, within-file conflict key parity, Google id path, AI fingerprint stability.
 
 Also: `src/lib/calendar-import/__tests__/review-plan-options.test.ts` — plan type options from playbooks, selection → `playbookId` / strategy, defaults, status preserved.
+
+Also: `src/lib/calendar-import/__tests__/review-filters.test.ts` — past vs upcoming relative to today, search match on name/category/reason, combined type+date+search filters, past-id list for mass remove.
 
 ---
 
