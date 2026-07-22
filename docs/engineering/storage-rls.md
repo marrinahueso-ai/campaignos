@@ -27,8 +27,10 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 | `school-assets` | **public** | `organization_id` | `{orgId}/pto-logo.png` | `organizations/mutations.ts` |
 | `event-assets` | **public** | `event_id` | `{eventId}/campaign-builder-v2/...` | `event-workspace/storage.ts`, AI / builder uploaders |
 | `campaign-files` | **public** | `event_id` | `{eventId}/{timestamp}-file.pdf` | `campaign-files/storage.ts` |
+| `developer-agreements` | private | path prefix (`templates/` or `signatures/{userId}/`) | `templates/…`, `signatures/{userId}/{versionId}.png` | Platform legal templates + drawn e-signatures (`073_developer_agreements.sql`) |
 
-**Do not change first-folder conventions without updating `067` helpers/policies.**
+**Do not change first-folder conventions without updating `067` helpers/policies.**  
+`developer-agreements` uses its own path policies in `073` (not org-UUID first folder).
 
 ---
 

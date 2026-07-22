@@ -58,7 +58,8 @@ export async function resolveOrgGateRedirect(
     isOrgSetupPath(pathname) ||
     pathname === "/login" ||
     pathname.startsWith("/invite/") ||
-    pathname === "/account/change-password"
+    pathname === "/account/change-password" ||
+    pathname.startsWith("/account/agreements")
   ) {
     return null;
   }

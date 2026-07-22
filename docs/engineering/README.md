@@ -10,6 +10,7 @@
 | [access-control.md](./access-control.md) | **Living** |
 | [storage-rls.md](./storage-rls.md) | **Living** |
 | [auth-welcome-email.md](./auth-welcome-email.md) | **Living** |
+| [developer-agreements.md](./developer-agreements.md) | **Living** — NDA/IP gate + in-app e-sign |
 | [database.md](./database.md) | **Living** — migrations are source of truth |
 
 Calendar / Meta behavior (QA living refs, linked from architecture):

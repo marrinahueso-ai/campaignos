@@ -12,6 +12,10 @@ import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import {
+  DEVELOPER_AGREEMENTS_PATH,
+  userMustSignDeveloperAgreements,
+} from "@/lib/developer-agreements/gate";
 
 export const SCHOOL_SETUP_PATH = "/settings/school-setup";
 /** Value-first first-time onboarding (Welcome → create event). */
@@ -157,6 +161,10 @@ export async function resolvePostAuthPathForUser(
       return `/login?${params.toString()}`;
     }
     return ONBOARDING_PATH;
+  }
+
+  if (await userMustSignDeveloperAgreements(supabase, userId)) {
+    return DEVELOPER_AGREEMENTS_PATH;
   }
 
   return resolveAuthenticatedAppPath(true, next);

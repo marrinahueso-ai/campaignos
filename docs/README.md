@@ -52,6 +52,7 @@ This is the documentation hub. Start here.
 | Access control | [engineering/access-control.md](./engineering/access-control.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
+| Developer agreements | [engineering/developer-agreements.md](./engineering/developer-agreements.md) |
 | Artwork → approvals findings | [qa/artwork-approval-findings.md](./qa/artwork-approval-findings.md) |
 | Create with AI artwork inputs | [qa/create-with-ai-artwork-inputs.md](./qa/create-with-ai-artwork-inputs.md) |
 | Calendar import dedupe (school events) | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |

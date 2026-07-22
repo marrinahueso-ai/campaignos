@@ -1,0 +1,218 @@
+HEY RALLI, LLC
+INTELLECTUAL PROPERTY ASSIGNMENT & PROPRIETARY RIGHTS AGREEMENT
+Document Number: HR-LGL-002 Version: 1.0 Effective Date: July 20, 2026 Prepared By: Hey Ralli, LLC Confidential
+
+TABLE OF CONTENTS
+	•	Purpose
+	•	Definitions
+	•	Assignment of Intellectual Property
+	•	Ownership of Work Product
+	•	Future Assistance
+	•	Pre-Existing Intellectual Property
+	•	Open Source & Third-Party Materials
+	•	Confidential Information
+	•	Return of Company Property
+	•	Representations & Warranties
+	•	Term
+	•	Governing Law
+	•	General Provisions
+	•	Electronic Signatures
+	•	Acknowledgement
+	•	Signature Page
+
+1. PURPOSE
+This Intellectual Property Assignment & Proprietary Rights Agreement ("Agreement") is entered into by and between Hey Ralli, LLC, a Tennessee limited liability company ("Company"), and the individual or entity identified on the Signature Page ("Contributor").
+Hey Ralli develops proprietary software, artificial intelligence technologies, creative assets, operational systems, and business processes. During the course of providing services, consulting, testing, designing, advising, or developing for the Company, the Contributor may create valuable intellectual property.
+The purpose of this Agreement is to ensure that all qualifying work created for Hey Ralli is owned exclusively by the Company.
+
+2. DEFINITIONS
+For purposes of this Agreement:
+Company means Hey Ralli, LLC.
+Contributor means the individual or entity signing this Agreement.
+Work Product means all materials, inventions, discoveries, developments, software, documentation, creative works, improvements, and other intellectual property created within the scope of services performed for Hey Ralli.
+The examples below are illustrative and are not intended to limit the scope of Work Product.
+
+2.1 Software & Technology
+
+
+Source Code
+APIs
+Databases
+Scripts
+Backend Services
+Frontend Components
+Mobile Applications
+Infrastructure Code
+Artificial Intelligence Models
+AI Prompt Libraries
+AI Workflows
+Automation Systems
+Testing Frameworks
+Performance Optimizations
+Security Enhancements
+Bug Fixes
+Deployment Pipelines
+Cloud Infrastructure
+Integrations
+SDKs
+Internal Tools
+Developer Utilities
+
+2.2 Product Development
+
+
+Features
+User Flows
+Product Specifications
+Product Roadmaps
+Technical Documentation
+Architecture Diagrams
+UI Components
+UX Designs
+Wireframes
+Mockups
+Design Systems
+User Stories
+Functional Requirements
+Acceptance Criteria
+Prototypes
+Beta Features
+Workflow Designs
+Process Improvements
+
+2.3 Creative Assets
+
+
+Branding
+Logos
+Icons
+Illustrations
+Marketing Graphics
+Social Media Assets
+Presentations
+Advertising Materials
+Email Templates
+Landing Pages
+Training Materials
+Videos
+Style Guides
+Design Libraries
+Campaign Assets
+Visual Content
+
+2.4 Business Materials
+
+
+Standard Operating Procedures
+Internal Documentation
+Reports
+Business Processes
+Research
+Product Strategy
+Playbooks
+Templates
+Financial Models
+Sales Materials
+Competitive Analysis
+Customer Research
+Operational Workflows
+Internal Policies
+Project Plans
+Business Methods
+
+Work Product also includes all updates, revisions, modifications, derivative works, enhancements, customizations, optimizations, bug fixes, and future improvements to any existing Hey Ralli software, technology, documentation, creative assets, or business systems developed during the Contributor's engagement with the Company.
+
+
+3. ASSIGNMENT OF INTELLECTUAL PROPERTY
+The Contributor hereby irrevocably assigns, transfers, and conveys to Hey Ralli all worldwide right, title, and interest in and to all Work Product created:
+	•	during the engagement with Hey Ralli;
+	•	within the scope of services performed for Hey Ralli;
+	•	using Hey Ralli systems, confidential information, or resources; or
+	•	specifically commissioned by Hey Ralli.
+This assignment includes all applicable intellectual property rights, including copyrights, patent rights, trade secret rights, database rights, and other proprietary rights recognized under applicable law.
+
+4. OWNERSHIP OF WORK PRODUCT
+All Work Product shall be the sole and exclusive property of Hey Ralli.
+The Contributor shall not retain any ownership interest in Work Product unless expressly granted through a separate written agreement signed by an authorized representative of Hey Ralli.
+Nothing in this Agreement grants the Contributor any continuing ownership, license, or right to use the Company's intellectual property except as necessary to perform authorized services.
+
+5. FUTURE ASSISTANCE
+The Contributor agrees to reasonably assist Hey Ralli, at the Company's expense, in securing, registering, maintaining, enforcing, or defending its intellectual property rights, including executing documents required for:
+	•	Copyright registrations
+	•	Patent applications
+	•	Trademark filings
+	•	Trade secret protection
+	•	Intellectual property enforcement
+This obligation survives termination of the Parties' relationship.
+
+6. PRE-EXISTING INTELLECTUAL PROPERTY
+The Contributor retains ownership of intellectual property created before working with Hey Ralli.
+If pre-existing intellectual property is incorporated into Work Product, the Contributor grants Hey Ralli a perpetual, worldwide, irrevocable, royalty-free, transferable license to use, reproduce, modify, distribute, display, sublicense, and otherwise exploit that material as part of the Work Product.
+The Contributor agrees to identify any significant pre-existing materials incorporated into Work Product before delivery whenever reasonably practicable.
+
+7. OPEN SOURCE & THIRD-PARTY MATERIALS
+The Contributor shall not knowingly incorporate any third-party code, software, images, fonts, templates, datasets, libraries, or other materials unless:
+	•	the Contributor has the legal right to use them;
+	•	the applicable license permits Hey Ralli's intended commercial use; and
+	•	the materials do not impose licensing obligations inconsistent with Hey Ralli's proprietary software strategy.
+The Contributor shall not knowingly include software under licenses that would require disclosure or licensing of Hey Ralli's proprietary source code without prior written approval from the Company.
+
+8. CONFIDENTIAL INFORMATION
+The Contributor acknowledges that Work Product may incorporate confidential information belonging to Hey Ralli.
+All obligations relating to confidentiality remain governed by the Parties' Confidentiality & Non-Disclosure Agreement (Document No. HR-LGL-001).
+
+9. RETURN OF COMPANY PROPERTY
+Upon request or upon termination of the Parties' relationship, the Contributor shall promptly:
+	•	Return Company equipment.
+	•	Return credentials, access tokens, and security devices.
+	•	Permanently delete Company source code and confidential information from personal devices and storage.
+	•	Return all documentation, reports, prototypes, and other Company materials.
+Upon request, the Contributor shall certify completion of these obligations.
+
+10. REPRESENTATIONS & WARRANTIES
+The Contributor represents and warrants that:
+	•	Work Product delivered to Hey Ralli will be original or properly licensed.
+	•	The Contributor has the authority to assign the rights granted under this Agreement.
+	•	The Contributor will not knowingly infringe the intellectual property rights of any third party.
+	•	No agreement with another party prevents the Contributor from performing services for Hey Ralli or assigning Work Product as required by this Agreement.
+
+11. TERM
+This Agreement becomes effective on the Effective Date.
+The assignment of intellectual property is permanent and irrevocable to the fullest extent permitted by law.
+Any obligations that by their nature should survive termination—including ownership, confidentiality, and assistance with intellectual property protection—shall survive the end of the Parties' relationship.
+
+12. GOVERNING LAW
+This Agreement shall be governed by the laws of the State of Tennessee.
+The Parties agree that any legal proceeding arising under this Agreement shall be brought exclusively in the state or federal courts located within Tennessee.
+
+13. GENERAL PROVISIONS
+If any provision of this Agreement is determined to be unenforceable, the remaining provisions shall continue in full force and effect.
+Failure by Hey Ralli to enforce any provision shall not constitute a waiver of future enforcement.
+This Agreement constitutes the entire understanding between the Parties regarding ownership of Work Product and supersedes all prior discussions relating to that subject.
+
+14. ELECTRONIC SIGNATURES
+Electronic signatures executed through DocuSign, Dropbox Sign, Adobe Acrobat Sign, or similar electronic signature platforms shall have the same legal force and effect as original handwritten signatures.
+
+15. ACKNOWLEDGEMENT
+By signing below, the Contributor acknowledges that they:
+	•	have carefully read this Agreement;
+	•	understand that qualifying Work Product created for Hey Ralli belongs exclusively to Hey Ralli;
+	•	understand that this Agreement protects the Company's software, artificial intelligence systems, creative assets, business methods, and other intellectual property; and
+	•	voluntarily agree to the terms contained herein.
+
+16. SIGNATURE PAGE
+HEY RALLI, LLC
+Authorized Representative
+Name: _______________________________________
+Title: ________________________________________
+Signature: ____________________________________
+Date: _________________________________________
+
+CONTRIBUTOR
+Printed Name: _________________________________
+Company: _____________________________________
+Signature: ____________________________________
+Date: _________________________________________
+
+HEY RALLI, LLC Confidential & Proprietary Document No. HR-LGL-002 • Version 1.0
+

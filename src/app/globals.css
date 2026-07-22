@@ -113,6 +113,143 @@ body {
     letter-spacing: -0.02em;
   }
 
+  /* 404 wandering speech-bubble — walks off the page */
+  .hr-wander {
+    overflow: visible;
+  }
+
+  .hr-wander-stage {
+    animation: hr-wander-exit 8s linear infinite;
+    will-change: transform, opacity;
+  }
+
+  .hr-wander-bob {
+    transform-origin: 140px 160px;
+    transform-box: view-box;
+    animation: hr-wander-bob 0.55s ease-in-out infinite;
+  }
+
+  .hr-wander-leg-front,
+  .hr-wander-leg-back,
+  .hr-wander-foot-front,
+  .hr-wander-foot-back {
+    transform-box: view-box;
+  }
+
+  .hr-wander-leg-front {
+    transform-origin: 158px 228px;
+    animation: hr-wander-step-front 0.55s ease-in-out infinite;
+  }
+
+  .hr-wander-leg-back {
+    transform-origin: 124px 228px;
+    animation: hr-wander-step-back 0.55s ease-in-out infinite;
+  }
+
+  /* Cancel leg rotation so toes keep pointing → */
+  .hr-wander-foot-front {
+    transform-origin: 180px 280px;
+    animation: hr-wander-foot-front 0.55s ease-in-out infinite;
+  }
+
+  .hr-wander-foot-back {
+    transform-origin: 116px 280px;
+    animation: hr-wander-foot-back 0.55s ease-in-out infinite;
+  }
+
+  .hr-wander-trail {
+    opacity: 0.9;
+  }
+
+  /* Appear mid-right, walk off the right edge of the page, loop */
+  @keyframes hr-wander-exit {
+    0% {
+      transform: translate3d(0, 0, 0);
+      opacity: 0;
+    }
+    5% {
+      opacity: 1;
+    }
+    75% {
+      transform: translate3d(70%, 0, 0);
+      opacity: 1;
+    }
+    90% {
+      transform: translate3d(110%, 0, 0);
+      opacity: 0;
+    }
+    100% {
+      transform: translate3d(110%, 0, 0);
+      opacity: 0;
+    }
+  }
+
+  @keyframes hr-wander-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+
+  @keyframes hr-wander-step-front {
+    0%,
+    100% {
+      transform: rotate(10deg);
+    }
+    50% {
+      transform: rotate(-8deg);
+    }
+  }
+
+  @keyframes hr-wander-step-back {
+    0%,
+    100% {
+      transform: rotate(-10deg);
+    }
+    50% {
+      transform: rotate(8deg);
+    }
+  }
+
+  @keyframes hr-wander-foot-front {
+    0%,
+    100% {
+      transform: rotate(-10deg);
+    }
+    50% {
+      transform: rotate(8deg);
+    }
+  }
+
+  @keyframes hr-wander-foot-back {
+    0%,
+    100% {
+      transform: rotate(10deg);
+    }
+    50% {
+      transform: rotate(-8deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hr-wander-stage,
+    .hr-wander-bob,
+    .hr-wander-leg-front,
+    .hr-wander-leg-back,
+    .hr-wander-foot-front,
+    .hr-wander-foot-back {
+      animation: none !important;
+    }
+
+    .hr-wander-stage {
+      transform: none;
+      opacity: 1;
+    }
+  }
+
   .studio-eyebrow {
     font-size: 0.6875rem;
     font-weight: 500;

@@ -11,6 +11,10 @@ import {
   resolvePostAuthPathForUser,
   shouldAllowAuthenticatedLoginView,
 } from "@/lib/auth/post-auth-path";
+import {
+  DEVELOPER_AGREEMENTS_PATH,
+  userMustSignDeveloperAgreements,
+} from "@/lib/developer-agreements/gate";
 
 const PUBLIC_PATHS = [
   "/",
@@ -163,9 +167,32 @@ export async function updateSession(request: NextRequest) {
       copyCookies(supabaseResponse, redirectResponse);
       return redirectResponse;
     }
+
+    // After password gate: developers must sign required agreements before app access.
+    if (
+      !mustChangePassword &&
+      pathname !== "/account/change-password" &&
+      !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
+    ) {
+      const mustSign = await userMustSignDeveloperAgreements(supabase, user.id);
+      if (mustSign) {
+        const agreementsUrl = new URL(
+          DEVELOPER_AGREEMENTS_PATH,
+          request.nextUrl.origin,
+        );
+        const redirectResponse = NextResponse.redirect(agreementsUrl);
+        copyCookies(supabaseResponse, redirectResponse);
+        return redirectResponse;
+      }
+    }
   }
 
-  if (user && !isPublicPath(pathname) && pathname !== "/account/change-password") {
+  if (
+    user &&
+    !isPublicPath(pathname) &&
+    pathname !== "/account/change-password" &&
+    !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
+  ) {
     const gateRedirect = await resolveOrgGateRedirect(request, supabase, user.id);
     if (gateRedirect) {
       const gateUrl = new URL(gateRedirect, request.nextUrl.origin);

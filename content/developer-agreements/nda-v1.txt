@@ -1,0 +1,158 @@
+HEY RALLI, LLC
+CONFIDENTIALITY & NON-DISCLOSURE AGREEMENT
+Document Number: HR-LGL-001 Version: 1.0 Effective Date: ___________________ Prepared By: Hey Ralli, LLC Confidential
+
+TABLE OF CONTENTS
+	•	Purpose
+	•	Definitions
+	•	Confidential Information
+	•	Obligations of the Receiving Party
+	•	Platform & System Access
+	•	Ownership of Confidential Information
+	•	Return or Destruction of Information
+	•	Exclusions
+	•	Term
+	•	Remedies
+	•	Governing Law
+	•	General Provisions
+	•	Electronic Signatures
+	•	Acknowledgement
+	•	Signature Page
+
+1. PURPOSE
+This Confidentiality and Non-Disclosure Agreement ("Agreement") is entered into by and between Hey Ralli, LLC, a Tennessee limited liability company ("Company"), and the individual or entity identified on the Signature Page ("Receiving Party").
+Hey Ralli develops proprietary software, artificial intelligence technologies, business systems, creative assets, and operational methodologies. During the course of evaluating, testing, advising, supporting, or performing services for the Company, the Receiving Party may obtain access to confidential and proprietary information.
+The purpose of this Agreement is to protect those assets and establish the Receiving Party's obligations regarding their use and disclosure.
+
+2. DEFINITIONS
+For purposes of this Agreement:
+Company means Hey Ralli, LLC.
+Receiving Party means the individual or entity executing this Agreement.
+Confidential Information has the meaning set forth in Section 3.
+
+3. CONFIDENTIAL INFORMATION
+Confidential Information includes all non-public information relating to Hey Ralli, whether disclosed orally, visually, electronically, digitally, or in writing.
+This includes, without limitation:
+Technology
+• Source Code
+• Databases
+• APIs
+• Artificial Intelligence Systems
+• AI Prompt Libraries
+• Automation Logic
+• Internal Software
+• Deployment Architecture
+• Infrastructure
+• Security Systems
+• Authentication Methods
+• Internal Documentation
+• Product Roadmaps
+Product
+Current, beta, future, and unreleased features including:
+• Campaign Builder
+• Event Management
+• AI Content Generation
+• AI Artwork Generation
+• Volunteer Management
+• Team & Access
+• Communication Playbooks
+• Vendor Management
+• Dashboard Analytics
+• Social Media Management
+• Calendar Systems
+• Email Systems
+Business
+• Financial Information
+• Pricing Models
+• Customer Information
+• Vendor Information
+• Marketing Strategy
+• Product Launch Plans
+• Competitive Analysis
+• Sales Processes
+• Internal Communications
+Creative Assets
+• Branding
+• Logos
+• Wireframes
+• Mockups
+• User Interface Designs
+• Documentation
+• Training Materials
+• Marketing Content
+Confidential Information also includes information that a reasonable person would understand to be confidential regardless of whether it is specifically marked as confidential.
+
+4. RECEIVING PARTY OBLIGATIONS
+The Receiving Party agrees to:
+	•	Maintain the confidentiality of all Confidential Information.
+	•	Use Confidential Information solely for authorized work benefiting Hey Ralli.
+	•	Prevent unauthorized access or disclosure.
+	•	Promptly report any suspected security incident or unauthorized disclosure.
+	•	Exercise reasonable care consistent with industry standards to protect Company information.
+
+5. PLATFORM & SYSTEM ACCESS
+Any access granted to Company systems—including repositories, cloud services, APIs, databases, staging environments, documentation, analytics platforms, and administrative tools—is provided solely for authorized business purposes.
+The Receiving Party shall not:
+	•	Share login credentials.
+	•	Circumvent security controls.
+	•	Copy proprietary information for personal use.
+	•	Use Company systems outside the scope of authorized work.
+The Company reserves the right to revoke access at any time.
+
+6. OWNERSHIP
+All Confidential Information remains the exclusive property of Hey Ralli.
+Nothing contained in this Agreement grants any ownership, license, patent rights, copyright interests, trademark rights, or other intellectual property rights.
+Ownership of work created for the Company is governed by the separate Intellectual Property Assignment Agreement.
+
+7. RETURN OF MATERIALS
+Upon request or upon termination of the Parties' relationship, the Receiving Party shall promptly:
+	•	Return all Company property.
+	•	Permanently delete Confidential Information stored electronically.
+	•	Destroy printed confidential materials.
+	•	Discontinue access to Company systems.
+
+8. EXCLUSIONS
+This Agreement does not apply to information that:
+	•	Is publicly available through no fault of the Receiving Party;
+	•	Was lawfully known before disclosure;
+	•	Is independently developed without use of Company Confidential Information; or
+	•	Must be disclosed pursuant to applicable law.
+
+9. TERM
+This Agreement becomes effective on the Effective Date and remains in effect for five (5) years after the Parties' relationship ends.
+Trade secret obligations survive for as long as permitted under applicable law.
+
+10. REMEDIES
+The Receiving Party acknowledges that unauthorized disclosure may cause irreparable harm to Hey Ralli.
+The Company may seek injunctive relief, equitable relief, damages, and any other remedies available under applicable law.
+
+11. GOVERNING LAW
+This Agreement shall be governed by the laws of the State of Tennessee.
+
+12. GENERAL PROVISIONS
+If any provision of this Agreement is found unenforceable, the remaining provisions shall continue in full force and effect.
+Failure to enforce any provision shall not constitute a waiver of future enforcement.
+This Agreement constitutes the entire understanding between the Parties concerning confidentiality.
+
+13. ELECTRONIC SIGNATURES
+Electronic signatures executed through DocuSign, Dropbox Sign, Adobe Acrobat Sign, or similar electronic signature platforms shall have the same force and effect as original handwritten signatures.
+
+14. ACKNOWLEDGEMENT
+By signing below, the Receiving Party acknowledges that they have carefully read this Agreement, understand its terms, and agree to comply with all obligations contained herein.
+
+15. SIGNATURE PAGE
+HEY RALLI, LLC
+Authorized Representative
+Name: _______________________________________
+Title: ________________________________________
+Signature: ____________________________________
+Date: _________________________________________
+
+RECEIVING PARTY
+Printed Name: _________________________________
+Company: _____________________________________
+Signature: ____________________________________
+Date: _________________________________________
+
+HEY RALLI, LLC Confidential & Proprietary Document No. HR-LGL-001 • Version 1.0
+
