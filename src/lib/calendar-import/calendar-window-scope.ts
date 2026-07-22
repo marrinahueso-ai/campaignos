@@ -33,6 +33,11 @@ export async function resolveOrganizationCalendarWindowScope(
   };
 }
 
+/**
+ * Event ids on the Calendar Import list / clear-all scope.
+ * Matches Events page school-year membership (not the rolling planning date window),
+ * so misdated imports outside the calendar grid remain visible and deletable.
+ */
 export async function getCalendarWindowEventIds(
   schoolYearLabel: string | null | undefined,
   organizationId?: string | null,
@@ -49,13 +54,11 @@ export async function getCalendarWindowEventIds(
   const { data, error } = await supabase
     .from("events")
     .select("id")
-    .gte("date", scope.window.startDate)
-    .lte("date", scope.window.endDate)
     .neq("status", "archived")
     .in("school_year_id", scope.schoolYearIds);
 
   if (error) {
-    console.error("Failed to list calendar window events:", error.message);
+    console.error("Failed to list calendar import-list events:", error.message);
     return [];
   }
 
@@ -78,8 +81,6 @@ export async function getCalendarWindowEventCount(
   const { count, error } = await supabase
     .from("events")
     .select("*", { count: "exact", head: true })
-    .gte("date", scope.window.startDate)
-    .lte("date", scope.window.endDate)
     .neq("status", "archived")
     .in("school_year_id", scope.schoolYearIds);
 

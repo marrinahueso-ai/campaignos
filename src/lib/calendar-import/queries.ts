@@ -6,10 +6,7 @@ import {
   buildCalendarEventDedupeKeySet,
   type ExistingCalendarEventForDedup,
 } from "@/lib/calendar-import/event-dedup";
-import {
-  getCalendarPlanningWindow,
-  resolveCalendarSchoolYearLabel,
-} from "@/lib/calendar-import/calendar-window";
+import { resolveCalendarSchoolYearLabel } from "@/lib/calendar-import/calendar-window";
 import { resolveOrganizationCalendarWindowScope } from "@/lib/calendar-import/calendar-window-scope";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
@@ -304,14 +301,14 @@ export async function getImportedEventsForCalendarList(): Promise<{
     return { filename: schoolYearLabel, events: [] };
   }
 
-  const window = getCalendarPlanningWindow(schoolYearLabel);
-
+  // Import list is cleanup/manage scope: every non-archived event for the org's
+  // school years — same membership as Events — not the rolling calendar date window.
+  // Date-window clipping hid misdated imports (e.g. July 30 prior year) so they
+  // remained on Events after "delete" from a list that never showed them.
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("events")
     .select("id, title, date, category, communication_strategy")
-    .gte("date", window.startDate)
-    .lte("date", window.endDate)
     .neq("status", "archived")
     .in("school_year_id", schoolYearIds)
     .order("date", { ascending: true });

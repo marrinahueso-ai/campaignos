@@ -64,7 +64,8 @@ function revalidateCalendarPaths() {
   revalidatePath("/calendar/review");
   revalidatePath("/calendar/import");
   revalidatePath("/dashboard");
-  revalidatePath("/events");
+  // Layout so nested /events/[id] and client navigations pick up deletes immediately.
+  revalidatePath("/events", "layout");
   revalidatePath("/publishing");
   revalidatePath("/approvals");
 }
@@ -383,27 +384,30 @@ export async function deleteImportedCalendarEventsAction(
 
 export async function bulkDeleteEventsAction(
   eventIds: string[],
-): Promise<CalendarImportActionState & { deletedCount?: number }> {
+): Promise<
+  CalendarImportActionState & { deletedCount?: number; deletedIds?: string[] }
+> {
   const organization = await getLatestOrganization();
   if (!organization) {
     return { error: "Complete school setup first.", success: false };
   }
 
-  const { ok, deletedCount } = await deleteEventsByIds(
+  const { ok, deletedCount, deletedIds } = await deleteEventsByIds(
     eventIds,
     organization.id,
   );
 
-  if (!ok || deletedCount === 0) {
+  if (!ok || deletedCount === 0 || deletedIds.length === 0) {
     return {
       error: "Unable to delete selected events.",
       success: false,
       deletedCount: 0,
+      deletedIds: [],
     };
   }
 
   revalidateCalendarPaths();
-  return { error: null, success: true, deletedCount };
+  return { error: null, success: true, deletedCount, deletedIds };
 }
 
 export async function clearCalendarWindowEventsAction(): Promise<{

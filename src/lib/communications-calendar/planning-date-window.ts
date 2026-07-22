@@ -9,17 +9,17 @@ export interface PlanningDateWindow {
 /** Full calendar / publishing hub — current school year when known. */
 export function resolveCalendarPlanningWindow(
   schoolYear?: string | null,
+  today: string = getTodayDateString(),
 ): PlanningDateWindow {
-  const today = getTodayDateString();
   const range = parseSchoolYearRange(schoolYear);
   if (range) {
     let startDate = `${range.startYear}-08-01`;
     const endDate = `${range.endYear}-07-31`;
 
-    // Orgs often activate the next school year before August; July events still
-    // belong to the outgoing year and must stay in the calendar window.
+    // Orgs often activate the next school year before August; late-July events
+    // (e.g. Back to School Fair on Jul 30) still belong on the calendar.
     if (today < startDate) {
-      startDate = `${range.startYear - 1}-08-01`;
+      startDate = `${range.startYear - 1}-07-01`;
     }
 
     return { startDate, endDate };

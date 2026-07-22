@@ -96,7 +96,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: `/calendar/import` → `/calendar/review`; Settings → Google Calendar is connect/subscribe only)
 - Calendar import review plan type from org playbooks (Settings → Playbooks; stores `playbookId` on import) — **shipped**
 - Calendar import review search (name/category/date/year), type/date filters, and Archive past events (bulk remove prior dates from the import queue) — **shipped**
-- Calendar Import list search (name/category/date/year) with Select all / Delete selected on visible filtered rows — **shipped** (`/calendar` → Import list)
+- Calendar Import list search (name/category/date/year) with Select all / Delete selected on visible filtered rows — **shipped** (`/calendar` → Import list; hard-deletes events for the org’s school years — same membership as Events, not the rolling calendar date window)
 - Calendar import dedupe (ICS UID / Google id / AI fingerprint; Update on date change; review New/Duplicate/Update/Conflict) — **shipped** (canonical: `/calendar/import` + `/calendar/review`; QA: [calendar-import-dedupe.md](../qa/calendar-import-dedupe.md); Playwright: `tests/hey-ralli/smoke/14-calendar-import-dedupe.spec.ts`)
 - Communications planning calendar — **shipped** (secondary)
 - Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))

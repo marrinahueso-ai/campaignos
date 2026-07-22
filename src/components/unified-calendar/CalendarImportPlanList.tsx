@@ -146,7 +146,10 @@ export function CalendarImportPlanList({
         return;
       }
 
-      setEvents((current) => current.filter((event) => !ids.includes(event.id)));
+      const removedIds = new Set(result.deletedIds ?? ids);
+      setEvents((current) =>
+        current.filter((event) => !removedIds.has(event.id)),
+      );
       setSelectedIds(new Set());
       router.refresh();
     });
@@ -217,8 +220,8 @@ export function CalendarImportPlanList({
             : `${events.length} events for ${filename ?? "this school year"}`}
         </p>
         <p className="mt-1 text-sm text-cos-muted">
-          All school-year events in your planning window. Search to find rows, then
-          select them to permanently delete bad imports, or{" "}
+          All school-year events (same set as Events — including misdated imports).
+          Search to find rows, then select them to permanently delete bad imports, or{" "}
           <button
             type="button"
             onClick={handleClearAll}

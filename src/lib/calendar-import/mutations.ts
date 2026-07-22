@@ -317,19 +317,19 @@ async function getActiveSchoolYearViaClient(
 export async function deleteEventsByIds(
   ids: string[],
   organizationId?: string | null,
-): Promise<{ ok: boolean; deletedCount: number }> {
+): Promise<{ ok: boolean; deletedCount: number; deletedIds: string[] }> {
   if (ids.length === 0) {
-    return { ok: true, deletedCount: 0 };
+    return { ok: true, deletedCount: 0, deletedIds: [] };
   }
 
   const scopedOrgId = await resolveScopedOrganizationId(organizationId);
   if (!scopedOrgId) {
-    return { ok: false, deletedCount: 0 };
+    return { ok: false, deletedCount: 0, deletedIds: [] };
   }
 
   const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
   if (!schoolYearIds.length) {
-    return { ok: false, deletedCount: 0 };
+    return { ok: false, deletedCount: 0, deletedIds: [] };
   }
 
   const supabase = await createClient();
@@ -341,12 +341,26 @@ export async function deleteEventsByIds(
 
   if (scopeError) {
     console.error("Failed to scope events for delete:", scopeError.message);
-    return { ok: false, deletedCount: 0 };
+    return { ok: false, deletedCount: 0, deletedIds: [] };
   }
 
   const scopedIds = (scopedRows ?? []).map((row) => row.id as string);
   if (scopedIds.length === 0) {
-    return { ok: false, deletedCount: 0 };
+    return { ok: false, deletedCount: 0, deletedIds: [] };
+  }
+
+  // vendor_event_assignments references events with ON DELETE RESTRICT.
+  const { error: vendorClearError } = await supabase
+    .from("vendor_event_assignments")
+    .delete()
+    .in("event_id", scopedIds);
+
+  if (vendorClearError) {
+    console.error(
+      "Failed to clear vendor assignments before event delete:",
+      vendorClearError.message,
+    );
+    return { ok: false, deletedCount: 0, deletedIds: [] };
   }
 
   const { error, count } = await supabase
@@ -356,10 +370,18 @@ export async function deleteEventsByIds(
 
   if (error) {
     console.error("Failed to bulk delete events:", error.message);
-    return { ok: false, deletedCount: 0 };
+    return { ok: false, deletedCount: 0, deletedIds: [] };
   }
 
-  return { ok: true, deletedCount: count ?? scopedIds.length };
+  const deletedCount = count ?? 0;
+  if (deletedCount !== scopedIds.length) {
+    console.error(
+      `Bulk delete count mismatch: expected ${scopedIds.length}, got ${deletedCount}`,
+    );
+    return { ok: false, deletedCount, deletedIds: [] };
+  }
+
+  return { ok: true, deletedCount, deletedIds: scopedIds };
 }
 
 export async function deleteEventsForCalendarImport(
@@ -396,7 +418,7 @@ export async function deleteEventsForSchoolYear(
   return true;
 }
 
-/** Delete every event currently visible on the calendar (planning window) for this org. */
+/** Delete every non-archived event for this org's school years (Import list scope). */
 export async function deleteCalendarWindowEvents(
   schoolYearLabel: string | null | undefined,
   organizationId?: string | null,
