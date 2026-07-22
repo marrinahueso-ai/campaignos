@@ -15,7 +15,7 @@ This is the documentation hub. Start here.
 |----------|------------|
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
-| **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) |
+| **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
 | **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
 | **Historical only** | [Archive](./archive/README.md) — do not treat as current |

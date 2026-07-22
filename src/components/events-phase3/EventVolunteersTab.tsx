@@ -30,9 +30,12 @@ import {
   type VolunteerAiSummary,
 } from "@/lib/event-volunteers/ai-summary";
 import {
+  defaultDateAllowlistFromAssignments,
   filterAndSortAssignments,
+  filterAssignmentsByDateAllowlist,
   formatAssignmentDateLabel,
   listAssignmentDateOptions,
+  NO_DATE_FILTER,
   type AssignmentDateFilter,
   type AssignmentSortId,
   type AssignmentStatusFilter,
@@ -195,12 +198,17 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
     });
   }
 
-  function handleConfirm(sourceId: string, snapshotId: string) {
+  function handleConfirm(
+    sourceId: string,
+    snapshotId: string,
+    includedAssignmentDates: string[],
+  ) {
     startTransition(async () => {
       const result = await confirmVolunteerOverviewAction({
         eventId: event.id,
         sourceId,
         snapshotId,
+        includedAssignmentDates,
       });
       if (!result.success) {
         setError(result.error ?? "Could not confirm overview.");
@@ -312,9 +320,13 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
         canManage={canManage}
         isPending={isPending}
         error={error}
-        onConfirm={() => {
+        onConfirm={(includedAssignmentDates) => {
           if (payload.source && payload.snapshot) {
-            handleConfirm(payload.source.id, payload.snapshot.id);
+            handleConfirm(
+              payload.source.id,
+              payload.snapshot.id,
+              includedAssignmentDates,
+            );
           }
         }}
         onCancel={handleCancelReview}
@@ -463,10 +475,29 @@ function VolunteerConnectionReview({
   canManage: boolean;
   isPending: boolean;
   error: string | null;
-  onConfirm: () => void;
+  onConfirm: (includedAssignmentDates: string[]) => void;
   onCancel: () => void;
   onTryAgain: () => void;
 }) {
+  const dateOptions = useMemo(
+    () => (snapshot ? listAssignmentDateOptions(snapshot.assignments) : []),
+    [snapshot],
+  );
+
+  const [selectedDates, setSelectedDates] = useState<string[]>(() =>
+    snapshot
+      ? defaultDateAllowlistFromAssignments(snapshot.assignments)
+      : [],
+  );
+
+  useEffect(() => {
+    if (!snapshot) {
+      setSelectedDates([]);
+      return;
+    }
+    setSelectedDates(defaultDateAllowlistFromAssignments(snapshot.assignments));
+  }, [snapshot?.id]);
+
   if (!snapshot) {
     return (
       <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-6">
@@ -484,16 +515,26 @@ function VolunteerConnectionReview({
     );
   }
 
-  const dates = [
-    ...new Set(
-      snapshot.assignments.map((a) => a.date).filter(Boolean) as string[],
-    ),
-  ];
+  const selectedSet = new Set(selectedDates);
+  const scopedAssignments = filterAssignmentsByDateAllowlist(
+    snapshot.assignments,
+    selectedDates,
+  );
+  const summary = summarizeAssignmentList(scopedAssignments);
   const locations = [
     ...new Set(
-      snapshot.assignments.map((a) => a.location).filter(Boolean) as string[],
+      scopedAssignments.map((a) => a.location).filter(Boolean) as string[],
     ),
   ];
+  const nothingSelected = selectedDates.length === 0;
+
+  function toggleDate(value: string) {
+    setSelectedDates((current) =>
+      current.includes(value)
+        ? current.filter((date) => date !== value)
+        : [...current, value],
+    );
+  }
 
   return (
     <section className="space-y-4 rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5 sm:p-6">
@@ -505,46 +546,89 @@ function VolunteerConnectionReview({
           We found volunteer assignments for {eventTitle}
         </h2>
         <p className="mt-1 text-sm text-cos-muted">
-          Confirm to create the Volunteer Overview for this Event ID.
+          Choose which dates to include for this event, then confirm. Shared
+          multi-date SignUpGenius links stay scoped on every refresh.
         </p>
       </div>
+
+      {dateOptions.length > 0 ? (
+        <fieldset className="rounded-xl border border-cos-border bg-cos-bg/40 px-4 py-3">
+          <legend className="px-1 text-xs font-medium tracking-wide text-cos-muted uppercase">
+            Include dates
+          </legend>
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+            {dateOptions.map((option) => (
+              <li key={option.value}>
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-cos-text">
+                  <input
+                    type="checkbox"
+                    checked={selectedSet.has(option.value)}
+                    onChange={() => toggleDate(option.value)}
+                    disabled={isPending || !canManage}
+                    className="h-4 w-4 rounded border-cos-border"
+                  />
+                  <span>
+                    {option.value === NO_DATE_FILTER
+                      ? "No date"
+                      : option.label}
+                    {option.value === NO_DATE_FILTER ? (
+                      <span className="ml-1 text-cos-muted">
+                        (undated shifts)
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          {nothingSelected ? (
+            <p className="mt-2 text-xs text-amber-800">
+              Select at least one date to create the overview.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ReviewStat
           label="Assignments"
-          value={String(snapshot.summary.assignmentCount)}
+          value={String(summary.assignmentCount)}
         />
         <ReviewStat
           label="Total spots"
           value={
-            snapshot.summary.totalSpots === null
-              ? "Unknown"
-              : String(snapshot.summary.totalSpots)
+            summary.totalSpots === null ? "Unknown" : String(summary.totalSpots)
           }
         />
         <ReviewStat
           label="Filled"
           value={
-            snapshot.summary.filledSpots === null
+            summary.filledSpots === null
               ? "Unknown"
-              : String(snapshot.summary.filledSpots)
+              : String(summary.filledSpots)
           }
         />
         <ReviewStat
           label="Open"
           value={
-            snapshot.summary.openSpots === null
-              ? "Unknown"
-              : String(snapshot.summary.openSpots)
+            summary.openSpots === null ? "Unknown" : String(summary.openSpots)
           }
         />
       </ul>
 
       <div className="grid gap-3 text-sm text-cos-muted sm:grid-cols-2">
         <p>
-          Dates detected:{" "}
+          Dates included:{" "}
           <span className="text-cos-text">
-            {dates.length ? dates.join(", ") : "None"}
+            {selectedDates.length
+              ? selectedDates
+                  .map((date) =>
+                    date === NO_DATE_FILTER
+                      ? "No date"
+                      : formatAssignmentDateLabel(date),
+                  )
+                  .join(", ")
+              : "None"}
           </span>
         </p>
         <p>
@@ -553,7 +637,7 @@ function VolunteerConnectionReview({
             {locations.length ? locations.join(", ") : "None"}
           </span>
         </p>
-        {!snapshot.summary.quantitiesComplete ? (
+        {!summary.quantitiesComplete && scopedAssignments.length > 0 ? (
           <p className="sm:col-span-2 text-amber-800">
             Some quantities could not be calculated reliably.
           </p>
@@ -565,23 +649,42 @@ function VolunteerConnectionReview({
           <thead className="sticky top-0 bg-cos-bg text-xs uppercase tracking-wide text-cos-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Assignment</th>
+              <th className="px-3 py-2 font-medium">Date</th>
               <th className="px-3 py-2 font-medium">Filled</th>
               <th className="px-3 py-2 font-medium">Open</th>
             </tr>
           </thead>
           <tbody>
-            {snapshot.assignments.map((assignment) => (
-              <tr
-                key={assignment.externalKey}
-                className="border-t border-cos-border/70"
-              >
-                <td className="px-3 py-2.5 text-cos-text">{assignment.name}</td>
-                <td className="px-3 py-2.5">{filledLabel(assignment)}</td>
-                <td className="px-3 py-2.5">
-                  {assignment.quantityOpen ?? "—"}
+            {scopedAssignments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-3 py-6 text-center text-cos-muted"
+                >
+                  No assignments match the selected dates.
                 </td>
               </tr>
-            ))}
+            ) : (
+              scopedAssignments.map((assignment) => (
+                <tr
+                  key={assignment.externalKey}
+                  className="border-t border-cos-border/70"
+                >
+                  <td className="px-3 py-2.5 text-cos-text">
+                    {assignment.name}
+                  </td>
+                  <td className="px-3 py-2.5 text-cos-muted">
+                    {assignment.date
+                      ? formatAssignmentDateLabel(assignment.date)
+                      : "No date"}
+                  </td>
+                  <td className="px-3 py-2.5">{filledLabel(assignment)}</td>
+                  <td className="px-3 py-2.5">
+                    {assignment.quantityOpen ?? "—"}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -594,7 +697,11 @@ function VolunteerConnectionReview({
 
       {canManage ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onConfirm} disabled={isPending}>
+          <Button
+            type="button"
+            onClick={() => onConfirm(selectedDates)}
+            disabled={isPending || nothingSelected || scopedAssignments.length === 0}
+          >
             {isPending ? "Saving…" : "Confirm & Create Overview"}
           </Button>
           <Button

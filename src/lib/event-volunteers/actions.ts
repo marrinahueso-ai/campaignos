@@ -5,6 +5,10 @@ import { getAuthUser } from "@/lib/auth/queries";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getEventById } from "@/lib/events/queries";
+import {
+  filterAssignmentsByDateAllowlist,
+  normalizeDateAllowlist,
+} from "@/lib/event-volunteers/assignment-list";
 import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import { canManageVolunteerStats } from "@/lib/event-volunteers/permissions";
 import {
@@ -27,6 +31,7 @@ import {
 import { readSignUpGeniusSignup } from "@/lib/event-volunteers/signupgenius-reader";
 import { validateSignUpGeniusUrl } from "@/lib/event-volunteers/url";
 import { buildVolunteerAiSummary } from "@/lib/event-volunteers/ai-summary";
+import type { AssignmentDateAllowlist } from "@/lib/event-volunteers/assignment-list";
 
 const STALE_MS = 30 * 60 * 1000;
 
@@ -189,10 +194,27 @@ async function refreshVolunteerStatsInternal(input: {
   sourceUrl: string;
   eventDate: string | null;
   confirmed: boolean;
+  /** Sticky allowlist; omitted → load from source (null = all dates). */
+  includedAssignmentDates?: AssignmentDateAllowlist;
 }): Promise<{ snapshotId: string } | { error: string }> {
   const begin = await beginVolunteerSync(input.sourceId);
   if ("error" in begin) {
     return begin;
+  }
+
+  let allowlist: AssignmentDateAllowlist =
+    input.includedAssignmentDates === undefined
+      ? null
+      : input.includedAssignmentDates;
+
+  if (input.includedAssignmentDates === undefined) {
+    const source = await getActiveVolunteerSourceForEvent(
+      input.eventId,
+      input.organizationId,
+    );
+    if (source?.id === input.sourceId) {
+      allowlist = source.includedAssignmentDates;
+    }
   }
 
   const read = await readSignUpGeniusSignup(input.sourceUrl);
@@ -216,9 +238,28 @@ async function refreshVolunteerStatsInternal(input: {
     return { error: "No assignments found." };
   }
 
+  const scopedAssignments = filterAssignmentsByDateAllowlist(
+    read.snapshot.assignments,
+    allowlist,
+  );
+
+  if (scopedAssignments.length === 0) {
+    const message =
+      allowlist == null
+        ? "No assignments found."
+        : "No assignments found for the dates included in this event.";
+    await markVolunteerSyncFailed({
+      sourceId: input.sourceId,
+      eventId: input.eventId,
+      organizationId: input.organizationId,
+      errorMessage: message,
+    });
+    return { error: message };
+  }
+
   const rebuilt = buildSnapshotFromAssignments({
     ...read.snapshot,
-    assignments: read.snapshot.assignments,
+    assignments: scopedAssignments,
   });
 
   const persisted = await persistVolunteerSnapshot({
@@ -276,6 +317,7 @@ export async function connectVolunteerSourceAction(input: {
     return { success: false as const, error: source.error };
   }
 
+  // Review import reads the full link; sticky allowlist is chosen on confirm.
   const synced = await refreshVolunteerStatsInternal({
     eventId: ctx.event.id,
     organizationId: ctx.organization.id,
@@ -284,6 +326,7 @@ export async function connectVolunteerSourceAction(input: {
     sourceUrl: validated.normalizedHref,
     eventDate: ctx.event.date,
     confirmed: false,
+    includedAssignmentDates: null,
   });
 
   if ("error" in synced) {
@@ -324,6 +367,7 @@ export async function confirmVolunteerOverviewAction(input: {
   eventId: string;
   sourceId: string;
   snapshotId: string;
+  includedAssignmentDates: string[];
 }) {
   const ctx = await requireVolunteerContext(input.eventId);
   if ("error" in ctx) {
@@ -336,10 +380,16 @@ export async function confirmVolunteerOverviewAction(input: {
     };
   }
 
+  const normalized = normalizeDateAllowlist(input.includedAssignmentDates);
+  if (!normalized.ok) {
+    return { success: false as const, error: normalized.error };
+  }
+
   const result = await confirmVolunteerSnapshot({
     sourceId: input.sourceId,
     snapshotId: input.snapshotId,
     organizationId: ctx.organization.id,
+    includedAssignmentDates: normalized.dates,
   });
   if ("error" in result) {
     return { success: false as const, error: result.error };
@@ -351,7 +401,10 @@ export async function confirmVolunteerOverviewAction(input: {
     sourceId: input.sourceId,
     actorUserId: ctx.user.id,
     action: "confirm",
-    details: { snapshotId: input.snapshotId },
+    details: {
+      snapshotId: input.snapshotId,
+      includedAssignmentDates: normalized.dates,
+    },
   });
 
   revalidatePath(`/events/${ctx.event.id}`);

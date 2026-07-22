@@ -77,6 +77,11 @@ export type VolunteerSourceRecord = {
   lastFailedSyncAt: string | null;
   nextScheduledSyncAt: string | null;
   latestConfirmedSnapshotId: string | null;
+  /**
+   * Sticky assignment start-date allowlist (`YYYY-MM-DD` + optional `__none__`).
+   * `null` means include all dates (legacy / no filter).
+   */
+  includedAssignmentDates: string[] | null;
 };
 
 export type VolunteerSnapshotRecord = {

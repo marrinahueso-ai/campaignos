@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  filterAssignmentsByDateAllowlist,
+  normalizeDateAllowlist,
+} from "@/lib/event-volunteers/assignment-list";
 import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import type {
   VolunteerSignupSnapshot,
@@ -68,6 +72,9 @@ export async function upsertVolunteerSource(input: {
         connected_at: now,
         disconnected_at: null,
         sync_error: null,
+        // New URL / re-review must not inherit a prior event-scoped allowlist.
+        included_assignment_dates: null,
+        latest_confirmed_snapshot_id: null,
         updated_at: now,
       })
       .eq("id", existing.id)
@@ -91,6 +98,7 @@ export async function upsertVolunteerSource(input: {
       connected_by_user_id: input.userId,
       connected_at: now,
       sync_status: "idle",
+      included_assignment_dates: null,
     })
     .select("id")
     .single();
@@ -304,13 +312,123 @@ export async function confirmVolunteerSnapshot(input: {
   sourceId: string;
   snapshotId: string;
   organizationId: string;
+  includedAssignmentDates: string[];
 }): Promise<{ ok: true } | { error: string }> {
+  const normalized = normalizeDateAllowlist(input.includedAssignmentDates);
+  if (!normalized.ok) {
+    return { error: normalized.error };
+  }
+
   const supabase = await createClient();
   const now = new Date().toISOString();
 
+  const { data: snapshotRow, error: snapshotLoadError } = await supabase
+    .from("event_volunteer_snapshots")
+    .select("*")
+    .eq("id", input.snapshotId)
+    .eq("organization_id", input.organizationId)
+    .eq("source_id", input.sourceId)
+    .maybeSingle();
+
+  if (snapshotLoadError || !snapshotRow) {
+    return { error: "Could not find the volunteer overview to confirm." };
+  }
+
+  const { data: assignmentRows, error: assignmentLoadError } = await supabase
+    .from("event_volunteer_assignments")
+    .select("*")
+    .eq("snapshot_id", input.snapshotId)
+    .order("source_order", { ascending: true });
+
+  if (assignmentLoadError) {
+    return { error: "Could not load volunteer assignments." };
+  }
+
+  const pendingAssignments = (assignmentRows ?? []).map((row) => ({
+    externalKey: String(row.external_key),
+    groupName: (row.group_name as string | null) ?? undefined,
+    name: String(row.assignment_name),
+    description: (row.assignment_description as string | null) ?? undefined,
+    date: (row.assignment_date as string | null) ?? undefined,
+    startTime: (row.start_time as string | null) ?? undefined,
+    endTime: (row.end_time as string | null) ?? undefined,
+    location: (row.location as string | null) ?? undefined,
+    quantityRequested: (row.quantity_requested as number | null) ?? null,
+    quantityFilled: (row.quantity_filled as number | null) ?? null,
+    quantityOpen: (row.quantity_open as number | null) ?? null,
+  }));
+
+  const filtered = filterAssignmentsByDateAllowlist(
+    pendingAssignments,
+    normalized.dates,
+  );
+
+  if (filtered.length === 0) {
+    return {
+      error: "No assignments match the selected dates. Select at least one date with shifts.",
+    };
+  }
+
+  const rebuilt = buildSnapshotFromAssignments({
+    sourceTitle: (snapshotRow.source_title as string | null) ?? undefined,
+    sourceDescription:
+      (snapshotRow.source_description as string | null) ?? undefined,
+    sourceLocation: (snapshotRow.source_location as string | null) ?? undefined,
+    signupDeadline: (snapshotRow.signup_deadline as string | null) ?? undefined,
+    parseVersion: String(snapshotRow.parse_version ?? "1"),
+    assignments: filtered,
+  });
+
+  const { error: deleteError } = await supabase
+    .from("event_volunteer_assignments")
+    .delete()
+    .eq("snapshot_id", input.snapshotId);
+
+  if (deleteError) {
+    return { error: "Could not update volunteer assignments." };
+  }
+
+  const rows = rebuilt.classified.map((assignment) => ({
+    snapshot_id: input.snapshotId,
+    event_id: String(snapshotRow.event_id),
+    organization_id: input.organizationId,
+    external_key: assignment.externalKey,
+    group_name: assignment.groupName ?? null,
+    assignment_name: assignment.name,
+    assignment_description: assignment.description ?? null,
+    assignment_date: assignment.date ?? null,
+    start_time: assignment.startTime ?? null,
+    end_time: assignment.endTime ?? null,
+    location: assignment.location ?? null,
+    quantity_requested: assignment.quantityRequested,
+    quantity_filled: assignment.quantityFilled,
+    quantity_open: assignment.quantityOpen,
+    availability_status: assignment.availabilityStatus,
+    source_order: assignment.sourceOrder,
+  }));
+
+  const { error: insertError } = await supabase
+    .from("event_volunteer_assignments")
+    .insert(rows);
+
+  if (insertError) {
+    return { error: "Could not save filtered volunteer assignments." };
+  }
+
   const { error: snapError } = await supabase
     .from("event_volunteer_snapshots")
-    .update({ confirmed: true })
+    .update({
+      confirmed: true,
+      total_spots: rebuilt.summary.totalSpots,
+      filled_spots: rebuilt.summary.filledSpots,
+      open_spots: rebuilt.summary.openSpots,
+      full_assignment_count: rebuilt.summary.fullAssignmentCount,
+      needs_help_count: rebuilt.summary.needsHelpCount,
+      nearly_full_count: rebuilt.summary.nearlyFullCount,
+      unknown_assignment_count: rebuilt.summary.unknownAssignmentCount,
+      assignment_count: rebuilt.summary.assignmentCount,
+      quantities_complete: rebuilt.summary.quantitiesComplete,
+    })
     .eq("id", input.snapshotId)
     .eq("organization_id", input.organizationId)
     .eq("source_id", input.sourceId);
@@ -324,6 +442,7 @@ export async function confirmVolunteerSnapshot(input: {
     .update({
       status: "connected",
       latest_confirmed_snapshot_id: input.snapshotId,
+      included_assignment_dates: normalized.dates,
       updated_at: now,
     })
     .eq("id", input.sourceId)

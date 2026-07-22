@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Events Home list thumbnails use promoted approved-square URL when artwork prefetch misses a row; Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
+**Last updated:** July 21, 2026 — Volunteers SignUpGenius sticky date allowlist on review/confirm/refresh; Events Home list thumbnails use promoted approved-square URL when artwork prefetch misses a row; Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
 
 ---
 
@@ -47,7 +47,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
-- Volunteers (SignUpGenius URL; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped**
+- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Create with AI (Campaign Builder)

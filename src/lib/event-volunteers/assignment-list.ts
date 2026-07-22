@@ -1,6 +1,7 @@
 import type {
   VolunteerAssignmentView,
   VolunteerAvailabilityStatus,
+  VolunteerSignupAssignment,
 } from "@/lib/event-volunteers/types";
 
 export type AssignmentStatusFilter = "all" | VolunteerAvailabilityStatus;
@@ -16,10 +17,101 @@ export const NO_DATE_FILTER = "__none__";
 
 export type AssignmentDateFilter = "all" | typeof NO_DATE_FILTER | string;
 
+/**
+ * Sticky date allowlist stored on `event_volunteer_sources.included_assignment_dates`.
+ * - `null` → include all dates (backward compatible / no filter)
+ * - string[] → ISO start dates (`YYYY-MM-DD`) and/or {@link NO_DATE_FILTER}
+ */
+export type AssignmentDateAllowlist = string[] | null;
+
 export type AssignmentDateOption = {
   value: AssignmentDateFilter;
   label: string;
 };
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** True when value is an ISO date or the undated sentinel. */
+export function isValidAllowlistDateToken(value: string): boolean {
+  return value === NO_DATE_FILTER || ISO_DATE_RE.test(value);
+}
+
+/**
+ * Normalize a user-selected allowlist: dedupe, validate tokens, reject empty.
+ */
+export function normalizeDateAllowlist(
+  selected: string[],
+): { ok: true; dates: string[] } | { ok: false; error: string } {
+  const dates = [
+    ...new Set(
+      selected
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    ),
+  ];
+
+  if (dates.length === 0) {
+    return { ok: false, error: "Select at least one date to include." };
+  }
+
+  for (const date of dates) {
+    if (!isValidAllowlistDateToken(date)) {
+      return { ok: false, error: "One or more selected dates are invalid." };
+    }
+  }
+
+  dates.sort((a, b) => {
+    if (a === NO_DATE_FILTER) return 1;
+    if (b === NO_DATE_FILTER) return -1;
+    return a.localeCompare(b);
+  });
+
+  return { ok: true, dates };
+}
+
+/**
+ * Default review selection: every detected date, plus No date when undated rows exist.
+ */
+export function defaultDateAllowlistFromAssignments(
+  assignments: Array<Pick<VolunteerSignupAssignment, "date">>,
+): string[] {
+  const dates = new Set<string>();
+  let hasNoDate = false;
+
+  for (const assignment of assignments) {
+    if (assignment.date) {
+      dates.add(assignment.date);
+    } else {
+      hasNoDate = true;
+    }
+  }
+
+  const allowlist = [...dates].sort((a, b) => a.localeCompare(b));
+  if (hasNoDate) {
+    allowlist.push(NO_DATE_FILTER);
+  }
+  return allowlist;
+}
+
+/**
+ * Filter assignments by sticky date allowlist (start date only).
+ * `null` / `undefined` keeps all rows for backward compatibility.
+ */
+export function filterAssignmentsByDateAllowlist<
+  T extends Pick<VolunteerSignupAssignment, "date">,
+>(assignments: T[], allowlist: AssignmentDateAllowlist | undefined): T[] {
+  if (allowlist == null) {
+    return assignments;
+  }
+
+  const allowed = new Set(allowlist);
+  return assignments.filter((assignment) => {
+    if (!assignment.date) {
+      return allowed.has(NO_DATE_FILTER);
+    }
+    return allowed.has(assignment.date);
+  });
+}
 
 /** Short weekday/month/day label matching Volunteer Assignments table style. */
 export function formatAssignmentDateLabel(date: string): string {

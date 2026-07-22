@@ -8,6 +8,11 @@ import type {
 } from "@/lib/event-volunteers/types";
 
 export function mapSourceRow(row: Record<string, unknown>): VolunteerSourceRecord {
+  const rawDates = row.included_assignment_dates;
+  const includedAssignmentDates = Array.isArray(rawDates)
+    ? rawDates.filter((value): value is string => typeof value === "string")
+    : null;
+
   return {
     id: String(row.id),
     eventId: String(row.event_id),
@@ -24,6 +29,7 @@ export function mapSourceRow(row: Record<string, unknown>): VolunteerSourceRecor
     nextScheduledSyncAt: (row.next_scheduled_sync_at as string | null) ?? null,
     latestConfirmedSnapshotId:
       (row.latest_confirmed_snapshot_id as string | null) ?? null,
+    includedAssignmentDates,
   };
 }
 

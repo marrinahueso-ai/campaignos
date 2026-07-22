@@ -7,6 +7,7 @@
 |-----|--------|
 | [meta.md](./meta.md) | **Living** — OAuth model; native schedule / Calendar DnD → [../qa/meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) |
 | [google-calendar.md](./google-calendar.md) | **Living** — OAuth + sync; import dedupe → [../qa/calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) |
+| [signupgenius.md](./signupgenius.md) | **Living** — public URL volunteer import + sticky date allowlist |
 | [canva.md](./canva.md) | Planned stub |
 | [monday.md](./monday.md) | Planned stub |
 

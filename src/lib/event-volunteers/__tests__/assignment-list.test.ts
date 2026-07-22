@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  defaultDateAllowlistFromAssignments,
   filterAndSortAssignments,
+  filterAssignmentsByDateAllowlist,
   formatAssignmentDateLabel,
   listAssignmentDateOptions,
+  normalizeDateAllowlist,
   NO_DATE_FILTER,
 } from "@/lib/event-volunteers/assignment-list";
+import { buildSnapshotFromAssignments } from "@/lib/event-volunteers/stats";
 import type { VolunteerAssignmentView } from "@/lib/event-volunteers/types";
 
 function assignment(
@@ -132,5 +136,112 @@ describe("assignment date filter helpers", () => {
       }).length,
       2,
     );
+  });
+});
+
+describe("sticky date allowlist", () => {
+  const rows = [
+    assignment({
+      externalKey: "a",
+      name: "Day 1",
+      date: "2026-09-09",
+      quantityRequested: 4,
+      quantityFilled: 1,
+      quantityOpen: 3,
+    }),
+    assignment({
+      externalKey: "b",
+      name: "Day 2",
+      date: "2026-09-17",
+      quantityRequested: 4,
+      quantityFilled: 2,
+      quantityOpen: 2,
+    }),
+    assignment({
+      externalKey: "c",
+      name: "Undated",
+      quantityRequested: 2,
+      quantityFilled: 0,
+      quantityOpen: 2,
+    }),
+  ];
+
+  it("defaults to all detected dates plus No date when undated rows exist", () => {
+    assert.deepEqual(defaultDateAllowlistFromAssignments(rows), [
+      "2026-09-09",
+      "2026-09-17",
+      NO_DATE_FILTER,
+    ]);
+  });
+
+  it("treats null allowlist as include-all (backward compatible)", () => {
+    assert.equal(filterAssignmentsByDateAllowlist(rows, null).length, 3);
+  });
+
+  it("filters by selected start dates and optional No date", () => {
+    assert.deepEqual(
+      filterAssignmentsByDateAllowlist(rows, ["2026-09-09"]).map(
+        (r) => r.externalKey,
+      ),
+      ["a"],
+    );
+
+    assert.deepEqual(
+      filterAssignmentsByDateAllowlist(rows, [
+        "2026-09-17",
+        NO_DATE_FILTER,
+      ]).map((r) => r.externalKey),
+      ["b", "c"],
+    );
+  });
+
+  it("rejects empty allowlist and accepts normalized tokens", () => {
+    const empty = normalizeDateAllowlist([]);
+    assert.equal(empty.ok, false);
+
+    const ok = normalizeDateAllowlist([
+      "2026-09-17",
+      NO_DATE_FILTER,
+      "2026-09-09",
+      "2026-09-09",
+    ]);
+    assert.equal(ok.ok, true);
+    if (ok.ok) {
+      assert.deepEqual(ok.dates, [
+        "2026-09-09",
+        "2026-09-17",
+        NO_DATE_FILTER,
+      ]);
+    }
+  });
+
+  it("rebuilds confirm-style snapshot summary from the selected subset", () => {
+    const filtered = filterAssignmentsByDateAllowlist(rows, ["2026-09-09"]);
+    const { summary } = buildSnapshotFromAssignments({
+      parseVersion: "1",
+      assignments: filtered,
+    });
+
+    assert.equal(summary.assignmentCount, 1);
+    assert.equal(summary.totalSpots, 4);
+    assert.equal(summary.filledSpots, 1);
+    assert.equal(summary.openSpots, 3);
+  });
+
+  it("reapplies sticky allowlist like a refresh would", () => {
+    const sticky = ["2026-09-17", NO_DATE_FILTER];
+    // Fresh read from the shared multi-date link
+    const refreshed = filterAssignmentsByDateAllowlist(rows, sticky);
+    assert.deepEqual(
+      refreshed.map((r) => r.externalKey),
+      ["b", "c"],
+    );
+
+    const { summary } = buildSnapshotFromAssignments({
+      parseVersion: "1",
+      assignments: refreshed,
+    });
+    assert.equal(summary.assignmentCount, 2);
+    assert.equal(summary.totalSpots, 6);
   });
 });
