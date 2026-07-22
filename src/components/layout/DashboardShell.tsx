@@ -13,6 +13,7 @@ interface DashboardShellProps {
   inboxUnreadCount?: number;
   organizations?: ActiveOrganizationOption[];
   activeOrganizationId?: string | null;
+  showOwnerOps?: boolean;
 }
 
 export function DashboardShell({
@@ -23,6 +24,7 @@ export function DashboardShell({
   inboxUnreadCount = 0,
   organizations = [],
   activeOrganizationId = null,
+  showOwnerOps = false,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -34,6 +36,7 @@ export function DashboardShell({
           changeRequestsCount={changeRequestsCount}
           inboxUnreadCount={inboxUnreadCount}
           activeOrganizationId={activeOrganizationId}
+          showOwnerOps={showOwnerOps}
         />
       </div>
 
@@ -52,6 +55,7 @@ export function DashboardShell({
               changeRequestsCount={changeRequestsCount}
               inboxUnreadCount={inboxUnreadCount}
               activeOrganizationId={activeOrganizationId}
+              showOwnerOps={showOwnerOps}
               onNavigate={() => setMobileOpen(false)}
             />
           </div>

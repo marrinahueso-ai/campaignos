@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const DEVELOPER_AGREEMENTS_PATH = "/account/agreements";
 export const DEVELOPER_AGREEMENTS_MANAGE_PATH = "/account/agreements/manage";
+export const DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH =
+  "/account/agreements/countersign";
 
 /** Active campaign roles for a user across all active memberships. */
 export async function getActiveCampaignRolesForUser(

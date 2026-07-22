@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Megaphone,
+  Shield,
   Store,
   WandSparkles,
 } from "lucide-react";
@@ -241,6 +242,8 @@ interface SidebarProps {
   inboxUnreadCount?: number;
   /** Scopes "last event" for Create with AI so orgs never share ids. */
   activeOrganizationId?: string | null;
+  /** Hey Ralli platform owner ops link. */
+  showOwnerOps?: boolean;
 }
 
 type NavBadgeVariant = "approval" | "changeRequest";
@@ -303,6 +306,7 @@ export function Sidebar({
   changeRequestsCount = 0,
   inboxUnreadCount = 0,
   activeOrganizationId = null,
+  showOwnerOps = false,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -398,7 +402,18 @@ export function Sidebar({
           showLabels ? "px-4 py-6" : "px-2 py-4",
         )}
       >
-        {navItems.map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
+        {(
+          showOwnerOps
+            ? [
+                ...navItems,
+                {
+                  label: "Owner ops",
+                  href: "/ops",
+                  icon: Shield,
+                },
+              ]
+            : navItems
+        ).map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
           const linkHref = resolveHref ? resolveHref(pathname, lastEventId) : href;
           const isActive = isActiveFn
             ? isActiveFn(pathname, locationHash)

@@ -14,7 +14,7 @@ import {
   DEVELOPER_AGREEMENTS_PATH,
   getDeveloperAgreementSigningProgress,
 } from "@/lib/developer-agreements/queries";
-import { resolveAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
+import { DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH } from "@/lib/developer-agreements/gate";
 
 export type AgreementActionState = {
   error: string | null;
@@ -120,7 +120,7 @@ export async function signDeveloperAgreementAction(
   }
 
   const headerStore = await headers();
-  const { error: insertError } = await supabase
+  const { data: inserted, error: insertError } = await supabase
     .from("developer_agreement_signatures")
     .insert({
       user_id: user.id,
@@ -131,16 +131,35 @@ export async function signDeveloperAgreementAction(
       signature_image_path: signaturePath,
       ip_address: clientIp(headerStore),
       user_agent: headerStore.get("user-agent"),
-    });
+      status: "awaiting_company",
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    console.error("signature insert failed:", insertError.message);
+  if (insertError || !inserted) {
+    console.error("signature insert failed:", insertError?.message);
     return {
-      error: insertError.message.includes("duplicate")
+      error: insertError?.message.includes("duplicate")
         ? "You already signed this version."
         : "Could not save your signature. Try again.",
       success: false,
     };
+  }
+
+  // Store populated packet (developer fields filled; company pending) + notify owners.
+  try {
+    const { buildAndStoreExecutedPacket, notifyOwnersDeveloperSigned } =
+      await import("@/lib/developer-agreements/packet");
+    await buildAndStoreExecutedPacket(inserted.id);
+    await notifyOwnersDeveloperSigned({
+      signatureId: inserted.id,
+      developerName: typedLegalName,
+      developerEmail: user.email,
+      documentTitle: target.title,
+      versionLabel: target.version.versionLabel,
+    });
+  } catch (error) {
+    console.error("post-sign packet/notify failed:", error);
   }
 
   const nextProgress = await getDeveloperAgreementSigningProgress(user.id);
@@ -148,7 +167,7 @@ export async function signDeveloperAgreementAction(
     redirect(`${DEVELOPER_AGREEMENTS_PATH}?signed=1`);
   }
 
-  redirect(resolveAuthenticatedAppPath(true, null));
+  redirect(`${DEVELOPER_AGREEMENTS_PATH}?complete=1`);
 }
 
 export async function seedDeveloperAgreementsAction(): Promise<AgreementActionState> {
@@ -315,6 +334,161 @@ export async function publishDeveloperAgreementVersionAction(
   }
 
   redirect(`${DEVELOPER_AGREEMENTS_MANAGE_PATH}?published=1`);
+}
+
+export async function countersignCompanyAgreementAction(
+  _prev: AgreementActionState,
+  formData: FormData,
+): Promise<AgreementActionState> {
+  if (!(await canManageDeveloperAgreements())) {
+    return { error: "Only Hey Ralli owners can counter-sign.", success: false };
+  }
+  if (!isSupabaseAdminConfigured()) {
+    return {
+      error: "SUPABASE_SERVICE_ROLE_KEY is required to counter-sign.",
+      success: false,
+    };
+  }
+
+  const user = await getAuthUser();
+  if (!user) {
+    return { error: "You must be signed in.", success: false };
+  }
+
+  const signatureId = String(formData.get("signatureId") ?? "").trim();
+  const typedLegalName = String(formData.get("typedLegalName") ?? "").trim();
+  const title = String(formData.get("companyTitle") ?? "").trim() ||
+    "Authorized Representative";
+  const confirmation = String(formData.get("confirmation") ?? "");
+  const signatureDataUrl = String(formData.get("signatureDataUrl") ?? "").trim();
+  const scrolledComplete = String(formData.get("scrolledComplete") ?? "") === "true";
+
+  if (!signatureId) {
+    return { error: "Missing signature record.", success: false };
+  }
+  if (!scrolledComplete) {
+    return {
+      error: "Scroll to the bottom of the agreement before signing.",
+      success: false,
+    };
+  }
+  if (confirmation !== "on" && confirmation !== "true") {
+    return {
+      error: "Confirm that you have read and agree to the complete terms.",
+      success: false,
+    };
+  }
+  if (typedLegalName.length < 2) {
+    return { error: "Enter your full legal name.", success: false };
+  }
+
+  const parsedSignature = dataUrlToBytes(signatureDataUrl);
+  if (!parsedSignature) {
+    return {
+      error: "Draw your signature in the signature box.",
+      success: false,
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: existing, error: loadError } = await admin
+    .from("developer_agreement_signatures")
+    .select("id, status, user_id, version_id, document_id, typed_legal_name")
+    .eq("id", signatureId)
+    .maybeSingle();
+
+  if (loadError || !existing) {
+    return { error: "Signature record not found.", success: false };
+  }
+  if (existing.status === "fully_executed") {
+    redirect(`${DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH}?done=1`);
+  }
+
+  const ext =
+    parsedSignature.contentType === "image/jpeg"
+      ? "jpg"
+      : parsedSignature.contentType === "image/webp"
+        ? "webp"
+        : "png";
+  const companyPath = `signatures/company/${signatureId}.${ext}`;
+  const uploaded = await admin.storage
+    .from("developer-agreements")
+    .upload(companyPath, parsedSignature.bytes, {
+      contentType: parsedSignature.contentType,
+      upsert: true,
+    });
+  if (uploaded.error) {
+    return {
+      error: "Could not store company signature. Try again.",
+      success: false,
+    };
+  }
+
+  const headerStore = await headers();
+  const now = new Date().toISOString();
+  const { error: updateError } = await admin
+    .from("developer_agreement_signatures")
+    .update({
+      status: "fully_executed",
+      company_signer_user_id: user.id,
+      company_typed_legal_name: typedLegalName,
+      company_title: title,
+      company_signature_image_path: companyPath,
+      company_signed_at: now,
+      company_ip_address: clientIp(headerStore),
+      company_user_agent: headerStore.get("user-agent"),
+    })
+    .eq("id", signatureId);
+
+  if (updateError) {
+    return { error: updateError.message, success: false };
+  }
+
+  await admin.from("developer_agreement_company_profile").upsert({
+    id: 1,
+    legal_name: typedLegalName,
+    title,
+    email: user.email,
+    signature_image_path: companyPath,
+    updated_at: now,
+    updated_by: user.id,
+  });
+
+  const {
+    buildAndStoreExecutedPacket,
+    emailExecutedAgreementCopy,
+  } = await import("@/lib/developer-agreements/packet");
+
+  const packet = await buildAndStoreExecutedPacket(signatureId);
+  if ("error" in packet) {
+    return {
+      error: `Signed, but could not build executed copy: ${packet.error}`,
+      success: false,
+    };
+  }
+
+  const { data: authUser } = await admin.auth.admin.getUserById(existing.user_id);
+  const { data: document } = await admin
+    .from("developer_agreement_documents")
+    .select("title")
+    .eq("id", existing.document_id)
+    .maybeSingle();
+  const { data: version } = await admin
+    .from("developer_agreement_versions")
+    .select("version_label")
+    .eq("id", existing.version_id)
+    .maybeSingle();
+
+  await emailExecutedAgreementCopy({
+    signatureId,
+    html: packet.html,
+    documentTitle: document?.title ?? "Agreement",
+    versionLabel: version?.version_label ?? "",
+    developerEmail: authUser.user?.email ?? "",
+    developerName: existing.typed_legal_name,
+  });
+
+  redirect(`${DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH}?done=1`);
 }
 
 function escapeHtml(value: string): string {

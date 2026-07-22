@@ -9,6 +9,7 @@ import {
 import { getAuthUser } from "@/lib/auth/queries";
 import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
+import { canAccessOwnerOps } from "@/lib/ops/access";
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +23,7 @@ export default async function DashboardLayout({
     schedulingBadgeCounts,
     organizations,
     activeMembership,
+    showOwnerOps,
   ] = await Promise.all([
     getAuthUser(),
     getApprovalSidebarCountsForCurrentUser(),
@@ -29,6 +31,7 @@ export default async function DashboardLayout({
     getSidebarSchedulingBadgeCounts(),
     listActiveMemberships(),
     getActiveMembership(),
+    canAccessOwnerOps(),
   ]);
 
   const assignedApprovalsCount = Math.max(
@@ -51,6 +54,7 @@ export default async function DashboardLayout({
       activeOrganizationId={
         normalizeOrganizationId(activeMembership?.organizationId) ?? null
       }
+      showOwnerOps={showOwnerOps}
     >
       {children}
       <ReportProblemHost />

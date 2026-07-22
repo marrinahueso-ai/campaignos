@@ -12,6 +12,7 @@ import type {
 } from "@/lib/developer-agreements/types";
 
 export {
+  DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH,
   DEVELOPER_AGREEMENTS_MANAGE_PATH,
   DEVELOPER_AGREEMENTS_PATH,
   userMustSignDeveloperAgreements,
@@ -213,4 +214,181 @@ export async function listDeveloperAgreementDocumentsForManage() {
       currentSourceFilename: current?.source_filename ?? null,
     };
   });
+}
+
+export type PendingCountersign = {
+  id: string;
+  status: string;
+  developerName: string;
+  developerEmail: string;
+  documentTitle: string;
+  versionLabel: string;
+  signedAt: string;
+  executedHtmlPath: string | null;
+  fullyExecuted: boolean;
+};
+
+export async function listPendingCompanyCountersignatures(): Promise<
+  PendingCountersign[]
+> {
+  const { createAdminClient, isSupabaseAdminConfigured } = await import(
+    "@/lib/supabase/admin"
+  );
+  if (!isSupabaseAdminConfigured()) return [];
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("developer_agreement_signatures")
+    .select(
+      "id, status, typed_legal_name, signed_at, executed_html_path, user_id, document_id, version_id",
+    )
+    .order("signed_at", { ascending: false })
+    .limit(100);
+
+  if (error || !data?.length) return [];
+
+  const results: PendingCountersign[] = [];
+  for (const row of data) {
+    const [{ data: document }, { data: version }, { data: authUser }] =
+      await Promise.all([
+        admin
+          .from("developer_agreement_documents")
+          .select("title")
+          .eq("id", row.document_id)
+          .maybeSingle(),
+        admin
+          .from("developer_agreement_versions")
+          .select("version_label")
+          .eq("id", row.version_id)
+          .maybeSingle(),
+        admin.auth.admin.getUserById(row.user_id),
+      ]);
+
+    results.push({
+      id: row.id,
+      status: row.status,
+      developerName: row.typed_legal_name,
+      developerEmail: authUser.user?.email ?? "",
+      documentTitle: document?.title ?? "Agreement",
+      versionLabel: version?.version_label ?? "",
+      signedAt: row.signed_at,
+      executedHtmlPath: row.executed_html_path,
+      fullyExecuted: row.status === "fully_executed",
+    });
+  }
+
+  return results;
+}
+
+export async function getCountersignDetail(signatureId: string) {
+  const { createAdminClient, isSupabaseAdminConfigured } = await import(
+    "@/lib/supabase/admin"
+  );
+  if (!isSupabaseAdminConfigured()) return null;
+  const admin = createAdminClient();
+
+  const { data: row, error } = await admin
+    .from("developer_agreement_signatures")
+    .select(
+      "id, status, typed_legal_name, signed_at, signature_image_path, user_id, document_id, version_id, company_typed_legal_name, company_title",
+    )
+    .eq("id", signatureId)
+    .maybeSingle();
+
+  if (error || !row) return null;
+
+  const [{ data: document }, { data: version }, { data: authUser }, { data: profile }] =
+    await Promise.all([
+      admin
+        .from("developer_agreement_documents")
+        .select("id, title, description, document_number")
+        .eq("id", row.document_id)
+        .maybeSingle(),
+      admin
+        .from("developer_agreement_versions")
+        .select("id, version_label, body_html, effective_at")
+        .eq("id", row.version_id)
+        .maybeSingle(),
+      admin.auth.admin.getUserById(row.user_id),
+      admin
+        .from("developer_agreement_company_profile")
+        .select("legal_name, title, email")
+        .eq("id", 1)
+        .maybeSingle(),
+    ]);
+
+  if (!document || !version) return null;
+
+  return {
+    signatureId: row.id,
+    status: row.status as string,
+    fullyExecuted: row.status === "fully_executed",
+    developer: {
+      name: row.typed_legal_name as string,
+      email: authUser.user?.email ?? "",
+      signedAt: row.signed_at as string,
+    },
+    document: {
+      id: document.id as string,
+      title: document.title as string,
+      description: (document.description as string) ?? "",
+      documentNumber: (document.document_number as string | null) ?? null,
+    },
+    version: {
+      id: version.id as string,
+      versionLabel: version.version_label as string,
+      bodyHtml: version.body_html as string,
+      effectiveAt: version.effective_at as string,
+    },
+    companyDefaults: {
+      legalName:
+        (row.company_typed_legal_name as string | null) ||
+        profile?.legal_name ||
+        "",
+      title:
+        (row.company_title as string | null) ||
+        profile?.title ||
+        "Authorized Representative",
+    },
+  };
+}
+
+export async function listMyExecutedAgreements(userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("developer_agreement_signatures")
+    .select(
+      "id, status, typed_legal_name, signed_at, executed_html_path, document_id, version_id, company_signed_at",
+    )
+    .eq("user_id", userId)
+    .order("signed_at", { ascending: false });
+
+  if (error || !data?.length) return [];
+
+  const results = [];
+  for (const row of data) {
+    const [{ data: document }, { data: version }] = await Promise.all([
+      supabase
+        .from("developer_agreement_documents")
+        .select("title")
+        .eq("id", row.document_id)
+        .maybeSingle(),
+      supabase
+        .from("developer_agreement_versions")
+        .select("version_label")
+        .eq("id", row.version_id)
+        .maybeSingle(),
+    ]);
+    results.push({
+      id: row.id,
+      title: document?.title ?? "Agreement",
+      versionLabel: version?.version_label ?? "",
+      status: row.status,
+      signedAt: row.signed_at,
+      companySignedAt: row.company_signed_at,
+      canDownload: Boolean(row.executed_html_path),
+      fullyExecuted: row.status === "fully_executed",
+    });
+  }
+  return results;
 }

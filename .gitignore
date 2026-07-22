@@ -59,3 +59,5 @@ next-env.d.ts
 .next-dev*.lock
 tmp-socials-email-preview.html
 tmp-*.html
+
+.local-dev-credentials.txt

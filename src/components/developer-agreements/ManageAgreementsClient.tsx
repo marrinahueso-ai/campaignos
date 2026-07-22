@@ -27,12 +27,24 @@ const initialState: AgreementActionState = {
   success: false,
 };
 
+type QueueItem = {
+  id: string;
+  developerName: string;
+  developerEmail: string;
+  documentTitle: string;
+  versionLabel: string;
+  fullyExecuted: boolean;
+  signedAt: string;
+};
+
 export function ManageAgreementsClient({
   documents,
   published,
+  queue = [],
 }: {
   documents: ManagedDoc[];
   published?: boolean;
+  queue?: QueueItem[];
 }) {
   const [publishState, publishAction, publishPending] = useActionState(
     publishDeveloperAgreementVersionAction,
@@ -65,6 +77,59 @@ export function ManageAgreementsClient({
           prompted on next sign-in.
         </p>
       )}
+
+      <section className="space-y-3 rounded-xl border border-[#ddd4c8] bg-white p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold">Signatures &amp; counter-sign</h2>
+          <a
+            href="/account/agreements/countersign"
+            className="text-sm font-medium underline"
+          >
+            Open counter-sign queue
+          </a>
+        </div>
+        {queue.length === 0 ? (
+          <p className="text-sm text-[#5c554c]">No signatures yet.</p>
+        ) : (
+          <ul className="divide-y divide-[#eee7dc]">
+            {queue.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-medium text-[#2a2622]">
+                    {item.documentTitle}
+                  </p>
+                  <p className="text-xs text-[#5c554c]">
+                    {item.developerName} · {item.developerEmail} ·{" "}
+                    {item.versionLabel} ·{" "}
+                    {item.fullyExecuted
+                      ? "Fully executed"
+                      : "Needs your counter-signature"}
+                  </p>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <a
+                    className="underline"
+                    href={`/api/developer-agreements/download?id=${item.id}`}
+                  >
+                    Download
+                  </a>
+                  {!item.fullyExecuted && (
+                    <a
+                      className="font-medium underline"
+                      href={`/account/agreements/countersign?id=${item.id}`}
+                    >
+                      Counter-sign
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="space-y-3 rounded-xl border border-[#ddd4c8] bg-white p-5">
         <h2 className="text-sm font-semibold">Current documents</h2>

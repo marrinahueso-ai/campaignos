@@ -15,8 +15,19 @@ This is an **in-app e-sign** flow (typed legal name + drawn signature), not Docu
 1. Invite / accept membership as usual (`/invite/[token]`).
 2. After password gate (if any), middleware and `resolvePostAuthPathForUser` send unsigned developers to `/account/agreements`.
 3. For each required current version: scroll to bottom → confirm → type full legal name → draw signature → Sign and Continue.
-4. Audit fields stored: typed name, signature image path, timestamp, IP, user agent, agreement version.
-5. When all current required versions are signed → `/dashboard` (or normal post-auth path).
+4. System builds an HTML packet with the agreement body + populated developer signature fields (name, date, drawn signature) and stores it under Storage `executed/{userId}/{versionId}.html`.
+5. Owners in `HEY_RALLI_OWNER_EMAILS` are emailed via Resend template `developer-agreement-countersign` with a counter-sign link (`/account/agreements/countersign?id=…`).
+6. Owner reviews the same agreement UI, types name/title, draws company signature → status becomes `fully_executed`.
+7. Final HTML packet includes both parties; Resend template `developer-agreement-executed` emails developer + owners with a signed download URL (HTML+attachment fallback if the template send fails). Also downloadable via `/api/developer-agreements/download?id=…` and Owner ops.
+
+### Resend templates
+
+| Alias | Purpose | Dashboard |
+|-------|---------|-----------|
+| `developer-agreement-countersign` | Notify owners to counter-sign | https://resend.com/templates/0d05ada9-02f0-4995-8ea9-03e7db09e91b |
+| `developer-agreement-executed` | Fully executed notice + download CTA | https://resend.com/templates/4a8acff5-cddc-4aa5-8ee7-bfe262872ed4 |
+
+Override ids with `RESEND_DEVELOPER_AGREEMENT_COUNTERSIGN_TEMPLATE_ID` / `RESEND_DEVELOPER_AGREEMENT_EXECUTED_TEMPLATE_ID` if needed.
 
 ## Data model
 
@@ -30,7 +41,9 @@ Storage bucket: `developer-agreements` (private) — `templates/…` originals, 
 
 ## Managing documents
 
-Owner-only UI: `/account/agreements/manage`  
+Owner dashboard: `/ops` — platform metrics + **Developers signed** table (counter-sign / download).  
+Owner-only manage UI: `/account/agreements/manage`  
+Counter-sign queue: `/account/agreements/countersign`  
 Gated by `HEY_RALLI_OWNER_EMAILS` (or `REPORT_A_PROBLEM_OWNER_EMAILS`).
 
 - Seed starting NDA + IP from repo content (`src/lib/developer-agreements/seed-content.ts`, sourced from Starting Agreements `.docx`).
