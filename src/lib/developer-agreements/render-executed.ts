@@ -5,6 +5,7 @@ export type ExecutedParty = {
   legalName: string;
   title?: string | null;
   email?: string | null;
+  companyName?: string | null;
   signedAt: string;
   signatureDataUrl: string | null;
 };
@@ -51,6 +52,7 @@ function partyBlock(party: ExecutedParty): string {
       <p style="margin:4px 0;"><strong>Printed name:</strong> ${escapeHtml(party.legalName)}</p>
       ${party.title ? `<p style="margin:4px 0;"><strong>Title:</strong> ${escapeHtml(party.title)}</p>` : ""}
       ${party.email ? `<p style="margin:4px 0;"><strong>Email:</strong> ${escapeHtml(party.email)}</p>` : ""}
+      ${party.companyName ? `<p style="margin:4px 0;"><strong>Company:</strong> ${escapeHtml(party.companyName)}</p>` : ""}
       <p style="margin:4px 0;"><strong>Date / time:</strong> ${escapeHtml(formatDate(party.signedAt))}</p>
       <p style="margin:12px 0 4px;"><strong>Electronic signature:</strong></p>
       ${signature}

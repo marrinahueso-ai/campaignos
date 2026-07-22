@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth/queries";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { resolveAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { DeveloperAgreementsClient } from "@/components/developer-agreements/DeveloperAgreementsClient";
+import { AgreementThemeShell } from "@/components/developer-agreements/AgreementThemeShell";
 import { ensureDeveloperAgreementsSeeded } from "@/lib/developer-agreements/ensure-seed";
 import { canManageDeveloperAgreements } from "@/lib/developer-agreements/access";
 import {
@@ -51,29 +52,28 @@ export default async function DeveloperAgreementsPage({
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <p className="font-serif text-xl">Hey Ralli</p>
-      <h1 className="mt-4 font-serif text-3xl text-[#2a2622]">
+    <AgreementThemeShell eyebrow="Developer agreements">
+      <h1 className="font-serif text-3xl text-cos-text md:text-4xl">
         {params.complete === "1"
           ? "Your signatures are saved"
           : "Your developer agreements"}
       </h1>
-      <p className="mt-3 text-sm leading-relaxed text-[#5c554c]">
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-cos-muted">
         {params.complete === "1"
           ? "Hey Ralli has been notified to counter-sign. When both parties have signed, a full executed copy is emailed to everyone and available to download below."
           : "Download executed copies once Hey Ralli has counter-signed. Pending items show your signature only until the company signs."}
       </p>
 
       {mine.length > 0 && (
-        <ul className="mt-8 divide-y divide-[#eee7dc] rounded-xl border border-[#ddd4c8] bg-white">
+        <ul className="mt-8 divide-y divide-cos-border rounded-2xl border border-cos-border bg-cos-card shadow-sm">
           {mine.map((item) => (
             <li
               key={item.id}
               className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div>
-                <p className="font-medium text-[#2a2622]">{item.title}</p>
-                <p className="text-xs text-[#5c554c]">
+                <p className="font-medium text-cos-text">{item.title}</p>
+                <p className="text-xs text-cos-muted">
                   {item.versionLabel}
                   {" · "}
                   {item.fullyExecuted
@@ -83,13 +83,13 @@ export default async function DeveloperAgreementsPage({
               </div>
               {item.canDownload ? (
                 <a
-                  className="text-sm font-medium underline"
+                  className="text-sm font-medium text-cos-primary underline"
                   href={`/api/developer-agreements/download?id=${item.id}`}
                 >
                   Download
                 </a>
               ) : (
-                <span className="text-xs text-[#8a8278]">Preparing…</span>
+                <span className="text-xs text-cos-muted">Preparing…</span>
               )}
             </li>
           ))}
@@ -97,26 +97,29 @@ export default async function DeveloperAgreementsPage({
       )}
 
       <div className="mt-8 flex flex-wrap gap-4 text-sm">
-        <Link href="/dashboard" className="font-medium underline">
+        <Link
+          href="/dashboard"
+          className="font-medium text-cos-primary underline"
+        >
           Continue to dashboard
         </Link>
         {isOwner && (
           <>
             <Link
               href="/account/agreements/countersign"
-              className="font-medium underline"
+              className="font-medium text-cos-primary underline"
             >
               Counter-sign queue
             </Link>
             <Link
               href="/account/agreements/manage"
-              className="font-medium underline"
+              className="font-medium text-cos-primary underline"
             >
               Manage templates
             </Link>
           </>
         )}
       </div>
-    </main>
+    </AgreementThemeShell>
   );
 }

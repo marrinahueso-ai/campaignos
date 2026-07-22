@@ -52,6 +52,8 @@ export async function signDeveloperAgreementAction(
   const versionId = String(formData.get("versionId") ?? "").trim();
   const documentId = String(formData.get("documentId") ?? "").trim();
   const typedLegalName = String(formData.get("typedLegalName") ?? "").trim();
+  const signerEmail = String(formData.get("signerEmail") ?? "").trim();
+  const signerCompanyName = String(formData.get("signerCompanyName") ?? "").trim();
   const confirmation = String(formData.get("confirmation") ?? "");
   const signatureDataUrl = String(formData.get("signatureDataUrl") ?? "").trim();
   const scrolledComplete = String(formData.get("scrolledComplete") ?? "") === "true";
@@ -73,6 +75,9 @@ export async function signDeveloperAgreementAction(
   }
   if (typedLegalName.length < 2) {
     return { error: "Enter your full legal name.", success: false };
+  }
+  if (!signerEmail || !signerEmail.includes("@")) {
+    return { error: "Enter a valid email address.", success: false };
   }
 
   const parsedSignature = dataUrlToBytes(signatureDataUrl);
@@ -128,6 +133,8 @@ export async function signDeveloperAgreementAction(
       document_id: documentId,
       version_id: versionId,
       typed_legal_name: typedLegalName,
+      signer_email: signerEmail,
+      signer_company_name: signerCompanyName || null,
       signature_image_path: signaturePath,
       ip_address: clientIp(headerStore),
       user_agent: headerStore.get("user-agent"),
@@ -357,6 +364,10 @@ export async function countersignCompanyAgreementAction(
 
   const signatureId = String(formData.get("signatureId") ?? "").trim();
   const typedLegalName = String(formData.get("typedLegalName") ?? "").trim();
+  const companyEmail = String(formData.get("companyEmail") ?? "").trim();
+  const companyOrganizationName = String(
+    formData.get("companyOrganizationName") ?? "",
+  ).trim();
   const title = String(formData.get("companyTitle") ?? "").trim() ||
     "Authorized Representative";
   const confirmation = String(formData.get("confirmation") ?? "");
@@ -380,6 +391,9 @@ export async function countersignCompanyAgreementAction(
   }
   if (typedLegalName.length < 2) {
     return { error: "Enter your full legal name.", success: false };
+  }
+  if (!companyEmail || !companyEmail.includes("@")) {
+    return { error: "Enter a valid email address.", success: false };
   }
 
   const parsedSignature = dataUrlToBytes(signatureDataUrl);
@@ -433,6 +447,8 @@ export async function countersignCompanyAgreementAction(
       company_signer_user_id: user.id,
       company_typed_legal_name: typedLegalName,
       company_title: title,
+      company_email: companyEmail,
+      company_organization_name: companyOrganizationName || null,
       company_signature_image_path: companyPath,
       company_signed_at: now,
       company_ip_address: clientIp(headerStore),
@@ -448,7 +464,8 @@ export async function countersignCompanyAgreementAction(
     id: 1,
     legal_name: typedLegalName,
     title,
-    email: user.email,
+    email: companyEmail,
+    organization_name: companyOrganizationName || null,
     signature_image_path: companyPath,
     updated_at: now,
     updated_by: user.id,

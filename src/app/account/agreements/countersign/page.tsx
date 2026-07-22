@@ -23,10 +23,20 @@ export default async function CountersignAgreementsPage({
   const detail = params.id
     ? await getCountersignDetail(params.id)
     : null;
+  const detailWithEmail =
+    detail && !detail.companyDefaults.email
+      ? {
+          ...detail,
+          companyDefaults: {
+            ...detail.companyDefaults,
+            email: user.email || "",
+          },
+        }
+      : detail;
 
   return (
     <CountersignClient
-      detail={detail}
+      detail={detailWithEmail}
       queue={queue}
       done={params.done === "1"}
     />

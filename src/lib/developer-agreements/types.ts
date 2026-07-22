@@ -21,9 +21,18 @@ export type DeveloperAgreementVersion = {
   isPublished: boolean;
 };
 
+export type AgreementSignatureReceipt = {
+  legalName: string;
+  email: string;
+  companyName: string | null;
+  signedAt: string;
+  signatureDataUrl: string | null;
+};
+
 export type DeveloperAgreementForSigning = DeveloperAgreementDocument & {
   version: DeveloperAgreementVersion;
   signed: boolean;
+  receipt: AgreementSignatureReceipt | null;
 };
 
 export type DeveloperAgreementSigningProgress = {

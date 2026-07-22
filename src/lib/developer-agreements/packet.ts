@@ -24,11 +24,15 @@ type SignatureRow = {
   document_id: string;
   version_id: string;
   typed_legal_name: string;
+  signer_email: string | null;
+  signer_company_name: string | null;
   signature_image_path: string;
   signed_at: string;
   status: string;
   company_typed_legal_name: string | null;
   company_title: string | null;
+  company_email: string | null;
+  company_organization_name: string | null;
   company_signature_image_path: string | null;
   company_signed_at: string | null;
   executed_html_path: string | null;
@@ -42,7 +46,7 @@ export async function buildAndStoreExecutedPacket(signatureId: string): Promise<
   const { data: signature, error } = await admin
     .from("developer_agreement_signatures")
     .select(
-      "id, user_id, document_id, version_id, typed_legal_name, signature_image_path, signed_at, status, company_typed_legal_name, company_title, company_signature_image_path, company_signed_at, executed_html_path",
+      "id, user_id, document_id, version_id, typed_legal_name, signer_email, signer_company_name, signature_image_path, signed_at, status, company_typed_legal_name, company_title, company_email, company_organization_name, company_signature_image_path, company_signed_at, executed_html_path",
     )
     .eq("id", signatureId)
     .maybeSingle();
@@ -87,7 +91,8 @@ export async function buildAndStoreExecutedPacket(signatureId: string): Promise<
     developer: {
       roleLabel: "Receiving Party / Contributor",
       legalName: row.typed_legal_name,
-      email: authUser.user?.email ?? null,
+      email: row.signer_email || authUser.user?.email || null,
+      companyName: row.signer_company_name,
       signedAt: row.signed_at,
       signatureDataUrl: developerSig,
     },
@@ -97,7 +102,11 @@ export async function buildAndStoreExecutedPacket(signatureId: string): Promise<
           legalName:
             row.company_typed_legal_name || "Authorized Representative",
           title: row.company_title || "Authorized Representative",
-          email: getDeveloperAgreementOwnerEmails()[0] ?? null,
+          email:
+            row.company_email ||
+            getDeveloperAgreementOwnerEmails()[0] ||
+            null,
+          companyName: row.company_organization_name,
           signedAt: row.company_signed_at!,
           signatureDataUrl: companySig,
         }

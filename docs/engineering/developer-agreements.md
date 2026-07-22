@@ -2,7 +2,7 @@
 
 **Status:** Shipped  
 **Last updated:** July 22, 2026  
-**Migration:** `supabase/migrations/073_developer_agreements.sql`
+**Migrations:** `073_developer_agreements.sql`, `074_developer_agreement_execution.sql`, `075_developer_agreement_signer_fields.sql`
 
 ## Purpose
 
@@ -14,10 +14,10 @@ This is an **in-app e-sign** flow (typed legal name + drawn signature), not Docu
 
 1. Invite / accept membership as usual (`/invite/[token]`).
 2. After password gate (if any), middleware and `resolvePostAuthPathForUser` send unsigned developers to `/account/agreements`.
-3. For each required current version: scroll to bottom → confirm → type full legal name → draw signature → Sign and Continue.
-4. System builds an HTML packet with the agreement body + populated developer signature fields (name, date, drawn signature) and stores it under Storage `executed/{userId}/{versionId}.html`.
+3. For each required current version: scroll to bottom → confirm → type full legal name + email (company name optional) → draw signature → Sign and Continue. Signed receipts (name, email, date, drawn signature) stay visible on the sign / counter-sign panels.
+4. System builds an HTML packet with the agreement body + populated developer signature fields and stores it under Storage `executed/{userId}/{versionId}.html`.
 5. Owners in `HEY_RALLI_OWNER_EMAILS` are emailed via Resend template `developer-agreement-countersign` with a counter-sign link (`/account/agreements/countersign?id=…`).
-6. Owner reviews the same agreement UI, types name/title, draws company signature → status becomes `fully_executed`.
+6. Owner reviews the agreement UI (developer receipt shown), types full name + email (+ optional company name / title), draws company signature → status becomes `fully_executed`.
 7. Final HTML packet includes both parties; Resend template `developer-agreement-executed` emails developer + owners with a signed download URL (HTML+attachment fallback if the template send fails). Also downloadable via `/api/developer-agreements/download?id=…` and Owner ops.
 
 ### Resend templates
