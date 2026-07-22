@@ -28,7 +28,9 @@ Stable import identity on `events` so re-imports do not create duplicate school 
 
 **Review filters + past cleanup:** Summary cards filter by category / Conflicts / Duplicates / Updates. A toolbar above the table supports **search** (name, category, match reason, and date/year/month — e.g. `2025`, `Jul`, `July 30`, `07/30`) and **All dates / Upcoming / Past** (local calendar date; today counts as upcoming). **Archive past events** bulk-removes every review row with a date before today from the import queue (same persistence as Delete selected — not a separate DB archive). Confirm dialog says archive / remove from import queue. Search, type filter, and date filter combine; Select all / Delete all apply to the visible filtered rows.
 
-**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook), `review-filters.ts` (type / date / search).
+**Import list search + mass delete (post-import):** On `/calendar` → **Import list**, search matches event title, category, and the same date/year/month tokens. Select all / Delete selected apply to the visible filtered rows (already-imported events — permanent delete, not the review queue).
+
+**Code:** `src/lib/calendar-import/event-dedup.ts` (classify + fingerprints), `parse-ics.ts` / Google sync / subscribe sync, `mutations.ts` (persist), `review-plan-options.ts` (plan type ↔ playbook), `date-search.ts` (shared date tokens), `review-filters.ts` / `import-list-filters.ts` (type / date / search).
 
 ---
 
@@ -81,6 +83,8 @@ Suite: `src/lib/calendar-import/__tests__/event-dedup.test.ts` — UID skip, UID
 Also: `src/lib/calendar-import/__tests__/review-plan-options.test.ts` — plan type options from playbooks, selection → `playbookId` / strategy, defaults, status preserved.
 
 Also: `src/lib/calendar-import/__tests__/review-filters.test.ts` — past vs upcoming relative to today, search match on name/category/reason/date-year, combined type+date+search filters, past-id list for mass archive.
+
+Also: `src/lib/calendar-import/__tests__/import-list-filters.test.ts` — Import list search on title/category/date-year.
 
 ---
 

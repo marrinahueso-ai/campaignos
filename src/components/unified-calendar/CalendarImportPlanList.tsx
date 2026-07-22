@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CalendarReviewCategoryBadge } from "@/components/calendar-review/CalendarReviewBadges";
 import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
@@ -26,6 +26,7 @@ import {
   bulkDeleteEventsAction,
   clearCalendarWindowEventsAction,
 } from "@/lib/calendar-import/actions";
+import { filterImportListEventsBySearch } from "@/lib/calendar-import/import-list-filters";
 import { updateEventPlanTypeAction } from "@/lib/events/actions";
 import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
 import { formatEventDate } from "@/lib/utils/dates";
@@ -44,6 +45,7 @@ export function CalendarImportPlanList({
   const router = useRouter();
   const [events, setEvents] = useState(initialEvents);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -53,19 +55,32 @@ export function CalendarImportPlanList({
     setSelectedIds(new Set());
   }, [initialEvents]);
 
+  const filteredEvents = useMemo(
+    () => filterImportListEventsBySearch(events, searchQuery),
+    [events, searchQuery],
+  );
+
+  const isSearchFiltered = searchQuery.trim().length > 0;
+
   const counts = useMemo(() => {
     const byStrategy = new Map<CommunicationStrategy, number>();
-    for (const event of events) {
+    for (const event of filteredEvents) {
       byStrategy.set(
         event.communicationStrategy,
         (byStrategy.get(event.communicationStrategy) ?? 0) + 1,
       );
     }
     return byStrategy;
-  }, [events]);
+  }, [filteredEvents]);
 
   const selectedCount = selectedIds.size;
-  const allSelected = events.length > 0 && selectedCount === events.length;
+  const allSelected =
+    filteredEvents.length > 0 && selectedCount === filteredEvents.length;
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+    setSelectedIds(new Set());
+  }
 
   function toggleSelected(eventId: string) {
     setSelectedIds((current) => {
@@ -80,7 +95,7 @@ export function CalendarImportPlanList({
   }
 
   function handleSelectAll() {
-    setSelectedIds(new Set(events.map((event) => event.id)));
+    setSelectedIds(new Set(filteredEvents.map((event) => event.id)));
   }
 
   function handleClearSelection() {
@@ -131,7 +146,7 @@ export function CalendarImportPlanList({
         return;
       }
 
-      setEvents((current) => current.filter((event) => !selectedIds.has(event.id)));
+      setEvents((current) => current.filter((event) => !ids.includes(event.id)));
       setSelectedIds(new Set());
       router.refresh();
     });
@@ -165,6 +180,7 @@ export function CalendarImportPlanList({
 
       setEvents([]);
       setSelectedIds(new Set());
+      setSearchQuery("");
       router.refresh();
     });
   }
@@ -196,11 +212,13 @@ export function CalendarImportPlanList({
     <div className="space-y-4">
       <div className="rounded-2xl border border-cos-border bg-cos-card px-5 py-4">
         <p className="text-sm font-medium text-cos-text">
-          {events.length} events for {filename ?? "this school year"}
+          {isSearchFiltered
+            ? `${filteredEvents.length} of ${events.length} events matching “${searchQuery.trim()}”`
+            : `${events.length} events for ${filename ?? "this school year"}`}
         </p>
         <p className="mt-1 text-sm text-cos-muted">
-          All school-year events in your planning window. Select rows to permanently
-          delete bad imports, or{" "}
+          All school-year events in your planning window. Search to find rows, then
+          select them to permanently delete bad imports, or{" "}
           <button
             type="button"
             onClick={handleClearAll}
@@ -226,19 +244,37 @@ export function CalendarImportPlanList({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-cos-border bg-cos-bg px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-cos-muted">
-          {selectedCount > 0 ? (
-            <span>
-              <span className="font-medium text-cos-text">{selectedCount}</span> selected
-            </span>
-          ) : (
-            <span>Select rows to permanently delete events.</span>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 rounded-xl border border-cos-border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative block w-full max-w-md">
+          <span className="sr-only">Search events</span>
+          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            placeholder="Search by name, category, or date..."
+            disabled={isPending}
+            className="h-10 w-full rounded-lg border border-cos-border bg-white py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-2 focus:ring-cos-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="text-sm text-cos-muted">
+            {selectedCount > 0 ? (
+              <span>
+                <span className="font-medium text-cos-text">{selectedCount}</span> selected
+              </span>
+            ) : (
+              <span>Select rows to permanently delete events.</span>
+            )}
+          </div>
           {!allSelected ? (
-            <Button type="button" variant="secondary" size="sm" onClick={handleSelectAll} disabled={isPending}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={isPending || filteredEvents.length === 0}
+            >
               Select all
             </Button>
           ) : (
@@ -280,76 +316,94 @@ export function CalendarImportPlanList({
             workspace automatically.
           </CardDescription>
         </CardHeader>
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-10">
-                <span className="sr-only">Select</span>
-              </TableHead>
-              <TableHead>Event</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Plan type</TableHead>
-              <TableHead className="text-right">Open</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {events.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(event.id)}
-                    onChange={() => toggleSelected(event.id)}
-                    aria-label={`Select ${event.title}`}
-                    className="h-4 w-4 rounded border-cos-border"
-                  />
-                </TableCell>
-                <TableCell className="font-medium text-cos-text">{event.title}</TableCell>
-                <TableCell>{formatEventDate(event.date)}</TableCell>
-                <TableCell>
-                  {event.category ? (
-                    <CalendarReviewCategoryBadge
-                      category={
-                        event.category as import("@/types/calendar-review").CalendarEventCategory
-                      }
-                    />
-                  ) : (
-                    <span className="text-sm text-cos-muted">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="min-w-[12rem] space-y-2">
-                    <Select
-                      value={event.communicationStrategy}
-                      onChange={(changeEvent) =>
-                        handleStrategyChange(
-                          event.id,
-                          changeEvent.target.value as CommunicationStrategy,
-                        )
-                      }
-                      disabled={isPending && pendingId === event.id}
-                      aria-label={`Plan type for ${event.title}`}
-                    >
-                      {COMMUNICATION_STRATEGY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <CommunicationStrategyBadge strategy={event.communicationStrategy} />
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button href={`/events/${event.id}`} variant="ghost" size="sm">
-                    <ExternalLink className="h-4 w-4" />
-                    View
-                  </Button>
-                </TableCell>
+        {filteredEvents.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm font-medium text-cos-text">No matching events</p>
+            <p className="mt-1 text-sm text-cos-muted">
+              Try a different name, category, year, or date (e.g. 2025, Jul, 07/30).
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={() => handleSearchChange("")}
+            >
+              Clear search
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-10">
+                  <span className="sr-only">Select</span>
+                </TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Plan type</TableHead>
+                <TableHead className="text-right">Open</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredEvents.map((event) => (
+                <TableRow key={event.id}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(event.id)}
+                      onChange={() => toggleSelected(event.id)}
+                      aria-label={`Select ${event.title}`}
+                      className="h-4 w-4 rounded border-cos-border"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium text-cos-text">{event.title}</TableCell>
+                  <TableCell>{formatEventDate(event.date)}</TableCell>
+                  <TableCell>
+                    {event.category ? (
+                      <CalendarReviewCategoryBadge
+                        category={
+                          event.category as import("@/types/calendar-review").CalendarEventCategory
+                        }
+                      />
+                    ) : (
+                      <span className="text-sm text-cos-muted">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="min-w-[12rem] space-y-2">
+                      <Select
+                        value={event.communicationStrategy}
+                        onChange={(changeEvent) =>
+                          handleStrategyChange(
+                            event.id,
+                            changeEvent.target.value as CommunicationStrategy,
+                          )
+                        }
+                        disabled={isPending && pendingId === event.id}
+                        aria-label={`Plan type for ${event.title}`}
+                      >
+                        {COMMUNICATION_STRATEGY_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <CommunicationStrategyBadge strategy={event.communicationStrategy} />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button href={`/events/${event.id}`} variant="ghost" size="sm">
+                      <ExternalLink className="h-4 w-4" />
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       <p className="text-sm text-cos-muted">
