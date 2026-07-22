@@ -4,15 +4,15 @@ import { cn } from "@/lib/utils/cn";
 
 const LOGO_FULL = "/hey-ralli-logo.png";
 const LOGO_MARK = "/hey-ralli-logo-circle.png";
-const LOGO_ALT = "Hey Ralli — ORGANIZE. CREATE. CONNECT.";
+const LOGO_ALT = "Hey Ralli";
 
-/** Trimmed horizontal lockup (905×350). */
-const FULL_WIDTH = 905;
-const FULL_HEIGHT = 350;
+/** Trimmed horizontal lockup (speech bubble + Ralli wordmark). */
+const FULL_WIDTH = 535;
+const FULL_HEIGHT = 227;
 
-/** Trimmed circular mark (911×922). */
-const MARK_WIDTH = 911;
-const MARK_HEIGHT = 922;
+/** Circular mark (Hey bubble on cream). */
+const MARK_WIDTH = 1024;
+const MARK_HEIGHT = 1024;
 
 interface BrandLogoProps {
   href?: string | null;

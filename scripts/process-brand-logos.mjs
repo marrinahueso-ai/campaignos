@@ -1,6 +1,7 @@
 /**
- * Flatten warm cream/white logo canvas pixels to transparent PNG.
- * Targets logo background (~#FAF5F1) and site card tones (~#FFFCF7).
+ * Flatten logo canvas pixels to transparent PNG.
+ * Targets cream/white site tones (~#FAF5F1 / #FFFCF7) and near-black
+ * export backgrounds (ChatGPT/brand lockups on black).
  */
 import sharp from "sharp";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -33,10 +34,16 @@ function backgroundAlpha(r, g, b, a) {
 
   const min = Math.min(r, g, b);
   const max = Math.max(r, g, b);
+  const avg = (r + g + b) / 3;
   const spread = max - min;
   const refDist = minReferenceDistance(r, g, b);
 
-  // Hard-remove obvious canvas pixels.
+  // Near-black export canvas (logo lockups on black).
+  if (max <= 28) return 0;
+  if (avg <= 40 && max <= 55) return 0;
+  if (avg <= 55 && spread <= 8 && max <= 70) return 0;
+
+  // Hard-remove obvious cream/white canvas pixels.
   if (refDist <= 10) return 0;
   if (min >= 245 && spread <= 8) return 0;
   if (min >= 228 && spread <= 14 && refDist <= 18) return 0;

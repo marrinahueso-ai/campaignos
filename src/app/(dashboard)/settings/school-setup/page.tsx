@@ -53,7 +53,7 @@ export default async function SettingsSchoolSetupPage({
 
   // Legacy wizard / step deep-links → focused pages (no boarding steppers).
   if (params.view === "wizard" || params.step === "school") {
-    redirect("/settings/organization");
+    redirect("/settings/organization/edit");
   }
   if (params.step === "meta" || params.onboarding === "1" || params.connected === "1") {
     redirect("/settings/integrations");

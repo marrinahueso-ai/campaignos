@@ -336,6 +336,40 @@ export async function bootstrapMinimalOrganization(input: {
   return { organizationId };
 }
 
+export async function updateOrganizationProfile(input: {
+  organizationId: string;
+  name: string;
+  timezone: string;
+  district?: string | null;
+  schoolYear?: string | null;
+  principal?: string | null;
+  mascot?: string | null;
+  schoolWebsite?: string | null;
+  ptoWebsite?: string | null;
+}): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      name: input.name.trim(),
+      timezone: input.timezone.trim(),
+      district: input.district?.trim() || null,
+      school_year: input.schoolYear?.trim() || null,
+      principal: input.principal?.trim() || null,
+      mascot: input.mascot?.trim() || null,
+      school_website: input.schoolWebsite?.trim() || null,
+      pto_website: input.ptoWebsite?.trim() || null,
+    })
+    .eq("id", input.organizationId);
+
+  if (error) {
+    console.error("Failed to update organization profile:", error.message);
+    return { error: "Unable to save profile." };
+  }
+
+  return { error: null };
+}
+
 export async function updateOrganizationBrand(input: {
   organizationId: string;
   mascot?: string | null;

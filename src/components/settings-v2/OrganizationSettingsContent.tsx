@@ -39,7 +39,11 @@ export async function OrganizationSettingsContent({
           title="Organization Details"
           description="Basic information used across Hey Ralli."
           actions={
-            <Button variant="secondary" size="sm" href="/settings/organization">
+            <Button
+              variant="secondary"
+              size="sm"
+              href="/settings/organization/edit"
+            >
               Edit profile
             </Button>
           }
