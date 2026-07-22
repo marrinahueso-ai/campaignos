@@ -169,14 +169,14 @@ export function CalendarImportReview({
     setSelectedIds(new Set());
   }
 
-  function handleRemovePastEvents() {
+  function handleArchivePastEvents() {
     const pastIds = getPastReviewEventIds(events, today);
     if (pastIds.length === 0) {
       return;
     }
 
     const confirmed = window.confirm(
-      `Remove ${pastIds.length} past event${pastIds.length === 1 ? "" : "s"} from this import list? They will not be added to your calendar. This only affects the review queue.`,
+      `Archive ${pastIds.length} past event${pastIds.length === 1 ? "" : "s"} from this import list? They will be removed from the import queue and will not be added to your calendar.`,
     );
     if (!confirmed) {
       return;
@@ -494,7 +494,7 @@ export function CalendarImportReview({
               onClearSelection={() => setSelectedIds(new Set())}
               onDeleteSelected={() => handleBulkDelete(Array.from(selectedIds))}
               onDeleteAll={() => handleBulkDelete(filteredEvents.map((event) => event.id))}
-              onRemovePastEvents={handleRemovePastEvents}
+              onArchivePastEvents={handleArchivePastEvents}
               onApplyRecommendedPlans={handleApplyRecommendedPlans}
               disabled={isPending || isParsing}
             />

@@ -49,7 +49,7 @@ export function CalendarReviewFilters({
           type="search"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by name or category..."
+          placeholder="Search by name, category, or date..."
           disabled={disabled}
           className="h-10 w-full rounded-lg border border-cos-border bg-white py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-2 focus:ring-cos-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
         />

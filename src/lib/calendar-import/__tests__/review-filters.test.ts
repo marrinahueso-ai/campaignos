@@ -67,6 +67,25 @@ describe("matchesReviewSearch", () => {
     assert.equal(matchesReviewSearch(event, "carnival"), false);
     assert.equal(matchesReviewSearch(event, "   "), true);
   });
+
+  it("matches year, month, and formatted / slash date variants", () => {
+    const event = reviewEvent({
+      name: "Last Year Fair",
+      date: "2025-07-30",
+      category: "PTO Event",
+    });
+
+    assert.equal(matchesReviewSearch(event, "2025"), true);
+    assert.equal(matchesReviewSearch(event, "jul"), true);
+    assert.equal(matchesReviewSearch(event, "July"), true);
+    assert.equal(matchesReviewSearch(event, "july 30"), true);
+    assert.equal(matchesReviewSearch(event, "Jul 30, 2025"), true);
+    assert.equal(matchesReviewSearch(event, "07/30"), true);
+    assert.equal(matchesReviewSearch(event, "7/30/2025"), true);
+    assert.equal(matchesReviewSearch(event, "2025-07-30"), true);
+    assert.equal(matchesReviewSearch(event, "2024"), false);
+    assert.equal(matchesReviewSearch(event, "august"), false);
+  });
 });
 
 describe("filterReviewEvents / date / apply", () => {
@@ -124,7 +143,20 @@ describe("filterReviewEvents / date / apply", () => {
     );
   });
 
-  it("returns past event ids for mass remove", () => {
+  it("returns past event ids for mass archive", () => {
     assert.deepEqual(getPastReviewEventIds(events, today), ["past-dup"]);
+  });
+
+  it("searches by year across filtered upcoming/past sets", () => {
+    const filtered = applyReviewEventFilters(events, {
+      filter: "all",
+      dateFilter: "all",
+      search: "2025",
+      today,
+    });
+    assert.deepEqual(
+      filtered.map((event) => event.id),
+      ["past-dup"],
+    );
   });
 });

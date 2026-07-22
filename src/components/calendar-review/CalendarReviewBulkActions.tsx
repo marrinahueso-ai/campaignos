@@ -11,7 +11,7 @@ interface CalendarReviewBulkActionsProps {
   onClearSelection: () => void;
   onDeleteSelected: () => void;
   onDeleteAll: () => void;
-  onRemovePastEvents: () => void;
+  onArchivePastEvents: () => void;
   onApplyRecommendedPlans: () => void;
   disabled?: boolean;
 }
@@ -24,7 +24,7 @@ export function CalendarReviewBulkActions({
   onClearSelection,
   onDeleteSelected,
   onDeleteAll,
-  onRemovePastEvents,
+  onArchivePastEvents,
   onApplyRecommendedPlans,
   disabled = false,
 }: CalendarReviewBulkActionsProps) {
@@ -43,7 +43,7 @@ export function CalendarReviewBulkActions({
         ) : pastCount > 0 ? (
           <span>
             <span className="font-medium text-cos-text">{pastCount}</span> past
-            event{pastCount === 1 ? "" : "s"} can be removed before import.
+            event{pastCount === 1 ? "" : "s"} can be archived before import.
           </span>
         ) : (
           <span>Select rows to remove bad imports before adding them to your calendar.</span>
@@ -86,11 +86,11 @@ export function CalendarReviewBulkActions({
           type="button"
           variant="secondary"
           size="sm"
-          onClick={onRemovePastEvents}
+          onClick={onArchivePastEvents}
           disabled={disabled || pastCount === 0}
         >
           <Archive className="h-4 w-4" />
-          Remove past events
+          Archive past events
           {pastCount > 0 ? ` (${pastCount})` : ""}
         </Button>
         <Button
