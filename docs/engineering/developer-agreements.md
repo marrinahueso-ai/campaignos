@@ -44,7 +44,11 @@ Storage bucket: `developer-agreements` (private) — `templates/…` originals, 
 Owner dashboard: `/ops` — platform metrics + **Developers signed** table (counter-sign / download).  
 Owner-only manage UI: `/account/agreements/manage`  
 Counter-sign queue: `/account/agreements/countersign`  
-Gated by `HEY_RALLI_OWNER_EMAILS` (or `REPORT_A_PROBLEM_OWNER_EMAILS`).
+Gated by **both**:
+1. Email on `HEY_RALLI_OWNER_EMAILS` (or `REPORT_A_PROBLEM_OWNER_EMAILS`)
+2. Active membership **Owner** role (`campaign_role = admin`)
+
+Other Owners / admins who are not on the email allowlist cannot open `/ops` or counter-sign.
 
 - Seed starting NDA + IP from repo content (`src/lib/developer-agreements/seed-content.ts`, sourced from Starting Agreements `.docx`).
 - Publish new versions (`.docx` / `.html` / `.txt` or pasted HTML). Publishing updates `current_version_id`; developers who have not signed that version are gated again.
