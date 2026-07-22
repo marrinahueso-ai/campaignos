@@ -28,6 +28,7 @@ import { EMPTY_ONBOARDING_STATE } from "@/lib/onboarding/types";
 import {
   bootstrapMinimalOrganization,
   updateOrganizationBrand,
+  type BrandKitLogoCategory,
 } from "@/lib/organizations/mutations";
 import { getSchoolProfile } from "@/lib/organizations/queries";
 import { getSchoolYearSettingsData } from "@/lib/school-years/actions";
@@ -112,9 +113,12 @@ export async function startValueFirstOnboardingAction(formData: FormData) {
   redirect("/events/create?onboarding=1");
 }
 
-export async function skipOnboardingPromptAction(
+async function deferOnboardingPromptStep(
   step: "calendar" | "brand" | "invite",
-) {
+): Promise<
+  | { error: string; next?: undefined }
+  | { error?: undefined; next: "calendar" | "brand" | "invite" | null }
+> {
   const organization = await getCurrentOrganization();
   if (!organization) {
     return { error: "Workspace not found." };
@@ -140,10 +144,36 @@ export async function skipOnboardingPromptAction(
     await patchOrganizationOnboardingState(organization.id, {
       promptsFinishedAt: now,
     });
+    return { next: null };
+  }
+
+  return { next: following };
+}
+
+/** Skip a prompt and redirect to the next onboarding page (or Today). */
+export async function skipOnboardingPromptAction(
+  step: "calendar" | "brand" | "invite",
+) {
+  const result = await deferOnboardingPromptStep(step);
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  if (!result.next) {
     redirect("/dashboard");
   }
 
-  redirect(`/onboarding/${following}`);
+  redirect(`/onboarding/${result.next}`);
+}
+
+/**
+ * Skip a prompt without leaving the current page.
+ * Used by the event-page overlay so "Do this later" advances the stepper in place.
+ */
+export async function deferOnboardingPromptAction(
+  step: "calendar" | "brand" | "invite",
+) {
+  return deferOnboardingPromptStep(step);
 }
 
 export async function completeOnboardingCalendarAction() {
@@ -164,6 +194,11 @@ export async function completeOnboardingCalendarAction() {
   redirect("/calendar/import");
 }
 
+function fileFromFormData(formData: FormData, key: string): File | null {
+  const value = formData.get(key);
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
 export async function saveOnboardingBrandAction(formData: FormData) {
   const organization = await getCurrentOrganization();
   if (!organization) {
@@ -173,8 +208,27 @@ export async function saveOnboardingBrandAction(formData: FormData) {
   const primaryColor = formData.get("primaryColor")?.toString() ?? null;
   const secondaryColor = formData.get("secondaryColor")?.toString() ?? null;
   const mascot = formData.get("mascot")?.toString() ?? null;
-  const logo = formData.get("ptoLogo");
-  const ptoLogo = logo instanceof File && logo.size > 0 ? logo : null;
+  const ptoLogo = fileFromFormData(formData, "ptoLogo");
+  const schoolLogo = fileFromFormData(formData, "schoolLogo");
+
+  const extraFiles = formData
+    .getAll("extraLogo")
+    .filter((value): value is File => value instanceof File && value.size > 0);
+  const extraCategories = formData.getAll("extraLogoCategory").map(String);
+  const extraLabels = formData.getAll("extraLogoLabel").map(String);
+
+  const extraLogos = extraFiles.map((file, index) => {
+    const rawCategory = extraCategories[index] ?? "other";
+    const category: BrandKitLogoCategory =
+      rawCategory === "pto_logo" || rawCategory === "school_logo"
+        ? rawCategory
+        : "other";
+    return {
+      file,
+      category,
+      label: extraLabels[index]?.trim() || undefined,
+    };
+  });
 
   const result = await updateOrganizationBrand({
     organizationId: organization.id,
@@ -182,10 +236,17 @@ export async function saveOnboardingBrandAction(formData: FormData) {
     primaryColor,
     secondaryColor,
     ptoLogo,
+    schoolLogo,
+    extraLogos,
   });
 
   if (result.error) {
-    return { error: result.error };
+    return {
+      error: result.error,
+      ptoLogoUrl: result.ptoLogoUrl ?? null,
+      schoolLogoUrl: result.schoolLogoUrl ?? null,
+      extraLogos: result.extraLogos ?? [],
+    };
   }
 
   const now = new Date().toISOString();
@@ -194,7 +255,14 @@ export async function saveOnboardingBrandAction(formData: FormData) {
   });
 
   revalidateOnboardingPaths();
-  redirect("/onboarding/invite");
+  revalidatePath("/onboarding/brand");
+
+  return {
+    success: true as const,
+    ptoLogoUrl: result.ptoLogoUrl ?? null,
+    schoolLogoUrl: result.schoolLogoUrl ?? null,
+    extraLogos: result.extraLogos ?? [],
+  };
 }
 
 export async function finishOnboardingPromptsAction() {

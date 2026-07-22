@@ -115,10 +115,10 @@ export function buildOnboardingChecklist(input: {
     },
     {
       id: "brand",
-      title: "Add your school look",
-      description: "A logo and colors help posts feel like your school.",
+      title: "Build your brand kit",
+      description: "Logos and colors so every campaign feels like your school.",
       href: "/onboarding/brand",
-      cta: brandDone ? "Edit look" : "Add look",
+      cta: brandDone ? "Edit brand kit" : "Build brand kit",
       done: brandDone,
       optional: true,
     },

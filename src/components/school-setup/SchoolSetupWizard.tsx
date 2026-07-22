@@ -8,7 +8,6 @@ import { SchoolSetupTeamStep } from "@/components/school-setup/SchoolSetupTeamSt
 import { WizardProgress } from "@/components/school-setup/WizardProgress";
 import { WizardShell } from "@/components/school-setup/WizardShell";
 import { Button } from "@/components/ui/Button";
-import { ColorField } from "@/components/ui/ColorField";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -24,14 +23,18 @@ import { cn } from "@/lib/utils/cn";
 const STEPS = [
   "Welcome",
   "School",
-  "Brand",
   "Calendar",
   "Meta",
   "Team",
   "Finish",
 ];
 
-const SETUP_STEP_COUNT = 4;
+/** Welcome + School + Calendar before org create. Brand lives at /onboarding/brand. */
+const SETUP_STEP_COUNT = 3;
+const META_STEP = 4;
+const TEAM_STEP = 5;
+const FINISH_STEP = 6;
+
 const initialState: SchoolSetupFormState = { error: null, success: false };
 
 function detectDefaultTimezone(): string {
@@ -49,6 +52,8 @@ function detectDefaultTimezone(): string {
 interface SchoolSetupWizardProps {
   validatedAccessCode?: string | null;
   resumePostSetup?: boolean;
+  /** Org already exists — calendar should deep-link to canonical `/calendar/import`. */
+  hasOrganization?: boolean;
   metaConnection?: MetaConnection | null;
   metaConfiguredViaEnv?: boolean;
   metaIntegrationConfigured?: boolean;
@@ -59,6 +64,7 @@ interface SchoolSetupWizardProps {
 export function SchoolSetupWizard({
   validatedAccessCode = null,
   resumePostSetup = false,
+  hasOrganization = false,
   metaConnection = null,
   metaConfiguredViaEnv = false,
   metaIntegrationConfigured = false,
@@ -67,7 +73,7 @@ export function SchoolSetupWizard({
 }: SchoolSetupWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [step, setStep] = useState(resumePostSetup ? 5 : 1);
+  const [step, setStep] = useState(resumePostSetup ? META_STEP : 1);
   const [hasCalendarFile, setHasCalendarFile] = useState(false);
   const [schoolNameError, setSchoolNameError] = useState<string | null>(null);
   const [timezoneError, setTimezoneError] = useState<string | null>(null);
@@ -78,42 +84,50 @@ export function SchoolSetupWizard({
   );
 
   const setupComplete = state.success || resumePostSetup;
+  /** Org exists (or just created) — Meta / Team / Finish no longer need createSchoolProfile. */
+  const canContinuePostSetup = setupComplete || hasOrganization;
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
+    if (stepParam === "brand") {
+      router.replace("/onboarding/brand");
+      return;
+    }
     if (stepParam === "meta") {
-      setStep(5);
+      setStep(META_STEP);
     } else if (stepParam === "school") {
       setStep(2);
-    } else if (stepParam === "brand") {
+    } else if (stepParam === "calendar") {
       setStep(3);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (resumePostSetup && searchParams.get("step") !== "meta") {
-      setStep(5);
+      setStep(META_STEP);
     }
   }, [resumePostSetup, searchParams]);
 
   useEffect(() => {
     if (state.success && step <= SETUP_STEP_COUNT) {
-      setStep(5);
+      setStep(META_STEP);
       router.replace("/settings/school-setup?onboarding=1");
       router.refresh();
     }
   }, [state.success, step, router]);
 
   useEffect(() => {
-    if (step === 7 && setupComplete) {
-      const destination = hasCalendarFile ? "/calendar/review" : "/dashboard";
+    if (step === FINISH_STEP && canContinuePostSetup) {
+      const destination = hasCalendarFile
+        ? "/calendar/review"
+        : "/calendar/import";
       const timeout = setTimeout(() => {
         router.push(destination);
       }, 2500);
 
       return () => clearTimeout(timeout);
     }
-  }, [step, setupComplete, hasCalendarFile, router]);
+  }, [step, canContinuePostSetup, hasCalendarFile, router]);
 
   const stepCopy = useMemo(
     () =>
@@ -129,35 +143,32 @@ export function SchoolSetupWizard({
             "School name and timezone are required. Everything else helps Hey Ralli sound like your community.",
         },
         3: {
-          title: "Build your brand kit",
-          description:
-            "Upload logos and choose colors so every future campaign feels like your PTO. Skip if you want to add these later.",
+          title: "Bring in your school calendar",
+          description: hasOrganization
+            ? "Use the same Import calendar page as everywhere else — Sign in with Google, an ICS subscribe feed, or a file upload. Review before dates go live."
+            : "Same three options as Calendar → Import: Sign in with Google, an ICS subscribe feed, or a file upload. Add a feed or file now, or finish setup and import next.",
         },
         4: {
-          title: "Import your school calendar",
-          description:
-            "Upload a calendar file or paste an ICS subscribe feed. After setup you can also Sign in with Google from Integrations — same review flow before dates go live.",
-        },
-        5: {
           title: "Connect Facebook & Instagram",
           description:
             "Optional — link Meta now for automatic publishing after approvals, or connect anytime in Settings.",
         },
-        6: {
+        5: {
           title: "Invite your board",
           description:
             "Add VPs and committee chairs by email. Invites are optional — you can always invite later from Settings → Team.",
         },
-        7: {
+        6: {
           title: "You're all set",
-          description: "Your school profile is ready. Let's head to your dashboard.",
+          description:
+            "Import your calendar next (Google, ICS, or file), or go to Today whenever you're ready.",
         },
-      })[step as 1 | 2 | 3 | 4 | 5 | 6 | 7] ?? {
+      })[step as 1 | 2 | 3 | 4 | 5 | 6] ?? {
         title: "Welcome to Hey Ralli",
         description:
           "Set up your school profile once, and every PTO communication will stay on brand all year long.",
       },
-    [step],
+    [step, hasOrganization],
   );
 
   function validateSchoolStep(): boolean {
@@ -190,7 +201,7 @@ export function SchoolSetupWizard({
       return;
     }
 
-    if (setupComplete && step >= 5) {
+    if (canContinuePostSetup && step >= META_STEP) {
       setStep((current) => Math.min(current + 1, STEPS.length));
       return;
     }
@@ -201,36 +212,49 @@ export function SchoolSetupWizard({
   }
 
   function renderFooter() {
-    if (step === 7) {
+    if (step === FINISH_STEP) {
       return (
-        <div className="ml-auto">
-          <Button href={hasCalendarFile ? "/calendar/review" : "/dashboard"}>
-            {hasCalendarFile ? "Review Calendar" : "Go to Today"}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          {hasCalendarFile ? (
+            <Button href="/calendar/review">Review calendar</Button>
+          ) : (
+            <Button href="/calendar/import">Import calendar</Button>
+          )}
+          <Button href="/dashboard" variant="secondary">
+            Go to Today
           </Button>
         </div>
       );
     }
 
-    if (setupComplete && step >= 5) {
+    if (canContinuePostSetup && step >= META_STEP) {
       return (
         <>
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setStep((current) => Math.max(5, current - 1))}
-            disabled={step === 5 || isPending}
+            onClick={() => setStep((current) => Math.max(META_STEP, current - 1))}
+            disabled={step === META_STEP || isPending}
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
           <div className="flex items-center gap-3">
-            {step === 5 && (
-              <Button type="button" variant="secondary" onClick={() => setStep(6)}>
+            {step === META_STEP && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setStep(TEAM_STEP)}
+              >
                 Skip for now
               </Button>
             )}
-            {step === 6 && (
-              <Button type="button" variant="secondary" onClick={() => setStep(7)}>
+            {step === TEAM_STEP && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setStep(FINISH_STEP)}
+              >
                 Skip for now
               </Button>
             )}
@@ -260,6 +284,17 @@ export function SchoolSetupWizard({
             Continue
             <ArrowRight className="h-4 w-4" />
           </Button>
+        ) : hasOrganization ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setStep(META_STEP)}
+            >
+              Skip for now
+            </Button>
+            <Button href="/calendar/import">Import calendar</Button>
+          </div>
         ) : (
           <div className="flex items-center gap-3">
             <Button type="submit" variant="secondary" disabled={isPending}>
@@ -294,7 +329,7 @@ export function SchoolSetupWizard({
             description={stepCopy.description}
             footer={renderFooter()}
           >
-            {state.error && (step === 2 || step === 4) && (
+            {state.error && (step === 2 || step === 3) && (
               <div
                 role="alert"
                 className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
@@ -312,8 +347,9 @@ export function SchoolSetupWizard({
                   <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
                     <p className="font-display text-xl text-cos-text">One school profile</p>
                     <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                      Centralize your school details, branding, timezone, and calendar in
-                      one place.
+                      Centralize your school details, timezone, and calendar in one
+                      place. Brand logos and colors live in Get started → Build your
+                      brand kit.
                     </p>
                   </div>
                   <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
@@ -414,76 +450,71 @@ export function SchoolSetupWizard({
             </div>
 
             <div className={cn(step !== 3 && "hidden")}>
-              <div className="mx-auto grid max-w-2xl gap-8">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <FileUpload
-                    name="ptoLogo"
-                    label="PTO Logo"
-                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                  />
-                  <FileUpload
-                    name="schoolLogo"
-                    label="School Logo"
-                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                  />
-                </div>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <ColorField
-                    name="primaryColor"
-                    label="Primary Color"
-                    defaultValue="#4F46E5"
-                  />
-                  <ColorField
-                    name="secondaryColor"
-                    label="Secondary Color"
-                    defaultValue="#0F172A"
-                  />
-                </div>
-                <Select name="fontFamily" label="Font (optional)" defaultValue="">
-                  <option value="">Default system font</option>
-                  <option value="Inter">Inter</option>
-                  <option value="Geist">Geist</option>
-                  <option value="Arial">Arial</option>
-                  <option value="Georgia">Georgia</option>
-                </Select>
-              </div>
-            </div>
-
-            <div className={cn(step !== 4 && "hidden")}>
               <div className="mx-auto max-w-2xl space-y-6">
-                <FileUpload
-                  name="calendarFile"
-                  label="School calendar file"
-                  accept=".pdf,.docx,.xlsx,.xls,.csv,.ics,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/calendar"
-                  hint="PDF, Word (.docx), Excel, CSV, or ICS"
-                  onChange={(file) => setHasCalendarFile(Boolean(file))}
-                />
-                <Input
-                  name="calendarSubscribeUrl"
-                  label="Calendar subscribe feed (ICS URL)"
-                  placeholder="https://calendar.google.com/calendar/ical/..."
-                  hint="Optional — Google Calendar ICS or webcal:// URLs sync daily after setup."
-                  type="url"
-                />
-                <div className="rounded-xl border border-dashed border-cos-border bg-cos-bg/40 px-5 py-4">
-                  <p className="text-sm font-medium text-cos-text">
-                    Prefer Sign in with Google?
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                    Finish setup, then connect under Settings → Integrations →
-                    Google Calendar. We sync events into the same review list.
-                  </p>
-                </div>
-                <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
-                  <p className="font-display text-xl text-cos-text">
-                    Review before anything goes live
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                    After setup, you will review every date in a list. Events start
-                    as view-only on your calendar — turn any one into a campaign
-                    later if you need it.
-                  </p>
-                </div>
+                {hasOrganization ? (
+                  <>
+                    <div className="space-y-3 rounded-xl border border-cos-border bg-cos-bg/40 px-5 py-5">
+                      <p className="font-display text-xl text-cos-text">
+                        Import calendar
+                      </p>
+                      <p className="text-sm leading-relaxed text-cos-muted">
+                        Sign in with Google, link an ICS subscribe feed, or upload
+                        a calendar file — one place, same review flow as Calendar
+                        and Integrations.
+                      </p>
+                      <Button href="/calendar/import" className="mt-1">
+                        Open Import calendar
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
+                      <p className="font-display text-xl text-cos-text">
+                        Review before anything goes live
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-cos-muted">
+                        New dates go to review first. Events start as view-only —
+                        turn any one into a campaign later if you need it.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-cos-border bg-cos-bg/40 px-5 py-4">
+                      <p className="text-sm font-medium text-cos-text">
+                        Sign in with Google
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-cos-muted">
+                        Available on Import calendar as soon as you finish setup —
+                        alongside ICS and file upload, not a separate Integrations-only
+                        path.
+                      </p>
+                    </div>
+                    <Input
+                      name="calendarSubscribeUrl"
+                      label="Calendar subscribe feed (ICS URL)"
+                      placeholder="https://calendar.google.com/calendar/ical/..."
+                      hint="Optional — Google Calendar ICS or webcal:// URLs sync daily after setup."
+                      type="url"
+                    />
+                    <FileUpload
+                      name="calendarFile"
+                      label="Or upload a calendar file"
+                      accept=".pdf,.docx,.xlsx,.xls,.csv,.ics,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/calendar"
+                      hint="PDF, Word (.docx), Excel, CSV, or ICS"
+                      onChange={(file) => setHasCalendarFile(Boolean(file))}
+                    />
+                    <div className="border border-cos-border bg-cos-bg/40 px-5 py-4">
+                      <p className="font-display text-xl text-cos-text">
+                        Review before anything goes live
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-cos-muted">
+                        After setup, you review every date in a list. Events start
+                        as view-only on your calendar — turn any one into a campaign
+                        later if you need it.
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </WizardShell>
@@ -494,7 +525,7 @@ export function SchoolSetupWizard({
           description={stepCopy.description}
           footer={renderFooter()}
         >
-          {step === 5 && (
+          {step === META_STEP && (
             <SchoolSetupMetaStep
               connection={metaConnection}
               configuredViaEnv={metaConfiguredViaEnv}
@@ -503,20 +534,24 @@ export function SchoolSetupWizard({
             />
           )}
 
-          {step === 6 && <SchoolSetupTeamStep roles={organizationRoles} />}
+          {step === TEAM_STEP && (
+            <SchoolSetupTeamStep roles={organizationRoles} />
+          )}
 
-          {step === 7 && (
+          {step === FINISH_STEP && (
             <div className="mx-auto flex max-w-lg flex-col items-center py-8 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
                 <CheckCircle2 className="h-8 w-8 text-emerald-600" />
               </div>
               <p className="font-display mt-6 text-2xl text-cos-text">
-                Your school has been created successfully.
+                {hasOrganization && !state.success
+                  ? "You're all set."
+                  : "Your school has been created successfully."}
               </p>
               <p className="mt-3 text-sm text-cos-muted">
                 {hasCalendarFile
                   ? "Redirecting you to review imported events..."
-                  : "Redirecting you to the dashboard..."}
+                  : "Next up: Import calendar (Google, ICS, or file) — or head to Today."}
               </p>
             </div>
           )}

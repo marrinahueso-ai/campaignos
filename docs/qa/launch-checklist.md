@@ -42,7 +42,7 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release). Note envir
 | 1.2 | Org switcher works when user has >1 membership | | |
 | 1.3 | `/onboarding` Welcome → Create my first event → lands on event page under ~60s | | |
 | 1.4 | After first event: calendar / brand / invite prompts are skippable; skipped items appear on Today + Settings → Get started | | |
-| 1.5 | Legacy wizard still opens via Get started / `?view=wizard` if needed | | |
+| 1.5 | Legacy wizard still opens via Get started / `?view=wizard` if needed; brand opens `/onboarding/brand` (not a second brand form) | | |
 | 1.6 | Deactivated / no-membership user sees a clear gate, not a blank app | | |
 
 ## 2. Organization settings

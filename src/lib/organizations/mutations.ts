@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createOrganizationMembership } from "@/lib/auth/membership-mutations";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -32,6 +33,15 @@ async function uploadFile(
   path: string,
   file: File,
 ): Promise<string | null> {
+  const result = await uploadFileDetailed(bucket, path, file);
+  return "url" in result ? result.url : null;
+}
+
+async function uploadFileDetailed(
+  bucket: string,
+  path: string,
+  file: File,
+): Promise<{ url: string } | { error: string }> {
   const supabase = await createClient();
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -42,16 +52,44 @@ async function uploadFile(
 
   if (error) {
     console.error(`Failed to upload file to ${bucket}:`, error.message);
-    return null;
+    return { error: error.message || "Upload failed." };
   }
 
   if (bucket === SCHOOL_ASSETS_BUCKET) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
+    return { url: data.publicUrl };
   }
 
-  return path;
+  return { url: path };
 }
+
+function sanitizeLogoFilename(filename: string): string {
+  const base = filename.split(/[/\\]/).pop() ?? "logo.png";
+  return base.replace(/[^\w.-]+/g, "_").slice(0, 80) || "logo.png";
+}
+
+function logoExtension(file: File): string {
+  const fromName = file.name.split(".").pop()?.toLowerCase();
+  if (fromName && /^[a-z0-9]+$/.test(fromName) && fromName.length <= 8) {
+    return fromName;
+  }
+  if (file.type === "image/png") return "png";
+  if (file.type === "image/jpeg" || file.type === "image/jpg") return "jpg";
+  if (file.type === "image/webp") return "webp";
+  if (file.type === "image/gif") return "gif";
+  if (file.type === "image/svg+xml") return "svg";
+  return "png";
+}
+
+export type BrandKitLogoCategory = "pto_logo" | "school_logo" | "other";
+
+export type SavedBrandKitLogo = {
+  id: string;
+  label: string;
+  category: BrandKitLogoCategory;
+  url: string;
+  filename: string | null;
+};
 
 export async function createSchoolProfile(
   input: SchoolSetupInput,
@@ -304,7 +342,18 @@ export async function updateOrganizationBrand(input: {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   ptoLogo?: File | null;
-}): Promise<{ error: string | null }> {
+  schoolLogo?: File | null;
+  extraLogos?: Array<{
+    file: File;
+    category: BrandKitLogoCategory;
+    label?: string;
+  }>;
+}): Promise<{
+  error: string | null;
+  ptoLogoUrl?: string | null;
+  schoolLogoUrl?: string | null;
+  extraLogos?: SavedBrandKitLogo[];
+}> {
   const supabase = await createClient();
 
   if (input.mascot !== undefined) {
@@ -320,16 +369,30 @@ export async function updateOrganizationBrand(input: {
 
   let ptoLogoUrl: string | undefined;
   if (input.ptoLogo && input.ptoLogo.size > 0) {
-    const extension = input.ptoLogo.name.split(".").pop() ?? "png";
-    const uploaded = await uploadFile(
+    const extension = logoExtension(input.ptoLogo);
+    const uploaded = await uploadFileDetailed(
       SCHOOL_ASSETS_BUCKET,
       `${input.organizationId}/pto-logo.${extension}`,
       input.ptoLogo,
     );
-    if (!uploaded) {
-      return { error: "Unable to upload logo." };
+    if ("error" in uploaded) {
+      return { error: `Unable to upload PTO logo: ${uploaded.error}` };
     }
-    ptoLogoUrl = uploaded;
+    ptoLogoUrl = uploaded.url;
+  }
+
+  let schoolLogoUrl: string | undefined;
+  if (input.schoolLogo && input.schoolLogo.size > 0) {
+    const extension = logoExtension(input.schoolLogo);
+    const uploaded = await uploadFileDetailed(
+      SCHOOL_ASSETS_BUCKET,
+      `${input.organizationId}/school-logo.${extension}`,
+      input.schoolLogo,
+    );
+    if ("error" in uploaded) {
+      return { error: `Unable to upload school logo: ${uploaded.error}` };
+    }
+    schoolLogoUrl = uploaded.url;
   }
 
   const brandPatch: Record<string, string | null> = {};
@@ -342,16 +405,19 @@ export async function updateOrganizationBrand(input: {
   if (ptoLogoUrl !== undefined) {
     brandPatch.pto_logo = ptoLogoUrl;
   }
+  if (schoolLogoUrl !== undefined) {
+    brandPatch.school_logo = schoolLogoUrl;
+  }
+
+  const { data: existing } = await supabase
+    .from("brand_assets")
+    .select("id, pto_logo, school_logo")
+    .eq("organization_id", input.organizationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   if (Object.keys(brandPatch).length > 0) {
-    const { data: existing } = await supabase
-      .from("brand_assets")
-      .select("id")
-      .eq("organization_id", input.organizationId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     if (existing?.id) {
       const { error } = await supabase
         .from("brand_assets")
@@ -365,7 +431,7 @@ export async function updateOrganizationBrand(input: {
       const { error } = await supabase.from("brand_assets").insert({
         organization_id: input.organizationId,
         pto_logo: brandPatch.pto_logo ?? null,
-        school_logo: null,
+        school_logo: brandPatch.school_logo ?? null,
         primary_color: brandPatch.primary_color ?? "#0F2E38",
         secondary_color: brandPatch.secondary_color ?? "#DDBA4C",
         font_family: "Modern",
@@ -377,7 +443,93 @@ export async function updateOrganizationBrand(input: {
     }
   }
 
-  return { error: null };
+  const savedExtraLogos: SavedBrandKitLogo[] = [];
+  const extras = input.extraLogos ?? [];
+  if (extras.length > 0) {
+    const authUser = await getAuthUser();
+    const { data: sortRow } = await supabase
+      .from("organization_brand_kit_items")
+      .select("sort_order")
+      .eq("organization_id", input.organizationId)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    let nextSort = ((sortRow?.sort_order as number | undefined) ?? -1) + 1;
+
+    for (const extra of extras) {
+      if (!extra.file || extra.file.size <= 0) continue;
+
+      const safeName = sanitizeLogoFilename(extra.file.name);
+      const storagePath = `${input.organizationId}/brand-kit/${randomUUID()}-${safeName}`;
+      const uploaded = await uploadFileDetailed(
+        SCHOOL_ASSETS_BUCKET,
+        storagePath,
+        extra.file,
+      );
+      if ("error" in uploaded) {
+        return {
+          error: `Unable to upload additional logo (${safeName}): ${uploaded.error}`,
+          ptoLogoUrl: ptoLogoUrl ?? (existing?.pto_logo as string | null) ?? null,
+          schoolLogoUrl:
+            schoolLogoUrl ?? (existing?.school_logo as string | null) ?? null,
+          extraLogos: savedExtraLogos,
+        };
+      }
+
+      const label =
+        extra.label?.trim() ||
+        (extra.category === "school_logo"
+          ? "School logo"
+          : extra.category === "pto_logo"
+            ? "PTO logo"
+            : safeName);
+
+      const { data: item, error: itemError } = await supabase
+        .from("organization_brand_kit_items")
+        .insert({
+          organization_id: input.organizationId,
+          category: extra.category,
+          label,
+          value_text: null,
+          storage_path: uploaded.url,
+          filename: safeName,
+          uploaded_by: authUser?.id ?? null,
+          sort_order: nextSort,
+        })
+        .select("id, label, category, storage_path, filename")
+        .single();
+
+      if (itemError || !item) {
+        console.error(
+          "Failed to save brand kit logo item:",
+          itemError?.message,
+        );
+        return {
+          error: "Logo uploaded but could not be saved to the brand kit.",
+          ptoLogoUrl: ptoLogoUrl ?? (existing?.pto_logo as string | null) ?? null,
+          schoolLogoUrl:
+            schoolLogoUrl ?? (existing?.school_logo as string | null) ?? null,
+          extraLogos: savedExtraLogos,
+        };
+      }
+
+      nextSort += 1;
+      savedExtraLogos.push({
+        id: item.id as string,
+        label: item.label as string,
+        category: item.category as BrandKitLogoCategory,
+        url: (item.storage_path as string) || uploaded.url,
+        filename: (item.filename as string | null) ?? safeName,
+      });
+    }
+  }
+
+  return {
+    error: null,
+    ptoLogoUrl: ptoLogoUrl ?? (existing?.pto_logo as string | null) ?? null,
+    schoolLogoUrl: schoolLogoUrl ?? (existing?.school_logo as string | null) ?? null,
+    extraLogos: savedExtraLogos,
+  };
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {

@@ -69,7 +69,10 @@ describe("onboarding state", () => {
     });
     assert.equal(items.some((item) => item.id === "first_event"), false);
     assert.equal(items.find((item) => item.id === "calendar")?.done, false);
-    assert.equal(items.find((item) => item.id === "brand")?.done, false);
+    const brand = items.find((item) => item.id === "brand");
+    assert.equal(brand?.done, false);
+    assert.equal(brand?.href, "/onboarding/brand");
+    assert.equal(brand?.title, "Build your brand kit");
   });
 
   it("defaultSchoolYearLabel uses July boundary", () => {

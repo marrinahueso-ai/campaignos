@@ -63,12 +63,12 @@ export default function CalendarImportPage() {
         >
           Integrations → Google Calendar
         </Link>
-        , or during{" "}
+        . Setup tips live under Settings →{" "}
         <Link
           href="/settings/school-setup"
           className="font-medium text-cos-accent hover:underline"
         >
-          School Setup
+          Get started
         </Link>
         .
       </p>

@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Value-first onboarding (Welcome → create first event → skippable calendar/brand/invite; Today + Get started checklist); Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
+**Last updated:** July 22, 2026 — Event onboarding overlay: Do this later advances stepper in place; Get started calendar → `/calendar/import`; Single brand kit path (`/onboarding/brand`; Get started checklist deep-links; legacy wizard brand step removed); multi-logo upload + preview; Value-first onboarding; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
 
 ---
 
@@ -19,8 +19,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Sign in / sign up — **shipped**
 - Founding access code + org welcome magic-link email — **shipped**
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
-- Value-first onboarding (`/onboarding`: Welcome → create first event → skippable calendar / brand / invite; skipped items on Today + Settings **Get started**) — **shipped**
-- Legacy School Setup wizard (Welcome → School → Brand → Calendar → Meta → Team → Finish) — **partial** (reopen via Get started / `?view=wizard`; first-time path prefers `/onboarding`)
+- Value-first onboarding (`/onboarding`: Welcome → create first event → skippable calendar / brand / invite overlay on the first event; **Do this later** advances the stepper in place without leaving the event; skipped items on Today + Settings **Get started**) — **shipped**
+- Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; save stays on page with Continue to invite; Get started checklist + Organization → Edit branding deep-link here — **shipped**
+- Legacy School Setup wizard (Welcome → School → Calendar → Meta → Team → Finish) — **partial** (labeled **Get started**; brand step removed / `?step=brand` redirects to `/onboarding/brand`; calendar step deep-links to `/calendar/import` when org exists; reopen via Get started / `?view=wizard`; first-time path prefers `/onboarding`)
 - Change password — **shipped**
 - Deactivated-account handling — **shipped**
 
@@ -94,7 +95,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Google Calendar daily sync cron (auto-import new events) — **shipped**
 - Google Calendar on Import page + Calendar header CTAs — **shipped**
 - ICS / webcal subscribe feed — **shipped**
-- Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: `/calendar/import` → `/calendar/review`; Settings → Google Calendar is connect/subscribe only)
+- Calendar file upload + import review (incl. AI fix) — **shipped** (canonical UX: `/calendar/import` → `/calendar/review` — Google + ICS + file on one screen; onboarding checklist + Get started wizard calendar step use that same path; Settings → Google Calendar is connect/subscribe with deep-links to Import)
 - Calendar import review plan type from org playbooks (Settings → Playbooks; stores `playbookId` on import) — **shipped**
 - Calendar import review search (name/category/date/year), type/date filters, and Archive past events (bulk remove prior dates from the import queue) — **shipped**
 - Calendar Import list search (name/category/date/year) with Select all / Delete selected on visible filtered rows — **shipped** (`/calendar` → Import list; hard-deletes events for the org’s school years — same membership as Events, not the rolling calendar date window)

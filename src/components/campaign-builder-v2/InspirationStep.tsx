@@ -585,10 +585,10 @@ export function InspirationStep() {
                   <p className="text-xs text-cos-muted">
                     No organization logos yet.{" "}
                     <Link
-                      href="/settings/school-setup"
+                      href="/onboarding/brand"
                       className="font-medium text-cos-text underline hover:no-underline"
                     >
-                      Add logos in Organization settings
+                      Add logos in your brand kit
                     </Link>
                     {canUploadArtwork ? " or upload one here." : "."}
                   </p>

@@ -59,6 +59,11 @@ export default async function SettingsSchoolSetupPage({
   const showWizard =
     isPostSetupContinuation(params) || params.view === "wizard";
 
+  // One brand experience: never re-ask brand inside the legacy wizard.
+  if (params.step === "brand") {
+    redirect("/onboarding/brand");
+  }
+
   if (accessCodeRequired && !hasValidPendingCode && !membership) {
     redirect("/login?intent=setup&error=code_required");
   }
@@ -90,6 +95,7 @@ export default async function SettingsSchoolSetupPage({
       <SchoolSetupWizard
         validatedAccessCode={pendingCode}
         resumePostSetup={isPostSetupContinuation(params) && Boolean(membership)}
+        hasOrganization={Boolean(membership)}
         metaConnection={metaConnection}
         metaConfiguredViaEnv={metaConnection?.id === "env"}
         metaIntegrationConfigured={isMetaIntegrationConfigured()}

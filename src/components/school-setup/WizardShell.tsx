@@ -6,6 +6,8 @@ interface WizardShellProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  /** Matches Settings nav label; legacy “School setup” renamed. */
+  eyebrow?: string;
 }
 
 export function WizardShell({
@@ -14,11 +16,12 @@ export function WizardShell({
   children,
   footer,
   className,
+  eyebrow = "Get started",
 }: WizardShellProps) {
   return (
     <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col px-4 py-8 sm:px-6">
       <div className="mb-10 space-y-3 text-center sm:mb-14">
-        <p className="studio-eyebrow">School setup</p>
+        <p className="studio-eyebrow">{eyebrow}</p>
         <h1 className="font-display text-4xl text-cos-text sm:text-5xl">{title}</h1>
         <p className="mx-auto max-w-2xl text-sm leading-relaxed text-cos-muted sm:text-base">
           {description}

@@ -18,7 +18,7 @@ Calendar is critical, so Hey Ralli keeps **three import streams**:
 
 **Connect / manage only:** Settings → Integrations → Google Calendar (`/settings/integrations/calendar`) — primary Connect card; subscribe + deep-links under “Other ways to import” (not the full review UI).
 
-Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, and School Setup (post-setup connect note).
+Also surfaced on Calendar header (Import → `/calendar/import`, Google Calendar → settings), review empty state, and Get started (legacy wizard calendar step deep-links to `/calendar/import` when an org already exists; founding setup still accepts file/ICS inline and then routes to Import).
 
 **Not** one forced “Google for Calendar + Gmail” button. Gmail scopes are restricted and would block shipping Calendar.
 

@@ -36,7 +36,7 @@ export default async function CalendarReviewPage({
             Import calendar
           </Button>
           <Button href="/settings/school-setup" variant="ghost">
-            School setup
+            Get started
           </Button>
         </div>
       </div>
