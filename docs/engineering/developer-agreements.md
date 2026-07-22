@@ -2,7 +2,8 @@
 
 **Status:** Shipped  
 **Last updated:** July 22, 2026  
-**Migrations:** `073_developer_agreements.sql`, `074_developer_agreement_execution.sql`, `075_developer_agreement_signer_fields.sql`
+**Migrations:** `073_developer_agreements.sql`, `074_developer_agreement_execution.sql`, `075_developer_agreement_signer_fields.sql`  
+**QA:** [developer-agreements.md](../qa/developer-agreements.md) — manual E2E A1–A19 (gate, e-sign, countersign, download API, ops / access)
 
 ## Purpose
 

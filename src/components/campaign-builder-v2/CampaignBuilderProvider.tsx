@@ -545,8 +545,8 @@ export function CampaignBuilderProvider({
       restoredFromServer,
       resolvedWorkflowApprover,
     );
-    // Stale localStorage often still has brandKitId "none" from seed — upgrade
-    // when the org has logos/colors/mascot so generation useBrandKit stays true.
+    // Never auto-apply org brand kit from localStorage / seed — Creative Setup
+    // art direction is opt-in via logo, colors, and tone controls only.
     return {
       ...hydrated,
       inspiration: {

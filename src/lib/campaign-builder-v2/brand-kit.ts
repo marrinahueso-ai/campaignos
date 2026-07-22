@@ -35,15 +35,12 @@ export function hasOrganizationBrandDirection(input: {
 }
 
 /**
- * When the org has a brand kit and the session still says "none" (seed / stale
- * localStorage), prefer the organization brand kit so AI reads school brand.
+ * Creative Setup does not auto-apply the org brand kit.
+ * Art direction comes only from explicit logo / color / tone controls.
  */
 export function resolveBrandKitIdForSession(
-  currentId: string | null | undefined,
-  hasBrand: boolean,
+  ..._args: [string | null | undefined, boolean]
 ): string {
-  if (!isNoBrandKit(currentId)) {
-    return currentId!.trim();
-  }
-  return hasBrand ? ORG_DEFAULT_BRAND_KIT_ID : NO_BRAND_KIT_ID;
+  void _args;
+  return NO_BRAND_KIT_ID;
 }

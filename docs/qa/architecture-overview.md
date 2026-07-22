@@ -78,7 +78,7 @@ Appears on Calendar / Approvals “published” · feeds Insights & heatmap hist
 | **4. Review dates** | Edit categories / strategies; confirm import | Inserts rows into `events` (view-only school dates) | `/calendar/review` |
 | **5. See the year** | Open Calendar (month / week / agenda) | Reads `events` + scheduled Meta slots; week view may show posting heatmap if Meta connected | `/calendar` |
 | **6. Open an event** | Events list or Calendar → event workspace | Loads event + tabs (Create with AI, Approvals, Tasks, …) | `/events/[id]` |
-| **7. Create with AI** | 4 steps: Creative Setup → Milestones → Preview → Review & Approve; generate artwork + captions | OpenAI text + image APIs; assets in Supabase Storage | `/create-with-ai` or event **Create with AI** |
+| **7. Create with AI** | Opens Creative Setup for a default event (or empty hub if none); 4 steps: Creative Setup → Milestones → Preview → Review & Approve; generate artwork + captions | OpenAI text + image APIs; assets in Supabase Storage | `/create-with-ai` → event builder, or event **Create with AI** |
 | **8. Human edit** | Regenerate, edit caption, adjust artwork | AI is assistive — nothing posts without later approval/publish | Campaign builder Preview / Review |
 | **9. Send to Approvals** | Send for approval from Review | Creates / updates `approval_scheduling_items`; **Sent for approval** notice then back to Review tabs (Pending Review pills) | Campaign builder `#review` / notice; `/approvals` |
 | **10. Approve** | Approver accepts or requests changes | Status gates publishing; session sync moves Review pills to Approved / Changes requested | `/approvals` |

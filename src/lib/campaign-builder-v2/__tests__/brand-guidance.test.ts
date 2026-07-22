@@ -69,11 +69,11 @@ describe("brand kit session defaults", () => {
     assert.equal(hasOrganizationBrandDirection({}), false);
   });
 
-  it("upgrades seed none to org-default when brand exists", () => {
+  it("does not auto-apply org brand kit even when brand exists", () => {
     assert.equal(isNoBrandKit(NO_BRAND_KIT_ID), true);
     assert.equal(
       resolveBrandKitIdForSession(NO_BRAND_KIT_ID, true),
-      ORG_DEFAULT_BRAND_KIT_ID,
+      NO_BRAND_KIT_ID,
     );
     assert.equal(
       resolveBrandKitIdForSession(NO_BRAND_KIT_ID, false),
@@ -81,7 +81,7 @@ describe("brand kit session defaults", () => {
     );
     assert.equal(
       resolveBrandKitIdForSession(ORG_DEFAULT_BRAND_KIT_ID, true),
-      ORG_DEFAULT_BRAND_KIT_ID,
+      NO_BRAND_KIT_ID,
     );
   });
 });

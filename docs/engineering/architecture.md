@@ -61,7 +61,7 @@ CampignOS/
     └── middleware.ts             # Session refresh + public route allowlist
 ```
 
-**Primary nav routes:** `/dashboard`, `/calendar`, `/events`, `/create-with-ai`, `/approvals`, `/tasks`, `/inbox` (Communications Hub), `/files`, `/vendors`, `/insights`, plus Settings subtree.
+**Primary nav routes:** `/dashboard`, `/calendar`, `/events`, `/create-with-ai` (redirects into Campaign Builder Creative Setup when events exist), `/approvals`, `/tasks`, `/inbox` (Communications Hub), `/files`, `/vendors`, `/insights`, plus Settings subtree.
 
 ---
 

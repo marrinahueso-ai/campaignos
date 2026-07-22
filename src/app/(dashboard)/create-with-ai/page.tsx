@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { CreateWithAiHub } from "@/components/campaign-builder-v2/CreateWithAiHub";
 import { hasPermission } from "@/lib/access-templates/effective-access";
+import { pickDefaultCreateWithAiEvent } from "@/lib/campaign-builder-v2/default-event";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
+import { createWithAiHref } from "@/lib/events/event-responsibility";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -24,15 +26,34 @@ export default async function CreateWithAiPage() {
     getCampaignPageEvents(organization?.id ?? null),
   ]);
 
-  return (
-    <CreateWithAiHub
-      canUseCreateWithAi={canUseCreateWithAi}
-      organizationName={organization?.name ?? null}
-      events={events.map((event) => ({
-        id: event.id,
-        title: event.title,
-        date: event.date,
-      }))}
-    />
-  );
+  const hubEvents = events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    date: event.date,
+  }));
+
+  // Access denied or no events — keep the hub empty states.
+  if (!canUseCreateWithAi || hubEvents.length === 0) {
+    return (
+      <CreateWithAiHub
+        canUseCreateWithAi={canUseCreateWithAi}
+        organizationName={organization?.name ?? null}
+        events={hubEvents}
+      />
+    );
+  }
+
+  // Land directly on Creative Setup (inspiration) for a sensible default event.
+  const defaultEvent = pickDefaultCreateWithAiEvent(hubEvents);
+  if (!defaultEvent) {
+    return (
+      <CreateWithAiHub
+        canUseCreateWithAi={canUseCreateWithAi}
+        organizationName={organization?.name ?? null}
+        events={hubEvents}
+      />
+    );
+  }
+
+  redirect(createWithAiHref(defaultEvent.id, "inspiration"));
 }

@@ -155,9 +155,8 @@ export default async function CampaignBuilderPage({
   );
 
   // Keep org colors available for the organization_palette mode, but do not
-  // auto-select logo, colors, or tone — Creative Setup starts at explicit None.
-  // Org brand kit itself defaults on when brand direction exists so AI reads
-  // school logos / colors / mascot even without Creative Setup toggles.
+  // auto-select logo, colors, tone, or brand kit — Creative Setup starts at
+  // explicit None. Art direction is opt-in via the controls on this step only.
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
   initialSession.inspiration.brandKitId = resolveBrandKitIdForSession(

@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { CalendarPlus, Lock, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { createWithAiHref } from "@/lib/events/event-responsibility";
 
 export type CreateWithAiHubEvent = {
   id: string;
@@ -15,21 +13,10 @@ type CreateWithAiHubProps = {
   organizationName?: string | null;
 };
 
-function formatEventDate(date: string | null | undefined): string | null {
-  if (!date) {
-    return null;
-  }
-  const parsed = new Date(`${date}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return date;
-  }
-  return parsed.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
+/**
+ * Empty / access states for Create with AI.
+ * When events exist, `/create-with-ai` redirects into the builder on Creative Setup.
+ */
 export function CreateWithAiHub({
   canUseCreateWithAi,
   events,
@@ -92,8 +79,8 @@ export function CreateWithAiHub({
               <div>
                 <p className="text-sm font-medium text-cos-text">No events yet</p>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                  Once you have an event, Create with AI opens the full builder —
-                  not the events list.
+                  Once you have an event, Create with AI opens Creative Setup in
+                  the builder — not a choose-event list.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -112,53 +99,20 @@ export function CreateWithAiHub({
     );
   }
 
+  // Events exist — page should redirect before rendering this. Fallback only.
   return (
-    <div className="mx-auto max-w-3xl space-y-6 py-6">
+    <div className="mx-auto max-w-2xl space-y-6 py-6">
       <header className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-cos-muted">
           Create with AI
         </p>
         <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
-          Choose an event
+          Opening Creative Setup
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-cos-muted sm:text-base">
-          Open Create with AI for a campaign. Each event gets its own artwork,
-          captions, and approval flow.
+          Taking you into the Create with AI builder…
         </p>
       </header>
-
-      <ul className="divide-y divide-cos-border rounded-2xl border border-cos-border bg-cos-card">
-        {events.map((event) => {
-          const dateLabel = formatEventDate(event.date);
-          return (
-            <li key={event.id}>
-              <Link
-                href={createWithAiHref(event.id, "inspiration")}
-                className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-cos-bg"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-cos-text">
-                    {event.title}
-                  </p>
-                  {dateLabel ? (
-                    <p className="mt-0.5 text-xs text-cos-muted">{dateLabel}</p>
-                  ) : null}
-                </div>
-                <span className="shrink-0 text-xs font-medium text-cos-accent">
-                  Open builder
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="flex flex-wrap gap-3">
-        <Button href="/events/create" variant="secondary" size="sm">
-          <CalendarPlus className="h-4 w-4" strokeWidth={1.5} />
-          New event
-        </Button>
-      </div>
     </div>
   );
 }

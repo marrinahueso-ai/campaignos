@@ -212,7 +212,7 @@ export function clearAllCreativeSelections(
     voiceTone: "",
     voiceToneValues: [],
     globalAiGuidance: "",
-    // Keep org brand kit — Clear all is for Creative Setup toggles only.
+    // Clear all resets Creative Setup toggles only (logo / colors / tone / images).
   };
 }
 

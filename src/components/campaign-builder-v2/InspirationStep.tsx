@@ -16,7 +16,6 @@ import {
   DEFAULT_VOICE_TONE_CHOICES,
   toCreativeConfiguration,
 } from "@/lib/campaign-builder-v2/creative-config";
-import { isNoBrandKit } from "@/lib/campaign-builder-v2/brand-kit";
 import type { CreativeColorMode } from "@/lib/campaign-builder-v2/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -135,7 +134,6 @@ export function InspirationStep() {
     campaignOptions,
     logoOptions,
     schoolColors,
-    mascot,
     inspirationUploadError,
     clearInspirationUploadError,
     isSaving,
@@ -159,9 +157,6 @@ export function InspirationStep() {
   const hasSchoolColors = Boolean(
     schoolColors.primary || schoolColors.secondary,
   );
-  const usingBrandKit = !isNoBrandKit(inspiration.brandKitId);
-  const hasBrandDirection =
-    logoOptions.length > 0 || hasSchoolColors || Boolean(mascot?.trim());
   const inspirationImages = inspiration.inspirationImages ?? [];
   const hasInspirationImages = inspirationImages.length > 0;
   const colorMode: CreativeColorMode = inspiration.colorMode ?? "none";
@@ -254,63 +249,6 @@ export function InspirationStep() {
               These choices will guide artwork created for this campaign’s
               milestones. You can still adjust an individual milestone later.
             </p>
-            {usingBrandKit && hasBrandDirection && (
-              <div
-                className="mt-4 flex flex-wrap items-center gap-3 border border-cos-border bg-cos-bg-alt px-3 py-2.5 text-xs text-cos-muted"
-                data-testid="brand-kit-direction"
-              >
-                <span className="font-medium text-cos-text">
-                  Using your brand kit
-                </span>
-                {logoOptions.slice(0, 3).map((logo) => (
-                  <span
-                    key={logo.id}
-                    className="relative h-7 w-7 overflow-hidden border border-cos-border bg-cos-card"
-                    title={logo.label}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={logo.url}
-                      alt=""
-                      className="h-full w-full object-contain"
-                    />
-                  </span>
-                ))}
-                {schoolColors.primary && (
-                  <span
-                    className="inline-flex items-center gap-1.5"
-                    title={`Primary ${schoolColors.primary}`}
-                  >
-                    <span
-                      className="h-3.5 w-3.5 border border-cos-border"
-                      style={{ backgroundColor: schoolColors.primary }}
-                    />
-                    Primary
-                  </span>
-                )}
-                {schoolColors.secondary && (
-                  <span
-                    className="inline-flex items-center gap-1.5"
-                    title={`Accent ${schoolColors.secondary}`}
-                  >
-                    <span
-                      className="h-3.5 w-3.5 border border-cos-border"
-                      style={{ backgroundColor: schoolColors.secondary }}
-                    />
-                    Accent
-                  </span>
-                )}
-                {mascot?.trim() && (
-                  <span className="text-cos-text">Mascot: {mascot.trim()}</span>
-                )}
-                <Link
-                  href="/onboarding/brand"
-                  className="ml-auto text-cos-primary underline-offset-2 hover:underline"
-                >
-                  Edit brand kit
-                </Link>
-              </div>
-            )}
           </header>
 
           <div className="grid gap-6 lg:grid-cols-3">

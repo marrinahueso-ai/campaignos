@@ -245,10 +245,14 @@ describe("brand-kit helpers", () => {
     assert.equal(brandKitIdForAi(ORG_DEFAULT_BRAND_KIT_ID), ORG_DEFAULT_BRAND_KIT_ID);
   });
 
-  it("resolves org-default when brand direction exists", () => {
+  it("does not auto-apply org brand kit when brand direction exists", () => {
     assert.equal(
       resolveBrandKitIdForSession(NO_BRAND_KIT_ID, true),
-      ORG_DEFAULT_BRAND_KIT_ID,
+      NO_BRAND_KIT_ID,
+    );
+    assert.equal(
+      resolveBrandKitIdForSession(ORG_DEFAULT_BRAND_KIT_ID, true),
+      NO_BRAND_KIT_ID,
     );
   });
 });

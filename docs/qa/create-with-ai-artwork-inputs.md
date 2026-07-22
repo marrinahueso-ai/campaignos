@@ -28,7 +28,7 @@ Do **not** generate full feed+story for every dropdown value in CI.
 | **Overall inspiration comment** (`inspirationOverallComment`) | Creative Setup — “Overall inspiration comment (optional)” | **Yes** — primary campaign-level art direction | Prefer this over any legacy Notes field |
 | **Per-image comment** (`inspirationImages[].comment`) | Under each inspiration image | **Yes** | “What AI should take from this” |
 | **Notes to AI** (`globalAiGuidance`) | **No UI** | **No** (artwork prompt ignores it) | Legacy session field; do **not** QA as an artwork input |
-| **Brand kit** (`brandKitId`) | Signal on Creative Setup (“Using your brand kit”) when org has logos/colors/mascot; no dropdown | **Yes** — defaults to `org-default` when brand exists; prompt gets primary/accent + mascot; logo URLs attached as visual refs | Edit via `/onboarding/brand`; Creative Setup logo/color toggles remain optional overlays |
+| **Brand kit** (`brandKitId`) | **No banner / no dropdown** — not auto-applied | **No** by default (`none`) | Org logos/colors remain available via Creative Setup logo + color toggles only; edit assets at `/onboarding/brand` |
 | **Prior-milestone style reference** | None (automatic) | **Yes** on later milestones | First prior feed/story URL is prepended as a style reference — no control to toggle |
 
 ---
@@ -104,13 +104,14 @@ Caption notes, delivery method, schedule/email fields, Auto-suggest best time, A
 
 ## Manual verify tips
 
-1. Open Create with AI → Creative Setup for a staging event.
-2. Set Overall inspiration comment, a voice tone chip, and a color mode (or Clear all).
-3. Confirm **Your Selections** sidebar updates.
-4. **Save & Continue to Milestones**, then return to Creative Setup — values persist.
-5. Edit a milestone: set Artwork notes + platforms; Save; reopen.
-6. Optional: generate one milestone in Preview; confirm prompt direction is reflected visually (mood/colors/logo), not as pasted note text on the graphic.
-7. Do **not** look for Notes to AI or a brand kit dropdown — neither is a current Creative Setup control for artwork.
+1. Open Create with AI (nav or `/create-with-ai`) → should land on Creative Setup (not a choose-event list).
+2. Confirm there is **no** “Using your brand kit” banner.
+3. Set Overall inspiration comment, a voice tone chip, and a color mode (or Clear all).
+4. Confirm **Your Selections** sidebar updates.
+5. **Save & Continue to Milestones**, then return to Creative Setup — values persist.
+6. Edit a milestone: set Artwork notes + platforms; Save; reopen.
+7. Optional: generate one milestone in Preview; confirm prompt direction is reflected visually (mood/colors/logo), not as pasted note text on the graphic.
+8. Do **not** look for Notes to AI, a brand kit banner, or a brand kit dropdown — art direction is opt-in via logo/color/tone controls only.
 
 Inspect session (DevTools):
 
