@@ -212,7 +212,7 @@ export function clearAllCreativeSelections(
     voiceTone: "",
     voiceToneValues: [],
     globalAiGuidance: "",
-    brandKitId: NO_BRAND_KIT_ID,
+    // Keep org brand kit — Clear all is for Creative Setup toggles only.
   };
 }
 

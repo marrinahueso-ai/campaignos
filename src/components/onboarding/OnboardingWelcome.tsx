@@ -32,8 +32,8 @@ export function OnboardingWelcome({
         What event are you planning first?
       </h1>
       <p className="mt-4 text-base text-cos-muted">
-        Create one real event in under a minute. You can import your calendar,
-        brand, and team anytime after — everything else is skippable.
+        Create one real event in under a minute. Calendar, brand, team, and Meta
+        can wait — everything after the event is skippable.
       </p>
 
       <form action={startValueFirstOnboardingAction} className="mt-8 space-y-4">

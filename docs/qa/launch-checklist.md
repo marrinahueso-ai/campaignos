@@ -30,26 +30,26 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release). Note envir
 | Build / SHA | Working tree after onboarding checklist fixes (base `2be8510`) |
 | Org | Playwright staging seat (`HEY_RALLI_TEST_*`) |
 | Tester | Cursor agent smoke |
-| Overall | **Pass** (value-first onboarding + Helpful next steps) |
+| Overall | **Pass** (unified Get started + Meta overlay + home checklist) |
 
-### Value-first onboarding smoke (July 22, 2026 — local)
+### Unified Get started smoke (July 22, 2026 — local)
 
-Automated: `npm run test:hey-ralli -- tests/hey-ralli/smoke/15-onboarding-value-first.spec.ts` (**Pass**, ~1.2m). Unit: `src/lib/onboarding/__tests__/state.test.ts` (**Pass**).
+Automated: `npm run test:hey-ralli -- tests/hey-ralli/smoke/15-onboarding-value-first.spec.ts`. Unit: `src/lib/onboarding/__tests__/state.test.ts`.
 
 | Step | Result | Notes |
 |------|--------|-------|
 | Welcome `/onboarding?welcome=1` → Create my first event | Pass | Lands `/events/create?onboarding=1` |
-| Save & continue → event + overlay Calendar | Pass | `?onboarding=calendar`; stepper shows Event → Calendar |
-| Overlay **Do this later** | Pass | Advances in place to Brand (`?onboarding=brand`); stays on event |
-| Overlay **Set up brand** (primary) | Pass | Navigates `/onboarding/brand` (single brand path) |
-| Brand **Skip for now** → Invite **Do this later** | Pass | Reaches Today |
-| Helpful next steps — skipped items surface | Pass | Today checklist shows pending cards even when org already has calendar/brand/team signals |
-| Checklist **Later** | Pass | Marks card done / removes from pending; stepper state updates |
-| Checklist **Set up now** | Pass | Invite card → `/onboarding/invite` |
-| Canonical `/calendar/import` + `/onboarding/brand` | Pass | No duplicate brand wizard |
-| Restart / Welcome replay | Pass | Get started restart + `?welcome=1`; create-event clears stale skip flags so overlay can replay |
+| Save & continue → event + overlay Calendar | Pass | `?onboarding=calendar`; stepper Event → Calendar → Brand → Team → Meta |
+| Overlay **Do this later** | Pass | Advances in place Calendar → Brand (stays on event) |
+| Overlay **Set up brand** (primary) | Pass | Navigates `/onboarding/brand` |
+| Brand **Skip** → Invite **Do this later** → Meta overlay | Pass | Meta is last skippable overlay step; then home |
+| Helpful next steps on home | Pass | Pending cards (incl. Meta) even when org already has signals |
+| Checklist **Later** / **Set up now** | Pass | Later dismisses; Set up now deep-links (invite / Meta / import / brand) |
+| Brand from Organization settings | Pass | `?standalone=1` hides boarding stepper |
+| Settings Get started | Pass | Checklist shell only — no SchoolSetupWizard for members |
+| Restart / Welcome replay | Pass | Restart + `?welcome=1`; create-event clears stale flags incl. meta |
 
-**Not covered this session:** Production heyralli.com, Stay on event click, full calendar import upload, real teammate invite email, org switcher, deactivated-user gate, welcome email CTA copy.
+**Not covered this session:** Production heyralli.com, Stay on event click, full Meta OAuth connect, full calendar import upload, real teammate invite email, org switcher, deactivated-user gate, welcome email CTA copy.
 
 ---
 
@@ -60,10 +60,10 @@ Automated: `npm run test:hey-ralli -- tests/hey-ralli/smoke/15-onboarding-value-
 | 1.1 | Sign in / sign out works | Pass | Local Playwright login (`HEY_RALLI_TEST_*`) |
 | 1.2 | Org switcher works when user has >1 membership | Skip | Single-org seat |
 | 1.3 | `/onboarding` Welcome → Create my first event (`?onboarding=1`) → lands on event page under ~60s | Pass | Local smoke 15 |
-| 1.4 | Event overlay stepper Calendar → Brand → Team: primary CTAs work; **Do this later** advances in place (stays on event); **Stay on event** dismisses only | Pass* | *Do this later + Set up brand verified; Stay on event not clicked this run |
-| 1.5 | Calendar primary → `/calendar/import` (Google + ICS + file); Brand → `/onboarding/brand` (save stays, then Continue); Invite → `/onboarding/invite` | Pass* | *Brand route + calendar import URL verified; full ICS/Google upload not run |
-| 1.6 | Skipped / unfinished items appear on Today + Settings → **Get started** checklist; Restart onboarding replays Welcome (`?welcome=1`) for finished orgs | Pass | Helpful next steps: **Set up now** + **Later** both update checklist; overlay skip still surfaces cards until Later/complete |
-| 1.7 | Legacy wizard via Get started / `?view=wizard` if needed; `?step=brand` opens `/onboarding/brand` (not a second brand form); calendar step → `/calendar/import` | Pass* | *Single brand path `/onboarding/brand` confirmed; full wizard walk not re-run |
+| 1.4 | Event overlay Calendar → Brand → Team → Meta: primary CTAs work; **Do this later** advances in place (stays on event); **Stay on event** dismisses only | Pass* | *Do this later through Meta verified in smoke; Stay on event not clicked this run |
+| 1.5 | Calendar → `/calendar/import`; Brand → `/onboarding/brand`; Invite → `/onboarding/invite`; Meta → `/settings/meta` (returnTo event when possible) | Pass* | *Brand + Meta overlay path verified; full OAuth/import not run |
+| 1.6 | Skipped / unfinished items appear on **home/dashboard** (+ Settings Get started shell); Restart replays Welcome (`?welcome=1`) | Pass | Incl. Meta checklist card; Set up now + Later |
+| 1.7 | Organization settings: no boarding steppers; Brand CTA `?standalone=1`; legacy `?view=wizard` / step deep-links redirect (org / integrations / import / brand) — wizard not mounted for members | Pass* | *Redirects + standalone brand verified; founding no-membership → `/onboarding` |
 | 1.8 | Deactivated / no-membership user sees a clear gate, not a blank app | Skip | Not in this smoke |
 | 1.9 | Org welcome email CTA reads **Let's get started** (not Continue setup) | Skip | Not in this smoke |
 
@@ -199,7 +199,7 @@ Unit packs as needed: `test:event-volunteers`, `test:calendar-import`, `test:app
 - Insights demographics / LLM narrative / year-end board report
 - Insights-weighted posting heatmap
 - Full Create-with-AI → Meta published slot sync
-- Legacy wizard re-entry polish (primary first-run is value-first `/onboarding` + Get started checklist)
+- ~~Legacy wizard re-entry~~ — retired for members; boarding is Welcome → event overlay only
 
 ---
 

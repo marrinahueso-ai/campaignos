@@ -39,11 +39,7 @@ export async function OrganizationSettingsContent({
           title="Organization Details"
           description="Basic information used across Hey Ralli."
           actions={
-            <Button
-              variant="secondary"
-              size="sm"
-              href="/settings/school-setup?view=wizard&step=school"
-            >
+            <Button variant="secondary" size="sm" href="/settings/organization">
               Edit profile
             </Button>
           }
@@ -60,7 +56,11 @@ export async function OrganizationSettingsContent({
           title="Branding"
           description="Colors and visual identity for generated content."
           actions={
-            <Button variant="secondary" size="sm" href="/onboarding/brand">
+            <Button
+              variant="secondary"
+              size="sm"
+              href="/onboarding/brand?standalone=1"
+            >
               Edit branding
             </Button>
           }
@@ -125,11 +125,11 @@ export async function OrganizationSettingsContent({
       ) : (
         <SettingsV2Card title="Timezone & posting windows">
           <p className="text-sm text-cos-muted">
-            Complete School Setup so Hey Ralli knows which organization timezone
-            and posting windows to use.
+            Set your organization timezone so Hey Ralli can suggest posting
+            windows.
           </p>
-          <Button className="mt-4" href="/settings/school-setup">
-            Go to School Setup
+          <Button className="mt-4" href="/dashboard">
+            Go to home
           </Button>
         </SettingsV2Card>
       )}

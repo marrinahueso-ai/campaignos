@@ -5,14 +5,18 @@ import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
 import { getBrandKitItems } from "@/lib/creative-assets/queries";
 import type { BrandKitItem } from "@/lib/creative-assets/types";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
+import { buildBrandGuidanceBlock } from "@/lib/campaign-builder-v2/brand-guidance";
 import { NO_BRAND_KIT_GUIDANCE } from "@/lib/campaign-builder-v2/brand-kit";
 import { getLatestOrganization, getSchoolProfile } from "@/lib/organizations/queries";
+
+export { buildBrandGuidanceBlock } from "@/lib/campaign-builder-v2/brand-guidance";
 
 export interface BrandContextForGeneration {
   guidance: string | null;
   logoUrls: string[];
   organizationName: string | null;
   ptoName: string | null;
+  mascot: string | null;
 }
 
 function resolveBrandKitLogoUrls(items: BrandKitItem[]): string[] {
@@ -33,46 +37,6 @@ function resolveBrandKitLogoUrls(items: BrandKitItem[]): string[] {
   return urls;
 }
 
-export function buildBrandGuidanceBlock(input: {
-  items: BrandKitItem[];
-  organizationName?: string | null;
-  ptoName?: string | null;
-  includeOrganizationNames?: boolean;
-}): string | null {
-  const lines: string[] = [];
-
-  if (input.includeOrganizationNames) {
-    if (input.organizationName?.trim()) {
-      lines.push(`Organization: ${input.organizationName.trim()}`);
-    }
-    if (input.ptoName?.trim()) {
-      lines.push(`PTO name: ${input.ptoName.trim()}`);
-    }
-  }
-
-  for (const item of input.items) {
-    if (item.category === "color" && item.valueText?.trim()) {
-      lines.push(`Color — ${item.label}: ${item.valueText.trim()}`);
-    }
-    if (item.category === "font" && item.valueText?.trim()) {
-      lines.push(`Font — ${item.label}: ${item.valueText.trim()}`);
-    }
-    if (item.category === "brand_voice" && item.valueText?.trim()) {
-      lines.push(`Brand voice: ${item.valueText.trim()}`);
-    }
-    if (
-      (item.category === "school_logo" || item.category === "pto_logo") &&
-      item.label?.trim()
-    ) {
-      lines.push(
-        `${item.category === "school_logo" ? "School logo" : "PTO logo"}: include as a visual element from the attached reference — do not render the logo label as text.`,
-      );
-    }
-  }
-
-  return lines.length > 0 ? lines.join("\n") : null;
-}
-
 async function resolveBrandContextForGenerationUncached(
   useBrandKit: boolean,
 ): Promise<BrandContextForGeneration> {
@@ -83,6 +47,8 @@ async function resolveBrandContextForGenerationUncached(
 
   const organizationName = organization?.name ?? schoolProfile?.organization?.name ?? null;
   const ptoName = organizationName;
+  const mascot = organization?.mascot ?? schoolProfile?.organization?.mascot ?? null;
+  const brandAssets = schoolProfile?.brandAssets ?? null;
 
   if (!useBrandKit) {
     return {
@@ -90,26 +56,38 @@ async function resolveBrandContextForGenerationUncached(
       logoUrls: [],
       organizationName,
       ptoName,
+      mascot: null,
     };
   }
 
   if (!organization?.id) {
+    const logoUrls = buildCampaignBuilderLogoOptions(brandAssets).map(
+      (option) => option.url,
+    );
     return {
-      guidance: null,
-      logoUrls: buildCampaignBuilderLogoOptions(schoolProfile?.brandAssets).map(
-        (option) => option.url,
-      ),
+      guidance: buildBrandGuidanceBlock({
+        items: [],
+        organizationName,
+        ptoName,
+        includeOrganizationNames: false,
+        primaryColor: brandAssets?.primaryColor,
+        secondaryColor: brandAssets?.secondaryColor,
+        mascot,
+        hasPtoLogo: Boolean(brandAssets?.ptoLogo),
+        hasSchoolLogo: Boolean(brandAssets?.schoolLogo),
+      }),
+      logoUrls,
       organizationName,
       ptoName,
+      mascot,
     };
   }
 
   const items = await getBrandKitItems(organization.id);
   const kitLogoUrls = resolveBrandKitLogoUrls(items);
-  const profileLogoUrls = buildCampaignBuilderLogoOptions(
-    schoolProfile?.brandAssets,
-    items,
-  ).map((option) => option.url);
+  const profileLogoUrls = buildCampaignBuilderLogoOptions(brandAssets, items).map(
+    (option) => option.url,
+  );
   const logoUrls = [...new Set([...kitLogoUrls, ...profileLogoUrls])];
 
   return {
@@ -118,10 +96,16 @@ async function resolveBrandContextForGenerationUncached(
       organizationName,
       ptoName,
       includeOrganizationNames: false,
+      primaryColor: brandAssets?.primaryColor,
+      secondaryColor: brandAssets?.secondaryColor,
+      mascot,
+      hasPtoLogo: Boolean(brandAssets?.ptoLogo),
+      hasSchoolLogo: Boolean(brandAssets?.schoolLogo),
     }),
     logoUrls,
     organizationName,
     ptoName,
+    mascot,
   };
 }
 

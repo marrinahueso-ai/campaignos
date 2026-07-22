@@ -1,5 +1,6 @@
 import type {
   OnboardingChecklistItem,
+  OnboardingPromptStep,
   OrganizationOnboardingState,
 } from "@/lib/onboarding/types";
 import { EMPTY_ONBOARDING_STATE } from "@/lib/onboarding/types";
@@ -32,6 +33,9 @@ export function parseOnboardingState(
     inviteChecklistDismissedAt: asOptionalString(
       value.inviteChecklistDismissedAt,
     ),
+    metaCompletedAt: asOptionalString(value.metaCompletedAt),
+    metaSkippedAt: asOptionalString(value.metaSkippedAt),
+    metaChecklistDismissedAt: asOptionalString(value.metaChecklistDismissedAt),
     promptsFinishedAt: asOptionalString(value.promptsFinishedAt),
   };
 }
@@ -60,15 +64,20 @@ export function isInviteSettled(state: OrganizationOnboardingState): boolean {
   return Boolean(state.inviteCompletedAt || state.inviteSkippedAt);
 }
 
+export function isMetaSettled(state: OrganizationOnboardingState): boolean {
+  return Boolean(state.metaCompletedAt || state.metaSkippedAt);
+}
+
 export function nextOnboardingPrompt(
   state: OrganizationOnboardingState,
-): "calendar" | "brand" | "invite" | null {
+): OnboardingPromptStep | null {
   if (!hasCompletedFirstEvent(state) || state.promptsFinishedAt) {
     return null;
   }
   if (!isCalendarSettled(state)) return "calendar";
   if (!isBrandSettled(state)) return "brand";
   if (!isInviteSettled(state)) return "invite";
+  if (!isMetaSettled(state)) return "meta";
   return null;
 }
 
@@ -88,12 +97,19 @@ export function buildOnboardingChecklist(input: {
   hasCalendarSignal: boolean;
   hasBrandSignal: boolean;
   hasTeamSignal: boolean;
+  hasMetaSignal: boolean;
   firstEventHref: string | null;
 }): OnboardingChecklistItem[] {
-  const { state, hasCalendarSignal, hasBrandSignal, hasTeamSignal } = input;
+  const {
+    state,
+    hasCalendarSignal,
+    hasBrandSignal,
+    hasTeamSignal,
+    hasMetaSignal,
+  } = input;
 
   // Overlay "Do this later" sets *SkippedAt — those items must still surface here
-  // even if the org already has calendar/brand/team signals (restart / mature orgs).
+  // even if the org already has calendar/brand/team/meta signals (restart / mature orgs).
   // Checklist "Later" sets *ChecklistDismissedAt. Signals only auto-complete when
   // the step was not deferred in the current onboarding run.
   const calendarDone =
@@ -108,6 +124,10 @@ export function buildOnboardingChecklist(input: {
     Boolean(state.inviteChecklistDismissedAt) ||
     Boolean(state.inviteCompletedAt) ||
     (hasTeamSignal && !state.inviteSkippedAt);
+  const metaDone =
+    Boolean(state.metaChecklistDismissedAt) ||
+    Boolean(state.metaCompletedAt) ||
+    (hasMetaSignal && !state.metaSkippedAt);
   const firstEventDone = hasCompletedFirstEvent(state);
 
   const items: OnboardingChecklistItem[] = [];
@@ -150,6 +170,15 @@ export function buildOnboardingChecklist(input: {
       href: "/onboarding/invite",
       cta: inviteDone ? "View team" : "Set up now",
       done: inviteDone,
+      optional: true,
+    },
+    {
+      id: "meta",
+      title: "Connect Facebook & Instagram",
+      description: "Link your PTO page so approved posts can publish automatically.",
+      href: "/settings/meta",
+      cta: metaDone ? "View Meta" : "Set up now",
+      done: metaDone,
       optional: true,
     },
   );

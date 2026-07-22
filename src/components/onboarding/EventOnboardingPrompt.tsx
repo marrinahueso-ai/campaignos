@@ -4,19 +4,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   completeOnboardingCalendarAction,
+  completeOnboardingMetaAction,
   deferOnboardingPromptAction,
 } from "@/lib/onboarding/actions";
+import type { OnboardingPromptStep } from "@/lib/onboarding/types";
 import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Button } from "@/components/ui/Button";
 
-type PromptStep = "calendar" | "brand" | "invite";
-
 interface EventOnboardingPromptProps {
-  step: PromptStep;
+  step: OnboardingPromptStep;
 }
 
 const COPY: Record<
-  PromptStep,
+  OnboardingPromptStep,
   {
     title: string;
     body: string;
@@ -25,7 +25,7 @@ const COPY: Record<
 > = {
   calendar: {
     title: "Save hours by importing your school calendar",
-    body: "Your event is ready. Pull in the rest of the year when you want — or do this later from Today.",
+    body: "Your event is ready. Pull in the rest of the year when you want — or do this later from home.",
     primaryLabel: "Import calendar",
   },
   brand: {
@@ -35,8 +35,13 @@ const COPY: Record<
   },
   invite: {
     title: "Invite someone to help",
-    body: "Bring in another board member when you’re ready — or finish setup and stay on this event.",
+    body: "Bring in another board member when you’re ready — or continue to Meta setup.",
     primaryLabel: "Invite teammate",
+  },
+  meta: {
+    title: "Connect Facebook & Instagram",
+    body: "Link your PTO page so approved posts can publish automatically — or finish setup and stay on this event. You can also pick this up later from home.",
+    primaryLabel: "Connect Meta",
   },
 };
 
@@ -45,7 +50,7 @@ export function EventOnboardingPrompt({ step }: EventOnboardingPromptProps) {
   const pathname = usePathname();
   // Local step owns the overlay after defer so revalidation cannot snap back
   // to a stale `?onboarding=` search param mid-transition.
-  const [activeStep, setActiveStep] = useState<PromptStep>(step);
+  const [activeStep, setActiveStep] = useState<OnboardingPromptStep>(step);
   const [isPending, startTransition] = useTransition();
   const copy = COPY[activeStep];
 
@@ -53,7 +58,7 @@ export function EventOnboardingPrompt({ step }: EventOnboardingPromptProps) {
     router.replace(pathname);
   }
 
-  function goToStep(next: PromptStep) {
+  function goToStep(next: OnboardingPromptStep) {
     setActiveStep(next);
     router.replace(`${pathname}?onboarding=${next}`);
   }
@@ -68,7 +73,11 @@ export function EventOnboardingPrompt({ step }: EventOnboardingPromptProps) {
         router.push("/onboarding/brand");
         return;
       }
-      router.push("/onboarding/invite");
+      if (activeStep === "invite") {
+        router.push("/onboarding/invite");
+        return;
+      }
+      await completeOnboardingMetaAction(`${pathname}?onboarding=meta`);
     });
   }
 
@@ -83,8 +92,13 @@ export function EventOnboardingPrompt({ step }: EventOnboardingPromptProps) {
         return;
       }
       // Fallback: if server already had this step settled (stale state), still
-      // advance the visible stepper Calendar → Brand → Team before dismissing.
-      const order: PromptStep[] = ["calendar", "brand", "invite"];
+      // advance the visible stepper before dismissing.
+      const order: OnboardingPromptStep[] = [
+        "calendar",
+        "brand",
+        "invite",
+        "meta",
+      ];
       const index = order.indexOf(activeStep);
       const fallback = index >= 0 ? order[index + 1] : undefined;
       if (fallback) {

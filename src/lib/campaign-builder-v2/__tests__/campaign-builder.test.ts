@@ -27,7 +27,13 @@ import {
   syncCaptionsToPlatforms,
 } from "../caption-utils.ts";
 import { mergeInspirationImageUrls } from "../inspiration-utils.ts";
-import { isNoBrandKit, brandKitIdForAi, NO_BRAND_KIT_ID } from "../brand-kit.ts";
+import {
+  isNoBrandKit,
+  brandKitIdForAi,
+  NO_BRAND_KIT_ID,
+  ORG_DEFAULT_BRAND_KIT_ID,
+  resolveBrandKitIdForSession,
+} from "../brand-kit.ts";
 import {
   formatValidationErrors,
   resolveSingleGenerationTarget,
@@ -236,6 +242,14 @@ describe("brand-kit helpers", () => {
 
   it("passes through real brand kit ids", () => {
     assert.equal(brandKitIdForAi("ees-pto"), "ees-pto");
+    assert.equal(brandKitIdForAi(ORG_DEFAULT_BRAND_KIT_ID), ORG_DEFAULT_BRAND_KIT_ID);
+  });
+
+  it("resolves org-default when brand direction exists", () => {
+    assert.equal(
+      resolveBrandKitIdForSession(NO_BRAND_KIT_ID, true),
+      ORG_DEFAULT_BRAND_KIT_ID,
+    );
   });
 });
 

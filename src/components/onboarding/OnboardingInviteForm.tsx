@@ -87,7 +87,7 @@ export function OnboardingInviteForm() {
               })
             }
           >
-            Go to Today
+            Go to home
           </Button>
         </div>
       </form>

@@ -32,6 +32,8 @@ interface OnboardingBrandFormProps {
   initialPtoLogo: string | null;
   initialSchoolLogo: string | null;
   initialExtraLogos: OnboardingBrandKitLogo[];
+  /** Hide boarding stepper (e.g. Organization settings brand CTA). */
+  standalone?: boolean;
 }
 
 function LogoThumb({
@@ -61,6 +63,7 @@ export function OnboardingBrandForm({
   initialPtoLogo,
   initialSchoolLogo,
   initialExtraLogos,
+  standalone = false,
 }: OnboardingBrandFormProps) {
   const router = useRouter();
   const formId = useId();
@@ -137,14 +140,15 @@ export function OnboardingBrandForm({
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-10">
-      <OnboardingProgress current="brand" />
+      {standalone ? null : <OnboardingProgress current="brand" />}
       <div>
         <h1 className="font-display text-3xl text-cos-text sm:text-4xl">
           Build your brand kit
         </h1>
         <p className="mt-2 text-sm text-cos-muted">
-          Logos, colors, and mascot — skip anytime and come back from Get
-          started.
+          {standalone
+            ? "Logos, colors, and mascot for your school’s campaigns."
+            : "Logos, colors, and mascot — skip anytime and come back from home."}
         </p>
       </div>
 
@@ -430,22 +434,31 @@ export function OnboardingBrandForm({
               {isPending ? "Saving…" : "Save"}
             </Button>
             {success ? (
-              <Button type="button" href="/onboarding/invite">
-                Continue
+              <Button
+                type="button"
+                href={standalone ? "/settings/organization" : "/onboarding/invite"}
+              >
+                {standalone ? "Back to organization" : "Continue"}
               </Button>
             ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isPending}
-              onClick={() =>
-                startTransition(async () => {
-                  await skipOnboardingPromptAction("brand");
-                })
-              }
-            >
-              Skip for now
-            </Button>
+            {standalone ? (
+              <Button type="button" variant="secondary" href="/settings/organization">
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isPending}
+                onClick={() =>
+                  startTransition(async () => {
+                    await skipOnboardingPromptAction("brand");
+                  })
+                }
+              >
+                Skip for now
+              </Button>
+            )}
           </div>
         </form>
 

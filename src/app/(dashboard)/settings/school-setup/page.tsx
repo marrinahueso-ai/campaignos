@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { SchoolSetupShellContent } from "@/components/settings-v2/SchoolSetupShellContent";
 import {
   getPendingFoundingAccessCode,
@@ -7,11 +6,6 @@ import {
 } from "@/lib/auth/founding-access";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
-import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
-import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
-import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
-import { SchoolSetupWizard } from "@/components/school-setup/SchoolSetupWizard";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -28,20 +22,11 @@ interface SettingsSchoolSetupPageProps {
   }>;
 }
 
-function isPostSetupContinuation(params: {
-  step?: string;
-  connected?: string;
-  error?: string;
-  onboarding?: string;
-}): boolean {
-  return (
-    params.onboarding === "1" ||
-    params.step === "meta" ||
-    params.connected === "1" ||
-    Boolean(params.error)
-  );
-}
-
+/**
+ * Get started under Settings is no longer a boarding wizard.
+ * Members see Helpful next steps (or home); founding users go to Welcome.
+ * Legacy deep-links redirect to focused surfaces without steppers.
+ */
 export default async function SettingsSchoolSetupPage({
   searchParams,
 }: SettingsSchoolSetupPageProps) {
@@ -56,52 +41,34 @@ export default async function SettingsSchoolSetupPage({
     Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
   const accessCodeRequired = isFoundingAccessCodeRequired();
   const params = await searchParams;
-  const showWizard =
-    isPostSetupContinuation(params) || params.view === "wizard";
-
-  // One brand experience: never re-ask brand inside the legacy wizard.
-  if (params.step === "brand") {
-    redirect("/onboarding/brand");
-  }
 
   if (accessCodeRequired && !hasValidPendingCode && !membership) {
     redirect("/login?intent=setup&error=code_required");
   }
 
-  if (!membership && !showWizard) {
+  // Founding / no org — Welcome → first event → overlay (no school wizard).
+  if (!membership) {
     redirect("/onboarding");
   }
 
-  if (membership && !hasValidPendingCode && !showWizard) {
-    return <SchoolSetupShellContent />;
+  // Legacy wizard / step deep-links → focused pages (no boarding steppers).
+  if (params.view === "wizard" || params.step === "school") {
+    redirect("/settings/organization");
+  }
+  if (params.step === "meta" || params.onboarding === "1" || params.connected === "1") {
+    redirect("/settings/integrations");
+  }
+  if (params.step === "calendar") {
+    redirect("/calendar/import");
+  }
+  if (params.step === "brand") {
+    redirect("/onboarding/brand?standalone=1");
+  }
+  if (params.error) {
+    redirect(
+      `/settings/meta?error=${encodeURIComponent(params.error)}`,
+    );
   }
 
-  const [metaConnection, workspace] = membership
-    ? await Promise.all([
-        getMetaConnectionForCurrentOrg(),
-        getOrganizationWorkspaceData(membership.organizationId),
-      ])
-    : [null, null];
-
-  const metaOauthError =
-    params.connected === "1"
-      ? null
-      : params.error
-        ? getMetaOAuthErrorMessage(params.error)
-        : null;
-
-  return (
-    <Suspense fallback={null}>
-      <SchoolSetupWizard
-        validatedAccessCode={pendingCode}
-        resumePostSetup={isPostSetupContinuation(params) && Boolean(membership)}
-        hasOrganization={Boolean(membership)}
-        metaConnection={metaConnection}
-        metaConfiguredViaEnv={metaConnection?.id === "env"}
-        metaIntegrationConfigured={isMetaIntegrationConfigured()}
-        metaOauthError={metaOauthError}
-        organizationRoles={workspace?.roles ?? []}
-      />
-    </Suspense>
-  );
+  return <SchoolSetupShellContent />;
 }

@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Value-first onboarding Helpful next steps Set up now / Later; overlay skip still surfaces checklist; artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
+**Last updated:** July 22, 2026 — Unified Get started: Welcome → event → overlay Calendar → Brand → Team → Meta; Helpful next steps on home; settings have no boarding steppers; artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
 
 ---
 
@@ -19,16 +19,16 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Sign in / sign up — **shipped**
 - Founding access code + org welcome magic-link email (CTA **Let's get started** → `/auth/callback` → `/onboarding`) — **shipped** (eng: [auth-welcome-email.md](../engineering/auth-welcome-email.md))
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
-- Value-first onboarding — **shipped** (done for now):
-  - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → event-page overlay stepper **Calendar → Brand → Team**; also `/onboarding/brand`, `/onboarding/invite`
+- Get started (one boarding flow) — **shipped**:
+  - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → **stay on event** with overlay **Calendar → Brand → Team → Meta** (all skippable); also `/onboarding/brand`, `/onboarding/invite`, `/onboarding/meta`
   - Overlay CTAs: primary action · **Do this later** (advances stepper **in place**, stays on event) · **Stay on event** (dismisses overlay only)
-  - Calendar primary → canonical `/calendar/import` (Google + ICS + file)
-  - Brand: single path `/onboarding/brand` (PTO + school + extra logos, preview; save stays on page then Continue) — Get started deep-links here; **not** a second wizard brand step
-  - Helpful next steps (Today + Settings → **Get started**): pending cards show **Set up now** + **Later**; Later dismisses that card; overlay **Do this later** still surfaces the card until Later or real completion (even if the org already has calendar/brand/team signals)
-  - Progress persisted on `organizations.onboarding_state` (migration `072`; checklist dismiss timestamps in JSON)
-  - Restart / replay Welcome for finished orgs (`RestartOnboardingButton` → `/onboarding?welcome=1`); creating an onboarding event clears stale skip/complete flags so Calendar → Brand → Team can replay
-- Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; save stays on page with Continue to invite; Get started checklist + Organization → Edit branding deep-link here — **shipped**
-- Legacy wizard (School → Calendar → Meta → Team → Finish) — **partial** (re-entry via Get started / `?view=wizard`; brand step removed / `?step=brand` → `/onboarding/brand`; calendar step → `/calendar/import` when org exists; first-time path prefers `/onboarding`)
+  - Calendar primary → canonical `/calendar/import`; Brand → `/onboarding/brand`; Invite → `/onboarding/invite`; Meta → `/settings/meta` with `returnTo` back to the event when possible
+  - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); overlay skip still surfaces cards until Later or real completion
+  - Progress on `organizations.onboarding_state` (incl. meta completed/skipped/checklist-dismissed)
+  - Restart / replay Welcome (`RestartOnboardingButton` → `/onboarding?welcome=1`); creating an onboarding event clears stale flags so Calendar → Brand → Team → Meta can replay
+  - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
+- Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; boarding Continue → invite; Organization → Edit branding uses `?standalone=1` — **shipped**
+- Legacy 6-step SchoolSetupWizard — **retired for members** (legacy query redirects: `?view=wizard`/`?step=school` → org settings; `?step=meta` → integrations; `?step=calendar` → `/calendar/import`; `?step=brand` → brand standalone)
 - Change password — **shipped**
 - Deactivated-account handling — **shipped**
 
@@ -63,7 +63,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Create with AI (Campaign Builder)
 - Hub to pick/create an event — **shipped**
 - Inspiration / creative setup, logos, milestones — **shipped**
-- Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); brand kit selector deferred to org setup — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
+- Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); organization brand kit from Build your brand kit (`/onboarding/brand`) auto-applies to Create with AI (primary/accent colors, mascot, logo image refs in prompts) — Creative Setup logo/color/tone toggles stay optional — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**

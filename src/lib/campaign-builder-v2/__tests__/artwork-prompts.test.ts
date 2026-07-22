@@ -199,4 +199,19 @@ describe("buildCampaignBuilderArtworkPrompt", () => {
     const tight = buildPrompt({ styleStrength: 80 });
     assert.match(tight, /Stay very close to the reference style/);
   });
+
+  it("includes brand kit guidance block when provided", () => {
+    const prompt = buildCampaignBuilderArtworkPrompt({
+      inspiration: baseInspiration,
+      milestone: baseMilestone,
+      view: "feed",
+      brandGuidance:
+        "Color — Primary: #0F766E\nColor — Accent: #22C55E\nMascot: Globe",
+      hasInspirationImages: false,
+      storyFromFeed: false,
+    });
+    assert.match(prompt, /Brand kit \(colors, fonts, voice/);
+    assert.match(prompt, /Color — Primary: #0F766E/);
+    assert.match(prompt, /Mascot: Globe/);
+  });
 });

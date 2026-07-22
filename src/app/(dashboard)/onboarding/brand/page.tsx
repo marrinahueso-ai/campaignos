@@ -8,11 +8,23 @@ export const metadata = {
   title: "Brand kit",
 };
 
-export default async function OnboardingBrandPage() {
+interface OnboardingBrandPageProps {
+  searchParams: Promise<{ standalone?: string; from?: string }>;
+}
+
+export default async function OnboardingBrandPage({
+  searchParams,
+}: OnboardingBrandPageProps) {
   const profile = await getSchoolProfile();
   if (!profile?.organization) {
     redirect("/onboarding");
   }
+
+  const params = await searchParams;
+  const standalone =
+    params.standalone === "1" ||
+    params.standalone === "true" ||
+    params.from === "settings";
 
   const brandKitItems = await getBrandKitItems(profile.organization.id);
   const initialExtraLogos = brandKitItems
@@ -37,6 +49,7 @@ export default async function OnboardingBrandPage() {
 
   return (
     <OnboardingBrandForm
+      standalone={standalone}
       initialPrimary={profile.brandAssets?.primaryColor ?? "#0F2E38"}
       initialSecondary={profile.brandAssets?.secondaryColor ?? "#DDBA4C"}
       initialMascot={profile.organization.mascot ?? ""}

@@ -1,4 +1,4 @@
-export type OnboardingPromptStep = "calendar" | "brand" | "invite";
+export type OnboardingPromptStep = "calendar" | "brand" | "invite" | "meta";
 
 export interface OrganizationOnboardingState {
   version: 1;
@@ -16,6 +16,9 @@ export interface OrganizationOnboardingState {
   inviteCompletedAt?: string | null;
   inviteSkippedAt?: string | null;
   inviteChecklistDismissedAt?: string | null;
+  metaCompletedAt?: string | null;
+  metaSkippedAt?: string | null;
+  metaChecklistDismissedAt?: string | null;
   /** User finished or dismissed the post-event prompt sequence */
   promptsFinishedAt?: string | null;
 }
@@ -25,7 +28,7 @@ export const EMPTY_ONBOARDING_STATE: OrganizationOnboardingState = {
 };
 
 export interface OnboardingChecklistItem {
-  id: "calendar" | "brand" | "invite" | "first_event";
+  id: "calendar" | "brand" | "invite" | "meta" | "first_event";
   title: string;
   description: string;
   href: string;
@@ -33,3 +36,9 @@ export interface OnboardingChecklistItem {
   done: boolean;
   optional: boolean;
 }
+
+/** Checklist cards that support Later (not first_event). */
+export type OnboardingChecklistDismissStep = Exclude<
+  OnboardingChecklistItem["id"],
+  "first_event"
+>;

@@ -5,10 +5,11 @@ const STEPS = [
   { id: "calendar", label: "Calendar" },
   { id: "brand", label: "Brand" },
   { id: "invite", label: "Team" },
+  { id: "meta", label: "Meta" },
 ] as const;
 
 interface OnboardingProgressProps {
-  current: "event" | "calendar" | "brand" | "invite";
+  current: "event" | "calendar" | "brand" | "invite" | "meta";
   className?: string;
 }
 

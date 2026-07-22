@@ -8,7 +8,7 @@ import {
 
 /**
  * Value-first onboarding smoke:
- * Welcome → create event → overlay stepper (Do this later + Set up brand) →
+ * Welcome → create event → overlay (Calendar → Brand → Team → Meta) →
  * Helpful next steps Set up now + Later both update checklist state.
  *
  * Soft-skips when HEY_RALLI_TEST_* credentials are missing.
@@ -102,14 +102,33 @@ test.describe("Value-first onboarding", () => {
     ).toBeVisible({ timeout: 30_000 });
 
     await page.getByRole("button", { name: /skip for now/i }).click();
-    await page.waitForURL(/\/(onboarding\/invite|dashboard)/, {
+    await page.waitForURL(/\/onboarding\/invite/, {
       timeout: 30_000,
     });
 
-    if (page.url().includes("/onboarding/invite")) {
+    await page.getByRole("button", { name: /^do this later$/i }).click();
+    // Invite skip → Meta (event overlay or dedicated meta page)
+    await page.waitForURL(/onboarding=meta|\/onboarding\/meta|\/settings\/meta/, {
+      timeout: 30_000,
+    });
+
+    if (page.url().includes("onboarding=meta")) {
+      await expect(
+        page.getByRole("heading", {
+          name: /connect facebook/i,
+        }),
+      ).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByLabel(/onboarding progress/i)).toContainText(
+        /5\.\s*Meta/i,
+      );
       await page.getByRole("button", { name: /^do this later$/i }).click();
-      await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
+    } else if (page.url().includes("/onboarding/meta")) {
+      await page.getByRole("button", { name: /^do this later$/i }).click();
     }
+
+    await page.waitForURL(/\/dashboard|\/events\//, { timeout: 30_000 }).catch(
+      () => undefined,
+    );
 
     // Helpful next steps — skipped steps surface even on mature orgs
     await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
@@ -150,7 +169,7 @@ test.describe("Value-first onboarding", () => {
     }
 
     // Dismiss any remaining pending cards via Later
-    for (const id of ["brand", "invite"] as const) {
+    for (const id of ["brand", "invite", "meta"] as const) {
       const pendingCard = page.locator(
         `[data-onboarding-checklist-item="${id}"][data-done="false"]`,
       );
@@ -167,22 +186,30 @@ test.describe("Value-first onboarding", () => {
         .toMatch(/^(true|gone)$/);
     }
 
-    // Canonical calendar + single brand path
+    // Canonical calendar + single brand path (standalone from settings hides stepper)
     await page.goto("/calendar/import", { waitUntil: "domcontentloaded" });
     await expectNoBlankScreen(page);
     await expect(page).toHaveURL(/\/calendar\/import/);
 
-    await page.goto("/onboarding/brand", { waitUntil: "domcontentloaded" });
+    await page.goto("/onboarding/brand?standalone=1", {
+      waitUntil: "domcontentloaded",
+    });
     await expect(
       mainContent(page).getByRole("heading", {
         name: /build your brand kit/i,
       }),
     ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByLabel(/onboarding progress/i)).toHaveCount(0);
 
-    // Get started still reachable
+    // Get started still reachable (checklist shell, no wizard)
     await page.goto("/settings/school-setup", {
       waitUntil: "domcontentloaded",
     });
     await expectNoBlankScreen(page);
+    await expect(
+      page.getByRole("heading", {
+        name: /helpful next steps|ready when you are|a few helpful next steps/i,
+      }),
+    ).toBeVisible({ timeout: 30_000 });
   });
 });

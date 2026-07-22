@@ -5,13 +5,22 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { dismissOnboardingChecklistItemAction } from "@/lib/onboarding/actions";
-import type { OnboardingChecklistItem } from "@/lib/onboarding/types";
+import type {
+  OnboardingChecklistDismissStep,
+  OnboardingChecklistItem,
+} from "@/lib/onboarding/types";
 import { cn } from "@/lib/utils/cn";
 
 interface OnboardingChecklistCardsProps {
   items: OnboardingChecklistItem[];
   title?: string;
   description?: string;
+}
+
+function isDismissibleStep(
+  id: OnboardingChecklistItem["id"],
+): id is OnboardingChecklistDismissStep {
+  return id === "calendar" || id === "brand" || id === "invite" || id === "meta";
 }
 
 export function OnboardingChecklistCards({
@@ -27,9 +36,10 @@ export function OnboardingChecklistCards({
   }
 
   function handleLater(item: OnboardingChecklistItem) {
-    if (item.id === "first_event") return;
+    if (!isDismissibleStep(item.id)) return;
+    const step: OnboardingChecklistDismissStep = item.id;
     startTransition(async () => {
-      const result = await dismissOnboardingChecklistItemAction(item.id);
+      const result = await dismissOnboardingChecklistItemAction(step);
       if (result.error) return;
       router.refresh();
     });
@@ -83,7 +93,7 @@ export function OnboardingChecklistCards({
                   {item.cta}
                   <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </Link>
-                {item.id !== "first_event" ? (
+                {isDismissibleStep(item.id) ? (
                   <button
                     type="button"
                     disabled={isPending}

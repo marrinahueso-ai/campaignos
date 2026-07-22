@@ -15,12 +15,14 @@ describe("onboarding state", () => {
       version: 1,
       firstEventId: "evt-1",
       firstEventCompletedAt: "2026-07-22T00:00:00.000Z",
+      metaSkippedAt: "2026-07-22T00:00:00.000Z",
     });
     assert.equal(parsed.firstEventId, "evt-1");
+    assert.equal(parsed.metaSkippedAt, "2026-07-22T00:00:00.000Z");
     assert.equal(hasCompletedFirstEvent(parsed), true);
   });
 
-  it("orders prompts calendar → brand → invite", () => {
+  it("orders prompts calendar → brand → invite → meta", () => {
     const base = parseOnboardingState({
       version: 1,
       firstEventId: "e1",
@@ -49,11 +51,21 @@ describe("onboarding state", () => {
         brandCompletedAt: "2026-07-22T00:00:00.000Z",
         inviteSkippedAt: "2026-07-22T00:00:00.000Z",
       }),
+      "meta",
+    );
+    assert.equal(
+      nextOnboardingPrompt({
+        ...base,
+        calendarCompletedAt: "2026-07-22T00:00:00.000Z",
+        brandCompletedAt: "2026-07-22T00:00:00.000Z",
+        inviteSkippedAt: "2026-07-22T00:00:00.000Z",
+        metaSkippedAt: "2026-07-22T00:00:00.000Z",
+      }),
       null,
     );
   });
 
-  it("builds checklist with pending optional items", () => {
+  it("builds checklist with pending optional items including meta", () => {
     const items = buildOnboardingChecklist({
       state: parseOnboardingState({
         version: 1,
@@ -65,6 +77,7 @@ describe("onboarding state", () => {
       hasCalendarSignal: false,
       hasBrandSignal: false,
       hasTeamSignal: false,
+      hasMetaSignal: false,
       firstEventHref: "/events/e1",
     });
     assert.equal(items.some((item) => item.id === "first_event"), false);
@@ -74,6 +87,10 @@ describe("onboarding state", () => {
     assert.equal(brand?.href, "/onboarding/brand");
     assert.equal(brand?.title, "Build your brand kit");
     assert.equal(brand?.cta, "Set up now");
+    const meta = items.find((item) => item.id === "meta");
+    assert.equal(meta?.done, false);
+    assert.equal(meta?.href, "/settings/meta");
+    assert.equal(meta?.cta, "Set up now");
   });
 
   it("overlay skip keeps checklist pending even with org signals; Later dismiss marks done", () => {
@@ -85,10 +102,12 @@ describe("onboarding state", () => {
         calendarSkippedAt: "2026-07-22T00:00:00.000Z",
         brandSkippedAt: "2026-07-22T00:00:00.000Z",
         inviteSkippedAt: "2026-07-22T00:00:00.000Z",
+        metaSkippedAt: "2026-07-22T00:00:00.000Z",
       }),
       hasCalendarSignal: true,
       hasBrandSignal: true,
       hasTeamSignal: true,
+      hasMetaSignal: true,
       firstEventHref: "/events/e1",
     });
     assert.equal(
@@ -103,6 +122,10 @@ describe("onboarding state", () => {
       afterOverlaySkip.find((item) => item.id === "invite")?.done,
       false,
     );
+    assert.equal(
+      afterOverlaySkip.find((item) => item.id === "meta")?.done,
+      false,
+    );
 
     const signalsWithoutSkip = buildOnboardingChecklist({
       state: parseOnboardingState({
@@ -113,6 +136,7 @@ describe("onboarding state", () => {
       hasCalendarSignal: true,
       hasBrandSignal: true,
       hasTeamSignal: true,
+      hasMetaSignal: true,
       firstEventHref: "/events/e1",
     });
     assert.equal(
@@ -130,10 +154,13 @@ describe("onboarding state", () => {
         brandCompletedAt: "2026-07-22T00:02:00.000Z",
         inviteSkippedAt: "2026-07-22T00:00:00.000Z",
         inviteChecklistDismissedAt: "2026-07-22T00:03:00.000Z",
+        metaSkippedAt: "2026-07-22T00:00:00.000Z",
+        metaChecklistDismissedAt: "2026-07-22T00:04:00.000Z",
       }),
       hasCalendarSignal: true,
       hasBrandSignal: false,
       hasTeamSignal: true,
+      hasMetaSignal: false,
       firstEventHref: "/events/e1",
     });
     assert.equal(
@@ -146,6 +173,10 @@ describe("onboarding state", () => {
     );
     assert.equal(
       afterChecklistLater.find((item) => item.id === "invite")?.done,
+      true,
+    );
+    assert.equal(
+      afterChecklistLater.find((item) => item.id === "meta")?.done,
       true,
     );
   });

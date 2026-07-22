@@ -74,6 +74,7 @@ export interface CampaignBuilderBrandSetup {
     primary: string | null;
     secondary: string | null;
   };
+  mascot: string | null;
 }
 
 /**
@@ -88,6 +89,7 @@ export const getCachedCampaignBuilderBrandSetup = cache(
         brandAssets: null,
         brandKitItems: [],
         schoolColors: { primary: null, secondary: null },
+        mascot: null,
       };
     }
 
@@ -114,6 +116,7 @@ export const getCachedCampaignBuilderBrandSetup = cache(
         primary: brandAssets?.primaryColor ?? null,
         secondary: brandAssets?.secondaryColor ?? null,
       },
+      mascot: organization.mascot ?? null,
     };
   },
 );

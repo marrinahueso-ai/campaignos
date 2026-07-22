@@ -38,7 +38,8 @@ export default async function EventWorkspacePage({
   const onboardingStep =
     onboarding === "calendar" ||
     onboarding === "brand" ||
-    onboarding === "invite"
+    onboarding === "invite" ||
+    onboarding === "meta"
       ? onboarding
       : null;
 

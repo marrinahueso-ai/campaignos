@@ -18,7 +18,12 @@ import { getEventById } from "@/lib/events/queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { buildCampaignBuilderLogoOptions } from "@/lib/artwork-v2/setup-logos";
-import { NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
+import {
+  hasOrganizationBrandDirection,
+  NO_BRAND_KIT_ID,
+  ORG_DEFAULT_BRAND_KIT_ID,
+  resolveBrandKitIdForSession,
+} from "@/lib/campaign-builder-v2/brand-kit";
 import type { BrandKitOption } from "@/lib/campaign-builder-v2/types";
 
 interface CampaignBuilderPageProps {
@@ -117,7 +122,7 @@ export default async function CampaignBuilderPage({
 
   const brandKits: BrandKitOption[] = [
     { id: NO_BRAND_KIT_ID, name: "No brand kit" },
-    { id: "org-default", name: "Organization Brand Kit" },
+    { id: ORG_DEFAULT_BRAND_KIT_ID, name: "Organization Brand Kit" },
   ];
 
   const logoOptions = buildCampaignBuilderLogoOptions(
@@ -125,6 +130,15 @@ export default async function CampaignBuilderPage({
     brandSetup.brandKitItems,
   );
   const schoolColors = brandSetup.schoolColors;
+  const mascot = brandSetup.mascot;
+  const hasBrandDirection = hasOrganizationBrandDirection({
+    primaryColor: schoolColors.primary,
+    secondaryColor: schoolColors.secondary,
+    ptoLogo: brandSetup.brandAssets?.ptoLogo,
+    schoolLogo: brandSetup.brandAssets?.schoolLogo,
+    mascot,
+    brandKitItemCount: brandSetup.brandKitItems.length,
+  });
 
   const restoredFromServer = savedSession !== null;
   // Always normalize — even for a brand-new campaign with no saved session —
@@ -142,8 +156,14 @@ export default async function CampaignBuilderPage({
 
   // Keep org colors available for the organization_palette mode, but do not
   // auto-select logo, colors, or tone — Creative Setup starts at explicit None.
+  // Org brand kit itself defaults on when brand direction exists so AI reads
+  // school logos / colors / mascot even without Creative Setup toggles.
   initialSession.inspiration.primarySchoolColor = schoolColors.primary;
   initialSession.inspiration.secondarySchoolColor = schoolColors.secondary;
+  initialSession.inspiration.brandKitId = resolveBrandKitIdForSession(
+    initialSession.inspiration.brandKitId,
+    hasBrandDirection,
+  );
 
   const resolvedWorkflowApprover = approvalAssignee
     ? toResolvedWorkflowApprover(approvalAssignee)
@@ -168,6 +188,7 @@ export default async function CampaignBuilderPage({
       campaignOptions={campaignOptions}
       logoOptions={logoOptions}
       schoolColors={schoolColors}
+      mascot={mascot}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
       resolvedWorkflowApprover={resolvedWorkflowApprover}

@@ -39,8 +39,8 @@ export default async function OnboardingPage({
   }
 
   const next = nextOnboardingPrompt(state);
-  if (next === "calendar" && state.firstEventId) {
-    redirect(`/events/${state.firstEventId}?onboarding=calendar`);
+  if (next && state.firstEventId) {
+    redirect(`/events/${state.firstEventId}?onboarding=${next}`);
   }
   if (next === "brand") {
     redirect("/onboarding/brand");
@@ -48,7 +48,10 @@ export default async function OnboardingPage({
   if (next === "invite") {
     redirect("/onboarding/invite");
   }
+  if (next === "meta") {
+    redirect("/settings/meta");
+  }
 
-  // Finished prompts — checklist lives under Get started (not Today/home).
-  redirect("/settings/school-setup");
+  // Finished prompts — Helpful next steps live on home.
+  redirect("/dashboard");
 }

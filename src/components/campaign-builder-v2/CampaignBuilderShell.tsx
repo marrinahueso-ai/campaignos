@@ -73,6 +73,7 @@ interface CampaignBuilderShellProps {
   campaignOptions: CampaignOption[];
   logoOptions: SetupLogoOption[];
   schoolColors: CampaignBuilderSchoolColors;
+  mascot?: string | null;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
   resolvedWorkflowApprover?: ResolvedWorkflowApprover | null;
@@ -173,6 +174,7 @@ export function CampaignBuilderShell({
   campaignOptions,
   logoOptions,
   schoolColors,
+  mascot = null,
   initialSession,
   restoredFromServer,
   resolvedWorkflowApprover = null,
@@ -191,6 +193,7 @@ export function CampaignBuilderShell({
       campaignOptions={campaignOptions}
       logoOptions={logoOptions}
       schoolColors={schoolColors}
+      mascot={mascot}
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
       resolvedWorkflowApprover={resolvedWorkflowApprover}

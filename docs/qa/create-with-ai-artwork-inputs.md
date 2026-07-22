@@ -28,7 +28,7 @@ Do **not** generate full feed+story for every dropdown value in CI.
 | **Overall inspiration comment** (`inspirationOverallComment`) | Creative Setup — “Overall inspiration comment (optional)” | **Yes** — primary campaign-level art direction | Prefer this over any legacy Notes field |
 | **Per-image comment** (`inspirationImages[].comment`) | Under each inspiration image | **Yes** | “What AI should take from this” |
 | **Notes to AI** (`globalAiGuidance`) | **No UI** | **No** (artwork prompt ignores it) | Legacy session field; do **not** QA as an artwork input |
-| **Brand kit** (`brandKitId`) | **No UI yet** | Deferred | Planned with “Set up your organization”; not a current UI test target |
+| **Brand kit** (`brandKitId`) | Signal on Creative Setup (“Using your brand kit”) when org has logos/colors/mascot; no dropdown | **Yes** — defaults to `org-default` when brand exists; prompt gets primary/accent + mascot; logo URLs attached as visual refs | Edit via `/onboarding/brand`; Creative Setup logo/color toggles remain optional overlays |
 | **Prior-milestone style reference** | None (automatic) | **Yes** on later milestones | First prior feed/story URL is prepended as a style reference — no control to toggle |
 
 ---

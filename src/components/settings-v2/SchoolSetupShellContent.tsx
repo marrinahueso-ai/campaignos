@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/Button";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 import { checklistNeedsAttention } from "@/lib/onboarding/state";
 
+/**
+ * Settings → Get started: simple checklist shell (no boarding wizard).
+ * Primary Helpful next steps also live on home/dashboard.
+ */
 export async function SchoolSetupShellContent() {
   const checklist = await getOnboardingChecklistForCurrentOrg();
   const items = checklist?.items ?? [];
@@ -19,13 +23,16 @@ export async function SchoolSetupShellContent() {
         </h1>
         <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-cos-muted">
           {hasOpenItems
-            ? "Add another event anytime. The tips below are optional — do them whenever it feels right."
+            ? "These tips also show on home until you’re done. Optional — do them whenever it feels right."
             : "Start a new event whenever you have something coming up. We’ll help with the rest as you go."}
         </p>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button href="/events/create?onboarding=1" size="lg">
             Create an event
+          </Button>
+          <Button href="/dashboard" variant="secondary" size="lg">
+            Go to home
           </Button>
         </div>
 

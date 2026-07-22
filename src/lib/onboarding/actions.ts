@@ -23,10 +23,15 @@ import {
   isBrandSettled,
   isCalendarSettled,
   isInviteSettled,
+  isMetaSettled,
   nextOnboardingPrompt,
   parseOnboardingState,
 } from "@/lib/onboarding/state";
-import type { OnboardingChecklistItem } from "@/lib/onboarding/types";
+import type {
+  OnboardingChecklistDismissStep,
+  OnboardingChecklistItem,
+  OnboardingPromptStep,
+} from "@/lib/onboarding/types";
 import { EMPTY_ONBOARDING_STATE } from "@/lib/onboarding/types";
 import {
   bootstrapMinimalOrganization,
@@ -36,12 +41,76 @@ import {
 import { getSchoolProfile } from "@/lib/organizations/queries";
 import { getSchoolYearSettingsData } from "@/lib/school-years/actions";
 import { getOrganizationWorkspaceData } from "@/lib/organization-workspace/queries";
+import {
+  getMetaConnectionForCurrentOrg,
+  isMetaConnectionConfigured,
+} from "@/lib/meta-publishing/connection";
 
 function revalidateOnboardingPaths() {
   revalidatePath("/dashboard");
   revalidatePath("/onboarding");
   revalidatePath("/settings/school-setup");
   revalidatePath("/events");
+  revalidatePath("/settings/meta");
+}
+
+function onboardingPromptDestination(
+  step: OnboardingPromptStep,
+  firstEventId?: string | null,
+): string {
+  if (step === "calendar" && firstEventId) {
+    return `/events/${firstEventId}?onboarding=calendar`;
+  }
+  if (step === "meta") {
+    return firstEventId
+      ? `/events/${firstEventId}?onboarding=meta`
+      : "/settings/meta";
+  }
+  return `/onboarding/${step}`;
+}
+
+function skipPatchForStep(
+  step: OnboardingPromptStep,
+  now: string,
+): Partial<{
+  calendarSkippedAt: string;
+  brandSkippedAt: string;
+  inviteSkippedAt: string;
+  metaSkippedAt: string;
+}> {
+  if (step === "calendar") return { calendarSkippedAt: now };
+  if (step === "brand") return { brandSkippedAt: now };
+  if (step === "invite") return { inviteSkippedAt: now };
+  return { metaSkippedAt: now };
+}
+
+function dismissPatchForStep(
+  step: OnboardingChecklistDismissStep,
+  current: Awaited<ReturnType<typeof getOrganizationOnboardingState>>,
+  now: string,
+) {
+  if (step === "calendar") {
+    return {
+      calendarChecklistDismissedAt: now,
+      ...(!isCalendarSettled(current) ? { calendarSkippedAt: now } : {}),
+    };
+  }
+  if (step === "brand") {
+    return {
+      brandChecklistDismissedAt: now,
+      ...(!isBrandSettled(current) ? { brandSkippedAt: now } : {}),
+    };
+  }
+  if (step === "invite") {
+    return {
+      inviteChecklistDismissedAt: now,
+      ...(!isInviteSettled(current) ? { inviteSkippedAt: now } : {}),
+    };
+  }
+  return {
+    metaChecklistDismissedAt: now,
+    ...(!isMetaSettled(current) ? { metaSkippedAt: now } : {}),
+  };
 }
 
 /** Clear first-time progress so Welcome → create event can run again (same org). */
@@ -117,10 +186,10 @@ export async function startValueFirstOnboardingAction(formData: FormData) {
 }
 
 async function deferOnboardingPromptStep(
-  step: "calendar" | "brand" | "invite",
+  step: OnboardingPromptStep,
 ): Promise<
   | { error: string; next?: undefined }
-  | { error?: undefined; next: "calendar" | "brand" | "invite" | null }
+  | { error?: undefined; next: OnboardingPromptStep | null }
 > {
   const organization = await getCurrentOrganization();
   if (!organization) {
@@ -128,14 +197,10 @@ async function deferOnboardingPromptStep(
   }
 
   const now = new Date().toISOString();
-  const patch =
-    step === "calendar"
-      ? { calendarSkippedAt: now }
-      : step === "brand"
-        ? { brandSkippedAt: now }
-        : { inviteSkippedAt: now };
-
-  const next = await patchOrganizationOnboardingState(organization.id, patch);
+  const next = await patchOrganizationOnboardingState(
+    organization.id,
+    skipPatchForStep(step, now),
+  );
   if (!next) {
     return { error: "Unable to save progress." };
   }
@@ -153,10 +218,8 @@ async function deferOnboardingPromptStep(
   return { next: following };
 }
 
-/** Skip a prompt and redirect to the next onboarding page (or Today). */
-export async function skipOnboardingPromptAction(
-  step: "calendar" | "brand" | "invite",
-) {
+/** Skip a prompt and redirect to the next onboarding page (or home). */
+export async function skipOnboardingPromptAction(step: OnboardingPromptStep) {
   const result = await deferOnboardingPromptStep(step);
   if (result.error) {
     return { error: result.error };
@@ -166,16 +229,18 @@ export async function skipOnboardingPromptAction(
     redirect("/dashboard");
   }
 
-  redirect(`/onboarding/${result.next}`);
+  const organization = await getCurrentOrganization();
+  const state = organization
+    ? await getOrganizationOnboardingState(organization.id)
+    : null;
+  redirect(onboardingPromptDestination(result.next, state?.firstEventId));
 }
 
 /**
  * Skip a prompt without leaving the current page.
  * Used by the event-page overlay so "Do this later" advances the stepper in place.
  */
-export async function deferOnboardingPromptAction(
-  step: "calendar" | "brand" | "invite",
-) {
+export async function deferOnboardingPromptAction(step: OnboardingPromptStep) {
   return deferOnboardingPromptStep(step);
 }
 
@@ -185,7 +250,7 @@ export async function deferOnboardingPromptAction(
  * overlay skip behavior (skipped-but-not-dismissed items still appear).
  */
 export async function dismissOnboardingChecklistItemAction(
-  step: "calendar" | "brand" | "invite",
+  step: OnboardingChecklistDismissStep,
 ): Promise<{ error?: string; ok?: true }> {
   const organization = await getCurrentOrganization();
   if (!organization) {
@@ -194,23 +259,10 @@ export async function dismissOnboardingChecklistItemAction(
 
   const current = await getOrganizationOnboardingState(organization.id);
   const now = new Date().toISOString();
-  const patch: Partial<typeof current> =
-    step === "calendar"
-      ? {
-          calendarChecklistDismissedAt: now,
-          ...(!isCalendarSettled(current) ? { calendarSkippedAt: now } : {}),
-        }
-      : step === "brand"
-        ? {
-            brandChecklistDismissedAt: now,
-            ...(!isBrandSettled(current) ? { brandSkippedAt: now } : {}),
-          }
-        : {
-            inviteChecklistDismissedAt: now,
-            ...(!isInviteSettled(current) ? { inviteSkippedAt: now } : {}),
-          };
-
-  const next = await patchOrganizationOnboardingState(organization.id, patch);
+  const next = await patchOrganizationOnboardingState(
+    organization.id,
+    dismissPatchForStep(step, current, now),
+  );
   if (!next) {
     return { error: "Unable to save progress." };
   }
@@ -241,6 +293,40 @@ export async function completeOnboardingCalendarAction() {
 
   revalidateOnboardingPaths();
   redirect("/calendar/import");
+}
+
+/**
+ * Mark Meta prompt complete and open Meta connect.
+ * Optional returnTo keeps the event overlay journey coherent after OAuth.
+ */
+export async function completeOnboardingMetaAction(returnTo?: string) {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const now = new Date().toISOString();
+  const next = await patchOrganizationOnboardingState(organization.id, {
+    metaCompletedAt: now,
+  });
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  revalidateOnboardingPaths();
+
+  const safeReturn =
+    typeof returnTo === "string" &&
+    returnTo.startsWith("/") &&
+    !returnTo.startsWith("//")
+      ? returnTo
+      : next.firstEventId
+        ? `/events/${next.firstEventId}`
+        : "/dashboard";
+
+  redirect(
+    `/settings/meta?returnTo=${encodeURIComponent(safeReturn)}`,
+  );
 }
 
 function fileFromFormData(formData: FormData, key: string): File | null {
@@ -358,12 +444,16 @@ export async function sendOnboardingInviteAction(formData: FormData) {
     return { error: result.error ?? "Unable to send invite." };
   }
 
-  await patchOrganizationOnboardingState(organization.id, {
+  const state = await patchOrganizationOnboardingState(organization.id, {
     inviteCompletedAt: new Date().toISOString(),
   });
 
   revalidateOnboardingPaths();
-  redirect("/dashboard");
+
+  if (state?.firstEventId && !isMetaSettled(state)) {
+    redirect(`/events/${state.firstEventId}?onboarding=meta`);
+  }
+  redirect("/settings/meta");
 }
 
 export async function getOnboardingChecklistForCurrentOrg(): Promise<{
@@ -377,9 +467,10 @@ export async function getOnboardingChecklistForCurrentOrg(): Promise<{
 
   const organization = profile.organization;
   const state = parseOnboardingState(organization.onboardingState);
-  const [schoolYearData, members] = await Promise.all([
+  const [schoolYearData, members, metaConnection] = await Promise.all([
     getSchoolYearSettingsData(),
     getOrganizationUsers(organization.id),
+    getMetaConnectionForCurrentOrg(),
   ]);
 
   const hasCalendarSignal = Boolean(
@@ -392,12 +483,14 @@ export async function getOnboardingChecklistForCurrentOrg(): Promise<{
       organization.mascot,
   );
   const hasTeamSignal = members.length > 1;
+  const hasMetaSignal = isMetaConnectionConfigured(metaConnection);
 
   const items = buildOnboardingChecklist({
     state,
     hasCalendarSignal,
     hasBrandSignal,
     hasTeamSignal,
+    hasMetaSignal,
     firstEventHref: state.firstEventId
       ? `/events/${state.firstEventId}`
       : null,

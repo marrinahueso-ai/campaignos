@@ -44,7 +44,12 @@ import {
   ensureSharedCaptionsForPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
 import { defaultEnabledFormats, emptyMilestoneArtwork, normalizeMilestoneArtwork } from "@/lib/campaign-builder-v2/platform-utils";
-import { brandKitIdForAi, NO_BRAND_KIT_ID } from "@/lib/campaign-builder-v2/brand-kit";
+import {
+  brandKitIdForAi,
+  hasOrganizationBrandDirection,
+  NO_BRAND_KIT_ID,
+  resolveBrandKitIdForSession,
+} from "@/lib/campaign-builder-v2/brand-kit";
 import { normalizeCreativeSelections } from "@/lib/campaign-builder-v2/creative-config";
 import {
   DEFAULT_BRAND_KIT_OPTIONS,
@@ -122,6 +127,7 @@ interface CampaignBuilderProviderProps {
   campaignOptions: CampaignOption[];
   logoOptions: SetupLogoOption[];
   schoolColors: CampaignBuilderSchoolColors;
+  mascot?: string | null;
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
   /** Org-resolved default approver for Review sidebar (same path as send-for-approval). */
@@ -141,6 +147,7 @@ interface CampaignBuilderContextValue {
   campaignOptions: CampaignOption[];
   logoOptions: SetupLogoOption[];
   schoolColors: CampaignBuilderSchoolColors;
+  mascot: string | null;
   isSaving: boolean;
   isGeneratingContent: boolean;
   generatingMilestoneId: string | null;
@@ -509,14 +516,27 @@ export function CampaignBuilderProvider({
   campaignOptions,
   logoOptions,
   schoolColors,
+  mascot = null,
   initialSession,
   restoredFromServer,
   resolvedWorkflowApprover = null,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
-  const [session, setSession] = useState<CampaignBuilderSession>(() =>
-    hydrateWithArtworkBackup(
+  const hasBrandDirection = hasOrganizationBrandDirection({
+    primaryColor: schoolColors.primary,
+    secondaryColor: schoolColors.secondary,
+    ptoLogo: logoOptions.some((logo) => logo.id === "pto")
+      ? "pto"
+      : null,
+    schoolLogo: logoOptions.some((logo) => logo.id === "school")
+      ? "school"
+      : null,
+    mascot,
+    brandKitItemCount: logoOptions.length,
+  });
+  const [session, setSession] = useState<CampaignBuilderSession>(() => {
+    const hydrated = hydrateWithArtworkBackup(
       initialSession,
       loadLocalSession(eventId),
       eventId,
@@ -524,8 +544,24 @@ export function CampaignBuilderProvider({
       eventDate,
       restoredFromServer,
       resolvedWorkflowApprover,
-    ),
-  );
+    );
+    // Stale localStorage often still has brandKitId "none" from seed — upgrade
+    // when the org has logos/colors/mascot so generation useBrandKit stays true.
+    return {
+      ...hydrated,
+      inspiration: {
+        ...hydrated.inspiration,
+        brandKitId: resolveBrandKitIdForSession(
+          hydrated.inspiration.brandKitId,
+          hasBrandDirection,
+        ),
+        primarySchoolColor:
+          schoolColors.primary ?? hydrated.inspiration.primarySchoolColor,
+        secondarySchoolColor:
+          schoolColors.secondary ?? hydrated.inspiration.secondarySchoolColor,
+      },
+    };
+  });
   const [currentStep, setCurrentStep] = useState<CampaignBuilderStepId>(() => {
     const fromHash = stepFromHash(
       typeof window !== "undefined" ? getLocationHash() : "",
@@ -2105,6 +2141,7 @@ export function CampaignBuilderProvider({
       campaignOptions,
       logoOptions,
       schoolColors,
+      mascot,
       isSaving,
       isGeneratingContent,
       generatingMilestoneId,
@@ -2155,6 +2192,7 @@ export function CampaignBuilderProvider({
       campaignOptions,
       logoOptions,
       schoolColors,
+      mascot,
       isSaving,
       isGeneratingContent,
       generatingMilestoneId,

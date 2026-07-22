@@ -183,7 +183,14 @@ export async function generateCampaignBuilderArtwork(input: {
     uploadedLogoUrl: resolvedInspiration.uploadedLogoUrl,
     uploadedLogoLabel: resolvedInspiration.uploadedLogoLabel,
   });
-  const logoUrls = selectedLogo.url ? [selectedLogo.url] : [];
+  // Selected logo first (explicit include), then org brand-kit logo URLs as
+  // visual references — brandContext.logoUrls was previously unused.
+  const logoUrls = [
+    ...new Set([
+      ...(selectedLogo.url ? [selectedLogo.url] : []),
+      ...(input.useBrandKit ? brandContext.logoUrls : []),
+    ]),
+  ];
   const baseInspirationUrls = mergeInspirationImageUrls(
     input.inspirationImageUrls,
     logoUrls,
