@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 21, 2026 — Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
+**Last updated:** July 21, 2026 — Events Home list thumbnails use promoted approved-square URL when artwork prefetch misses a row; Event detail hero Filled volunteers stat; Meta-native FB feed schedule on Approve + Calendar DnD Graph reschedule (no re-approval); Create with AI artwork input QA matrix; Review approval workflow uses Team Access approvers
 
 ---
 
@@ -43,7 +43,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Week ahead / upcoming events + weather context — **shipped**
 
 ## Events
-- Events list, create, edit — **shipped**
+- Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**

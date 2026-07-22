@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CalendarDays, User } from "lucide-react";
 import { EventStatusBadge } from "@/components/events/EventStatusBadge";
 import { Button } from "@/components/ui/Button";
+import { resolveEventsHomeListArtwork } from "@/lib/events/resolve-events-home-list-artwork";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
@@ -45,7 +46,10 @@ export function EventsUpcomingSection({
 
       <div className="flex items-stretch gap-3 overflow-x-auto pb-1">
         {events.map((event) => {
-          const artwork = artworkByEventId[event.id] ?? null;
+          const artwork = resolveEventsHomeListArtwork(
+            event,
+            artworkByEventId[event.id],
+          );
           const responsible = responsibleByEventId[event.id] ?? {
             displayName: "Not assigned",
             organizationTitle: null,

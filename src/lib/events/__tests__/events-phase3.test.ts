@@ -19,9 +19,11 @@ import {
   matchesEventsHomeMonth,
 } from "../events-home-summary.ts";
 import { collectEventsHomeArtworkEventIds } from "../events-home-artwork-ids.ts";
+import { resolveEventsHomeListArtwork } from "../resolve-events-home-list-artwork.ts";
 import { isEventsPhase3UiEnabled } from "../events-phase3-flag.ts";
 import type { OrganizationCommittee, OrganizationMember } from "../../../types/organization-workspace.ts";
 import type { Event } from "../../../types/index.ts";
+import type { HeroArtworkSelection } from "../../event-workspace/select-hero-artwork.ts";
 
 function member(
   partial: Partial<OrganizationMember> & Pick<OrganizationMember, "id" | "name">,
@@ -394,6 +396,48 @@ describe("artwork isolation contract", () => {
     assert.ok(ids.includes("evt-8")); // upcoming
     assert.ok(ids.length < events.length);
     assert.equal(new Set(ids).size, ids.length);
+  });
+
+  it("falls back to promoted approved-square URL when prefetch misses", () => {
+    const prefetched: HeroArtworkSelection = {
+      source: "approved_asset",
+      caption: "Artwork ready",
+      imageUrl: "https://cdn.example/prefetched.png",
+      label: "Approved artwork",
+      filename: null,
+      aspectRatio: "square",
+      assetType: "square_graphic",
+    };
+    assert.equal(
+      resolveEventsHomeListArtwork(
+        {
+          approvedSquareImageUrl: "https://cdn.example/fallback.png",
+          approvedSquareImageStatus: "filled",
+        },
+        prefetched,
+      )?.imageUrl,
+      "https://cdn.example/prefetched.png",
+    );
+    assert.equal(
+      resolveEventsHomeListArtwork(
+        {
+          approvedSquareImageUrl: "https://cdn.example/fallback.png",
+          approvedSquareImageStatus: "filled",
+        },
+        null,
+      )?.imageUrl,
+      "https://cdn.example/fallback.png",
+    );
+    assert.equal(
+      resolveEventsHomeListArtwork(
+        {
+          approvedSquareImageUrl: "https://cdn.example/fallback.png",
+          approvedSquareImageStatus: "open",
+        },
+        null,
+      ),
+      null,
+    );
   });
 });
 

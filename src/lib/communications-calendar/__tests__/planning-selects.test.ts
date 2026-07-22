@@ -17,7 +17,18 @@ describe("planning lean selects", () => {
     assert.doesNotMatch(selects, /planning_quick_links/);
     assert.doesNotMatch(selects, /planning_vendors/);
     assert.doesNotMatch(selects, /volunteer_needs/);
-    assert.doesNotMatch(selects, /approved_square_image/);
+    // Lean summary stays without artwork; campaign list select adds URLs.
+    const summaryStart = selects.indexOf("export const EVENT_SUMMARY_SELECT");
+    const campaignListStart = selects.indexOf(
+      "export const EVENT_CAMPAIGN_LIST_SELECT",
+    );
+    assert.ok(summaryStart >= 0);
+    assert.ok(campaignListStart > summaryStart);
+    const summaryBlock = selects.slice(summaryStart, campaignListStart);
+    assert.doesNotMatch(summaryBlock, /approved_square_image/);
+    assert.match(selects, /export const EVENT_CAMPAIGN_LIST_SELECT/);
+    assert.match(selects, /approved_square_image_url/);
+    assert.match(selects, /approved_square_image_status/);
   });
 
   it("asset select omits heavy generation / review JSON columns", () => {

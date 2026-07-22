@@ -21,3 +21,13 @@ export const EVENT_SUMMARY_SELECT = [
   "created_at",
   "updated_at",
 ].join(", ");
+
+/**
+ * Campaigns / Events Home list — summary columns plus promoted hero URL so
+ * rows outside the artwork prefetch window still show a thumbnail.
+ */
+export const EVENT_CAMPAIGN_LIST_SELECT = [
+  EVENT_SUMMARY_SELECT,
+  "approved_square_image_url",
+  "approved_square_image_status",
+].join(", ");

@@ -34,6 +34,7 @@ import {
   type EventsHomeMonthFilter,
   type EventsHomeSummaryKey,
 } from "@/lib/events/events-home-summary";
+import { resolveEventsHomeListArtwork } from "@/lib/events/resolve-events-home-list-artwork";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
@@ -389,7 +390,10 @@ export function EventsHomeContent({
                     className="flex flex-col gap-4 rounded-xl border border-cos-border bg-cos-card p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-3.5"
                   >
                     <EventsHomeArtwork
-                      artwork={artworkByEventId[event.id] ?? null}
+                      artwork={resolveEventsHomeListArtwork(
+                        event,
+                        artworkByEventId[event.id],
+                      )}
                       eventTitle={event.title}
                       size="row"
                     />
