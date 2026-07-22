@@ -19,10 +19,19 @@ export function parseOnboardingState(
     firstEventCompletedAt: asOptionalString(value.firstEventCompletedAt),
     calendarCompletedAt: asOptionalString(value.calendarCompletedAt),
     calendarSkippedAt: asOptionalString(value.calendarSkippedAt),
+    calendarChecklistDismissedAt: asOptionalString(
+      value.calendarChecklistDismissedAt,
+    ),
     brandCompletedAt: asOptionalString(value.brandCompletedAt),
     brandSkippedAt: asOptionalString(value.brandSkippedAt),
+    brandChecklistDismissedAt: asOptionalString(
+      value.brandChecklistDismissedAt,
+    ),
     inviteCompletedAt: asOptionalString(value.inviteCompletedAt),
     inviteSkippedAt: asOptionalString(value.inviteSkippedAt),
+    inviteChecklistDismissedAt: asOptionalString(
+      value.inviteChecklistDismissedAt,
+    ),
     promptsFinishedAt: asOptionalString(value.promptsFinishedAt),
   };
 }
@@ -83,10 +92,22 @@ export function buildOnboardingChecklist(input: {
 }): OnboardingChecklistItem[] {
   const { state, hasCalendarSignal, hasBrandSignal, hasTeamSignal } = input;
 
+  // Overlay "Do this later" sets *SkippedAt — those items must still surface here
+  // even if the org already has calendar/brand/team signals (restart / mature orgs).
+  // Checklist "Later" sets *ChecklistDismissedAt. Signals only auto-complete when
+  // the step was not deferred in the current onboarding run.
   const calendarDone =
-    hasCalendarSignal || Boolean(state.calendarCompletedAt);
-  const brandDone = hasBrandSignal || Boolean(state.brandCompletedAt);
-  const inviteDone = hasTeamSignal || Boolean(state.inviteCompletedAt);
+    Boolean(state.calendarChecklistDismissedAt) ||
+    Boolean(state.calendarCompletedAt) ||
+    (hasCalendarSignal && !state.calendarSkippedAt);
+  const brandDone =
+    Boolean(state.brandChecklistDismissedAt) ||
+    Boolean(state.brandCompletedAt) ||
+    (hasBrandSignal && !state.brandSkippedAt);
+  const inviteDone =
+    Boolean(state.inviteChecklistDismissedAt) ||
+    Boolean(state.inviteCompletedAt) ||
+    (hasTeamSignal && !state.inviteSkippedAt);
   const firstEventDone = hasCompletedFirstEvent(state);
 
   const items: OnboardingChecklistItem[] = [];
@@ -97,7 +118,7 @@ export function buildOnboardingChecklist(input: {
       title: "Create your first event",
       description: "Pick something on the calendar and we’ll help you plan from there.",
       href: "/onboarding",
-      cta: "Create event",
+      cta: "Set up now",
       done: false,
       optional: false,
     });
@@ -109,7 +130,7 @@ export function buildOnboardingChecklist(input: {
       title: "Bring in your school calendar",
       description: "Add your year’s dates so nothing important gets missed.",
       href: "/calendar/import",
-      cta: calendarDone ? "View calendar" : "Import calendar",
+      cta: calendarDone ? "View calendar" : "Set up now",
       done: calendarDone,
       optional: true,
     },
@@ -118,7 +139,7 @@ export function buildOnboardingChecklist(input: {
       title: "Build your brand kit",
       description: "Logos and colors so every campaign feels like your school.",
       href: "/onboarding/brand",
-      cta: brandDone ? "Edit brand kit" : "Build brand kit",
+      cta: brandDone ? "Edit brand kit" : "Set up now",
       done: brandDone,
       optional: true,
     },
@@ -127,7 +148,7 @@ export function buildOnboardingChecklist(input: {
       title: "Invite a teammate",
       description: "Bring in another board member when you’re ready to share the work.",
       href: "/onboarding/invite",
-      cta: inviteDone ? "View team" : "Invite teammate",
+      cta: inviteDone ? "View team" : "Set up now",
       done: inviteDone,
       optional: true,
     },

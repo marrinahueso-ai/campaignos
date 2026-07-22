@@ -391,7 +391,7 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Scrollable primary nav; Insights is last so Ask Ralli sits directly under it. */}
+      {/* Scrollable primary nav; Ask Ralli renders immediately after Insights. */}
       <nav
         className={cn(
           "min-h-0 flex-1 space-y-0.5 overflow-y-auto",
@@ -496,16 +496,20 @@ export function Sidebar({
             </Link>
           );
         })}
+
+        {/* Immediately under Insights (last nav item) — scrolls with nav, not footer-pinned. */}
+        <div className={cn(showLabels ? "pt-3" : "flex justify-center pt-2")}>
+          {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
+        </div>
       </nav>
 
-      {/* Pinned under Insights — stays in the sidebar viewport while nav scrolls. */}
+      {/* AI credits stay at the bottom of the sidebar. */}
       <div
         className={cn(
           "shrink-0 border-t border-cos-border bg-cos-card",
-          showLabels ? "space-y-3 px-4 py-3" : "flex flex-col items-center gap-3 px-2 py-3",
+          showLabels ? "px-4 py-3" : "flex justify-center px-2 py-3",
         )}
       >
-        {showLabels ? <RalliAiAssistantWidget /> : <RalliAiAssistantWidget compact />}
         {showLabels ? <AiCreditsWidget /> : <AiCreditsWidget compact />}
       </div>
     </aside>

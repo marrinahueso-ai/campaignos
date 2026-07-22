@@ -196,9 +196,9 @@ export function RalliAiAssistantWidget({
           title="Hey Ralli Assistant"
           aria-label="Hey Ralli Assistant"
           onClick={() => setOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-cos-brand-navy/20 bg-cos-brand-navy-soft/70 transition-colors hover:bg-cos-brand-navy-soft"
+          className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-cos-accent/25 bg-cos-accent-soft/70 transition-colors hover:bg-cos-accent-soft"
         >
-          <Sparkles className="h-4 w-4 text-cos-brand-navy" strokeWidth={1.5} />
+          <Sparkles className="h-4 w-4 text-cos-accent" strokeWidth={1.5} />
         </button>
       ) : (
         <div className="rounded-[12px] border border-cos-border bg-cos-card p-4 shadow-[0_1px_2px_rgba(42,38,34,0.04)]">
@@ -210,7 +210,7 @@ export function RalliAiAssistantWidget({
             <h3 className="font-display text-base text-cos-brand-navy">
               Hey Ralli Assistant
             </h3>
-            <span className="rounded-full bg-cos-brand-navy px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#f6f2eb] uppercase">
+            <span className="rounded-full bg-cos-accent px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#f6f2eb] uppercase">
               Ask
             </span>
           </div>
@@ -225,8 +225,8 @@ export function RalliAiAssistantWidget({
             type="button"
             onClick={() => setOpen(true)}
             className={cn(
-              "mt-4 flex w-full items-center justify-center rounded-[10px] border border-cos-brand-navy/15",
-              "bg-cos-brand-navy px-4 py-2.5 text-sm font-semibold text-[#f6f2eb] transition-colors hover:bg-cos-brand-navy/90",
+              "mt-4 flex w-full items-center justify-center rounded-[10px] border border-cos-accent/20",
+              "bg-cos-accent px-4 py-2.5 text-sm font-semibold text-[#f6f2eb] transition-colors hover:bg-cos-accent/90",
             )}
           >
             Ask Ralli →

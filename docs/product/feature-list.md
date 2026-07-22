@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Value-first onboarding done-for-now (state, restart, overlay, single brand path, Get started checklist); artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
+**Last updated:** July 22, 2026 — Value-first onboarding Helpful next steps Set up now / Later; overlay skip still surfaces checklist; artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
 
 ---
 
@@ -24,9 +24,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Overlay CTAs: primary action · **Do this later** (advances stepper **in place**, stays on event) · **Stay on event** (dismisses overlay only)
   - Calendar primary → canonical `/calendar/import` (Google + ICS + file)
   - Brand: single path `/onboarding/brand` (PTO + school + extra logos, preview; save stays on page then Continue) — Get started deep-links here; **not** a second wizard brand step
-  - Skipped / unfinished items surface on Today + Settings → **Get started** checklist (`/settings/school-setup`, labeled Get started; eyebrow **Get started** not School setup)
-  - Progress persisted on `organizations.onboarding_state` (migration `072`)
-  - Restart / replay Welcome for finished orgs (`RestartOnboardingButton` → `/onboarding?welcome=1`)
+  - Helpful next steps (Today + Settings → **Get started**): pending cards show **Set up now** + **Later**; Later dismisses that card; overlay **Do this later** still surfaces the card until Later or real completion (even if the org already has calendar/brand/team signals)
+  - Progress persisted on `organizations.onboarding_state` (migration `072`; checklist dismiss timestamps in JSON)
+  - Restart / replay Welcome for finished orgs (`RestartOnboardingButton` → `/onboarding?welcome=1`); creating an onboarding event clears stale skip/complete flags so Calendar → Brand → Team can replay
 - Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; save stays on page with Continue to invite; Get started checklist + Organization → Edit branding deep-link here — **shipped**
 - Legacy wizard (School → Calendar → Meta → Team → Finish) — **partial** (re-entry via Get started / `?view=wizard`; brand step removed / `?step=brand` → `/onboarding/brand`; calendar step → `/calendar/import` when org exists; first-time path prefers `/onboarding`)
 - Change password — **shipped**

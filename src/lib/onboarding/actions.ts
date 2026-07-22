@@ -20,6 +20,9 @@ import {
 import {
   buildOnboardingChecklist,
   hasCompletedFirstEvent,
+  isBrandSettled,
+  isCalendarSettled,
+  isInviteSettled,
   nextOnboardingPrompt,
   parseOnboardingState,
 } from "@/lib/onboarding/state";
@@ -174,6 +177,52 @@ export async function deferOnboardingPromptAction(
   step: "calendar" | "brand" | "invite",
 ) {
   return deferOnboardingPromptStep(step);
+}
+
+/**
+ * Dismiss one Helpful next steps card via Later.
+ * Marks the checklist item done without requiring setup; does not reverse
+ * overlay skip behavior (skipped-but-not-dismissed items still appear).
+ */
+export async function dismissOnboardingChecklistItemAction(
+  step: "calendar" | "brand" | "invite",
+): Promise<{ error?: string; ok?: true }> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const current = await getOrganizationOnboardingState(organization.id);
+  const now = new Date().toISOString();
+  const patch: Partial<typeof current> =
+    step === "calendar"
+      ? {
+          calendarChecklistDismissedAt: now,
+          ...(!isCalendarSettled(current) ? { calendarSkippedAt: now } : {}),
+        }
+      : step === "brand"
+        ? {
+            brandChecklistDismissedAt: now,
+            ...(!isBrandSettled(current) ? { brandSkippedAt: now } : {}),
+          }
+        : {
+            inviteChecklistDismissedAt: now,
+            ...(!isInviteSettled(current) ? { inviteSkippedAt: now } : {}),
+          };
+
+  const next = await patchOrganizationOnboardingState(organization.id, patch);
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  if (!nextOnboardingPrompt(next) && !next.promptsFinishedAt) {
+    await patchOrganizationOnboardingState(organization.id, {
+      promptsFinishedAt: now,
+    });
+  }
+
+  revalidateOnboardingPaths();
+  return { ok: true };
 }
 
 export async function completeOnboardingCalendarAction() {

@@ -8,10 +8,14 @@ export interface OrganizationOnboardingState {
   firstEventCompletedAt?: string | null;
   calendarCompletedAt?: string | null;
   calendarSkippedAt?: string | null;
+  /** Dismissed from Helpful next steps via Later (overlay skip still surfaces the card) */
+  calendarChecklistDismissedAt?: string | null;
   brandCompletedAt?: string | null;
   brandSkippedAt?: string | null;
+  brandChecklistDismissedAt?: string | null;
   inviteCompletedAt?: string | null;
   inviteSkippedAt?: string | null;
+  inviteChecklistDismissedAt?: string | null;
   /** User finished or dismissed the post-event prompt sequence */
   promptsFinishedAt?: string | null;
 }

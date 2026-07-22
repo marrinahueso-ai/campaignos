@@ -88,10 +88,22 @@ export async function createEvent(
       "@/lib/onboarding/mutations"
     );
     const now = new Date().toISOString();
+    // Clear prior skip/complete flags so Calendar → Brand → Team can replay
+    // after Restart (merge would otherwise keep stale *SkippedAt values).
     await patchOrganizationOnboardingState(organization.id, {
       firstEventId: event.id,
       firstEventCompletedAt: now,
       startedAt: now,
+      calendarCompletedAt: null,
+      calendarSkippedAt: null,
+      calendarChecklistDismissedAt: null,
+      brandCompletedAt: null,
+      brandSkippedAt: null,
+      brandChecklistDismissedAt: null,
+      inviteCompletedAt: null,
+      inviteSkippedAt: null,
+      inviteChecklistDismissedAt: null,
+      promptsFinishedAt: null,
     });
     revalidatePath("/dashboard");
     revalidatePath("/events");

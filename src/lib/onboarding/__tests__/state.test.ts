@@ -73,6 +73,81 @@ describe("onboarding state", () => {
     assert.equal(brand?.done, false);
     assert.equal(brand?.href, "/onboarding/brand");
     assert.equal(brand?.title, "Build your brand kit");
+    assert.equal(brand?.cta, "Set up now");
+  });
+
+  it("overlay skip keeps checklist pending even with org signals; Later dismiss marks done", () => {
+    const afterOverlaySkip = buildOnboardingChecklist({
+      state: parseOnboardingState({
+        version: 1,
+        firstEventId: "e1",
+        firstEventCompletedAt: "2026-07-22T00:00:00.000Z",
+        calendarSkippedAt: "2026-07-22T00:00:00.000Z",
+        brandSkippedAt: "2026-07-22T00:00:00.000Z",
+        inviteSkippedAt: "2026-07-22T00:00:00.000Z",
+      }),
+      hasCalendarSignal: true,
+      hasBrandSignal: true,
+      hasTeamSignal: true,
+      firstEventHref: "/events/e1",
+    });
+    assert.equal(
+      afterOverlaySkip.find((item) => item.id === "calendar")?.done,
+      false,
+    );
+    assert.equal(
+      afterOverlaySkip.find((item) => item.id === "brand")?.done,
+      false,
+    );
+    assert.equal(
+      afterOverlaySkip.find((item) => item.id === "invite")?.done,
+      false,
+    );
+
+    const signalsWithoutSkip = buildOnboardingChecklist({
+      state: parseOnboardingState({
+        version: 1,
+        firstEventId: "e1",
+        firstEventCompletedAt: "2026-07-22T00:00:00.000Z",
+      }),
+      hasCalendarSignal: true,
+      hasBrandSignal: true,
+      hasTeamSignal: true,
+      firstEventHref: "/events/e1",
+    });
+    assert.equal(
+      signalsWithoutSkip.every((item) => item.done),
+      true,
+    );
+
+    const afterChecklistLater = buildOnboardingChecklist({
+      state: parseOnboardingState({
+        version: 1,
+        firstEventId: "e1",
+        firstEventCompletedAt: "2026-07-22T00:00:00.000Z",
+        calendarSkippedAt: "2026-07-22T00:00:00.000Z",
+        calendarChecklistDismissedAt: "2026-07-22T00:01:00.000Z",
+        brandCompletedAt: "2026-07-22T00:02:00.000Z",
+        inviteSkippedAt: "2026-07-22T00:00:00.000Z",
+        inviteChecklistDismissedAt: "2026-07-22T00:03:00.000Z",
+      }),
+      hasCalendarSignal: true,
+      hasBrandSignal: false,
+      hasTeamSignal: true,
+      firstEventHref: "/events/e1",
+    });
+    assert.equal(
+      afterChecklistLater.find((item) => item.id === "calendar")?.done,
+      true,
+    );
+    assert.equal(
+      afterChecklistLater.find((item) => item.id === "brand")?.done,
+      true,
+    );
+    assert.equal(
+      afterChecklistLater.find((item) => item.id === "invite")?.done,
+      true,
+    );
   });
 
   it("defaultSchoolYearLabel uses July boundary", () => {

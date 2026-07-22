@@ -82,6 +82,15 @@ export function EventOnboardingPrompt({ step }: EventOnboardingPromptProps) {
         goToStep(result.next);
         return;
       }
+      // Fallback: if server already had this step settled (stale state), still
+      // advance the visible stepper Calendar → Brand → Team before dismissing.
+      const order: PromptStep[] = ["calendar", "brand", "invite"];
+      const index = order.indexOf(activeStep);
+      const fallback = index >= 0 ? order[index + 1] : undefined;
+      if (fallback) {
+        goToStep(fallback);
+        return;
+      }
       dismissPrompt();
     });
   }

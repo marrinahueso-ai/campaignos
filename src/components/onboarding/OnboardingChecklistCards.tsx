@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import { dismissOnboardingChecklistItemAction } from "@/lib/onboarding/actions";
 import type { OnboardingChecklistItem } from "@/lib/onboarding/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -14,9 +19,20 @@ export function OnboardingChecklistCards({
   title = "Helpful next steps",
   description = "Optional — do these whenever you’re ready.",
 }: OnboardingChecklistCardsProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const pending = items.filter((item) => !item.done);
   if (pending.length === 0) {
     return null;
+  }
+
+  function handleLater(item: OnboardingChecklistItem) {
+    if (item.id === "first_event") return;
+    startTransition(async () => {
+      const result = await dismissOnboardingChecklistItemAction(item.id);
+      if (result.error) return;
+      router.refresh();
+    });
   }
 
   return (
@@ -33,17 +49,21 @@ export function OnboardingChecklistCards({
               "flex flex-col gap-3 rounded-xl border border-cos-border bg-cos-card p-4",
               item.done && "opacity-70",
             )}
+            data-onboarding-checklist-item={item.id}
+            data-done={item.done ? "true" : "false"}
           >
             <div className="flex items-start gap-3">
               {item.done ? (
                 <CheckCircle2
                   className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"
                   strokeWidth={1.75}
+                  aria-hidden
                 />
               ) : (
                 <Circle
                   className="mt-0.5 h-5 w-5 shrink-0 text-cos-muted"
                   strokeWidth={1.75}
+                  aria-hidden
                 />
               )}
               <div className="min-w-0">
@@ -55,13 +75,25 @@ export function OnboardingChecklistCards({
               </div>
             </div>
             {!item.done ? (
-              <Link
-                href={item.href}
-                className="inline-flex items-center gap-1 text-sm font-medium text-cos-text hover:text-cos-primary"
-              >
-                {item.cta}
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={item.href}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-cos-text hover:text-cos-primary"
+                >
+                  {item.cta}
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+                </Link>
+                {item.id !== "first_event" ? (
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleLater(item)}
+                    className="text-sm text-cos-muted hover:text-cos-text disabled:opacity-60"
+                  >
+                    Later
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </article>
         ))}
