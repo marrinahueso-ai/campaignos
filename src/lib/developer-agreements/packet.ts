@@ -13,6 +13,7 @@ import {
   getAgreementsSiteOrigin,
   getDeveloperAgreementOwnerEmails,
 } from "@/lib/developer-agreements/owner-emails";
+import { createExecutedAgreementDownloadToken } from "@/lib/developer-agreements/download-token";
 import {
   signaturePathToDataUrl,
   uploadAgreementBytes,
@@ -212,24 +213,11 @@ export async function emailExecutedAgreementCopy(input: {
   ];
   if (!recipients.length) return;
 
-  const admin = createAdminClient();
-  const { data: signatureRow } = await admin
-    .from("developer_agreement_signatures")
-    .select("executed_html_path")
-    .eq("id", input.signatureId)
-    .maybeSingle();
-
-  // Prefer a time-limited Storage signed URL so the Resend template CTA works
-  // without requiring the recipient to be logged in.
-  let downloadUrl = `${getAgreementsSiteOrigin()}/api/developer-agreements/download?id=${encodeURIComponent(input.signatureId)}`;
-  if (signatureRow?.executed_html_path) {
-    const signed = await admin.storage
-      .from("developer-agreements")
-      .createSignedUrl(signatureRow.executed_html_path, 60 * 60 * 24 * 30);
-    if (signed.data?.signedUrl) {
-      downloadUrl = signed.data.signedUrl;
-    }
-  }
+  // App-origin download with a time-limited HMAC token so email CTAs work
+  // without login and Safari gets Content-Type: text/html (Storage signed URLs
+  // often serve as octet-stream / text/plain and show raw source).
+  const token = createExecutedAgreementDownloadToken(input.signatureId);
+  const downloadUrl = `${getAgreementsSiteOrigin()}/api/developer-agreements/download?id=${encodeURIComponent(input.signatureId)}&token=${encodeURIComponent(token)}`;
 
   const content = buildDeveloperAgreementExecutedEmail({
     developerName: input.developerName,
@@ -241,8 +229,7 @@ export async function emailExecutedAgreementCopy(input: {
   const filename = `${slugify(input.documentTitle)}-${input.versionLabel}-executed.html`;
 
   // Primary: published Resend template (editable in the Resend dashboard).
-  // CTA uses a Storage signed URL so recipients can open the full copy
-  // without signing in. Templates cannot include file attachments.
+  // CTA uses the app download API (tokenized). Templates cannot attach files.
   let result = await sendTemplateEmail({
     to: recipients,
     templateId: resolveDeveloperAgreementExecutedTemplateId(),
@@ -277,6 +264,7 @@ export async function emailExecutedAgreementCopy(input: {
   }
 
   if (result.success) {
+    const admin = createAdminClient();
     await admin
       .from("developer_agreement_signatures")
       .update({ executed_emailed_at: new Date().toISOString() })

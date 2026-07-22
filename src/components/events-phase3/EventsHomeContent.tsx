@@ -10,7 +10,6 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { CampaignRowActions } from "@/components/campaigns/CampaignRowActions";
 import {
   EventsHomeArtwork,
   EventsUpcomingSection,
@@ -440,7 +439,6 @@ export function EventsHomeContent({
                       >
                         View Details
                       </Button>
-                      <CampaignRowActions event={event} compact />
                     </div>
                   </div>
                 );

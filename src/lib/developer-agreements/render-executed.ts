@@ -83,7 +83,7 @@ export function renderExecutedAgreementHtml(
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>${escapeHtml(input.title)} — ${escapeHtml(input.versionLabel)}</title>
+  <title>${escapeHtml(input.title)} &mdash; ${escapeHtml(input.versionLabel)}</title>
   <style>
     body { font-family: Georgia, "Times New Roman", serif; color: #2a2622; max-width: 760px; margin: 0 auto; padding: 32px 24px 64px; line-height: 1.55; }
     h1, h2, h3 { font-weight: 600; }

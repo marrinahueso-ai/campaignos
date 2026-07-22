@@ -19,7 +19,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Sign in / sign up — **shipped**
 - Founding access code + org welcome magic-link email (CTA **Let's get started** → `/auth/callback` → `/onboarding`) — **shipped** (eng: [auth-welcome-email.md](../engineering/auth-welcome-email.md))
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
-- Developer agreements gate (NDA + IP, in-app e-sign: full name + email + optional company + drawn signature; scroll-to-enable; signed receipt on panels; Hey Ralli-themed UI; audit log) — **shipped** (`/account/agreements`; owner manage at `/account/agreements/manage`; eng: [developer-agreements.md](../engineering/developer-agreements.md))
+- Developer agreements gate (NDA + IP, in-app e-sign: full name + email + optional company + drawn signature; scroll-to-enable; signed receipt on panels; Hey Ralli-themed UI; audit log; executed-copy email CTA via app download API with token) — **shipped** (`/account/agreements`; owner manage at `/account/agreements/manage`; eng: [developer-agreements.md](../engineering/developer-agreements.md))
 - Owner dashboard (`/ops`) — platform metrics + **Developers signed** counter-sign queue — **shipped** (gated by `HEY_RALLI_OWNER_EMAILS`)
 - Get started (one boarding flow) — **shipped**:
   - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → **stay on event** with overlay **Calendar → Brand → Team → Meta** (all skippable); also `/onboarding/brand`, `/onboarding/invite`, `/onboarding/meta`

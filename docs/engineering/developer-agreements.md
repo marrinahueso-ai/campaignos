@@ -18,7 +18,7 @@ This is an **in-app e-sign** flow (typed legal name + drawn signature), not Docu
 4. System builds an HTML packet with the agreement body + populated developer signature fields and stores it under Storage `executed/{userId}/{versionId}.html`.
 5. Owners in `HEY_RALLI_OWNER_EMAILS` are emailed via Resend template `developer-agreement-countersign` with a counter-sign link (`/account/agreements/countersign?id=…`).
 6. Owner reviews the agreement UI (developer receipt shown), types full name + email (+ optional company name / title), draws company signature → status becomes `fully_executed`.
-7. Final HTML packet includes both parties; Resend template `developer-agreement-executed` emails developer + owners with a signed download URL (HTML+attachment fallback if the template send fails). Also downloadable via `/api/developer-agreements/download?id=…` and Owner ops.
+7. Final HTML packet includes both parties (`executed/{userId}/{versionId}.html`, uploaded as `text/html; charset=utf-8`). Resend template `developer-agreement-executed` emails developer + owners with an **app-origin** download CTA: `/api/developer-agreements/download?id=…&token=…` (HMAC, ~30 days). The API streams the HTML with `Content-Type: text/html; charset=utf-8` and `Content-Disposition: inline` so Safari/Chrome render the packet (Supabase Storage signed URLs often serve as `octet-stream` / `text/plain` and show raw source). Logged-in signer/owner can omit `token`. Add `&disposition=attachment` to force a file download. HTML+attachment fallback if the template send fails. Also linked from account agreements UI and Owner ops.
 
 ### Resend templates
 

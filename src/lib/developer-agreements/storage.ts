@@ -10,9 +10,13 @@ export async function uploadAgreementBytes(input: {
   contentType: string;
 }): Promise<{ path: string } | { error: string }> {
   const admin = createAdminClient();
+  // Prefer an explicit MIME from the caller (executed packets use
+  // text/html; charset=utf-8). Upsert refreshes Storage metadata so
+  // regenerating a packet corrects a previously wrong content type.
   const { error } = await admin.storage.from(BUCKET).upload(input.path, input.bytes, {
     contentType: input.contentType,
     upsert: true,
+    cacheControl: "private, no-store",
   });
   if (error) {
     return { error: error.message };
