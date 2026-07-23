@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Download,
   LayoutList,
   Plus,
   Search,
@@ -33,6 +34,11 @@ import {
   type EventsHomeMonthFilter,
   type EventsHomeSummaryKey,
 } from "@/lib/events/events-home-summary";
+import {
+  buildEventsListPdfFilename,
+  downloadEventsListPdf,
+  eventStatusLabel,
+} from "@/lib/events/export-events-list-pdf";
 import { resolveEventsHomeListArtwork } from "@/lib/events/resolve-events-home-list-artwork";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
 import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
@@ -75,6 +81,8 @@ export function EventsHomeContent({
     activeSchoolYearId ?? "all",
   );
   const [page, setPage] = useState(1);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   const summaryCounts = useMemo(
     () => countEventsHomeSummary(events, today),
@@ -184,6 +192,56 @@ export function EventsHomeContent({
 
   function resetPage() {
     setPage(1);
+  }
+
+  const monthFilterLabel =
+    monthOptions.find((option) => option.value === monthFilter)?.label ??
+    "Filtered";
+
+  async function handleDownloadFilteredPdf() {
+    if (filtered.length === 0 || isExportingPdf) {
+      setExportMessage("No events match the current filters to download.");
+      return;
+    }
+
+    setExportMessage(null);
+    setIsExportingPdf(true);
+    try {
+      const rows = filtered.map((event) => {
+        const responsible = responsibleByEventId[event.id];
+        const typeLabel = event.eventType
+          ? (EVENT_TYPE_LABELS[event.eventType] ?? event.eventType)
+          : event.category;
+        const artwork = resolveEventsHomeListArtwork(
+          event,
+          artworkByEventId[event.id],
+        );
+        const timeLabel = event.time ? formatEventTime(event.time) : null;
+        return {
+          title: event.title,
+          typeLabel: typeLabel ?? null,
+          dateTime: timeLabel
+            ? `${formatEventDate(event.date)} · ${timeLabel}`
+            : formatEventDate(event.date),
+          statusLabel: eventStatusLabel(event.status),
+          assignee: responsible?.displayName ?? "Not assigned",
+          imageUrl: artwork?.imageUrl ?? null,
+        };
+      });
+
+      await downloadEventsListPdf({
+        rows,
+        filename: buildEventsListPdfFilename({
+          monthFilter,
+          today,
+        }),
+        filterLabel: monthFilterLabel,
+      });
+    } catch {
+      setExportMessage("Could not download the PDF. Try again in a moment.");
+    } finally {
+      setIsExportingPdf(false);
+    }
   }
 
   return (
@@ -356,23 +414,45 @@ export function EventsHomeContent({
         </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState
-          icon={CalendarDays}
-          title="No events match"
-          description="Try clearing filters, or create a new event."
-          action={{ label: "Create Event", href: "/events/create" }}
+      {filtered.length > 0 ? (
+        <EventsUpcomingSection
+          events={upcomingEvents}
+          artworkByEventId={artworkByEventId}
+          responsibleByEventId={responsibleByEventId}
         />
-      ) : (
-        <>
-          <EventsUpcomingSection
-            events={upcomingEvents}
-            artworkByEventId={artworkByEventId}
-            responsibleByEventId={responsibleByEventId}
-          />
+      ) : null}
 
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl text-cos-text">All Events</h2>
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl text-cos-text">All Events</h2>
+          <button
+            type="button"
+            onClick={() => {
+              void handleDownloadFilteredPdf();
+            }}
+            disabled={filtered.length === 0 || isExportingPdf}
+            aria-label="Download filtered events as PDF"
+            title="Download filtered events as PDF"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Download className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
+        {exportMessage ? (
+          <p className="text-sm text-cos-muted" role="status">
+            {exportMessage}
+          </p>
+        ) : null}
+
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={CalendarDays}
+            title="No events match"
+            description="Try clearing filters, or create a new event."
+            action={{ label: "Create Event", href: "/events/create" }}
+          />
+        ) : (
+          <>
             <div className="space-y-3">
               {paginatedEvents.map((event) => {
                 const responsible = responsibleByEventId[event.id] ?? {
@@ -506,9 +586,9 @@ export function EventsHomeContent({
                 </button>
               </div>
             </div>
-          </section>
-        </>
-      )}
+          </>
+        )}
+      </section>
     </div>
   );
 }
