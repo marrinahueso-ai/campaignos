@@ -7,6 +7,7 @@ import {
 import {
   AI_APIS_AGGREGATE_ROW_CAP,
   AI_APIS_CSV_EXPORT_CAP,
+  AI_APIS_PINNED_ORGANIZATIONS,
   AI_APIS_TABLE_PAGE_SIZE,
   AI_ORGS_NEAR_LIMIT_USD,
 } from "@/lib/ops/ai-apis-constants";
@@ -344,7 +345,8 @@ function toAiUsageRow(
 export function defaultAiApisRange(): { fromIso: string; toIso: string } {
   const to = new Date();
   const from = new Date(to);
-  from.setUTCDate(from.getUTCDate() - 30);
+  // 90 days so one-time OpenAI history import (pre–collecting-since) is visible.
+  from.setUTCDate(from.getUTCDate() - 90);
   return { fromIso: from.toISOString(), toIso: to.toISOString() };
 }
 
@@ -470,11 +472,18 @@ export async function getAiApisDashboard(filters: AiApisFilters): Promise<{
     orgCost.set(key, (orgCost.get(key) ?? 0) + (num(row.estimated_cost_usd) ?? 0));
   }
 
+  for (const pinned of AI_APIS_PINNED_ORGANIZATIONS) {
+    if (!orgCost.has(pinned.id)) {
+      orgCost.set(pinned.id, 0);
+    }
+  }
+
   const orgIds = [
     ...new Set(
       [
         ...currentFiltered.map((r) => r.organization_id),
         ...[...orgCost.keys()],
+        ...AI_APIS_PINNED_ORGANIZATIONS.map((org) => org.id),
       ].filter((id): id is string => Boolean(id)),
     ),
   ];
@@ -491,6 +500,12 @@ export async function getAiApisDashboard(filters: AiApisFilters): Promise<{
     resolveUserLabels(userIds),
   ]);
 
+  for (const pinned of AI_APIS_PINNED_ORGANIZATIONS) {
+    if (!orgNames.has(pinned.id)) {
+      orgNames.set(pinned.id, pinned.name);
+    }
+  }
+
   const byOrgCost: AiApisOrgCostBar[] = [...orgCost.entries()]
     .map(([organizationId, costUsd]) => ({
       organizationId,
@@ -500,7 +515,7 @@ export async function getAiApisDashboard(filters: AiApisFilters): Promise<{
       costUsd,
     }))
     .sort((a, b) => b.costUsd - a.costUsd)
-    .slice(0, 8);
+    .slice(0, 12);
 
   const sorted = [...currentFiltered].sort((a, b) => {
     const dir = sortDir === "asc" ? 1 : -1;
@@ -546,9 +561,17 @@ export async function getAiApisDashboard(filters: AiApisFilters): Promise<{
     toAiUsageRow(row, orgNames, userLabels),
   );
 
+  const organizationOptions = new Map<string, string>();
+  for (const pinned of AI_APIS_PINNED_ORGANIZATIONS) {
+    organizationOptions.set(pinned.id, pinned.name);
+  }
+  for (const id of orgIds) {
+    organizationOptions.set(id, orgNames.get(id) ?? id.slice(0, 8));
+  }
+
   const filterOptions: AiApisFilterOptions = {
-    organizations: orgIds
-      .map((id) => ({ id, name: orgNames.get(id) ?? id.slice(0, 8) }))
+    organizations: [...organizationOptions.entries()]
+      .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     features: [...new Set(currentFetch.rows.map((r) => r.feature))].sort(),
     models: [...new Set(currentFetch.rows.map((r) => r.model))].sort(),

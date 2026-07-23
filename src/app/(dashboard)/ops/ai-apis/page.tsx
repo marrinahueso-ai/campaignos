@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AiApisOwnerShell } from "@/components/ops/ai-apis/AiApisOwnerShell";
 import { canAccessOwnerOps } from "@/lib/ops/access";
 import {
+  AI_APIS_PINNED_ORGANIZATIONS,
   AI_APIS_TABLE_PAGE_SIZE,
 } from "@/lib/ops/ai-apis-constants";
 import {
@@ -12,6 +13,7 @@ import {
   type AiApisSummary,
 } from "@/lib/ops/ai-apis-queries";
 import { getConnectedApisDashboard } from "@/lib/ops/connected-apis-queries";
+import { isOpenAiAdminUsageConfigured } from "@/lib/ops/openai-usage-import";
 
 export const metadata = {
   title: "AI & APIs",
@@ -51,7 +53,10 @@ const EMPTY_AI_SUMMARY: AiApisSummary = {
 };
 
 const EMPTY_AI_FILTERS: AiApisFilterOptions = {
-  organizations: [],
+  organizations: AI_APIS_PINNED_ORGANIZATIONS.map((org) => ({
+    id: org.id,
+    name: org.name,
+  })),
   features: [],
   models: [],
   providers: [],
@@ -162,6 +167,7 @@ export default async function OwnerAiApisPage({
       totalFiltered={dashboard?.totalFiltered ?? 0}
       pageSize={dashboard?.pageSize ?? AI_APIS_TABLE_PAGE_SIZE}
       filterOptions={dashboard?.filterOptions ?? EMPTY_AI_FILTERS}
+      openAiImportConfigured={isOpenAiAdminUsageConfigured()}
       connected={
         connected
           ? {

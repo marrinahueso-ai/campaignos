@@ -17,6 +17,7 @@ import {
 import {
   exportAiApisCsvAction,
   exportConnectedApisCsvAction,
+  importOpenAiHistoryAction,
 } from "@/lib/ops/ai-apis-actions";
 import {
   AI_APIS_COLLECTING_SINCE,
@@ -65,6 +66,7 @@ type ShellProps = {
   totalFiltered: number;
   pageSize: number;
   filterOptions: AiApisFilterOptions;
+  openAiImportConfigured: boolean;
   connected: {
     summary: ConnectedApisSummary;
     providers: ConnectedProviderRollup[];
@@ -126,6 +128,7 @@ export function AiApisOwnerShell(props: ShellProps) {
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<AiUsageRow | null>(null);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(props.totalFiltered / props.pageSize));
 
@@ -147,6 +150,25 @@ export function AiApisOwnerShell(props: ShellProps) {
     };
     startTransition(() => {
       router.push(`/ops/ai-apis${buildQuery(next)}`);
+    });
+  };
+
+  const onImportOpenAiHistory = () => {
+    setImportMessage(null);
+    startTransition(async () => {
+      const result = await importOpenAiHistoryAction();
+      if (!result.success) {
+        setImportMessage(result.error);
+        return;
+      }
+      const warn =
+        result.warnings.length > 0
+          ? ` Warnings: ${result.warnings.join(" ")}`
+          : "";
+      setImportMessage(
+        `Imported ${result.inserted} OpenAI history row(s) (${result.skippedExisting} already present) across ${result.daysCovered} day(s), attributed to Edmondson Elementary. Widen From date if needed.${warn}`,
+      );
+      router.refresh();
     });
   };
 
@@ -231,6 +253,21 @@ export function AiApisOwnerShell(props: ShellProps) {
               onChange={(event) => navigate({ to: event.target.value, page: 1 })}
             />
           </label>
+          {props.tab === "ai" ? (
+            <button
+              type="button"
+              onClick={onImportOpenAiHistory}
+              disabled={!props.openAiImportConfigured || pending}
+              title={
+                props.openAiImportConfigured
+                  ? "One-time pull of OpenAI Usage API history before collecting-since (Edmondson)"
+                  : "Set OPENAI_ADMIN_KEY (Admin key with api.usage.read) on the server"
+              }
+              className="inline-flex items-center gap-2 rounded-lg border border-cos-border bg-cos-card px-4 py-2 text-sm font-medium text-cos-text disabled:opacity-40"
+            >
+              Import OpenAI history
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onExport}
@@ -248,6 +285,11 @@ export function AiApisOwnerShell(props: ShellProps) {
       {exportMessage ? (
         <p className="text-sm text-cos-muted" role="status">
           {exportMessage}
+        </p>
+      ) : null}
+      {importMessage ? (
+        <p className="text-sm text-cos-muted" role="status">
+          {importMessage}
         </p>
       ) : null}
 

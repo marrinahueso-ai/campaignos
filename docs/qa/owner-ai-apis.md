@@ -117,6 +117,12 @@ Do not mark Phase 5 complete while critical shipped AI surfaces (E1–E6 at mini
 `HEY_RALLI_SKIP_ARTWORK_GENERATION=false npm run test:hey-ralli -- tests/hey-ralli/smoke/20-owner-ai-apis-artwork-usage.spec.ts`  
 Requires test user + `HEY_RALLI_TEST_EVENT_ID` + `SUPABASE_SERVICE_ROLE_KEY`. Asserts `ai_usage_log` increases after Create with AI artwork regenerate, then opens `/ops/ai-apis` when the user passes the Owner gate.
 
+**One-time OpenAI history import (Owner monitoring):**  
+1. Create an **Admin API key** with `api.usage.read` at [OpenAI Admin keys](https://platform.openai.com/settings/organization/admin-keys).  
+2. Set `OPENAI_ADMIN_KEY` in `.env.local` and Vercel Production.  
+3. Click **Import OpenAI history** on `/ops/ai-apis` (AI tab), or run `node --env-file=.env.local scripts/import-openai-usage-history.mjs`.  
+4. Import covers up to 90 days **before** collecting-since (does not re-pull going forward). Rows use feature `openai_account_history`, attributed to **Edmondson Elementary**. **School B** stays listed at $0 until live app usage exists.
+
 ---
 
 ## F — Accuracy lock (Phase 5 — required before customer QA)

@@ -10,6 +10,7 @@ import {
   type ConnectedApisFilters,
 } from "@/lib/ops/connected-apis-queries";
 import { AI_APIS_CSV_EXPORT_CAP } from "@/lib/ops/ai-apis-constants";
+import { importOpenAiUsageHistory } from "@/lib/ops/openai-usage-import";
 
 function csvEscape(value: string | number | boolean | null | undefined): string {
   if (value == null) return "";
@@ -131,5 +132,48 @@ export async function exportConnectedApisCsvAction(
   } catch (error) {
     console.error("[connected-apis] CSV export failed:", error);
     return { success: false, error: "Could not export CSV." };
+  }
+}
+
+/**
+ * One-time Owner import of OpenAI Usage API history (daily×model aggregates)
+ * attributed to Edmondson Elementary. Does not run on a schedule.
+ */
+export async function importOpenAiHistoryAction(): Promise<
+  | {
+      success: true;
+      inserted: number;
+      skippedExisting: number;
+      daysCovered: number;
+      fromIso: string;
+      toIsoExclusive: string;
+      warnings: string[];
+    }
+  | { success: false; error: string }
+> {
+  if (!(await canAccessOwnerOps())) {
+    return { success: false, error: "Not authorized." };
+  }
+
+  try {
+    const result = await importOpenAiUsageHistory({ lookbackDays: 90 });
+    return {
+      success: true,
+      inserted: result.inserted,
+      skippedExisting: result.skippedExisting,
+      daysCovered: result.daysCovered,
+      fromIso: result.range.fromIso,
+      toIsoExclusive: result.range.toIsoExclusive,
+      warnings: result.warnings,
+    };
+  } catch (error) {
+    console.error("[ai-apis] OpenAI history import failed:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Could not import OpenAI usage history.",
+    };
   }
 }
