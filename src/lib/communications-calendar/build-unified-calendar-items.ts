@@ -1,5 +1,6 @@
 import { mapEventRows } from "@/lib/events/mappers";
 import { isoToLocalDateOnly, normalizeDateOnly } from "@/lib/utils/dates";
+import { isCommittedMetaSlotStatus } from "@/lib/meta-publishing/slot-status";
 import type { MetaPublicationSlot } from "@/lib/meta-publishing/types";
 import type { UnifiedCalendarRawData } from "@/lib/communications-calendar/unified-calendar-raw";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
@@ -12,18 +13,14 @@ function toDateOnly(value: string): string {
   return normalizeDateOnly(value);
 }
 
-function aggregateMetaStatus(
+export function aggregateMetaStatus(
   slots: MetaPublicationSlot[],
 ): "published" | "scheduled" | "draft" {
   if (slots.some((slot) => slot.status === "published")) {
     return "published";
   }
 
-  if (
-    slots.some((slot) =>
-      ["scheduled", "approved", "posting", "failed"].includes(slot.status),
-    )
-  ) {
+  if (slots.some((slot) => isCommittedMetaSlotStatus(slot.status))) {
     return "scheduled";
   }
 

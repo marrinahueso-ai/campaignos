@@ -8,6 +8,7 @@ import {
 } from "@/lib/communications-calendar/planning-selects";
 import { createClient } from "@/lib/supabase/server";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
+import { COMMITTED_META_SLOT_STATUSES } from "@/lib/meta-publishing/slot-status";
 import type { MetaPublicationSlot, MetaPublicationSlotRow } from "@/lib/meta-publishing/types";
 import type { EventRow as CoreEventRow } from "@/types";
 
@@ -52,12 +53,20 @@ export const fetchUnifiedCalendarRawData = cache(
       return { eventRows: [], metaSlots: [] };
     }
 
-    const { data: metaSlotRows } = await supabase
+    const { data: metaSlotRows, error: metaSlotError } = await supabase
       .from("meta_publication_slots")
       .select(UNIFIED_META_SLOT_SELECT)
       .in("event_id", eventIds)
+      .in("status", [...COMMITTED_META_SLOT_STATUSES])
       .not("scheduled_for", "is", null)
       .order("scheduled_for", { ascending: true });
+
+    if (metaSlotError) {
+      console.error(
+        "Failed to load meta publication slots for calendar:",
+        metaSlotError.message,
+      );
+    }
 
     return {
       eventRows: scopedEventRows,

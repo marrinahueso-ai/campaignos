@@ -61,6 +61,7 @@ Adds `meta_publication_slots.graph_schedule_id` and `graph_schedule_error` (soft
 4. Legacy slot without `graph_schedule_id` → DnD only changes CampignOS time; cron still publishes when due.
 5. Instagram-only / story-manual milestones → approve still works; no Graph schedule id required; `graph_schedule_error` may record the soft-fail reason.
 6. Outside Graph window (sooner than ~10 minutes or later than ~75 days) → native schedule create may soft-fail; CampignOS still holds `scheduled_for` for cron path when no Graph id.
+7. **Publish Now / custom date** (relative_day outside playbook, e.g. Reminder Only posted today for a November event) → Meta Published + Calendar still show the post; reopening Social / Review must **not** delete approved/scheduled orphan slots.
 
 ---
 
@@ -75,7 +76,9 @@ npm run test:meta-publishing
 |-------|--------|
 | `src/lib/meta-publishing/__tests__/native-schedule-utils.test.ts` | Window bounds, FB feed-only support, cron skip when Graph id present, schedule-only reschedule payload |
 | `src/lib/meta-publishing/__tests__/graph-native-schedule.test.ts` | Graph id candidates / update path |
+| `src/lib/meta-publishing/__tests__/slot-status.test.ts` | Committed orphan slots survive sync; Meta bundles merge orphan days |
 | `src/lib/communications-calendar/__tests__/meta-milestone-reschedule.test.ts` | DnD payload never flips `status`; wires to `rescheduleNativeMetaSchedulesForMilestone` |
+| `src/lib/communications-calendar/__tests__/build-unified-calendar-items.test.ts` | Calendar chips for Publish Now / custom-day committed slots |
 
 ---
 

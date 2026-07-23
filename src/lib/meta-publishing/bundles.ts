@@ -43,6 +43,7 @@ import {
   ensureMetaPublicationSlots,
   getMetaPublicationSlotsForEvent,
 } from "@/lib/meta-publishing/sync-slots";
+import { isCommittedMetaSlotStatus } from "@/lib/meta-publishing/slot-status";
 import type {
   MetaPublicationSlot,
   MetaPublicationSlotStatus,
@@ -234,6 +235,18 @@ function deriveBundleStatus(input: {
       : "scheduled";
   }
 
+  // Partial commit (e.g. Publish Now on custom day while sibling slots stay draft):
+  // still surface the milestone on Scheduled / Published instead of "ready".
+  if (publishableStatuses.some((status) => status === "published")) {
+    return "published";
+  }
+  if (publishableStatuses.some((status) => status === "scheduled")) {
+    return "scheduled";
+  }
+  if (publishableStatuses.some((status) => status === "approved")) {
+    return "approved";
+  }
+
   if (
     (needsFeedArtwork && !input.hasFeedArtwork) ||
     (needsStoryArtwork && !input.hasStoryArtwork)
@@ -246,6 +259,115 @@ function deriveBundleStatus(input: {
   }
 
   return "ready";
+}
+
+/** Bundles for committed slots whose relative_day is outside the playbook plan. */
+function buildOrphanCommittedBundles(
+  slots: MetaPublicationSlot[],
+  knownDays: Set<number>,
+  captions: Awaited<ReturnType<typeof getMetaSocialCaptionsForEvent>>,
+  cb2ArtworkIndex: Cb2ArtworkIndex,
+  sessionMilestones: SessionMilestoneRef[],
+): MetaPublishBundle[] {
+  const orphanSlots = slots.filter(
+    (slot) =>
+      !knownDays.has(slot.relativeDay) && isCommittedMetaSlotStatus(slot.status),
+  );
+
+  if (orphanSlots.length === 0) {
+    return [];
+  }
+
+  const byDay = new Map<number, MetaPublicationSlot[]>();
+  for (const slot of orphanSlots) {
+    const list = byDay.get(slot.relativeDay) ?? [];
+    list.push(slot);
+    byDay.set(slot.relativeDay, list);
+  }
+
+  const bundles: MetaPublishBundle[] = [];
+
+  for (const [relativeDay, groupSlots] of byDay) {
+    const title =
+      groupSlots.find((slot) => slot.milestoneTitle.trim())?.milestoneTitle ??
+      "Scheduled post";
+    const committedSlot = groupSlots.find(
+      (slot) => slot.scheduledFor && isCommittedMetaSlotStatus(slot.status),
+    );
+    const feedCaption = getFeedCaptionForMilestone(captions, relativeDay);
+    const storyCaption = getStoryCaptionForMilestone(captions, relativeDay);
+    const sessionMilestone =
+      sessionMilestones.find(
+        (milestone) =>
+          milestone.relativeDay === relativeDay &&
+          milestoneNameMatchKey(milestone.name) === milestoneNameMatchKey(title),
+      ) ??
+      sessionMilestones.find(
+        (milestone) =>
+          milestoneNameMatchKey(milestone.name) === milestoneNameMatchKey(title),
+      ) ??
+      sessionMilestones.find((milestone) => milestone.relativeDay === relativeDay) ??
+      null;
+    const cb2Artwork = resolveCb2ArtworkForMilestone({
+      milestoneId: sessionMilestone?.id ?? null,
+      milestoneTitle: title,
+      relativeDay,
+      sessionMilestones,
+      index: cb2ArtworkIndex,
+    });
+
+    const enabledTargets = groupSlots
+      .filter((slot) => slot.status !== "cancelled")
+      .map((slot) => ({
+        platform: slot.platform,
+        placement: slot.placement,
+        label: targetLabel(slot.platform, slot.placement),
+      }));
+
+    const uniqueTargets = [
+      ...new Map(
+        enabledTargets.map((target) => [
+          `${target.platform}:${target.placement}`,
+          target,
+        ]),
+      ).values(),
+    ];
+
+    bundles.push({
+      relativeDay,
+      title,
+      dueDate: committedSlot?.scheduledFor
+        ? committedSlot.scheduledFor.slice(0, 10)
+        : null,
+      scheduledFor: committedSlot?.scheduledFor ?? null,
+      captionPreview: feedCaption?.trim().slice(0, 160) ?? null,
+      storyCaptionPreview: storyCaption?.trim().slice(0, 120) ?? null,
+      feedArtworkUrl: cb2Artwork?.feedArtworkUrl?.trim() || null,
+      storyArtworkUrl: cb2Artwork?.storyArtworkUrl?.trim() || null,
+      status: deriveBundleStatus({
+        surfaces: "both",
+        storyManualPublish: false,
+        storyReminderSentAt: null,
+        stepCompleted: groupSlots.every((slot) => slot.status === "published"),
+        hasFeedArtwork: Boolean(cb2Artwork?.feedArtworkUrl?.trim()),
+        hasStoryArtwork: Boolean(cb2Artwork?.storyArtworkUrl?.trim()),
+        hasCaption: isMilestoneCaptionsApproved(captions, relativeDay, "both"),
+        slotStatuses: slotStatuses(groupSlots),
+      }),
+      targets: uniqueTargets,
+      missingArtwork: [],
+      channel: "facebook",
+      isMetaPost: true,
+      stepId: null,
+      metaPublishSurfaces: "both",
+      storyManualPublish: false,
+      publishMode: derivePublishMode("both", false),
+      publishPlatforms: resolvePublishPlatformsFromSlots(groupSlots, uniqueTargets),
+      storyReminderSentAt: null,
+    });
+  }
+
+  return bundles;
 }
 
 function deriveChannelOnlyStatus(input: {
@@ -485,11 +607,23 @@ export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
     };
   });
 
+  const knownDays = new Set(bundles.map((bundle) => bundle.relativeDay));
+  const orphanBundles = buildOrphanCommittedBundles(
+    slots,
+    knownDays,
+    metaCaptions,
+    cb2ArtworkIndex,
+    sessionMilestones,
+  );
+
   const sessionMilestoneNames =
     session?.milestones?.map((milestone) => milestone.name).filter(Boolean) ??
     [];
 
-  return filterBundlesForCb2Session(bundles, sessionMilestoneNames);
+  return filterBundlesForCb2Session(
+    [...bundles, ...orphanBundles],
+    sessionMilestoneNames,
+  );
 });
 
 export function countBundlesByStatus(

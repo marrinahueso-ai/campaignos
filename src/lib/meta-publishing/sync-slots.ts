@@ -17,6 +17,7 @@ import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { buildCommunicationItemsByStepId, ensureStepCommunicationItemsForEvent } from "@/lib/event-workspace/communication-items";
 import { getEventById } from "@/lib/events/queries";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
+import { isCommittedMetaSlotStatus } from "@/lib/meta-publishing/slot-status";
 import { createJobClient } from "@/lib/supabase/job-client";
 import { createClient } from "@/lib/supabase/server";
 import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
@@ -150,7 +151,9 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
     }
 
     for (const slot of existingSlots ?? []) {
-      if (slot.status === "published") {
+      // Publish Now / custom CB2 dates create slots outside playbook days —
+      // never wipe committed queue or history when the plan is empty.
+      if (isCommittedMetaSlotStatus(slot.status as string)) {
         continue;
       }
 
@@ -200,7 +203,9 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
       continue;
     }
 
-    if (row.status === "published") {
+    // Custom publish dates (Publish Now / Schedule off playbook days) create
+    // orphan relative_day rows. Keep anything already queued or posted.
+    if (isCommittedMetaSlotStatus(row.status)) {
       continue;
     }
 
@@ -314,9 +319,7 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
           continue;
         }
 
-        const preserveSchedule = ["approved", "posting", "published", "failed"].includes(
-          row.status,
-        );
+        const preserveSchedule = isCommittedMetaSlotStatus(row.status);
         const updatePayload = preserveSchedule
           ? {
               milestone_title: payload.milestone_title,
