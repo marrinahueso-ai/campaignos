@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  engagementFallbackInsight,
+  extractPostDisplayFields,
   extractViewsFromRawMetrics,
   isReachMetric,
   isTotalMediaViewMetric,
@@ -71,4 +73,31 @@ test("extractViewsFromRawMetrics prefers total media views", () => {
   );
   assert.equal(extractViewsFromRawMetrics({ views: 12 }, 5), 12);
   assert.equal(extractViewsFromRawMetrics({}, 5), 5);
+});
+
+test("engagementFallbackInsight derives totals when insights metrics are missing", () => {
+  const insight = engagementFallbackInsight({
+    likes: 3,
+    comments: 4,
+    shares: 1,
+  });
+  assert.equal(insight.views, 0);
+  assert.equal(insight.likes, 3);
+  assert.equal(insight.comments, 4);
+  assert.equal(insight.shares, 1);
+  assert.equal(insight.engagement, 8);
+});
+
+test("extractPostDisplayFields reads caption and thumbnail from raw metrics", () => {
+  const fields = extractPostDisplayFields({
+    caption: "Back to School Fair",
+    thumbnail_url: "https://example.com/art.jpg",
+    views: 12,
+  });
+  assert.equal(fields.caption, "Back to School Fair");
+  assert.equal(fields.thumbnailUrl, "https://example.com/art.jpg");
+  assert.deepEqual(extractPostDisplayFields(null), {
+    caption: null,
+    thumbnailUrl: null,
+  });
 });

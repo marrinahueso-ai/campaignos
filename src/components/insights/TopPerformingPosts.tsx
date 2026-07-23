@@ -126,8 +126,8 @@ export function TopPerformingPosts({
     <InsightsSectionCard title={<SectionTitle platformFilter={platformFilter} />}>
       {posts.length === 0 ? (
         <p className="text-sm text-cos-muted">
-          No post-level insights stored for this period. Publish through Hey Ralli
-          and refresh Insights to see individual post stats.
+          No top content for this period yet. Tap Refresh to pull recent Facebook
+          and Instagram posts from your connected Page, or widen the date range.
         </p>
       ) : (
         <div className="relative">

@@ -17,6 +17,8 @@ import {
   type NormalizedPostInsight,
 } from "@/lib/meta/insights-normalize";
 
+export { engagementFallbackInsight } from "@/lib/meta/insights-normalize";
+
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
 type GraphResult =
@@ -280,3 +282,207 @@ export async function fetchInstagramMediaInsights(input: {
 
   return { insight: parsed, error: null };
 }
+
+/** Recent Page/IG posts discovered from Graph (not only CampignOS publication slots). */
+export type DiscoveredSocialPost = {
+  externalPostId: string;
+  platform: "facebook" | "instagram";
+  placement: "feed" | "story";
+  message: string | null;
+  publishedAt: string | null;
+  thumbnailUrl: string | null;
+  likes: number;
+  comments: number;
+  shares: number;
+};
+
+function readGraphString(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return null;
+}
+
+function readSummaryTotal(value: unknown): number {
+  if (!value || typeof value !== "object") {
+    return 0;
+  }
+  const summary = (value as { summary?: { total_count?: unknown } }).summary;
+  return Number(summary?.total_count) || 0;
+}
+
+function readSharesCount(value: unknown): number {
+  if (!value || typeof value !== "object") {
+    return 0;
+  }
+  return Number((value as { count?: unknown }).count) || 0;
+}
+
+function withinDateRange(
+  publishedAt: string | null,
+  since: string,
+  until: string,
+): boolean {
+  if (!publishedAt) {
+    return true;
+  }
+  const day = publishedAt.slice(0, 10);
+  return day >= since && day <= until;
+}
+
+async function graphGetPagedItems(input: {
+  path: string;
+  params: Record<string, string>;
+  maxPages?: number;
+}): Promise<{ items: Record<string, unknown>[]; error: string | null }> {
+  const items: Record<string, unknown>[] = [];
+  let nextPath: string | null = input.path;
+  let nextParams: Record<string, string> | null = input.params;
+  const maxPages = input.maxPages ?? 2;
+
+  for (let page = 0; page < maxPages && nextPath; page += 1) {
+    const result = nextParams
+      ? await graphGet(nextPath, nextParams)
+      : await (async () => {
+          const response = await fetch(nextPath!);
+          const payload = (await response.json()) as {
+            data?: unknown;
+            error?: GraphErrorPayload;
+            paging?: { next?: string };
+          };
+          if (!response.ok || payload.error) {
+            return {
+              ok: false as const,
+              error: formatGraphError(payload.error ?? {}, response.status),
+              errorCode: payload.error?.code,
+            };
+          }
+          return { ok: true as const, data: payload as Record<string, unknown> };
+        })();
+
+    if (!result.ok) {
+      return { items, error: result.error };
+    }
+
+    const pageItems = Array.isArray(result.data.data)
+      ? (result.data.data as Record<string, unknown>[])
+      : [];
+    items.push(...pageItems);
+
+    const paging = result.data.paging as { next?: string } | undefined;
+    const nextUrl = typeof paging?.next === "string" ? paging.next : null;
+    if (!nextUrl) {
+      break;
+    }
+    nextPath = nextUrl;
+    nextParams = null;
+  }
+
+  return { items, error: null };
+}
+
+/**
+ * Lists recent published Facebook Page feed posts (includes posts not created via Hey Ralli).
+ */
+export async function fetchFacebookPageRecentPosts(input: {
+  pageId: string;
+  accessToken: string;
+  since: string;
+  until: string;
+  limit?: number;
+}): Promise<{ posts: DiscoveredSocialPost[]; error: string | null }> {
+  const result = await graphGetPagedItems({
+    path: `/${input.pageId}/posts`,
+    params: {
+      fields:
+        "id,message,created_time,full_picture,permalink_url,shares,reactions.summary(true),comments.summary(true)",
+      limit: String(input.limit ?? 25),
+      access_token: input.accessToken,
+    },
+    maxPages: 2,
+  });
+
+  if (result.error && result.items.length === 0) {
+    return { posts: [], error: result.error };
+  }
+
+  const posts: DiscoveredSocialPost[] = [];
+  for (const item of result.items) {
+    const externalPostId = readGraphString(item.id);
+    if (!externalPostId) {
+      continue;
+    }
+    const publishedAt = readGraphString(item.created_time);
+    if (!withinDateRange(publishedAt, input.since, input.until)) {
+      continue;
+    }
+
+    posts.push({
+      externalPostId,
+      platform: "facebook",
+      placement: "feed",
+      message: readGraphString(item.message),
+      publishedAt,
+      thumbnailUrl: readGraphString(item.full_picture),
+      likes: readSummaryTotal(item.reactions),
+      comments: readSummaryTotal(item.comments),
+      shares: readSharesCount(item.shares),
+    });
+  }
+
+  return { posts, error: result.error };
+}
+
+/**
+ * Lists recent Instagram feed media for the connected business account.
+ */
+export async function fetchInstagramRecentMedia(input: {
+  instagramAccountId: string;
+  accessToken: string;
+  since: string;
+  until: string;
+  limit?: number;
+}): Promise<{ posts: DiscoveredSocialPost[]; error: string | null }> {
+  const result = await graphGetPagedItems({
+    path: `/${input.instagramAccountId}/media`,
+    params: {
+      fields:
+        "id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count,permalink",
+      limit: String(input.limit ?? 25),
+      access_token: input.accessToken,
+    },
+    maxPages: 2,
+  });
+
+  if (result.error && result.items.length === 0) {
+    return { posts: [], error: result.error };
+  }
+
+  const posts: DiscoveredSocialPost[] = [];
+  for (const item of result.items) {
+    const externalPostId = readGraphString(item.id);
+    if (!externalPostId) {
+      continue;
+    }
+    const publishedAt = readGraphString(item.timestamp);
+    if (!withinDateRange(publishedAt, input.since, input.until)) {
+      continue;
+    }
+
+    posts.push({
+      externalPostId,
+      platform: "instagram",
+      placement: "feed",
+      message: readGraphString(item.caption),
+      publishedAt,
+      thumbnailUrl:
+        readGraphString(item.thumbnail_url) ?? readGraphString(item.media_url),
+      likes: Number(item.like_count) || 0,
+      comments: Number(item.comments_count) || 0,
+      shares: 0,
+    });
+  }
+
+  return { posts, error: result.error };
+}
+

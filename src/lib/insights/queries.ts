@@ -21,7 +21,10 @@ import type {
   InsightsTimeSeriesPoint,
   InsightsTopPost,
 } from "@/lib/insights/types";
-import { extractViewsFromRawMetrics } from "@/lib/meta/insights-normalize";
+import {
+  extractPostDisplayFields,
+  extractViewsFromRawMetrics,
+} from "@/lib/meta/insights-normalize";
 import {
   getMetaConnectionForOrganization,
   isInstagramPublishingConfigured,
@@ -495,13 +498,13 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
     const slot = row.meta_publication_slot_id
       ? slotById.get(row.meta_publication_slot_id)
       : null;
-
-    let thumbnailUrl: string | null = null;
-    let caption: string | null = null;
+    const syncedDisplay = extractPostDisplayFields(row.raw_metrics);
+    let thumbnailUrl: string | null = syncedDisplay.thumbnailUrl;
+    let caption: string | null = syncedDisplay.caption;
 
     if (slot) {
       if (slot.event_asset_id) {
-        thumbnailUrl = assetUrlById.get(slot.event_asset_id) ?? null;
+        thumbnailUrl = assetUrlById.get(slot.event_asset_id) ?? thumbnailUrl;
       }
 
       const approvals = approvalByEvent.get(slot.event_id) ?? [];
@@ -514,9 +517,10 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
 
       if (match) {
         caption =
-          slot.placement === "story"
+          caption ??
+          (slot.placement === "story"
             ? match.story_caption ?? match.caption_text
-            : match.caption_text ?? match.story_caption;
+            : match.caption_text ?? match.story_caption);
         if (!thumbnailUrl) {
           thumbnailUrl =
             slot.placement === "story"
@@ -542,13 +546,19 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
       shares: Number(row.shares) || 0,
       externalPostId: row.external_post_id,
       _sortViews: views,
+      _sortEngagement: engagement,
     };
   });
 
   return enriched
-    .sort((a, b) => b._sortViews - a._sortViews)
+    .sort((a, b) => {
+      if (b._sortViews !== a._sortViews) {
+        return b._sortViews - a._sortViews;
+      }
+      return b._sortEngagement - a._sortEngagement;
+    })
     .slice(0, 8)
-    .map(({ _sortViews: _ignored, ...post }) => post);
+    .map(({ _sortViews: _v, _sortEngagement: _e, ...post }) => post);
 }
 
 async function fetchActivityEvents(

@@ -3,11 +3,15 @@ import "server-only";
 import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import {
   fetchFacebookPageDailyInsights,
+  fetchFacebookPageRecentPosts,
   fetchFacebookPostInsights,
   fetchInstagramAccountDailyInsights,
   fetchInstagramMediaInsights,
+  fetchInstagramRecentMedia,
+  type DiscoveredSocialPost,
 } from "@/lib/meta/insights-graph";
 import { isSkippableInsightsError } from "@/lib/meta/insights-metrics";
+import { engagementFallbackInsight } from "@/lib/meta/insights-normalize";
 import { getMetaConnectionForOrganization } from "@/lib/meta-publishing/connection";
 import { inspectMetaPageToken } from "@/lib/meta-publishing/connection-token-health";
 import {
@@ -26,6 +30,20 @@ type PublishedSlot = {
   published_at: string | null;
 };
 
+type PostCandidate = {
+  externalPostId: string;
+  platform: "facebook" | "instagram";
+  placement: "feed" | "story";
+  title: string | null;
+  publishedAt: string | null;
+  metaPublicationSlotId: string | null;
+  caption: string | null;
+  thumbnailUrl: string | null;
+  likesFallback: number;
+  commentsFallback: number;
+  sharesFallback: number;
+};
+
 export type InsightsSyncResult = {
   ok: boolean;
   postsSynced: number;
@@ -36,7 +54,7 @@ export type InsightsSyncResult = {
 
 type PostSyncFailure = {
   externalPostId: string;
-  platform: PublishedSlot["platform"];
+  platform: PostCandidate["platform"];
   error: string;
   errorCode?: number;
 };
@@ -162,6 +180,77 @@ async function fetchPublishedSlotsForOrganization(
   return (data ?? []) as PublishedSlot[];
 }
 
+function titleFromCaption(caption: string | null, fallback: string): string {
+  if (!caption?.trim()) {
+    return fallback;
+  }
+  const normalized = caption.trim().replace(/\s+/g, " ");
+  return normalized.length > 80 ? `${normalized.slice(0, 79).trimEnd()}…` : normalized;
+}
+
+function mergePostCandidates(input: {
+  slots: PublishedSlot[];
+  discovered: DiscoveredSocialPost[];
+  since: string;
+  until: string;
+}): PostCandidate[] {
+  const byId = new Map<string, PostCandidate>();
+
+  for (const post of input.discovered) {
+    byId.set(post.externalPostId, {
+      externalPostId: post.externalPostId,
+      platform: post.platform,
+      placement: post.placement,
+      title: titleFromCaption(post.message, "Published post"),
+      publishedAt: post.publishedAt,
+      metaPublicationSlotId: null,
+      caption: post.message,
+      thumbnailUrl: post.thumbnailUrl,
+      likesFallback: post.likes,
+      commentsFallback: post.comments,
+      sharesFallback: post.shares,
+    });
+  }
+
+  for (const slot of input.slots) {
+    const publishedAt = slot.published_at;
+    if (publishedAt) {
+      const day = publishedAt.slice(0, 10);
+      if (day < input.since || day > input.until) {
+        continue;
+      }
+    }
+
+    const existing = byId.get(slot.external_post_id);
+    if (existing) {
+      byId.set(slot.external_post_id, {
+        ...existing,
+        metaPublicationSlotId: slot.id,
+        placement: slot.placement,
+        title: slot.milestone_title || existing.title,
+        publishedAt: existing.publishedAt ?? slot.published_at,
+      });
+      continue;
+    }
+
+    byId.set(slot.external_post_id, {
+      externalPostId: slot.external_post_id,
+      platform: slot.platform,
+      placement: slot.placement,
+      title: slot.milestone_title || "Published post",
+      publishedAt: slot.published_at,
+      metaPublicationSlotId: slot.id,
+      caption: null,
+      thumbnailUrl: null,
+      likesFallback: 0,
+      commentsFallback: 0,
+      sharesFallback: 0,
+    });
+  }
+
+  return [...byId.values()];
+}
+
 async function upsertAccountInsights(input: {
   organizationId: string;
   platform: "facebook" | "instagram";
@@ -206,7 +295,7 @@ async function upsertAccountInsights(input: {
 
 async function upsertPostInsight(input: {
   organizationId: string;
-  slot: PublishedSlot;
+  candidate: PostCandidate;
   insight: {
     views: number;
     reach: number;
@@ -223,12 +312,12 @@ async function upsertPostInsight(input: {
   const { error } = await admin.from("social_post_insights").upsert(
     {
       organization_id: input.organizationId,
-      meta_publication_slot_id: input.slot.id,
-      external_post_id: input.slot.external_post_id,
-      platform: input.slot.platform,
-      placement: input.slot.placement,
-      post_title: input.slot.milestone_title,
-      published_at: input.slot.published_at,
+      meta_publication_slot_id: input.candidate.metaPublicationSlotId,
+      external_post_id: input.candidate.externalPostId,
+      platform: input.candidate.platform,
+      placement: input.candidate.placement,
+      post_title: input.candidate.title,
+      published_at: input.candidate.publishedAt,
       reach: input.insight.reach,
       engagement: input.insight.engagement,
       likes: input.insight.likes,
@@ -238,7 +327,13 @@ async function upsertPostInsight(input: {
       raw_metrics: {
         ...input.insight.rawMetrics,
         views: input.insight.views,
-      },
+        ...(input.candidate.caption
+          ? { caption: input.candidate.caption }
+          : {}),
+        ...(input.candidate.thumbnailUrl
+          ? { thumbnail_url: input.candidate.thumbnailUrl }
+          : {}),
+      } as Record<string, unknown>,
       synced_at: now,
       updated_at: now,
     },
@@ -334,6 +429,45 @@ async function backfillActivityFromInbox(organizationId: string): Promise<number
   return inserted;
 }
 
+async function discoverRecentPageAndIgPosts(input: {
+  pageId: string;
+  pageAccessToken: string;
+  instagramAccountId: string | null;
+  since: string;
+  until: string;
+  warnings: string[];
+}): Promise<DiscoveredSocialPost[]> {
+  const discovered: DiscoveredSocialPost[] = [];
+
+  const facebook = await fetchFacebookPageRecentPosts({
+    pageId: input.pageId,
+    accessToken: input.pageAccessToken,
+    since: input.since,
+    until: input.until,
+  });
+
+  if (facebook.error) {
+    input.warnings.push(`Facebook recent posts: ${facebook.error}`);
+  }
+  discovered.push(...facebook.posts);
+
+  if (input.instagramAccountId) {
+    const instagram = await fetchInstagramRecentMedia({
+      instagramAccountId: input.instagramAccountId,
+      accessToken: input.pageAccessToken,
+      since: input.since,
+      until: input.until,
+    });
+
+    if (instagram.error) {
+      input.warnings.push(`Instagram recent media: ${instagram.error}`);
+    }
+    discovered.push(...instagram.posts);
+  }
+
+  return discovered;
+}
+
 export async function syncOrganizationInsights(input: {
   organizationId: string;
   since?: string;
@@ -427,62 +561,109 @@ export async function syncOrganizationInsights(input: {
     }
 
     const slots = await fetchPublishedSlotsForOrganization(input.organizationId);
+    const discovered = await discoverRecentPageAndIgPosts({
+      pageId: connection.facebookPageId,
+      pageAccessToken: connection.pageAccessToken,
+      instagramAccountId: connection.instagramAccountId,
+      since: sinceDate,
+      until: untilDate,
+      warnings,
+    });
+
+    const candidates = mergePostCandidates({
+      slots,
+      discovered,
+      since: sinceDate,
+      until: untilDate,
+    });
     const postFailures: PostSyncFailure[] = [];
 
-    for (const slot of slots) {
+    for (const candidate of candidates) {
       const fetchResult =
-        slot.platform === "facebook"
+        candidate.platform === "facebook"
           ? await fetchFacebookPostInsights({
-              postId: slot.external_post_id,
+              postId: candidate.externalPostId,
               accessToken: connection.pageAccessToken,
-              placement: slot.placement,
+              placement: candidate.placement,
             })
           : await fetchInstagramMediaInsights({
-              mediaId: slot.external_post_id,
+              mediaId: candidate.externalPostId,
               accessToken: connection.pageAccessToken,
-              placement: slot.placement,
+              placement: candidate.placement,
             });
 
-      if (slot.platform === "facebook") {
+      if (candidate.platform === "facebook") {
         const facebookResult = fetchResult as Awaited<
           ReturnType<typeof fetchFacebookPostInsights>
         >;
         if (facebookResult.skipped) {
           console.info("Insights sync skipped post:", {
-            externalPostId: slot.external_post_id,
-            platform: slot.platform,
+            externalPostId: candidate.externalPostId,
+            platform: candidate.platform,
             reason: facebookResult.skipReason,
           });
           continue;
         }
       }
 
-      if (fetchResult.error) {
-        postFailures.push({
-          externalPostId: slot.external_post_id,
-          platform: slot.platform,
-          error: fetchResult.error,
-          errorCode: fetchResult.errorCode,
-        });
-        console.warn("Insights sync post metrics unavailable:", {
-          externalPostId: slot.external_post_id,
-          platform: slot.platform,
-          placement: slot.placement,
-          error: fetchResult.error,
-          errorCode: fetchResult.errorCode,
-          skippable: isSkippableInsightsError(fetchResult.errorCode),
-        });
-        continue;
+      let insight = fetchResult.insight;
+
+      if (fetchResult.error || !insight) {
+        const hasFallback =
+          candidate.likesFallback > 0 ||
+          candidate.commentsFallback > 0 ||
+          candidate.sharesFallback > 0 ||
+          Boolean(candidate.caption) ||
+          Boolean(candidate.thumbnailUrl);
+
+        if (hasFallback) {
+          insight = engagementFallbackInsight({
+            likes: candidate.likesFallback,
+            comments: candidate.commentsFallback,
+            shares: candidate.sharesFallback,
+          });
+        } else if (fetchResult.error) {
+          postFailures.push({
+            externalPostId: candidate.externalPostId,
+            platform: candidate.platform,
+            error: fetchResult.error,
+            errorCode: fetchResult.errorCode,
+          });
+          console.warn("Insights sync post metrics unavailable:", {
+            externalPostId: candidate.externalPostId,
+            platform: candidate.platform,
+            placement: candidate.placement,
+            error: fetchResult.error,
+            errorCode: fetchResult.errorCode,
+            skippable: isSkippableInsightsError(fetchResult.errorCode),
+          });
+          continue;
+        } else {
+          continue;
+        }
       }
 
-      if (!fetchResult.insight) {
-        continue;
+      // Prefer Graph engagement fields when insights omit shares/comments.
+      if (insight.shares <= 0 && candidate.sharesFallback > 0) {
+        insight = { ...insight, shares: candidate.sharesFallback };
+      }
+      if (insight.comments <= 0 && candidate.commentsFallback > 0) {
+        insight = { ...insight, comments: candidate.commentsFallback };
+      }
+      if (insight.likes <= 0 && candidate.likesFallback > 0) {
+        insight = { ...insight, likes: candidate.likesFallback };
+      }
+      if (insight.engagement <= 0) {
+        insight = {
+          ...insight,
+          engagement: insight.likes + insight.comments + insight.shares,
+        };
       }
 
       const saved = await upsertPostInsight({
         organizationId: input.organizationId,
-        slot,
-        insight: fetchResult.insight,
+        candidate,
+        insight,
       });
 
       if (saved) {
@@ -497,7 +678,7 @@ export async function syncOrganizationInsights(input: {
       postsSynced,
       daysSynced,
       postFailures,
-      totalPosts: slots.length,
+      totalPosts: candidates.length,
     });
 
     await finishSyncRun({
@@ -509,6 +690,8 @@ export async function syncOrganizationInsights(input: {
       metadata: {
         warnings: outcome.userWarnings,
         postErrors: postFailures,
+        discoveredPosts: discovered.length,
+        candidatePosts: candidates.length,
       },
     });
 

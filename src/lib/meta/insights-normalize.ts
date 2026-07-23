@@ -236,3 +236,50 @@ export function extractViewsFromRawMetrics(
 
   return reachFallback;
 }
+
+/** Soft engagement snapshot when post insights metrics are unavailable. */
+export function engagementFallbackInsight(input: {
+  likes: number;
+  comments: number;
+  shares: number;
+}): NormalizedPostInsight {
+  const likes = Number(input.likes) || 0;
+  const comments = Number(input.comments) || 0;
+  const shares = Number(input.shares) || 0;
+  return {
+    views: 0,
+    reach: 0,
+    engagement: likes + comments + shares,
+    likes,
+    comments,
+    shares,
+    clicks: 0,
+    rawMetrics: {
+      engagement_fallback: 1,
+      likes,
+      comments,
+      shares,
+    },
+  };
+}
+
+/** Caption / artwork stored on post insight rows for carousel cards. */
+export function extractPostDisplayFields(
+  rawMetrics: Record<string, unknown> | null | undefined,
+): { caption: string | null; thumbnailUrl: string | null } {
+  if (!rawMetrics || typeof rawMetrics !== "object") {
+    return { caption: null, thumbnailUrl: null };
+  }
+
+  const caption =
+    typeof rawMetrics.caption === "string" && rawMetrics.caption.trim()
+      ? rawMetrics.caption
+      : null;
+  const thumbnailUrl =
+    typeof rawMetrics.thumbnail_url === "string" &&
+    rawMetrics.thumbnail_url.trim()
+      ? rawMetrics.thumbnail_url
+      : null;
+
+  return { caption, thumbnailUrl };
+}
