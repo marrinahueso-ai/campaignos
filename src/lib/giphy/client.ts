@@ -3,8 +3,8 @@ import "server-only";
 import type { GiphyGifSummary } from "@/lib/giphy/types";
 
 const GIPHY_API_BASE = "https://api.giphy.com/v1/gifs";
-/** School / PTO-safe content filter (includes G + PG). */
-export const GIPHY_RATING = "pg";
+/** Full Giphy catalog up to R (matches giphy.com breadth). */
+export const GIPHY_RATING = "r";
 const MAX_SEND_BYTES = 8 * 1024 * 1024;
 /** Page size for search/trending (Giphy max is 50). */
 export const DEFAULT_LIMIT = 48;

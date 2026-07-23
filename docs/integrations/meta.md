@@ -71,9 +71,9 @@ Local `inbox_messages.metadata.localReaction` is written only after Meta succeed
 
 Communications Hub reply toolbar includes a **GIF** control for Messenger / Instagram DMs only (`facebook_message`, `instagram_dm`). Comments and tags stay text-only (button dimmed with clear copy).
 
-- Server proxy: `GET /api/giphy/search?q=&offset=` and `GET /api/giphy/trending?offset=` — reads `GIPHY_API_KEY` from server env (never exposed to the client). Default page size 48; rating `pg` (school-safe). Picker supports Load more via Giphy `offset`.
+- Server proxy: `GET /api/giphy/search?q=&offset=` and `GET /api/giphy/trending?offset=` — reads `GIPHY_API_KEY` from server env (never exposed to the client). Default page size 48; rating `r` (full catalog up to R). Picker supports Load more via Giphy `offset`.
 - Missing key → friendly empty state (“Add GIPHY_API_KEY to enable GIF search”); app does not crash.
-- Content rating: `pg` (school / PTO-safe).
+- Content rating: `r` (full Giphy catalog up to R, matching giphy.com breadth).
 - On select, send uses the same Meta DM image-attachment path as org stickers, with a size-safe Giphy CDN URL (`downsized` / `fixed_height` preference, ≤8MB).
 - Env note: see [env-and-secrets.md](../ops/env-and-secrets.md) and `.env.local.example`.
 
