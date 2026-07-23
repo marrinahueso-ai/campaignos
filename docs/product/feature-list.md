@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Communications Hub: remove top-bar campaign/channel/AI Queue filters
+**Last updated:** July 23, 2026 — Tasks summary cards filter Main Table
 
 ---
 
@@ -140,6 +140,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
 - Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
+- Summary cards (Tasks due / Overdue / Completed) as clickable Main Table filters (`?summary=`; click again clears to all; selected = dark brown + white) — **shipped**
 - My Tasks (assignee = signed-in user via `assignee_user_id`) — **shipped**
 - My Views filters (Assigned / This Week / Overdue / Completed) — **shipped**
 - Kanban board (by status) — **shipped**

@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  
-**Last updated:** July 22, 2026  
+**Last updated:** July 23, 2026  
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
@@ -138,7 +138,7 @@ flowchart LR
 | Inbox / Insights | `inbox`, `insights`, `meta` | Synced Meta entities + analytics tables |
 | Access | `auth`, `access-templates`, `organization-workspace` | Memberships, templates, roster |
 | Onboarding | `onboarding`, `school-setup` (legacy wizard re-entry) | `organizations.onboarding_state` (migration `072`); routes `/onboarding`, `/onboarding/brand`, `/onboarding/invite`; checklist under Settings → Get started |
-| Tasks | `tasks-v2`, `task-hub` | Task rows (assignee_user_id, event scope) |
+| Tasks | `tasks-v2`, `task-hub` | Task rows (assignee_user_id, event scope); summary cards use `?summary=` Main Table filter |
 
 ### 5.2 Major `src/lib` domains (non-exhaustive)
 

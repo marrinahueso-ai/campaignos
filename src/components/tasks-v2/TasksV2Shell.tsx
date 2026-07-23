@@ -19,14 +19,20 @@ import { TasksV2Tabs, parseTasksV2Tab } from "@/components/tasks-v2/TasksV2Tabs"
 import { eventGroupAccentColor } from "@/lib/tasks-v2/event-colors";
 import { flattenEventGroups } from "@/lib/tasks-v2/group-by-event";
 import {
+  filterEventGroupsByTasks,
   filterEventGroupsForMyView,
   type TasksV2MyViewId,
 } from "@/lib/tasks-v2/my-tasks-filter";
-import { computeTasksV2SummaryStats } from "@/lib/tasks-v2/summary-stats";
+import {
+  computeTasksV2SummaryStats,
+  parseTasksV2SummaryFilter,
+  taskMatchesSummaryFilter,
+} from "@/lib/tasks-v2/summary-stats";
 import { cn } from "@/lib/utils/cn";
 import type {
   TasksV2EventGroup,
   TasksV2PageData,
+  TasksV2SummaryFilter,
   TasksV2ViewTab,
 } from "@/types/tasks-v2";
 
@@ -94,6 +100,10 @@ export function TasksV2Shell({
         (activeTab === "my_tasks" ? "my_tasks" : null))
       : null;
 
+  const summaryFilter: TasksV2SummaryFilter | null = embedded
+    ? null
+    : parseTasksV2SummaryFilter(searchParams.get("summary"));
+
   const eventFilter =
     lockedId ??
     searchParams.get("event") ??
@@ -143,9 +153,18 @@ export function TasksV2Shell({
             ? (myViewFilter ?? "my_tasks")
             : null,
         mview: null,
+        // Summary cards are Main Table filters only.
+        summary: tab === "main_table" ? summaryFilter : null,
       });
     },
-    [activeTab, embedded, localMyView, myViewFilter, replaceParams],
+    [
+      activeTab,
+      embedded,
+      localMyView,
+      myViewFilter,
+      replaceParams,
+      summaryFilter,
+    ],
   );
 
   const handleMyViewSelect = useCallback(
@@ -165,9 +184,28 @@ export function TasksV2Shell({
         tab: "my_tasks",
         view,
         mview: null,
+        summary: null,
       });
     },
     [embedded, replaceParams],
+  );
+
+  const handleSummaryFilterChange = useCallback(
+    (filter: TasksV2SummaryFilter) => {
+      if (embedded) {
+        return;
+      }
+
+      const next = summaryFilter === filter ? null : filter;
+      replaceParams({
+        summary: next,
+        // Summary cards filter the Main Table (not My Views).
+        tab: null,
+        view: null,
+        mview: null,
+      });
+    },
+    [embedded, replaceParams, summaryFilter],
   );
 
   // Legacy ?tab=files deep links → strip tab (Files lives on /files sidebar)
@@ -220,7 +258,7 @@ export function TasksV2Shell({
     ];
   }, [data.eventGroups, eventFilter, eventsWithLocked]);
 
-  const displayEventGroups = useMemo(() => {
+  const personalEventGroups = useMemo(() => {
     if (!myViewFilter) {
       return eventScopedGroups;
     }
@@ -233,10 +271,20 @@ export function TasksV2Shell({
     );
   }, [activeTab, data.viewer, eventScopedGroups, myViewFilter]);
 
+  // Card counts stay stable while a summary filter narrows the table.
   const scopedSummary = useMemo(
-    () => computeTasksV2SummaryStats(flattenEventGroups(displayEventGroups)),
-    [displayEventGroups],
+    () => computeTasksV2SummaryStats(flattenEventGroups(personalEventGroups)),
+    [personalEventGroups],
   );
+
+  const displayEventGroups = useMemo(() => {
+    if (!summaryFilter) {
+      return personalEventGroups;
+    }
+    return filterEventGroupsByTasks(personalEventGroups, (task) =>
+      taskMatchesSummaryFilter(task, summaryFilter),
+    );
+  }, [personalEventGroups, summaryFilter]);
 
   const mainContent = useMemo(() => {
     if (!data.tablesAvailable) {
@@ -317,7 +365,11 @@ export function TasksV2Shell({
               </p>
             </div>
             <div className="w-full lg:max-w-md lg:shrink-0">
-              <TasksV2SummaryCards summary={scopedSummary} />
+              <TasksV2SummaryCards
+                summary={scopedSummary}
+                activeFilter={summaryFilter}
+                onFilterChange={handleSummaryFilterChange}
+              />
             </div>
           </header>
           <TasksV2Tabs activeTab={activeTab} onTabChange={handleTabChange} />

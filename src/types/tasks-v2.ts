@@ -17,6 +17,8 @@ export interface TasksV2Viewer {
   email: string | null;
 }
 
+export type TasksV2SummaryFilter = "tasks_due" | "overdue" | "completed";
+
 export interface TasksV2SummaryStats {
   tasksDue: number;
   overdue: number;
