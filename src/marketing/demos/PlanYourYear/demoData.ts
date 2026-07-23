@@ -4,24 +4,41 @@ export const PLAN_YOUR_YEAR_DEMO = {
     workspace: "Calendar",
     school: "Edmondson Elementary",
     month: "August 2026",
-    detail: "Event detail",
-    heatmap: "Posting times",
+    weekLabel: "Week of Aug 3",
   },
-  events: [
-    { day: 5, title: "Back to School Fair", tone: "brand" as const },
-    { day: 8, title: "Volunteer Kickoff", tone: "sage" as const },
-    { day: 12, title: "Board Meeting", tone: "muted" as const },
+  days: [
+    { key: "sun", label: "Sun", date: 2 },
+    { key: "mon", label: "Mon", date: 3 },
+    { key: "tue", label: "Tue", date: 4 },
+    { key: "wed", label: "Wed", date: 5 },
+    { key: "thu", label: "Thu", date: 6 },
+    { key: "fri", label: "Fri", date: 7 },
+    { key: "sat", label: "Sat", date: 8 },
   ],
-  selected: {
+  /** Post that gets drag-rescheduled Wed → Fri */
+  dragPost: {
+    category: "Posts",
     title: "Back to School Fair",
-    date: "Wednesday, August 5",
-    time: "3:00–4:30 PM",
-    place: "Edmondson Elementary",
-    next: "Save the Date · draft ready",
+    status: "Scheduled",
+    fromDay: "wed",
+    toDay: "fri",
   },
-  heatmap: ["Tue 7pm", "Wed 6pm", "Thu 7pm"],
+  staticCards: [
+    {
+      day: "tue",
+      category: "Events",
+      title: "Kindergarten Mixer",
+      status: "Draft",
+    },
+    {
+      day: "thu",
+      category: "Posts",
+      title: "Spirit Afternoon",
+      status: "Published",
+    },
+  ],
   toast: {
-    title: "Year in view",
-    description: "Events, posts, and deadlines stay on one calendar.",
+    title: "Post rescheduled",
+    description: "Drag posts on the calendar to change the Meta schedule.",
   },
 } as const;

@@ -35,7 +35,7 @@ export function PlanYourYearDemo({
       aria-label="Plan Your Year product demonstration"
       fallback={
         <div
-          className="flex min-h-[24rem] items-center justify-center rounded-2xl border border-[var(--cos-border)] bg-[var(--cos-card)] text-sm text-[var(--cos-muted)]"
+          className="flex h-[28rem] items-center justify-center rounded-2xl border border-[var(--cos-border)] bg-[var(--cos-card)] text-sm text-[var(--cos-muted)] sm:h-[30rem] lg:h-[32rem]"
           aria-hidden
         >
           Preparing demo…
@@ -55,27 +55,39 @@ function PlanYourYearStage() {
   return (
     <MarketingDemoShell
       eyebrow={PLAN_YOUR_YEAR_DEMO.labels.workspace}
-      title={PLAN_YOUR_YEAR_DEMO.labels.month}
+      title={PLAN_YOUR_YEAR_DEMO.labels.weekLabel}
     >
       <CalendarStage />
       <Cursor
         keyframes={[
-          { at: 0, x: "18%", y: "40%", opacity: 0 },
-          { at: 2.8, x: "18%", y: "40%", opacity: 0 },
-          { at: 3.1, x: "22%", y: "38%", opacity: 1 },
-          { at: 4.1, x: "28%", y: "42%", opacity: 1 },
-          { at: 4.2, x: "28%", y: "42%", click: true, scale: 0.94 },
-          { at: 5.2, x: "28%", y: "42%", opacity: 1 },
-          { at: 6.2, x: "72%", y: "36%", opacity: 0 },
+          { at: 0, x: "30%", y: "50%", opacity: 0 },
+          { at: 2.8, x: "30%", y: "50%", opacity: 0 },
+          { at: 3.2, x: "32%", y: "52%", opacity: 1 },
+          { at: 4.3, x: "30%", y: "50%", opacity: 1 },
+          { at: 4.4, x: "30%", y: "50%", click: true, scale: 0.94 },
+          { at: 5.5, x: "30%", y: "48%", opacity: 1 },
+          { at: 7.5, x: "50%", y: "40%", opacity: 1 },
+          { at: 10.5, x: "70%", y: "52%", opacity: 1 },
+          { at: 10.8, x: "70%", y: "52%", click: true, scale: 0.94 },
+          { at: 12, x: "70%", y: "52%", opacity: 1 },
+          { at: 13.5, x: "80%", y: "30%", opacity: 0 },
         ]}
       />
       <MouseClick
-        cue="select-click"
-        x="28%"
-        y="42%"
+        cue="grab-click"
+        x="30%"
+        y="50%"
         showRipple
-        rippleSize={36}
-        duration={0.2}
+        rippleSize={32}
+        duration={0.18}
+      />
+      <MouseClick
+        cue="drop-click"
+        x="70%"
+        y="52%"
+        showRipple
+        rippleSize={32}
+        duration={0.18}
       />
       <Toast
         cue="toast"

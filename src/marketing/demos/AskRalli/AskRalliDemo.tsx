@@ -59,13 +59,14 @@ function AskRalliStage() {
           <p className="text-[10px] font-medium tracking-[0.12em] text-[var(--cos-muted)] uppercase">
             You
           </p>
-          <p className="mt-2 min-h-[3rem] text-sm leading-relaxed text-[var(--cos-text)] sm:text-base">
+          <div className="mt-2 min-h-[3rem] text-sm leading-relaxed text-[var(--cos-text)] sm:text-base">
             <TypingAnimation
               cue="question"
               text={question}
               charsPerSecond={26}
+              as="p"
             />
-          </p>
+          </div>
         </div>
 
         <FadeSlide cue="answer" direction="up" distance={10} holdAfter>
@@ -73,13 +74,14 @@ function AskRalliStage() {
             <p className="text-[10px] font-medium tracking-[0.12em] text-[var(--cos-muted)] uppercase">
               Ask Ralli
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--cos-text)] sm:text-base">
+            <div className="mt-2 text-sm leading-relaxed text-[var(--cos-text)] sm:text-base">
               <TypingAnimation
                 cue="answer"
                 text={answer}
                 charsPerSecond={32}
+                as="p"
               />
-            </p>
+            </div>
             <FadeSlide cue="chips" direction="up" distance={6} holdAfter>
               <div className="mt-4 flex flex-wrap gap-2">
                 {chips.map((chip, index) => (

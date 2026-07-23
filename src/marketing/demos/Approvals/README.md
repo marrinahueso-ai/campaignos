@@ -1,5 +1,5 @@
 # Approvals marketing demo
 
-Assigned to Me → review Save the Date → Approve → Approved status.
+Assigned to Me hub row → click **View** → Review drawer (artwork + caption) → **Approve**.
 
 Preview: `/dev/motion-engine` or `/features#approvals`

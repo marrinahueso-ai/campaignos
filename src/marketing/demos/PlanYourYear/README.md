@@ -1,5 +1,5 @@
 # Plan Your Year marketing demo
 
-School-year calendar → select Back to School Fair → event detail + posting-time chips.
+Week calendar with product-style grip cards. Cursor grabs a Scheduled post and drag-reschedules it Wednesday → Friday.
 
 Preview: `/dev/motion-engine` or `/features#plan-your-year`
