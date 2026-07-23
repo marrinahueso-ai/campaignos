@@ -6,6 +6,7 @@ import {
   CalendarPlus,
   Mail,
   UserMinus,
+  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
