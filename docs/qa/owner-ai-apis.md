@@ -113,6 +113,10 @@ Verify rows in Supabase (`ai_usage_log` / `api_usage_log`) within ~1 minute of t
 
 Do not mark Phase 5 complete while critical shipped AI surfaces (E1–E6 at minimum) are unchecked.
 
+**Playwright smoke (artwork → warehouse):**  
+`HEY_RALLI_SKIP_ARTWORK_GENERATION=false npm run test:hey-ralli -- tests/hey-ralli/smoke/20-owner-ai-apis-artwork-usage.spec.ts`  
+Requires test user + `HEY_RALLI_TEST_EVENT_ID` + `SUPABASE_SERVICE_ROLE_KEY`. Asserts `ai_usage_log` increases after Create with AI artwork regenerate, then opens `/ops/ai-apis` when the user passes the Owner gate.
+
 ---
 
 ## F — Accuracy lock (Phase 5 — required before customer QA)
