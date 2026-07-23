@@ -592,6 +592,78 @@ export async function markInboxThreadReadAction(input: {
   return { success: true };
 }
 
+export async function toggleInboxThreadFollowUpAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      follow_up: !thread.followUp,
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not update follow-up." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+export async function markInboxThreadDoneAction(input: {
+  threadId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const nextMarkedDone = !thread.markedDone;
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      marked_done: nextMarkedDone,
+      ...(nextMarkedDone ? { unread_count: 0 } : {}),
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not update conversation." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
 export async function archiveInboxThreadAction(input: {
   threadId: string;
 }): Promise<InboxActionResult> {
@@ -619,13 +691,14 @@ export async function archiveInboxThreadAction(input: {
     .update({
       status: "archived",
       unread_count: 0,
+      marked_done: false,
       updated_at: now,
     })
     .eq("id", input.threadId)
     .eq("organization_id", access.organizationId);
 
   if (error) {
-    return { success: false, error: "Could not archive conversation." };
+    return { success: false, error: "Could not delete conversation." };
   }
 
   revalidateInboxRoutes();
@@ -658,13 +731,14 @@ export async function unarchiveInboxThreadAction(input: {
     .from("inbox_threads")
     .update({
       status: "pending",
+      marked_done: false,
       updated_at: now,
     })
     .eq("id", input.threadId)
     .eq("organization_id", access.organizationId);
 
   if (error) {
-    return { success: false, error: "Could not move conversation out of archive." };
+    return { success: false, error: "Could not restore conversation." };
   }
 
   revalidateInboxRoutes();

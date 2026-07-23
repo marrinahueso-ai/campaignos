@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type ChangeEvent,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -102,19 +103,35 @@ export function CommunicationsReplySection({
   const [isPending, startTransition] = useTransition();
   const [draftRequested, setDraftRequested] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const selectionRef = useRef({ start: 0, end: 0 });
 
   const participantFirstName =
     thread.participantName?.trim().split(/\s+/)[0] ?? "contact";
+
+  const rememberSelection = useCallback(() => {
+    const textarea = replyTextareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    selectionRef.current = {
+      start: textarea.selectionStart,
+      end: textarea.selectionEnd,
+    };
+  }, []);
 
   useEffect(() => {
     setDraftBody(initialBody);
     setManualReply("");
     setIsEditing(false);
     setActionError(null);
+    setAttachmentNotice(null);
     setDraftRequested(false);
     setEmojiPickerOpen(false);
+    selectionRef.current = { start: 0, end: 0 };
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
 
   useEffect(() => {
@@ -131,19 +148,42 @@ export function CommunicationsReplySection({
       }
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setEmojiPickerOpen(false);
+      }
+    }
+
+    // Defer so the opening click does not immediately close the picker.
+    const timer = window.setTimeout(() => {
+      document.addEventListener("mousedown", handlePointerDown);
+      document.addEventListener("keydown", handleKeyDown);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [emojiPickerOpen]);
 
   const insertIntoReply = useCallback((text: string) => {
     const textarea = replyTextareaRef.current;
-    const start = textarea?.selectionStart ?? null;
-    const end = textarea?.selectionEnd ?? null;
+    const isFocused =
+      textarea != null && document.activeElement === textarea;
 
     setManualReply((current) => {
-      const insertAt = start ?? current.length;
-      const insertEnd = end ?? current.length;
-      return `${current.slice(0, insertAt)}${text}${current.slice(insertEnd)}`;
+      let insertAt = Math.min(selectionRef.current.start, current.length);
+      let insertEnd = Math.min(selectionRef.current.end, current.length);
+      // If the composer was never focused, append instead of inserting at 0.
+      if (!isFocused && insertAt === 0 && insertEnd === 0 && current.length > 0) {
+        insertAt = current.length;
+        insertEnd = current.length;
+      }
+      const next = `${current.slice(0, insertAt)}${text}${current.slice(insertEnd)}`;
+      const cursor = insertAt + text.length;
+      selectionRef.current = { start: cursor, end: cursor };
+      return next;
     });
 
     requestAnimationFrame(() => {
@@ -151,10 +191,28 @@ export function CommunicationsReplySection({
         return;
       }
       textarea.focus();
-      const cursor = (start ?? textarea.value.length) + text.length;
+      const cursor = selectionRef.current.start;
       textarea.setSelectionRange(cursor, cursor);
     });
   }, []);
+
+  function handleAttachClick() {
+    setAttachmentNotice(null);
+    setEmojiPickerOpen(false);
+    fileInputRef.current?.click();
+  }
+
+  function handleAttachSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    // Allow selecting the same file again later.
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    setAttachmentNotice(
+      "Attachments aren't supported for Meta replies yet — send text only for now.",
+    );
+  }
 
   const requestDraft = useCallback(
     (options?: { forceRegenerate?: boolean }) => {
@@ -378,44 +436,63 @@ export function CommunicationsReplySection({
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-cos-border bg-cos-card px-4 py-3">
+      <div className="relative z-30 mt-4 overflow-visible rounded-xl border border-cos-border bg-cos-card px-4 py-3">
         <textarea
           ref={replyTextareaRef}
           value={manualReply}
-          onChange={(event) => setManualReply(event.target.value)}
+          onChange={(event) => {
+            setManualReply(event.target.value);
+            rememberSelection();
+          }}
+          onSelect={rememberSelection}
+          onClick={rememberSelection}
+          onKeyUp={rememberSelection}
+          onBlur={rememberSelection}
           rows={3}
-          disabled={isPending}
           placeholder={`Reply to ${participantFirstName}...`}
           aria-label={`Reply to ${participantFirstName}`}
-          className="w-full resize-none bg-transparent text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:outline-none disabled:opacity-60"
+          className="w-full resize-none bg-transparent text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:outline-none"
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf,.doc,.docx,.txt"
+          className="hidden"
+          onChange={handleAttachSelected}
+          tabIndex={-1}
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <div className="relative flex items-center gap-0.5" ref={emojiPickerRef}>
             <button
               type="button"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted opacity-60"
+              onClick={handleAttachClick}
+              onMouseDown={(event) => event.preventDefault()}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
               aria-label="Attach file"
-              title="Attachments not supported yet — Meta replies are text-only"
-              disabled
+              title="Attach file"
             >
               <Paperclip className="h-4 w-4" />
             </button>
             <button
               type="button"
-              disabled={isPending}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => setEmojiPickerOpen((open) => !open)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text",
+                emojiPickerOpen && "bg-cos-bg text-cos-text",
+              )}
               aria-label="Add emoji"
               aria-expanded={emojiPickerOpen}
+              aria-haspopup="listbox"
               title="Add emoji"
             >
               <Smile className="h-4 w-4" />
             </button>
             <button
               type="button"
-              disabled={isPending}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => insertIntoReply("👍")}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
               aria-label="Insert thumbs up"
               title="Insert 👍"
             >
@@ -423,9 +500,9 @@ export function CommunicationsReplySection({
             </button>
             <button
               type="button"
-              disabled={isPending}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => insertIntoReply("❤️")}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
               aria-label="Insert heart"
               title="Insert ❤️"
             >
@@ -433,7 +510,7 @@ export function CommunicationsReplySection({
             </button>
             {emojiPickerOpen ? (
               <div
-                className="absolute bottom-full left-0 z-20 mb-2 grid w-52 grid-cols-6 gap-1 rounded-xl border border-cos-border bg-white p-2 shadow-lg"
+                className="absolute bottom-full left-0 z-50 mb-2 grid w-52 grid-cols-6 gap-1 rounded-xl border border-cos-border bg-white p-2 shadow-lg"
                 role="listbox"
                 aria-label="Emoji picker"
               >
@@ -443,6 +520,7 @@ export function CommunicationsReplySection({
                     type="button"
                     role="option"
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base transition-colors hover:bg-cos-bg"
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                       insertIntoReply(emoji);
                       setEmojiPickerOpen(false);
@@ -469,6 +547,12 @@ export function CommunicationsReplySection({
           </button>
         </div>
       </div>
+
+      {attachmentNotice ? (
+        <p className="mt-3 text-xs text-amber-700" role="status">
+          {attachmentNotice}
+        </p>
+      ) : null}
 
       {actionError ? (
         <p className="mt-3 text-xs text-red-600" role="alert">

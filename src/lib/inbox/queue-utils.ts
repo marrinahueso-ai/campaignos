@@ -9,6 +9,7 @@ export type CommunicationsQueueFilter =
   | "waiting_on_ai"
   | "ready_to_send"
   | "assigned_to_me"
+  | "follow_up"
   | "completed"
   | "archived";
 
@@ -18,6 +19,7 @@ export interface CommunicationsQueueCounts {
   waitingOnAi: number;
   readyToSend: number;
   assignedToMe: number;
+  followUp: number;
   completed: number;
   archived: number;
 }
@@ -27,6 +29,7 @@ export interface ThreadQueueState {
   unread: boolean;
   waitingOnAi: boolean;
   readyToSend: boolean;
+  followUp: boolean;
   completed: boolean;
 }
 
@@ -35,37 +38,48 @@ export function classifyThreadQueueState(
   messages: InboxMessage[],
 ): ThreadQueueState {
   const unread = thread.unreadCount > 0;
+  const followUp = thread.followUp && thread.status !== "archived";
   const replyTarget = resolveInboxReplyTarget({
     channelType: thread.channelType,
     messages,
   });
 
   if (!isReplyChannel(thread.channelType)) {
-    const completed = thread.status === "sent" || thread.status === "archived";
+    const completed =
+      thread.markedDone ||
+      thread.status === "sent" ||
+      thread.status === "archived";
     const needsReply = !completed && thread.status === "pending";
     return {
       needsReply,
       unread,
       waitingOnAi: false,
       readyToSend: false,
+      followUp,
       completed,
     };
   }
 
   if (!replyTarget) {
-    const completed = thread.status === "sent" || thread.status === "archived";
+    const completed =
+      thread.markedDone ||
+      thread.status === "sent" ||
+      thread.status === "archived";
     return {
       needsReply: false,
       unread,
       waitingOnAi: false,
       readyToSend: false,
+      followUp,
       completed,
     };
   }
 
   // Prefer message-level completion. Do not keep a thread "completed" after
   // send just because thread.status is still "sent" when a newer inbound is pending.
+  // Manual Done (marked_done) still wins until a new inbound clears it.
   const completed =
+    thread.markedDone ||
     thread.status === "archived" ||
     replyTarget.status === "sent" ||
     replyTarget.status === "archived";
@@ -80,6 +94,7 @@ export function classifyThreadQueueState(
     unread,
     waitingOnAi,
     readyToSend,
+    followUp,
     completed,
   };
 }
@@ -94,6 +109,7 @@ export function computeQueueCounts(
     waitingOnAi: 0,
     readyToSend: 0,
     assignedToMe: 0,
+    followUp: 0,
     completed: 0,
     archived: 0,
   };
@@ -109,6 +125,7 @@ export function computeQueueCounts(
     if (state.unread) counts.unread += 1;
     if (state.waitingOnAi) counts.waitingOnAi += 1;
     if (state.readyToSend) counts.readyToSend += 1;
+    if (state.followUp) counts.followUp += 1;
     if (state.completed) counts.completed += 1;
   }
 
@@ -163,7 +180,7 @@ export function filterThreadsForCommunicationsHub(input: {
 
     switch (input.queueFilter) {
       case "all":
-        // Active inbox only — archived conversations live under Archived.
+        // Active inbox only — deleted conversations live under Deleted.
         return thread.status !== "archived";
       case "needs_reply":
         return thread.status !== "archived" && state.needsReply;
@@ -175,6 +192,8 @@ export function filterThreadsForCommunicationsHub(input: {
         return thread.status !== "archived" && state.readyToSend;
       case "assigned_to_me":
         return false;
+      case "follow_up":
+        return thread.status !== "archived" && state.followUp;
       case "completed":
         return thread.status !== "archived" && state.completed;
       case "archived":

@@ -2,7 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowLeft, ChevronDown, User, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Star,
+  Trash2,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
@@ -10,6 +18,8 @@ import { INBOX_CHANNEL_LABELS, isReplyChannel, isTaggedChannel } from "@/lib/inb
 import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
 import {
   archiveInboxThreadAction,
+  markInboxThreadDoneAction,
+  toggleInboxThreadFollowUpAction,
   unarchiveInboxThreadAction,
 } from "@/lib/inbox/actions";
 import { classifyThreadQueueState } from "@/lib/inbox/queue-utils";
@@ -166,6 +176,9 @@ function ThreadMessageTimeline({
   );
 }
 
+const threadActionButtonClassName =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cos-border bg-white text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-60";
+
 interface CommunicationsWorkspaceProps {
   thread: InboxThread | null;
   messages: InboxMessage[];
@@ -174,6 +187,7 @@ interface CommunicationsWorkspaceProps {
   onBack?: () => void;
   showAiPanel?: boolean;
   onArchived?: () => void;
+  onMovedOutOfQueue?: () => void;
   className?: string;
 }
 
@@ -185,31 +199,84 @@ export function CommunicationsWorkspace({
   onBack,
   showAiPanel = true,
   onArchived,
+  onMovedOutOfQueue,
   className,
 }: CommunicationsWorkspaceProps) {
   const router = useRouter();
-  const [archiveError, setArchiveError] = useState<string | null>(null);
-  const [isArchiving, startArchiveTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isActing, startActionTransition] = useTransition();
 
   const isArchived = thread?.status === "archived";
+  const queueState = thread ? classifyThreadQueueState(thread, messages) : null;
+  const isFollowUp = Boolean(thread?.followUp);
+  const isDone = Boolean(queueState?.completed);
 
-  function handleArchiveToggle() {
+  function handleFollowUpToggle() {
     if (!thread) {
       return;
     }
-    setArchiveError(null);
-    startArchiveTransition(async () => {
+    setActionError(null);
+    startActionTransition(async () => {
+      const result = await toggleInboxThreadFollowUpAction({ threadId: thread.id });
+      if (!result.success) {
+        setActionError(result.error ?? "Could not update follow-up.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function handleDoneToggle() {
+    if (!thread) {
+      return;
+    }
+    setActionError(null);
+    startActionTransition(async () => {
+      const result = await markInboxThreadDoneAction({ threadId: thread.id });
+      if (!result.success) {
+        setActionError(result.error ?? "Could not update conversation.");
+        return;
+      }
+      if (!thread.markedDone) {
+        onMovedOutOfQueue?.();
+      }
+      router.refresh();
+    });
+  }
+
+  function handleDeleteToggle() {
+    if (!thread) {
+      return;
+    }
+
+    if (!isArchived) {
+      const confirmed = window.confirm(
+        "Delete this conversation? It will be removed from your active inbox.",
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setActionError(null);
+    startActionTransition(async () => {
       const result = isArchived
         ? await unarchiveInboxThreadAction({ threadId: thread.id })
         : await archiveInboxThreadAction({ threadId: thread.id });
 
       if (!result.success) {
-        setArchiveError(result.error ?? "Could not update archive status.");
+        setActionError(
+          result.error ??
+            (isArchived
+              ? "Could not restore conversation."
+              : "Could not delete conversation."),
+        );
         return;
       }
 
       if (!isArchived) {
         onArchived?.();
+        onMovedOutOfQueue?.();
       }
       router.refresh();
     });
@@ -233,17 +300,16 @@ export function CommunicationsWorkspace({
 
   const displayName =
     thread.participantName ?? INBOX_CHANNEL_LABELS[thread.channelType];
-  const queueState = classifyThreadQueueState(thread, messages);
   const statusLabel = isArchived
-    ? "Archived"
-    : queueState.readyToSend
+    ? "Deleted"
+    : queueState?.readyToSend
       ? "Ready to Send"
-      : queueState.waitingOnAi
+      : queueState?.waitingOnAi
         ? "Waiting on AI"
-        : queueState.needsReply
+        : queueState?.needsReply
           ? "Needs Reply"
-          : queueState.completed
-            ? "Completed"
+          : isDone
+            ? "Done"
             : "Open";
 
   return (
@@ -289,29 +355,43 @@ export function CommunicationsWorkspace({
             </span>
             <button
               type="button"
-              onClick={handleArchiveToggle}
-              disabled={isArchiving}
-              title={
-                isArchived
-                  ? "Move back to All conversations"
-                  : "Archive this conversation"
-              }
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-cos-border px-3 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-60"
+              onClick={handleFollowUpToggle}
+              disabled={isActing}
+              title="Follow up"
+              aria-label={isFollowUp ? "Remove follow up" : "Follow up"}
+              aria-pressed={isFollowUp}
+              className={threadActionButtonClassName}
             >
-              {isArchived ? (
-                <ArchiveRestore className="h-3.5 w-3.5" aria-hidden />
-              ) : (
-                <Archive className="h-3.5 w-3.5" aria-hidden />
-              )}
-              <span className="hidden sm:inline">
-                {isArchiving
-                  ? isArchived
-                    ? "Restoring…"
-                    : "Archiving…"
-                  : isArchived
-                    ? "Unarchive"
-                    : "Archive"}
-              </span>
+              <Star
+                className={cn("h-4 w-4", isFollowUp ? "text-[#f59e0b]" : "text-cos-text")}
+                fill={isFollowUp ? "currentColor" : "none"}
+                aria-hidden
+              />
+            </button>
+            <button
+              type="button"
+              onClick={handleDoneToggle}
+              disabled={isActing}
+              title="Done"
+              aria-label={thread.markedDone ? "Undo done" : "Done"}
+              aria-pressed={isDone}
+              className={threadActionButtonClassName}
+            >
+              <Check
+                className={cn("h-4 w-4", isDone ? "text-emerald-700" : "text-cos-text")}
+                strokeWidth={2.25}
+                aria-hidden
+              />
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteToggle}
+              disabled={isActing}
+              title={isArchived ? "Restore" : "Delete"}
+              aria-label={isArchived ? "Restore conversation" : "Delete"}
+              className={threadActionButtonClassName}
+            >
+              <Trash2 className="h-4 w-4 text-cos-text" aria-hidden />
             </button>
             <button
               type="button"
@@ -329,9 +409,9 @@ export function CommunicationsWorkspace({
           </div>
         </div>
 
-        {archiveError ? (
+        {actionError ? (
           <p className="border-b border-red-200 bg-red-50 px-5 py-2 text-xs text-red-700" role="alert">
-            {archiveError}
+            {actionError}
           </p>
         ) : null}
 
@@ -353,7 +433,9 @@ export function CommunicationsWorkspace({
         </div>
 
         {isReplyChannel(thread.channelType) && !isArchived ? (
-          <CommunicationsReplySection thread={thread} messages={messages} />
+          <div className="relative z-20 shrink-0 overflow-visible">
+            <CommunicationsReplySection thread={thread} messages={messages} />
+          </div>
         ) : null}
       </div>
 

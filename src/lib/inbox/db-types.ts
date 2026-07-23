@@ -18,6 +18,8 @@ export interface InboxThreadRow {
   last_message_at: string | null;
   unread_count: number;
   status: InboxItemStatus;
+  follow_up: boolean;
+  marked_done: boolean;
   synced_at: string | null;
   metadata: Record<string, unknown>;
   created_at: string;

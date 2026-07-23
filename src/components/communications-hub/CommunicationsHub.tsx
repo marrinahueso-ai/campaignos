@@ -285,6 +285,11 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                     setMobileShowDetail(false);
                     setMobileShowAiPanel(false);
                   }}
+                  onMovedOutOfQueue={() => {
+                    setSelectedThreadId(null);
+                    setMobileShowDetail(false);
+                    setMobileShowAiPanel(false);
+                  }}
                   showAiPanel={!mobileShowAiPanel}
                   className={cn(!mobileShowDetail && "hidden xl:flex")}
                 />

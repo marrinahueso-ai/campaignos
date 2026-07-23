@@ -125,7 +125,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Inbox AI drafts + approve-then-send — **shipped**
 - Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**
 - Messenger timeline always shows a profile picture (or initials/fallback) next to every bubble — **shipped**
-- Reply composer toolbar: emoji picker + 👍/❤️ quick-insert — **shipped**; attachments — **deferred** (Meta reply path is text-only)
+- Reply composer toolbar: emoji picker + 👍/❤️ quick-insert — **shipped**; attachment icon opens file picker then shows Meta text-only notice — **shipped** (send path still text-only)
+- Thread actions: Follow up (star), Done, Delete (with confirm); queue filters Follow up / Done / Deleted — **shipped**
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**
 

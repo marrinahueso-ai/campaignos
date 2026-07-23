@@ -26,6 +26,8 @@ export function mapInboxThreadRow(row: InboxThreadRow): InboxThread {
     lastMessageAt: row.last_message_at,
     unreadCount: row.unread_count,
     status: row.status,
+    followUp: Boolean(row.follow_up),
+    markedDone: Boolean(row.marked_done),
     syncedAt: row.synced_at,
     metadata,
     createdAt: row.created_at,

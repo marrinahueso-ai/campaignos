@@ -81,7 +81,7 @@ async function incrementThreadUnreadForInboundMessage(
 
   const { data: threadData, error: threadError } = await supabase
     .from("inbox_threads")
-    .select("unread_count, status")
+    .select("unread_count, status, marked_done")
     .eq("id", input.threadId)
     .single();
 
@@ -92,15 +92,20 @@ async function incrementThreadUnreadForInboundMessage(
 
   const nextUnreadCount = (threadData.unread_count as number | null) ?? 0;
   const currentStatus = (threadData.status as string | null) ?? "pending";
-  // Re-open archived/sent threads when the same person messages again so they
+  // Re-open archived/sent/done threads when the same person messages again so they
   // return to All conversations with full history intact.
-  const shouldReopen = currentStatus === "archived" || currentStatus === "sent";
+  const shouldReopen =
+    currentStatus === "archived" ||
+    currentStatus === "sent" ||
+    Boolean(threadData.marked_done);
 
   const { error: unreadError } = await supabase
     .from("inbox_threads")
     .update({
       unread_count: nextUnreadCount + 1,
-      ...(shouldReopen ? { status: "pending" } : {}),
+      ...(shouldReopen
+        ? { status: "pending", marked_done: false }
+        : { marked_done: false }),
       updated_at: input.now,
     })
     .eq("id", input.threadId);

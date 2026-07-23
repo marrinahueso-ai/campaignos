@@ -1,5 +1,6 @@
 "use client";
 
+import { Star } from "lucide-react";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { INBOX_CHANNEL_LABELS } from "@/lib/inbox/constants";
 import type { CommunicationsQueueCounts, CommunicationsQueueFilter } from "@/lib/inbox/queue-utils";
@@ -19,8 +20,9 @@ const QUEUE_ITEMS: Array<{
   { id: "waiting_on_ai", label: "Waiting on AI", countKey: "waitingOnAi" },
   { id: "ready_to_send", label: "Ready to Send", countKey: "readyToSend" },
   { id: "assigned_to_me", label: "Assigned to Me", countKey: "assignedToMe", shell: true },
-  { id: "completed", label: "Completed", countKey: "completed" },
-  { id: "archived", label: "Archived", countKey: "archived" },
+  { id: "follow_up", label: "Follow up", countKey: "followUp" },
+  { id: "completed", label: "Done", countKey: "completed" },
+  { id: "archived", label: "Deleted", countKey: "archived" },
 ];
 
 function formatRelativeUpdated(iso: string | null): string {
@@ -62,7 +64,7 @@ function threadStatusLabel(
   messages: InboxMessage[],
 ): string | null {
   if (thread.status === "archived") {
-    return "Archived";
+    return "Deleted";
   }
   const state = classifyThreadQueueState(thread, messages);
   if (state.readyToSend) {
@@ -75,7 +77,7 @@ function threadStatusLabel(
     return "Needs Reply";
   }
   if (state.completed) {
-    return "Completed";
+    return "Done";
   }
   return null;
 }
@@ -193,9 +195,18 @@ export function CommunicationsQueuePanel({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-cos-text">{displayName}</p>
-                    <span className="shrink-0 text-[11px] text-cos-muted">
-                      {formatRelativeUpdated(thread.lastMessageAt)}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[11px] text-cos-muted">
+                        {formatRelativeUpdated(thread.lastMessageAt)}
+                      </span>
+                      {thread.followUp && thread.status !== "archived" ? (
+                        <Star
+                          className="h-3.5 w-3.5 text-[#f59e0b]"
+                          fill="currentColor"
+                          aria-label="Follow up"
+                        />
+                      ) : null}
+                    </div>
                   </div>
                   {statusLabel ? (
                     <span className="mt-1 inline-flex rounded-full bg-[#fff4e5] px-2 py-0.5 text-[10px] font-semibold tracking-wide text-[#b45309] uppercase">

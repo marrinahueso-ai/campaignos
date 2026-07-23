@@ -27,6 +27,8 @@ export interface InboxThread {
   lastMessageAt: string | null;
   unreadCount: number;
   status: InboxItemStatus;
+  followUp: boolean;
+  markedDone: boolean;
   syncedAt: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
