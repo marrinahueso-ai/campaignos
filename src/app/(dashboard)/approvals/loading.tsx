@@ -10,8 +10,8 @@ export default function ApprovalsLoading() {
         <div className="h-10 w-28 rounded bg-cos-bg" />
         <div className="h-10 w-64 rounded bg-cos-bg" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} className="h-24 border border-cos-border bg-cos-card" />
         ))}
       </div>

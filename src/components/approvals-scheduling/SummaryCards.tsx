@@ -43,12 +43,6 @@ const CARDS: {
     description: "Scheduled to publish",
   },
   {
-    key: "posted",
-    tabId: "posted",
-    label: "Posted",
-    description: "Waiting to publish",
-  },
-  {
     key: "published",
     tabId: "published",
     label: "Published",
@@ -66,7 +60,7 @@ export function SummaryCards({
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {CARDS.map((card) => {
         const isActive = activeFilter === card.tabId;
 

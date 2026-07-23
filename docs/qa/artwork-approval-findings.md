@@ -134,7 +134,7 @@ Rendered on **Approvals** nav via `NavNotificationBadge`:
 
 ### Approvals hub
 
-- Summary cards / tabs: In queue, Assigned to me, Scheduled, Posted, Published, **Changes requested** (`summarizeCounts`)
+- Summary cards / tabs: Assigned to me, Changes requested, In queue, Scheduled, Published (`summarizeCounts`; Posted remains a row status, not a summary card)
 - Table status badges + Review drawer actions when `canActOnUnifiedItem`
 
 Stability P0: sidebar uses `{ count: "exact", head: true }` — not full row materialization.
