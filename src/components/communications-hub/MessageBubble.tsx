@@ -204,12 +204,12 @@ export function MessageBubble({
   return (
     <li
       className={cn(
-        "flex max-w-[85%] items-end gap-2",
+        "flex w-fit min-w-0 max-w-[min(85%,100%)] items-end gap-2",
         isOutbound && "ml-auto flex-row-reverse",
       )}
     >
       <MessageAvatar avatarUrl={avatarUrl} initials={initials} />
-      <div className="relative min-w-0">
+      <div className="relative min-w-0 max-w-full">
         <div
           role="button"
           tabIndex={0}
@@ -223,7 +223,7 @@ export function MessageBubble({
           }}
           aria-label={`Message from ${avatarName ?? "contact"}. Double-tap to react.`}
           className={cn(
-            "select-none rounded-2xl touch-manipulation",
+            "max-w-full select-none rounded-2xl touch-manipulation",
             jumboEmojiCount
               ? "px-3 py-2"
               : stickerUrl && !showTextBody
@@ -240,7 +240,7 @@ export function MessageBubble({
               src={stickerUrl}
               alt="Sticker"
               className={cn(
-                "max-h-40 max-w-[11rem] rounded-xl object-contain",
+                "max-h-40 max-w-[min(11rem,100%)] rounded-xl object-contain",
                 showTextBody && "mb-2",
               )}
               loading="lazy"
@@ -249,7 +249,7 @@ export function MessageBubble({
           {showTextBody ? (
             <p
               className={cn(
-                "whitespace-pre-wrap",
+                "whitespace-pre-wrap break-words [overflow-wrap:anywhere]",
                 jumboEmojiCount === 1 && "text-[3.75rem] leading-none",
                 jumboEmojiCount != null &&
                   jumboEmojiCount > 1 &&

@@ -94,7 +94,7 @@ function ThreadMessageTimeline({
   const seedMessageId = timelineMessages[0]?.id ?? null;
 
   return (
-    <ul className="flex flex-col gap-3" role="list">
+    <ul className="flex min-w-0 flex-col gap-3" role="list">
       {timelineMessages.map((message) => {
         const isOutbound = isOutboundTimelineMessage(message, { seedMessageId });
         const avatarUrl = isOutbound
@@ -358,7 +358,7 @@ export function CommunicationsWorkspace({
           </p>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pt-6 pb-5 scroll-pt-6">
           <ThreadMessageTimeline
             messages={messages}
             channelType={thread.channelType}

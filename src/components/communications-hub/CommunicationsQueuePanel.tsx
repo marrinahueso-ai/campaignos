@@ -198,17 +198,18 @@ export function CommunicationsQueuePanel({
               type="button"
               onClick={() => setManageOpen((open) => !open)}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors",
+                "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
                 manageOpen || manageHighlightsSecondary
                   ? "border-cos-dark bg-cos-bg text-cos-text"
                   : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark hover:bg-cos-bg",
               )}
+              aria-label="Manage"
+              title="Manage"
               aria-haspopup="menu"
               aria-expanded={manageOpen}
               aria-controls={manageMenuId}
             >
               <Layers className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-              Manage
             </button>
 
             {manageOpen ? (
