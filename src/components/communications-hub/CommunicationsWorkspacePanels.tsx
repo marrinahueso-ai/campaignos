@@ -64,10 +64,13 @@ export function CommunicationsReplySection({
     [messages, thread.channelType],
   );
 
+  // After a reply is sent, start empty so Completed threads can take a follow-up.
   const initialBody =
-    replyTarget?.status === "approved" && replyTarget.approvedBody
-      ? replyTarget.approvedBody
-      : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
+    replyTarget?.status === "sent"
+      ? ""
+      : replyTarget?.status === "approved" && replyTarget.approvedBody
+        ? replyTarget.approvedBody
+        : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
 
   const [draftBody, setDraftBody] = useState(initialBody);
   const [manualReply, setManualReply] = useState("");
@@ -85,7 +88,7 @@ export function CommunicationsReplySection({
     setIsEditing(false);
     setActionError(null);
     setDraftRequested(false);
-  }, [replyTarget?.id, initialBody]);
+  }, [replyTarget?.id, initialBody, replyTarget?.status]);
 
   const requestDraft = useCallback(
     (options?: { forceRegenerate?: boolean }) => {
@@ -149,9 +152,7 @@ export function CommunicationsReplySection({
 
   const isSent = replyTarget.status === "sent";
   const isApproved = replyTarget.status === "approved";
-  const displayBody = isSent
-    ? replyTarget.approvedBody ?? replyTarget.body
-    : draftBody;
+  const displayBody = draftBody;
   const confidence = deriveAiConfidenceScore(replyTarget.aiSourceUsed);
   const confidenceLabel =
     confidence == null
@@ -208,16 +209,14 @@ export function CommunicationsReplySection({
     });
   }
 
-  if (isSent) {
-    return null;
-  }
-
   return (
     <div className="border-t border-cos-border px-5 py-5">
       <div className="rounded-xl border border-[#b8dcc4] bg-[#f4fbf6] p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
-          <p className="text-sm font-semibold text-cos-text">AI Suggested Reply</p>
+          <p className="text-sm font-semibold text-cos-text">
+            {isSent ? "Write another reply" : "AI Suggested Reply"}
+          </p>
           {displayBody && confidenceLabel && confidence != null ? (
             <span
               className={cn(

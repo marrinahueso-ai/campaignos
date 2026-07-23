@@ -53,6 +53,7 @@ export interface InboxMessage {
   approvedByUserId: string | null;
   sentToPlatformAt: string | null;
   externalSendId: string | null;
+  metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

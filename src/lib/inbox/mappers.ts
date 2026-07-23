@@ -54,6 +54,7 @@ export function mapInboxMessageRow(row: InboxMessageRow): InboxMessage {
     approvedByUserId: row.approved_by_user_id,
     sentToPlatformAt: row.sent_to_platform_at,
     externalSendId: row.external_send_id,
+    metadata: row.metadata ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

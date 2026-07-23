@@ -37,9 +37,11 @@ export function resolveInboxReplyTarget(input: {
     return null;
   }
 
+  // No inbound rows (e.g. Meta attributed the Page as author). Prefer a pending
+  // seed, otherwise the chronologically first message — not a later page reply.
   const ordered = sortBySentAt(input.messages);
   const pending = ordered.find(isPendingReply);
-  return pending ?? ordered[ordered.length - 1] ?? null;
+  return pending ?? ordered[0] ?? null;
 }
 
 export function canApproveReplyAnchor(input: {

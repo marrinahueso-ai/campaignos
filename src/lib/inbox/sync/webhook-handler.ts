@@ -310,7 +310,8 @@ async function handleFeedCommentChange(input: {
     channelType: "facebook_comment",
     externalThreadId: threadExternalId,
     externalMessageId: commentId,
-    direction: senderId === input.connection.facebookPageId ? "outbound" : "inbound",
+    // Seed comments are inbound for inbox UX even when Meta attributes the Page.
+    direction: "inbound",
     body: message,
     senderName,
     senderExternalId: senderId,

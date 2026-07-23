@@ -56,10 +56,13 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     [messages, thread.channelType],
   );
 
+  // After a reply is sent, start empty so completed threads can take a follow-up.
   const initialBody =
-    replyTarget?.status === "approved" && replyTarget.approvedBody
-      ? replyTarget.approvedBody
-      : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
+    replyTarget?.status === "sent"
+      ? ""
+      : replyTarget?.status === "approved" && replyTarget.approvedBody
+        ? replyTarget.approvedBody
+        : replyTarget?.aiDraftBody ?? replyTarget?.approvedBody ?? "";
 
   const [draftBody, setDraftBody] = useState(initialBody);
   const [manualReply, setManualReply] = useState("");
@@ -77,7 +80,7 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     setIsEditing(false);
     setActionError(null);
     setDraftRequested(false);
-  }, [replyTarget?.id, initialBody]);
+  }, [replyTarget?.id, initialBody, replyTarget?.status]);
 
   const requestDraft = useCallback(
     (options?: { forceRegenerate?: boolean }) => {
@@ -141,9 +144,7 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
 
   const isSent = replyTarget.status === "sent";
   const isApproved = replyTarget.status === "approved";
-  const displayBody = isSent
-    ? replyTarget.approvedBody ?? replyTarget.body
-    : draftBody;
+  const displayBody = draftBody;
   const draftTimestamp = replyTarget.aiDraftGeneratedAt ?? replyTarget.sentAt;
   const sendBody = manualReply.trim() || displayBody;
 
@@ -197,26 +198,15 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
     });
   }
 
-  if (isSent) {
-    return (
-      <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#8a8a88]">
-          Sent reply
-        </p>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[#1a1a1a]">
-          {displayBody}
-        </p>
-      </div>
-    );
-  }
-
   const canSend = Boolean(sendBody.trim()) && !isPending;
 
   return (
     <div className="shrink-0 border-t border-[#ebebea] bg-white px-6 py-5">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
-        <p className="text-sm font-semibold text-[#1a1a1a]">AI suggested reply</p>
+        <p className="text-sm font-semibold text-[#1a1a1a]">
+          {isSent ? "Write another reply" : "AI suggested reply"}
+        </p>
         {isPending && !displayBody ? (
           <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-[#8a8a88]" />
         ) : null}

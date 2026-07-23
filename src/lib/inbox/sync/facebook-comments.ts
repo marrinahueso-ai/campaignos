@@ -165,12 +165,15 @@ export async function fetchFacebookPostComments(input: {
         threadMap.set(threadExternalId, thread);
       }
 
+      // Top-level comments are always the public question / seed for this
+      // thread. Graph sometimes reports the Page as `from` (Page-as-author
+      // testing or attribution quirks); treating those as outbound makes the
+      // seed look like a sent reply after we flip status to "sent".
       messages.push({
         channelType: "facebook_comment",
         externalThreadId: threadExternalId,
         externalMessageId,
-        direction:
-          senderId && senderId === readGraphId(input.pageId) ? "outbound" : "inbound",
+        direction: "inbound",
         body,
         senderName,
         senderExternalId: senderId,

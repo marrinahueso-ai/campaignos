@@ -283,10 +283,12 @@ function ThreadMessageList({
     );
   }
 
+  const seedMessageId = timelineMessages[0]?.id ?? null;
+
   return (
     <ul className="flex flex-col gap-4" role="list">
       {timelineMessages.map((message) => {
-        const isOutbound = isOutboundTimelineMessage(message);
+        const isOutbound = isOutboundTimelineMessage(message, { seedMessageId });
         return (
           <li key={message.id} className={cn("max-w-[85%]", isOutbound && "ml-auto")}>
             <div
@@ -294,7 +296,7 @@ function ThreadMessageList({
                 "rounded-[1.25rem] px-4 py-3 text-sm leading-relaxed",
                 isOutbound
                   ? "rounded-br-md bg-[#1a1a1a] text-white"
-                  : "rounded-bl-md bg-[#f3f3f2] text-[#1a1a1a]",
+                  : "rounded-bl-md bg-[#eceae4] text-[#1a1a1a]",
               )}
             >
               <p className="whitespace-pre-wrap">{message.body}</p>
