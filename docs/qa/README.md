@@ -9,6 +9,7 @@
 | [launch-checklist.md](./launch-checklist.md) | **Living** — soft launch / Production pass-fail checklist |
 | [architecture-overview.md](./architecture-overview.md) | **Living** |
 | [testing-guide.md](./testing-guide.md) | **Living** |
+| [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; `npm run test:hey-ralli:perf` |
 | [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md) | **Living** — Creative Setup → artwork input matrix; Playwright `13` / `13b` |
 | [meta-calendar-dnd.md](./meta-calendar-dnd.md) | **Living** — Meta native Graph schedule on Approve + Calendar DnD reschedule (no re-approval); not school-event import |
 | [calendar-import-dedupe.md](./calendar-import-dedupe.md) | **Living** — ICS/Google/AI school-event import keys, Update vs Duplicate; Playwright `14-calendar-import-dedupe` |

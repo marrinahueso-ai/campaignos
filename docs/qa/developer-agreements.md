@@ -97,7 +97,7 @@ Also confirm Resend templates / env are wired before email rows (see eng doc).
 | Risk | Why it matters |
 |------|----------------|
 | **Old Supabase signed email links** | Legacy Storage signed URLs often serve as `octet-stream` / `text/plain` → raw HTML source in Safari/Chrome. New path must use the **app download API**. |
-| **No Playwright yet** | Full flow is manual; regressions need a human session until smokes exist. |
+| **Playwright (gate only)** | `17-developer-agreements-gate` with `HEY_RALLI_QA_UNSIGNED_*` — gate redirect only. Countersign / Resend / Safari stay manual. |
 | **Token TTL ~30d** | HMAC download tokens expire (~30 days); re-test with a fresh executed email if CTA 401s. |
 | **Safari content-type** | Safari is stricter about inline HTML; always re-check A12 after download/API changes. |
 | **Owner vs allowlist** | `/ops` and countersign require **both** allowlist email and Owner (`admin`) seat — easy to misconfigure in local/Preview. |
@@ -106,7 +106,7 @@ Also confirm Resend templates / env are wired before email rows (see eng doc).
 
 ## Automated
 
-**None yet.** Do not invent Playwright coverage here; add a smoke only when product asks for it.
+Gate smoke: `npm run test:hey-ralli -- tests/hey-ralli/smoke/17-developer-agreements-gate.spec.ts` (needs `HEY_RALLI_QA_UNSIGNED_EMAIL` + `HEY_RALLI_QA_UNSIGNED_PASSWORD` in `.env.local`). Full A1–A19 remains manual.
 
 Optional eng follow-up (not required for this checklist): unit tests around gate helpers / download auth if they already exist under `src/lib/developer-agreements/`.
 

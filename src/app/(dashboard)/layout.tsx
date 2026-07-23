@@ -1,14 +1,13 @@
+import { Suspense } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ReportProblemHost } from "@/components/monitoring/ReportProblemHost";
-import { getSidebarSchedulingBadgeCounts } from "@/lib/approvals-scheduling/queries";
 import { normalizeOrganizationId } from "@/lib/auth/active-organization";
 import {
   getActiveMembership,
   listActiveMemberships,
 } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getApprovalSidebarCountsForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
-import { getInboxUnreadCountForCurrentOrg } from "@/lib/inbox/queries";
+import { loadDashboardBadgeCounts } from "@/lib/layout/dashboard-badge-counts";
 import { canAccessOwnerOps } from "@/lib/ops/access";
 
 export default async function DashboardLayout({
@@ -16,40 +15,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [
-    user,
-    sidebarCounts,
-    inboxUnreadCount,
-    schedulingBadgeCounts,
-    organizations,
-    activeMembership,
-    showOwnerOps,
-  ] = await Promise.all([
-    getAuthUser(),
-    getApprovalSidebarCountsForCurrentUser(),
-    getInboxUnreadCountForCurrentOrg(),
-    getSidebarSchedulingBadgeCounts(),
-    listActiveMemberships(),
-    getActiveMembership(),
-    canAccessOwnerOps(),
-  ]);
+  // Auth / org switcher only — badge counts stream via Suspense so they do not
+  // block the shell or page body (Calendar, Tasks, Approvals, Dashboard, …).
+  const [user, organizations, activeMembership, showOwnerOps] =
+    await Promise.all([
+      getAuthUser(),
+      listActiveMemberships(),
+      getActiveMembership(),
+      canAccessOwnerOps(),
+    ]);
 
-  const assignedApprovalsCount = Math.max(
-    sidebarCounts.assignedApprovalsCount,
-    schedulingBadgeCounts.assignedApprovalsCount,
-  );
-
-  const changeRequestsCount = Math.max(
-    sidebarCounts.changeRequestsCount,
-    schedulingBadgeCounts.changeRequestsCount,
-  );
+  const badgeCountsPromise = loadDashboardBadgeCounts();
 
   return (
     <DashboardShell
       userEmail={user?.email ?? null}
-      assignedApprovalsCount={assignedApprovalsCount}
-      changeRequestsCount={changeRequestsCount}
-      inboxUnreadCount={inboxUnreadCount}
+      badgeCountsPromise={badgeCountsPromise}
       organizations={organizations}
       activeOrganizationId={
         normalizeOrganizationId(activeMembership?.organizationId) ?? null
@@ -57,7 +38,9 @@ export default async function DashboardLayout({
       showOwnerOps={showOwnerOps}
     >
       {children}
-      <ReportProblemHost />
+      <Suspense fallback={null}>
+        <ReportProblemHost />
+      </Suspense>
     </DashboardShell>
   );
 }

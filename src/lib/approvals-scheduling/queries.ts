@@ -1,10 +1,8 @@
 import "server-only";
 
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
-import { getPlanningCalendarData } from "@/lib/communications-calendar/planning-queries";
 import {
   mapClassicApprovalItem,
-  mapPlanningPublishingItem,
   mapSchedulingItemRow,
 } from "@/lib/approvals-scheduling/map-items";
 import {
@@ -53,24 +51,6 @@ function normalizeSchedulingListRow(
     caption_text: (row.caption_text as string | null | undefined) ?? null,
     story_caption: (row.story_caption as string | null | undefined) ?? null,
   };
-}
-
-function isPublishedPlanningItem(
-  item: import("@/types/communications-calendar").PlanningCalendarItem,
-): boolean {
-  return item.publishStatus === "published" || item.status === "published";
-}
-
-function relativeDayFromPlanningSourceId(
-  sourceId: string,
-  eventId: string,
-): number | null {
-  const prefix = `${eventId}-`;
-  if (!sourceId.startsWith(prefix)) {
-    return null;
-  }
-  const day = Number(sourceId.slice(prefix.length));
-  return Number.isFinite(day) ? day : null;
 }
 
 async function loadMetaBundlesByEvent(
@@ -151,29 +131,8 @@ const PENDING_SCHEDULING_STATUSES = ["assigned_to_me", "in_queue"] as const;
 /** Org-scoped event ids for scheduling queries (request-deduped). */
 const resolveScopedSchedulingEventIds = cache(
   async function resolveScopedSchedulingEventIds(): Promise<string[]> {
-    const { resolveScopedOrganizationId, getOrganizationSchoolYearIds } =
-      await import("@/lib/events/org-scope");
-    const scopedOrgId = await resolveScopedOrganizationId(undefined);
-    if (!scopedOrgId) {
-      return [];
-    }
-
-    const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
-    if (!schoolYearIds.length) {
-      return [];
-    }
-
-    const supabase = await createClient();
-    const { data: events, error: eventsError } = await supabase
-      .from("events")
-      .select("id")
-      .in("school_year_id", schoolYearIds);
-
-    if (eventsError?.code === "42P01" || eventsError) {
-      return [];
-    }
-
-    return (events ?? []).map((row) => row.id as string);
+    const { resolveScopedOrgEventIds } = await import("@/lib/events/org-scope");
+    return resolveScopedOrgEventIds(undefined);
   },
 );
 
@@ -370,14 +329,19 @@ function isSubmittedByActor(
 
 const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovalsData(): Promise<UnifiedApprovalsPageData> {
   const today = getTodayDateString();
-  const [role, membership, queue, planning, schedulingRows] = await Promise.all([
-    getCurrentCampaignRole(),
-    getActiveMembership(),
-    // Hub list: skip classic version/Meta preview enrichment (load on open).
-    getApprovalQueueOverviewForCurrentUser(undefined, { enrichPreviews: false }),
-    getPlanningCalendarData(),
-    fetchCampaignBuilderSchedulingItems(),
-  ]);
+  // Critical path: classic queue + CB2 scheduling rows only.
+  // Full Calendar / Meta publish bundles are too heavy for the ≤2s hub budget;
+  // scheduled/posted CB2 rows already cover the publishing tabs.
+  const [role, membership, queue, schedulingRows, canViewAll] =
+    await Promise.all([
+      getCurrentCampaignRole(),
+      getActiveMembership(),
+      getApprovalQueueOverviewForCurrentUser(undefined, {
+        enrichPreviews: false,
+      }),
+      fetchCampaignBuilderSchedulingItems(),
+      hasPermission("approve_comms"),
+    ]);
 
   const actor: ApprovalActor | null = membership
     ? {
@@ -391,66 +355,11 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     ...queue.assignedToMe,
     ...queue.allPending.filter((item) => !item.assignedToMe),
     ...queue.changesRequested,
-    ...queue.recentlyApproved,
+    ...queue.recentlyApproved.slice(0, 25),
   ].map((item) => mapClassicApprovalItem(item, today));
-
-  const metaItems = planning.items.filter(
-    (item) => item.communicationType === "meta_milestone",
-  );
-
-  const publishingCandidates = metaItems.filter(
-    (item) =>
-      isPublishedPlanningItem(item) ||
-      item.publishStatus === "scheduled" ||
-      item.status === "scheduled" ||
-      item.publishStatus === "posting" ||
-      (!isPublishedPlanningItem(item) && item.scheduledDate <= today),
-  );
-
-  const schedulingByEventMilestone = new Map<string, ApprovalSchedulingItemRow>();
-  for (const row of schedulingRows) {
-    schedulingByEventMilestone.set(
-      `${row.event_id}:${milestoneNameMatchKey(row.milestone_name)}`,
-      row,
-    );
-  }
-
-  const bundlesByEvent = await loadMetaBundlesByEvent(
-    publishingCandidates.map((item) => item.eventId),
-  );
-
-  const publishingItems = publishingCandidates.map((item) => {
-    const milestoneName = item.timelineStepTitle ?? item.title;
-    const cb2Row = schedulingByEventMilestone.get(
-      `${item.eventId}:${milestoneNameMatchKey(milestoneName)}`,
-    );
-    const relativeDay = relativeDayFromPlanningSourceId(
-      item.sourceId,
-      item.eventId,
-    );
-    const bundles = bundlesByEvent.get(item.eventId) ?? [];
-    const bundle =
-      (relativeDay === null
-        ? null
-        : bundles.find((entry) => entry.relativeDay === relativeDay)) ??
-      bundles.find(
-        (entry) =>
-          milestoneNameMatchKey(entry.title) ===
-          milestoneNameMatchKey(milestoneName),
-      );
-
-    const assets =
-      previewAssetsFromSchedulingRow(cb2Row) ??
-      previewAssetsFromBundle(bundle);
-
-    return mapPlanningPublishingItem(item, today, new Date(), assets);
-  });
 
   const eventTitleById = new Map<string, string>();
   for (const item of classicItems) {
-    eventTitleById.set(item.eventId, item.eventTitle);
-  }
-  for (const item of publishingItems) {
     eventTitleById.set(item.eventId, item.eventTitle);
   }
   for (const row of schedulingRows) {
@@ -478,7 +387,6 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
   const items = dedupeUnifiedApprovalItems([
     ...classicItems,
     ...cb2Items,
-    ...publishingItems,
   ]).sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 
   const counts = summarizeCounts(items);
@@ -503,7 +411,7 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     actorUserId: actor?.organizationUserId ?? null,
     actorRoleId: actor?.organizationRoleId ?? null,
     role,
-    canViewAll: await hasPermission("approve_comms"),
+    canViewAll,
   };
 });
 

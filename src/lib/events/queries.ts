@@ -144,7 +144,7 @@ export async function getActiveEvents(
   return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
 }
 
-export async function getAllEvents(
+export const getAllEvents = cache(async function getAllEvents(
   organizationId?: string | null,
 ): Promise<Event[]> {
   const schoolYearIds = await scopedSchoolYearIds(organizationId);
@@ -166,7 +166,7 @@ export async function getAllEvents(
   }
 
   return applyAssignedEventsFilter(mapEventRows((data ?? []) as unknown as EventRow[]));
-}
+});
 
 export const getEventById = cache(async (id: string): Promise<Event | null> => {
   const supabase = await createClient();

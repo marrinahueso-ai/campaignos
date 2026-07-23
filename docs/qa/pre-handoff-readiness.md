@@ -150,7 +150,7 @@ Before you invite them, have these ready (links + one short note is enough):
 | Item | Why |
 |------|-----|
 | Owner vs Admin rename / copy polish | Product naming follow-up; access is allowlist + `admin` seat today |
-| Playwright coverage for agreements | None yet — manual QA is expected ([developer-agreements.md](./developer-agreements.md)) |
+| Playwright coverage for agreements | Gate-only smoke exists (`17-developer-agreements-gate` with `HEY_RALLI_QA_UNSIGNED_*`). Countersign / Resend / Safari download remain manual ([developer-agreements.md](./developer-agreements.md)) |
 | Full launch-checklist A–Z | Soft-launch suite is Phase B after slice A readiness — not a gate to invite them for agreements |
 | Stripe / paid plan gates | Deferred (Phase E) |
 | Exhaustive Safari + Chrome matrix on every disposition flag | Your smoke = Safari once; QA can expand A10–A14 |
@@ -189,7 +189,7 @@ Known issues (standard three — no extras)
 
 Out of scope / do not block
 - Owner vs Admin rename
-- Missing Playwright for agreements (manual only)
+- Full agreements A1–A19 (Playwright covers gate only when `HEY_RALLI_QA_UNSIGNED_*` set)
 - Stripe / unpaid plan gates
 - Full launch-checklist rows (separate Phase B handoff)
 - Unrelated soft-launch rows unless listed in Scope
@@ -208,8 +208,8 @@ Questions → Marrina
 
 | Order | Launch-checklist section | Auto / agent | Needs Marrina |
 |-------|--------------------------|--------------|---------------|
-| 1 | **§12 Deploy smoke** | 12.1 Pass (Vercel Ready `b4a1b9a`); 12.8 Pass (migrations on remote incl. developer agreements + onboarding); auth surfaces redirect to login when logged out | 12.2–12.6 logged-in clicks (login already proven in slice A §4 — reconfirm + Calendar / Meta / Tasks / Insights) |
-| 2 | **§1 Auth & setup** | Logged-out URL sanity only | Production spot-check: sign out/in, org switcher (Edmondson ↔ School B), light onboarding if time — **do not treat old local Playwright Pass as Production Pass** |
+| 1 | **§12 Deploy smoke** | 12.1 Pass (Vercel Ready `b4a1b9a`); 12.8 Pass (migrations on remote incl. developer agreements + onboarding); auth surfaces redirect to login when logged out; **local** Playwright `16-launch-smoke` covers logged-in Calendar / Meta / Tasks / Insights / Today (no OAuth) | Production session marks for 12.2–12.6 if you want heyralli.com in the log; Meta/Google **OAuth** still Needs you |
+| 2 | **§1 Auth & setup** | Logged-out URL sanity; **local** `16-launch-smoke` sign-out → sign-in | Production org switcher (Edmondson ↔ School B); light onboarding if time — **do not treat local Playwright Pass as Production Pass** |
 
 ### Remaining launch sections (after this batch)
 
@@ -220,7 +220,17 @@ Questions → Marrina
 | 5 | **§7 Meta** → **§8 Volunteers** → **§10 Ask Ralli** → **§11 Billing** |
 | 6 | Sign-off table + full-site handoff note to QA |
 
-**Rule of thumb:** Agent marks what code/URLs/env prove; Marrina marks anything that needs a real login, OAuth, email, or Safari. Do **not** invent Pass for rows she has not clicked on Production.
+**Rule of thumb:** Agent marks what code/URLs/env/Playwright prove locally; Marrina marks Production session rows, OAuth, email, or Safari. Do **not** invent Production Pass for rows she has not clicked on heyralli.com.
+
+**Playwright shortcuts (local / staging credentials):**
+
+```bash
+npm run test:hey-ralli -- tests/hey-ralli/smoke/16-launch-smoke.spec.ts
+# Optional agreements gate (needs HEY_RALLI_QA_UNSIGNED_EMAIL + HEY_RALLI_QA_UNSIGNED_PASSWORD in .env.local):
+npm run test:hey-ralli -- tests/hey-ralli/smoke/17-developer-agreements-gate.spec.ts
+```
+
+See [testing-guide.md](./testing-guide.md). Still manual: Safari download, Resend email, Meta/Google OAuth.
 
 ---
 

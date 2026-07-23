@@ -6,6 +6,8 @@ cd "$ROOT"
 
 # Load only Playwright-relevant keys from .env.local (never print values).
 # Uses a temp file so process-substitution races cannot leave vars unset.
+# Caller-exported HEY_RALLI_BASE_URL wins (e.g. Production perf runs).
+PRESERVE_BASE_URL="${HEY_RALLI_BASE_URL-}"
 if [[ -f .env.local ]]; then
   ENV_TMP="$(mktemp)"
   # shellcheck disable=SC2064
@@ -17,6 +19,9 @@ if [[ -f .env.local ]]; then
   # shellcheck disable=SC1090
   source "$ENV_TMP"
   set +a
+fi
+if [[ -n "$PRESERVE_BASE_URL" ]]; then
+  export HEY_RALLI_BASE_URL="$PRESERVE_BASE_URL"
 fi
 
 MODE="${1:-run}"

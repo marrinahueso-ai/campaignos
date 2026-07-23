@@ -123,30 +123,8 @@ function mapQueueRow(
 
 const resolveScopedApprovalEventIds = cache(
   async function resolveScopedApprovalEventIds(): Promise<string[]> {
-    const { getOrganizationSchoolYearIds, resolveScopedOrganizationId } =
-      await import("@/lib/events/org-scope");
-    const scopedOrgId = await resolveScopedOrganizationId(undefined);
-    if (!scopedOrgId) {
-      return [];
-    }
-
-    const schoolYearIds = await getOrganizationSchoolYearIds(scopedOrgId);
-    if (!schoolYearIds.length) {
-      return [];
-    }
-
-    const supabase = await createClient();
-    const { data: scopedEvents, error: scopeError } = await supabase
-      .from("events")
-      .select("id")
-      .in("school_year_id", schoolYearIds);
-
-    if (scopeError) {
-      console.error("Failed to scope approval queue events:", scopeError.message);
-      return [];
-    }
-
-    return (scopedEvents ?? []).map((row) => row.id as string);
+    const { resolveScopedOrgEventIds } = await import("@/lib/events/org-scope");
+    return resolveScopedOrgEventIds(undefined);
   },
 );
 

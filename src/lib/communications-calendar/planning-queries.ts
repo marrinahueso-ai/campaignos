@@ -76,6 +76,23 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
   };
 }
 
+/**
+ * Approvals hub only needs Meta milestone planning items — not import cleanup,
+ * heatmap, or the imported-events list (those belong on Calendar).
+ */
+export async function getApprovalsPlanningItems(): Promise<
+  PlanningCalendarItem[]
+> {
+  const organization = await getLatestOrganization();
+  const raw = await fetchUnifiedCalendarRawData(
+    organization?.schoolYear ?? null,
+    organization?.id ?? null,
+  );
+  return buildUnifiedCalendarItemsFromRaw(raw).filter(
+    (item) => item.communicationType === "meta_milestone",
+  );
+}
+
 /** Lightweight Today path: scoped to recent overdue + upcoming work in the school year. */
 export async function getTodayPlanningItems(): Promise<PlanningCalendarItem[]> {
   const { buildPlanningItemsFromRaw, TODAY_PLANNING_ITEM_OPTIONS } = await import(

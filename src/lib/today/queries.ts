@@ -116,15 +116,17 @@ export async function getTodayPageData(
   const eventsForRaw = mergeEventsById(upcomingCampaignEvents, eventsInWindow);
   const eventIds = eventsForRaw.map((event) => event.id);
 
-  const raw = await fetchPlanningRawDataForEvents(eventIds);
+  // Memory hints only need event list (prior runs) — overlap with planning raw fetch.
+  const [raw, memoryHintsByEventId] = await Promise.all([
+    fetchPlanningRawDataForEvents(eventIds),
+    getMemoryHintsForEvents(eventsForRaw),
+  ]);
   const planningItems = buildPlanningItemsFromRaw(raw, TODAY_PLANNING_ITEM_OPTIONS);
-
-  const [stepsByEventId, intelligenceByEventId, memoryHintsByEventId] =
-    await Promise.all([
-      Promise.resolve(buildStepsByEventIdFromRaw(raw, eventIds)),
-      Promise.resolve(getCampaignIntelligenceForEventsFromRaw(eventsForRaw, raw)),
-      getMemoryHintsForEvents(eventsForRaw),
-    ]);
+  const stepsByEventId = buildStepsByEventIdFromRaw(raw, eventIds);
+  const intelligenceByEventId = getCampaignIntelligenceForEventsFromRaw(
+    eventsForRaw,
+    raw,
+  );
 
   const weekEndStr = addDaysToDateOnly(today, 7);
   const weekEvents = upcomingCampaignEvents.filter(

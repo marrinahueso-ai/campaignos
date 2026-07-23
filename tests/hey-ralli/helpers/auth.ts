@@ -33,6 +33,17 @@ export function testInviteToken(): string | null {
   return process.env.HEY_RALLI_TEST_INVITE_TOKEN?.trim() || null;
 }
 
+/**
+ * Optional unsigned developer seat for agreements-gate smoke.
+ * Prefer `HEY_RALLI_QA_UNSIGNED_*`; never hardcode passwords in the repo.
+ */
+export function hasUnsignedDeveloperCredentials(): boolean {
+  return Boolean(
+    process.env.HEY_RALLI_QA_UNSIGNED_EMAIL?.trim() &&
+      process.env.HEY_RALLI_QA_UNSIGNED_PASSWORD?.trim(),
+  );
+}
+
 async function loginWithCredentials(
   page: Page,
   email: string,
@@ -67,6 +78,31 @@ export async function loginWithNoUploadUser(page: Page): Promise<void> {
     );
   }
   await loginWithCredentials(page, email, password);
+}
+
+/** Sign in as the unsigned developer seat (agreements gate). */
+export async function loginWithUnsignedDeveloper(page: Page): Promise<void> {
+  const email = process.env.HEY_RALLI_QA_UNSIGNED_EMAIL?.trim();
+  const password = process.env.HEY_RALLI_QA_UNSIGNED_PASSWORD?.trim();
+  if (!email || !password) {
+    throw new Error(
+      "Missing HEY_RALLI_QA_UNSIGNED_EMAIL / HEY_RALLI_QA_UNSIGNED_PASSWORD. Add them to .env.local for agreements-gate smoke (do not commit).",
+    );
+  }
+  await loginWithCredentials(page, email, password);
+}
+
+/** Header Sign out → land on login (Desktop Chrome viewport). */
+export async function signOutViaUi(page: Page): Promise<void> {
+  const signOut = page.getByRole("button", { name: /^sign out$/i });
+  await expect(signOut).toBeVisible({ timeout: 20_000 });
+  await signOut.click();
+  await page.waitForURL((url) => url.pathname.startsWith("/login"), {
+    timeout: 30_000,
+  });
+  await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({
+    timeout: 20_000,
+  });
 }
 
 export async function expectNoBlankScreen(page: Page): Promise<void> {
@@ -136,4 +172,48 @@ export async function expectInsightsLoaded(page: Page): Promise<void> {
   await expect(
     mainContent(page).getByRole("heading", { name: /^insights$/i }),
   ).toBeVisible({ timeout: 45_000 });
+}
+
+/** Navigate to Calendar and wait for planning chrome (month title or Import CTA). */
+export async function gotoCalendar(page: Page): Promise<void> {
+  await page.goto("/calendar", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await expect(page).toHaveURL(/\/calendar/, { timeout: 30_000 });
+  const main = mainContent(page);
+  // Live shell uses a period heading (e.g. "July 2026") + Import/Review;
+  // older header copy "Calendar" may still appear in some builds.
+  await expect(
+    main
+      .getByRole("heading", { name: /^calendar$/i })
+      .or(main.getByRole("heading", { level: 1 }))
+      .or(main.getByRole("link", { name: /^import$/i }))
+      .first(),
+  ).toBeVisible({ timeout: 45_000 });
+}
+
+/** Navigate to Meta settings and wait for the page title (no OAuth). */
+export async function gotoMetaSettings(page: Page): Promise<void> {
+  await page.goto("/settings/meta", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await expect(page).toHaveURL(/\/settings\/meta/, { timeout: 30_000 });
+  // Settings shells may nest multiple <main> elements — assert on the page.
+  await expect(
+    page.getByRole("heading", {
+      name: /facebook\s*&\s*instagram|^meta$/i,
+    }),
+  ).toBeVisible({ timeout: 45_000 });
+}
+
+/** Navigate to Events Home and wait for list chrome. */
+export async function gotoEventsHome(page: Page): Promise<void> {
+  await page.goto("/events", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
+  await expect(page).toHaveURL(/\/events/, { timeout: 30_000 });
+  await expect(page).not.toHaveURL(/\/login/);
 }

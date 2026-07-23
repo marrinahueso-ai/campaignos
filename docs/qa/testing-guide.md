@@ -32,15 +32,25 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Does the app load?
 - Can someone reach the login page?
 - Can a test user sign in?
+- Sign out → sign back in? (`16-launch-smoke`)
 - Do Dashboard and Team & Access load?
-- Does Create with AI load?
+- Launch nav smoke: Calendar (Import / Google CTAs), Meta settings page, Tasks, Insights, Today/dashboard? (`16-launch-smoke`)
+- Events Home: **View Details** present, no row kebab / CampaignRowActions? (`16-launch-smoke`)
+- `/create-with-ai` lands on Creative Setup (not choose-event hub); no “Using your brand kit” banner; logo/color controls present? (`16-launch-smoke`)
+- Does Create with AI load (event builder path)?
 - Create with AI Creative Setup wiring (playbook, Overall inspiration comment, logo/colors/voice, Your Selections persistence)? (`13-create-with-ai-artwork-inputs`) — see [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md)
+- (Optional) Unsigned developer agreements gate? (`17-developer-agreements-gate`, needs `HEY_RALLI_QA_UNSIGNED_*`)
 - (Optional / longer) Artwork generate → Send for approval notice → Approvals hub badges? (`09-artwork-generation-approval`)
 - (Optional / longer) Golden artwork inputs generate / Edit Artwork regenerate? (`13b-create-with-ai-artwork-generation-inputs`, gated by `HEY_RALLI_SKIP_ARTWORK_GENERATION`)
 - Ask Ralli Assistant: sidebar open, org/ops vs FAQ routing, Approvals how-to (`12-ask-ralli-assistant`) — see [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md)
+- Launch checklist settings batch: org Brand CTA `standalone=1`, Approvals hub, billing plan, calendar import entry, Tasks New Task (`18-launch-checklist`) — Team Access people/templates + org switcher skip unless the seat is multi-org admin
 - Does an invalid invite link show a clear error?
 - (Optional) Does a pending invite show password setup?
 - (Optional) Are Inspiration uploads hidden when `upload_artwork` is off?
+
+**Still manual (not Playwright):** Safari executed-HTML download, Resend countersign/executed email delivery, Meta OAuth deep connect, Google Calendar OAuth deep connect, org switcher (needs multi-org Owner seat), Team Access invite/edit as Owner, full Create-with-AI generate + approve cycle, SignUpGenius connect.
+
+**Performance budget:** `npm run test:hey-ralli:perf` — page loads / light saves ≤ 2s (+ concurrent dashboard). See [performance-budget.md](./performance-budget.md).
 
 It never intentionally deletes production data. Authenticated tests are designed to use **test/staging credentials** only.
 
@@ -88,11 +98,22 @@ HEY_RALLI_TEST_NO_UPLOAD_EMAIL=restricted-staging-user@example.com
 HEY_RALLI_TEST_NO_UPLOAD_PASSWORD=their-staging-password
 # Optional — pending invite token from Team & Access (staging only)
 HEY_RALLI_TEST_INVITE_TOKEN=paste-pending-invite-token-here
+# Optional — unsigned developer for agreements gate smoke (17-developer-agreements-gate)
+# Example email: qa.unsigned.developer@heyralli.dev — password via 1Password only
+HEY_RALLI_QA_UNSIGNED_EMAIL=qa.unsigned.developer@heyralli.dev
+HEY_RALLI_QA_UNSIGNED_PASSWORD=paste-from-1password-never-commit
 # Optional — keep true in CI to avoid burning AI credits (smokes 09 / 13b)
 HEY_RALLI_SKIP_ARTWORK_GENERATION=true
 ```
 
-If those values are missing, login/dashboard/Create-with-AI/restricted-upload/invite-form tests will be **skipped** instead of failing against production. The invalid-invite smoke test always runs.
+If those values are missing, login/dashboard/Create-with-AI/restricted-upload/invite-form/unsigned-gate tests will be **skipped** instead of failing against production. The invalid-invite smoke test always runs.
+
+Targeted launch smoke (faster than the full pack):
+
+```bash
+npm run test:hey-ralli -- tests/hey-ralli/smoke/16-launch-smoke.spec.ts
+npm run test:hey-ralli -- tests/hey-ralli/smoke/17-developer-agreements-gate.spec.ts
+```
 
 Artwork input matrix (what feeds AI artwork, Layer A vs C): [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md).
 

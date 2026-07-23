@@ -100,6 +100,8 @@ describe("targeted event tab speed contracts", () => {
       approvals,
       /export async function getUnifiedApprovalsSchedulingData\(/,
     );
-    assert.match(approvals, /getPlanningCalendarData\(\)/);
+    // Org Approvals hub stays on classic queue + CB2 scheduling (no full Calendar).
+    assert.doesNotMatch(approvals, /getPlanningCalendarData\(\)/);
+    assert.match(approvals, /fetchCampaignBuilderSchedulingItems/);
   });
 });
