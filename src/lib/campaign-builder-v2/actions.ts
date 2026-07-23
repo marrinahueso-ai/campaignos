@@ -674,7 +674,7 @@ export async function generateAllContentAction(
           artwork: emptyMilestoneArtwork(),
           captions: [],
           enabledFormats,
-          deliveryMethod: "auto-publish",
+          deliveryMethod: "publish-now",
           scheduleDate: milestone.suggestedDate,
           scheduleTime: "09:00",
           emailSendDate: milestone.suggestedDate,

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 20, 2026  
+**Last updated:** July 22, 2026  
 **Related:** [Ops](./README.md) · [`vercel.json`](../../vercel.json) · [Env & secrets](./env-and-secrets.md) · [Architecture](../engineering/architecture.md) · [Documentation home](../README.md)
 
 ## Auth
@@ -57,7 +57,7 @@ Schedules are **UTC** (Vercel Cron).
 |---------|---------------------|
 | ICS subscribe stale | `calendar-subscribe-sync` failing or bad subscribe URL |
 | Google events not refreshing overnight | `google-calendar-sync`; OAuth revoked / `deleted_client`; no active school year |
-| Scheduled FB/IG posts not going out | `meta-publish`; token expired → check `meta-token-health` |
+| Scheduled FB/IG posts not going out | `meta-publish`; cron loads due slots + org Meta connection via **service role** (no user session). Token expired → check `meta-token-health`. Create with AI **Publish Now** bypasses cron and publishes on approve. |
 | Inbox not updating | `inbox-sync`; Meta connection scope / token |
 | Reminder emails missing | `story-post-reminders` / `manual-upload-emails`; Resend config |
 | Cron returns 401 | Missing/wrong `CRON_SECRET` |

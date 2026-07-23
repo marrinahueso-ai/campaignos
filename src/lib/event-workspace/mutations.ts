@@ -237,8 +237,10 @@ export async function approveCommunicationItem(
 
 export async function markCommunicationPublished(
   communicationItemId: string,
+  options?: { useServiceRole?: boolean },
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const { createJobClient } = await import("@/lib/supabase/job-client");
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
   const now = new Date().toISOString();
 
   const { error } = await supabase

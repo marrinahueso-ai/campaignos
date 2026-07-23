@@ -172,7 +172,7 @@ function buildEmptyPreviewContent(
       { platform: "instagram", text: "" },
     ],
     enabledFormats: milestone.platformFormats,
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
     scheduleDate: milestone.suggestedDate,
     scheduleTime: "09:00",
     emailSendDate: milestone.suggestedDate,

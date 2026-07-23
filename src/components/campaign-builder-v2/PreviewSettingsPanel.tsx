@@ -11,7 +11,7 @@ import type {
 } from "@/lib/campaign-builder-v2/types";
 
 const DELIVERY_OPTIONS = [
-  ["auto-publish", "Publish automatically"],
+  ["publish-now", "Publish Now"],
   ["schedule", "Schedule to publish"],
   ["manual-email", "Email me for manual upload"],
   ["draft-only", "Save as draft only"],
@@ -88,7 +88,12 @@ export function PreviewSettingsPanel({
             <input
               type="radio"
               name={`delivery-${preview.milestoneId}`}
-              checked={preview.deliveryMethod === value}
+              checked={
+                value === "publish-now"
+                  ? preview.deliveryMethod === "publish-now" ||
+                    preview.deliveryMethod === "auto-publish"
+                  : preview.deliveryMethod === value
+              }
               onChange={() =>
                 onUpdate({ deliveryMethod: value as DeliveryMethod })
               }
@@ -97,35 +102,44 @@ export function PreviewSettingsPanel({
             {label}
           </label>
         ))}
+        {(preview.deliveryMethod === "publish-now" ||
+          preview.deliveryMethod === "auto-publish") && (
+          <p className="text-xs text-cos-muted">
+            Posts to Facebook/Instagram as soon as this milestone is approved —
+            not later via schedule or overnight cron.
+          </p>
+        )}
       </fieldset>
 
-      <div className="space-y-2">
-        <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-          Schedule
-        </p>
-        <Input
-          label="Publish date"
-          type="date"
-          value={preview.scheduleDate}
-          onChange={(e) => onUpdate({ scheduleDate: e.target.value })}
-        />
-        <Input
-          label="Publish time"
-          type="time"
-          value={preview.scheduleTime}
-          onChange={(e) => onUpdate({ scheduleTime: e.target.value })}
-        />
-        <button
-          type="button"
-          className="flex items-center gap-1.5 text-xs font-medium text-cos-text transition-colors hover:text-cos-muted"
-        >
-          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Auto-suggest best time
-        </button>
-        <p className="text-xs text-cos-muted">
-          {formatScheduleDate(preview.scheduleDate, preview.scheduleTime)}
-        </p>
-      </div>
+      {preview.deliveryMethod === "schedule" ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
+            Schedule
+          </p>
+          <Input
+            label="Publish date"
+            type="date"
+            value={preview.scheduleDate}
+            onChange={(e) => onUpdate({ scheduleDate: e.target.value })}
+          />
+          <Input
+            label="Publish time"
+            type="time"
+            value={preview.scheduleTime}
+            onChange={(e) => onUpdate({ scheduleTime: e.target.value })}
+          />
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-xs font-medium text-cos-text transition-colors hover:text-cos-muted"
+          >
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Auto-suggest best time
+          </button>
+          <p className="text-xs text-cos-muted">
+            {formatScheduleDate(preview.scheduleDate, preview.scheduleTime)}
+          </p>
+        </div>
+      ) : null}
 
       {(hasManualIgStory || preview.deliveryMethod === "manual-email") && (
         <div className="space-y-2 border-t border-cos-border pt-4">

@@ -235,7 +235,9 @@ export function DeliveryIcons({
           ? "Manual email"
           : deliveryMethod === "draft-only"
             ? "Draft only"
-            : "Auto-publish"}
+            : deliveryMethod === "schedule"
+              ? "Scheduled"
+              : "Publish Now"}
       </span>
     </div>
   );

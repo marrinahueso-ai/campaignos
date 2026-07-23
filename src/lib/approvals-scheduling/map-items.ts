@@ -26,8 +26,11 @@ function parseDeliveryMethod(value: string | null): UnifiedDeliveryMethod | null
     return null;
   }
 
+  if (value === "auto-publish" || value === "publish-now") {
+    return "publish-now";
+  }
+
   if (
-    value === "auto-publish" ||
     value === "schedule" ||
     value === "manual-email" ||
     value === "draft-only"
@@ -47,8 +50,9 @@ function parsePlatforms(values: string[] | null | undefined): UnifiedPlatform[] 
 
 function deliveryLabel(method: UnifiedDeliveryMethod | null): string {
   switch (method) {
+    case "publish-now":
     case "auto-publish":
-      return "Auto-publish";
+      return "Publish Now";
     case "schedule":
       return "Scheduled";
     case "manual-email":
@@ -56,7 +60,7 @@ function deliveryLabel(method: UnifiedDeliveryMethod | null): string {
     case "draft-only":
       return "Draft only";
     default:
-      return "Auto-publish";
+      return "Publish Now";
   }
 }
 
@@ -113,7 +117,7 @@ export function mapClassicApprovalItem(
         : scheduleAt
           ? formatFutureRelativeTime(scheduleAt, now)
           : `Submitted ${formatRelativeTime(item.requestedAt, now)}`,
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
     platforms: platformsFromChannel(item.channel),
     scheduleAt,
     scheduleLabel: scheduleAt ? formatDateTime(scheduleAt) : null,
@@ -195,7 +199,7 @@ export function mapPlanningPublishingItem(
     nextActionTime: scheduleAt
       ? formatFutureRelativeTime(scheduleAt, now)
       : formatRelativeTime(scheduleAt, now),
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
     platforms: ["facebook", "instagram"],
     scheduleAt,
     scheduleLabel: formatDateTime(scheduleAt),

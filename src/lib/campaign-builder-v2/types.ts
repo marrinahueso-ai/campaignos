@@ -37,6 +37,8 @@ export type PlatformFormat =
   | "instagram-story-manual";
 
 export type DeliveryMethod =
+  | "publish-now"
+  /** @deprecated Normalized to publish-now on load; kept for persisted sessions. */
   | "auto-publish"
   | "schedule"
   | "manual-email"

@@ -30,6 +30,7 @@ export type ApprovalSortField =
 export type ApprovalSortDirection = "asc" | "desc";
 
 export type UnifiedDeliveryMethod =
+  | "publish-now"
   | "auto-publish"
   | "schedule"
   | "manual-email"

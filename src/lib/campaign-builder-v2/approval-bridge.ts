@@ -9,6 +9,7 @@ import {
   sendApprovalResubmittedEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
 import { getSharedCaptionText } from "@/lib/campaign-builder-v2/caption-utils";
+import { normalizeDeliveryMethod } from "@/lib/campaign-builder-v2/delivery-method";
 import { normalizeMilestoneName } from "@/lib/campaign-builder-v2/milestone-names";
 import {
   derivedPreviewStatus,
@@ -166,7 +167,7 @@ export async function sendCampaignBuilderForApproval(
       assigned_organization_role_id: assignee.organizationRoleId,
       assigned_user_id: assignee.assignedUserId,
       requested_by_user_id: membership?.user.id ?? null,
-      delivery_method: preview.deliveryMethod,
+      delivery_method: normalizeDeliveryMethod(preview.deliveryMethod),
       platforms: milestone.platforms,
       schedule_at: scheduleAt,
       caption_text: captionText,
@@ -268,7 +269,7 @@ export async function sendCampaignBuilderForApproval(
           manual_email_to: manualEmailFields.manual_email_to,
           manual_email_send_at: manualEmailFields.manual_email_send_at,
           schedule_at: scheduleAt,
-          delivery_method: preview.deliveryMethod,
+          delivery_method: normalizeDeliveryMethod(preview.deliveryMethod),
           platforms: milestone.platforms,
           updated_at: now,
         })

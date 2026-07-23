@@ -156,7 +156,8 @@ export function resolveRowMetaScheduleIntent(
   const wantsMetaFeedSchedule =
     Boolean(row.feed_artwork_url?.trim()) &&
     (row.delivery_method === "schedule" ||
-      row.delivery_method === "auto-publish");
+      row.delivery_method === "auto-publish" ||
+      row.delivery_method === "publish-now");
 
   return {
     wantsMetaFeedSchedule,

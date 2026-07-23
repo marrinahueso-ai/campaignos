@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import type { MetaConnection, MetaConnectionRow } from "@/lib/meta-publishing/types";
 import {
@@ -45,15 +45,21 @@ function connectionFromEnv(): MetaConnection | null {
   };
 }
 
+export type MetaConnectionLookupOptions = {
+  /** Bypass RLS — required for Vercel cron / service jobs with no user session. */
+  useServiceRole?: boolean;
+};
+
 /** Org-scoped Meta row only — never falls back to shared env credentials. */
 export async function getStoredMetaConnectionForOrganization(
   organizationId: string | null,
+  options?: MetaConnectionLookupOptions,
 ): Promise<MetaConnection | null> {
   if (!organizationId) {
     return null;
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
   const { data, error } = await supabase
     .from("organization_meta_connections")
     .select("*")
@@ -69,13 +75,55 @@ export async function getStoredMetaConnectionForOrganization(
 
 export async function getMetaConnectionForOrganization(
   organizationId: string | null,
+  options?: MetaConnectionLookupOptions,
 ): Promise<MetaConnection | null> {
-  const stored = await getStoredMetaConnectionForOrganization(organizationId);
+  const stored = await getStoredMetaConnectionForOrganization(
+    organizationId,
+    options,
+  );
   if (stored) {
     return stored;
   }
 
   return connectionFromEnv();
+}
+
+/** event → school_year → organization_id (no signed-in membership required). */
+export async function getOrganizationIdForEvent(
+  eventId: string,
+  options?: MetaConnectionLookupOptions,
+): Promise<string | null> {
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("school_year_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (eventError || !event?.school_year_id) {
+    return null;
+  }
+
+  const { data: schoolYear, error: yearError } = await supabase
+    .from("school_years")
+    .select("organization_id")
+    .eq("id", event.school_year_id as string)
+    .maybeSingle();
+
+  if (yearError || !schoolYear?.organization_id) {
+    return null;
+  }
+
+  return schoolYear.organization_id as string;
+}
+
+/** Cron-safe: resolve org Meta OAuth from the event's school year, not session org. */
+export async function getMetaConnectionForEvent(
+  eventId: string,
+  options?: MetaConnectionLookupOptions,
+): Promise<MetaConnection | null> {
+  const organizationId = await getOrganizationIdForEvent(eventId, options);
+  return getMetaConnectionForOrganization(organizationId, options);
 }
 
 export async function getMetaConnectionForCurrentOrg(): Promise<MetaConnection | null> {
@@ -115,7 +163,7 @@ export async function refreshOrganizationInstagramAccountId(input: {
     return current;
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(false);
   const { error } = await supabase
     .from("organization_meta_connections")
     .update({

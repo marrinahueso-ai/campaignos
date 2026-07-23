@@ -8,6 +8,11 @@ import {
 import { resolveRelativeDayFromApprovalInputs } from "@/lib/campaign-builder-v2/relative-day-from-approval";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { syncCampaignBuilderMilestoneArtwork } from "@/lib/campaign-builder-v2/hero-sync";
+import {
+  isPublishNowDelivery,
+  normalizeDeliveryMethod,
+  wantsMetaFeedDelivery,
+} from "@/lib/campaign-builder-v2/delivery-method";
 import type {
   DeliveryMethod,
   MilestonePreviewContent,
@@ -71,11 +76,8 @@ export function previewWantsMetaFeedSchedule(
     return false;
   }
 
-  // Explicit schedule / auto-publish always schedules Meta feed.
-  if (
-    preview.deliveryMethod === "schedule" ||
-    preview.deliveryMethod === "auto-publish"
-  ) {
+  // Publish Now / schedule always prepare Meta feed slots.
+  if (wantsMetaFeedDelivery(preview.deliveryMethod)) {
     return true;
   }
 
@@ -91,9 +93,10 @@ export function resolvePersistedDeliveryMethod(
   }
 
   if (previewWantsMetaFeedSchedule(preview)) {
-    return preview.deliveryMethod === "auto-publish"
-      ? "auto-publish"
-      : "schedule";
+    if (isPublishNowDelivery(preview.deliveryMethod)) {
+      return "publish-now";
+    }
+    return "schedule";
   }
 
   if (
@@ -104,7 +107,7 @@ export function resolvePersistedDeliveryMethod(
     return "manual-email";
   }
 
-  return preview.deliveryMethod;
+  return normalizeDeliveryMethod(preview.deliveryMethod);
 }
 
 export function resolveFeedScheduleIso(
@@ -287,6 +290,8 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
   wantsMetaFeedSchedule: boolean;
   /** Manual Instagram story — exclude story slots from Meta auto-publish. */
   storyManual: boolean;
+  /** Publish Now — skip Meta-native Graph schedule; caller publishes immediately. */
+  immediatePublish?: boolean;
 }): Promise<{ scheduled: boolean; relativeDay: number | null; error?: string }> {
   const feedUrl = input.feedArtworkUrl?.trim() || null;
   if (!feedUrl || isPlaceholderArtworkUrl(feedUrl) || !input.wantsMetaFeedSchedule) {
@@ -366,7 +371,9 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
 
   const supabase = await createClient();
   const now = new Date().toISOString();
-  const scheduledFor = input.feedScheduleAt ?? now;
+  const scheduledFor = input.immediatePublish
+    ? now
+    : (input.feedScheduleAt ?? now);
 
   // Playbook sync only creates slots for known communication steps. CB2
   // milestones with a custom publish date (e.g. Announcement on -27) need slots.
@@ -420,7 +427,7 @@ export async function scheduleMetaFeedFromCampaignBuilderApproval(input: {
       .in("status", ["draft", "scheduled", "approved", "failed"]);
   }
 
-  if ((data?.length ?? 0) > 0) {
+  if ((data?.length ?? 0) > 0 && !input.immediatePublish) {
     try {
       const { createNativeMetaSchedulesForMilestone } = await import(
         "@/lib/meta-publishing/native-schedule"

@@ -17,6 +17,7 @@ import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { buildCommunicationItemsByStepId, ensureStepCommunicationItemsForEvent } from "@/lib/event-workspace/communication-items";
 import { getEventById } from "@/lib/events/queries";
 import { mapMetaPublicationSlotRow } from "@/lib/meta-publishing/mappers";
+import { createJobClient } from "@/lib/supabase/job-client";
 import { createClient } from "@/lib/supabase/server";
 import { combineLocalDateAndTimeToIso } from "@/lib/utils/dates";
 import type { MetaPublicationSlotRow } from "@/lib/meta-publishing/types";
@@ -353,8 +354,9 @@ export async function syncMetaPublicationSlots(eventId: string): Promise<boolean
 
 export async function getMetaPublicationSlotsForEvent(
   eventId: string,
+  options?: { useServiceRole?: boolean },
 ): Promise<import("@/lib/meta-publishing/types").MetaPublicationSlot[]> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
 
   const { data, error } = await supabase
     .from("meta_publication_slots")

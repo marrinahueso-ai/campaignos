@@ -1,5 +1,11 @@
+import {
+  getMetaConnectionForEvent,
+} from "@/lib/meta-publishing/connection";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
-import { createClient } from "@/lib/supabase/server";
+import {
+  createAdminClient,
+  isSupabaseAdminConfigured,
+} from "@/lib/supabase/admin";
 
 export interface PublishDueResult {
   processedBundles: number;
@@ -14,7 +20,14 @@ type DueMilestone = {
 };
 
 export async function findDueApprovedMilestones(): Promise<DueMilestone[]> {
-  const supabase = await createClient();
+  if (!isSupabaseAdminConfigured()) {
+    console.error(
+      "Meta publish cron: SUPABASE_SERVICE_ROLE_KEY is not configured; cannot load due slots under RLS.",
+    );
+    return [];
+  }
+
+  const supabase = createAdminClient();
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
@@ -47,6 +60,21 @@ export async function findDueApprovedMilestones(): Promise<DueMilestone[]> {
   return milestones;
 }
 
+async function publishDueMilestone(
+  milestone: DueMilestone,
+): Promise<{ success: boolean; error?: string | null }> {
+  const connection = await getMetaConnectionForEvent(milestone.eventId, {
+    useServiceRole: true,
+  });
+
+  return publishMetaMilestoneBundle({
+    eventId: milestone.eventId,
+    relativeDay: milestone.relativeDay,
+    connection,
+    useServiceRole: true,
+  });
+}
+
 export async function publishDueMetaMilestones(): Promise<PublishDueResult> {
   const due = await findDueApprovedMilestones();
   const result: PublishDueResult = {
@@ -58,10 +86,7 @@ export async function publishDueMetaMilestones(): Promise<PublishDueResult> {
 
   for (const milestone of due) {
     result.processedBundles += 1;
-    const publishResult = await publishMetaMilestoneBundle({
-      eventId: milestone.eventId,
-      relativeDay: milestone.relativeDay,
-    });
+    const publishResult = await publishDueMilestone(milestone);
 
     if (publishResult.success) {
       result.publishedBundles += 1;
@@ -94,6 +119,9 @@ export async function publishDueMetaMilestonesForEvent(
 
   for (const milestone of due) {
     result.processedBundles += 1;
+    // Interactive "publish due for event" still has a user session — keep
+    // session org connection when present, but allow service-role DB writes
+    // only when called from cron via publishDueMetaMilestones.
     const publishResult = await publishMetaMilestoneBundle({
       eventId: milestone.eventId,
       relativeDay: milestone.relativeDay,

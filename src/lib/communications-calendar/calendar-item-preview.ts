@@ -53,7 +53,7 @@ export async function loadCalendarItemPreview(input: {
     },
     scheduleLabel: input.scheduledAt ? formatDateTime(input.scheduledAt) : null,
     platforms: ["facebook", "instagram"],
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
   };
 
   const relativeDay = relativeDayFromSourceId(input.sourceId, input.eventId);
@@ -184,6 +184,6 @@ export async function loadCalendarItemPreview(input: {
       ? formatDateTime(bundle.scheduledFor)
       : empty.scheduleLabel,
     platforms: platforms.length > 0 ? platforms : empty.platforms,
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
   };
 }

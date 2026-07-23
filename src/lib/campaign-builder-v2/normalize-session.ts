@@ -23,6 +23,7 @@ import {
   sanitizeSeedPurpose,
 } from "./stale-seed-migration.ts";
 import { isFirstCampaignMilestone } from "./first-milestone.ts";
+import { normalizeDeliveryMethod } from "./delivery-method.ts";
 import { normalizeMilestoneName } from "./milestone-names.ts";
 import type {
   CampaignBuilderMilestone,
@@ -46,7 +47,7 @@ function buildEmptyPreviewContent(
       { platform: "instagram", text: "" },
     ],
     enabledFormats: milestone.platformFormats,
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
     scheduleDate: milestone.suggestedDate,
     scheduleTime: "09:00",
     emailSendDate: milestone.suggestedDate,
@@ -446,6 +447,7 @@ export function reconcilePreviewContent(
     artwork: normalizeMilestoneArtwork(content.artwork),
     enabledFormats,
     captions,
+    deliveryMethod: normalizeDeliveryMethod(content.deliveryMethod),
     emailSendDate: content.emailSendDate ?? content.scheduleDate,
     emailSendTime: content.emailSendTime ?? content.scheduleTime,
     manualEmailTo: content.manualEmailTo ?? "marrina@heyralli.com",

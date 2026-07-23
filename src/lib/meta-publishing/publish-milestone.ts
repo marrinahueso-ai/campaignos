@@ -11,6 +11,7 @@ import {
 } from "@/lib/meta-captions/queries";
 import {
   getMetaConnectionForCurrentOrg,
+  getMetaConnectionForEvent,
 } from "@/lib/meta-publishing/connection";
 import { ensureMetaConnectionHealthyForOrganization } from "@/lib/meta-publishing/connection-token-health";
 import {
@@ -33,7 +34,7 @@ import type {
 } from "@/lib/meta-publishing/types";
 import { markCommunicationPublished } from "@/lib/event-workspace/mutations";
 import type { MetaPublishSurfaces } from "@/types/playbooks";
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
 
 export interface PublishMilestoneResult {
   success: boolean;
@@ -45,8 +46,9 @@ export interface PublishMilestoneResult {
 async function getMilestonePublishSettings(
   eventId: string,
   relativeDay: number,
+  useServiceRole: boolean,
 ): Promise<{ surfaces: MetaPublishSurfaces; storyManualPublish: boolean }> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   const { data: step } = await supabase
     .from("event_communication_steps")
     .select("meta_publish_surfaces, story_manual_publish")
@@ -75,8 +77,9 @@ async function prepareSlotsForImmediatePublish(input: {
   relativeDay: number;
   surfaces: MetaPublishSurfaces;
   storyManualPublish: boolean;
+  useServiceRole: boolean;
 }): Promise<number> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(input.useServiceRole);
   const now = new Date().toISOString();
 
   const enabledTargets = filterMetaPublishTargetsBySurfaces(
@@ -182,8 +185,9 @@ async function updateSlotPublishResult(input: {
   status: "published" | "failed" | "cancelled";
   externalPostId?: string | null;
   publishError?: string | null;
+  useServiceRole: boolean;
 }): Promise<void> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(input.useServiceRole);
   const now = new Date().toISOString();
 
   await supabase
@@ -198,16 +202,42 @@ async function updateSlotPublishResult(input: {
     .eq("id", input.slotId);
 }
 
-async function markSlotsPosting(slotIds: string[]): Promise<void> {
+async function markSlotsPosting(
+  slotIds: string[],
+  useServiceRole: boolean,
+): Promise<void> {
   if (slotIds.length === 0) {
     return;
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   await supabase
     .from("meta_publication_slots")
     .update({ status: "posting", updated_at: new Date().toISOString() })
     .in("id", slotIds);
+}
+
+async function markDueSlotsFailed(input: {
+  eventId: string;
+  relativeDay: number;
+  publishError: string;
+  useServiceRole: boolean;
+}): Promise<void> {
+  const supabase = await createJobClient(input.useServiceRole);
+  const now = new Date().toISOString();
+
+  await supabase
+    .from("meta_publication_slots")
+    .update({
+      status: "failed",
+      publish_error: input.publishError,
+      updated_at: now,
+    })
+    .eq("event_id", input.eventId)
+    .eq("relative_day", input.relativeDay)
+    .eq("status", "approved")
+    .not("scheduled_for", "is", null)
+    .lte("scheduled_for", now);
 }
 
 export async function publishMetaMilestoneBundle(input: {
@@ -216,26 +246,54 @@ export async function publishMetaMilestoneBundle(input: {
   connection?: MetaConnection | null;
   /** When true, bypasses scheduled time and publishes via Graph API now. */
   immediate?: boolean;
+  /** Cron / job path: service-role DB + event→org Meta connection (no user session). */
+  useServiceRole?: boolean;
 }): Promise<PublishMilestoneResult> {
-  const connection = input.connection ?? (await getMetaConnectionForCurrentOrg());
+  const useServiceRole = Boolean(input.useServiceRole);
+
+  const connection =
+    input.connection ??
+    (useServiceRole
+      ? await getMetaConnectionForEvent(input.eventId, { useServiceRole: true })
+      : await getMetaConnectionForCurrentOrg());
 
   if (!connection || !isMetaConnectionConfigured(connection)) {
+    const error =
+      "Meta is not connected. Add your Facebook Page and Instagram account in Settings → Meta Publishing.";
+    if (useServiceRole && !input.immediate) {
+      await markDueSlotsFailed({
+        eventId: input.eventId,
+        relativeDay: input.relativeDay,
+        publishError: error,
+        useServiceRole: true,
+      });
+    }
     return {
       success: false,
-      error:
-        "Meta is not connected. Add your Facebook Page and Instagram account in Settings → Meta Publishing.",
+      error,
       publishedCount: 0,
       failedCount: 0,
     };
   }
 
-  if (connection?.organizationId && connection.id !== "env") {
-    const health = await ensureMetaConnectionHealthyForOrganization(connection.organizationId);
+  if (connection.organizationId && connection.id !== "env") {
+    const health = await ensureMetaConnectionHealthyForOrganization(
+      connection.organizationId,
+    );
     if (health && !health.tokenValid) {
+      const error =
+        "Meta connection expired or was revoked. Reconnect once in Settings → Meta Publishing.";
+      if (useServiceRole && !input.immediate) {
+        await markDueSlotsFailed({
+          eventId: input.eventId,
+          relativeDay: input.relativeDay,
+          publishError: error,
+          useServiceRole: true,
+        });
+      }
       return {
         success: false,
-        error:
-          "Meta connection expired or was revoked. Reconnect once in Settings → Meta Publishing.",
+        error,
         publishedCount: 0,
         failedCount: 0,
       };
@@ -245,6 +303,7 @@ export async function publishMetaMilestoneBundle(input: {
   const { surfaces, storyManualPublish } = await getMilestonePublishSettings(
     input.eventId,
     input.relativeDay,
+    useServiceRole,
   );
 
   if (input.immediate) {
@@ -253,6 +312,7 @@ export async function publishMetaMilestoneBundle(input: {
       relativeDay: input.relativeDay,
       surfaces,
       storyManualPublish,
+      useServiceRole,
     });
 
     if (prepared === 0) {
@@ -266,7 +326,7 @@ export async function publishMetaMilestoneBundle(input: {
   }
 
   const allEligibleSlots = (
-    await getMetaPublicationSlotsForEvent(input.eventId)
+    await getMetaPublicationSlotsForEvent(input.eventId, { useServiceRole })
   ).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
@@ -290,6 +350,7 @@ export async function publishMetaMilestoneBundle(input: {
           status: "published",
           externalPostId: slot.graphScheduleId,
           publishError: null,
+          useServiceRole,
         }),
       ),
     );
@@ -302,7 +363,7 @@ export async function publishMetaMilestoneBundle(input: {
   if (input.immediate && slots.some((slot) => slot.graphScheduleId)) {
     await clearNativeMetaSchedulesForSlots({
       slots: slots.filter((slot) => Boolean(slot.graphScheduleId)),
-      connection: connection!,
+      connection,
     });
     slots = slots.map((slot) =>
       slot.graphScheduleId ? { ...slot, graphScheduleId: null } : slot,
@@ -338,7 +399,9 @@ export async function publishMetaMilestoneBundle(input: {
     };
   }
 
-  const captions = await getMetaSocialCaptionsForEvent(input.eventId);
+  const captions = await getMetaSocialCaptionsForEvent(input.eventId, {
+    useServiceRole,
+  });
   const feedCaption = getFeedCaptionForMilestone(captions, input.relativeDay)?.trim();
   const storyCaption = getStoryCaptionForMilestone(captions, input.relativeDay)?.trim();
 
@@ -350,13 +413,23 @@ export async function publishMetaMilestoneBundle(input: {
     (needsFeedCaption && !feedCaption) ||
     (needsStoryCaption && !storyCaption)
   ) {
-    return {
-      success: false,
-      error: needsFeedCaption && needsStoryCaption
+    const error =
+      needsFeedCaption && needsStoryCaption
         ? "Approved feed and story captions are required before auto-publish."
         : needsFeedCaption
           ? "Approved feed caption is required before auto-publish."
-          : "Approved story caption is required before auto-publish.",
+          : "Approved story caption is required before auto-publish.";
+    if (useServiceRole && !input.immediate) {
+      await markDueSlotsFailed({
+        eventId: input.eventId,
+        relativeDay: input.relativeDay,
+        publishError: error,
+        useServiceRole: true,
+      });
+    }
+    return {
+      success: false,
+      error,
       publishedCount: 0,
       failedCount: 0,
     };
@@ -365,28 +438,42 @@ export async function publishMetaMilestoneBundle(input: {
   const { feedUrl, storyUrl } = await resolveMilestoneArtworkUrls({
     eventId: input.eventId,
     relativeDay: input.relativeDay,
+    useServiceRole,
   });
 
   if (
     (needsFeedCaption && !feedUrl) ||
     (needsStoryCaption && !storyUrl)
   ) {
-    return {
-      success: false,
-      error: needsFeedCaption && needsStoryCaption
+    const error =
+      needsFeedCaption && needsStoryCaption
         ? "Approved feed and story artwork are required before auto-publish."
         : needsFeedCaption
           ? "Approved feed artwork is required before auto-publish."
-          : "Approved story artwork is required before auto-publish.",
+          : "Approved story artwork is required before auto-publish.";
+    if (useServiceRole && !input.immediate) {
+      await markDueSlotsFailed({
+        eventId: input.eventId,
+        relativeDay: input.relativeDay,
+        publishError: error,
+        useServiceRole: true,
+      });
+    }
+    return {
+      success: false,
+      error,
       publishedCount: 0,
       failedCount: 0,
     };
   }
 
-  await markSlotsPosting(slots.map((slot) => slot.id));
+  await markSlotsPosting(
+    slots.map((slot) => slot.id),
+    useServiceRole,
+  );
 
   const publishInputs = {
-    connection: connection!,
+    connection,
     feedCaption: feedCaption ?? "",
     storyCaption: storyCaption ?? "",
     feedUrl: feedUrl ?? "",
@@ -434,6 +521,7 @@ export async function publishMetaMilestoneBundle(input: {
         status: outcome.status,
         externalPostId: outcome.externalPostId,
         publishError: outcome.publishError,
+        useServiceRole,
       }),
     ),
   );
@@ -457,11 +545,11 @@ export async function publishMetaMilestoneBundle(input: {
 
   const communicationItemId = slots.find((slot) => slot.communicationItemId)?.communicationItemId;
   if (publishedCount > 0 && communicationItemId) {
-    await markCommunicationPublished(communicationItemId);
+    await markCommunicationPublished(communicationItemId, { useServiceRole });
   }
 
   if (publishedCount > 0) {
-    const supabase = await createClient();
+    const supabase = await createJobClient(useServiceRole);
     await supabase.from("activity_log").insert({
       event_id: input.eventId,
       activity_type: "published",
@@ -471,7 +559,9 @@ export async function publishMetaMilestoneBundle(input: {
     });
   }
 
-  const allDaySlots = (await getMetaPublicationSlotsForEvent(input.eventId)).filter(
+  const allDaySlots = (
+    await getMetaPublicationSlotsForEvent(input.eventId, { useServiceRole })
+  ).filter(
     (slot) =>
       slot.relativeDay === input.relativeDay &&
       slotMatchesSurfaces(slot, surfaces, storyManualPublish),

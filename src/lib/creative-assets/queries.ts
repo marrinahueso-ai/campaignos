@@ -1,4 +1,5 @@
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
+import { createJobClient } from "@/lib/supabase/job-client";
 import { createClient } from "@/lib/supabase/server";
 import { mapEventAssetRows } from "@/lib/event-workspace/mappers";
 import { WORKSPACE_ASSET_SELECT } from "@/lib/event-workspace/selects";
@@ -26,8 +27,9 @@ import type { BrandKitItemRow } from "@/lib/creative-assets/types";
  */
 export async function getCampaignAssetsForEvent(
   eventId: string,
+  options?: { useServiceRole?: boolean },
 ): Promise<EventAsset[]> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
 
   const { data, error } = await supabase
     .from("event_assets")

@@ -7,6 +7,7 @@ import {
   sendCampaignManualUploadEmail,
   sendScheduledDeliveryEmail,
 } from "@/lib/campaign-builder-v2/approval-notifications";
+import { isPublishNowDelivery } from "@/lib/campaign-builder-v2/delivery-method";
 import {
   previewWantsMetaFeedSchedule,
   resolveFeedScheduleIso,
@@ -26,6 +27,7 @@ import {
   approveCommunicationAction,
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
+import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
 import {
@@ -181,7 +183,8 @@ async function resolveMetaScheduleIntent(row: ApprovalSchedulingItemRow): Promis
         preview.enabledFormats.includes("instagram-story-manual") ||
         Boolean(preview.manualEmailTo.trim()) ||
         preview.deliveryMethod === "manual-email",
-      feedScheduleAt: resolveFeedScheduleIso(preview) ?? row.schedule_at,
+      // Approvals row schedule is what the user sees — prefer it over session preview.
+      feedScheduleAt: row.schedule_at ?? resolveFeedScheduleIso(preview),
     };
   }
 
@@ -277,7 +280,11 @@ export async function approveUnifiedItemAction(input: {
       Boolean(row.manual_email_to?.trim());
 
     const metaIntent = await resolveMetaScheduleIntent(row);
+    const publishNow = isPublishNowDelivery(row.delivery_method);
     if (metaIntent.wantsMetaFeedSchedule) {
+      const feedScheduleAt = publishNow
+        ? new Date().toISOString()
+        : metaIntent.feedScheduleAt;
       const metaResult = await scheduleMetaFeedFromCampaignBuilderApproval({
         eventId: input.eventId,
         milestoneName: row.milestone_name,
@@ -286,9 +293,10 @@ export async function approveUnifiedItemAction(input: {
         storyArtworkUrl: row.story_artwork_url,
         captionText: row.caption_text,
         storyCaption: row.story_caption,
-        feedScheduleAt: metaIntent.feedScheduleAt,
+        feedScheduleAt,
         wantsMetaFeedSchedule: true,
         storyManual: metaIntent.storyManual,
+        immediatePublish: publishNow,
       });
       if (metaResult.error) {
         metaWarning = `Approved, but Meta feed scheduling failed: ${metaResult.error}`;
@@ -296,6 +304,34 @@ export async function approveUnifiedItemAction(input: {
           "Meta feed schedule after CB2 approve failed:",
           metaResult.error,
         );
+      } else if (publishNow && metaResult.relativeDay !== null) {
+        const publishResult = await publishMetaMilestoneBundle({
+          eventId: input.eventId,
+          relativeDay: metaResult.relativeDay,
+          immediate: true,
+        });
+        if (!publishResult.success) {
+          metaWarning = `Approved, but Publish Now failed: ${
+            publishResult.error ?? "Meta publish failed."
+          }`;
+          console.error(
+            "Immediate Meta publish after CB2 approve failed:",
+            publishResult.error,
+          );
+        } else {
+          const published = await updateSchedulingItemStatus(
+            input.schedulingItemId,
+            "published",
+          );
+          if (published) {
+            await syncCampaignBuilderSessionAfterSchedulingOutcome({
+              eventId: input.eventId,
+              campaignMilestoneId: row.campaign_milestone_id,
+              milestoneName: row.milestone_name,
+              outcome: "published",
+            });
+          }
+        }
       }
     }
 

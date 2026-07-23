@@ -1,3 +1,4 @@
+import { createJobClient } from "@/lib/supabase/job-client";
 import { createClient } from "@/lib/supabase/server";
 import { mapMetaSocialCaptionRow } from "@/lib/meta-captions/mappers";
 import type {
@@ -13,8 +14,9 @@ function isMissingTable(error: { code?: string; message?: string } | null): bool
 
 export async function getMetaSocialCaptionsForEvent(
   eventId: string,
+  options?: { useServiceRole?: boolean },
 ): Promise<MetaSocialCaption[]> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(Boolean(options?.useServiceRole));
 
   const { data, error } = await supabase
     .from("meta_social_captions")

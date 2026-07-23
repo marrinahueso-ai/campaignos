@@ -11,13 +11,16 @@ import { playbookRelativeDay } from "@/lib/campaign-builder-v2/campaign-timing";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
+import { mapEventRow } from "@/lib/events/mappers";
 import { getEventById } from "@/lib/events/queries";
 import {
   indexCb2ArtworkRows,
   resolveCb2ArtworkForMilestone,
   type SessionMilestoneRef,
 } from "@/lib/meta-publishing/cb2-artwork-identity";
-import { createClient } from "@/lib/supabase/server";
+import { createJobClient } from "@/lib/supabase/job-client";
+import type { CampaignBuilderSession } from "@/lib/campaign-builder-v2/types";
+import type { Event, EventRow } from "@/types";
 import type { EventAsset } from "@/types/event-workspace";
 import type { EventCommunicationStepRow } from "@/types/playbooks";
 
@@ -41,13 +44,58 @@ function assetUrl(asset: EventAsset | null): string | null {
   return resolveAssetImageUrl(asset.storagePath);
 }
 
+async function loadEventForArtwork(
+  eventId: string,
+  useServiceRole: boolean,
+): Promise<Event | null> {
+  if (!useServiceRole) {
+    return getEventById(eventId);
+  }
+
+  const supabase = await createJobClient(true);
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return mapEventRow(data as EventRow);
+}
+
+async function loadCampaignBuilderSessionForArtwork(
+  eventId: string,
+  useServiceRole: boolean,
+): Promise<CampaignBuilderSession | null> {
+  if (!useServiceRole) {
+    return loadCampaignBuilderSession(eventId);
+  }
+
+  const supabase = await createJobClient(true);
+  const { data, error } = await supabase
+    .from("campaign_builder_sessions")
+    .select("session_data")
+    .eq("event_id", eventId)
+    .maybeSingle();
+
+  if (error || !data?.session_data) {
+    return null;
+  }
+
+  return data.session_data as CampaignBuilderSession;
+}
+
 /** When cron publishes a CB2 custom day (e.g. Announcement at −27), use slot title + approval URLs. */
 async function resolveCb2ArtworkUrls(input: {
   eventId: string;
   relativeDay: number;
   eventDate: string | null | undefined;
+  useServiceRole: boolean;
 }): Promise<{ feedUrl: string | null; storyUrl: string | null; milestoneTitle: string | null }> {
-  const supabase = await createClient();
+  const supabase = await createJobClient(input.useServiceRole);
   const [slotsResult, approvalsResult, session] = await Promise.all([
     supabase
       .from("meta_publication_slots")
@@ -61,7 +109,7 @@ async function resolveCb2ArtworkUrls(input: {
         "campaign_milestone_id, milestone_name, feed_artwork_url, story_artwork_url",
       )
       .eq("event_id", input.eventId),
-    loadCampaignBuilderSession(input.eventId),
+    loadCampaignBuilderSessionForArtwork(input.eventId, input.useServiceRole),
   ]);
 
   const milestoneTitle =
@@ -106,15 +154,17 @@ async function resolveCb2ArtworkUrls(input: {
 export async function resolveMilestoneArtworkUrls(input: {
   eventId: string;
   relativeDay: number;
+  useServiceRole?: boolean;
 }): Promise<{ feedUrl: string | null; storyUrl: string | null }> {
-  const event = await getEventById(input.eventId);
+  const useServiceRole = Boolean(input.useServiceRole);
+  const event = await loadEventForArtwork(input.eventId, useServiceRole);
   if (!event) {
     return { feedUrl: null, storyUrl: null };
   }
 
-  const supabase = await createClient();
+  const supabase = await createJobClient(useServiceRole);
   const [assets, stepsResult] = await Promise.all([
-    getCampaignAssetsForEvent(input.eventId),
+    getCampaignAssetsForEvent(input.eventId, { useServiceRole }),
     supabase
       .from("event_communication_steps")
       .select("relative_day, title, sort_order, channel, status")
@@ -158,6 +208,7 @@ export async function resolveMilestoneArtworkUrls(input: {
     eventId: input.eventId,
     relativeDay: input.relativeDay,
     eventDate: event.date,
+    useServiceRole,
   });
 
   feedUrl = feedUrl || cb2.feedUrl;

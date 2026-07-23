@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Unified Get started: Welcome → event → overlay Calendar → Brand → Team → Meta; Helpful next steps on home; settings have no boarding steppers; artwork Apply hydrate stick; welcome email CTA; event detail sunburst accents; Volunteers SignUpGenius sticky date allowlist; Events Home artwork fallback; hero Filled volunteers; Meta Graph schedule on Approve + Calendar DnD
+**Last updated:** July 22, 2026 — Create with AI Delivery **Publish Now** (default; posts on approve); legacy auto-publish normalizes to Publish Now; Unified Get started + Meta Graph schedule / Calendar DnD
 
 ---
 
@@ -84,8 +84,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Captions, Meta & publishing
 - Caption generation/editing — **shipped**
 - Meta connect (Facebook Page + Instagram) — **shipped**
-- Schedule / publish now / publish ready bundles — **shipped**
-- Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
+- Create with AI Delivery method: **Publish Now** (default) posts to Meta on approve; Schedule / Email manual / Draft remain — **shipped** (legacy “Publish automatically” / `auto-publish` normalizes to Publish Now)
+- Schedule / publish now / publish ready bundles (Review & Publish + Meta bundles) — **shipped**
+- Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; Publish Now skips native Graph schedule and publishes immediately; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Posting schedule preferences — **shipped**
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)

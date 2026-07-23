@@ -271,7 +271,7 @@ function buildNewMilestone(
       { platform: "instagram", text: "" },
     ],
     enabledFormats: defaultEnabledFormats(),
-    deliveryMethod: "auto-publish",
+    deliveryMethod: "publish-now",
     scheduleDate: inspiration.eventDate,
     scheduleTime: "09:00",
     emailSendDate: inspiration.eventDate,
