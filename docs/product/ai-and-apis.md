@@ -7,7 +7,7 @@
 
 Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, and **customer consumption**. Internal ops only — not org-member Insights.
 
-**Implementation status:** Phases 0–3. Route `/ops/ai-apis` ships with AI APIs tab (cards, charts, table, drawer, CSV) on real `ai_usage_log`. Connected APIs tab is an honest placeholder until Phase 4.
+**Implementation status:** Phases 0–4. Route `/ops/ai-apis` ships with AI APIs tab on real `ai_usage_log` and Connected APIs tab on real `api_usage_log` (provider rollups, health from real signals, request table, drawer, CSV). Phase 5 = soak + OpenAI reconcile before feature-list **shipped**.
 
 ---
 
@@ -131,7 +131,7 @@ Request counts, successes/failures, latency (avg or p50/p95 when volume allows),
 
 **Apply migration** before relying on Production numbers: `supabase db push` (or SQL Editor) for `20260723220241_ai_api_usage_logs.sql`.
 
-UI is **Phase 3–4**. Customer QA on numbers is **Phase 5** after soak + reconciliation.
+UI is **Phase 3–4 shipped** (AI + Connected tabs). Customer QA on numbers is **Phase 5** after soak + reconciliation.
 
 ---
 

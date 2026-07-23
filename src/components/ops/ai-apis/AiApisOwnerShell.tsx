@@ -14,10 +14,12 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { exportAiApisCsvAction } from "@/lib/ops/ai-apis-actions";
+import {
+  exportAiApisCsvAction,
+  exportConnectedApisCsvAction,
+} from "@/lib/ops/ai-apis-actions";
 import {
   AI_APIS_COLLECTING_SINCE,
-  AI_APIS_CONNECTED_PROVIDERS,
   AI_ORGS_NEAR_LIMIT_USD,
 } from "@/lib/ops/ai-apis-constants";
 import type {
@@ -28,6 +30,13 @@ import type {
   AiApisSummary,
   AiUsageRow,
 } from "@/lib/ops/ai-apis-queries";
+import type {
+  ApiUsageRow,
+  ConnectedApisFilterOptions,
+  ConnectedApisSummary,
+  ConnectedProviderRollup,
+} from "@/lib/ops/connected-apis-queries";
+import { ConnectedApisPanel } from "@/components/ops/ai-apis/ConnectedApisPanel";
 import { cn } from "@/lib/utils/cn";
 
 export type AiApisTab = "ai" | "connected";
@@ -53,6 +62,15 @@ type ShellProps = {
   totalFiltered: number;
   pageSize: number;
   filterOptions: AiApisFilterOptions;
+  connected: {
+    summary: ConnectedApisSummary;
+    providers: ConnectedProviderRollup[];
+    rows: ApiUsageRow[];
+    totalFiltered: number;
+    page: number;
+    pageSize: number;
+    filterOptions: ConnectedApisFilterOptions;
+  } | null;
 };
 
 function formatMoney(value: number | null | undefined): string {
@@ -132,19 +150,26 @@ export function AiApisOwnerShell(props: ShellProps) {
   const onExport = () => {
     setExportMessage(null);
     startTransition(async () => {
-      const result = await exportAiApisCsvAction({
+      const status: "success" | "failed" | null =
+        props.status === "success" || props.status === "failed"
+          ? props.status
+          : null;
+      const range = {
         fromIso: new Date(`${props.fromDate}T00:00:00.000Z`).toISOString(),
         toIso: new Date(`${props.toDate}T23:59:59.999Z`).toISOString(),
         search: props.search || null,
         organizationId: props.organizationId || null,
-        feature: props.feature || null,
-        model: props.model || null,
         provider: props.provider || null,
-        status:
-          props.status === "success" || props.status === "failed"
-            ? props.status
-            : null,
-      });
+        status,
+      };
+      const result =
+        props.tab === "connected"
+          ? await exportConnectedApisCsvAction(range)
+          : await exportAiApisCsvAction({
+              ...range,
+              feature: props.feature || null,
+              model: props.model || null,
+            });
       if (!result.success) {
         setExportMessage(result.error);
         return;
@@ -153,7 +178,7 @@ export function AiApisOwnerShell(props: ShellProps) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `ai-apis-${props.fromDate}-to-${props.toDate}.csv`;
+      anchor.download = `${props.tab === "connected" ? "connected-apis" : "ai-apis"}-${props.fromDate}-to-${props.toDate}.csv`;
       anchor.click();
       URL.revokeObjectURL(url);
       setExportMessage(
@@ -165,6 +190,7 @@ export function AiApisOwnerShell(props: ShellProps) {
   };
 
   const empty = props.summary.requests === 0;
+  const connectedEmpty = (props.connected?.summary.totalRequests ?? 0) === 0;
 
   return (
     <div className={cn("studio-page space-y-6 pb-12", pending && "opacity-80")}>
@@ -205,7 +231,9 @@ export function AiApisOwnerShell(props: ShellProps) {
           <button
             type="button"
             onClick={onExport}
-            disabled={props.tab !== "ai" || empty}
+            disabled={
+              props.tab === "ai" ? empty : connectedEmpty || !props.connected
+            }
             className="inline-flex items-center gap-2 rounded-lg bg-cos-dark px-4 py-2 text-sm font-medium text-[#f6f2eb] disabled:opacity-40"
           >
             <Download className="h-4 w-4" strokeWidth={1.5} />
@@ -242,7 +270,30 @@ export function AiApisOwnerShell(props: ShellProps) {
       </div>
 
       {props.tab === "connected" ? (
-        <ConnectedApisPlaceholder />
+        props.connected ? (
+          <ConnectedApisPanel
+            fromDate={props.fromDate}
+            toDate={props.toDate}
+            search={props.search}
+            organizationId={props.organizationId}
+            provider={props.provider}
+            status={props.status}
+            page={props.connected.page}
+            sortKey={props.sortKey}
+            sortDir={props.sortDir}
+            summary={props.connected.summary}
+            providers={props.connected.providers}
+            rows={props.connected.rows}
+            totalFiltered={props.connected.totalFiltered}
+            pageSize={props.connected.pageSize}
+            filterOptions={props.connected.filterOptions}
+            onNavigate={navigate}
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-cos-border bg-cos-card px-6 py-12 text-center text-sm text-cos-muted">
+            Could not load connected API data.
+          </div>
+        )
       ) : (
         <>
           <FilterBar {...props} onNavigate={navigate} />
@@ -899,41 +950,6 @@ function EmptyState({ capped }: { capped: boolean }) {
         only — no demo data.
         {capped ? " Aggregate load cap was reached for broader windows." : ""}
       </p>
-    </div>
-  );
-}
-
-function ConnectedApisPlaceholder() {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-cos-border bg-cos-card p-6 shadow-sm">
-        <h2 className="font-serif text-xl text-cos-text">Connected APIs</h2>
-        <p className="mt-2 max-w-2xl text-sm text-cos-muted">
-          Request logging is live for Meta, Resend, Google Calendar, and
-          SignupGenius. Rollup cards, health signals, and the provider table ship
-          in Phase 4. Until then we show honest empty state — not fake
-          “Operational” status.
-        </p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {AI_APIS_CONNECTED_PROVIDERS.map((provider) => (
-          <div
-            key={provider}
-            className="rounded-2xl border border-cos-border bg-cos-card p-4 shadow-sm"
-          >
-            <p className="text-sm font-medium capitalize text-cos-text">
-              {provider}
-            </p>
-            <p className="mt-2 text-xs text-cos-muted">
-              {provider === "microsoft" || provider === "stripe"
-                ? "Not instrumented yet"
-                : provider === "supabase"
-                  ? "No volume logging (config/health only later)"
-                  : "No data yet — open this tab after Phase 4 for rollups"}
-            </p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

@@ -5,6 +5,10 @@ import {
   exportAiApisCsvRows,
   type AiApisFilters,
 } from "@/lib/ops/ai-apis-queries";
+import {
+  exportConnectedApisCsvRows,
+  type ConnectedApisFilters,
+} from "@/lib/ops/connected-apis-queries";
 import { AI_APIS_CSV_EXPORT_CAP } from "@/lib/ops/ai-apis-constants";
 
 function csvEscape(value: string | number | boolean | null | undefined): string {
@@ -73,6 +77,59 @@ export async function exportAiApisCsvAction(
     };
   } catch (error) {
     console.error("[ai-apis] CSV export failed:", error);
+    return { success: false, error: "Could not export CSV." };
+  }
+}
+
+export async function exportConnectedApisCsvAction(
+  filters: ConnectedApisFilters,
+): Promise<{ success: true; csv: string; truncated: boolean } | { success: false; error: string }> {
+  if (!(await canAccessOwnerOps())) {
+    return { success: false, error: "Not authorized." };
+  }
+
+  try {
+    const rows = await exportConnectedApisCsvRows(filters);
+    const header = [
+      "created_at",
+      "request_id",
+      "organization",
+      "provider",
+      "operation",
+      "http_status",
+      "success",
+      "latency_ms",
+      "estimated_cost_usd",
+      "error_code",
+      "environment",
+    ];
+    const lines = [
+      header.join(","),
+      ...rows.map((row) =>
+        [
+          row.createdAt,
+          row.requestId,
+          row.organizationName,
+          row.provider,
+          row.operation,
+          row.httpStatus,
+          row.success,
+          row.latencyMs,
+          row.estimatedCostUsd,
+          row.errorCode,
+          row.environment,
+        ]
+          .map(csvEscape)
+          .join(","),
+      ),
+    ];
+    return {
+      success: true,
+      csv: lines.join("\n"),
+      truncated: rows.length >= AI_APIS_CSV_EXPORT_CAP,
+    };
+  } catch (error) {
+    console.error("[connected-apis] CSV export failed:", error);
     return { success: false, error: "Could not export CSV." };
   }
 }

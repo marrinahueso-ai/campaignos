@@ -6,6 +6,7 @@ import {
   getAiApisDashboard,
   type AiApisSortKey,
 } from "@/lib/ops/ai-apis-queries";
+import { getConnectedApisDashboard } from "@/lib/ops/connected-apis-queries";
 
 export const metadata = {
   title: "AI & APIs",
@@ -44,37 +45,62 @@ export default async function OwnerAiApisPage({
   const toIso = new Date(`${toDate}T23:59:59.999Z`).toISOString();
 
   const sortRaw = first(params.sort) ?? "created_at";
-  const sortKey = (
-    [
-      "created_at",
-      "estimated_cost_usd",
-      "total_tokens",
-      "latency_ms",
-      "feature",
-      "model",
-      "success",
-    ] as AiApisSortKey[]
-  ).includes(sortRaw as AiApisSortKey)
+  const aiSortKeys: AiApisSortKey[] = [
+    "created_at",
+    "estimated_cost_usd",
+    "total_tokens",
+    "latency_ms",
+    "feature",
+    "model",
+    "success",
+  ];
+  const sortKey = aiSortKeys.includes(sortRaw as AiApisSortKey)
     ? (sortRaw as AiApisSortKey)
     : "created_at";
+  const connectedSortKey =
+    sortRaw === "latency_ms" ||
+    sortRaw === "estimated_cost_usd" ||
+    sortRaw === "provider" ||
+    sortRaw === "success"
+      ? sortRaw
+      : "created_at";
 
   const statusRaw = first(params.status);
   const status =
     statusRaw === "success" || statusRaw === "failed" ? statusRaw : null;
 
-  const dashboard = await getAiApisDashboard({
-    fromIso,
-    toIso,
-    search: first(params.q) ?? null,
-    organizationId: first(params.organizationId) ?? null,
-    feature: first(params.feature) ?? null,
-    model: first(params.model) ?? null,
-    provider: first(params.provider) ?? null,
-    status,
-    page: Math.max(1, Number(first(params.page) ?? "1") || 1),
-    sortKey,
-    sortDir: first(params.dir) === "asc" ? "asc" : "desc",
-  });
+  const page = Math.max(1, Number(first(params.page) ?? "1") || 1);
+  const sortDir = first(params.dir) === "asc" ? "asc" : "desc";
+  const search = first(params.q) ?? null;
+  const organizationId = first(params.organizationId) ?? null;
+  const provider = first(params.provider) ?? null;
+
+  const [dashboard, connected] = await Promise.all([
+    getAiApisDashboard({
+      fromIso,
+      toIso,
+      search,
+      organizationId,
+      feature: first(params.feature) ?? null,
+      model: first(params.model) ?? null,
+      provider,
+      status,
+      page,
+      sortKey,
+      sortDir,
+    }),
+    getConnectedApisDashboard({
+      fromIso,
+      toIso,
+      search,
+      organizationId,
+      provider,
+      status,
+      page,
+      sortKey: connectedSortKey,
+      sortDir,
+    }),
+  ]);
 
   return (
     <AiApisOwnerShell
@@ -87,9 +113,9 @@ export default async function OwnerAiApisPage({
       model={first(params.model) ?? ""}
       provider={first(params.provider) ?? ""}
       status={status ?? ""}
-      page={dashboard.page}
+      page={tab === "connected" ? connected.page : dashboard.page}
       sortKey={sortKey}
-      sortDir={first(params.dir) === "asc" ? "asc" : "desc"}
+      sortDir={sortDir}
       summary={dashboard.summary}
       series={dashboard.series}
       byFeature={dashboard.byFeature}
@@ -98,6 +124,15 @@ export default async function OwnerAiApisPage({
       totalFiltered={dashboard.totalFiltered}
       pageSize={dashboard.pageSize}
       filterOptions={dashboard.filterOptions}
+      connected={{
+        summary: connected.summary,
+        providers: connected.providers,
+        rows: connected.rows,
+        totalFiltered: connected.totalFiltered,
+        page: connected.page,
+        pageSize: connected.pageSize,
+        filterOptions: connected.filterOptions,
+      }}
     />
   );
 }
