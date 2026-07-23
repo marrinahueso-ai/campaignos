@@ -20,6 +20,8 @@ async function fetchGiphy(path: string): Promise<GiphyProxyResponse> {
   };
 }
 
+const SCROLL_AREA_CLASS = "h-[min(28rem,55vh)]";
+
 export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -74,7 +76,7 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
   return (
     <div
       className={cn(
-        "flex w-80 flex-col rounded-xl border border-cos-border bg-white p-3 shadow-lg",
+        "flex w-[min(28rem,92vw)] flex-col rounded-xl border border-cos-border bg-white p-3 shadow-lg",
         className,
       )}
       role="dialog"
@@ -94,7 +96,12 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
       </div>
 
       {!configured ? (
-        <div className="flex h-80 max-h-[min(22rem,50vh)] flex-col items-center justify-center gap-1 px-3 text-center">
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 px-3 text-center",
+            SCROLL_AREA_CLASS,
+          )}
+        >
           <p className="text-sm font-medium text-cos-text">GIF search isn’t set up yet</p>
           <p className="text-xs leading-snug text-cos-muted">
             {message?.includes("GIPHY_API_KEY")
@@ -103,26 +110,38 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
           </p>
         </div>
       ) : loading ? (
-        <div className="flex h-80 max-h-[min(22rem,50vh)] items-center justify-center text-xs text-cos-muted">
+        <div
+          className={cn("flex items-center justify-center text-xs text-cos-muted", SCROLL_AREA_CLASS)}
+        >
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
           Loading GIFs…
         </div>
       ) : gifs.length === 0 ? (
-        <div className="flex h-80 max-h-[min(22rem,50vh)] flex-col items-center justify-center gap-1 px-3 text-center">
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 px-3 text-center",
+            SCROLL_AREA_CLASS,
+          )}
+        >
           <p className="text-sm text-cos-text">No GIFs found</p>
           <p className="text-xs text-cos-muted">
             {message ?? (debouncedQuery ? "Try a different search." : "Trending is empty right now.")}
           </p>
         </div>
       ) : (
-        <div className="grid h-80 max-h-[min(22rem,50vh)] grid-cols-2 content-start items-start gap-2 overflow-y-auto">
+        <div
+          className={cn(
+            "grid grid-cols-2 content-start items-start gap-3 overflow-y-auto",
+            SCROLL_AREA_CLASS,
+          )}
+        >
           {gifs.map((gif) => (
             <button
               key={gif.id}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onSelect(gif)}
-              className="group relative aspect-square w-full min-h-[7.5rem] shrink-0 overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
+              className="group relative aspect-square w-full min-h-[11.5rem] shrink-0 overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
               aria-label={gif.title || "Select GIF"}
               title={gif.title || "Select GIF"}
             >

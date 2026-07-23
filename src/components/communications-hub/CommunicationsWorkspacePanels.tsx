@@ -899,7 +899,7 @@ export function CommunicationsReplySection({
               </div>
             ) : null}
             {composerPicker === "gif" && dmThread ? (
-              <div className="absolute bottom-full left-0 z-50 mb-2">
+              <div className="absolute bottom-full left-0 z-50 mb-2 overflow-visible">
                 <GiphyGifPicker onSelect={handleGifSelect} />
               </div>
             ) : null}
