@@ -44,6 +44,10 @@ const OPS_PATTERNS: RegExp[] = [
   /\bwhat('?s|s| is) (left|outstanding|remaining)\b/i,
   /\bam i (on track|ready|caught up)\b/i,
   /\battention\b/i,
+  // Milestone progress for a campaign (not Create with AI how-to)
+  /\bmilestones? (done|complete|finished|ready|left|remaining|open|status|progress)\b/i,
+  /\b(are |is )?(all )?(my |our |the )?milestones? (done|complete|finished|ready|left|remaining)\b/i,
+  /\b(done|complete|finished) .{0,40}\bmilestones?\b/i,
 ];
 
 const STOP_WORDS = new Set([

@@ -179,6 +179,8 @@ export async function askRalliProductHelp(input: {
     );
   }
 
+  // FAQ only when clearly how-to / product-help — bare keyword collisions
+  // (e.g. historical “milestones”) must not steal ops/org status asks.
   const matched = matchProductHelpTopic(question);
   if (matched && shouldPreferProductHelpFaq(question)) {
     return withDisplayPolish({
@@ -191,7 +193,7 @@ export async function askRalliProductHelp(input: {
     });
   }
 
-  if (matched) {
+  if (matched && !isOpsIntent(question)) {
     return withDisplayPolish({
       success: true,
       answer: formatTopicAnswer(matched),

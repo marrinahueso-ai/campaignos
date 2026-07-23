@@ -88,7 +88,9 @@ export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
       "campaign builder",
       "generate artwork",
       "generate captions",
-      "milestones",
+      // Avoid bare "milestones" — status asks (“are my milestones done?”) are ops/org.
+      "milestones step",
+      "create with ai milestones",
       "inspiration step",
     ],
     answer: [

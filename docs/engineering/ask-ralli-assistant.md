@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 21, 2026  
+**Last updated:** July 23, 2026  
 **Related:** [Architecture](./architecture.md) · [Feature list](../product/feature-list.md) · [QA overview](../qa/architecture-overview.md) · [Testing guide](../qa/testing-guide.md)
 
 In-app coach + product guide for Hey Ralli. Users open **Hey Ralli Assistant** from the sidebar (pinned under Insights) and ask operational, briefing, draft, insights, or how-to questions.
@@ -27,7 +27,7 @@ Entry: `askRalliAssistantAction` → `askRalliProductHelp` in `src/lib/ralli-ass
 | 6 | OpenAI product help | `ai` | Unmatched how-to when AI is configured |
 | — | Deterministic fallbacks | `org` / `ops` / `faq` | Missing AI key or model failure → pack/FAQ text, never silent invent |
 
-Classic ops/org status asks (**“what’s next”**, **“today’s summary”**, **“what do I have this week”**, **“what needs my approval”**) must **not** fall through to Calendar/Tasks FAQ keyword collisions. Routing helpers live in `ask-routing.ts` + `*-intent.ts`.
+Classic ops/org status asks (**“what’s next”**, **“today’s summary”**, **“what do I have this week”**, **“what needs my approval”**, **“are all my milestones done for this week”**) must **not** fall through to Calendar/Tasks/Create with AI FAQ keyword collisions. Routing helpers live in `ask-routing.ts` + `*-intent.ts`. When ops/content need an event and none is named, answers include **upcoming campaign chips** (`pickUpcomingEvents`) so users can pick instead of only seeing Campaigns/Tasks links.
 
 ### Sources (what each does)
 
