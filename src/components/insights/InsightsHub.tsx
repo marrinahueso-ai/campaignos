@@ -2,7 +2,7 @@
 
 import { BarChart3, Download, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { ConnectionHealthBanner } from "@/components/insights/ConnectionHealthBanner";
 import { InsightsRecommendationsFooter } from "@/components/insights/InsightsRecommendationsFooter";
 import { InsightsDateRangeSelector } from "@/components/insights/InsightsDateRangeSelector";
@@ -17,16 +17,70 @@ import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
 import { getInsightsDataNote } from "@/lib/insights/connection-messages";
 import { formatInsightsNumber } from "@/lib/insights/format";
-import type { InsightsPageData, InsightsPlatform } from "@/lib/insights/types";
+import type {
+  InsightsKpiKey,
+  InsightsPageData,
+  InsightsPlatform,
+} from "@/lib/insights/types";
 import { cn } from "@/lib/utils/cn";
 
 interface InsightsHubProps {
   data: InsightsPageData;
 }
 
+function filterTopPosts(
+  posts: InsightsPageData["topPosts"],
+  platform: InsightsPlatform,
+) {
+  if (platform === "all") {
+    return posts;
+  }
+  return posts.filter((post) => post.platform === platform);
+}
+
+function filterKpisForPlatform(
+  data: InsightsPageData,
+  platform: InsightsPlatform,
+): InsightsPageData["kpis"] {
+  if (platform === "all") {
+    return data.kpis;
+  }
+
+  // Recompute sparkline/value display from platform-filtered time series.
+  return data.kpis.map((kpi) => {
+    const series = data.timeSeries[platform];
+    const sparkline = series.map((point) => {
+      switch (kpi.key) {
+        case "views":
+          return point.views;
+        case "reach":
+          return point.reach;
+        case "engagement":
+          return point.engagement;
+        case "likes":
+          return point.likes;
+        case "comments":
+          return point.comments;
+        default:
+          return 0;
+      }
+    });
+    const value = sparkline.reduce((sum, entry) => sum + entry, 0);
+    return {
+      ...kpi,
+      value,
+      sparkline,
+      // Prior-period comparison stays org-wide; avoid misleading platform deltas.
+      changePercent: null,
+      previousValue: null,
+    };
+  });
+}
+
 export function InsightsHub({ data }: InsightsHubProps) {
   const router = useRouter();
   const [platformFilter, setPlatformFilter] = useState<InsightsPlatform>("all");
+  const [selectedMetric, setSelectedMetric] = useState<InsightsKpiKey>("views");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -38,6 +92,15 @@ export function InsightsHub({ data }: InsightsHubProps) {
     !data.hasAnyMetrics &&
     !data.syncInProgress;
   const dataNote = getInsightsDataNote(data.connection);
+
+  const filteredKpis = useMemo(
+    () => filterKpisForPlatform(data, platformFilter),
+    [data, platformFilter],
+  );
+  const filteredTopPosts = useMemo(
+    () => filterTopPosts(data.topPosts, platformFilter),
+    [data.topPosts, platformFilter],
+  );
 
   function handleSync() {
     startTransition(async () => {
@@ -77,6 +140,23 @@ export function InsightsHub({ data }: InsightsHubProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-full border border-cos-border bg-cos-bg p-0.5 text-xs">
+            {(["all", "facebook", "instagram"] as const).map((platform) => (
+              <button
+                key={platform}
+                type="button"
+                onClick={() => setPlatformFilter(platform)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 capitalize transition-colors",
+                  platformFilter === platform
+                    ? "bg-cos-dark text-[#f6f2eb]"
+                    : "text-cos-muted hover:text-cos-text",
+                )}
+              >
+                {platform === "all" ? "All" : platform}
+              </button>
+            ))}
+          </div>
           <InsightsDateRangeSelector
             currentFrom={data.dateRange.from}
             currentTo={data.dateRange.to}
@@ -88,7 +168,7 @@ export function InsightsHub({ data }: InsightsHubProps) {
               variant="secondary"
               size="md"
               onClick={handleSync}
-              disabled={isPending || data.syncInProgress || showSyncEmpty}
+              disabled={isPending || data.syncInProgress}
             >
               <RefreshCw
                 className={cn(
@@ -110,7 +190,10 @@ export function InsightsHub({ data }: InsightsHubProps) {
       <ConnectionHealthBanner connection={data.connection} />
 
       {syncMessage ? (
-        <p className="rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-muted" role="status">
+        <p
+          className="rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-muted"
+          role="status"
+        >
           {syncMessage}
         </p>
       ) : null}
@@ -134,8 +217,10 @@ export function InsightsHub({ data }: InsightsHubProps) {
       {!showConnectEmpty && !showSyncEmpty ? (
         <div className="space-y-6">
           <InsightsKpiCards
-            kpis={data.kpis}
-            comparisonLabel="vs prior"
+            kpis={filteredKpis}
+            comparisonLabel="vs prior period"
+            selectedKey={selectedMetric}
+            onSelect={setSelectedMetric}
           />
 
           <InsightsRecommendationsFooter
@@ -144,38 +229,26 @@ export function InsightsHub({ data }: InsightsHubProps) {
             pageName={data.connection.pageName}
           />
 
-          <InsightsSectionCard
-            title="Performance over time"
-            action={
-              <div className="flex items-center gap-0.5 rounded-full border border-cos-border bg-cos-bg p-0.5 text-xs">
-                {(["all", "facebook", "instagram"] as const).map((platform) => (
-                  <button
-                    key={platform}
-                    type="button"
-                    onClick={() => setPlatformFilter(platform)}
-                    className={cn(
-                      "rounded-full px-3 py-1 capitalize transition-colors",
-                      platformFilter === platform
-                        ? "bg-cos-dark text-[#f6f2eb]"
-                        : "text-cos-muted hover:text-cos-text",
-                    )}
-                  >
-                    {platform}
-                  </button>
-                ))}
-              </div>
-            }
-          >
+          <InsightsSectionCard title="Content overview">
             <PerformanceChart
               series={data.timeSeries}
               platform={platformFilter}
+              metric={selectedMetric}
+              kpis={filteredKpis}
               emptyMessage={
-                data.timeSeries.all.length === 0
+                data.timeSeries.all.every(
+                  (point) =>
+                    point.views === 0 &&
+                    point.reach === 0 &&
+                    point.engagement === 0,
+                )
                   ? "No daily metrics stored for this period. Sync insights from Meta to populate this chart."
-                  : null
+                  : "No data for this metric in the selected range."
               }
             />
           </InsightsSectionCard>
+
+          <TopPerformingPosts posts={filteredTopPosts} />
 
           <div className="grid gap-4 lg:grid-cols-3">
             <InsightsSectionCard title="Content breakdown">
@@ -216,7 +289,11 @@ export function InsightsHub({ data }: InsightsHubProps) {
             <LiveActivityFeed events={data.activity} />
           </div>
 
-          <TopPerformingPosts posts={data.topPosts} />
+          {data.unavailableMetricNotes.length > 0 ? (
+            <p className="text-xs leading-relaxed text-cos-muted">
+              {data.unavailableMetricNotes.join(" ")}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

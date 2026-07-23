@@ -21,12 +21,14 @@ import type {
   InsightsTimeSeriesPoint,
   InsightsTopPost,
 } from "@/lib/insights/types";
+import { extractViewsFromRawMetrics } from "@/lib/meta/insights-normalize";
 import {
   getMetaConnectionForOrganization,
   isInstagramPublishingConfigured,
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
 import { inspectMetaPageToken } from "@/lib/meta-publishing/connection-token-health";
+import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { createClient } from "@/lib/supabase/server";
 
 type AccountInsightRow = {
@@ -38,6 +40,7 @@ type AccountInsightRow = {
   comments: number;
   shares: number;
   clicks: number;
+  raw_metrics: Record<string, unknown> | null;
 };
 
 type PostInsightRow = {
@@ -49,6 +52,11 @@ type PostInsightRow = {
   published_at: string | null;
   reach: number;
   engagement: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  raw_metrics: Record<string, unknown> | null;
+  meta_publication_slot_id: string | null;
 };
 
 type ActivityRow = {
@@ -60,17 +68,62 @@ type ActivityRow = {
   occurred_at: string;
 };
 
-function sumMetric(
+type MetricKey = "views" | "reach" | "engagement" | "likes" | "comments" | "shares";
+
+function rowViews(row: AccountInsightRow | PostInsightRow): number {
+  return extractViewsFromRawMetrics(row.raw_metrics, Number(row.reach) || 0);
+}
+
+function rowEngagement(row: PostInsightRow): number {
+  const stored = Number(row.engagement) || 0;
+  if (stored > 0) {
+    return stored;
+  }
+  return (Number(row.likes) || 0) + (Number(row.comments) || 0) + (Number(row.shares) || 0);
+}
+
+function metricFromAccountRow(row: AccountInsightRow, key: MetricKey): number {
+  switch (key) {
+    case "views":
+      return rowViews(row);
+    case "reach":
+      return Number(row.reach) || 0;
+    case "engagement":
+      return Number(row.engagement) || 0;
+    case "likes":
+      return Number(row.likes) || 0;
+    case "comments":
+      return Number(row.comments) || 0;
+    case "shares":
+      return Number(row.shares) || 0;
+    default:
+      return 0;
+  }
+}
+
+function sumAccountMetric(
   rows: AccountInsightRow[],
-  key: keyof Pick<
-    AccountInsightRow,
-    "reach" | "engagement" | "likes" | "comments" | "shares"
-  >,
+  key: MetricKey,
   platform: InsightsPlatform = "all",
 ): number {
   return rows
     .filter((row) => platform === "all" || row.platform === platform)
-    .reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+    .reduce((sum, row) => sum + metricFromAccountRow(row, key), 0);
+}
+
+function sumPostMetric(
+  rows: PostInsightRow[],
+  key: "likes" | "comments" | "shares" | "engagement" | "views" | "reach",
+  platform: InsightsPlatform = "all",
+): number {
+  return rows
+    .filter((row) => platform === "all" || row.platform === platform)
+    .reduce((sum, row) => {
+      if (key === "views") return sum + rowViews(row);
+      if (key === "reach") return sum + (Number(row.reach) || 0);
+      if (key === "engagement") return sum + rowEngagement(row);
+      return sum + (Number(row[key]) || 0);
+    }, 0);
 }
 
 function computeChangePercent(current: number, previous: number): number | null {
@@ -81,23 +134,95 @@ function computeChangePercent(current: number, previous: number): number | null 
   return ((current - previous) / previous) * 100;
 }
 
+function fillDateKeys(from: string, to: string): string[] {
+  const dates: string[] = [];
+  const cursor = new Date(`${from}T12:00:00.000Z`);
+  const end = new Date(`${to}T12:00:00.000Z`);
+  while (cursor.getTime() <= end.getTime()) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+function buildSparkline(
+  rows: AccountInsightRow[],
+  key: MetricKey,
+  from: string,
+  to: string,
+  platform: InsightsPlatform = "all",
+): number[] {
+  const byDate = new Map<string, number>();
+  for (const row of rows) {
+    if (platform !== "all" && row.platform !== platform) {
+      continue;
+    }
+    byDate.set(
+      row.metric_date,
+      (byDate.get(row.metric_date) ?? 0) + metricFromAccountRow(row, key),
+    );
+  }
+
+  return fillDateKeys(from, to).map((date) => byDate.get(date) ?? 0);
+}
+
+function resolveKpiValue(input: {
+  key: MetricKey;
+  accountRows: AccountInsightRow[];
+  postRows: PostInsightRow[];
+  platform?: InsightsPlatform;
+}): number {
+  const platform = input.platform ?? "all";
+  const accountTotal = sumAccountMetric(input.accountRows, input.key, platform);
+
+  // Page-level Graph metrics omit comments/shares; fall back to post aggregates.
+  if (
+    (input.key === "comments" || input.key === "shares" || input.key === "likes") &&
+    accountTotal <= 0 &&
+    input.postRows.length > 0
+  ) {
+    return sumPostMetric(input.postRows, input.key, platform);
+  }
+
+  return accountTotal;
+}
+
 function buildKpis(input: {
   current: AccountInsightRow[];
   previous: AccountInsightRow[];
+  currentPosts: PostInsightRow[];
+  previousPosts: PostInsightRow[];
+  from: string;
+  to: string;
   hasAccountData: boolean;
+  hasPostData: boolean;
   unavailableReason: string | null;
 }): InsightsKpi[] {
   const keys: Array<{ key: InsightsKpiKey; label: string }> = [
+    { key: "views", label: "Views" },
     { key: "reach", label: "Reach" },
-    { key: "engagement", label: "Engagement" },
+    { key: "engagement", label: "Interactions" },
     { key: "likes", label: "Likes" },
     { key: "comments", label: "Comments" },
-    { key: "shares", label: "Shares" },
   ];
 
+  const hasData = input.hasAccountData || input.hasPostData;
+
   return keys.map(({ key, label }) => {
-    const value = input.hasAccountData ? sumMetric(input.current, key) : null;
-    const previousValue = input.hasAccountData ? sumMetric(input.previous, key) : null;
+    const value = hasData
+      ? resolveKpiValue({
+          key,
+          accountRows: input.current,
+          postRows: input.currentPosts,
+        })
+      : null;
+    const previousValue = hasData
+      ? resolveKpiValue({
+          key,
+          accountRows: input.previous,
+          postRows: input.previousPosts,
+        })
+      : null;
 
     return {
       key,
@@ -108,7 +233,10 @@ function buildKpis(input: {
         value != null && previousValue != null
           ? computeChangePercent(value, previousValue)
           : null,
-      unavailableReason: input.hasAccountData ? null : input.unavailableReason,
+      unavailableReason: hasData ? null : input.unavailableReason,
+      sparkline: hasData
+        ? buildSparkline(input.current, key, input.from, input.to, "all")
+        : [],
     };
   });
 }
@@ -130,17 +258,36 @@ function buildTimeSeries(
   for (const row of filtered) {
     const current = byDate.get(row.metric_date) ?? {
       date: row.metric_date,
+      views: 0,
       reach: 0,
       engagement: 0,
+      likes: 0,
+      comments: 0,
       clicks: 0,
     };
+    current.views += rowViews(row);
     current.reach += Number(row.reach) || 0;
     current.engagement += Number(row.engagement) || 0;
+    current.likes += Number(row.likes) || 0;
+    current.comments += Number(row.comments) || 0;
     current.clicks += Number(row.clicks) || 0;
     byDate.set(row.metric_date, current);
   }
 
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+  // Dense series so the chart x-axis matches the selected date range.
+  return fillDateKeys(from, to).map((date) => {
+    return (
+      byDate.get(date) ?? {
+        date,
+        views: 0,
+        reach: 0,
+        engagement: 0,
+        likes: 0,
+        comments: 0,
+        clicks: 0,
+      }
+    );
+  });
 }
 
 function buildPlatformComparison(input: {
@@ -157,19 +304,25 @@ function buildPlatformComparison(input: {
       : ["facebook"];
 
   return platforms.map((platform) => {
-    const reach = input.hasAccountData ? sumMetric(input.current, "reach", platform) : null;
+    const views = input.hasAccountData
+      ? sumAccountMetric(input.current, "views", platform)
+      : null;
+    const reach = input.hasAccountData
+      ? sumAccountMetric(input.current, "reach", platform)
+      : null;
     const engagement = input.hasAccountData
-      ? sumMetric(input.current, "engagement", platform)
+      ? sumAccountMetric(input.current, "engagement", platform)
       : null;
     const previousReach = input.hasAccountData
-      ? sumMetric(input.previous, "reach", platform)
+      ? sumAccountMetric(input.previous, "reach", platform)
       : null;
     const previousEngagement = input.hasAccountData
-      ? sumMetric(input.previous, "engagement", platform)
+      ? sumAccountMetric(input.previous, "engagement", platform)
       : null;
 
     return {
       platform,
+      views,
       reach,
       engagement,
       previousReach,
@@ -191,7 +344,9 @@ async function fetchAccountInsights(input: {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("social_account_insights")
-    .select("platform, metric_date, reach, engagement, likes, comments, shares, clicks")
+    .select(
+      "platform, metric_date, reach, engagement, likes, comments, shares, clicks, raw_metrics",
+    )
     .eq("organization_id", input.organizationId)
     .gte("metric_date", input.from)
     .lte("metric_date", input.to);
@@ -216,7 +371,7 @@ async function fetchPostInsights(input: {
   const { data, error } = await supabase
     .from("social_post_insights")
     .select(
-      "id, external_post_id, platform, placement, post_title, published_at, reach, engagement",
+      "id, external_post_id, platform, placement, post_title, published_at, reach, engagement, likes, comments, shares, raw_metrics, meta_publication_slot_id",
     )
     .eq("organization_id", input.organizationId)
     .gte("published_at", `${input.from}T00:00:00.000Z`)
@@ -232,6 +387,167 @@ async function fetchPostInsights(input: {
   }
 
   return (data ?? []) as PostInsightRow[];
+}
+
+function captionSnippet(text: string | null | undefined, max = 72): string | null {
+  if (!text?.trim()) {
+    return null;
+  }
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (normalized.length <= max) {
+    return normalized;
+  }
+  return `${normalized.slice(0, max - 1).trimEnd()}…`;
+}
+
+async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[]> {
+  if (posts.length === 0) {
+    return [];
+  }
+
+  const supabase = await createClient();
+  const slotIds = posts
+    .map((post) => post.meta_publication_slot_id)
+    .filter((id): id is string => Boolean(id));
+
+  const slotById = new Map<
+    string,
+    {
+      event_id: string;
+      event_asset_id: string | null;
+      milestone_title: string;
+      placement: "feed" | "story";
+    }
+  >();
+
+  if (slotIds.length > 0) {
+    const { data: slots } = await supabase
+      .from("meta_publication_slots")
+      .select("id, event_id, event_asset_id, milestone_title, placement")
+      .in("id", slotIds);
+
+    for (const slot of slots ?? []) {
+      slotById.set(slot.id as string, {
+        event_id: slot.event_id as string,
+        event_asset_id: (slot.event_asset_id as string | null) ?? null,
+        milestone_title: (slot.milestone_title as string) ?? "",
+        placement: slot.placement as "feed" | "story",
+      });
+    }
+  }
+
+  const assetIds = [...slotById.values()]
+    .map((slot) => slot.event_asset_id)
+    .filter((id): id is string => Boolean(id));
+  const assetUrlById = new Map<string, string | null>();
+
+  if (assetIds.length > 0) {
+    const { data: assets } = await supabase
+      .from("event_assets")
+      .select("id, storage_path")
+      .in("id", assetIds);
+
+    for (const asset of assets ?? []) {
+      assetUrlById.set(
+        asset.id as string,
+        resolveAssetImageUrl((asset.storage_path as string | null) ?? null),
+      );
+    }
+  }
+
+  const eventIds = [...new Set([...slotById.values()].map((slot) => slot.event_id))];
+  const approvalByEvent = new Map<
+    string,
+    Array<{
+      milestone_name: string;
+      caption_text: string | null;
+      story_caption: string | null;
+      feed_artwork_url: string | null;
+      story_artwork_url: string | null;
+    }>
+  >();
+
+  if (eventIds.length > 0) {
+    const { data: approvals } = await supabase
+      .from("approval_scheduling_items")
+      .select(
+        "event_id, milestone_name, caption_text, story_caption, feed_artwork_url, story_artwork_url",
+      )
+      .in("event_id", eventIds);
+
+    for (const row of approvals ?? []) {
+      const eventId = row.event_id as string;
+      const list = approvalByEvent.get(eventId) ?? [];
+      list.push({
+        milestone_name: String(row.milestone_name ?? ""),
+        caption_text: (row.caption_text as string | null) ?? null,
+        story_caption: (row.story_caption as string | null) ?? null,
+        feed_artwork_url: (row.feed_artwork_url as string | null) ?? null,
+        story_artwork_url: (row.story_artwork_url as string | null) ?? null,
+      });
+      approvalByEvent.set(eventId, list);
+    }
+  }
+
+  const enriched = posts.map((row) => {
+    const views = rowViews(row);
+    const engagement = rowEngagement(row);
+    const slot = row.meta_publication_slot_id
+      ? slotById.get(row.meta_publication_slot_id)
+      : null;
+
+    let thumbnailUrl: string | null = null;
+    let caption: string | null = null;
+
+    if (slot) {
+      if (slot.event_asset_id) {
+        thumbnailUrl = assetUrlById.get(slot.event_asset_id) ?? null;
+      }
+
+      const approvals = approvalByEvent.get(slot.event_id) ?? [];
+      const match =
+        approvals.find(
+          (entry) =>
+            entry.milestone_name.trim().toLowerCase() ===
+            slot.milestone_title.trim().toLowerCase(),
+        ) ?? approvals[0];
+
+      if (match) {
+        caption =
+          slot.placement === "story"
+            ? match.story_caption ?? match.caption_text
+            : match.caption_text ?? match.story_caption;
+        if (!thumbnailUrl) {
+          thumbnailUrl =
+            slot.placement === "story"
+              ? match.story_artwork_url ?? match.feed_artwork_url
+              : match.feed_artwork_url ?? match.story_artwork_url;
+        }
+      }
+    }
+
+    return {
+      id: row.id,
+      title: row.post_title ?? "Published post",
+      captionSnippet: captionSnippet(caption) ?? captionSnippet(row.post_title),
+      thumbnailUrl,
+      platform: row.platform,
+      placement: row.placement,
+      publishedAt: row.published_at,
+      views,
+      reach: Number(row.reach) || 0,
+      engagement,
+      likes: Number(row.likes) || 0,
+      comments: Number(row.comments) || 0,
+      externalPostId: row.external_post_id,
+      _sortViews: views,
+    };
+  });
+
+  return enriched
+    .sort((a, b) => b._sortViews - a._sortViews)
+    .slice(0, 8)
+    .map(({ _sortViews: _ignored, ...post }) => post);
 }
 
 async function fetchActivityEvents(
@@ -411,7 +727,7 @@ export async function getInsightsPageData(input?: {
   const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to);
   const connection = await buildConnectionHealth(organization.id);
 
-  const [currentAccount, previousAccount, postInsights, activity] =
+  const [currentAccount, previousAccount, postInsights, previousPosts, activity] =
     await Promise.all([
       fetchAccountInsights({
         organizationId: organization.id,
@@ -428,16 +744,28 @@ export async function getInsightsPageData(input?: {
         from: dateRange.from,
         to: dateRange.to,
       }),
+      fetchPostInsights({
+        organizationId: organization.id,
+        from: previousPeriod.from,
+        to: previousPeriod.to,
+      }),
       fetchActivityEvents(organization.id),
     ]);
 
   const hasAccountData = currentAccount.length > 0;
-  const unavailableReason = hasAccountData ? null : resolveUnavailableReason(connection);
+  const hasPostData = postInsights.length > 0;
+  const unavailableReason =
+    hasAccountData || hasPostData ? null : resolveUnavailableReason(connection);
 
   const kpis = buildKpis({
     current: currentAccount,
     previous: previousAccount,
+    currentPosts: postInsights,
+    previousPosts,
+    from: dateRange.from,
+    to: dateRange.to,
     hasAccountData,
+    hasPostData,
     unavailableReason,
   });
 
@@ -447,16 +775,7 @@ export async function getInsightsPageData(input?: {
     instagram: buildTimeSeries(currentAccount, dateRange.from, dateRange.to, "instagram"),
   };
 
-  const topPosts: InsightsTopPost[] = postInsights.slice(0, 5).map((row) => ({
-    id: row.id,
-    title: row.post_title ?? "Published post",
-    platform: row.platform,
-    placement: row.placement,
-    publishedAt: row.published_at,
-    reach: row.reach,
-    engagement: row.engagement,
-    externalPostId: row.external_post_id,
-  }));
+  const topPosts = await enrichTopPosts(postInsights);
 
   const platformComparison = buildPlatformComparison({
     current: currentAccount,
@@ -466,8 +785,19 @@ export async function getInsightsPageData(input?: {
     hasInstagram: connection.hasInstagram,
   });
 
-  const contentBreakdown = buildContentBreakdownFromPosts(postInsights);
-  const hasAnyMetrics = hasAccountData || postInsights.length > 0;
+  const contentBreakdown = buildContentBreakdownFromPosts(
+    postInsights.map((row) => ({
+      platform: row.platform,
+      placement: row.placement,
+      engagement: rowEngagement(row),
+    })),
+  );
+  const hasAnyMetrics = hasAccountData || hasPostData;
+
+  const unavailableMetricNotes = [
+    "Organic vs ads view breakdown is not available with current Page insights metrics.",
+    "Page visits, follows, and messaging conversations require additional Meta product metrics not synced yet.",
+  ];
 
   return {
     organizationId: organization.id,
@@ -491,6 +821,7 @@ export async function getInsightsPageData(input?: {
     }),
     hasAnyMetrics,
     syncInProgress: connection.lastSyncStatus === "running",
+    unavailableMetricNotes,
   };
 }
 
@@ -512,7 +843,7 @@ export function buildInsightsExportRows(data: InsightsPageData): string[][] {
     rows.push([
       "Daily",
       point.date,
-      `reach=${point.reach}; engagement=${point.engagement}; clicks=${point.clicks}`,
+      `views=${point.views}; reach=${point.reach}; engagement=${point.engagement}; likes=${point.likes}; clicks=${point.clicks}`,
     ]);
   }
 
@@ -520,7 +851,7 @@ export function buildInsightsExportRows(data: InsightsPageData): string[][] {
     rows.push([
       "Top post",
       post.title,
-      `reach=${post.reach ?? 0}; engagement=${post.engagement ?? 0}`,
+      `views=${post.views ?? 0}; comments=${post.comments ?? 0}; likes=${post.likes ?? 0}; engagement=${post.engagement ?? 0}`,
     ]);
   }
 

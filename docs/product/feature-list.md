@@ -150,14 +150,17 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Insights — soft launch **complete**
 - Meta Insights hub (`/insights`) — **shipped**
-- KPIs (reach, engagement, likes, comments, shares) — **shipped**
-- Performance chart + platform filter (All / Facebook / Instagram) — **shipped**
-- Content breakdown, platforms, recent activity, top posts — **shipped**
-- Date range presets (7 / 14 / 30 days) + URL `from` / `to` — **shipped**
+- Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — **shipped** (reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty)
+- Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar) — **shipped**
+- Platform filter (All / Facebook / Instagram) applies to KPIs, chart, and top content — **shipped**
+- Top content by views (thumbnail, caption snippet, published time, views / comments / reactions) — **shipped**
+- Content breakdown, platforms, recent activity — **shipped**
+- Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to` — **shipped**
 - Refresh from Meta + CSV export — **shipped**
 - Rule-based recommendations (“From your metrics” + details drawer) — **shipped**
 - Soft sync notes inline under recommendations (not full-page banner) — **shipped**
 - Connect Meta empty state with `returnTo=/insights` — **shipped**
+- Organic vs ads breakdown, page visits, follows, conversations — **deferred** (not available from current Page insights sync; honest empty copy on chart)
 - Audience demographics overview — **deferred**
 - LLM-generated narrative — **deferred**
 - Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))

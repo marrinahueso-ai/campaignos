@@ -13,6 +13,11 @@ test("resolveInsightsDateRange uses preset ranges", () => {
   assert.equal(daysBetweenInclusive(range.from, range.to), 7);
 });
 
+test("resolveInsightsDateRange supports Meta-style 28-day preset", () => {
+  const range = resolveInsightsDateRange({ range: "28d" });
+  assert.equal(daysBetweenInclusive(range.from, range.to), 28);
+});
+
 test("resolveInsightsDateRange honors explicit from/to", () => {
   const range = resolveInsightsDateRange({
     from: "2026-07-01",

@@ -1,7 +1,7 @@
 # Meta connection — one-click for every surface
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
-**Last updated:** July 21, 2026
+**Last updated:** July 22, 2026
 
 ---
 
@@ -28,7 +28,7 @@ A volunteer clicks Connect, approves the use cases Facebook shows, and that conn
 | Surface | What the same connection enables |
 |---------|----------------------------------|
 | Publishing / scheduling | Approved posts → Facebook Page + Instagram |
-| Insights | Reach, engagement, top posts, sync, export |
+| Insights | Views / reach / interactions KPIs + sparklines, content overview chart, top content cards (views/comments/reactions), sync, export |
 | Unified Inbox | DMs, comments, mentions, reply |
 | Approvals → publish | Same Page/IG targets |
 | Repost / comment moderation | Same engagement scopes |
@@ -45,6 +45,16 @@ Same mental model for Canva and Monday: one Connect CTA per provider, `returnTo`
 - Canva / Monday panels and Artwork Canva connect use the same start-path helper.
 - Connection rows: `organization_meta_connections`, `organization_canva_connections`, `organization_monday_connections`.
 - Google Calendar Sign-in is **live and wired** through review → calendar / dashboard, plus daily cron (see [google-calendar.md](./google-calendar.md)); ICS + upload remain alternate streams. Gmail still deferred.
+
+### Insights metrics (current)
+
+Synced via Graph Page / IG account + published-post insights (`read_insights`, `instagram_manage_insights`):
+
+- **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
+- **Interactions** from `page_post_engagements` / derived post reactions
+- **Top content** for posts published through Hey Ralli (`meta_publication_slots`)
+
+Not synced yet (shown as honest unavailable copy): organic vs ads split, page visits, follows/unfollows, messaging conversations. Instagram account series are thinner than Facebook (reach + accounts engaged); likes/comments often come from post aggregates.
 
 Still later: shared connection-health contract, App Review / production permission lifecycle, env-vs-org tenancy cleanup, Gmail Connect.
 

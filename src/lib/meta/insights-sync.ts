@@ -183,7 +183,11 @@ async function upsertAccountInsights(input: {
     comments: row.comments,
     shares: row.shares,
     clicks: row.clicks,
-    raw_metrics: row.rawMetrics,
+    // Persist derived views so Insights can read totals without a schema migration.
+    raw_metrics: {
+      ...row.rawMetrics,
+      views: row.views,
+    },
     synced_at: now,
     updated_at: now,
   }));
@@ -204,6 +208,7 @@ async function upsertPostInsight(input: {
   organizationId: string;
   slot: PublishedSlot;
   insight: {
+    views: number;
     reach: number;
     engagement: number;
     likes: number;
@@ -230,7 +235,10 @@ async function upsertPostInsight(input: {
       comments: input.insight.comments,
       shares: input.insight.shares,
       clicks: input.insight.clicks,
-      raw_metrics: input.insight.rawMetrics,
+      raw_metrics: {
+        ...input.insight.rawMetrics,
+        views: input.insight.views,
+      },
       synced_at: now,
       updated_at: now,
     },

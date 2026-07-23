@@ -144,5 +144,6 @@ function parsePresetRange(range: string | null | undefined): number | null {
 export const INSIGHTS_DATE_PRESETS = [
   { id: "7d", label: "Last 7 days", days: 7 },
   { id: "14d", label: "Last 14 days", days: 14 },
+  { id: "28d", label: "Last 28 days", days: 28 },
   { id: "30d", label: "Last 30 days", days: 30 },
 ] as const;

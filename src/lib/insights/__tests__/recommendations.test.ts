@@ -50,12 +50,22 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
   const recommendation = buildInsightsRecommendation({
     kpis: [
       {
+        key: "views",
+        label: "Views",
+        value: 2400,
+        previousValue: 1800,
+        changePercent: 33.3,
+        unavailableReason: null,
+        sparkline: [100, 200, 300],
+      },
+      {
         key: "engagement",
-        label: "Engagement",
+        label: "Interactions",
         value: 420,
         previousValue: 300,
         changePercent: 40,
         unavailableReason: null,
+        sparkline: [10, 20, 30],
       },
       {
         key: "reach",
@@ -64,6 +74,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
         previousValue: 4000,
         changePercent: 25,
         unavailableReason: null,
+        sparkline: [50, 60, 70],
       },
       {
         key: "likes",
@@ -72,6 +83,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
         previousValue: 120,
         changePercent: 50,
         unavailableReason: null,
+        sparkline: [5, 8, 12],
       },
       {
         key: "comments",
@@ -80,14 +92,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
         previousValue: 10,
         changePercent: 100,
         unavailableReason: null,
-      },
-      {
-        key: "shares",
-        label: "Shares",
-        value: 8,
-        previousValue: 4,
-        changePercent: 100,
-        unavailableReason: null,
+        sparkline: [1, 2, 3],
       },
     ],
     contentBreakdown: [
@@ -107,6 +112,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
     platformComparison: [
       {
         platform: "facebook",
+        views: 2200,
         reach: 2000,
         engagement: 170,
         previousReach: 1800,
@@ -116,6 +122,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
       },
       {
         platform: "instagram",
+        views: 3100,
         reach: 3000,
         engagement: 250,
         previousReach: 2200,
@@ -128,11 +135,16 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
       {
         id: "post-1",
         title: "Book Fair Reminder",
+        captionSnippet: "Don't forget book fair Friday!",
+        thumbnailUrl: null,
         platform: "instagram",
         placement: "feed",
         publishedAt: "2026-07-01T12:00:00.000Z",
+        views: 1400,
         reach: 1200,
         engagement: 180,
+        likes: 40,
+        comments: 6,
         externalPostId: "ig-1",
       },
     ],

@@ -9,6 +9,13 @@ import {
   INSTAGRAM_STORY_MEDIA_METRICS,
   looksLikeFacebookPhotoId,
 } from "@/lib/meta/insights-metrics";
+import {
+  parseDailyInsights,
+  parsePostInsights,
+  type InsightValueRow,
+  type NormalizedDailyInsight,
+  type NormalizedPostInsight,
+} from "@/lib/meta/insights-normalize";
 
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
@@ -62,195 +69,7 @@ async function graphGet(path: string, params: Record<string, string>): Promise<G
   return { ok: true, data: payload as Record<string, unknown> };
 }
 
-export type NormalizedDailyInsight = {
-  date: string;
-  reach: number;
-  engagement: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  clicks: number;
-  rawMetrics: Record<string, number>;
-};
-
-export type NormalizedPostInsight = {
-  reach: number;
-  engagement: number;
-  likes: number;
-  comments: number;
-  shares: number;
-  clicks: number;
-  rawMetrics: Record<string, number>;
-};
-
-type InsightValueRow = {
-  name?: string;
-  period?: string;
-  values?: Array<{ value?: number | Record<string, number>; end_time?: string }>;
-  total_value?: {
-    value?: number;
-    breakdowns?: Array<{
-      results?: Array<{ value?: number; end_time?: string }>;
-    }>;
-  };
-};
-
-function readMetricValue(value: number | Record<string, number> | undefined): number {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (value && typeof value === "object") {
-    return Object.values(value).reduce((sum, entry) => sum + (Number(entry) || 0), 0);
-  }
-
-  return 0;
-}
-
-function metricAmountForDate(row: InsightValueRow, date: string): number | null {
-  for (const entry of row.values ?? []) {
-    const endTime = entry.end_time;
-    if (!endTime || endTime.slice(0, 10) !== date) {
-      continue;
-    }
-    return readMetricValue(entry.value);
-  }
-
-  for (const breakdown of row.total_value?.breakdowns ?? []) {
-    for (const result of breakdown.results ?? []) {
-      const endTime = result.end_time;
-      if (!endTime || endTime.slice(0, 10) !== date) {
-        continue;
-      }
-      return readMetricValue(result.value);
-    }
-  }
-
-  return null;
-}
-
-function collectDatesFromRows(rows: InsightValueRow[]): string[] {
-  const dates = new Set<string>();
-
-  for (const row of rows) {
-    for (const entry of row.values ?? []) {
-      if (entry.end_time) {
-        dates.add(entry.end_time.slice(0, 10));
-      }
-    }
-
-    for (const breakdown of row.total_value?.breakdowns ?? []) {
-      for (const result of breakdown.results ?? []) {
-        if (result.end_time) {
-          dates.add(result.end_time.slice(0, 10));
-        }
-      }
-    }
-  }
-
-  return [...dates].sort((a, b) => a.localeCompare(b));
-}
-
-function applyMetricToDailyRow(
-  current: NormalizedDailyInsight,
-  metricName: string,
-  amount: number,
-): void {
-  current.rawMetrics[metricName] = amount;
-
-  if (
-    metricName.includes("media_view_unique") ||
-    metricName.includes("impressions_unique") ||
-    metricName === "reach" ||
-    metricName === "impressions"
-  ) {
-    current.reach += amount;
-  } else if (metricName.includes("engagement") || metricName.includes("engaged")) {
-    current.engagement += amount;
-  } else if (metricName.includes("reactions_like") || metricName === "likes") {
-    current.likes += amount;
-  } else if (metricName.includes("comment")) {
-    current.comments += amount;
-  } else if (metricName.includes("share")) {
-    current.shares += amount;
-  } else if (metricName.includes("click")) {
-    current.clicks += amount;
-  } else if (metricName === "total_interactions") {
-    current.engagement += amount;
-  }
-}
-
-function parseDailyInsights(rows: InsightValueRow[]): NormalizedDailyInsight[] {
-  const dates = collectDatesFromRows(rows);
-  const byDate = new Map<string, NormalizedDailyInsight>();
-
-  for (const date of dates) {
-    const current: NormalizedDailyInsight = {
-      date,
-      reach: 0,
-      engagement: 0,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      clicks: 0,
-      rawMetrics: {},
-    };
-
-    for (const row of rows) {
-      const metricName = row.name ?? "";
-      const amount = metricAmountForDate(row, date);
-      if (amount == null) {
-        continue;
-      }
-      applyMetricToDailyRow(current, metricName, amount);
-    }
-
-    byDate.set(date, current);
-  }
-
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function parsePostInsights(rows: InsightValueRow[]): NormalizedPostInsight {
-  const rawMetrics: Record<string, number> = {};
-  let reach = 0;
-  let engagement = 0;
-  let likes = 0;
-  let comments = 0;
-  let shares = 0;
-  let clicks = 0;
-
-  for (const row of rows) {
-    const metricName = row.name ?? "";
-    const amount =
-      readMetricValue(row.values?.[0]?.value) ||
-      readMetricValue(row.total_value?.value);
-    rawMetrics[metricName] = amount;
-
-    if (
-      metricName.includes("media_view_unique") ||
-      metricName.includes("impressions_unique") ||
-      metricName === "reach" ||
-      metricName === "impressions"
-    ) {
-      reach += amount;
-    } else if (metricName.includes("engagement") || metricName.includes("engaged")) {
-      engagement += amount;
-    } else if (metricName.includes("reactions_like") || metricName === "likes") {
-      likes += amount;
-    } else if (metricName.includes("comment")) {
-      comments += amount;
-    } else if (metricName.includes("share")) {
-      shares += amount;
-    } else if (metricName.includes("click")) {
-      clicks += amount;
-    } else if (metricName === "total_interactions") {
-      engagement += amount;
-    }
-  }
-
-  return { reach, engagement, likes, comments, shares, clicks, rawMetrics };
-}
+export type { NormalizedDailyInsight, NormalizedPostInsight };
 
 export async function fetchFacebookPageDailyInsights(input: {
   pageId: string;
@@ -453,6 +272,10 @@ export async function fetchInstagramMediaInsights(input: {
     parsed.engagement = parsed.shares + parsed.comments;
   } else {
     parsed.engagement = parsed.likes + parsed.comments + parsed.shares;
+  }
+
+  if (parsed.views <= 0 && parsed.reach > 0) {
+    parsed.views = parsed.reach;
   }
 
   return { insight: parsed, error: null };

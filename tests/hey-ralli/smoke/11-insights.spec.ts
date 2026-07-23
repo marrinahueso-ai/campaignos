@@ -108,8 +108,8 @@ test.describe("Insights workspace", () => {
       return;
     }
 
-    // KPI tiles
-    for (const label of ["Reach", "Engagement", "Likes", "Comments", "Shares"]) {
+    // KPI tiles (Meta-style overview metrics)
+    for (const label of ["Views", "Reach", "Interactions", "Likes", "Comments"]) {
       await expect(main.getByText(label, { exact: true }).first()).toBeVisible({
         timeout: 20_000,
       });
@@ -154,20 +154,20 @@ test.describe("Insights workspace", () => {
       }
     }
 
-    // Performance chart + platform filters
+    // Content overview chart + platform filters
     await expect(
-      main.getByRole("heading", { name: /performance over time/i }),
+      main.getByRole("heading", { name: /content overview/i }),
     ).toBeVisible();
     await expect(
-      main.getByRole("img", { name: /performance over time chart/i }),
+      main.getByRole("img", { name: /over time chart/i }),
     ).toBeVisible();
 
-    for (const platform of ["all", "facebook", "instagram"]) {
+    for (const platform of ["All", "facebook", "instagram"]) {
       const btn = main.getByRole("button", { name: new RegExp(`^${platform}$`, "i") });
       await expect(btn).toBeVisible();
       await btn.click();
       await expect(
-        main.getByRole("img", { name: /performance over time chart/i }),
+        main.getByRole("img", { name: /over time chart/i }),
       ).toBeVisible();
     }
 
@@ -180,7 +180,7 @@ test.describe("Insights workspace", () => {
       main.getByRole("heading", { name: /recent activity/i }),
     ).toBeVisible();
     await expect(
-      main.getByRole("heading", { name: /top performing posts/i }),
+      main.getByRole("heading", { name: /top content by views/i }),
     ).toBeVisible();
 
     // Inbox deep link from activity

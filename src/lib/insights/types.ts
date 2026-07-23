@@ -6,7 +6,12 @@ export type InsightsDateRange = {
   label: string;
 };
 
-export type InsightsKpiKey = "reach" | "engagement" | "likes" | "comments" | "shares";
+export type InsightsKpiKey =
+  | "views"
+  | "reach"
+  | "engagement"
+  | "likes"
+  | "comments";
 
 export type InsightsKpi = {
   key: InsightsKpiKey;
@@ -15,12 +20,17 @@ export type InsightsKpi = {
   previousValue: number | null;
   changePercent: number | null;
   unavailableReason: string | null;
+  /** Daily values across the selected range for sparkline rendering. */
+  sparkline: number[];
 };
 
 export type InsightsTimeSeriesPoint = {
   date: string;
+  views: number;
   reach: number;
   engagement: number;
+  likes: number;
+  comments: number;
   clicks: number;
 };
 
@@ -43,16 +53,22 @@ export type InsightsActivityEvent = {
 export type InsightsTopPost = {
   id: string;
   title: string;
+  captionSnippet: string | null;
+  thumbnailUrl: string | null;
   platform: "facebook" | "instagram";
   placement: "feed" | "story" | null;
   publishedAt: string | null;
+  views: number | null;
   reach: number | null;
   engagement: number | null;
+  likes: number | null;
+  comments: number | null;
   externalPostId: string;
 };
 
 export type InsightsPlatformTotals = {
   platform: "facebook" | "instagram";
+  views: number | null;
   reach: number | null;
   engagement: number | null;
   previousReach: number | null;
@@ -107,4 +123,9 @@ export type InsightsPageData = {
   recommendation: InsightsRecommendation | null;
   hasAnyMetrics: boolean;
   syncInProgress: boolean;
+  /**
+   * Honest capability notes for metrics Meta Business Suite shows that we
+   * cannot currently break out (organic vs ads, page visits, conversations).
+   */
+  unavailableMetricNotes: string[];
 };

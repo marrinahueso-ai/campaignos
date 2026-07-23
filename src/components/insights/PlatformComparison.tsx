@@ -35,7 +35,13 @@ export function PlatformComparison({ platforms }: PlatformComparisonProps) {
               {entry.unavailableReason ? (
                 <p className="text-xs text-cos-muted">{entry.unavailableReason}</p>
               ) : (
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <p className="text-[11px] text-cos-muted">Views</p>
+                    <p className="font-display text-xl text-cos-text">
+                      {formatInsightsNumber(entry.views)}
+                    </p>
+                  </div>
                   <div>
                     <p className="text-[11px] text-cos-muted">Reach</p>
                     <p className="font-display text-xl text-cos-text">
@@ -61,7 +67,7 @@ export function PlatformComparison({ platforms }: PlatformComparisonProps) {
                     ) : null}
                   </div>
                   <div>
-                    <p className="text-[11px] text-cos-muted">Engagement</p>
+                    <p className="text-[11px] text-cos-muted">Interactions</p>
                     <p className="font-display text-xl text-cos-text">
                       {formatInsightsNumber(entry.engagement)}
                     </p>
