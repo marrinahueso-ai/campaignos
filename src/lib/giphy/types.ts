@@ -13,4 +13,7 @@ export type GiphyProxyResponse = {
   configured: boolean;
   gifs: GiphyGifSummary[];
   message?: string | null;
+  /** Next Giphy `offset` to request for another page (omit when exhausted). */
+  nextOffset?: number | null;
+  hasMore?: boolean;
 };

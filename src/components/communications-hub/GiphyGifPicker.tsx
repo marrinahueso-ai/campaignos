@@ -1,12 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import { Loader2, Search } from "lucide-react";
 import type { GiphyGifSummary, GiphyProxyResponse } from "@/lib/giphy/types";
 import { cn } from "@/lib/utils/cn";
 
 type GiphyGifPickerProps = {
   onSelect: (gif: GiphyGifSummary) => void;
+  /** Anchor element (GIF button) used to position the fixed portal panel. */
+  anchorRef: RefObject<HTMLElement | null>;
+  /** Optional ref to the portaled panel — needed for outside-click handling. */
+  panelRef?: RefObject<HTMLDivElement | null>;
   className?: string;
 };
 
@@ -17,18 +28,115 @@ async function fetchGiphy(path: string): Promise<GiphyProxyResponse> {
     configured: Boolean(payload.configured),
     gifs: Array.isArray(payload.gifs) ? payload.gifs : [],
     message: payload.message ?? null,
+    nextOffset: payload.nextOffset ?? null,
+    hasMore: Boolean(payload.hasMore),
   };
 }
 
-const SCROLL_AREA_CLASS = "h-[min(28rem,55vh)]";
+function giphyPath(query: string, offset = 0): string {
+  const params = new URLSearchParams();
+  if (offset > 0) {
+    params.set("offset", String(offset));
+  }
+  if (query) {
+    params.set("q", query);
+    const qs = params.toString();
+    return `/api/giphy/search?${qs}`;
+  }
+  const qs = params.toString();
+  return qs ? `/api/giphy/trending?${qs}` : "/api/giphy/trending";
+}
 
-export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
+function mergeUniqueGifs(
+  existing: GiphyGifSummary[],
+  incoming: GiphyGifSummary[],
+): GiphyGifSummary[] {
+  if (existing.length === 0) {
+    return incoming;
+  }
+  const seen = new Set(existing.map((gif) => gif.id));
+  const merged = [...existing];
+  for (const gif of incoming) {
+    if (!seen.has(gif.id)) {
+      seen.add(gif.id);
+      merged.push(gif);
+    }
+  }
+  return merged;
+}
+
+/** ~512px tall scroll region — never inherits parent height. */
+const SCROLL_AREA_CLASS = "h-[min(32rem,60vh)]";
+/** ~576px / 95vw — set in JS too so flex ancestors cannot squeeze it. */
+const PANEL_WIDTH_PX = 36 * 16;
+
+function useFixedAnchorStyle(
+  anchorRef: RefObject<HTMLElement | null>,
+): CSSProperties {
+  const [style, setStyle] = useState<CSSProperties>({
+    position: "fixed",
+    left: 0,
+    bottom: 0,
+    width: PANEL_WIDTH_PX,
+    zIndex: 9999,
+    visibility: "hidden",
+  });
+
+  useLayoutEffect(() => {
+    function update() {
+      const el = anchorRef.current;
+      if (!el) {
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      const width = Math.min(PANEL_WIDTH_PX, window.innerWidth * 0.95);
+      const gap = 8;
+      let left = rect.left;
+      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+      const bottom = Math.max(8, window.innerHeight - rect.top + gap);
+      setStyle({
+        position: "fixed",
+        left,
+        bottom,
+        width,
+        zIndex: 9999,
+        visibility: "visible",
+      });
+    }
+
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [anchorRef]);
+
+  return style;
+}
+
+export function GiphyGifPicker({
+  onSelect,
+  anchorRef,
+  panelRef,
+  className,
+}: GiphyGifPickerProps) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [gifs, setGifs] = useState<GiphyGifSummary[]>([]);
   const [configured, setConfigured] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextOffset, setNextOffset] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const fixedStyle = useFixedAnchorStyle(anchorRef);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -43,22 +151,25 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
     async function load() {
       setLoading(true);
       setMessage(null);
+      setHasMore(false);
+      setNextOffset(null);
       try {
-        const path = debouncedQuery
-          ? `/api/giphy/search?q=${encodeURIComponent(debouncedQuery)}`
-          : "/api/giphy/trending";
-        const result = await fetchGiphy(path);
+        const result = await fetchGiphy(giphyPath(debouncedQuery, 0));
         if (cancelled) {
           return;
         }
         setConfigured(result.configured);
         setGifs(result.gifs);
         setMessage(result.message ?? null);
+        setHasMore(Boolean(result.hasMore));
+        setNextOffset(result.nextOffset ?? null);
       } catch {
         if (!cancelled) {
           setConfigured(true);
           setGifs([]);
           setMessage("Could not load GIFs. Try again.");
+          setHasMore(false);
+          setNextOffset(null);
         }
       } finally {
         if (!cancelled) {
@@ -73,10 +184,41 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
     };
   }, [debouncedQuery]);
 
-  return (
+  async function loadMore() {
+    if (loading || loadingMore || !hasMore || nextOffset == null) {
+      return;
+    }
+    setLoadingMore(true);
+    setMessage(null);
+    try {
+      const result = await fetchGiphy(giphyPath(debouncedQuery, nextOffset));
+      setConfigured(result.configured);
+      setGifs((prev) => mergeUniqueGifs(prev, result.gifs));
+      setMessage(result.message ?? null);
+      setHasMore(Boolean(result.hasMore));
+      setNextOffset(result.nextOffset ?? null);
+    } catch {
+      setMessage("Could not load more GIFs. Try again.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  if (!mounted) {
+    return null;
+  }
+
+  const panel = (
     <div
+      ref={(node) => {
+        if (panelRef) {
+          panelRef.current = node;
+        }
+      }}
+      style={fixedStyle}
       className={cn(
-        "flex w-[min(28rem,92vw)] flex-col rounded-xl border border-cos-border bg-white p-3 shadow-lg",
+        // Explicit min-width so nothing can collapse the portal panel.
+        "flex w-[min(36rem,95vw)] min-w-[min(36rem,95vw)] max-w-[95vw] flex-col rounded-xl border border-cos-border bg-white p-3 shadow-2xl",
         className,
       )}
       role="dialog"
@@ -141,7 +283,7 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onSelect(gif)}
-              className="group relative aspect-square w-full min-h-[11.5rem] shrink-0 overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
+              className="group relative aspect-square w-full min-h-[15rem] min-w-[13.5rem] shrink-0 overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
               aria-label={gif.title || "Select GIF"}
               title={gif.title || "Select GIF"}
             >
@@ -153,6 +295,26 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
               />
             </button>
           ))}
+          {hasMore ? (
+            <div className="col-span-2 flex justify-center pb-1 pt-1">
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                className="inline-flex items-center rounded-lg border border-cos-border bg-white px-3 py-1.5 text-xs font-medium text-cos-text transition-colors hover:bg-cos-bg/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Loading…
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -161,4 +323,6 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
       </p>
     </div>
   );
+
+  return createPortal(panel, document.body);
 }

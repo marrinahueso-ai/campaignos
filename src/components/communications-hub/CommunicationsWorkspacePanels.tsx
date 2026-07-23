@@ -125,6 +125,8 @@ export function CommunicationsReplySection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stickerUploadInputRef = useRef<HTMLInputElement>(null);
   const composerPickerRef = useRef<HTMLDivElement>(null);
+  const gifButtonRef = useRef<HTMLButtonElement>(null);
+  const gifPickerPanelRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
   const commentThread = isCommentChannel(thread.channelType);
   const dmThread = isDmChannel(thread.channelType);
@@ -180,10 +182,11 @@ export function CommunicationsReplySection({
     }
 
     function handlePointerDown(event: MouseEvent) {
-      if (
-        composerPickerRef.current &&
-        !composerPickerRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      const inComposer = composerPickerRef.current?.contains(target) ?? false;
+      // GIF picker portals to document.body — include its panel in the "inside" check.
+      const inGifPanel = gifPickerPanelRef.current?.contains(target) ?? false;
+      if (!inComposer && !inGifPanel) {
         setComposerPicker(null);
       }
     }
@@ -732,6 +735,7 @@ export function CommunicationsReplySection({
               <Sticker className="h-4 w-4" />
             </button>
             <button
+              ref={gifButtonRef}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={handleGifButtonClick}
@@ -899,9 +903,11 @@ export function CommunicationsReplySection({
               </div>
             ) : null}
             {composerPicker === "gif" && dmThread ? (
-              <div className="absolute bottom-full left-0 z-50 mb-2 overflow-visible">
-                <GiphyGifPicker onSelect={handleGifSelect} />
-              </div>
+              <GiphyGifPicker
+                onSelect={handleGifSelect}
+                anchorRef={gifButtonRef}
+                panelRef={gifPickerPanelRef}
+              />
             ) : null}
           </div>
           <button

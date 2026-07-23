@@ -6,7 +6,9 @@ const GIPHY_API_BASE = "https://api.giphy.com/v1/gifs";
 /** School / PTO-safe content filter (includes G + PG). */
 export const GIPHY_RATING = "pg";
 const MAX_SEND_BYTES = 8 * 1024 * 1024;
-const DEFAULT_LIMIT = 24;
+/** Page size for search/trending (Giphy max is 50). */
+export const DEFAULT_LIMIT = 48;
+const MAX_LIMIT = 50;
 
 type GiphyImageRendition = {
   url?: string;
@@ -29,6 +31,23 @@ type GiphyApiGif = {
 
 type GiphyApiResponse = {
   data?: GiphyApiGif[];
+  pagination?: {
+    total_count?: number;
+    count?: number;
+    offset?: number;
+  };
+};
+
+export type GiphyFetchOptions = {
+  offset?: number;
+  limit?: number;
+};
+
+export type GiphyFetchResult = {
+  gifs: GiphyGifSummary[];
+  error: string | null;
+  nextOffset: number | null;
+  hasMore: boolean;
 };
 
 export function getGiphyApiKey(): string | null {
@@ -127,22 +146,43 @@ function mapGif(gif: GiphyApiGif): GiphyGifSummary | null {
   };
 }
 
+function clampOffset(value: number | undefined): number {
+  if (value == null || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return Math.floor(value);
+}
+
+function clampLimit(value: number | undefined): number {
+  if (value == null || !Number.isFinite(value) || value <= 0) {
+    return DEFAULT_LIMIT;
+  }
+  return Math.min(MAX_LIMIT, Math.floor(value));
+}
+
 async function giphyGet(
   path: "search" | "trending",
   params: Record<string, string>,
-): Promise<{ gifs: GiphyGifSummary[]; error: string | null }> {
+  options: GiphyFetchOptions = {},
+): Promise<GiphyFetchResult> {
   const apiKey = getGiphyApiKey();
   if (!apiKey) {
     return {
       gifs: [],
       error: "Add GIPHY_API_KEY to enable GIF search",
+      nextOffset: null,
+      hasMore: false,
     };
   }
+
+  const offset = clampOffset(options.offset);
+  const limit = clampLimit(options.limit);
 
   const url = new URL(`${GIPHY_API_BASE}/${path}`);
   url.searchParams.set("api_key", apiKey);
   url.searchParams.set("rating", GIPHY_RATING);
-  url.searchParams.set("limit", String(DEFAULT_LIMIT));
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
   for (const [key, value] of Object.entries(params)) {
     if (value) {
       url.searchParams.set(key, value);
@@ -158,35 +198,58 @@ async function giphyGet(
 
     if (!response.ok) {
       console.error("Giphy API error:", response.status, await response.text());
-      return { gifs: [], error: "Giphy is temporarily unavailable. Try again shortly." };
+      return {
+        gifs: [],
+        error: "Giphy is temporarily unavailable. Try again shortly.",
+        nextOffset: null,
+        hasMore: false,
+      };
     }
 
     const payload = (await response.json()) as GiphyApiResponse;
-    const gifs = (payload.data ?? [])
-      .map(mapGif)
-      .filter((gif): gif is GiphyGifSummary => gif != null);
+    const raw = payload.data ?? [];
+    const gifs = raw.map(mapGif).filter((gif): gif is GiphyGifSummary => gif != null);
 
-    return { gifs, error: null };
+    const pagination = payload.pagination;
+    const apiCount = pagination?.count ?? raw.length;
+    const apiOffset = pagination?.offset ?? offset;
+    const totalCount = pagination?.total_count;
+    const nextOffset = apiOffset + apiCount;
+    const hasMore =
+      typeof totalCount === "number"
+        ? nextOffset < totalCount
+        : apiCount >= limit;
+
+    return {
+      gifs,
+      error: null,
+      nextOffset: hasMore ? nextOffset : null,
+      hasMore,
+    };
   } catch (error) {
     console.error("Giphy request failed:", error);
-    return { gifs: [], error: "Could not reach Giphy. Check your connection and try again." };
+    return {
+      gifs: [],
+      error: "Could not reach Giphy. Check your connection and try again.",
+      nextOffset: null,
+      hasMore: false,
+    };
   }
 }
 
-export async function searchGiphyGifs(query: string): Promise<{
-  gifs: GiphyGifSummary[];
-  error: string | null;
-}> {
+export async function searchGiphyGifs(
+  query: string,
+  options: GiphyFetchOptions = {},
+): Promise<GiphyFetchResult> {
   const q = query.trim();
   if (!q) {
-    return trendingGiphyGifs();
+    return trendingGiphyGifs(options);
   }
-  return giphyGet("search", { q });
+  return giphyGet("search", { q }, options);
 }
 
-export async function trendingGiphyGifs(): Promise<{
-  gifs: GiphyGifSummary[];
-  error: string | null;
-}> {
-  return giphyGet("trending", {});
+export async function trendingGiphyGifs(
+  options: GiphyFetchOptions = {},
+): Promise<GiphyFetchResult> {
+  return giphyGet("trending", {}, options);
 }
