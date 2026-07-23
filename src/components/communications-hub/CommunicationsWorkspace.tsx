@@ -13,6 +13,10 @@ import {
   unarchiveInboxThreadAction,
 } from "@/lib/inbox/actions";
 import { classifyThreadQueueState } from "@/lib/inbox/queue-utils";
+import {
+  getTimelineMessages,
+  isOutboundTimelineMessage,
+} from "@/lib/inbox/timeline-messages";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
@@ -53,26 +57,14 @@ function threadChannelDisplayLabel(thread: InboxThread): string {
   }
 }
 
-function sortTimelineMessages(messages: InboxMessage[]): InboxMessage[] {
-  return [...messages].sort((left, right) => {
-    const leftTime = Date.parse(left.sentAt ?? left.createdAt);
-    const rightTime = Date.parse(right.sentAt ?? right.createdAt);
-    return leftTime - rightTime;
-  });
-}
-
-function getTimelineMessages(messages: InboxMessage[]): InboxMessage[] {
-  return sortTimelineMessages(
-    messages.filter(
-      (message) =>
-        message.direction === "inbound" ||
-        (message.direction === "outbound" && message.status === "sent"),
-    ),
-  );
-}
-
-function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
-  const timelineMessages = getTimelineMessages(messages);
+function ThreadMessageTimeline({
+  messages,
+  channelType,
+}: {
+  messages: InboxMessage[];
+  channelType: InboxThread["channelType"];
+}) {
+  const timelineMessages = getTimelineMessages(messages, channelType);
 
   if (timelineMessages.length === 0) {
     return (
@@ -85,7 +77,7 @@ function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
   return (
     <ul className="flex flex-col gap-4" role="list">
       {timelineMessages.map((message) => {
-        const isOutbound = message.direction === "outbound";
+        const isOutbound = isOutboundTimelineMessage(message);
 
         return (
           <li key={message.id} className={cn("max-w-[85%]", isOutbound && "ml-auto")}>
@@ -121,6 +113,7 @@ function ThreadMessageTimeline({ messages }: { messages: InboxMessage[] }) {
 interface CommunicationsWorkspaceProps {
   thread: InboxThread | null;
   messages: InboxMessage[];
+  pageName?: string | null;
   showBack?: boolean;
   onBack?: () => void;
   showAiPanel?: boolean;
@@ -131,6 +124,7 @@ interface CommunicationsWorkspaceProps {
 export function CommunicationsWorkspace({
   thread,
   messages,
+  pageName = null,
   showBack,
   onBack,
   showAiPanel = true,
@@ -286,7 +280,7 @@ export function CommunicationsWorkspace({
         ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-          <ThreadMessageTimeline messages={messages} />
+          <ThreadMessageTimeline messages={messages} channelType={thread.channelType} />
 
           {isTaggedChannel(thread.channelType) ? (
             <div className="mt-4 border-t border-cos-border pt-4">
@@ -304,6 +298,7 @@ export function CommunicationsWorkspace({
         <CommunicationsAiPanel
           thread={thread}
           messages={messages}
+          pageName={pageName}
           className="hidden xl:flex"
         />
       ) : null}

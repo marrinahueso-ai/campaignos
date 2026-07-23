@@ -5,6 +5,7 @@ export interface CommentPostPreviewData {
   caption: string | null;
   imageUrl: string | null;
   permalink: string | null;
+  publishedAt: string | null;
 }
 
 const GENERIC_SUBJECTS = new Set([
@@ -64,6 +65,7 @@ export function buildCommentPostMetadata(input: {
   permalink: string | null;
   postId?: string | null;
   mediaId?: string | null;
+  publishedAt?: string | null;
   extra?: Record<string, unknown>;
 }): Record<string, unknown> {
   return {
@@ -73,12 +75,13 @@ export function buildCommentPostMetadata(input: {
     post_permalink: input.permalink,
     post_caption: input.caption,
     post_image_url: input.imageUrl,
+    ...(input.publishedAt ? { post_created_time: input.publishedAt } : {}),
     ...input.extra,
   };
 }
 
 export function readCommentPostPreview(thread: InboxThread): CommentPostPreviewData | null {
-  if (!isCommentChannel(thread.channelType)) {
+  if (!isCommentChannel(thread.channelType) && !isTaggedChannel(thread.channelType)) {
     return null;
   }
 
@@ -101,10 +104,16 @@ export function readCommentPostPreview(thread: InboxThread): CommentPostPreviewD
       : null) ??
     (typeof meta.permalink === "string" && meta.permalink.trim() ? meta.permalink : null);
 
+  const publishedAt =
+    typeof meta.post_created_time === "string" && meta.post_created_time.trim()
+      ? meta.post_created_time.trim()
+      : null;
+
   return {
     caption: captionFromMeta ?? captionFromSubject,
     imageUrl,
     permalink,
+    publishedAt,
   };
 }
 

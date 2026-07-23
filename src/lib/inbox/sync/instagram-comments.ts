@@ -79,6 +79,7 @@ function normalizeInstagramComment(input: {
   mediaCaption: string | null;
   mediaPermalink: string | null;
   mediaImageUrl: string | null;
+  mediaPublishedAt?: string | null;
   comment: Record<string, unknown>;
   threadExternalId: string;
   isReply?: boolean;
@@ -107,6 +108,7 @@ function normalizeInstagramComment(input: {
     imageUrl: input.mediaImageUrl,
     permalink: input.mediaPermalink,
     mediaId: input.mediaId,
+    publishedAt: input.mediaPublishedAt ?? null,
     extra: {
       isReply: input.isReply ?? false,
     },
@@ -143,6 +145,7 @@ function ingestInstagramCommentsForMedia(input: {
   mediaCaption: string | null;
   mediaPermalink: string | null;
   mediaImageUrl: string | null;
+  mediaPublishedAt?: string | null;
   comments: Record<string, unknown>[];
   threadMap: Map<string, NormalizedInboxThread>;
   messages: NormalizedInboxMessage[];
@@ -154,6 +157,7 @@ function ingestInstagramCommentsForMedia(input: {
       mediaCaption: input.mediaCaption,
       mediaPermalink: input.mediaPermalink,
       mediaImageUrl: input.mediaImageUrl,
+      mediaPublishedAt: input.mediaPublishedAt,
       comment,
       threadExternalId,
     });
@@ -183,6 +187,7 @@ function ingestInstagramCommentsForMedia(input: {
         mediaCaption: input.mediaCaption,
         mediaPermalink: input.mediaPermalink,
         mediaImageUrl: input.mediaImageUrl,
+        mediaPublishedAt: input.mediaPublishedAt,
         comment: reply,
         threadExternalId: replyThreadId,
         isReply: true,
@@ -267,6 +272,7 @@ export async function fetchInstagramMediaComments(input: {
 
     const mediaCaption = readString(media.caption);
     const mediaPermalink = readString(media.permalink);
+    const mediaPublishedAt = readIsoTime(media.timestamp);
     const mediaImageUrl = await resolveInstagramPostImageUrl({
       mediaId,
       media,
@@ -299,6 +305,7 @@ export async function fetchInstagramMediaComments(input: {
       mediaCaption,
       mediaPermalink,
       mediaImageUrl,
+      mediaPublishedAt,
       comments: commentsResult.data,
       threadMap,
       messages,

@@ -15,7 +15,8 @@ import {
   generateInboxAiDraftAction,
   sendInboxReplyAction,
 } from "@/lib/inbox/actions";
-import { isCommentChannel } from "@/lib/inbox/constants";
+import { CommunicationsParentPostCard } from "@/components/communications-hub/CommunicationsParentPostCard";
+import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
@@ -125,15 +126,14 @@ export function CommunicationsReplySection({
       draftRequested ||
       replyTarget.aiDraftBody ||
       replyTarget.approvedBody ||
-      replyTarget.status === "sent" ||
-      (replyTarget.direction === "outbound" && isCommentChannel(thread.channelType))
+      replyTarget.status === "sent"
     ) {
       return;
     }
 
     setDraftRequested(true);
     requestDraft();
-  }, [draftRequested, replyTarget, requestDraft, thread.channelType]);
+  }, [draftRequested, replyTarget, requestDraft]);
 
   if (!replyTarget) {
     return (
@@ -154,7 +154,13 @@ export function CommunicationsReplySection({
     : draftBody;
   const confidence = deriveAiConfidenceScore(replyTarget.aiSourceUsed);
   const confidenceLabel =
-    confidence >= 85 ? "High confidence" : confidence >= 60 ? "Medium confidence" : "Low confidence";
+    confidence == null
+      ? null
+      : confidence >= 85
+        ? "High confidence"
+        : confidence >= 60
+          ? "Medium confidence"
+          : "Low confidence";
   const sourceLabels =
     replyTarget.aiSourceUsed?.sourcesChecked
       .filter((source) => source.answerFound)
@@ -212,7 +218,7 @@ export function CommunicationsReplySection({
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Sparkles className="h-4 w-4 fill-[#f5c842] text-[#f5c842]" aria-hidden />
           <p className="text-sm font-semibold text-cos-text">AI Suggested Reply</p>
-          {displayBody ? (
+          {displayBody && confidenceLabel && confidence != null ? (
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
@@ -246,8 +252,12 @@ export function CommunicationsReplySection({
               {renderTextWithLinks(displayBody)}
             </p>
           )
-        ) : (
+        ) : isPending ? (
           <p className="text-sm text-cos-muted">Generating a suggested reply…</p>
+        ) : (
+          <p className="text-sm text-cos-muted">
+            No suggested reply yet. Click Ask AI to generate one.
+          </p>
         )}
 
         {sourceLabels.length > 0 ? (
@@ -372,12 +382,14 @@ export function CommunicationsReplySection({
 interface CommunicationsAiPanelProps {
   thread: InboxThread;
   messages: InboxMessage[];
+  pageName?: string | null;
   className?: string;
 }
 
 export function CommunicationsAiPanel({
   thread,
   messages,
+  pageName = null,
   className,
 }: CommunicationsAiPanelProps) {
   const replyTarget = useMemo(
@@ -391,6 +403,11 @@ export function CommunicationsAiPanel({
 
   const confidence = deriveAiConfidenceScore(replyTarget?.aiSourceUsed ?? null);
   const sourcesChecked = replyTarget?.aiSourceUsed?.sourcesChecked ?? [];
+  const showParentPost = hasCommentPostPreview(thread);
+  const conversationContext =
+    replyTarget?.body?.trim() ||
+    thread.lastMessageSnippet?.trim() ||
+    "Select a conversation to see context.";
 
   const takeActionItems = [
     { label: "Create FAQ", href: null },
@@ -410,18 +427,27 @@ export function CommunicationsAiPanel({
     >
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <section className="space-y-4">
-          <div>
-            <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-              Answer Summary
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-cos-text">
-              {replyTarget?.body?.trim()
-                ? replyTarget.body.length > 160
-                  ? `${replyTarget.body.slice(0, 157)}…`
-                  : replyTarget.body
-                : thread.lastMessageSnippet ?? "Select a conversation to see AI context."}
-            </p>
-          </div>
+          {showParentPost ? (
+            <div>
+              <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
+                Original Post
+              </h3>
+              <div className="mt-2">
+                <CommunicationsParentPostCard thread={thread} pageName={pageName} />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
+                Conversation
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-cos-text">
+                {conversationContext.length > 160
+                  ? `${conversationContext.slice(0, 157)}…`
+                  : conversationContext}
+              </p>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between gap-2">
@@ -429,15 +455,20 @@ export function CommunicationsAiPanel({
                 Confidence
               </h3>
               <span className="text-sm font-semibold text-[#1a6b4a] tabular-nums">
-                {confidence}%
+                {confidence == null ? "—" : `${confidence}%`}
               </span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-cos-bg">
               <div
                 className="h-full rounded-full bg-[#1a6b4a] transition-all"
-                style={{ width: `${confidence}%` }}
+                style={{ width: `${confidence ?? 0}%` }}
               />
             </div>
+            {confidence == null ? (
+              <p className="mt-1.5 text-[11px] text-cos-muted">
+                Appears after AI generates a draft.
+              </p>
+            ) : null}
           </div>
 
           <div>

@@ -274,6 +274,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                   messages={
                     selectedThread ? messagesByThreadId[selectedThread.id] ?? [] : []
                   }
+                  pageName={connection.pageName}
                   showBack
                   onBack={() => {
                     setMobileShowDetail(false);
@@ -302,6 +303,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                       <CommunicationsAiPanel
                         thread={selectedThread}
                         messages={messagesByThreadId[selectedThread.id] ?? []}
+                        pageName={connection.pageName}
                         className="border-t border-cos-border"
                       />
                     ) : null}

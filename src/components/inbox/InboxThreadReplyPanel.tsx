@@ -13,7 +13,6 @@ import {
   generateInboxAiDraftAction,
   sendInboxReplyAction,
 } from "@/lib/inbox/actions";
-import { isCommentChannel } from "@/lib/inbox/constants";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
@@ -119,15 +118,14 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
       draftRequested ||
       replyTarget.aiDraftBody ||
       replyTarget.approvedBody ||
-      replyTarget.status === "sent" ||
-      (replyTarget.direction === "outbound" && isCommentChannel(thread.channelType))
+      replyTarget.status === "sent"
     ) {
       return;
     }
 
     setDraftRequested(true);
     requestDraft();
-  }, [draftRequested, replyTarget, requestDraft, thread.channelType]);
+  }, [draftRequested, replyTarget, requestDraft]);
 
   if (!replyTarget) {
     return (
@@ -251,8 +249,12 @@ export function InboxThreadReplyPanel({ thread, messages }: InboxThreadReplyPane
             </time>
           ) : null}
         </div>
-      ) : (
+      ) : isPending ? (
         <p className="text-sm text-[#8a8a88]">Generating a suggested reply…</p>
+      ) : (
+        <p className="text-sm text-[#8a8a88]">
+          No suggested reply yet. Click Ask AI to generate one.
+        </p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

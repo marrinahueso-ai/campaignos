@@ -190,11 +190,12 @@ export function pickDefaultQueueFilter(
   return counts.needsReply >= totalThreads ? "needs_reply" : "all";
 }
 
+/** Returns null when no AI draft/source check has run yet (do not invent a score). */
 export function deriveAiConfidenceScore(
   aiSourceUsed: InboxMessage["aiSourceUsed"],
-): number {
+): number | null {
   if (!aiSourceUsed) {
-    return 72;
+    return null;
   }
   if (aiSourceUsed.answerFrom) {
     return 96;

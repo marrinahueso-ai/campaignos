@@ -104,11 +104,13 @@ export async function fetchFacebookPostComments(input: {
     const permalink = resolveFacebookPostPermalink({ postId, graphPermalink });
     const postImageUrl =
       readString(post.full_picture) ?? readString(post.thumbnail_url);
+    const postPublishedAt = readIsoTime(post.created_time);
     const postMetadata = buildCommentPostMetadata({
       caption: postMessage,
       imageUrl: postImageUrl,
       permalink,
       postId,
+      publishedAt: postPublishedAt,
     });
 
     const commentsResult = await inboxGraphGetAllPages(

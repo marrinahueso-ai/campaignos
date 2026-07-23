@@ -123,6 +123,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
+- Comment/tag detail panel shows original parent post (caption + artwork) — **shipped**
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**
 

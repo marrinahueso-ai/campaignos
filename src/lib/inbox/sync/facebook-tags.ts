@@ -65,6 +65,7 @@ export async function fetchFacebookTaggedPosts(input: {
       imageUrl: mediaUrl,
       permalink,
       postId,
+      publishedAt: sentAt,
       extra: {
         mediaUrl,
         tagged: true,

@@ -25,6 +25,10 @@ import {
   isReplyChannel,
   isTaggedChannel,
 } from "@/lib/inbox/constants";
+import {
+  getTimelineMessages,
+  isOutboundTimelineMessage,
+} from "@/lib/inbox/timeline-messages";
 import type {
   InboxChannelType,
   InboxConnectionStatus,
@@ -262,10 +266,16 @@ function ConversationListRow({
   );
 }
 
-function ThreadMessageList({ messages }: { messages: InboxMessage[] }) {
-  const inboundMessages = messages.filter((message) => message.direction === "inbound");
+function ThreadMessageList({
+  messages,
+  channelType,
+}: {
+  messages: InboxMessage[];
+  channelType: InboxThread["channelType"];
+}) {
+  const timelineMessages = getTimelineMessages(messages, channelType);
 
-  if (inboundMessages.length === 0) {
+  if (timelineMessages.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-[#8a8a88]">
         No messages in this thread yet.
@@ -275,21 +285,35 @@ function ThreadMessageList({ messages }: { messages: InboxMessage[] }) {
 
   return (
     <ul className="flex flex-col gap-4" role="list">
-      {inboundMessages.map((message) => (
-        <li key={message.id} className="max-w-[85%]">
-          <div className="rounded-[1.25rem] rounded-bl-md bg-[#f3f3f2] px-4 py-3 text-sm leading-relaxed text-[#1a1a1a]">
-            <p className="whitespace-pre-wrap">{message.body}</p>
-          </div>
-          {message.sentAt ? (
-            <time
-              className="mt-1.5 block px-1 text-xs text-[#8a8a88]"
-              dateTime={message.sentAt}
+      {timelineMessages.map((message) => {
+        const isOutbound = isOutboundTimelineMessage(message);
+        return (
+          <li key={message.id} className={cn("max-w-[85%]", isOutbound && "ml-auto")}>
+            <div
+              className={cn(
+                "rounded-[1.25rem] px-4 py-3 text-sm leading-relaxed",
+                isOutbound
+                  ? "rounded-br-md bg-[#1a1a1a] text-white"
+                  : "rounded-bl-md bg-[#f3f3f2] text-[#1a1a1a]",
+              )}
             >
-              {formatMessageTime(message.sentAt)}
-            </time>
-          ) : null}
-        </li>
-      ))}
+              <p className="whitespace-pre-wrap">{message.body}</p>
+            </div>
+            {message.sentAt ? (
+              <time
+                className={cn(
+                  "mt-1.5 block px-1 text-xs text-[#8a8a88]",
+                  isOutbound && "text-right",
+                )}
+                dateTime={message.sentAt}
+              >
+                {formatMessageTime(message.sentAt)}
+                {isOutbound ? " · Sent" : null}
+              </time>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -338,7 +362,7 @@ function ConversationPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <ThreadMessageList messages={messages} />
+        <ThreadMessageList messages={messages} channelType={thread.channelType} />
 
         {isTaggedChannel(thread.channelType) ? (
           <div className="mt-4 border-t border-[#ebebea] pt-4">
