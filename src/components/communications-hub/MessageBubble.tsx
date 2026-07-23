@@ -27,7 +27,7 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const DOUBLE_TAP_MS = 320;
-const STICKER_PLACEHOLDER_BODY = "📎 Sticker";
+const IMAGE_PLACEHOLDER_BODIES = new Set(["📎 Sticker", "📎 GIF"]);
 
 function MessageAvatar({
   avatarUrl,
@@ -91,7 +91,8 @@ export function MessageBubble({
   const stickerUrl = readMessageStickerUrl(message.metadata);
   const textBody = message.body?.trim() ?? "";
   const showTextBody =
-    Boolean(textBody) && !(stickerUrl && textBody === STICKER_PLACEHOLDER_BODY);
+    Boolean(textBody) &&
+    !(stickerUrl && IMAGE_PLACEHOLDER_BODIES.has(textBody));
   // Image stickers stay images; jumbo only applies to emoji-only text bodies.
   const jumboEmojiCount =
     showTextBody && !stickerUrl ? getJumboEmojiCount(textBody) : null;

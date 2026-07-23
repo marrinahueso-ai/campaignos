@@ -80,6 +80,7 @@ See [cron-jobs.md](./cron-jobs.md).
 |------|-----------|
 | Canva | `CANVA_CLIENT_ID`, `CANVA_CLIENT_SECRET`, `CANVA_REDIRECT_URI` |
 | Monday | `MONDAY_CLIENT_ID`, `MONDAY_CLIENT_SECRET`, `MONDAY_REDIRECT_URI` |
+| GIPHY (Inbox GIFs) | `GIPHY_API_KEY` — server-only; powers Communications Hub DM GIF search via `/api/giphy/*` (see [meta.md](../integrations/meta.md)) |
 | Sentry | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_*`, Report-a-Problem allowlists |
 | Access codes | `CAMPAIGNOS_FOUNDING_ACCESS_CODES`, `CAMPAIGNOS_REQUIRE_ACCESS_CODE` |
 | Role simulator | `ALLOW_ROLE_SIMULATOR` (never enable loosely in Production) |

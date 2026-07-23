@@ -67,6 +67,16 @@ Bubble 👍 / ❤️ in Communications Hub syncs to Meta on reply channels:
 
 Local `inbox_messages.metadata.localReaction` is written only after Meta succeeds (or for hub-only tagged threads).
 
+### Inbox GIFs (GIPHY)
+
+Communications Hub reply toolbar includes a **GIF** control for Messenger / Instagram DMs only (`facebook_message`, `instagram_dm`). Comments and tags stay text-only (button dimmed with clear copy).
+
+- Server proxy: `GET /api/giphy/search?q=` and `GET /api/giphy/trending` — reads `GIPHY_API_KEY` from server env (never exposed to the client).
+- Missing key → friendly empty state (“Add GIPHY_API_KEY to enable GIF search”); app does not crash.
+- Content rating: `pg` (school / PTO-safe).
+- On select, send uses the same Meta DM image-attachment path as org stickers, with a size-safe Giphy CDN URL (`downsized` / `fixed_height` preference, ≤8MB).
+- Env note: see [env-and-secrets.md](../ops/env-and-secrets.md) and `.env.local.example`.
+
 Not synced yet (shown as honest unavailable copy): organic vs ads split, page visits, follows/unfollows, messaging conversations. Instagram account series are thinner than Facebook (reach + accounts engaged); likes/comments often come from post aggregates.
 
 Still later: shared connection-health contract, App Review / production permission lifecycle, env-vs-org tenancy cleanup, Gmail Connect.

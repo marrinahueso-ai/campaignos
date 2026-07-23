@@ -43,6 +43,10 @@ export function isCommentChannel(channelType: InboxChannelType): boolean {
   return channelType === "instagram_comment" || channelType === "facebook_comment";
 }
 
+export function isDmChannel(channelType: InboxChannelType): boolean {
+  return channelType === "instagram_dm" || channelType === "facebook_message";
+}
+
 export function isTaggedChannel(channelType: InboxChannelType): boolean {
   return channelType === "instagram_tag" || channelType === "facebook_tag";
 }

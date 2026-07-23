@@ -33,12 +33,14 @@ import {
   uploadOrganizationStickerAction,
 } from "@/lib/inbox/actions";
 import { CommunicationsParentPostCard } from "@/components/communications-hub/CommunicationsParentPostCard";
+import { GiphyGifPicker } from "@/components/communications-hub/GiphyGifPicker";
 import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
-import { isCommentChannel } from "@/lib/inbox/constants";
+import { isCommentChannel, isDmChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
 import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
+import type { GiphyGifSummary } from "@/lib/giphy/types";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import type { OrganizationSticker } from "@/types/organization-stickers";
 import { formatMessageTime } from "@/lib/utils/dates";
@@ -55,7 +57,7 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
   ),
 });
 
-type ComposerPicker = "emoji" | "sticker" | null;
+type ComposerPicker = "emoji" | "sticker" | "gif" | null;
 
 function renderTextWithLinks(text: string) {
   const parts = text.split(URL_PATTERN);
@@ -118,12 +120,14 @@ export function CommunicationsReplySection({
   const [pendingSticker, setPendingSticker] = useState<OrganizationSticker | null>(
     null,
   );
+  const [pendingGif, setPendingGif] = useState<GiphyGifSummary | null>(null);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stickerUploadInputRef = useRef<HTMLInputElement>(null);
   const composerPickerRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
   const commentThread = isCommentChannel(thread.channelType);
+  const dmThread = isDmChannel(thread.channelType);
 
   const participantFirstName =
     thread.participantName?.trim().split(/\s+/)[0] ?? "contact";
@@ -148,6 +152,7 @@ export function CommunicationsReplySection({
     setDraftRequested(false);
     setComposerPicker(null);
     setPendingSticker(null);
+    setPendingGif(null);
     selectionRef.current = { start: 0, end: 0 };
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
 
@@ -256,10 +261,38 @@ export function CommunicationsReplySection({
       return;
     }
     setPendingSticker(sticker);
+    setPendingGif(null);
     setComposerPicker(null);
     setAttachmentNotice(
       "Sticker attached — Send will deliver it as an image in this DM.",
     );
+  }
+
+  function handleGifSelect(gif: GiphyGifSummary) {
+    if (!dmThread) {
+      setAttachmentNotice(
+        "GIFs can only be sent in Messenger or Instagram DMs — comments and tags stay text-only.",
+      );
+      setComposerPicker(null);
+      return;
+    }
+    setPendingGif(gif);
+    setPendingSticker(null);
+    setComposerPicker(null);
+    setAttachmentNotice(
+      "GIF attached — Send will deliver it as an image in this DM.",
+    );
+  }
+
+  function handleGifButtonClick() {
+    if (!dmThread) {
+      setAttachmentNotice(
+        "GIFs are available in Messenger and Instagram DMs only — comments and tags stay text-only.",
+      );
+      setComposerPicker(null);
+      return;
+    }
+    setComposerPicker((current) => (current === "gif" ? null : "gif"));
   }
 
   function handleAttachSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -392,7 +425,10 @@ export function CommunicationsReplySection({
       : []);
   const sendBody = manualReply.trim() || displayBody;
   const canSend =
-    (Boolean(sendBody.trim()) || pendingSticker != null) && !isPending;
+    (Boolean(sendBody.trim()) ||
+      pendingSticker != null ||
+      pendingGif != null) &&
+    !isPending;
   const composerJumboCount = getJumboEmojiCount(manualReply);
 
   function handleApproveAndSend() {
@@ -404,8 +440,9 @@ export function CommunicationsReplySection({
       setActionError(null);
 
       const bodyToSend = sendBody.trim();
-      if (!bodyToSend && !pendingSticker) {
-        setActionError("Write a reply or choose a sticker before sending.");
+      const hasImageAttachment = pendingSticker != null || pendingGif != null;
+      if (!bodyToSend && !hasImageAttachment) {
+        setActionError("Write a reply or choose a sticker or GIF before sending.");
         return;
       }
 
@@ -416,7 +453,14 @@ export function CommunicationsReplySection({
         return;
       }
 
-      // Sticker-only DM replies can skip text approval.
+      if (pendingGif && !dmThread) {
+        setActionError(
+          "GIFs can only be sent in Messenger or Instagram DMs — comments and tags stay text-only.",
+        );
+        return;
+      }
+
+      // Sticker/GIF-only DM replies can skip text approval.
       const needsTextApproval =
         Boolean(bodyToSend) &&
         !isSent &&
@@ -435,8 +479,10 @@ export function CommunicationsReplySection({
 
       const sendResult = await sendInboxReplyAction({
         messageId: replyTarget.id,
-        body: isSent || pendingSticker ? bodyToSend || undefined : undefined,
+        body:
+          isSent || hasImageAttachment ? bodyToSend || undefined : undefined,
         stickerId: pendingSticker?.id ?? null,
+        giphyImageUrl: pendingGif?.sendUrl ?? null,
       });
       if (!sendResult.success) {
         setActionError(sendResult.error ?? "Could not send reply.");
@@ -446,6 +492,7 @@ export function CommunicationsReplySection({
       setIsEditing(false);
       setManualReply("");
       setPendingSticker(null);
+      setPendingGif(null);
       setAttachmentNotice(null);
       router.refresh();
     });
@@ -586,6 +633,37 @@ export function CommunicationsReplySection({
             </button>
           </div>
         ) : null}
+        {pendingGif ? (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-cos-border bg-cos-bg/60 px-3 py-2">
+            <img
+              src={pendingGif.previewUrl}
+              alt={pendingGif.title}
+              className="h-14 w-14 rounded-md object-cover bg-white"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-cos-text">
+                {pendingGif.title || "GIF"}
+              </p>
+              <p className="text-[11px] text-cos-muted">
+                {dmThread
+                  ? "Ready to send as a GIF in this DM"
+                  : "Won’t send on comments/tags — switch to a DM thread"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingGif(null);
+                setAttachmentNotice(null);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-white hover:text-cos-text"
+              aria-label="Remove GIF"
+              title="Remove GIF"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
         <textarea
           ref={replyTextareaRef}
           value={manualReply}
@@ -672,6 +750,30 @@ export function CommunicationsReplySection({
               title="Add sticker"
             >
               <Sticker className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={handleGifButtonClick}
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text",
+                !dmThread && "opacity-45",
+                composerPicker === "gif" && dmThread && "bg-cos-bg text-cos-text",
+              )}
+              aria-label={
+                dmThread
+                  ? "Add GIF"
+                  : "GIFs available in Messenger and Instagram DMs only"
+              }
+              aria-expanded={composerPicker === "gif"}
+              aria-haspopup="dialog"
+              title={
+                dmThread
+                  ? "Add GIF from GIPHY"
+                  : "GIFs are available in Messenger and Instagram DMs only — comments and tags stay text-only"
+              }
+            >
+              <span className="text-[11px] font-bold tracking-wide">GIF</span>
             </button>
             <button
               type="button"
@@ -814,6 +916,11 @@ export function CommunicationsReplySection({
                     ))}
                   </div>
                 </div>
+              </div>
+            ) : null}
+            {composerPicker === "gif" && dmThread ? (
+              <div className="absolute bottom-full left-0 z-50 mb-2">
+                <GiphyGifPicker onSelect={handleGifSelect} />
               </div>
             ) : null}
           </div>

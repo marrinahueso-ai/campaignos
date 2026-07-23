@@ -18,7 +18,13 @@ import {
   missingInstagramCommentScopes,
   missingInstagramEngagementScopes,
 } from "@/lib/inbox/scopes";
-import { isCommentChannel, isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
+import {
+  isCommentChannel,
+  isDmChannel,
+  isReplyChannel,
+  isTaggedChannel,
+} from "@/lib/inbox/constants";
+import { isAllowedGiphyCdnUrl } from "@/lib/giphy/client";
 import {
   deleteOrganizationSticker,
   getOrganizationStickerById,
@@ -325,6 +331,8 @@ export async function sendInboxReplyAction(input: {
   body?: string;
   /** Optional org sticker to send as a Meta image attachment (DMs only). */
   stickerId?: string | null;
+  /** Optional Giphy CDN URL for a GIF attachment (DMs only). */
+  giphyImageUrl?: string | null;
 }): Promise<InboxReplyActionResult> {
   const access = await requireInboxPermission();
   if (!access.ok) {
@@ -344,6 +352,15 @@ export async function sendInboxReplyAction(input: {
   let bodyToSend: string;
   let stickerImageUrl: string | null = null;
   let stickerId: string | null = null;
+  let giphyImageUrl: string | null = null;
+  let imageKind: "sticker" | "giphy" | null = null;
+
+  if (input.stickerId && input.giphyImageUrl?.trim()) {
+    return {
+      success: false,
+      error: "Send either a sticker or a GIF, not both at once.",
+    };
+  }
 
   if (input.stickerId) {
     const sticker = await getOrganizationStickerById({
@@ -355,15 +372,28 @@ export async function sendInboxReplyAction(input: {
     }
     stickerImageUrl = sticker.publicUrl;
     stickerId = sticker.id;
+    imageKind = "sticker";
+  } else if (input.giphyImageUrl?.trim()) {
+    const candidate = input.giphyImageUrl.trim();
+    if (!isAllowedGiphyCdnUrl(candidate)) {
+      return { success: false, error: "That GIF URL isn’t a valid Giphy link." };
+    }
+    giphyImageUrl = candidate;
+    imageKind = "giphy";
   }
 
+  const attachmentImageUrl = stickerImageUrl ?? giphyImageUrl;
+
   if (isFollowUp) {
-    if (!followUpBody && !stickerImageUrl) {
-      return { success: false, error: "Write a reply or choose a sticker before sending." };
+    if (!followUpBody && !attachmentImageUrl) {
+      return {
+        success: false,
+        error: "Write a reply or choose a sticker or GIF before sending.",
+      };
     }
     bodyToSend = followUpBody ?? "";
-  } else if (stickerImageUrl && !message.approvedBody?.trim() && !followUpBody) {
-    // Sticker-only first reply can skip text approval.
+  } else if (attachmentImageUrl && !message.approvedBody?.trim() && !followUpBody) {
+    // Image-only first reply (sticker/GIF) can skip text approval.
     bodyToSend = "";
   } else if (message.status === "approved" && message.approvedBody?.trim()) {
     bodyToSend = message.approvedBody.trim();
@@ -372,8 +402,8 @@ export async function sendInboxReplyAction(input: {
   } else {
     return {
       success: false,
-      error: stickerImageUrl
-        ? "Approve the text reply before sending, or send the sticker alone."
+      error: attachmentImageUrl
+        ? "Approve the text reply before sending, or send the image alone."
         : "Approve the reply before sending.",
     };
   }
@@ -390,11 +420,13 @@ export async function sendInboxReplyAction(input: {
     return { success: false, error: "This thread type does not support replies." };
   }
 
-  if (stickerImageUrl && isCommentChannel(thread.channelType)) {
+  if (attachmentImageUrl && !isDmChannel(thread.channelType)) {
     return {
       success: false,
       error:
-        "Image stickers can’t be sent as comment replies — Meta only accepts text on comments. Use Messenger or Instagram DMs instead.",
+        imageKind === "giphy"
+          ? "GIFs can only be sent in Messenger or Instagram DMs — comments and tags stay text-only."
+          : "Image stickers can’t be sent as comment replies — Meta only accepts text on comments. Use Messenger or Instagram DMs instead.",
     };
   }
 
@@ -447,7 +479,7 @@ export async function sendInboxReplyAction(input: {
     thread,
     inboundMessage: message,
     body: bodyToSend,
-    imageUrl: stickerImageUrl,
+    imageUrl: attachmentImageUrl,
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
     instagramAccountId: connection.instagramAccountId,
@@ -461,7 +493,11 @@ export async function sendInboxReplyAction(input: {
   const supabase = await createClient();
   const localBody =
     bodyToSend ||
-    (stickerImageUrl ? "📎 Sticker" : "");
+    (imageKind === "giphy"
+      ? "📎 GIF"
+      : stickerImageUrl
+        ? "📎 Sticker"
+        : "");
   const outboundMetadata: Record<string, unknown> = {
     replyToMessageId: message.id,
     followUp: isFollowUp,
@@ -469,6 +505,10 @@ export async function sendInboxReplyAction(input: {
   if (stickerImageUrl) {
     outboundMetadata.stickerUrl = stickerImageUrl;
     outboundMetadata.stickerId = stickerId;
+  }
+  if (giphyImageUrl) {
+    outboundMetadata.stickerUrl = giphyImageUrl;
+    outboundMetadata.giphyUrl = giphyImageUrl;
   }
 
   if (!isFollowUp) {
