@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Communications Hub: full emoji picker, stickers (local insert), double-tap bubble reactions (local)
+**Last updated:** July 22, 2026 — Communications Hub: Meta-style queue filter chips + Manage overflow
 
 ---
 
@@ -128,6 +128,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Reply composer toolbar: full emoji picker (`emoji-picker-react`, search/categories) + built-in sticker pack (inserts emoji; Meta custom sticker send unavailable) + 👍/❤️ quick-insert — **shipped**; attachment icon opens file picker then shows Meta text-only notice — **shipped** (send path still text-only)
 - Double-tap / double-click message bubble → quick 👍 / ❤️ reaction bar (local `inbox_messages.metadata`; Meta reaction sync not available) — **shipped**
 - Thread actions: Follow up (star), Done, Delete (with confirm); queue filters Follow up / Done / Deleted — **shipped**
+- Queue UI: Meta-style horizontal filter chips (Unread, Follow up, Done) above the list; AI workflow filters (Needs Reply, Waiting on AI, Ready to Send, Assigned to Me, Deleted, All) in Manage menu; list rows with platform badge, follow-up star, accent selected edge — **shipped** (search stays in top bar only)
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**
 
