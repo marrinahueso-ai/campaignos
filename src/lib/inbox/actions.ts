@@ -16,6 +16,7 @@ import { sendInboxReply } from "@/lib/inbox/send-reply";
 import {
   missingFacebookCommentReplyScopes,
   missingInstagramCommentScopes,
+  missingInstagramEngagementScopes,
 } from "@/lib/inbox/scopes";
 import { isCommentChannel, isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
 import {
@@ -24,6 +25,7 @@ import {
   listOrganizationStickers,
   uploadOrganizationSticker,
 } from "@/lib/inbox/organization-stickers";
+import { sendInboxReaction } from "@/lib/inbox/send-reaction";
 import { isBubbleQuickReaction } from "@/lib/inbox/stickers";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
@@ -707,9 +709,11 @@ export async function markInboxThreadReadAction(input: {
 }
 
 /**
- * Persist a local org-side reaction on a message bubble.
- * Meta Graph does not expose a reliable cross-channel reaction send path for
- * our inbox reply channels yet, so this stays CampaignOS-local (metadata).
+ * Apply a quick bubble reaction (👍 / ❤️) and sync to Meta when the channel supports it.
+ * - Facebook / Instagram comments → Graph LIKE only (❤️ maps to Like)
+ * - Messenger / Instagram DMs → sender_action react / unreact with the emoji
+ * - Tagged threads → hub-only (no Meta reaction edge)
+ * Local metadata is written only after Meta succeeds (or for hub-only channels).
  */
 export async function setInboxMessageReactionAction(input: {
   messageId: string;
@@ -732,14 +736,124 @@ export async function setInboxMessageReactionAction(input: {
     return { success: false, error: "Message not found." };
   }
 
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: message.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  let warning: string | null = null;
+  let metaReaction: "LIKE" | typeof input.reaction | null = null;
+  let localOnly = !isReplyChannel(thread.channelType);
+
+  if (isReplyChannel(thread.channelType)) {
+    const connection = await getMetaConnectionForCurrentOrg();
+    if (!connection?.pageAccessToken || !connection.facebookPageId) {
+      return {
+        success: false,
+        error: "Connect your Facebook Page before reacting on Facebook/Instagram.",
+      };
+    }
+
+    const inboxSettings = await getOrganizationInboxSettings(access.organizationId);
+    let grantedScopes = inboxSettings?.messagingScopesGranted ?? [];
+
+    if (thread.channelType === "facebook_comment") {
+      let missing = missingFacebookCommentReplyScopes(grantedScopes);
+      if (missing.length > 0) {
+        const refreshed = await refreshInboxScopesFromPageToken({
+          organizationId: access.organizationId,
+          pageAccessToken: connection.pageAccessToken,
+        });
+        grantedScopes = refreshed?.messagingScopesGranted ?? grantedScopes;
+        missing = missingFacebookCommentReplyScopes(grantedScopes);
+      }
+      if (missing.length > 0) {
+        return {
+          success: false,
+          error:
+            "Cannot like Facebook comments — your Page token is missing pages_manage_engagement. " +
+            "Go to Settings → Meta and click Reconnect with Facebook.",
+        };
+      }
+    }
+
+    if (thread.channelType === "instagram_comment") {
+      const missingComments = missingInstagramCommentScopes(grantedScopes);
+      const missingEngagement = missingInstagramEngagementScopes(grantedScopes);
+      if (missingComments.length > 0 || missingEngagement.length > 0) {
+        const refreshed = await refreshInboxScopesFromPageToken({
+          organizationId: access.organizationId,
+          pageAccessToken: connection.pageAccessToken,
+        });
+        grantedScopes = refreshed?.messagingScopesGranted ?? grantedScopes;
+      }
+      const stillMissing = [
+        ...missingInstagramCommentScopes(grantedScopes),
+        ...missingInstagramEngagementScopes(grantedScopes),
+      ];
+      if (stillMissing.length > 0) {
+        return {
+          success: false,
+          error:
+            "Cannot like Instagram comments — missing instagram_manage_engagement on your token. " +
+            "Go to Settings → Meta and reconnect Facebook (add the Like Media and Comments permission).",
+        };
+      }
+    }
+
+    const sendResult = await sendInboxReaction({
+      channelType: thread.channelType,
+      thread,
+      message,
+      reaction: input.reaction,
+      pageId: connection.facebookPageId,
+      pageAccessToken: connection.pageAccessToken,
+      instagramAccountId: connection.instagramAccountId,
+    });
+
+    if (!sendResult.success) {
+      return { success: false, error: sendResult.error };
+    }
+
+    localOnly = sendResult.localOnly;
+    metaReaction = sendResult.metaReaction;
+    if (sendResult.mappedToLike && input.reaction === "❤️") {
+      warning =
+        thread.channelType === "instagram_comment"
+          ? "Instagram comments only support Like — your ❤️ was posted as a Like."
+          : "Facebook comments only support Like — your ❤️ was posted as a Like.";
+    }
+  } else {
+    warning =
+      "Reactions on tagged posts stay in Hey Ralli — Meta doesn’t support Page reactions on tagged threads.";
+  }
+
   const now = new Date().toISOString();
   const nextMetadata: Record<string, unknown> = { ...message.metadata };
   if (input.reaction) {
     nextMetadata.localReaction = input.reaction;
     nextMetadata.localReactionAt = now;
+    if (metaReaction) {
+      nextMetadata.metaReaction = metaReaction;
+      nextMetadata.metaReactionAt = now;
+    } else {
+      delete nextMetadata.metaReaction;
+      delete nextMetadata.metaReactionAt;
+    }
+    if (localOnly) {
+      nextMetadata.localReactionOnly = true;
+    } else {
+      delete nextMetadata.localReactionOnly;
+    }
   } else {
     delete nextMetadata.localReaction;
     delete nextMetadata.localReactionAt;
+    delete nextMetadata.metaReaction;
+    delete nextMetadata.metaReactionAt;
+    delete nextMetadata.localReactionOnly;
   }
 
   const supabase = await createClient();
@@ -753,11 +867,17 @@ export async function setInboxMessageReactionAction(input: {
     .eq("organization_id", access.organizationId);
 
   if (error) {
-    return { success: false, error: "Could not save reaction." };
+    return {
+      success: false,
+      error:
+        localOnly
+          ? "Could not save reaction."
+          : "Reaction was posted to Meta but could not be saved in Hey Ralli.",
+    };
   }
 
   revalidateInboxRoutes();
-  return { success: true };
+  return { success: true, warning };
 }
 
 export async function toggleInboxThreadFollowUpAction(input: {

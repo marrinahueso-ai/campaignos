@@ -82,6 +82,29 @@ export async function inboxGraphPost<T extends Record<string, unknown>>(
   return { ok: true, data: payload };
 }
 
+export async function inboxGraphDelete<T extends Record<string, unknown>>(
+  path: string,
+  params: Record<string, string>,
+): Promise<InboxGraphResult<T>> {
+  const url = new URL(graphUrl(path));
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+
+  const response = await fetch(url.toString(), { method: "DELETE" });
+  const payload = (await response.json()) as T & { error?: GraphErrorPayload };
+
+  if (!response.ok || payload.error) {
+    return {
+      ok: false,
+      error: formatGraphError(payload.error ?? {}, response.status),
+      errorCode: payload.error?.code,
+    };
+  }
+
+  return { ok: true, data: payload };
+}
+
 export async function inboxGraphGetAllPages<T>(
   firstPath: string,
   params: Record<string, string>,

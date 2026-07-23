@@ -45,6 +45,19 @@ export function readLocalMessageReaction(
   return isBubbleQuickReaction(metadata.localReaction) ? metadata.localReaction : null;
 }
 
+/** True when Meta only accepted LIKE (comment channels). */
+export function readMetaReactionMappedToLike(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return Boolean(metadata && metadata.metaReaction === "LIKE");
+}
+
+export function readLocalReactionOnly(
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  return Boolean(metadata?.localReactionOnly);
+}
+
 export function readMessageStickerUrl(
   metadata: Record<string, unknown> | null | undefined,
 ): string | null {

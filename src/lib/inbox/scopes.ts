@@ -26,10 +26,14 @@ export const FACEBOOK_COMMENT_SCOPES = FACEBOOK_COMMENT_READ_SCOPES;
 
 export const INSTAGRAM_COMMENT_SCOPES = ["instagram_manage_comments"] as const;
 
+/** Like Instagram comments / media (Like Media and Comments API). */
+export const INSTAGRAM_ENGAGEMENT_SCOPES = ["instagram_manage_engagement"] as const;
+
 export const INBOX_COMMENT_SCOPES = [
   ...FACEBOOK_COMMENT_READ_SCOPES,
   ...FACEBOOK_COMMENT_REPLY_SCOPES,
   ...INSTAGRAM_COMMENT_SCOPES,
+  ...INSTAGRAM_ENGAGEMENT_SCOPES,
 ] as const;
 
 export function parseGrantedScopes(raw: string | null | undefined): string[] {
@@ -72,6 +76,10 @@ export function missingInstagramCommentScopes(scopes: string[]): string[] {
   return INSTAGRAM_COMMENT_SCOPES.filter((scope) => !scopes.includes(scope));
 }
 
+export function missingInstagramEngagementScopes(scopes: string[]): string[] {
+  return INSTAGRAM_ENGAGEMENT_SCOPES.filter((scope) => !scopes.includes(scope));
+}
+
 export function missingFacebookCommentScopes(scopes: string[]): string[] {
   return FACEBOOK_COMMENT_READ_SCOPES.filter((scope) => !scopes.includes(scope));
 }
@@ -88,12 +96,14 @@ export function inboxScopeStatus(scopes: string[]): {
   missingFacebookCommentReply: string[];
   missingFacebookCommentRead: string[];
   missingInstagramComments: string[];
+  missingInstagramEngagement: string[];
   missingMessaging: string[];
 } {
   return {
     missingFacebookCommentReply: missingFacebookCommentReplyScopes(scopes),
     missingFacebookCommentRead: missingFacebookCommentScopes(scopes),
     missingInstagramComments: missingInstagramCommentScopes(scopes),
+    missingInstagramEngagement: missingInstagramEngagementScopes(scopes),
     missingMessaging: INBOX_MESSAGING_SCOPES.filter((scope) => !scopes.includes(scope)),
   };
 }

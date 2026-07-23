@@ -11,11 +11,15 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import { User } from "lucide-react";
+import { isCommentChannel } from "@/lib/inbox/constants";
 import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
+import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
 import {
   BUBBLE_QUICK_REACTIONS,
   readLocalMessageReaction,
+  readLocalReactionOnly,
   readMessageStickerUrl,
+  readMetaReactionMappedToLike,
   type BubbleQuickReaction,
 } from "@/lib/inbox/stickers";
 import type { InboxMessage } from "@/lib/inbox/types";
@@ -72,6 +76,14 @@ export function MessageBubble({
   const [reaction, setReaction] = useState<BubbleQuickReaction | null>(() =>
     readLocalMessageReaction(message.metadata),
   );
+  const [mappedToLike, setMappedToLike] = useState(() =>
+    readMetaReactionMappedToLike(message.metadata),
+  );
+  const [localOnly, setLocalOnly] = useState(() =>
+    readLocalReactionOnly(message.metadata),
+  );
+  const [reactionError, setReactionError] = useState<string | null>(null);
+  const [reactionWarning, setReactionWarning] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const lastTapRef = useRef(0);
@@ -80,9 +92,15 @@ export function MessageBubble({
   const textBody = message.body?.trim() ?? "";
   const showTextBody =
     Boolean(textBody) && !(stickerUrl && textBody === STICKER_PLACEHOLDER_BODY);
+  // Image stickers stay images; jumbo only applies to emoji-only text bodies.
+  const jumboEmojiCount =
+    showTextBody && !stickerUrl ? getJumboEmojiCount(textBody) : null;
+  const commentsLikeOnly = isCommentChannel(message.channelType);
 
   useEffect(() => {
     setReaction(readLocalMessageReaction(message.metadata));
+    setMappedToLike(readMetaReactionMappedToLike(message.metadata));
+    setLocalOnly(readLocalReactionOnly(message.metadata));
   }, [message.id, message.metadata]);
 
   useEffect(() => {
@@ -116,15 +134,27 @@ export function MessageBubble({
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);
+    setReactionError(null);
   }, []);
 
   const applyReaction = useCallback(
     (next: BubbleQuickReaction) => {
       const previous = reaction;
+      const previousMapped = mappedToLike;
+      const previousLocalOnly = localOnly;
       // Toggle off when selecting the same reaction again.
       const resolved = previous === next ? null : next;
       setReaction(resolved);
       setPickerOpen(false);
+      setReactionError(null);
+      setReactionWarning(null);
+      if (resolved && commentsLikeOnly) {
+        setMappedToLike(true);
+      } else if (!resolved) {
+        setMappedToLike(false);
+        setLocalOnly(false);
+      }
+
       startTransition(async () => {
         const result = await setInboxMessageReactionAction({
           messageId: message.id,
@@ -132,10 +162,23 @@ export function MessageBubble({
         });
         if (!result.success) {
           setReaction(previous);
+          setMappedToLike(previousMapped);
+          setLocalOnly(previousLocalOnly);
+          setReactionError(result.error ?? "Could not apply reaction.");
+          return;
+        }
+        if (result.warning) {
+          setReactionWarning(result.warning);
+          setMappedToLike(result.warning.includes("Like"));
+          setLocalOnly(result.warning.includes("Hey Ralli"));
+        } else {
+          setReactionWarning(null);
+          setMappedToLike(Boolean(resolved && commentsLikeOnly));
+          setLocalOnly(false);
         }
       });
     },
-    [message.id, reaction],
+    [commentsLikeOnly, localOnly, mappedToLike, message.id, reaction],
   );
 
   function handleDoubleActivate() {
@@ -180,8 +223,12 @@ export function MessageBubble({
           }}
           aria-label={`Message from ${avatarName ?? "contact"}. Double-tap to react.`}
           className={cn(
-            "select-none rounded-2xl text-sm leading-relaxed touch-manipulation",
-            stickerUrl && !showTextBody ? "p-2" : "px-4 py-3",
+            "select-none rounded-2xl touch-manipulation",
+            jumboEmojiCount
+              ? "px-3 py-2"
+              : stickerUrl && !showTextBody
+                ? "p-2"
+                : "px-4 py-3 text-sm leading-relaxed",
             isOutbound
               ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
               : "rounded-bl-md bg-[#eceae4] text-cos-text",
@@ -200,7 +247,17 @@ export function MessageBubble({
             />
           ) : null}
           {showTextBody ? (
-            <p className="whitespace-pre-wrap">{message.body}</p>
+            <p
+              className={cn(
+                "whitespace-pre-wrap",
+                jumboEmojiCount === 1 && "text-[3.75rem] leading-none",
+                jumboEmojiCount != null &&
+                  jumboEmojiCount > 1 &&
+                  "text-[3rem] leading-none",
+              )}
+            >
+              {message.body}
+            </p>
           ) : null}
         </div>
 
@@ -208,40 +265,89 @@ export function MessageBubble({
           <div
             ref={pickerRef}
             className={cn(
-              "absolute z-20 flex items-center gap-1 rounded-full border border-cos-border bg-white px-1.5 py-1 shadow-md",
+              "absolute z-20 flex flex-col gap-1 rounded-2xl border border-cos-border bg-white px-1.5 py-1.5 shadow-md",
               isOutbound ? "right-0 bottom-full mb-2" : "left-0 bottom-full mb-2",
             )}
             role="toolbar"
             aria-label="Quick reactions"
           >
-            {BUBBLE_QUICK_REACTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                disabled={isPending}
-                onClick={() => applyReaction(emoji)}
-                className={cn(
-                  "inline-flex h-8 w-8 items-center justify-center rounded-full text-base transition-colors hover:bg-cos-bg",
-                  reaction === emoji && "bg-cos-bg ring-1 ring-cos-border",
-                )}
-                aria-label={`React with ${emoji}`}
-                aria-pressed={reaction === emoji}
-              >
-                {emoji}
-              </button>
-            ))}
+            <div className="flex items-center gap-1">
+              {BUBBLE_QUICK_REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => applyReaction(emoji)}
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-full text-base transition-colors hover:bg-cos-bg",
+                    reaction === emoji && "bg-cos-bg ring-1 ring-cos-border",
+                  )}
+                  aria-label={
+                    commentsLikeOnly && emoji === "❤️"
+                      ? "React with heart (posts as Like on comments)"
+                      : `React with ${emoji}`
+                  }
+                  aria-pressed={reaction === emoji}
+                  title={
+                    commentsLikeOnly && emoji === "❤️"
+                      ? "Comments only support Like — this posts as Like"
+                      : undefined
+                  }
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {commentsLikeOnly ? (
+              <p className="max-w-[11rem] px-1 pb-0.5 text-[10px] leading-snug text-cos-muted">
+                Comments support Like only — ❤️ posts as Like
+              </p>
+            ) : null}
           </div>
         ) : null}
 
         {reaction ? (
-          <div className={cn("mt-1 flex", isOutbound && "justify-end")}>
+          <div className={cn("mt-1 flex flex-col gap-0.5", isOutbound && "items-end")}>
             <span
               className="inline-flex items-center rounded-full border border-cos-border bg-white px-1.5 py-0.5 text-sm shadow-sm"
-              aria-label={`Reacted ${reaction}`}
+              aria-label={
+                mappedToLike
+                  ? `Reacted ${reaction} (Like on Meta)`
+                  : `Reacted ${reaction}`
+              }
             >
               {reaction}
             </span>
+            {mappedToLike ? (
+              <span className="px-1 text-[10px] text-cos-muted">Like on Meta</span>
+            ) : null}
+            {localOnly ? (
+              <span className="px-1 text-[10px] text-cos-muted">Hey Ralli only</span>
+            ) : null}
           </div>
+        ) : null}
+
+        {reactionError ? (
+          <p
+            className={cn(
+              "mt-1 max-w-xs text-xs text-red-700",
+              isOutbound && "text-right",
+            )}
+            role="alert"
+          >
+            {reactionError}
+          </p>
+        ) : null}
+        {reactionWarning && !reactionError ? (
+          <p
+            className={cn(
+              "mt-1 max-w-xs text-xs text-amber-800",
+              isOutbound && "text-right",
+            )}
+            role="status"
+          >
+            {reactionWarning}
+          </p>
         ) : null}
 
         {message.sentAt ? (
