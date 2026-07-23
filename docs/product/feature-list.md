@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Approvals summary cards drop Posted (Scheduled covers it)
+**Last updated:** July 23, 2026 — Org Volunteer Master at `/volunteers`
 
 ---
 
@@ -62,6 +62,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
 - Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
+
+## Volunteers
+- Volunteer Master (`/volunteers`) — org-wide upcoming events with fill rate, top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md))
+- Auto-feed: events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning Volunteer Signup URL — **shipped**
 
 ## Create with AI (Campaign Builder)
 - Nav / `/create-with-ai` lands on Creative Setup (inspiration) for a default event (soonest upcoming, else most recent past); empty/access hub when no events or no permission — **shipped**
@@ -206,7 +210,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ---
 
 ## Primary nav
-Dashboard · Calendar · Events · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights · Hey Ralli Assistant (pinned under Insights)
+Dashboard · Calendar · Events · Volunteers · Create with AI · Approvals · Tasks · Communications Hub · Files · Vendors · Insights · Hey Ralli Assistant (pinned under Insights)
 
 Settings: Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced
 

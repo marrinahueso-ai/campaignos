@@ -13,6 +13,7 @@ import {
   Megaphone,
   Shield,
   Store,
+  Users,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -209,6 +210,12 @@ const navItems: {
     href: "/events",
     icon: Megaphone,
     isActive: isCampaignsActive,
+  },
+  {
+    label: "Volunteers",
+    href: "/volunteers",
+    icon: Users,
+    isActive: (pathname) => pathname.startsWith("/volunteers"),
   },
   ...(isCampaignBuilderV2Enabled()
     ? [

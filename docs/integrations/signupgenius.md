@@ -2,10 +2,14 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 21, 2026  
+**Last updated:** July 23, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md)
 
 Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate assignment availability only (no volunteer PII).
+
+Org-wide **Volunteer Master** lives at `/volunteers`: KPI cards, upcoming events with fill rate + top roles, a “This week” underfilled rail, and search/filters. Sync / connect still happens on each event’s Volunteers tab; the master page reads the latest confirmed snapshots only.
+
+An event appears on Volunteer Master when it has an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning quick link `volunteer_signup` URL.
 
 ---
 
@@ -37,6 +41,7 @@ Migration: `071_event_volunteer_included_assignment_dates.sql`.
 | Area | Path |
 |------|------|
 | Review UI | `src/components/events-phase3/EventVolunteersTab.tsx` |
+| Org Volunteer Master | `src/app/(dashboard)/volunteers/page.tsx`, `src/components/volunteers/VolunteersMasterShell.tsx`, `src/lib/event-volunteers/org-master.ts` |
 | Actions | `src/lib/event-volunteers/actions.ts` (`confirmVolunteerOverviewAction`, refresh path) |
 | Mutations | `src/lib/event-volunteers/mutations.ts` (`confirmVolunteerSnapshot`, `upsertVolunteerSource`) |
 | Allowlist helpers | `src/lib/event-volunteers/assignment-list.ts` |
