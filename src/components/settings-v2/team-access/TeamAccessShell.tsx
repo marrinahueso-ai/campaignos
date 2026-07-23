@@ -6,7 +6,6 @@ import { useMemo, useState, useTransition } from "react";
 import { ArrowLeft, Mail } from "lucide-react";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { TeamAccessAccessTemplatesPanel } from "@/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel";
-import { TeamAccessAddRosterPersonModal } from "@/components/settings-v2/team-access/TeamAccessAddRosterPersonModal";
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
 import { TeamAccessGiveAppAccessModal } from "@/components/settings-v2/team-access/TeamAccessGiveAppAccessModal";
 import { TeamAccessInviteModal } from "@/components/settings-v2/team-access/TeamAccessInviteModal";
@@ -113,7 +112,6 @@ export function TeamAccessShell({
     organizationRoleId?: string;
     campaignRole?: string;
   } | null>(null);
-  const [addRosterOpen, setAddRosterOpen] = useState(false);
   const [giveAppAccessOpen, setGiveAppAccessOpen] = useState(false);
   const [giveAppAccessMember, setGiveAppAccessMember] =
     useState<UnifiedTeamMember | null>(null);
@@ -290,20 +288,10 @@ export function TeamAccessShell({
           className="mb-0"
           actions={
             canManage && hubTab === "people" ? (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="md"
-                  onClick={() => setAddRosterOpen(true)}
-                >
-                  Add Person
-                </Button>
-                <Button type="button" size="md" onClick={() => openInviteModal()}>
-                  <Mail className="h-4 w-4" />
-                  Invite to Login
-                </Button>
-              </>
+              <Button type="button" size="md" onClick={() => openInviteModal()}>
+                <Mail className="h-4 w-4" />
+                Invite person
+              </Button>
             ) : null
           }
         />
@@ -394,7 +382,6 @@ export function TeamAccessShell({
           mostAssigned={mostAssigned}
           canManage={canManage}
           onInvite={() => openInviteModal()}
-          onAddPerson={() => setAddRosterOpen(true)}
           onSelectMember={(member) => openPersonProfile(member)}
         />
       </div>
@@ -413,16 +400,6 @@ export function TeamAccessShell({
         prefill={invitePrefill}
         accessLabels={accessLabels}
         accessTemplates={accessTemplates}
-      />
-
-      <TeamAccessAddRosterPersonModal
-        open={addRosterOpen}
-        onClose={() => setAddRosterOpen(false)}
-        roles={workspace.roles}
-        committees={workspace.committees}
-        events={events}
-        accessTemplates={accessTemplates}
-        accessLabels={accessLabels}
       />
 
       <TeamAccessGiveAppAccessModal

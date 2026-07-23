@@ -322,7 +322,9 @@ describe("Team & Access people simplification", () => {
 
   it("13. Invite/edit/event-assignment actions still wired in shell", () => {
     assert.match(shellSource, /TeamAccessInviteModal/);
-    assert.match(shellSource, /TeamAccessAddRosterPersonModal/);
+    assert.match(shellSource, /Invite person/);
+    assert.doesNotMatch(shellSource, /TeamAccessAddRosterPersonModal/);
+    assert.doesNotMatch(shellSource, /Add Person/);
     assert.match(shellSource, /TeamAccessEditMemberModal/);
     assert.match(shellSource, /Manage Event Assignments|openPersonProfile\(moreActionsMember, "events"\)/);
   });

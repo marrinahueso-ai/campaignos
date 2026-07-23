@@ -6,7 +6,6 @@ import {
   CalendarPlus,
   Mail,
   UserMinus,
-  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
@@ -26,7 +25,6 @@ interface TeamAccessPeopleSidebarProps {
   mostAssigned: UnifiedTeamMember[];
   canManage: boolean;
   onInvite: () => void;
-  onAddPerson: () => void;
   onSelectMember: (member: UnifiedTeamMember) => void;
 }
 
@@ -39,7 +37,6 @@ export function TeamAccessPeopleSidebar({
   mostAssigned,
   canManage,
   onInvite,
-  onAddPerson,
   onSelectMember,
 }: TeamAccessPeopleSidebarProps) {
   const glanceItems = [
@@ -142,38 +139,22 @@ export function TeamAccessPeopleSidebar({
         <h3 className="font-display text-xl text-cos-text">Quick Actions</h3>
         <div className="mt-5 space-y-1.5">
           {canManage ? (
-            <>
-              <button
-                type="button"
-                onClick={onAddPerson}
-                className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
-              >
-                <div className="rounded-lg bg-[#ebe4f7] p-2 text-[#5b4a7a]">
-                  <UserPlus className="h-4 w-4" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-cos-text">Add Person</p>
-                  <p className="text-xs text-cos-muted">Add to the roster</p>
-                </div>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
-              </button>
-              <button
-                type="button"
-                onClick={onInvite}
-                className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
-              >
-                <div className="rounded-lg bg-cos-warning p-2 text-cos-warning-text">
-                  <Mail className="h-4 w-4" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-cos-text">
-                    Invite to Login
-                  </p>
-                  <p className="text-xs text-cos-muted">Send a login invite</p>
-                </div>
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={onInvite}
+              className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-cos-bg/70"
+            >
+              <div className="rounded-lg bg-cos-warning p-2 text-cos-warning-text">
+                <Mail className="h-4 w-4" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-cos-text">Invite person</p>
+                <p className="text-xs text-cos-muted">
+                  Send a login invite with email and role
+                </p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-cos-muted" />
+            </button>
           ) : null}
 
           <Link
