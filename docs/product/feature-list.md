@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Features page live Motion demos (6 stories)
+**Last updated:** July 23, 2026 — Volunteer Master + Insights pages documented
 
 ---
 
@@ -57,16 +57,28 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
-- Event detail Insights tab (`?tab=insights`) — **shipped** (event-scoped Meta post KPIs: Views / Reach / Interactions / Link clicks / Likes; comparison vs typical when ≥2 posts; Views Total / By post; Interactions breakdown; posts list with artwork/caption; sync footer; empty states for Meta not connected / no published posts / need sync; no Age & gender / Top countries / Follows / Saves) — living: [event-insights.md](./event-insights.md)
+- Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
-- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignments-first layout with compact Needs Snapshot / Quick Totals / Overall Filled strip and AI Assistant right rail; assignment table Filter + Date + Sort; summaries match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md) · org overview: [volunteer-master.md](./volunteer-master.md))
+- Event Volunteers tab — see **Volunteers** below (living: [signupgenius.md](../integrations/signupgenius.md) · org overview: [volunteer-master.md](./volunteer-master.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Volunteers
-- Volunteer Master (`/volunteers`) — org-wide upcoming events with circular event artwork (approved square; initials fallback), color-coded fill rate (Critical → Fully Staffed), top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [volunteer-master.md](./volunteer-master.md) · import: [signupgenius.md](../integrations/signupgenius.md))
-- Auto-feed: events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning Volunteer Signup URL — **shipped**
+- **Volunteer Master page** (`/volunteers`, sidebar **Volunteers**) — **shipped** (living: [volunteer-master.md](./volunteer-master.md) · import: [signupgenius.md](../integrations/signupgenius.md))
+  - Org-wide staffing scan: which events need people and how filled SignUpGenius / planning signup roles are
+  - Auto-feed: non-archived school-year events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning `volunteer_signup` URL; scoped by viewer’s event access
+  - KPI cards (clickable filters): Total Volunteers · Overall Fill Rate · Underfilled Roles · Upcoming Events (next 60 days); default chip filter **Upcoming**
+  - Search (event title or role) + chips: Upcoming · Needs people · Covered · All (Covered = confirmed snapshot, fill ≥ 100%, zero underfilled roles)
+  - Events table: circular artwork (approved square when filled; else initials), Fill Rate with shared color bands (Critical → Fully Staffed), Top Roles (up to 3), expand row with Open Volunteers tab / Open signup / underfilled copy
+  - **This week** rail: underfilled roles for events dated this calendar week (Sun start; cap 8); View all underfilled roles → underfilled filter
+  - Sync footer: SignUpGenius sync note + latest successful sync; connect/refresh stay on event Volunteers tab
+  - Privacy: aggregate quantities and role names only — **no volunteer PII**
+- **Event Volunteers tab** (`/events/[id]?tab=volunteers`) — **shipped** (writes sources/snapshots; Master only reads)
+  - SignUpGenius public URL connect → review multi-select dates + sticky allowlist reapplied on refresh
+  - Assignments-first layout: Needs Snapshot / Quick Totals / Overall Filled strip + AI Assistant right rail
+  - Assignment table Filter + Date + Sort; summaries match filtered assignments
+  - Same fill-rate color bands as Volunteer Master on Overall Filled and per-assignment progress
 
 ## Create with AI (Campaign Builder)
 - Nav / `/create-with-ai` lands on Creative Setup (inspiration) for a default event (soonest upcoming, else most recent past); empty/access hub when no events or no permission — **shipped**
@@ -165,23 +177,28 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Payments / contracts / communications tabs — **partial** (shell)
 
 ## Insights — soft launch **complete**
-- Meta Insights hub (`/insights`) — **shipped**
-- Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — **shipped** (reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty)
-- Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar) — **shipped**
-- Platform filter (All / Facebook / Instagram) applies to KPIs, chart, and top content — **shipped**
-- Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares) — **shipped** (Refresh syncs recent Facebook Page posts + Instagram media in range, not only posts published through Hey Ralli; Facebook post views use `post_media_view` batch without invalid `post_comments`/`post_shares` insight names that previously zeroed the carousel; falls back to post engagement fields when insights metrics are sparse)
-- Content breakdown, platforms, recent activity — **shipped**
-- Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to` — **shipped**
-- Refresh from Meta + CSV export — **shipped**
-- Rule-based recommendations (“From your metrics” + details drawer) — **shipped**
-- Soft sync notes inline under recommendations (not full-page banner) — **shipped**
-- Connect Meta empty state with `returnTo=/insights` — **shipped**
-- Event-scoped Insights on event detail (`/events/[id]?tab=insights`) — **shipped** (aggregates `social_post_insights` via published `meta_publication_slots` for that event; org hub unchanged) — living: [event-insights.md](./event-insights.md)
-- Organic vs ads breakdown, page visits, follows, conversations — **deferred** (not available from current Page insights sync; honest empty copy on chart)
-- Audience demographics overview (Age & gender, Top countries) — **deferred** (not shown on event Insights either)
+- **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)
+  - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty
+  - Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar)
+  - Platform filter (All / Facebook / Instagram) on KPIs, chart, and top content
+  - Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse
+  - Content breakdown, platforms, recent activity
+  - Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to`
+  - Refresh from Meta + CSV export
+  - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline under recommendations
+  - Connect Meta empty state with `returnTo=/insights`
+- **Event Insights tab** (`/events/[id]?tab=insights`) — **shipped** (living: [event-insights.md](./event-insights.md))
+  - Event-scoped Meta performance for that event’s published `meta_publication_slots` + matching `social_post_insights` (org hub unchanged; same Meta connection)
+  - KPI strip: Views · Reach · Interactions · Link clicks · Likes (info tooltips)
+  - Comparison banner when ≥2 posts have views (event total vs typical); Views Total / By post; Interactions breakdown (Likes / Comments / Shares)
+  - Posts for this event list (artwork/caption, platform, views, likes; outbound link when URL exists)
+  - Sync footer: last sync · Refresh (org-wide Meta sync) · link to Org Insights; opening the tab reads DB only (no automatic Graph pull)
+  - Empty states: connect Meta · no published posts yet (copy only, no Approvals/Create CTAs) · need sync (Sync now + Org Insights; scope warning when missing)
+  - Not on this tab: Age & gender, Top countries, Follows, Saves, organic-vs-ads / follower split
+- Organic vs ads breakdown, page visits, follows, conversations — **deferred** (org hub; honest empty copy where shown)
+- Audience demographics overview (Age & gender, Top countries) — **deferred** (org + event)
 - LLM-generated narrative — **deferred**
 - Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))
-- Smoke: `tests/hey-ralli/smoke/11-insights.spec.ts` — **shipped**
 
 ## Playbooks
 - Playbook library, assign by event type, milestone timelines — **shipped**

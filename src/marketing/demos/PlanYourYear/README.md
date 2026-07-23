@@ -1,5 +1,7 @@
 # Plan Your Year marketing demo
 
-Week calendar with product-style grip cards. Cursor grabs a Scheduled post and drag-reschedules it Wednesday → Friday.
+Month calendar for Edmondson Elementary (August 2026). Cursor drag-reschedules a Scheduled Meta post, opens Back to School Fair, scrolls the event detail to **Open Planning Hub**, then shows a calm toast.
+
+Story beats: Month hold → DnD → Open event → Scroll → Planning Hub → Toast / hold.
 
 Preview: `/dev/motion-engine` or `/features#plan-your-year`

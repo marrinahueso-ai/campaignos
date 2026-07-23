@@ -39,7 +39,7 @@ export const MARKETING_DEMO_REGISTRY: readonly MarketingDemoRegistration[] = [
     id: "plan-your-year",
     label: "Plan Your Year",
     description:
-      "School-year calendar with event detail and preferred posting times.",
+      "Month calendar — drag a Scheduled post, open an event, and jump to Planning Hub.",
     specId: "plan-your-year",
     Demo: lazyDemo(() => import("@/marketing/demos/PlanYourYear"), {
       loading: () => DemoLoadingFallback(),
