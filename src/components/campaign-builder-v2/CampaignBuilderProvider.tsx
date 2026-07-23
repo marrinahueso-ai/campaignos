@@ -132,6 +132,8 @@ interface CampaignBuilderProviderProps {
   restoredFromServer: boolean;
   /** Org-resolved default approver for Review sidebar (same path as send-for-approval). */
   resolvedWorkflowApprover?: ResolvedWorkflowApprover | null;
+  /** Distinct Team Access approver → Review footer shows Send for approval. */
+  hasExternalReviewer?: boolean;
   children: ReactNode;
 }
 
@@ -203,6 +205,8 @@ interface CampaignBuilderContextValue {
   organizationId: string;
   canUseDeveloperTools: boolean;
   canUploadArtwork: boolean;
+  /** Distinct Team Access approver (not self / unassigned) for Review primary CTA. */
+  hasExternalReviewer: boolean;
   clearMilestoneGeneratedContent: (
     milestoneId: string,
   ) => Promise<{
@@ -520,6 +524,7 @@ export function CampaignBuilderProvider({
   initialSession,
   restoredFromServer,
   resolvedWorkflowApprover = null,
+  hasExternalReviewer = false,
   children,
 }: CampaignBuilderProviderProps) {
   const router = useRouter();
@@ -2179,6 +2184,7 @@ export function CampaignBuilderProvider({
       organizationId,
       canUseDeveloperTools,
       canUploadArtwork,
+      hasExternalReviewer,
       clearMilestoneGeneratedContent,
     }),
     [
@@ -2230,6 +2236,7 @@ export function CampaignBuilderProvider({
       organizationId,
       canUseDeveloperTools,
       canUploadArtwork,
+      hasExternalReviewer,
       clearMilestoneGeneratedContent,
     ],
   );

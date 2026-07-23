@@ -57,6 +57,7 @@ export function ReviewStep() {
     setReviewFilter,
     toggleExpandedReview,
     updatePreviewContent,
+    hasExternalReviewer,
   } = useCampaignBuilder();
   const router = useRouter();
   const [isSending, setIsSending] = useState(false);
@@ -350,19 +351,12 @@ export function ReviewStep() {
         }
         rightActions={
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            {sendDisabledReason ? (
+            {hasExternalReviewer && sendDisabledReason ? (
               <p className="max-w-sm text-right text-xs text-cos-muted">
                 {sendDisabledReason}
               </p>
             ) : null}
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              <Button
-                variant="secondary"
-                onClick={handleApproveAll}
-                disabled={isSending}
-              >
-                Approve all & schedule
-              </Button>
+            {hasExternalReviewer ? (
               <Button
                 onClick={handleSendForApproval}
                 disabled={isSending || eligibleSubmitMilestones.length === 0}
@@ -374,7 +368,11 @@ export function ReviewStep() {
                     ? "Send for re-approval"
                     : "Send for approval"}
               </Button>
-            </div>
+            ) : (
+              <Button onClick={handleApproveAll} disabled={isSending}>
+                {isSending ? "Scheduling…" : "Approve all & schedule"}
+              </Button>
+            )}
           </div>
         }
       />

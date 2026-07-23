@@ -77,6 +77,8 @@ interface CampaignBuilderShellProps {
   initialSession: CampaignBuilderSession;
   restoredFromServer: boolean;
   resolvedWorkflowApprover?: ResolvedWorkflowApprover | null;
+  /** True when Team Access has a distinct approver (not self / unassigned). */
+  hasExternalReviewer?: boolean;
 }
 
 function renderActiveStep(step: CampaignBuilderStepId) {
@@ -178,6 +180,7 @@ export function CampaignBuilderShell({
   initialSession,
   restoredFromServer,
   resolvedWorkflowApprover = null,
+  hasExternalReviewer = false,
 }: CampaignBuilderShellProps) {
   return (
     <CampaignBuilderProvider
@@ -197,6 +200,7 @@ export function CampaignBuilderShell({
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
       resolvedWorkflowApprover={resolvedWorkflowApprover}
+      hasExternalReviewer={hasExternalReviewer}
     >
       <CampaignBuilderContent eventId={eventId} eventTitle={eventTitle} />
     </CampaignBuilderProvider>

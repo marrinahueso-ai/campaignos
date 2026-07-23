@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   applyResolvedApproverToWorkflow,
+  hasDistinctExternalReviewer,
   sanitizeApprovalWorkflowDemoAssignees,
   toResolvedWorkflowApprover,
 } from "../approval-workflow.ts";
@@ -35,11 +36,13 @@ describe("toResolvedWorkflowApprover", () => {
       organizationRoleName: "Committee Chair",
       assigneeDisplayName: "Board",
       hasAssignedPerson: false,
+      assignedUserId: null,
     });
 
     assert.equal(resolved.organizationRoleName, "Committee Chair");
     assert.equal(resolved.assigneeDisplayName, null);
     assert.equal(resolved.assigneeInitials, null);
+    assert.equal(resolved.assignedUserId, null);
   });
 
   it("maps display name and initials when a person is assigned", () => {
@@ -47,11 +50,73 @@ describe("toResolvedWorkflowApprover", () => {
       organizationRoleName: "VP Communications",
       assigneeDisplayName: "Alex Rivera",
       hasAssignedPerson: true,
+      assignedUserId: "org-user-1",
     });
 
     assert.equal(resolved.assigneeDisplayName, "Alex Rivera");
     assert.equal(resolved.assigneeInitials, "AR");
     assert.equal(resolved.organizationRoleName, "VP Communications");
+    assert.equal(resolved.assignedUserId, "org-user-1");
+  });
+});
+
+describe("hasDistinctExternalReviewer", () => {
+  it("is false when no person is assigned", () => {
+    assert.equal(
+      hasDistinctExternalReviewer({
+        organizationRoleName: "Committee Chair",
+        assigneeDisplayName: null,
+        assigneeInitials: null,
+        assignedUserId: null,
+      }),
+      false,
+    );
+    assert.equal(hasDistinctExternalReviewer(null), false);
+  });
+
+  it("is false when the assigned approver is the current user", () => {
+    assert.equal(
+      hasDistinctExternalReviewer(
+        {
+          organizationRoleName: "President",
+          assigneeDisplayName: "You",
+          assigneeInitials: "YO",
+          assignedUserId: "me",
+        },
+        "me",
+      ),
+      false,
+    );
+  });
+
+  it("is true when a different person is assigned", () => {
+    assert.equal(
+      hasDistinctExternalReviewer(
+        {
+          organizationRoleName: "President",
+          assigneeDisplayName: "Alex Rivera",
+          assigneeInitials: "AR",
+          assignedUserId: "them",
+        },
+        "me",
+      ),
+      true,
+    );
+  });
+
+  it("is true for contact-name-only assignees (no linked user id)", () => {
+    assert.equal(
+      hasDistinctExternalReviewer(
+        {
+          organizationRoleName: "President",
+          assigneeDisplayName: "Alex Rivera",
+          assigneeInitials: "AR",
+          assignedUserId: null,
+        },
+        "me",
+      ),
+      true,
+    );
   });
 });
 
@@ -61,6 +126,7 @@ describe("applyResolvedApproverToWorkflow", () => {
       organizationRoleName: "VP Communications",
       assigneeDisplayName: "Alex Rivera",
       assigneeInitials: "AR",
+      assignedUserId: "org-user-1",
     });
 
     const chair = next.find((step) => step.id === "committee-chair");
@@ -83,6 +149,7 @@ describe("applyResolvedApproverToWorkflow", () => {
       organizationRoleName: "Committee Chair",
       assigneeDisplayName: null,
       assigneeInitials: null,
+      assignedUserId: null,
     });
 
     const chair = next.find((step) => step.id === "committee-chair");
@@ -127,6 +194,7 @@ describe("applyResolvedApproverToWorkflow", () => {
       organizationRoleName: "Committee Chair",
       assigneeDisplayName: null,
       assigneeInitials: null,
+      assignedUserId: null,
     });
     assert.equal(
       cleared.find((step) => step.id === "committee-chair")?.assigneeName,
@@ -137,6 +205,7 @@ describe("applyResolvedApproverToWorkflow", () => {
       organizationRoleName: "Event Chair",
       assigneeDisplayName: "Jordan Lee",
       assigneeInitials: "JL",
+      assignedUserId: "org-user-2",
     });
     const chair = replaced.find((step) => step.id === "committee-chair");
     assert.equal(chair?.assigneeName, "Jordan Lee");
@@ -154,6 +223,7 @@ describe("applyResolvedApproverToWorkflow", () => {
       organizationRoleName: "Committee Chair",
       assigneeDisplayName: "Alex Rivera",
       assigneeInitials: "AR",
+      assignedUserId: "org-user-1",
     });
 
     const chair = next.find((step) => step.id === "committee-chair");

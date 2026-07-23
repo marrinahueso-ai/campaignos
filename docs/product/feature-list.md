@@ -89,6 +89,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
+- Review footer shows one primary CTA: **Send for approval** when Team Access has a distinct reviewer; **Approve all & schedule** when the approver is missing, unassigned, or yourself — **shipped**
 - Review **Send for approval** stays disabled until artwork + captions are complete; shows inline **Missing: …** (not schedule) when blocked — **shipped**
 - Sent for approval confirmation notice (not a stepper step); returns to Review — **shipped**
 - Full Meta slot sync after approval — **stub** / incomplete

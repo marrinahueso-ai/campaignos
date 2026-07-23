@@ -19,12 +19,15 @@ export type ApprovalAssigneeLike = {
   organizationRoleName: string | null;
   assigneeDisplayName: string;
   hasAssignedPerson: boolean;
+  assignedUserId?: string | null;
 };
 
 export type ResolvedWorkflowApprover = {
   organizationRoleName: string | null;
   assigneeDisplayName: string | null;
   assigneeInitials: string | null;
+  /** Organization user id when Team Access linked a member; null for contact-name-only. */
+  assignedUserId: string | null;
 };
 
 export function isStaleDemoApproverName(name: string | null | undefined): boolean {
@@ -32,6 +35,26 @@ export function isStaleDemoApproverName(name: string | null | undefined): boolea
     return false;
   }
   return STALE_DEMO_APPROVER_NAMES.has(name.trim().toLowerCase());
+}
+
+/**
+ * True when Review should send to someone else (Send for approval).
+ * False when the Team Access approver is missing, unassigned, or the current user
+ * (self-approve / Approve all & schedule).
+ */
+export function hasDistinctExternalReviewer(
+  resolved: ResolvedWorkflowApprover | null | undefined,
+  currentOrganizationUserId?: string | null,
+): boolean {
+  if (!resolved?.assigneeDisplayName?.trim()) {
+    return false;
+  }
+  const assignedUserId = resolved.assignedUserId?.trim() || null;
+  const currentUserId = currentOrganizationUserId?.trim() || null;
+  if (assignedUserId && currentUserId && assignedUserId === currentUserId) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -46,6 +69,7 @@ export function toResolvedWorkflowApprover(
       organizationRoleName: assignee.organizationRoleName,
       assigneeDisplayName: null,
       assigneeInitials: null,
+      assignedUserId: null,
     };
   }
 
@@ -54,6 +78,7 @@ export function toResolvedWorkflowApprover(
     organizationRoleName: assignee.organizationRoleName,
     assigneeDisplayName: displayName || null,
     assigneeInitials: displayName ? initialsFromName(displayName) : null,
+    assignedUserId: assignee.assignedUserId?.trim() || null,
   };
 }
 

@@ -7,12 +7,14 @@ import {
 } from "@/lib/campaign-builder-v2/page-queries";
 import {
   applyResolvedApproverToWorkflow,
+  hasDistinctExternalReviewer,
   toResolvedWorkflowApprover,
 } from "@/lib/campaign-builder-v2/approval-workflow";
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { normalizeCampaignBuilderSession } from "@/lib/campaign-builder-v2/normalize-session";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { hasPermission } from "@/lib/access-templates/effective-access";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { canUseDeveloperClearTools } from "@/lib/dev-tools/access";
 import { getEventById } from "@/lib/events/queries";
 import { resolveApprovalAssignee } from "@/lib/organization-workspace/resolve-approval-assignee";
@@ -102,6 +104,7 @@ export default async function CampaignBuilderPage({
     canUseDeveloperTools,
     canUploadArtwork,
     approvalAssignee,
+    membership,
   ] = await Promise.all([
     eventPromise,
     sessionPromise,
@@ -112,6 +115,7 @@ export default async function CampaignBuilderPage({
     canUseDeveloperClearTools(),
     hasPermission("upload_artwork"),
     approvalAssigneePromise,
+    getActiveMembership(),
   ]);
 
   if (!event) {
@@ -173,6 +177,10 @@ export default async function CampaignBuilderPage({
       resolvedWorkflowApprover,
     );
   }
+  const hasExternalReviewer = hasDistinctExternalReviewer(
+    resolvedWorkflowApprover,
+    membership?.user.id ?? null,
+  );
 
   return (
     <CampaignBuilderShell
@@ -191,6 +199,7 @@ export default async function CampaignBuilderPage({
       initialSession={initialSession}
       restoredFromServer={restoredFromServer}
       resolvedWorkflowApprover={resolvedWorkflowApprover}
+      hasExternalReviewer={hasExternalReviewer}
     />
   );
 }
