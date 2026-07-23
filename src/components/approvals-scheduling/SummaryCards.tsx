@@ -19,16 +19,22 @@ const CARDS: {
   description: string;
 }[] = [
   {
-    key: "inQueue",
-    tabId: "in_queue",
-    label: "In Queue",
-    description: "Waiting to be assigned",
-  },
-  {
     key: "assignedToMe",
     tabId: "assigned_to_me",
     label: "Assigned to Me",
     description: "Needs your approval",
+  },
+  {
+    key: "changesRequested",
+    tabId: "changes_requested",
+    label: "Changes Requested",
+    description: "Returned for edits",
+  },
+  {
+    key: "inQueue",
+    tabId: "in_queue",
+    label: "In Queue",
+    description: "Waiting to be assigned",
   },
   {
     key: "scheduled",
@@ -47,12 +53,6 @@ const CARDS: {
     tabId: "published",
     label: "Published",
     description: "Live and published",
-  },
-  {
-    key: "changesRequested",
-    tabId: "changes_requested",
-    label: "Changes Requested",
-    description: "Returned for edits",
   },
 ];
 
