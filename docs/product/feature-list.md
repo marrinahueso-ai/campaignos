@@ -4,13 +4,13 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Public Features “See Hey Ralli in Action”
+**Last updated:** July 23, 2026 — Features page live Motion demos (6 stories)
 
 ---
 
 ## Marketing & public
 - Landing / home — **shipped**
-- Features (`/features`) — **shipped** (“See Hey Ralli in Action”: Create with AI live Motion demo + static product stories for Plan Your Year, Approvals, Volunteer Intelligence, Communications Hub, Ask Ralli; private harness remains at `/dev/motion-engine`)
+- Features (`/features`) — **shipped** (“See Hey Ralli in Action”: live Motion demos for Create with AI, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
 - Pricing page ($29 / $59 / $99 marketing) — **shipped**; checkout **deferred**
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**

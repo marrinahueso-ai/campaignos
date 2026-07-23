@@ -8,7 +8,8 @@ Private animated product story for Hey Ralli’s Create with AI flow. Built on t
 
 ## Preview
 
-- **Public:** `/features` → Create with AI product story (no development controls)
+- **Public:** `/features` → Create with AI product story (no development controls).
+  Uses a fixed-height flex shell so the campaign panel is not clipped in the Features column.
 - **Private harness:** `/dev/motion-engine` → Marketing demos → Create with AI  
   (`notFound()` when `NODE_ENV === "production"`)
 

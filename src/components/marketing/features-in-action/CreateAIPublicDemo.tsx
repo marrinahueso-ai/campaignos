@@ -1,32 +1,8 @@
 "use client";
 
-import { getMarketingDemo } from "@/marketing/demo-generator/demoRegistry";
+import { MarketingPublicDemo } from "./MarketingPublicDemo";
 
-/**
- * Public Features page mount for the Create with AI demo.
- * Uses the registry lazy loader — no harness controls.
- */
+/** @deprecated Prefer MarketingPublicDemo with demoId="create-ai". */
 export function CreateAIPublicDemo({ className }: { className?: string }) {
-  const entry = getMarketingDemo("create-ai");
-  if (!entry) {
-    return (
-      <div
-        className="flex min-h-[22rem] items-center justify-center rounded-2xl border border-cos-border bg-cos-card text-sm text-cos-muted"
-        role="status"
-      >
-        Demo unavailable
-      </div>
-    );
-  }
-
-  const Demo = entry.Demo;
-  return (
-    <Demo
-      showControls={false}
-      className={
-        className ??
-        "overflow-hidden rounded-2xl border border-cos-border bg-cos-bg shadow-sm"
-      }
-    />
-  );
+  return <MarketingPublicDemo demoId="create-ai" className={className} />;
 }

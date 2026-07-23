@@ -14,7 +14,7 @@ export function ArtworkPreview() {
       <figcaption className="text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--cos-muted)] sm:text-xs">
         {labels.artwork}
       </figcaption>
-      <div className="relative aspect-[4/3] max-h-40 overflow-hidden border border-[var(--cos-border)] bg-[var(--cos-bg-alt)] sm:max-h-48 md:max-h-52">
+      <div className="relative aspect-[4/3] max-h-36 overflow-hidden border border-[var(--cos-border)] bg-[var(--cos-bg-alt)] sm:max-h-40 md:max-h-44">
         <Image
           src={artwork.src}
           alt={artwork.alt}

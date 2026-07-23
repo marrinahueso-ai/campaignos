@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { CreateAIPublicDemo } from "@/components/marketing/features-in-action/CreateAIPublicDemo";
+import { MarketingPublicDemo } from "@/components/marketing/features-in-action/MarketingPublicDemo";
 import { ProductStorySection } from "@/components/marketing/features-in-action/ProductStorySection";
-import { StaticProductPreview } from "@/components/marketing/features-in-action/StaticProductPreview";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
 import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
 import {
-  FEATURES_CREATE_WITH_AI_STORY,
   FEATURES_IN_ACTION_FINAL_CTA,
   FEATURES_IN_ACTION_HERO,
-  FEATURES_IN_ACTION_STATIC_SECTIONS,
+  FEATURES_IN_ACTION_STORIES,
 } from "@/lib/marketing/features-in-action";
 
 interface StudioFeaturesPageProps {
@@ -32,7 +30,6 @@ export function StudioFeaturesPage({
 
   return (
     <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
-      {/* Hero */}
       <section className="border-b border-cos-border bg-cos-bg">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-10 lg:py-24">
           <p className="studio-eyebrow">{FEATURES_IN_ACTION_HERO.eyebrow}</p>
@@ -57,37 +54,19 @@ export function StudioFeaturesPage({
         </div>
       </section>
 
-      {/* Create with AI — live Motion demo */}
-      <ProductStorySection
-        id={FEATURES_CREATE_WITH_AI_STORY.id}
-        eyebrow={FEATURES_CREATE_WITH_AI_STORY.eyebrow}
-        heading={FEATURES_CREATE_WITH_AI_STORY.heading}
-        body={FEATURES_CREATE_WITH_AI_STORY.body}
-        benefits={FEATURES_CREATE_WITH_AI_STORY.benefits}
-        visual={<CreateAIPublicDemo />}
-      />
-
-      {/* Remaining product stories — static previews */}
-      {FEATURES_IN_ACTION_STATIC_SECTIONS.map((section, index) => (
+      {FEATURES_IN_ACTION_STORIES.map((story, index) => (
         <ProductStorySection
-          key={section.id}
-          id={section.id}
-          eyebrow={section.eyebrow}
-          heading={section.heading}
-          body={section.body}
-          benefits={section.benefits}
-          reverse={index % 2 === 0}
-          visual={
-            <StaticProductPreview
-              src={section.imageSrc}
-              alt={section.imageAlt}
-              label={section.eyebrow}
-            />
-          }
+          key={story.id}
+          id={story.id}
+          eyebrow={story.eyebrow}
+          heading={story.heading}
+          body={story.body}
+          benefits={story.benefits}
+          reverse={index % 2 === 1}
+          visual={<MarketingPublicDemo demoId={story.demoId} />}
         />
       ))}
 
-      {/* Final CTA */}
       <section className="bg-cos-bg px-6 py-16 lg:px-10 lg:py-24">
         <div className="mx-auto max-w-3xl border border-cos-border bg-cos-dark px-8 py-12 text-center sm:px-12">
           <p className="studio-eyebrow text-cos-dark-muted">

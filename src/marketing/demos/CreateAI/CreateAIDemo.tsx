@@ -43,7 +43,7 @@ export function CreateAIDemo({
       aria-label="Create with AI product demonstration"
       fallback={
         <div
-          className="flex min-h-[22rem] items-center justify-center rounded-2xl border border-[var(--cos-border)] bg-[var(--cos-card)] text-sm text-[var(--cos-muted)] md:aspect-[16/10] md:min-h-0"
+          className="flex h-[28rem] items-center justify-center rounded-2xl border border-[var(--cos-border)] bg-[var(--cos-card)] text-sm text-[var(--cos-muted)] sm:h-[30rem] lg:h-[32rem]"
           aria-hidden
         >
           Preparing demo…
@@ -63,8 +63,13 @@ function CreateAIDemoStage() {
 
   return (
     <DemoShell>
-      <div className="relative h-full min-h-0">
-        <div className="h-full min-h-0 md:max-w-[48%]">
+      {/*
+        Flex layout on md+ so the campaign panel shares height instead of
+        absolute-overlay clipping inside a short Features column.
+        Mobile keeps a bottom sheet overlay for the primary story.
+      */}
+      <div className="relative flex h-full min-h-0 flex-col md:flex-row">
+        <div className="min-h-0 md:w-[46%] md:shrink-0 md:overflow-hidden">
           <EventSummary ctaId="create-ai-cta" />
         </div>
 
@@ -76,7 +81,7 @@ function CreateAIDemoStage() {
             { at: 3.5, x: "22%", y: "86%", opacity: 1 },
             { at: 3.6, x: "22%", y: "86%", click: true, scale: 0.94 },
             { at: 4.2, x: "22%", y: "86%", opacity: 1 },
-            { at: 4.8, x: "62%", y: "42%", opacity: 0 },
+            { at: 4.8, x: "72%", y: "42%", opacity: 0 },
           ]}
         />
         <MouseClick
@@ -93,7 +98,7 @@ function CreateAIDemoStage() {
           holdAfter
           enterDirection="up"
           enterDuration={0.45}
-          className="absolute inset-x-0 bottom-0 top-[32%] z-10 min-h-0 md:inset-y-0 md:left-[46%] md:right-0 md:top-0"
+          className="absolute inset-x-0 bottom-0 top-[34%] z-10 min-h-0 md:static md:inset-auto md:z-auto md:w-[54%] md:flex-1"
         >
           <CreateAIPanel />
         </Scene>
