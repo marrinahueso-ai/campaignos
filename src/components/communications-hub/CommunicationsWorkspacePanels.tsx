@@ -37,6 +37,7 @@ import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
 import { isCommentChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
+import { getJumboEmojiCount } from "@/lib/inbox/jumbo-emoji";
 import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import type { OrganizationSticker } from "@/types/organization-stickers";
@@ -392,6 +393,7 @@ export function CommunicationsReplySection({
   const sendBody = manualReply.trim() || displayBody;
   const canSend =
     (Boolean(sendBody.trim()) || pendingSticker != null) && !isPending;
+  const composerJumboCount = getJumboEmojiCount(manualReply);
 
   function handleApproveAndSend() {
     if (!replyTarget) {
@@ -598,7 +600,14 @@ export function CommunicationsReplySection({
           rows={3}
           placeholder={`Reply to ${participantFirstName}...`}
           aria-label={`Reply to ${participantFirstName}`}
-          className="w-full resize-none bg-transparent text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:outline-none"
+          className={cn(
+            "w-full resize-none bg-transparent text-cos-text placeholder:text-cos-muted focus:outline-none",
+            composerJumboCount === 1 && "text-[3rem] leading-none",
+            composerJumboCount != null &&
+              composerJumboCount > 1 &&
+              "text-[2.5rem] leading-none",
+            composerJumboCount == null && "text-sm leading-relaxed",
+          )}
         />
         <input
           ref={fileInputRef}

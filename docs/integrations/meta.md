@@ -29,7 +29,7 @@ A volunteer clicks Connect, approves the use cases Facebook shows, and that conn
 |---------|----------------------------------|
 | Publishing / scheduling | Approved posts → Facebook Page + Instagram |
 | Insights | Views / reach / interactions KPIs + sparklines, content overview chart, top content carousel (views/reactions/comments/shares), sync, export |
-| Unified Inbox | DMs, comments, mentions, reply |
+| Unified Inbox | DMs, comments, mentions, reply, comment likes + DM reactions |
 | Approvals → publish | Same Page/IG targets |
 | Repost / comment moderation | Same engagement scopes |
 
@@ -53,6 +53,19 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 - **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
 - **Interactions** from `page_post_engagements` / derived post reactions
 - **Top content by views** carousel from recent Facebook Page posts + Instagram media (and Hey Ralli `meta_publication_slots` when available) with synced post insights (`post_media_view` / `post_total_media_view_unique`, reactions, clicks; comments/shares from the post object); Refresh discovers Page/IG feed media so posts published outside Hey Ralli still appear. Avoid requesting invalid insights names like `post_comments` / `post_shares` — Graph rejects the whole batch (#100).
+
+### Inbox reactions (current)
+
+Bubble 👍 / ❤️ in Communications Hub syncs to Meta on reply channels:
+
+| Channel | Meta call | Notes |
+|---------|-----------|--------|
+| Facebook comments | `POST/DELETE /{comment-id}/likes` | **Like only** — ❤️ maps to Like (`pages_manage_engagement`) |
+| Instagram comments | `POST/DELETE /{ig-user-id}/likes?comment_id=` | **Like only** — needs `instagram_manage_engagement` (+ reconnect) |
+| Messenger / IG DMs | `POST /{page-id}/messages` with `sender_action` `react` / `unreact` | Emoji payload; Meta may reject `react` on some Messenger app/token setups — surface Graph error |
+| Tagged threads | None | Hub-only metadata |
+
+Local `inbox_messages.metadata.localReaction` is written only after Meta succeeds (or for hub-only tagged threads).
 
 Not synced yet (shown as honest unavailable copy): organic vs ads split, page visits, follows/unfollows, messaging conversations. Instagram account series are thinner than Facebook (reach + accounts engaged); likes/comments often come from post aggregates.
 

@@ -26,7 +26,10 @@ import {
   uploadOrganizationSticker,
 } from "@/lib/inbox/organization-stickers";
 import { sendInboxReaction } from "@/lib/inbox/send-reaction";
-import { isBubbleQuickReaction } from "@/lib/inbox/stickers";
+import {
+  isBubbleQuickReaction,
+  type BubbleQuickReaction,
+} from "@/lib/inbox/stickers";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -745,7 +748,7 @@ export async function setInboxMessageReactionAction(input: {
   }
 
   let warning: string | null = null;
-  let metaReaction: "LIKE" | typeof input.reaction | null = null;
+  let metaReaction: "LIKE" | BubbleQuickReaction | null = null;
   let localOnly = !isReplyChannel(thread.channelType);
 
   if (isReplyChannel(thread.channelType)) {
@@ -804,27 +807,45 @@ export async function setInboxMessageReactionAction(input: {
       }
     }
 
-    const sendResult = await sendInboxReaction({
-      channelType: thread.channelType,
-      thread,
-      message,
-      reaction: input.reaction,
-      pageId: connection.facebookPageId,
-      pageAccessToken: connection.pageAccessToken,
-      instagramAccountId: connection.instagramAccountId,
-    });
+    // Comments only support LIKE — switching 👍 ↔ ❤️ does not need another Graph call
+    // when the Page/IG account already liked this comment.
+    const alreadyLikedOnMeta =
+      isCommentChannel(thread.channelType) &&
+      message.metadata?.metaReaction === "LIKE" &&
+      input.reaction != null;
 
-    if (!sendResult.success) {
-      return { success: false, error: sendResult.error };
-    }
+    if (alreadyLikedOnMeta) {
+      metaReaction = "LIKE";
+      localOnly = false;
+      if (input.reaction === "❤️") {
+        warning =
+          thread.channelType === "instagram_comment"
+            ? "Instagram comments only support Like — your ❤️ was posted as a Like."
+            : "Facebook comments only support Like — your ❤️ was posted as a Like.";
+      }
+    } else {
+      const sendResult = await sendInboxReaction({
+        channelType: thread.channelType,
+        thread,
+        message,
+        reaction: input.reaction,
+        pageId: connection.facebookPageId,
+        pageAccessToken: connection.pageAccessToken,
+        instagramAccountId: connection.instagramAccountId,
+      });
 
-    localOnly = sendResult.localOnly;
-    metaReaction = sendResult.metaReaction;
-    if (sendResult.mappedToLike && input.reaction === "❤️") {
-      warning =
-        thread.channelType === "instagram_comment"
-          ? "Instagram comments only support Like — your ❤️ was posted as a Like."
-          : "Facebook comments only support Like — your ❤️ was posted as a Like.";
+      if (!sendResult.success) {
+        return { success: false, error: sendResult.error };
+      }
+
+      localOnly = sendResult.localOnly;
+      metaReaction = sendResult.metaReaction;
+      if (sendResult.mappedToLike && input.reaction === "❤️") {
+        warning =
+          thread.channelType === "instagram_comment"
+            ? "Instagram comments only support Like — your ❤️ was posted as a Like."
+            : "Facebook comments only support Like — your ❤️ was posted as a Like.";
+      }
     }
   } else {
     warning =

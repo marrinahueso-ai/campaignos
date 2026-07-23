@@ -30,6 +30,18 @@ export type SendInboxReactionResult = {
   localOnly: boolean;
 };
 
+/** Meta returns an error when liking an already-liked comment (or unliking when not liked). */
+export function isBenignCommentLikeStateError(graphError: string): boolean {
+  const lower = graphError.toLowerCase();
+  return (
+    lower.includes("already been liked") ||
+    lower.includes("already liked") ||
+    lower.includes("has not been liked") ||
+    lower.includes("not been liked") ||
+    lower.includes("user hasn't liked")
+  );
+}
+
 function formatReactionError(input: {
   channelType: InboxChannelType;
   graphError: string;
@@ -212,7 +224,7 @@ export async function sendInboxReaction(
         pageAccessToken: input.pageAccessToken,
         remove: input.reaction == null,
       });
-      if (!result.ok) {
+      if (!result.ok && !isBenignCommentLikeStateError(result.error)) {
         return {
           success: false,
           error: formatReactionError({
@@ -251,7 +263,7 @@ export async function sendInboxReaction(
       pageAccessToken: input.pageAccessToken,
       remove: input.reaction == null,
     });
-    if (!result.ok) {
+    if (!result.ok && !isBenignCommentLikeStateError(result.error)) {
       return {
         success: false,
         error: formatReactionError({
