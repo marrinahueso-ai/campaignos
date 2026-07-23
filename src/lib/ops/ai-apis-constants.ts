@@ -16,6 +16,17 @@ export const AI_APIS_TABLE_PAGE_SIZE = 25;
  */
 export const AI_APIS_COLLECTING_SINCE = "2026-07-23";
 
+/**
+ * Phase 5 OpenAI reconcile tolerance for a sample UTC day.
+ * App `estimated_cost_usd` can diverge from OpenAI invoices (pricing lag,
+ * image units, failed retries). Token totals should stay within this band.
+ */
+export const AI_APIS_RECONCILE_TOKEN_TOLERANCE_PCT = 15;
+export const AI_APIS_RECONCILE_COST_TOLERANCE_PCT = 25;
+
+/** Preferred Owner soak window before customer QA (calendar days). */
+export const AI_APIS_SOAK_DAYS_TARGET = 3;
+
 export const AI_APIS_CONNECTED_PROVIDERS = [
   "meta",
   "resend",

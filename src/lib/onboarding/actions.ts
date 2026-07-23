@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  clearPendingFoundingAccessCookie,
-  getPendingFoundingAccessCode,
   isFoundingAccessCodeRequired,
   resolveFoundingAccess,
 } from "@/lib/auth/founding-access";
+import {
+  clearPendingFoundingAccessCookie,
+  getPendingFoundingAccessCode,
+} from "@/lib/auth/founding-access-server";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { inviteTeamMemberAction } from "@/lib/auth/actions";

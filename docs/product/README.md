@@ -6,7 +6,7 @@
 | Doc | Status |
 |-----|--------|
 | [feature-list.md](./feature-list.md) | **Living** |
-| [ai-and-apis.md](./ai-and-apis.md) | **Living** — Owner `/ops/ai-apis` (Phase 0–1 schema/writers) |
+| [ai-and-apis.md](./ai-and-apis.md) | **Living** — Owner `/ops/ai-apis` (Phases 0–5; await Owner § F for shipped) |
 | [volunteer-master.md](./volunteer-master.md) | **Living** — org `/volunteers` |
 | [event-insights.md](./event-insights.md) | **Living** — event `?tab=insights` |
 | [vision.md](./vision.md) | Planned stub |

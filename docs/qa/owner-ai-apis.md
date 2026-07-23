@@ -126,6 +126,37 @@ Do not mark Phase 5 complete while critical shipped AI surfaces (E1–E6 at mini
 | F5 | Privacy | DB sample has no full prompts/completions; export has no API keys |
 | F6 | Feature list | Status moves to **shipped** only after F1–F5 |
 
+### Tolerances & tooling (F3)
+
+| Item | Value |
+|------|--------|
+| Token band | ±15% (`AI_APIS_RECONCILE_TOKEN_TOLERANCE_PCT`) |
+| Cost band | ±25% (`AI_APIS_RECONCILE_COST_TOLERANCE_PCT`) — pricing lag / image units expected |
+| Soak target | 3 calendar days (`AI_APIS_SOAK_DAYS_TARGET`) with real traffic, or E-matrix smoke |
+| CLI | `npm run reconcile:ai-usage -- YYYY-MM-DD` (UTC day) → compare to OpenAI Usage |
+| Unit tests | `npm run test:ops-usage` (includes Phase 5 privacy/perf/reconcile helpers) |
+
+### Eng pre-checks (automated / static — July 23, 2026)
+
+| Check | Result |
+|-------|--------|
+| Schema has no prompt/completion **body** columns | Pass (`prompt_tokens` / `completion_tokens` only) |
+| Metadata scrub drops token/secret/api_key keys | Pass (`scrubApiUsageMetadata`) |
+| Aggregate cap + page size bounded | Pass (8k / 25 / CSV 2k) |
+| Access gate same as `/ops` | Pass (`canAccessOwnerOps`) |
+| Warehouse row count on linked Supabase project | **0 AI / 0 API** — soak not started; F1–F3 Owner-owned |
+| Critical writers present in code (E1–E13) | Pass (static); runtime E-matrix still ☐ until Owner triggers |
+
+### Owner sign-off (do not mark feature-list **shipped** until complete)
+
+| ID | Owner action | Date | Initials | Pass |
+|----|--------------|------|----------|------|
+| F1 | Confirm ≥ soak target **or** E-matrix smoke for E1–E6 + E10–E11 | | | ☐ |
+| F2 | Create with AI + Ask Ralli → rows on `/ops/ai-apis` within ~1 min | | | ☐ |
+| F3 | `npm run reconcile:ai-usage -- <day>` vs OpenAI Usage within bands | | | ☐ |
+| A1–A6 | Access cases | | | ☐ |
+| F6 | Flip feature-list to **shipped** only after all above | | | ☐ |
+
 ---
 
 ## Fail = do not launch to customer QA

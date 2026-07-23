@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { AiApisOwnerShell } from "@/components/ops/ai-apis/AiApisOwnerShell";
 import { canAccessOwnerOps } from "@/lib/ops/access";
 import {
+  AI_APIS_TABLE_PAGE_SIZE,
+} from "@/lib/ops/ai-apis-constants";
+import {
   defaultAiApisRange,
   getAiApisDashboard,
+  type AiApisFilterOptions,
   type AiApisSortKey,
+  type AiApisSummary,
 } from "@/lib/ops/ai-apis-queries";
 import { getConnectedApisDashboard } from "@/lib/ops/connected-apis-queries";
 
@@ -23,6 +28,34 @@ function first(value: string | string[] | undefined): string | undefined {
 function ymd(iso: string): string {
   return iso.slice(0, 10);
 }
+
+const EMPTY_AI_SUMMARY: AiApisSummary = {
+  requests: 0,
+  totalCostUsd: 0,
+  totalTokens: 0,
+  successRate: null,
+  avgLatencyMs: null,
+  failedRequests: 0,
+  orgsNearLimit: 0,
+  estMonthlyCostUsd: null,
+  capped: false,
+  rowCountLoaded: 0,
+  compare: {
+    requestsDeltaPct: null,
+    costDeltaPct: null,
+    tokensDeltaPct: null,
+    successRateDeltaPts: null,
+    avgLatencyDeltaMs: null,
+    failedDeltaPct: null,
+  },
+};
+
+const EMPTY_AI_FILTERS: AiApisFilterOptions = {
+  organizations: [],
+  features: [],
+  models: [],
+  providers: [],
+};
 
 export default async function OwnerAiApisPage({
   searchParams,
@@ -75,32 +108,37 @@ export default async function OwnerAiApisPage({
   const organizationId = first(params.organizationId) ?? null;
   const provider = first(params.provider) ?? null;
 
-  const [dashboard, connected] = await Promise.all([
-    getAiApisDashboard({
-      fromIso,
-      toIso,
-      search,
-      organizationId,
-      feature: first(params.feature) ?? null,
-      model: first(params.model) ?? null,
-      provider,
-      status,
-      page,
-      sortKey,
-      sortDir,
-    }),
-    getConnectedApisDashboard({
-      fromIso,
-      toIso,
-      search,
-      organizationId,
-      provider,
-      status,
-      page,
-      sortKey: connectedSortKey,
-      sortDir,
-    }),
-  ]);
+  // Load only the active tab (avoids double warehouse scans on Owner page).
+  const dashboard =
+    tab === "ai"
+      ? await getAiApisDashboard({
+          fromIso,
+          toIso,
+          search,
+          organizationId,
+          feature: first(params.feature) ?? null,
+          model: first(params.model) ?? null,
+          provider,
+          status,
+          page,
+          sortKey,
+          sortDir,
+        })
+      : null;
+  const connected =
+    tab === "connected"
+      ? await getConnectedApisDashboard({
+          fromIso,
+          toIso,
+          search,
+          organizationId,
+          provider,
+          status,
+          page,
+          sortKey: connectedSortKey,
+          sortDir,
+        })
+      : null;
 
   return (
     <AiApisOwnerShell
@@ -113,26 +151,30 @@ export default async function OwnerAiApisPage({
       model={first(params.model) ?? ""}
       provider={first(params.provider) ?? ""}
       status={status ?? ""}
-      page={tab === "connected" ? connected.page : dashboard.page}
+      page={connected?.page ?? dashboard?.page ?? page}
       sortKey={sortKey}
       sortDir={sortDir}
-      summary={dashboard.summary}
-      series={dashboard.series}
-      byFeature={dashboard.byFeature}
-      byOrgCost={dashboard.byOrgCost}
-      rows={dashboard.rows}
-      totalFiltered={dashboard.totalFiltered}
-      pageSize={dashboard.pageSize}
-      filterOptions={dashboard.filterOptions}
-      connected={{
-        summary: connected.summary,
-        providers: connected.providers,
-        rows: connected.rows,
-        totalFiltered: connected.totalFiltered,
-        page: connected.page,
-        pageSize: connected.pageSize,
-        filterOptions: connected.filterOptions,
-      }}
+      summary={dashboard?.summary ?? EMPTY_AI_SUMMARY}
+      series={dashboard?.series ?? []}
+      byFeature={dashboard?.byFeature ?? []}
+      byOrgCost={dashboard?.byOrgCost ?? []}
+      rows={dashboard?.rows ?? []}
+      totalFiltered={dashboard?.totalFiltered ?? 0}
+      pageSize={dashboard?.pageSize ?? AI_APIS_TABLE_PAGE_SIZE}
+      filterOptions={dashboard?.filterOptions ?? EMPTY_AI_FILTERS}
+      connected={
+        connected
+          ? {
+              summary: connected.summary,
+              providers: connected.providers,
+              rows: connected.rows,
+              totalFiltered: connected.totalFiltered,
+              page: connected.page,
+              pageSize: connected.pageSize,
+              filterOptions: connected.filterOptions,
+            }
+          : null
+      }
     />
   );
 }

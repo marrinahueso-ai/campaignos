@@ -7,10 +7,7 @@ import {
 } from "@/lib/auth/active-organization";
 import { readActiveOrganizationCookie } from "@/lib/auth/active-organization-cookie";
 import { listOrganizationUserEventAssignmentsByOrg } from "@/lib/auth/event-assignments";
-import {
-  resolveOrganizationAccessState,
-  type OrganizationAccessState,
-} from "@/lib/auth/membership-access";
+import { getOrganizationAccessState } from "@/lib/auth/organization-access-state";
 import { isInviteExpired } from "@/lib/auth/invite-constants";
 import { mapOrganizationUserRow } from "@/lib/auth/mappers";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -425,26 +422,5 @@ export async function hasActiveOrganizationMembership(
  * Active vs deactivated vs no membership for post-auth / org-gate routing.
  * Returns null when organization_users is unavailable (legacy local dev).
  */
-export async function getOrganizationAccessState(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<OrganizationAccessState | null> {
-  const { data, error } = await supabase
-    .from("organization_users")
-    .select("status")
-    .eq("user_id", userId);
-
-  if (error?.code === "42P01") {
-    return null;
-  }
-
-  if (error) {
-    return "none";
-  }
-
-  return resolveOrganizationAccessState(
-    (data ?? []).map((row) => row.status as string),
-  );
-}
-
+export { getOrganizationAccessState };
 export { getLatestOrganizationLegacyId };

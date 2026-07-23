@@ -11,6 +11,7 @@ import {
 import {
   newUsageRequestId,
   resolveUsageEnvironment,
+  scrubApiUsageMetadata,
   truncateUsageErrorMessage,
 } from "@/lib/ops/usage-log-shared";
 
@@ -43,35 +44,6 @@ export type ApiUsageLogInput = {
   /** Small scrubbed metadata only — never secrets or full payloads. */
   metadata?: Record<string, unknown> | null;
 };
-
-function scrubMetadata(
-  metadata: Record<string, unknown> | null | undefined,
-): Record<string, unknown> {
-  if (!metadata || typeof metadata !== "object") return {};
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(metadata)) {
-    const lower = key.toLowerCase();
-    if (
-      lower.includes("token") ||
-      lower.includes("secret") ||
-      lower.includes("password") ||
-      lower.includes("authorization") ||
-      lower.includes("api_key") ||
-      lower.includes("apikey")
-    ) {
-      continue;
-    }
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean" ||
-      value === null
-    ) {
-      out[key] = typeof value === "string" ? value.slice(0, 200) : value;
-    }
-  }
-  return out;
-}
 
 /**
  * Persist a connected-API usage row for Owner AI & APIs.
@@ -123,7 +95,7 @@ export async function logApiUsage(input: ApiUsageLogInput): Promise<void> {
     estimated_cost_usd: estimatedCostUsd,
     error_code: input.errorCode?.trim() || null,
     error_message: truncateUsageErrorMessage(input.errorMessage),
-    metadata: scrubMetadata(input.metadata),
+    metadata: scrubApiUsageMetadata(input.metadata),
   };
 
   try {

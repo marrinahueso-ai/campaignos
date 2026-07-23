@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import type { NextResponse } from "next/server";
 
@@ -132,26 +131,6 @@ export function resolveFoundingAccess(
   };
 }
 
-export async function setPendingFoundingAccessCookie(code: string): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(
-    PENDING_FOUNDING_ACCESS_COOKIE,
-    code.trim().toUpperCase(),
-    pendingFoundingAccessCookieOptions(),
-  );
-}
-
-export async function getPendingFoundingAccessCode(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const value = cookieStore.get(PENDING_FOUNDING_ACCESS_COOKIE)?.value?.trim();
-  return value ? value.toUpperCase() : null;
-}
-
-export async function clearPendingFoundingAccessCookie(): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.delete(PENDING_FOUNDING_ACCESS_COOKIE);
-}
-
 /** Clear pending setup cookie on OAuth/password responses (stale cookie must not block sign-in). */
 export function clearPendingFoundingAccessCookieOnResponse(
   response: NextResponse,
@@ -160,11 +139,6 @@ export function clearPendingFoundingAccessCookieOnResponse(
     ...pendingFoundingAccessCookieOptions(),
     maxAge: 0,
   });
-}
-
-export async function resolvePendingFoundingAccess(): Promise<FoundingAccessResolution> {
-  const pendingCode = await getPendingFoundingAccessCode();
-  return resolveFoundingAccess(pendingCode, { required: true });
 }
 
 export function isOrganizationBillingExempt(organization: {

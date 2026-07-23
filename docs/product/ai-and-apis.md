@@ -7,7 +7,7 @@
 
 Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, and **customer consumption**. Internal ops only — not org-member Insights.
 
-**Implementation status:** Phases 0–4. Route `/ops/ai-apis` ships with AI APIs tab on real `ai_usage_log` and Connected APIs tab on real `api_usage_log` (provider rollups, health from real signals, request table, drawer, CSV). Phase 5 = soak + OpenAI reconcile before feature-list **shipped**.
+**Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse was empty as of Phase 5 lock (collecting since 2026-07-23).
 
 ---
 
@@ -131,7 +131,7 @@ Request counts, successes/failures, latency (avg or p50/p95 when volume allows),
 
 **Apply migration** before relying on Production numbers: `supabase db push` (or SQL Editor) for `20260723220241_ai_api_usage_logs.sql`.
 
-UI is **Phase 3–4 shipped** (AI + Connected tabs). Customer QA on numbers is **Phase 5** after soak + reconciliation.
+UI is **Phase 3–4 shipped** (AI + Connected tabs). Phase 5 tooling: Owner accuracy strip on `/ops/ai-apis`, `npm run reconcile:ai-usage`, tolerances in [`ai-apis-constants.ts`](../../src/lib/ops/ai-apis-constants.ts), tests via `npm run test:ops-usage`. Customer QA on numbers still requires Owner § F sign-off in [owner-ai-apis.md](../qa/owner-ai-apis.md).
 
 ---
 

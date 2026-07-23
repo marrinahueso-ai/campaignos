@@ -1,10 +1,10 @@
 import { getAuthUser } from "@/lib/auth/queries";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
 import {
-  getPendingFoundingAccessCode,
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
+import { getPendingFoundingAccessCode } from "@/lib/auth/founding-access-server";
 import {
   getAuthenticatedAppPath,
   shouldAllowAuthenticatedLoginView,

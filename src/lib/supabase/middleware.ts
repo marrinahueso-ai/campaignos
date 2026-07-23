@@ -5,12 +5,12 @@ import {
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
-import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
+import { getOrganizationAccessState } from "@/lib/auth/organization-access-state";
 import { resolveOrgGateRedirect } from "@/lib/auth/org-gate";
+import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path-for-user";
 import {
-  resolvePostAuthPathForUser,
   shouldAllowAuthenticatedLoginView,
-} from "@/lib/auth/post-auth-path";
+} from "@/lib/auth/post-auth-path-shared";
 import {
   DEVELOPER_AGREEMENTS_PATH,
   userMustSignDeveloperAgreements,
@@ -40,10 +40,24 @@ const PUBLIC_PATHS = [
   "/go/email-primary",
 ];
 
+/** Stay well under Vercel Edge middleware's 25s hard kill. */
+const AUTH_TIMEOUT_MS = 8_000;
+const GATE_TIMEOUT_MS = 6_000;
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+}
+
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(
+      ({ name }) =>
+        name.startsWith("sb-") &&
+        (name.includes("auth-token") || name.endsWith("-auth-token")),
+    );
 }
 
 function copyCookies(from: NextResponse, to: NextResponse) {
@@ -52,8 +66,37 @@ function copyCookies(from: NextResponse, to: NextResponse) {
   });
 }
 
+type TimedResult<T> = { ok: true; value: T } | { ok: false };
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<TimedResult<T>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise.then((value) => ({ ok: true as const, value })),
+      new Promise<TimedResult<T>>((resolve) => {
+        timer = setTimeout(() => {
+          console.warn(`[middleware] ${label} timed out after ${ms}ms`);
+          resolve({ ok: false });
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+
+  // Public marketing/auth pages with no session cookie: skip Supabase entirely.
+  if (isPublicPath(pathname) && !hasSupabaseAuthCookie(request)) {
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,11 +119,27 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userResult = await withTimeout(
+    supabase.auth.getUser().then((result) => result.data.user),
+    AUTH_TIMEOUT_MS,
+    "auth.getUser",
+  );
 
-  const { pathname } = request.nextUrl;
+  // Timed out talking to Auth: fail open on public paths, fail closed elsewhere.
+  if (!userResult.ok) {
+    if (isPublicPath(pathname)) {
+      return supabaseResponse;
+    }
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("error", "auth");
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    copyCookies(supabaseResponse, redirectResponse);
+    return redirectResponse;
+  }
+
+  const user = userResult.value;
 
   if (!user && !isPublicPath(pathname)) {
     const loginUrl = request.nextUrl.clone();
@@ -103,24 +162,33 @@ export async function updateSession(request: NextRequest) {
       : null;
     const hasValidPendingCode =
       Boolean(pendingCode) && validateFoundingAccessCode(pendingCode);
-    const accessState = await getOrganizationAccessState(supabase, user.id);
+    const accessStateResult = await withTimeout(
+      getOrganizationAccessState(supabase, user.id),
+      GATE_TIMEOUT_MS,
+      "getOrganizationAccessState",
+    );
+    const accessState = accessStateResult.ok ? accessStateResult.value : null;
     const hasMembership = accessState === "active";
 
-    // Deactivated members must resolve to the deactivated login state, not
-    // founding-access / school-setup entry.
     if (accessState === "deactivated") {
-      const homePath = await resolvePostAuthPathForUser(
-        supabase,
-        user.id,
-        null,
-        { setupIntent, pendingCode },
+      const homePathResult = await withTimeout(
+        resolvePostAuthPathForUser(supabase, user.id, null, {
+          setupIntent,
+          pendingCode,
+        }),
+        GATE_TIMEOUT_MS,
+        "resolvePostAuthPathForUser",
       );
       if (
+        homePathResult.ok &&
         shouldAllowAuthenticatedLoginView(
-          new URL(homePath, request.url).searchParams.get("error"),
+          new URL(homePathResult.value, request.url).searchParams.get("error"),
         )
       ) {
-        const deactivatedUrl = new URL(homePath, request.nextUrl.origin);
+        const deactivatedUrl = new URL(
+          homePathResult.value,
+          request.nextUrl.origin,
+        );
         if (
           request.nextUrl.pathname !== deactivatedUrl.pathname ||
           request.nextUrl.search !== deactivatedUrl.search
@@ -142,10 +210,18 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse;
     }
 
-    const homePath = await resolvePostAuthPathForUser(supabase, user.id, null, {
-      setupIntent,
-      pendingCode,
-    });
+    const homePathResult = await withTimeout(
+      resolvePostAuthPathForUser(supabase, user.id, null, {
+        setupIntent,
+        pendingCode,
+      }),
+      GATE_TIMEOUT_MS,
+      "resolvePostAuthPathForUser",
+    );
+    if (!homePathResult.ok) {
+      return supabaseResponse;
+    }
+    const homePath = homePathResult.value;
     if (
       shouldAllowAuthenticatedLoginView(
         new URL(homePath, request.url).searchParams.get("error"),
@@ -169,17 +245,18 @@ export async function updateSession(request: NextRequest) {
       return redirectResponse;
     }
 
-    // After password gate: developers must sign required agreements before app access.
-    // Skip public paths (marketing + /dev/* harnesses) so logged-in sessions can still
-    // open local tooling without completing agreements first.
     if (
       !mustChangePassword &&
       pathname !== "/account/change-password" &&
       !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH) &&
       !isPublicPath(pathname)
     ) {
-      const mustSign = await userMustSignDeveloperAgreements(supabase, user.id);
-      if (mustSign) {
+      const mustSignResult = await withTimeout(
+        userMustSignDeveloperAgreements(supabase, user.id),
+        GATE_TIMEOUT_MS,
+        "userMustSignDeveloperAgreements",
+      );
+      if (mustSignResult.ok && mustSignResult.value) {
         const agreementsUrl = new URL(
           DEVELOPER_AGREEMENTS_PATH,
           request.nextUrl.origin,
@@ -197,9 +274,13 @@ export async function updateSession(request: NextRequest) {
     pathname !== "/account/change-password" &&
     !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
   ) {
-    const gateRedirect = await resolveOrgGateRedirect(request, supabase, user.id);
-    if (gateRedirect) {
-      const gateUrl = new URL(gateRedirect, request.nextUrl.origin);
+    const gateRedirectResult = await withTimeout(
+      resolveOrgGateRedirect(request, supabase, user.id),
+      GATE_TIMEOUT_MS,
+      "resolveOrgGateRedirect",
+    );
+    if (gateRedirectResult.ok && gateRedirectResult.value) {
+      const gateUrl = new URL(gateRedirectResult.value, request.nextUrl.origin);
       const redirectResponse = NextResponse.redirect(gateUrl);
       copyCookies(supabaseResponse, redirectResponse);
       return redirectResponse;

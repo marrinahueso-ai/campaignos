@@ -1,9 +1,9 @@
 import { SchoolSetupShellContent } from "@/components/settings-v2/SchoolSetupShellContent";
 import {
-  getPendingFoundingAccessCode,
   isFoundingAccessCodeRequired,
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
+import { getPendingFoundingAccessCode } from "@/lib/auth/founding-access-server";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { redirect } from "next/navigation";

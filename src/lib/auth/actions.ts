@@ -61,12 +61,14 @@ import {
   updateOrganizationRole,
 } from "@/lib/organization-workspace/mutations";
 import {
-  clearPendingFoundingAccessCookie,
   isFoundingAccessCodeRequired,
   PENDING_FOUNDING_ACCESS_QUERY_PARAM,
   resolveFoundingAccess,
-  setPendingFoundingAccessCookie,
 } from "@/lib/auth/founding-access";
+import {
+  clearPendingFoundingAccessCookie,
+  setPendingFoundingAccessCookie,
+} from "@/lib/auth/founding-access-server";
 import { createPendingFoundingAccessLinkToken } from "@/lib/auth/founding-access-link-token";
 import { buildFoundingSetupEmailUrl } from "@/lib/auth/founding-setup-link";
 import { isOAuthSignInProvider } from "@/lib/auth/oauth-providers";

@@ -20,6 +20,9 @@ import {
 } from "@/lib/ops/ai-apis-actions";
 import {
   AI_APIS_COLLECTING_SINCE,
+  AI_APIS_RECONCILE_COST_TOLERANCE_PCT,
+  AI_APIS_RECONCILE_TOKEN_TOLERANCE_PCT,
+  AI_APIS_SOAK_DAYS_TARGET,
   AI_ORGS_NEAR_LIMIT_USD,
 } from "@/lib/ops/ai-apis-constants";
 import type {
@@ -268,6 +271,14 @@ export function AiApisOwnerShell(props: ShellProps) {
           label="Connected APIs"
         />
       </div>
+
+      <AccuracyLockNote
+        tab={props.tab}
+        aiRequests={props.summary.requests}
+        connectedRequests={props.connected?.summary.totalRequests ?? 0}
+        aiCapped={props.summary.capped}
+        connectedCapped={props.connected?.summary.capped ?? false}
+      />
 
       {props.tab === "connected" ? (
         props.connected ? (
@@ -935,6 +946,48 @@ function Detail({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 break-words text-cos-text">{value}</p>
+    </div>
+  );
+}
+
+function AccuracyLockNote({
+  tab,
+  aiRequests,
+  connectedRequests,
+  aiCapped,
+  connectedCapped,
+}: {
+  tab: AiApisTab;
+  aiRequests: number;
+  connectedRequests: number;
+  aiCapped: boolean;
+  connectedCapped: boolean;
+}) {
+  const requests = tab === "ai" ? aiRequests : connectedRequests;
+  const capped = tab === "ai" ? aiCapped : connectedCapped;
+  return (
+    <div className="rounded-xl border border-cos-border bg-cos-card/60 px-4 py-3 text-xs text-cos-muted">
+      <p>
+        Accuracy lock · Collecting since {AI_APIS_COLLECTING_SINCE} · Target soak{" "}
+        {AI_APIS_SOAK_DAYS_TARGET} days before customer QA.
+        {requests === 0
+          ? " No warehouse rows in this range yet — trigger product AI/API paths or wait for production traffic."
+          : null}
+        {capped
+          ? " Aggregate row cap reached — narrow the date range for full-period accuracy."
+          : null}
+      </p>
+      {tab === "ai" ? (
+        <p className="mt-1">
+          OpenAI reconcile:{" "}
+          <code className="rounded bg-cos-bg px-1 py-0.5 text-[11px] text-cos-text">
+            npm run reconcile:ai-usage -- YYYY-MM-DD
+          </code>{" "}
+          then compare tokens (±{AI_APIS_RECONCILE_TOKEN_TOLERANCE_PCT}%) and cost (±
+          {AI_APIS_RECONCILE_COST_TOLERANCE_PCT}%) to the OpenAI Usage dashboard
+          (UTC day). Checklist: docs/qa/owner-ai-apis.md § F.
+        </p>
+      ) : null}
     </div>
   );
 }

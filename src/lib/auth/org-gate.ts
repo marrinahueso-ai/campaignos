@@ -5,11 +5,11 @@ import {
   validateFoundingAccessCode,
 } from "@/lib/auth/founding-access";
 import { ACCOUNT_DEACTIVATED_LOGIN_PATH } from "@/lib/auth/membership-access";
-import { getOrganizationAccessState } from "@/lib/auth/membership-queries";
+import { getOrganizationAccessState } from "@/lib/auth/organization-access-state";
 import {
   ONBOARDING_PATH,
   SCHOOL_SETUP_PATH,
-} from "@/lib/auth/post-auth-path";
+} from "@/lib/auth/post-auth-path-shared";
 
 const ORG_SETUP_PATHS = [
   "/onboarding",

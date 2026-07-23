@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { resolveFoundingAccess } from "@/lib/auth/founding-access";
 import {
   clearPendingFoundingAccessCookie,
   getPendingFoundingAccessCode,
-  resolveFoundingAccess,
-} from "@/lib/auth/founding-access";
+} from "@/lib/auth/founding-access-server";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { createSchoolProfile } from "@/lib/organizations/mutations";
 import {
