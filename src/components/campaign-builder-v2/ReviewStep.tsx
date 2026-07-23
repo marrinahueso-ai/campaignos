@@ -13,6 +13,7 @@ import {
   sendForApprovalAction,
 } from "@/lib/campaign-builder-v2/actions";
 import {
+  describeApprovalSubmitBlockers,
   isMilestoneEligibleForApprovalSubmit,
   matchesReviewApprovalFilter,
   previewAfterResendForApproval,
@@ -109,13 +110,20 @@ export function ReviewStep() {
       (preview) =>
         resolveMilestoneGenerationStatus(preview) === "changes_requested",
     );
+  const sendDisabledReason =
+    eligibleSubmitMilestones.length === 0
+      ? changesRequestedCount > 0
+        ? "Use Send for re-approval on each changes-requested milestone after edits."
+        : describeApprovalSubmitBlockers(
+            sortedMilestones,
+            session.previewContents,
+          )
+      : null;
 
   async function handleSendForApproval() {
     if (eligibleSubmitMilestones.length === 0) {
       setActionMessage(
-        changesRequestedCount > 0
-          ? "Use Send for re-approval on each changes-requested milestone after edits."
-          : "No milestones are ready to send for approval.",
+        sendDisabledReason ?? "No milestones are ready to send for approval.",
       );
       return;
     }
@@ -341,25 +349,33 @@ export function ReviewStep() {
           </Button>
         }
         rightActions={
-          <>
-            <Button
-              variant="secondary"
-              onClick={handleApproveAll}
-              disabled={isSending}
-            >
-              Approve all & schedule
-            </Button>
-            <Button
-              onClick={handleSendForApproval}
-              disabled={isSending || eligibleSubmitMilestones.length === 0}
-            >
-              {isSending
-                ? "Sending…"
-                : bulkIsReapprovalOnly
-                  ? "Send for re-approval"
-                  : "Send for approval"}
-            </Button>
-          </>
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            {sendDisabledReason ? (
+              <p className="max-w-sm text-right text-xs text-cos-muted">
+                {sendDisabledReason}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={handleApproveAll}
+                disabled={isSending}
+              >
+                Approve all & schedule
+              </Button>
+              <Button
+                onClick={handleSendForApproval}
+                disabled={isSending || eligibleSubmitMilestones.length === 0}
+                title={sendDisabledReason ?? undefined}
+              >
+                {isSending
+                  ? "Sending…"
+                  : bulkIsReapprovalOnly
+                    ? "Send for re-approval"
+                    : "Send for approval"}
+              </Button>
+            </div>
+          </div>
         }
       />
     </div>

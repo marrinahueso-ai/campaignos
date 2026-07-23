@@ -168,6 +168,109 @@ export function isMilestoneEligibleForApprovalSubmit(
 }
 
 /**
+ * Human-readable content gaps that keep a milestone Incomplete / not sendable.
+ * Delivery method and schedule are intentionally excluded — Publish Now does not
+ * require schedule fields for approval submit.
+ */
+export function listMilestoneContentGaps(
+  preview: MilestonePreviewContent,
+): string[] {
+  const gaps: string[] = [];
+  const formats = preview.enabledFormats;
+
+  if (formats.length === 0) {
+    return ["publish formats"];
+  }
+
+  const views = enabledArtworkViews(formats);
+  for (const view of views) {
+    const url = preview.artwork[artworkKeyForView(view)];
+    if (!url || isPlaceholderArtworkUrl(url)) {
+      gaps.push(view === "feed" ? "feed image" : "story image");
+    }
+  }
+
+  const platforms = captionPlatformsForFormats(formats);
+  if (platforms.length > 0) {
+    const captions = ensureSharedCaptionsForPlatforms(preview.captions, platforms);
+    const hasCaption = platforms.every((platform) =>
+      captions.some(
+        (caption) =>
+          caption.platform === platform && caption.text.trim().length > 0,
+      ),
+    );
+    if (!hasCaption) {
+      gaps.push("caption");
+    }
+  }
+
+  return gaps;
+}
+
+/** Footer copy when bulk "Send for approval" is disabled. */
+export function describeApprovalSubmitBlockers(
+  milestones: CampaignBuilderMilestone[],
+  previewContents: MilestonePreviewContent[],
+): string | null {
+  const previewById = new Map(
+    previewContents.map((content) => [content.milestoneId, content]),
+  );
+  const ordered = sortedMilestones(milestones);
+  const contentBlockers: string[] = [];
+  let eligibleCount = 0;
+  let alreadyInFlight = 0;
+
+  for (const milestone of ordered) {
+    const preview = previewById.get(milestone.id);
+    if (!preview) {
+      contentBlockers.push(`${milestone.name}: preview content`);
+      continue;
+    }
+    if (isMilestoneEligibleForApprovalSubmit(preview)) {
+      eligibleCount += 1;
+      continue;
+    }
+
+    const status = resolveMilestoneGenerationStatus(preview);
+    if (
+      status === "awaiting_approval" ||
+      status === "approved" ||
+      status === "scheduled" ||
+      status === "published"
+    ) {
+      alreadyInFlight += 1;
+      continue;
+    }
+
+    const gaps = listMilestoneContentGaps(preview);
+    if (gaps.length === 0 && !milestoneHasArtwork(preview)) {
+      contentBlockers.push(`${milestone.name}: artwork`);
+      continue;
+    }
+    if (gaps.length === 0) {
+      continue;
+    }
+
+    contentBlockers.push(
+      ordered.length === 1
+        ? gaps.join(", ")
+        : `${milestone.name}: ${gaps.join(", ")}`,
+    );
+  }
+
+  if (eligibleCount > 0) {
+    return null;
+  }
+  if (contentBlockers.length > 0) {
+    return `Missing: ${contentBlockers.join("; ")}. Generate or edit on Preview.`;
+  }
+  if (alreadyInFlight > 0 && alreadyInFlight === ordered.length) {
+    return "All milestones are already sent or approved.";
+  }
+  return "No milestones are ready to send for approval.";
+}
+
+/**
  * Keep changes_requested / awaiting_approval while the creator edits caption,
  * schedule, or artwork. Content-derived statuses (generated / needs_review)
  * must not wipe the approval workflow until an explicit resubmit/approve.

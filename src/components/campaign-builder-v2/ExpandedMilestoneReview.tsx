@@ -8,8 +8,10 @@ import {
   campaignBuilderEditArtworkHref,
   campaignBuilderPreviewMilestoneHref,
 } from "@/lib/campaign-builder-v2/navigation";
+import { isPublishNowDelivery } from "@/lib/campaign-builder-v2/delivery-method";
 import {
   canResendMilestoneForApproval,
+  listMilestoneContentGaps,
   resolveMilestoneGenerationStatus,
   reviewApprovalPill,
   type ReviewApprovalPillTone,
@@ -106,8 +108,14 @@ export function ExpandedMilestoneReview({
     preview.deliveryMethod === "manual-email" ||
     preview.enabledFormats.includes("instagram-story-manual");
   const approvalPill = reviewApprovalPill(preview);
+  const contentGaps = listMilestoneContentGaps(preview);
   const generationStatus = resolveMilestoneGenerationStatus(preview);
   const canResend = canResendMilestoneForApproval(preview);
+  const scheduleRowLabel = isPublishNowDelivery(preview.deliveryMethod)
+    ? "On approval"
+    : preview.deliveryMethod === "draft-only"
+      ? "Draft only"
+      : formatScheduleLabel(preview.scheduleDate, preview.scheduleTime);
   const scheduleEditable =
     generationStatus === "changes_requested" ||
     generationStatus === "awaiting_approval";
@@ -181,7 +189,7 @@ export function ExpandedMilestoneReview({
           <option value="draft-only">Draft only</option>
         </select>
         <span className="hidden shrink-0 whitespace-nowrap text-sm text-cos-muted lg:block">
-          {formatScheduleLabel(preview.scheduleDate, preview.scheduleTime)}
+          {scheduleRowLabel}
         </span>
         {isExpanded ? (
           <ChevronUp className="h-4 w-4 shrink-0 text-cos-muted" />
@@ -210,6 +218,11 @@ export function ExpandedMilestoneReview({
             <h3 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
               Content summary
             </h3>
+            {approvalPill.tone === "incomplete" && contentGaps.length > 0 ? (
+              <p className="rounded border border-cos-border bg-cos-card px-3 py-2 text-xs text-cos-muted">
+                Missing: {contentGaps.join(", ")}. Generate or edit on Preview.
+              </p>
+            ) : null}
             <div className="space-y-2 text-sm">
               <p className="font-medium text-cos-text">Artwork</p>
               <ul className="space-y-1">
@@ -300,9 +313,24 @@ export function ExpandedMilestoneReview({
 
           <section className="space-y-3 border-b border-cos-border p-4 lg:border-b-0 lg:border-r">
             <h3 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-              Schedule
+              Delivery
             </h3>
-            {scheduleEditable ? (
+            {isPublishNowDelivery(preview.deliveryMethod) ? (
+              <dl className="space-y-2 text-sm">
+                <div>
+                  <dt className="text-cos-muted">Method</dt>
+                  <dd className="font-medium text-cos-text">
+                    {DELIVERY_LABELS[preview.deliveryMethod]}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-cos-muted">When</dt>
+                  <dd className="font-medium text-cos-text">
+                    Posts as soon as approved
+                  </dd>
+                </div>
+              </dl>
+            ) : scheduleEditable ? (
               <div className="space-y-2">
                 <Input
                   label="Publish date"

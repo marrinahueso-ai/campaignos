@@ -6,10 +6,12 @@ import {
   canResendMilestoneForApproval,
   countCompleteMilestones,
   derivedPreviewStatus,
+  describeApprovalSubmitBlockers,
   findNextMilestoneToGenerate,
   inferGenerationStatus,
   isMilestoneContentComplete,
   isMilestoneEligibleForApprovalSubmit,
+  listMilestoneContentGaps,
   milestoneHasArtwork,
   milestoneHasPartialContent,
   MILESTONE_STATUS_LABELS,
@@ -409,6 +411,53 @@ describe("resolveMilestoneGenerationStatus — timeline vs opened detail", () =>
     assert.equal(
       inferGenerationStatus(preview, preview.enabledFormats),
       "awaiting_approval",
+    );
+  });
+});
+
+describe("approval submit content gaps", () => {
+  it("lists missing feed/story/caption independently of Publish Now schedule", () => {
+    const preview = buildPreview({
+      deliveryMethod: "publish-now",
+      scheduleDate: "2026-09-09",
+      scheduleTime: "09:00",
+      enabledFormats: [
+        "facebook-feed",
+        "facebook-story",
+        "instagram-feed",
+        "instagram-story",
+      ],
+    });
+    assert.deepEqual(listMilestoneContentGaps(preview), [
+      "feed image",
+      "story image",
+      "caption",
+    ]);
+    assert.equal(isMilestoneEligibleForApprovalSubmit(preview), false);
+  });
+
+  it("describes bulk send blockers for incomplete Reminder Only milestone", () => {
+    const preview = buildPreview({
+      deliveryMethod: "publish-now",
+      enabledFormats: ["facebook-feed", "instagram-feed"],
+    });
+    const reason = describeApprovalSubmitBlockers(
+      [{ ...baseMilestone, name: "Reminder Only" }],
+      [preview],
+    );
+    assert.equal(
+      reason,
+      "Missing: feed image, caption. Generate or edit on Preview.",
+    );
+  });
+
+  it("returns null blockers and allows submit when content is complete", () => {
+    const preview = completeFeedPreview({ deliveryMethod: "publish-now" });
+    assert.deepEqual(listMilestoneContentGaps(preview), []);
+    assert.equal(isMilestoneEligibleForApprovalSubmit(preview), true);
+    assert.equal(
+      describeApprovalSubmitBlockers([baseMilestone], [preview]),
+      null,
     );
   });
 });
