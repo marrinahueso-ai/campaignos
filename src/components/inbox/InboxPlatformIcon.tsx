@@ -2,7 +2,11 @@ import {
   FacebookPlatformIcon,
   InstagramPlatformIcon,
 } from "@/components/communications-planning-calendar/MetaPlatformIcons";
-import { getInboxPlatform } from "@/lib/inbox/constants";
+import {
+  InstagramDmPlatformIcon,
+  MessengerPlatformIcon,
+} from "@/components/inbox/InboxChannelPlatformIcons";
+import { INBOX_CHANNEL_SHORT_LABELS } from "@/lib/inbox/constants";
 import type { InboxChannelType } from "@/lib/inbox/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -18,27 +22,38 @@ const SIZE_CLASSES = {
   md: "h-4 w-4",
 } as const;
 
-const PLATFORM_LABELS = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-} as const;
+function ChannelGlyph({
+  channelType,
+  iconClass,
+}: {
+  channelType: InboxChannelType;
+  iconClass: string;
+}) {
+  switch (channelType) {
+    case "facebook_message":
+      return <MessengerPlatformIcon className={iconClass} />;
+    case "instagram_dm":
+      return <InstagramDmPlatformIcon className={iconClass} />;
+    case "instagram_comment":
+    case "instagram_tag":
+      return <InstagramPlatformIcon className={iconClass} />;
+    case "facebook_comment":
+    case "facebook_tag":
+      return <FacebookPlatformIcon className={iconClass} />;
+  }
+}
 
 export function InboxPlatformIcon({
   channelType,
   size = "sm",
   className,
 }: InboxPlatformIconProps) {
-  const platform = getInboxPlatform(channelType);
   const iconClass = cn(SIZE_CLASSES[size], className);
-  const label = PLATFORM_LABELS[platform];
+  const label = INBOX_CHANNEL_SHORT_LABELS[channelType];
 
   return (
     <span className="inline-flex shrink-0" aria-label={label} title={label}>
-      {platform === "instagram" ? (
-        <InstagramPlatformIcon className={iconClass} />
-      ) : (
-        <FacebookPlatformIcon className={iconClass} />
-      )}
+      <ChannelGlyph channelType={channelType} iconClass={iconClass} />
     </span>
   );
 }

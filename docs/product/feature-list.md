@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Communications Hub: Meta-synced bubble reactions
+**Last updated:** July 23, 2026 — Communications Hub: DM-specific platform badges
 
 ---
 
@@ -131,6 +131,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Thread actions: Follow up (star), Done, Delete (with confirm); queue filters Unread / Follow up / Done / Deleted — **shipped**
 - Queue model: Unread is the default home (not Done, not Deleted; Follow up stays in Unread); Follow up = starred and not deleted; Done = marked done; Deleted via Manage — **shipped**
 - Queue UI: Meta-style horizontal filter chips (Unread, Follow up, Done); Manage menu has Deleted only (AI workflow folders removed); list rows with platform badge, follow-up star, accent selected edge — **shipped** (search stays in top bar only)
+- Platform badges by channel: Messenger bolt for `facebook_message`, IG paper-plane for `instagram_dm`, Facebook “f” / Instagram logo for comments & tags — **shipped** (queue avatar corner + thread header)
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**
 
