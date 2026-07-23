@@ -61,7 +61,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
-- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
+- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignments-first layout with compact Needs Snapshot / Quick Totals / Overall Filled strip and AI Assistant right rail; assignment table Filter + Date + Sort; summaries match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Volunteers

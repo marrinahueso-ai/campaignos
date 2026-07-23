@@ -938,28 +938,78 @@ function VolunteerOverview({
         ) : null}
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          label="Total Spots"
-          value={summary.totalSpots === null ? "—" : String(summary.totalSpots)}
-          hint={`Across ${summary.assignmentCount} assignments`}
-        />
-        <StatCard
-          label="Filled"
-          value={
-            summary.filledSpots === null ? "—" : String(summary.filledSpots)
-          }
-          hint={
-            summary.overallFilledPercent === null
-              ? "Quantities incomplete"
-              : `${summary.overallFilledPercent}% of all spots`
-          }
-        />
-        <StatCard
-          label="Open Spots"
-          value={summary.openSpots === null ? "—" : String(summary.openSpots)}
-          hint="Still need volunteers"
-        />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <section className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
+          <h3 className="font-display text-base text-cos-text">Needs Snapshot</h3>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {needs.map((item) => (
+              <li
+                key={item.status}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-cos-bg/60 px-2 py-1 text-xs"
+              >
+                <span
+                  className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${statusBadgeClass(item.status)}`}
+                >
+                  {item.label}
+                </span>
+                <span className="tabular-nums text-cos-muted">
+                  {item.assignmentCount}
+                  {item.status !== "full" ? ` · ${item.openSpots}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {days !== null ? (
+            <p className="mt-2 text-xs text-cos-muted">
+              In {days} day{days === 1 ? "" : "s"}
+              <span className="text-cos-border"> · </span>
+              {formatEventWhen(event)}
+            </p>
+          ) : null}
+        </section>
+
+        <section className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
+          <h3 className="font-display text-base text-cos-text">Quick Totals</h3>
+          <dl className="mt-2 grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+            <div>
+              <dt className="text-cos-muted">Total</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.totalSpots === null ? "—" : summary.totalSpots}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Filled</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.filledSpots === null ? "—" : summary.filledSpots}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Open</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.openSpots === null ? "—" : summary.openSpots}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Full</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.fullAssignmentCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Need help</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.needsHelpCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-cos-muted">Nearly full</dt>
+              <dd className="font-semibold tabular-nums text-cos-text">
+                {summary.nearlyFullCount}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
         <FillRateStatCard
           percent={summary.overallFilledPercent}
           hint={
@@ -969,25 +1019,136 @@ function VolunteerOverview({
                 : "From latest snapshot"
               : "Partial data"
           }
-        />
-        <StatCard
-          label="Full Assignments"
-          value={String(summary.fullAssignmentCount)}
-          hint="Zero open spots"
-        />
-        <StatCard
-          label="Assignments Needing Help"
-          value={String(summary.needsHelpCount)}
-          hint="High need + needs help"
+          compact
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="space-y-5">
-          <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start">
+        <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-4 sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h3 className="font-display text-xl text-cos-text">
+              Volunteer Assignments
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <Select
+                label="Filter"
+                value={filter}
+                onChange={(e) => onFilterChange(e.target.value as FilterId)}
+              >
+                <option value="all">All</option>
+                <option value="needs_help">Needs Help</option>
+                <option value="nearly_full">Nearly Full</option>
+                <option value="full">Full</option>
+                <option value="unknown">Unknown</option>
+              </Select>
+              <Select
+                label="Date"
+                value={activeDateFilter}
+                onChange={(e) =>
+                  onDateFilterChange(e.target.value as AssignmentDateFilter)
+                }
+              >
+                <option value="all">All dates</option>
+                {dateOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="Sort"
+                value={sort}
+                onChange={(e) => onSortChange(e.target.value as SortId)}
+              >
+                <option value="most_needed">Most Needed</option>
+                <option value="least_filled">Least Filled</option>
+                <option value="most_filled">Most Filled</option>
+                <option value="date">Date & Time</option>
+                <option value="name">Assignment Name</option>
+              </Select>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="border-b border-cos-border text-[11px] uppercase tracking-wide text-cos-muted">
+                <tr>
+                  <th className="pb-2 pr-3 font-medium">Assignment / Shift</th>
+                  <th className="pb-2 pr-3 font-medium">Date & Time</th>
+                  <th className="pb-2 pr-3 font-medium">Filled</th>
+                  <th className="pb-2 pr-3 font-medium">Open</th>
+                  <th className="pb-2 pr-3 font-medium">Progress</th>
+                  <th className="pb-2 pr-3 font-medium">Status</th>
+                  <th className="pb-2 font-medium">
+                    <span className="sr-only">Details</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="py-8 text-center text-cos-muted"
+                    >
+                      No assignments match this filter.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((assignment) => {
+                    const pct = progressPercent(assignment);
+                    return (
+                      <tr
+                        key={assignment.externalKey}
+                        className="cursor-pointer border-b border-cos-border/70 hover:bg-cos-bg/50"
+                        onClick={() => onSelect(assignment)}
+                      >
+                        <td className="py-3 pr-3">
+                          <p className="font-medium text-cos-text">
+                            {assignment.name}
+                          </p>
+                          {assignment.description ? (
+                            <p className="mt-0.5 text-xs text-cos-muted">
+                              {assignment.description}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="py-3 pr-3 text-cos-muted">
+                          {formatAssignmentWhen(assignment)}
+                        </td>
+                        <td className="py-3 pr-3">{filledLabel(assignment)}</td>
+                        <td className="py-3 pr-3">
+                          {assignment.quantityOpen ?? "—"}
+                        </td>
+                        <td className="py-3 pr-3">
+                          <AssignmentFillRateProgress percent={pct} />
+                        </td>
+                        <td className="py-3 pr-3">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(assignment.availabilityStatus)}`}
+                          >
+                            {availabilityStatusLabel(
+                              assignment.availabilityStatus,
+                            )}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <ChevronRight className="h-4 w-4 text-cos-muted" />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside className="space-y-4 lg:sticky lg:top-4">
+          <section className="rounded-2xl border border-cos-border/70 bg-cos-bg-alt p-4 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)]">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cos-muted" />
-              <h3 className="font-display text-xl text-cos-text">AI Assistant</h3>
+              <h3 className="font-display text-lg text-cos-text">AI Assistant</h3>
             </div>
             <p className="mt-3 text-sm font-medium text-cos-text">
               {ai?.headline}
@@ -1000,20 +1161,31 @@ function VolunteerOverview({
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button href={campaignBuilderHref} size="sm">
+            <div className="mt-4 flex flex-col gap-2">
+              <Button href={campaignBuilderHref} size="sm" className="w-full justify-center">
                 Create Reminder Post
               </Button>
-              <Button href={campaignBuilderHref} variant="secondary" size="sm">
+              <Button
+                href={campaignBuilderHref}
+                variant="secondary"
+                size="sm"
+                className="w-full justify-center"
+              >
                 Create Volunteer Email
               </Button>
-              <Button href={campaignBuilderHref} variant="secondary" size="sm">
+              <Button
+                href={campaignBuilderHref}
+                variant="secondary"
+                size="sm"
+                className="w-full justify-center"
+              >
                 Add Campaign Milestone
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="w-full justify-center"
                 onClick={onCopyMessage}
               >
                 <Copy className="h-3.5 w-3.5" />
@@ -1025,188 +1197,9 @@ function VolunteerOverview({
             ) : null}
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-              <h3 className="font-display text-xl text-cos-text">
-                Needs Snapshot
-              </h3>
-              <ul className="mt-4 space-y-3 text-sm">
-                {needs.map((item) => (
-                  <li key={item.status} className="flex items-start gap-2">
-                    <span
-                      className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(item.status)}`}
-                    >
-                      {item.label}
-                    </span>
-                    <span className="text-cos-muted">
-                      {item.assignmentCount} assignment
-                      {item.assignmentCount === 1 ? "" : "s"}
-                      {item.status !== "full"
-                        ? ` · ${item.openSpots} spot${item.openSpots === 1 ? "" : "s"}`
-                        : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {days !== null ? (
-                <p className="mt-4 text-sm text-cos-text">
-                  Event is in {days} day{days === 1 ? "" : "s"}
-                  <span className="block text-cos-muted">
-                    {formatEventWhen(event)}
-                  </span>
-                </p>
-              ) : null}
-            </div>
-            <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-              <h3 className="font-display text-xl text-cos-text">Quick Totals</h3>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-cos-muted">Full assignments</dt>
-                  <dd className="font-semibold text-cos-text">
-                    {summary.fullAssignmentCount}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-cos-muted">Need help</dt>
-                  <dd className="font-semibold text-cos-text">
-                    {summary.needsHelpCount}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-cos-muted">Nearly full</dt>
-                  <dd className="font-semibold text-cos-text">
-                    {summary.nearlyFullCount}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <h3 className="font-display text-xl text-cos-text">
-                Volunteer Assignments
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                <Select
-                  label="Filter"
-                  value={filter}
-                  onChange={(e) => onFilterChange(e.target.value as FilterId)}
-                >
-                  <option value="all">All</option>
-                  <option value="needs_help">Needs Help</option>
-                  <option value="nearly_full">Nearly Full</option>
-                  <option value="full">Full</option>
-                  <option value="unknown">Unknown</option>
-                </Select>
-                <Select
-                  label="Date"
-                  value={activeDateFilter}
-                  onChange={(e) =>
-                    onDateFilterChange(e.target.value as AssignmentDateFilter)
-                  }
-                >
-                  <option value="all">All dates</option>
-                  {dateOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  label="Sort"
-                  value={sort}
-                  onChange={(e) => onSortChange(e.target.value as SortId)}
-                >
-                  <option value="most_needed">Most Needed</option>
-                  <option value="least_filled">Least Filled</option>
-                  <option value="most_filled">Most Filled</option>
-                  <option value="date">Date & Time</option>
-                  <option value="name">Assignment Name</option>
-                </Select>
-              </div>
-            </div>
-
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="border-b border-cos-border text-[11px] uppercase tracking-wide text-cos-muted">
-                  <tr>
-                    <th className="pb-2 pr-3 font-medium">Assignment / Shift</th>
-                    <th className="pb-2 pr-3 font-medium">Date & Time</th>
-                    <th className="pb-2 pr-3 font-medium">Filled</th>
-                    <th className="pb-2 pr-3 font-medium">Open</th>
-                    <th className="pb-2 pr-3 font-medium">Progress</th>
-                    <th className="pb-2 pr-3 font-medium">Status</th>
-                    <th className="pb-2 font-medium">
-                      <span className="sr-only">Details</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="py-8 text-center text-cos-muted"
-                      >
-                        No assignments match this filter.
-                      </td>
-                    </tr>
-                  ) : (
-                    rows.map((assignment) => {
-                      const pct = progressPercent(assignment);
-                      return (
-                        <tr
-                          key={assignment.externalKey}
-                          className="cursor-pointer border-b border-cos-border/70 hover:bg-cos-bg/50"
-                          onClick={() => onSelect(assignment)}
-                        >
-                          <td className="py-3 pr-3">
-                            <p className="font-medium text-cos-text">
-                              {assignment.name}
-                            </p>
-                            {assignment.description ? (
-                              <p className="mt-0.5 text-xs text-cos-muted">
-                                {assignment.description}
-                              </p>
-                            ) : null}
-                          </td>
-                          <td className="py-3 pr-3 text-cos-muted">
-                            {formatAssignmentWhen(assignment)}
-                          </td>
-                          <td className="py-3 pr-3">{filledLabel(assignment)}</td>
-                          <td className="py-3 pr-3">
-                            {assignment.quantityOpen ?? "—"}
-                          </td>
-                          <td className="py-3 pr-3">
-                            <AssignmentFillRateProgress percent={pct} />
-                          </td>
-                          <td className="py-3 pr-3">
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(assignment.availabilityStatus)}`}
-                            >
-                              {availabilityStatusLabel(
-                                assignment.availabilityStatus,
-                              )}
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <ChevronRight className="h-4 w-4 text-cos-muted" />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-4">
-          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-            <h3 className="font-display text-xl text-cos-text">Event Details</h3>
-            <dl className="mt-4 space-y-3 text-sm">
+          <div className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
+            <h3 className="font-display text-base text-cos-text">Event Details</h3>
+            <dl className="mt-3 space-y-2.5 text-sm">
               <Detail label="Event" value={event.title} />
               <Detail label="Date / Time" value={formatEventWhen(event)} />
               <Detail
@@ -1224,10 +1217,10 @@ function VolunteerOverview({
             </dl>
           </div>
 
-          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-            <h3 className="font-display text-xl text-cos-text">Signup Source</h3>
-            <p className="mt-3 text-sm text-cos-muted">Provider: SignUpGenius</p>
-            <p className="mt-2 break-all text-sm text-cos-text">
+          <div className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
+            <h3 className="font-display text-base text-cos-text">Signup Source</h3>
+            <p className="mt-2 text-xs text-cos-muted">Provider: SignUpGenius</p>
+            <p className="mt-1 break-all text-sm text-cos-text">
               {truncateUrl(source.sourceUrl, 48)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -1252,9 +1245,9 @@ function VolunteerOverview({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-cos-border/70 bg-cos-card shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05),0_10px_24px_rgba(42,38,34,0.07)] p-5">
-            <h3 className="font-display text-xl text-cos-text">Sync Details</h3>
-            <dl className="mt-4 space-y-3 text-sm">
+          <div className="rounded-xl border border-cos-border/70 bg-cos-card p-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)]">
+            <h3 className="font-display text-base text-cos-text">Sync Details</h3>
+            <dl className="mt-3 space-y-2.5 text-sm">
               <Detail
                 label="Sync status"
                 value={
@@ -1302,7 +1295,7 @@ function VolunteerOverview({
               type="button"
               variant="secondary"
               size="sm"
-              className="mt-4"
+              className="mt-3"
               onClick={onToggleHistory}
             >
               {showHistory ? "Hide Sync History" : "View Sync History"}
@@ -1325,7 +1318,7 @@ function VolunteerOverview({
             ) : null}
           </div>
 
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-900">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-sm text-emerald-900">
             <div className="flex gap-2">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
@@ -1360,34 +1353,14 @@ function VolunteerOverview({
   );
 }
 
-function StatCard({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-}) {
-  return (
-    <div className="flex min-h-[7.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
-      <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-        {label}
-      </p>
-      <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
-        {value}
-      </p>
-      <p className="text-xs text-cos-muted">{hint}</p>
-    </div>
-  );
-}
-
 function FillRateStatCard({
   percent,
   hint,
+  compact = false,
 }: {
   percent: number | null;
   hint: string;
+  compact?: boolean;
 }) {
   const fillLabel = percent === null ? "—" : `${percent}%`;
   const band = getVolunteerFillRateBand(percent);
@@ -1399,7 +1372,12 @@ function FillRateStatCard({
 
   return (
     <div
-      className="flex min-h-[7.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"
+      className={cn(
+        "flex flex-col items-center justify-center gap-1 text-center",
+        compact
+          ? "rounded-xl border border-cos-border/70 bg-cos-card px-3 py-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_6px_rgba(42,38,34,0.05)] md:col-span-2 xl:col-span-1"
+          : "min-h-[7.25rem] rounded-2xl bg-cos-bg-alt px-4 py-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]",
+      )}
       title={statusLabel ?? undefined}
       aria-label={
         percent === null
@@ -1412,16 +1390,25 @@ function FillRateStatCard({
       </p>
       <p
         className={cn(
-          "flex items-center justify-center gap-1.5 font-display text-3xl leading-none tabular-nums",
+          "flex items-center justify-center gap-1.5 font-display leading-none tabular-nums",
+          compact ? "text-2xl" : "text-3xl",
           styles?.text ?? "text-cos-text",
         )}
       >
         {fillLabel}
         {isFullyStaffed ? (
-          <CheckCircle2 className="h-6 w-6 shrink-0" aria-hidden />
+          <CheckCircle2
+            className={cn("shrink-0", compact ? "h-5 w-5" : "h-6 w-6")}
+            aria-hidden
+          />
         ) : null}
       </p>
-      <div className="mt-1 h-1.5 w-full max-w-[7rem] overflow-hidden rounded-full bg-cos-bg">
+      <div
+        className={cn(
+          "overflow-hidden rounded-full bg-cos-bg",
+          compact ? "mt-0.5 h-1.5 w-full max-w-[6rem]" : "mt-1 h-1.5 w-full max-w-[7rem]",
+        )}
+      >
         <div
           className={cn(
             "h-full rounded-full transition-[width]",
