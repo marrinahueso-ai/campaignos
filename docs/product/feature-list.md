@@ -154,7 +154,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — **shipped** (reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty)
 - Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar) — **shipped**
 - Platform filter (All / Facebook / Instagram) applies to KPIs, chart, and top content — **shipped**
-- Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares) — **shipped** (Refresh syncs recent Facebook Page posts + Instagram media in range, not only posts published through Hey Ralli; falls back to post engagement fields when insights metrics are sparse)
+- Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares) — **shipped** (Refresh syncs recent Facebook Page posts + Instagram media in range, not only posts published through Hey Ralli; Facebook post views use `post_media_view` batch without invalid `post_comments`/`post_shares` insight names that previously zeroed the carousel; falls back to post engagement fields when insights metrics are sparse)
 - Content breakdown, platforms, recent activity — **shipped**
 - Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to` — **shipped**
 - Refresh from Meta + CSV export — **shipped**

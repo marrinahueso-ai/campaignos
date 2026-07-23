@@ -12,14 +12,23 @@ export const FACEBOOK_PAGE_DAILY_METRICS = [
   "page_actions_post_reactions_like_total",
 ] as const;
 
-/** Lifetime Facebook post metrics — reach/views, reactions, comments, shares, clicks. */
+/**
+ * Lifetime Facebook post insights metrics that Graph accepts today.
+ * Do not include `post_comments` / `post_shares` — those are not valid insights
+ * metric names and cause the entire `/{post-id}/insights` request to fail (#100).
+ * Comments/shares come from the post object (discovery) instead.
+ */
 export const FACEBOOK_POST_METRICS = [
   "post_total_media_view_unique",
   "post_media_view",
   "post_reactions_like_total",
-  "post_comments",
-  "post_shares",
   "post_clicks",
+] as const;
+
+/** Minimal view metrics — used when a broader post insights batch is rejected. */
+export const FACEBOOK_POST_VIEW_METRICS = [
+  "post_media_view",
+  "post_total_media_view_unique",
 ] as const;
 
 /** Instagram account metrics that require metric_type=total_value with period=day. */

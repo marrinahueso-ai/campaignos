@@ -1,6 +1,8 @@
 import { InsightsHub } from "@/components/insights/InsightsHub";
 import { getInsightsPageData } from "@/lib/insights/queries";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Insights & Analytics",
 };

@@ -22,6 +22,9 @@ test("uses view-based Facebook post metrics instead of deprecated impressions", 
   assert.ok(FACEBOOK_POST_METRICS.includes("post_total_media_view_unique"));
   assert.equal(FACEBOOK_POST_METRICS.includes("post_impressions_unique"), false);
   assert.equal(FACEBOOK_POST_METRICS.includes("post_engaged_users"), false);
+  // These look like metrics but Graph rejects them and fails the whole batch.
+  assert.equal(FACEBOOK_POST_METRICS.includes("post_comments"), false);
+  assert.equal(FACEBOOK_POST_METRICS.includes("post_shares"), false);
 });
 
 test("detects photo-only Facebook object IDs", () => {

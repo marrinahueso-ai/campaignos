@@ -3,6 +3,7 @@ import "server-only";
 import {
   FACEBOOK_PAGE_DAILY_METRICS,
   FACEBOOK_POST_METRICS,
+  FACEBOOK_POST_VIEW_METRICS,
   INSTAGRAM_ACCOUNT_TIME_SERIES_METRICS,
   INSTAGRAM_ACCOUNT_TOTAL_VALUE_METRICS,
   INSTAGRAM_FEED_MEDIA_METRICS,
@@ -188,17 +189,43 @@ async function fetchFacebookPostInsightsForId(input: {
   error: string | null;
   errorCode?: number;
 }> {
-  const result = await graphGet(`/${input.postId}/insights`, {
+  const primary = await graphGet(`/${input.postId}/insights`, {
     metric: FACEBOOK_POST_METRICS.join(","),
     access_token: input.accessToken,
   });
 
-  if (!result.ok) {
-    return { insight: null, error: result.error, errorCode: result.errorCode };
+  if (primary.ok) {
+    const data = (primary.data.data ?? []) as InsightValueRow[];
+    return { insight: parsePostInsights(data), error: null };
   }
 
-  const data = (result.data.data ?? []) as InsightValueRow[];
-  return { insight: parsePostInsights(data), error: null };
+  // One invalid metric name fails the whole batch — retry views-only.
+  if (
+    primary.errorCode === 100 &&
+    /valid insights metric/i.test(primary.error)
+  ) {
+    const fallback = await graphGet(`/${input.postId}/insights`, {
+      metric: FACEBOOK_POST_VIEW_METRICS.join(","),
+      access_token: input.accessToken,
+    });
+
+    if (fallback.ok) {
+      const data = (fallback.data.data ?? []) as InsightValueRow[];
+      return { insight: parsePostInsights(data), error: null };
+    }
+
+    return {
+      insight: null,
+      error: fallback.error,
+      errorCode: fallback.errorCode,
+    };
+  }
+
+  return {
+    insight: null,
+    error: primary.error,
+    errorCode: primary.errorCode,
+  };
 }
 
 export async function fetchFacebookPostInsights(input: {
