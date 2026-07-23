@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 22, 2026 — Create with AI Delivery **Publish Now** (default; posts on approve); legacy auto-publish normalizes to Publish Now; Unified Get started + Meta Graph schedule / Calendar DnD
+**Last updated:** July 22, 2026 — Communications Hub: full emoji picker, stickers (local insert), double-tap bubble reactions (local)
 
 ---
 
@@ -125,7 +125,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Inbox AI drafts + approve-then-send — **shipped**
 - Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**
 - Messenger timeline always shows a profile picture (or initials/fallback) next to every bubble — **shipped**
-- Reply composer toolbar: emoji picker + 👍/❤️ quick-insert — **shipped**; attachment icon opens file picker then shows Meta text-only notice — **shipped** (send path still text-only)
+- Reply composer toolbar: full emoji picker (`emoji-picker-react`, search/categories) + built-in sticker pack (inserts emoji; Meta custom sticker send unavailable) + 👍/❤️ quick-insert — **shipped**; attachment icon opens file picker then shows Meta text-only notice — **shipped** (send path still text-only)
+- Double-tap / double-click message bubble → quick 👍 / ❤️ reaction bar (local `inbox_messages.metadata`; Meta reaction sync not available) — **shipped**
 - Thread actions: Follow up (star), Done, Delete (with confirm); queue filters Follow up / Done / Deleted — **shipped**
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**

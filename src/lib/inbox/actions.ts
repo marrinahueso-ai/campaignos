@@ -18,6 +18,7 @@ import {
   missingInstagramCommentScopes,
 } from "@/lib/inbox/scopes";
 import { isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
+import { isBubbleQuickReaction } from "@/lib/inbox/stickers";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
 import { getLatestOrganization } from "@/lib/organizations/queries";
@@ -586,6 +587,60 @@ export async function markInboxThreadReadAction(input: {
 
   if (error) {
     return { success: false, error: "Could not mark thread as read." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+/**
+ * Persist a local org-side reaction on a message bubble.
+ * Meta Graph does not expose a reliable cross-channel reaction send path for
+ * our inbox reply channels yet, so this stays CampaignOS-local (metadata).
+ */
+export async function setInboxMessageReactionAction(input: {
+  messageId: string;
+  reaction: string | null;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  if (input.reaction != null && !isBubbleQuickReaction(input.reaction)) {
+    return { success: false, error: "Unsupported reaction." };
+  }
+
+  const message = await getInboxMessageById({
+    organizationId: access.organizationId,
+    messageId: input.messageId,
+  });
+  if (!message) {
+    return { success: false, error: "Message not found." };
+  }
+
+  const now = new Date().toISOString();
+  const nextMetadata: Record<string, unknown> = { ...message.metadata };
+  if (input.reaction) {
+    nextMetadata.localReaction = input.reaction;
+    nextMetadata.localReactionAt = now;
+  } else {
+    delete nextMetadata.localReaction;
+    delete nextMetadata.localReactionAt;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_messages")
+    .update({
+      metadata: nextMetadata,
+      updated_at: now,
+    })
+    .eq("id", input.messageId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not save reaction." };
   }
 
   revalidateInboxRoutes();

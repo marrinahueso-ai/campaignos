@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Star,
   Trash2,
-  User,
   UserPlus,
 } from "lucide-react";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
@@ -28,8 +27,8 @@ import {
   isOutboundTimelineMessage,
 } from "@/lib/inbox/timeline-messages";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
-import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
+import { MessageBubble } from "@/components/communications-hub/MessageBubble";
 import {
   CommunicationsAiPanel,
   CommunicationsReplySection,
@@ -46,37 +45,6 @@ function participantInitials(name: string | null): string {
   }
 
   return name.slice(0, 2).toUpperCase();
-}
-
-function MessageAvatar({
-  avatarUrl,
-  name,
-}: {
-  avatarUrl: string | null;
-  name: string | null;
-}) {
-  const initials = participantInitials(name);
-
-  return (
-    <div
-      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-[10px] font-semibold text-cos-text"
-      aria-hidden
-    >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-        />
-      ) : initials !== "?" ? (
-        initials
-      ) : (
-        <User className="h-4 w-4 text-cos-muted" strokeWidth={1.75} />
-      )}
-    </div>
-  );
 }
 
 function threadChannelDisplayLabel(thread: InboxThread): string {
@@ -137,39 +105,14 @@ function ThreadMessageTimeline({
           : message.senderName ?? participantName;
 
         return (
-          <li
+          <MessageBubble
             key={message.id}
-            className={cn(
-              "flex max-w-[85%] items-end gap-2",
-              isOutbound && "ml-auto flex-row-reverse",
-            )}
-          >
-            <MessageAvatar avatarUrl={avatarUrl} name={avatarName} />
-            <div className="min-w-0">
-              <div
-                className={cn(
-                  "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                  isOutbound
-                    ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
-                    : "rounded-bl-md bg-[#eceae4] text-cos-text",
-                )}
-              >
-                <p className="whitespace-pre-wrap">{message.body}</p>
-              </div>
-              {message.sentAt ? (
-                <time
-                  className={cn(
-                    "mt-1.5 block px-1 text-xs text-cos-muted",
-                    isOutbound && "text-right",
-                  )}
-                  dateTime={message.sentAt}
-                >
-                  {formatMessageTime(message.sentAt)}
-                  {isOutbound ? " · Sent" : null}
-                </time>
-              ) : null}
-            </div>
-          </li>
+            message={message}
+            isOutbound={isOutbound}
+            avatarUrl={avatarUrl}
+            avatarName={avatarName}
+            initials={participantInitials(avatarName)}
+          />
         );
       })}
     </ul>

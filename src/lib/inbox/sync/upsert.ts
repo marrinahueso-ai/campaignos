@@ -42,17 +42,32 @@ function buildThreadUpsertRow(input: {
   return row;
 }
 
-async function messageExists(
+type ExistingMessageLookup =
+  | { found: true; metadata: Record<string, unknown> }
+  | { found: false }
+  | null;
+
+function mergeMessageMetadata(
+  existing: Record<string, unknown> | null | undefined,
+  incoming: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  return {
+    ...(existing ?? {}),
+    ...(incoming ?? {}),
+  };
+}
+
+async function lookupExistingMessage(
   supabase: SupabaseClient,
   input: {
     organizationId: string;
     channelType: string;
     externalMessageId: string;
   },
-): Promise<boolean | null> {
+): Promise<ExistingMessageLookup> {
   const { data, error } = await supabase
     .from("inbox_messages")
-    .select("id")
+    .select("id, metadata")
     .eq("organization_id", input.organizationId)
     .eq("channel_type", input.channelType)
     .eq("external_message_id", input.externalMessageId)
@@ -63,7 +78,17 @@ async function messageExists(
     return null;
   }
 
-  return Boolean(data);
+  if (!data) {
+    return { found: false };
+  }
+
+  return {
+    found: true,
+    metadata:
+      data.metadata && typeof data.metadata === "object" && !Array.isArray(data.metadata)
+        ? (data.metadata as Record<string, unknown>)
+        : {},
+  };
 }
 
 async function incrementThreadUnreadForInboundMessage(
@@ -178,7 +203,7 @@ async function upsertInboxBatchWithClient(
       continue;
     }
 
-    const existingMessage = await messageExists(supabase, {
+    const existingMessage = await lookupExistingMessage(supabase, {
       organizationId: input.organizationId,
       channelType: message.channelType,
       externalMessageId: message.externalMessageId,
@@ -187,7 +212,7 @@ async function upsertInboxBatchWithClient(
       continue;
     }
 
-    const isNewMessage = !existingMessage;
+    const isNewMessage = !existingMessage.found;
 
     const { error } = await supabase.from("inbox_messages").upsert(
       {
@@ -200,7 +225,10 @@ async function upsertInboxBatchWithClient(
         sender_name: message.senderName ?? null,
         sender_external_id: message.senderExternalId ?? null,
         sent_at: message.sentAt ?? null,
-        metadata: message.metadata ?? {},
+        metadata: mergeMessageMetadata(
+          existingMessage.found ? existingMessage.metadata : null,
+          message.metadata,
+        ),
         updated_at: now,
       },
       { onConflict: "organization_id,channel_type,external_message_id" },
@@ -241,7 +269,7 @@ export async function upsertWebhookMessage(input: {
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
-  const existingMessage = await messageExists(admin, {
+  const existingMessage = await lookupExistingMessage(admin, {
     organizationId: input.organizationId,
     channelType: input.message.channelType,
     externalMessageId: input.message.externalMessageId,
@@ -251,7 +279,7 @@ export async function upsertWebhookMessage(input: {
     return false;
   }
 
-  const isNewMessage = !existingMessage;
+  const isNewMessage = !existingMessage.found;
 
   const { data: threadData, error: threadError } = await admin
     .from("inbox_threads")
@@ -282,7 +310,10 @@ export async function upsertWebhookMessage(input: {
       sender_name: input.message.senderName ?? null,
       sender_external_id: input.message.senderExternalId ?? null,
       sent_at: input.message.sentAt ?? null,
-      metadata: input.message.metadata ?? {},
+      metadata: mergeMessageMetadata(
+        existingMessage.found ? existingMessage.metadata : null,
+        input.message.metadata,
+      ),
       updated_at: now,
     },
     { onConflict: "organization_id,channel_type,external_message_id" },

@@ -9,6 +9,7 @@ import {
   useTransition,
   type ChangeEvent,
 } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -17,8 +18,10 @@ import {
   Paperclip,
   Smile,
   Sparkles,
+  Sticker,
   ThumbsUp,
 } from "lucide-react";
+import { Theme, type EmojiClickData } from "emoji-picker-react";
 import {
   approveInboxReplyAction,
   generateInboxAiDraftAction,
@@ -28,26 +31,23 @@ import { CommunicationsParentPostCard } from "@/components/communications-hub/Co
 import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
+import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
 
-const QUICK_EMOJIS = [
-  "😀",
-  "😊",
-  "😂",
-  "😍",
-  "🙏",
-  "👏",
-  "🎉",
-  "👍",
-  "❤️",
-  "🙌",
-  "💯",
-  "✨",
-] as const;
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[360px] w-[320px] items-center justify-center rounded-xl border border-cos-border bg-white text-xs text-cos-muted">
+      Loading emoji…
+    </div>
+  ),
+});
+
+type ComposerPicker = "emoji" | "sticker" | null;
 
 function renderTextWithLinks(text: string) {
   const parts = text.split(URL_PATTERN);
@@ -102,11 +102,11 @@ export function CommunicationsReplySection({
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [draftRequested, setDraftRequested] = useState(false);
-  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [composerPicker, setComposerPicker] = useState<ComposerPicker>(null);
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const composerPickerRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
 
   const participantFirstName =
@@ -130,27 +130,27 @@ export function CommunicationsReplySection({
     setActionError(null);
     setAttachmentNotice(null);
     setDraftRequested(false);
-    setEmojiPickerOpen(false);
+    setComposerPicker(null);
     selectionRef.current = { start: 0, end: 0 };
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
 
   useEffect(() => {
-    if (!emojiPickerOpen) {
+    if (!composerPicker) {
       return;
     }
 
     function handlePointerDown(event: MouseEvent) {
       if (
-        emojiPickerRef.current &&
-        !emojiPickerRef.current.contains(event.target as Node)
+        composerPickerRef.current &&
+        !composerPickerRef.current.contains(event.target as Node)
       ) {
-        setEmojiPickerOpen(false);
+        setComposerPicker(null);
       }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setEmojiPickerOpen(false);
+        setComposerPicker(null);
       }
     }
 
@@ -165,7 +165,7 @@ export function CommunicationsReplySection({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [emojiPickerOpen]);
+  }, [composerPicker]);
 
   const insertIntoReply = useCallback((text: string) => {
     const textarea = replyTextareaRef.current;
@@ -198,8 +198,20 @@ export function CommunicationsReplySection({
 
   function handleAttachClick() {
     setAttachmentNotice(null);
-    setEmojiPickerOpen(false);
+    setComposerPicker(null);
     fileInputRef.current?.click();
+  }
+
+  function handleEmojiClick(emojiData: EmojiClickData) {
+    insertIntoReply(emojiData.emoji);
+  }
+
+  function handleStickerSelect(emoji: string) {
+    insertIntoReply(emoji);
+    setComposerPicker(null);
+    setAttachmentNotice(
+      "Stickers insert as emoji for now — Meta replies are text-only (custom sticker send isn’t available yet).",
+    );
   }
 
   function handleAttachSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -462,7 +474,7 @@ export function CommunicationsReplySection({
           tabIndex={-1}
         />
         <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="relative flex items-center gap-0.5" ref={emojiPickerRef}>
+          <div className="relative flex items-center gap-0.5" ref={composerPickerRef}>
             <button
               type="button"
               onClick={handleAttachClick}
@@ -476,17 +488,38 @@ export function CommunicationsReplySection({
             <button
               type="button"
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => setEmojiPickerOpen((open) => !open)}
+              onClick={() =>
+                setComposerPicker((current) => (current === "emoji" ? null : "emoji"))
+              }
               className={cn(
                 "inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text",
-                emojiPickerOpen && "bg-cos-bg text-cos-text",
+                composerPicker === "emoji" && "bg-cos-bg text-cos-text",
               )}
               aria-label="Add emoji"
-              aria-expanded={emojiPickerOpen}
-              aria-haspopup="listbox"
+              aria-expanded={composerPicker === "emoji"}
+              aria-haspopup="dialog"
               title="Add emoji"
             >
               <Smile className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() =>
+                setComposerPicker((current) =>
+                  current === "sticker" ? null : "sticker",
+                )
+              }
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text",
+                composerPicker === "sticker" && "bg-cos-bg text-cos-text",
+              )}
+              aria-label="Add sticker"
+              aria-expanded={composerPicker === "sticker"}
+              aria-haspopup="dialog"
+              title="Add sticker"
+            >
+              <Sticker className="h-4 w-4" />
             </button>
             <button
               type="button"
@@ -508,27 +541,48 @@ export function CommunicationsReplySection({
             >
               <Heart className="h-4 w-4" />
             </button>
-            {emojiPickerOpen ? (
+            {composerPicker === "emoji" ? (
               <div
-                className="absolute bottom-full left-0 z-50 mb-2 grid w-52 grid-cols-6 gap-1 rounded-xl border border-cos-border bg-white p-2 shadow-lg"
-                role="listbox"
+                className="absolute bottom-full left-0 z-50 mb-2 overflow-hidden rounded-xl border border-cos-border bg-white shadow-lg"
+                role="dialog"
                 aria-label="Emoji picker"
               >
-                {QUICK_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    role="option"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base transition-colors hover:bg-cos-bg"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      insertIntoReply(emoji);
-                      setEmojiPickerOpen(false);
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme={Theme.LIGHT}
+                  width={320}
+                  height={360}
+                  searchPlaceHolder="Search emoji"
+                  previewConfig={{ showPreview: false }}
+                  lazyLoadEmojis
+                />
+              </div>
+            ) : null}
+            {composerPicker === "sticker" ? (
+              <div
+                className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-cos-border bg-white p-3 shadow-lg"
+                role="dialog"
+                aria-label="Sticker picker"
+              >
+                <p className="mb-2 text-[11px] leading-snug text-cos-muted">
+                  Built-in stickers insert into your reply. Meta custom sticker send
+                  isn’t available yet.
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {INBOX_STICKER_PACK.map((sticker) => (
+                    <button
+                      key={sticker.id}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleStickerSelect(sticker.emoji)}
+                      className="inline-flex h-12 flex-col items-center justify-center rounded-lg text-2xl transition-colors hover:bg-cos-bg"
+                      aria-label={sticker.label}
+                      title={sticker.label}
+                    >
+                      {sticker.emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : null}
           </div>
