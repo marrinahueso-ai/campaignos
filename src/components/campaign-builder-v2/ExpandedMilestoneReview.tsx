@@ -207,6 +207,7 @@ export function ExpandedMilestoneReview({
                 awaitingApproval={generationStatus === "awaiting_approval"}
                 editCaptionHref={previewHref}
                 editArtworkHref={editArtworkHref}
+                changeDateHref={previewHref}
                 onResendForApproval={onResendForApproval}
                 isResending={isResending}
                 message={resendMessage}

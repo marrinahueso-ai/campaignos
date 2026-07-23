@@ -15,6 +15,8 @@ interface ChangeRequestBannerProps {
   /** Optional link-style edit paths (Review step). */
   editArtworkHref?: string | null;
   editCaptionHref?: string | null;
+  /** Preview Campaign deep link for changing the milestone schedule. */
+  changeDateHref?: string | null;
   message?: string | null;
   messageIsError?: boolean;
 }
@@ -29,6 +31,7 @@ export function ChangeRequestBanner({
   isResending = false,
   editArtworkHref,
   editCaptionHref,
+  changeDateHref,
   message,
   messageIsError = false,
 }: ChangeRequestBannerProps) {
@@ -72,6 +75,32 @@ export function ChangeRequestBanner({
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
+        {onEditArtwork ? (
+          <Button
+            variant={awaitingApproval ? "secondary" : "primary"}
+            size="sm"
+            onClick={onEditArtwork}
+          >
+            Edit Artwork
+          </Button>
+        ) : editArtworkHref ? (
+          <Button
+            href={editArtworkHref}
+            variant={awaitingApproval ? "secondary" : "primary"}
+            size="sm"
+          >
+            Edit Artwork
+          </Button>
+        ) : null}
+        {onEditSchedule ? (
+          <Button variant="secondary" size="sm" onClick={onEditSchedule}>
+            Change Date
+          </Button>
+        ) : changeDateHref ? (
+          <Button href={changeDateHref} variant="secondary" size="sm">
+            Change Date
+          </Button>
+        ) : null}
         {onEditCaption ? (
           <Button variant="secondary" size="sm" onClick={onEditCaption}>
             Edit caption
@@ -81,23 +110,13 @@ export function ChangeRequestBanner({
             Edit caption
           </Button>
         ) : null}
-        {onEditSchedule ? (
-          <Button variant="secondary" size="sm" onClick={onEditSchedule}>
-            Edit schedule
-          </Button>
-        ) : null}
-        {onEditArtwork ? (
-          <Button variant="secondary" size="sm" onClick={onEditArtwork}>
-            Edit artwork
-          </Button>
-        ) : editArtworkHref ? (
-          <Button href={editArtworkHref} variant="secondary" size="sm">
-            Edit artwork
-          </Button>
-        ) : null}
         {onResendForApproval ? (
           <Button
-            variant="primary"
+            variant={
+              awaitingApproval || (!onEditArtwork && !editArtworkHref)
+                ? "primary"
+                : "secondary"
+            }
             size="sm"
             disabled={isResending}
             onClick={onResendForApproval}

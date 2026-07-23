@@ -110,9 +110,9 @@ describe("mutation refresh wiring (source contract)", () => {
   it("Approvals approve and request-changes refresh the approvals tab", () => {
     assert.match(approvalsHub, /useEventTabMutationRefresh\("approvals"\)/);
     assert.match(approvalsHub, /await refreshApprovalsTab\(\)/);
-    assert.match(approvalsTable, /useEventTabMutationRefresh\("approvals"\)/);
-    assert.match(approvalsTable, /await refreshApprovalsTab\(\)/);
     assert.doesNotMatch(approvalsHub, /router\.refresh\(\)/);
+    // Table is View-only; approve / request-changes run from the hub drawer.
+    assert.doesNotMatch(approvalsTable, /useEventTabMutationRefresh/);
     assert.doesNotMatch(approvalsTable, /router\.refresh\(\)/);
   });
 

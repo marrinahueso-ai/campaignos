@@ -1,18 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, MoreHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   AssigneeAvatar,
   DeliveryIcons,
 } from "@/components/approvals-scheduling/ReviewDrawer";
 import { StatusBadge } from "@/components/approvals-scheduling/StatusBadge";
-import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
-import {
-  approveUnifiedItemAction,
-} from "@/lib/approvals-scheduling/actions";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import {
   DEFAULT_APPROVAL_SORT_DIRECTION,
@@ -43,9 +39,7 @@ const SORTABLE_COLUMNS: {
 interface ApprovalsTableProps {
   items: UnifiedApprovalItem[];
   canApproveComms: boolean;
-  actorEmail: string | null;
   onReview: (item: UnifiedApprovalItem) => void;
-  onActionError: (message: string) => void;
 }
 
 function SortIcon({
@@ -71,13 +65,8 @@ function SortIcon({
 export function ApprovalsTable({
   items,
   canApproveComms,
-  actorEmail,
   onReview,
-  onActionError,
 }: ApprovalsTableProps) {
-  const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [expandedActionsId, setExpandedActionsId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<ApprovalSortField>(
     DEFAULT_APPROVAL_SORT_FIELD,
   );
@@ -94,28 +83,6 @@ export function ApprovalsTable({
     const next = nextApprovalSortState(sortField, sortDirection, field);
     setSortField(next.field);
     setSortDirection(next.direction);
-  }
-
-  async function runAction(
-    item: UnifiedApprovalItem,
-    action: () => Promise<{ success: boolean; error?: string; warning?: string }>,
-  ) {
-    setPendingId(item.id);
-    try {
-      const result = await action();
-      if (result.success) {
-        if (result.warning) {
-          onActionError(result.warning);
-        }
-        await refreshApprovalsTab();
-        return;
-      }
-      onActionError(result.error ?? "Unable to complete that action.");
-    } catch {
-      onActionError("Something went wrong. Please try again.");
-    } finally {
-      setPendingId(null);
-    }
   }
 
   if (items.length === 0) {
@@ -171,7 +138,6 @@ export function ApprovalsTable({
         <tbody>
           {sortedItems.map((item) => {
             const canAct = canActOnUnifiedItem(item, canApproveComms);
-            const isPending = pendingId === item.id;
             const showReview =
               item.workflowStatus === "assigned_to_me" ||
               item.workflowStatus === "in_queue" ||
@@ -236,72 +202,14 @@ export function ApprovalsTable({
                   </p>
                 </td>
                 <td className="px-4 py-4 align-top">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={showReview && canAct ? "primary" : "secondary"}
-                      disabled={isPending}
-                      onClick={() => onReview(item)}
-                    >
-                      View
-                    </Button>
-                    {canAct && showReview ? (
-                      <div className="relative">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0"
-                          aria-label="More actions"
-                          onClick={() =>
-                            setExpandedActionsId((current) =>
-                              current === item.id ? null : item.id,
-                            )
-                          }
-                        >
-                          {isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <MoreHorizontal className="h-4 w-4" />
-                          )}
-                        </Button>
-                        {expandedActionsId === item.id ? (
-                          <div className="absolute right-0 z-10 mt-1 min-w-40 border border-cos-border bg-cos-card py-1 shadow-lg">
-                            <button
-                              type="button"
-                              className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
-                              onClick={() => {
-                                setExpandedActionsId(null);
-                                void runAction(item, () =>
-                                  approveUnifiedItemAction({
-                                    eventId: item.eventId,
-                                    communicationItemId: item.communicationItemId,
-                                    schedulingItemId: item.schedulingItemId,
-                                    campaignName: item.campaignName,
-                                    milestoneName: item.milestoneName,
-                                    recipientEmail: actorEmail,
-                                  }),
-                                );
-                              }}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              type="button"
-                              className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
-                              onClick={() => {
-                                setExpandedActionsId(null);
-                                onReview(item);
-                              }}
-                            >
-                              Request changes
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={showReview && canAct ? "primary" : "secondary"}
+                    onClick={() => onReview(item)}
+                  >
+                    View
+                  </Button>
                 </td>
               </tr>
             );

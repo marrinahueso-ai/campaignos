@@ -313,23 +313,44 @@ export async function sendChangeRequestedEmail(
         input.campaignMilestoneId,
       )
     : null;
-  const primaryHref = editPreviewHref ?? editArtworkHref ?? reviewHref;
-  const primaryLabel = editPreviewHref
-    ? "Edit & resend"
-    : editArtworkHref
-      ? "Edit artwork"
+  const changeDateHref = editPreviewHref;
+  const primaryHref = editArtworkHref ?? changeDateHref ?? reviewHref;
+  const primaryLabel = editArtworkHref
+    ? "Edit Artwork"
+    : changeDateHref
+      ? "Change Date"
       : "View in Create with AI";
+  const secondaryCtaLabel = editArtworkHref
+    ? changeDateHref
+      ? "Change Date"
+      : "Open Review step"
+    : changeDateHref
+      ? "Open Review step"
+      : undefined;
+  const secondaryCtaHref = editArtworkHref
+    ? (changeDateHref ?? reviewHref)
+    : changeDateHref
+      ? reviewHref
+      : undefined;
   const content = contentPreviewFromInput(input);
   const commentBox = `<div style="margin:16px 0;padding:12px 14px;border:1px solid #f0c4c4;background:#fdf2f2;color:#8b3f3f;font-size:14px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><strong style="display:block;margin-bottom:6px;">Change request</strong>${escapeHtml(input.comment)}</div>`;
   const html = buildApprovalEmailHtml({
     heading: "Changes requested",
-    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}. Edit caption, schedule, or artwork on that milestone, then send for re-approval — regenerating artwork is optional.${commentBox}`,
+    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}. Use <strong>Edit Artwork</strong> or <strong>Change Date</strong> below, then send for re-approval from Preview or Review — regenerating artwork is optional.${commentBox}`,
     ctaLabel: primaryLabel,
     ctaHref: primaryHref,
-    secondaryCtaLabel: editArtworkHref ? "Edit artwork" : "Open Review step",
-    secondaryCtaHref: editArtworkHref ?? reviewHref,
+    secondaryCtaLabel,
+    secondaryCtaHref,
     content,
   });
+
+  const textLinks = [
+    editArtworkHref ? `Edit Artwork: ${editArtworkHref}` : null,
+    changeDateHref ? `Change Date: ${changeDateHref}` : null,
+    !editArtworkHref && !changeDateHref ? `Open ${reviewHref}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return dispatchApprovalEmail({
     eventId: input.eventId,
@@ -337,7 +358,7 @@ export async function sendChangeRequestedEmail(
     recipientEmail: input.recipientEmail,
     subject: `Changes requested: ${input.milestoneName}`,
     html,
-    text: `Changes requested for ${input.milestoneName}: ${input.comment}. ${editPreviewHref ? `Edit & resend: ${editPreviewHref}` : editArtworkHref ? `Edit artwork: ${editArtworkHref}` : `Open ${reviewHref}`}${buildApprovalContentPreviewText(content)}`,
+    text: `Changes requested for ${input.milestoneName}: ${input.comment}. ${textLinks}${buildApprovalContentPreviewText(content)}`,
     schedulingItemId: input.schedulingItemId,
     approvalRequestId: input.approvalRequestId,
   });

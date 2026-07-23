@@ -115,7 +115,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
 - Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
 - Event detail Approvals tab: same table without status filter tabs/search chrome; sortable column headers (default schedule ascending) — **shipped**
-- Change-requested items show the approver comment + Edit & resend / Edit artwork CTAs (Approvals drawer + email); Preview/Review show the comment with caption, schedule, and artwork edit paths; **Send for re-approval** submits that milestone’s current content (existing artwork OK — no regenerate-all) and emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**
+- Approvals table Actions column shows **View** only (approve / request changes stay in the review drawer) — **shipped**
+- Change-requested items show the approver comment + **Edit Artwork** / **Change Date** CTAs (Approvals drawer + email; Edit Artwork → Create with AI Preview + edit-artwork modal for that milestone; Change Date → Preview Campaign for that milestone); Preview/Review banners keep caption / Change Date / artwork paths plus **Send for re-approval**; resubmit emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**
 - Legacy Publishing Center → redirects to Approvals
 
 ## Calendar

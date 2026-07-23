@@ -268,7 +268,6 @@ export function ApprovalsSchedulingHub({
       <ApprovalsTable
         items={scopedItems}
         canApproveComms={canViewAll}
-        actorEmail={actorEmail}
         onReview={(item) => {
           setReviewItem(item);
           setComment("");
@@ -281,7 +280,6 @@ export function ApprovalsSchedulingHub({
             );
           });
         }}
-        onActionError={setActionError}
       />
 
       {!embedded ? <ApprovalFlowGuide /> : null}

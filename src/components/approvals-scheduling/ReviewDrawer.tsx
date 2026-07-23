@@ -133,21 +133,21 @@ export function ReviewDrawer({
               )}
               {editPreviewHref || editArtworkHref ? (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {editPreviewHref ? (
-                    <Button href={editPreviewHref} variant="primary" size="sm">
-                      Edit & resend
+                  {editArtworkHref ? (
+                    <Button href={editArtworkHref} variant="primary" size="sm">
+                      Edit Artwork
                     </Button>
                   ) : null}
-                  {editArtworkHref ? (
-                    <Button href={editArtworkHref} variant="secondary" size="sm">
-                      Edit artwork
+                  {editPreviewHref ? (
+                    <Button href={editPreviewHref} variant="secondary" size="sm">
+                      Change Date
                     </Button>
                   ) : null}
                 </div>
               ) : null}
               <p className="mt-2 text-xs text-red-800/80">
-                Caption, schedule, and artwork can be updated without regenerating
-                other milestones.
+                Update artwork or schedule for this milestone, then send for
+                re-approval from Preview or Review.
               </p>
             </div>
           ) : null}

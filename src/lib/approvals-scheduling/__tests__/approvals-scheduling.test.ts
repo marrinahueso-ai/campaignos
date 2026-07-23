@@ -299,6 +299,9 @@ describe("approval notification hooks", () => {
     assert.match(source, /approval_resubmitted/);
     assert.match(source, /Resubmitted for approval/);
     assert.match(source, /export async function sendChangeRequestedEmail/);
+    assert.match(source, /Edit Artwork/);
+    assert.match(source, /Change Date/);
+    assert.doesNotMatch(source, /Edit & resend/);
     assert.match(source, /export async function sendContentApprovedEmail/);
     assert.match(source, /export async function sendScheduledDeliveryEmail/);
     assert.match(source, /approval_notification_log/);
