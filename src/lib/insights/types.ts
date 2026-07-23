@@ -63,6 +63,8 @@ export type InsightsTopPost = {
   engagement: number | null;
   likes: number | null;
   comments: number | null;
+  /** Synced from Meta post insights (`post_shares` / IG shares); 0 when none. */
+  shares: number | null;
   externalPostId: string;
 };
 

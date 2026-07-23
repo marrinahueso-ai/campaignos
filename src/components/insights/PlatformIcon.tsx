@@ -13,8 +13,14 @@ export function PlatformIcon({ platform, className }: PlatformIconProps) {
   const Icon = platform === "instagram" ? InstagramIcon : FacebookIcon;
 
   return (
-    <span className={cn("inline-flex shrink-0", className)} aria-label={platform}>
-      <Icon className="h-7 w-7" />
+    <span
+      className={cn(
+        "inline-flex h-7 w-7 shrink-0 [&_svg]:h-full [&_svg]:w-full",
+        className,
+      )}
+      aria-label={platform}
+    >
+      <Icon className="h-full w-full" />
     </span>
   );
 }

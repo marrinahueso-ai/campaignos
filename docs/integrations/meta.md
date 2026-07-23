@@ -28,7 +28,7 @@ A volunteer clicks Connect, approves the use cases Facebook shows, and that conn
 | Surface | What the same connection enables |
 |---------|----------------------------------|
 | Publishing / scheduling | Approved posts → Facebook Page + Instagram |
-| Insights | Views / reach / interactions KPIs + sparklines, content overview chart, top content cards (views/comments/reactions), sync, export |
+| Insights | Views / reach / interactions KPIs + sparklines, content overview chart, top content carousel (views/reactions/comments/shares), sync, export |
 | Unified Inbox | DMs, comments, mentions, reply |
 | Approvals → publish | Same Page/IG targets |
 | Repost / comment moderation | Same engagement scopes |
@@ -52,7 +52,7 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 
 - **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
 - **Interactions** from `page_post_engagements` / derived post reactions
-- **Top content** for posts published through Hey Ralli (`meta_publication_slots`)
+- **Top content by views** carousel for posts published through Hey Ralli (`meta_publication_slots`) + synced post insights (views, reactions, comments, shares)
 
 Not synced yet (shown as honest unavailable copy): organic vs ads split, page visits, follows/unfollows, messaging conversations. Instagram account series are thinner than Facebook (reach + accounts engaged); likes/comments often come from post aggregates.
 

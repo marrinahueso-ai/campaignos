@@ -539,6 +539,7 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
       engagement,
       likes: Number(row.likes) || 0,
       comments: Number(row.comments) || 0,
+      shares: Number(row.shares) || 0,
       externalPostId: row.external_post_id,
       _sortViews: views,
     };

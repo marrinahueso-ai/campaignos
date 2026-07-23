@@ -248,7 +248,10 @@ export function InsightsHub({ data }: InsightsHubProps) {
             />
           </InsightsSectionCard>
 
-          <TopPerformingPosts posts={filteredTopPosts} />
+          <TopPerformingPosts
+            posts={filteredTopPosts}
+            platformFilter={platformFilter}
+          />
 
           <div className="grid gap-4 lg:grid-cols-3">
             <InsightsSectionCard title="Content breakdown">

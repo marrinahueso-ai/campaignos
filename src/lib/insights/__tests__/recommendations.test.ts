@@ -145,6 +145,7 @@ test("buildInsightsRecommendation uses real aggregates only", () => {
         engagement: 180,
         likes: 40,
         comments: 6,
+        shares: 2,
         externalPostId: "ig-1",
       },
     ],
