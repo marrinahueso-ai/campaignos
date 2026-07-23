@@ -61,11 +61,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
-- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
+- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignment table Filter + Date + Sort; summary cards match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Volunteers
-- Volunteer Master (`/volunteers`) — org-wide upcoming events with fill rate, top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md))
+- Volunteer Master (`/volunteers`) — org-wide upcoming events with circular event artwork (approved square; initials fallback), color-coded fill rate (Critical → Fully Staffed), top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md))
 - Auto-feed: events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning Volunteer Signup URL — **shipped**
 
 ## Create with AI (Campaign Builder)

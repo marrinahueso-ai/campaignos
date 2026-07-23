@@ -5,6 +5,8 @@ import {
   calendarWeekRange,
   computeEventFillStats,
   filterVolunteersMasterEvents,
+  getVolunteerFillRateBand,
+  getVolunteerFillRateLabel,
   listUnderfilledRoles,
   pickTopRoles,
   type VolunteersMasterEventRow,
@@ -35,6 +37,7 @@ function eventRow(
     date: partial.date ?? "2026-07-25",
     eventType: partial.eventType ?? null,
     category: partial.category ?? null,
+    artworkUrl: partial.artworkUrl ?? null,
     fillRatePercent: partial.fillRatePercent ?? null,
     filledSpots: partial.filledSpots ?? null,
     totalSpots: partial.totalSpots ?? null,
@@ -168,5 +171,22 @@ describe("volunteers master shared helpers", () => {
     const week = calendarWeekRange("2026-07-23");
     assert.equal(week.start, "2026-07-19");
     assert.equal(week.end, "2026-07-25");
+  });
+
+  it("maps fill-rate percent to status bands", () => {
+    assert.equal(getVolunteerFillRateBand(null), null);
+    assert.equal(getVolunteerFillRateBand(Number.NaN), null);
+    assert.equal(getVolunteerFillRateBand(0), "critical");
+    assert.equal(getVolunteerFillRateBand(19), "critical");
+    assert.equal(getVolunteerFillRateBand(20), "needs_attention");
+    assert.equal(getVolunteerFillRateBand(39), "needs_attention");
+    assert.equal(getVolunteerFillRateBand(40), "fair_progress");
+    assert.equal(getVolunteerFillRateBand(59), "fair_progress");
+    assert.equal(getVolunteerFillRateBand(60), "healthy");
+    assert.equal(getVolunteerFillRateBand(99), "healthy");
+    assert.equal(getVolunteerFillRateBand(100), "fully_staffed");
+    assert.equal(getVolunteerFillRateBand(120), "fully_staffed");
+    assert.equal(getVolunteerFillRateLabel(7), "Critical");
+    assert.equal(getVolunteerFillRateLabel(100), "Fully Staffed");
   });
 });

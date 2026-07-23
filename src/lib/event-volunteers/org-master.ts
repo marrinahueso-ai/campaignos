@@ -31,6 +31,7 @@ import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
 import type { EventType } from "@/types/playbooks";
 
 export type {
+  VolunteerFillRateBand,
   VolunteersMasterEventRow,
   VolunteersMasterFilter,
   VolunteersMasterKpis,
@@ -45,8 +46,11 @@ export {
   computeEventFillStats,
   eventMatchesVolunteersSearch,
   filterVolunteersMasterEvents,
+  getVolunteerFillRateBand,
+  getVolunteerFillRateLabel,
   listUnderfilledRoles,
   pickTopRoles,
+  VOLUNTEER_FILL_RATE_LABELS,
 } from "@/lib/event-volunteers/org-master-shared";
 
 type CandidateEvent = {
@@ -56,7 +60,18 @@ type CandidateEvent = {
   eventType: EventType | null;
   category: string | null;
   planningVolunteerSignupUrl: string | null;
+  artworkUrl: string | null;
 };
+
+/** Prefer promoted approved-square URL (same columns as EVENT_CAMPAIGN_LIST_SELECT). */
+function artworkUrlFromEventRow(row: {
+  approved_square_image_url?: string | null;
+  approved_square_image_status?: string | null;
+}): string | null {
+  if (row.approved_square_image_status !== "filled") return null;
+  const url = row.approved_square_image_url?.trim() ?? "";
+  return url.length > 0 ? url : null;
+}
 
 const ACTIVE_SOURCE_STATUSES = ["pending_review", "connected", "error"] as const;
 
@@ -98,6 +113,7 @@ function buildEventRow(input: {
     date: input.event.date,
     eventType: input.event.eventType,
     category: input.event.category,
+    artworkUrl: input.event.artworkUrl,
     fillRatePercent: fill.fillRatePercent,
     filledSpots: fill.filledSpots,
     totalSpots: fill.totalSpots,
@@ -150,7 +166,7 @@ export async function getVolunteersMasterPageData(
     const { data: eventRows, error: eventsError } = await supabase
       .from("events")
       .select(
-        "id, title, date, event_type, category, planning_quick_links, status, school_year_id",
+        "id, title, date, event_type, category, planning_quick_links, status, school_year_id, approved_square_image_url, approved_square_image_status",
       )
       .neq("status", "archived")
       .in("school_year_id", schoolYearIds)
@@ -185,6 +201,7 @@ export async function getVolunteersMasterPageData(
         planningVolunteerSignupUrl: volunteerSignupUrlFromPlanning(
           row.planning_quick_links,
         ),
+        artworkUrl: artworkUrlFromEventRow(row),
       }));
 
     if (candidates.length === 0) {

@@ -22,10 +22,6 @@ import {
   buildIntegrationSettingsPath,
   buildMetaOAuthStartPath,
 } from "@/lib/integrations/oauth";
-import {
-  createWithAiHref,
-  eventDetailApprovalsHref,
-} from "@/lib/events/event-responsibility";
 import type {
   EventInsightsKpiKey,
   EventInsightsPageData,
@@ -343,14 +339,6 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
           Insights appear after posts for this event are published to Facebook
           or Instagram through Hey Ralli.
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Button href={eventDetailApprovalsHref(data.eventId)}>
-            Open Approvals
-          </Button>
-          <Button href={createWithAiHref(data.eventId)} variant="secondary">
-            Create with AI
-          </Button>
-        </div>
       </div>
     );
   }

@@ -7,7 +7,7 @@
 
 Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate assignment availability only (no volunteer PII).
 
-Org-wide **Volunteer Master** lives at `/volunteers`: KPI cards, upcoming events with fill rate + top roles, a “This week” underfilled rail, and search/filters. Sync / connect still happens on each event’s Volunteers tab; the master page reads the latest confirmed snapshots only.
+Org-wide **Volunteer Master** lives at `/volunteers`: KPI cards, upcoming events with circular approved-square artwork (initials fallback), color-coded fill rate (0–19% Critical / 20–39% Needs Attention / 40–59% Fair Progress / 60–99% Healthy / 100% Fully Staffed), top roles, a “This week” underfilled rail, and search/filters. Sync / connect still happens on each event’s Volunteers tab; the master page reads the latest confirmed snapshots only. The event Volunteers tab uses the same fill-rate color bands for Overall Filled and per-assignment progress (check affordance at 100%).
 
 An event appears on Volunteer Master when it has an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning quick link `volunteer_signup` URL.
 

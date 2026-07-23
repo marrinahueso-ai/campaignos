@@ -41,6 +41,11 @@ import {
   type AssignmentStatusFilter,
 } from "@/lib/event-volunteers/assignment-list";
 import {
+  getVolunteerFillRateBand,
+  getVolunteerFillRateLabel,
+  type VolunteerFillRateBand,
+} from "@/lib/event-volunteers/org-master-shared";
+import {
   availabilityStatusLabel,
   summarizeAssignmentList,
 } from "@/lib/event-volunteers/stats";
@@ -52,7 +57,34 @@ import type {
   VolunteerSyncAttemptRecord,
 } from "@/lib/event-volunteers/types";
 import { truncateUrl, validateSignUpGeniusUrl } from "@/lib/event-volunteers/url";
+import { cn } from "@/lib/utils/cn";
 import type { Event } from "@/types";
+
+const FILL_RATE_BAND_STYLES: Record<
+  VolunteerFillRateBand,
+  { text: string; bar: string }
+> = {
+  critical: {
+    text: "text-cos-error-text",
+    bar: "bg-cos-error",
+  },
+  needs_attention: {
+    text: "text-orange-800",
+    bar: "bg-orange-500",
+  },
+  fair_progress: {
+    text: "text-amber-800",
+    bar: "bg-amber-400",
+  },
+  healthy: {
+    text: "text-cos-success-text",
+    bar: "bg-cos-success",
+  },
+  fully_staffed: {
+    text: "text-cos-success-text",
+    bar: "bg-cos-success",
+  },
+};
 
 interface EventVolunteersTabProps {
   event: Event;
@@ -928,13 +960,8 @@ function VolunteerOverview({
           value={summary.openSpots === null ? "—" : String(summary.openSpots)}
           hint="Still need volunteers"
         />
-        <StatCard
-          label="Overall Filled"
-          value={
-            summary.overallFilledPercent === null
-              ? "—"
-              : `${summary.overallFilledPercent}%`
-          }
+        <FillRateStatCard
+          percent={summary.overallFilledPercent}
           hint={
             summary.quantitiesComplete
               ? filtersActive
@@ -1152,12 +1179,7 @@ function VolunteerOverview({
                             {assignment.quantityOpen ?? "—"}
                           </td>
                           <td className="py-3 pr-3">
-                            <div className="h-2 w-24 overflow-hidden rounded-full bg-cos-bg">
-                              <div
-                                className="h-full rounded-full bg-emerald-600"
-                                style={{ width: `${pct ?? 0}%` }}
-                              />
-                            </div>
+                            <AssignmentFillRateProgress percent={pct} />
                           </td>
                           <td className="py-3 pr-3">
                             <span
@@ -1356,6 +1378,106 @@ function StatCard({
         {value}
       </p>
       <p className="text-xs text-cos-muted">{hint}</p>
+    </div>
+  );
+}
+
+function FillRateStatCard({
+  percent,
+  hint,
+}: {
+  percent: number | null;
+  hint: string;
+}) {
+  const fillLabel = percent === null ? "—" : `${percent}%`;
+  const band = getVolunteerFillRateBand(percent);
+  const statusLabel = getVolunteerFillRateLabel(percent);
+  const styles = band ? FILL_RATE_BAND_STYLES[band] : null;
+  const isFullyStaffed = band === "fully_staffed";
+  const fillWidth =
+    percent === null ? 0 : Math.max(0, Math.min(100, percent));
+
+  return (
+    <div
+      className="flex min-h-[7.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"
+      title={statusLabel ?? undefined}
+      aria-label={
+        percent === null
+          ? "Overall fill rate unavailable"
+          : `Overall fill rate ${fillLabel}${statusLabel ? `, ${statusLabel}` : ""}`
+      }
+    >
+      <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+        Overall Filled
+      </p>
+      <p
+        className={cn(
+          "flex items-center justify-center gap-1.5 font-display text-3xl leading-none tabular-nums",
+          styles?.text ?? "text-cos-text",
+        )}
+      >
+        {fillLabel}
+        {isFullyStaffed ? (
+          <CheckCircle2 className="h-6 w-6 shrink-0" aria-hidden />
+        ) : null}
+      </p>
+      <div className="mt-1 h-1.5 w-full max-w-[7rem] overflow-hidden rounded-full bg-cos-bg">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width]",
+            styles?.bar ?? "bg-cos-border",
+          )}
+          style={{ width: `${fillWidth}%` }}
+        />
+      </div>
+      <p className="text-xs text-cos-muted">{hint}</p>
+    </div>
+  );
+}
+
+function AssignmentFillRateProgress({
+  percent,
+}: {
+  percent: number | null;
+}) {
+  const fillLabel = percent === null ? "—" : `${percent}%`;
+  const fillWidth =
+    percent === null ? 0 : Math.max(0, Math.min(100, percent));
+  const band = getVolunteerFillRateBand(percent);
+  const statusLabel = getVolunteerFillRateLabel(percent);
+  const styles = band ? FILL_RATE_BAND_STYLES[band] : null;
+  const isFullyStaffed = band === "fully_staffed";
+
+  return (
+    <div
+      className="min-w-[6.5rem]"
+      title={statusLabel ?? undefined}
+      aria-label={
+        percent === null
+          ? "Fill rate unavailable"
+          : `Fill rate ${fillLabel}${statusLabel ? `, ${statusLabel}` : ""}`
+      }
+    >
+      <p
+        className={cn(
+          "flex items-center gap-1 text-sm font-medium tabular-nums",
+          styles?.text ?? "text-cos-muted",
+        )}
+      >
+        {fillLabel}
+        {isFullyStaffed ? (
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        ) : null}
+      </p>
+      <div className="mt-1.5 h-2 w-24 overflow-hidden rounded-full bg-cos-bg">
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width]",
+            styles?.bar ?? "bg-cos-border",
+          )}
+          style={{ width: `${fillWidth}%` }}
+        />
+      </div>
     </div>
   );
 }

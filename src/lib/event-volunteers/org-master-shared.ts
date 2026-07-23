@@ -32,6 +32,8 @@ export type VolunteersMasterEventRow = {
   date: string;
   eventType: EventType | null;
   category: string | null;
+  /** Approved square / campaign thumbnail URL when available. */
+  artworkUrl: string | null;
   fillRatePercent: number | null;
   filledSpots: number | null;
   totalSpots: number | null;
@@ -45,6 +47,48 @@ export type VolunteersMasterEventRow = {
   needsPeople: boolean;
   isCovered: boolean;
 };
+
+/** Volunteer fill-rate bands for UI color guidance. */
+export type VolunteerFillRateBand =
+  | "critical"
+  | "needs_attention"
+  | "fair_progress"
+  | "healthy"
+  | "fully_staffed";
+
+export const VOLUNTEER_FILL_RATE_LABELS: Record<VolunteerFillRateBand, string> =
+  {
+    critical: "Critical",
+    needs_attention: "Needs Attention",
+    fair_progress: "Fair Progress",
+    healthy: "Healthy",
+    fully_staffed: "Fully Staffed",
+  };
+
+/**
+ * Map a 0–100 fill-rate percent to a status band.
+ * Null/invalid inputs return null (no bar coloring).
+ */
+export function getVolunteerFillRateBand(
+  percent: number | null | undefined,
+): VolunteerFillRateBand | null {
+  if (typeof percent !== "number" || !Number.isFinite(percent)) {
+    return null;
+  }
+  const clamped = Math.max(0, Math.min(100, percent));
+  if (clamped >= 100) return "fully_staffed";
+  if (clamped >= 60) return "healthy";
+  if (clamped >= 40) return "fair_progress";
+  if (clamped >= 20) return "needs_attention";
+  return "critical";
+}
+
+export function getVolunteerFillRateLabel(
+  percent: number | null | undefined,
+): string | null {
+  const band = getVolunteerFillRateBand(percent);
+  return band ? VOLUNTEER_FILL_RATE_LABELS[band] : null;
+}
 
 export type VolunteersMasterKpis = {
   totalVolunteers: number;
