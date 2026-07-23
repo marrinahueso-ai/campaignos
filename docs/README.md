@@ -45,6 +45,7 @@ This is the documentation hub. Start here.
 | Architecture | [engineering/architecture.md](./engineering/architecture.md) |
 | Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
+| Owner AI & APIs | [product/ai-and-apis.md](./product/ai-and-apis.md) · [qa/owner-ai-apis.md](./qa/owner-ai-apis.md) |
 | Volunteer Master | [product/volunteer-master.md](./product/volunteer-master.md) |
 | Event Insights | [product/event-insights.md](./product/event-insights.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Resend } from "resend";
+import { recordApiCall } from "@/lib/ops/record-api-call";
 
 export interface EmailAttachment {
   filename: string;
@@ -86,6 +87,7 @@ export function isEmailConfigured(): boolean {
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  const startedAt = Date.now();
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     return {
@@ -132,11 +134,28 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       action: "sendEmail",
       message: error.message,
     });
+    await recordApiCall({
+      provider: "resend",
+      operation: "email.send",
+      startedAt,
+      success: false,
+      errorMessage: error.message,
+      metadata: { scheduled: isScheduled, recipientCount: input.to.length },
+    });
     return {
       success: false,
       error: error.message,
     };
   }
+
+  await recordApiCall({
+    provider: "resend",
+    operation: "email.send",
+    startedAt,
+    success: true,
+    costUnits: 1,
+    metadata: { scheduled: isScheduled, recipientCount: input.to.length },
+  });
 
   return {
     success: true,
@@ -148,6 +167,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 export async function sendTemplateEmail(
   input: SendTemplateEmailInput,
 ): Promise<SendEmailResult> {
+  const startedAt = Date.now();
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
     return {
@@ -183,11 +203,28 @@ export async function sendTemplateEmail(
       action: "sendTemplateEmail",
       message: error.message,
     });
+    await recordApiCall({
+      provider: "resend",
+      operation: "email.send_template",
+      startedAt,
+      success: false,
+      errorMessage: error.message,
+      metadata: { recipientCount: input.to.length },
+    });
     return {
       success: false,
       error: error.message,
     };
   }
+
+  await recordApiCall({
+    provider: "resend",
+    operation: "email.send_template",
+    startedAt,
+    success: true,
+    costUnits: 1,
+    metadata: { recipientCount: input.to.length },
+  });
 
   return {
     success: true,

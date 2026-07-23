@@ -2,7 +2,6 @@ import "server-only";
 
 import { buildOrganizationVoiceProfile } from "@/lib/brand-voice/organization-voice";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getAiProfileByOrganizationId } from "@/lib/organization-intelligence/queries";
@@ -113,22 +112,17 @@ export async function generateAiCampaignAdvice(
       userPrompt: user,
       maxTokens: 180,
       temperature: 0.5,
+      usage: {
+        actionType: "draft_communication",
+        eventId: context.input.event.id,
+        channel: "email",
+        feature: "campaign_director_advisor",
+      },
     });
 
     if (!result.success || !result.text) {
       return null;
     }
-
-    await logAiUsage({
-      eventId: context.input.event.id,
-      actionType: "draft_communication",
-      channel: "email",
-      model: result.model,
-      promptTokens: result.promptTokens,
-      completionTokens: result.completionTokens,
-      totalTokens: result.totalTokens,
-      success: true,
-    });
 
     const text = result.text.trim();
     return text.length > 0 ? text : null;

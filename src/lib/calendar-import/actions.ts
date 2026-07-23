@@ -583,6 +583,11 @@ Return every missing dated event.`,
     maxTokens: 16_384,
     temperature: 0.05,
     jsonMode: true,
+    usage: {
+      actionType: "calendar_import_parse",
+      organizationId: organization?.id ?? null,
+      feature: "calendar_import_find_missing",
+    },
   });
 
   if (!result.success || !result.text) {

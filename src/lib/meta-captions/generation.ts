@@ -1,5 +1,4 @@
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import { resolveSocialMetaMilestonesForEvent } from "@/lib/campaign-plan/resolve-plan-milestones";
 import {
   getApprovedFeedArtworkByMilestone,
@@ -93,12 +92,22 @@ export async function generateMetaSocialCaption(input: {
     length: input.generationOptions?.length,
   };
 
+  const captionUsage = {
+    actionType: "meta_social_caption" as const,
+    eventId: input.eventId,
+    channel:
+      input.placement === "feed"
+        ? ("facebook" as const)
+        : ("instagram" as const),
+  };
+
   let generation = await generateText({
     systemPrompt: buildMetaCaptionSystemPrompt({ hasArtworkImage }),
     userPrompt: buildMetaCaptionUserPrompt(promptInput),
     model,
     maxTokens,
     imageUrl: artworkImageUrl,
+    usage: captionUsage,
   });
 
   if ((!generation.success || !generation.text?.trim()) && hasArtworkImage) {
@@ -107,22 +116,11 @@ export async function generateMetaSocialCaption(input: {
       userPrompt: buildMetaCaptionUserPrompt({ ...promptInput, hasArtworkImage: false }),
       model,
       maxTokens,
+      usage: captionUsage,
     });
   }
 
   if (!generation.success || !generation.text?.trim()) {
-    await logAiUsage({
-      eventId: input.eventId,
-      actionType: "meta_social_caption",
-      channel: input.placement === "feed" ? "facebook" : "instagram",
-      model: generation.model,
-      promptTokens: generation.promptTokens,
-      completionTokens: generation.completionTokens,
-      totalTokens: generation.totalTokens,
-      success: false,
-      errorMessage: generation.error,
-    });
-
     return {
       success: false,
       error: generation.error ?? "Caption generation failed.",
@@ -143,17 +141,6 @@ export async function generateMetaSocialCaption(input: {
   if (!saved.success) {
     return { success: false, error: saved.error ?? "Could not save caption." };
   }
-
-  await logAiUsage({
-    eventId: input.eventId,
-    actionType: "meta_social_caption",
-    channel: input.placement === "feed" ? "facebook" : "instagram",
-    model: generation.model,
-    promptTokens: generation.promptTokens,
-    completionTokens: generation.completionTokens,
-    totalTokens: generation.totalTokens,
-    success: true,
-  });
 
   return { success: true, content };
 }

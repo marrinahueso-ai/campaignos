@@ -102,6 +102,7 @@ export async function syncSchoolYearGoogleCalendar(input: {
     calendarId: connection.googleCalendarId,
     timeMin: window.timeMin,
     timeMax: window.timeMax,
+    organizationId: connection.organizationId,
   });
 
   if (listed.error) {

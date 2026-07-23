@@ -261,6 +261,7 @@ async function analyzeInspirationStyleFromImage(
     : "";
 
   try {
+    const startedAt = Date.now();
     const response = await fetch(OPENAI_CHAT_URL, {
       method: "POST",
       headers: {
@@ -301,16 +302,49 @@ async function analyzeInspirationStyleFromImage(
     });
 
     if (!response.ok) {
+      const { logAiUsage } = await import("@/lib/ai/usage");
+      await logAiUsage({
+        eventId: null,
+        actionType: "orchestrate_artwork",
+        channel: null,
+        model: resolveFastDraftModel(),
+        promptTokens: null,
+        completionTokens: null,
+        totalTokens: null,
+        success: false,
+        errorMessage: `inspiration style analyze HTTP ${response.status}`,
+        feature: "artwork_inspiration_analyze",
+        latencyMs: Math.max(0, Date.now() - startedAt),
+      });
       return null;
     }
 
     const parsed = (await response.json()) as {
       choices?: { message?: { content?: string } }[];
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+      };
     };
     const content = parsed.choices?.[0]?.message?.content;
     if (!content) {
       return null;
     }
+
+    const { logAiUsage } = await import("@/lib/ai/usage");
+    await logAiUsage({
+      eventId: null,
+      actionType: "orchestrate_artwork",
+      channel: null,
+      model: resolveFastDraftModel(),
+      promptTokens: parsed.usage?.prompt_tokens ?? null,
+      completionTokens: parsed.usage?.completion_tokens ?? null,
+      totalTokens: parsed.usage?.total_tokens ?? null,
+      success: true,
+      feature: "artwork_inspiration_analyze",
+      latencyMs: Math.max(0, Date.now() - startedAt),
+    });
 
     const style = JSON.parse(content) as Record<string, string>;
     const profile: InspirationStyleProfile = {

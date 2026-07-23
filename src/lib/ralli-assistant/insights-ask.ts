@@ -90,6 +90,11 @@ async function answerFromPack(
     maxTokens: 400,
     temperature: 0.2,
     model: resolveFastDraftModel(),
+    usage: {
+      actionType: "ask_ralli",
+      eventId: pack.event?.id ?? null,
+      feature: "ask_ralli_insights",
+    },
   });
 
   if (!result.success || !result.text?.trim()) {

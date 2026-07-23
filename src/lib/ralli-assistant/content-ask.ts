@@ -259,6 +259,11 @@ async function generateRewriteDraft(input: {
     model: resolveMetaCaptionModel(),
     maxTokens: META_CAPTION_FEED_MAX_TOKENS,
     temperature: 0.5,
+    usage: {
+      actionType: "ask_ralli",
+      eventId: input.eventId ?? null,
+      feature: "ask_ralli_content_rewrite",
+    },
   });
 
   if (!generation.success || !generation.text?.trim()) {
@@ -325,6 +330,11 @@ async function generateReminderDraft(input: {
     model: resolveFastDraftModel(),
     maxTokens: 350,
     temperature: 0.45,
+    usage: {
+      actionType: "ask_ralli",
+      eventId: input.event.id,
+      feature: "ask_ralli_content_reminder",
+    },
   });
 
   if (!generation.success || !generation.text?.trim()) {
@@ -378,6 +388,11 @@ async function generateFreshCaptionDraft(input: {
     model: resolveMetaCaptionModel(),
     maxTokens: META_CAPTION_FEED_MAX_TOKENS,
     temperature: 0.55,
+    usage: {
+      actionType: "ask_ralli",
+      eventId: input.event.id,
+      feature: "ask_ralli_content_caption",
+    },
   });
 
   if (!generation.success || !generation.text?.trim()) {

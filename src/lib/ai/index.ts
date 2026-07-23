@@ -3,6 +3,7 @@ export type {
   AiAssistantStatus,
   AiGenerateTextInput,
   AiGenerateTextResult,
+  AiGenerateUsageContext,
   AiUsageLogInput,
   CommunicationDraftContext,
   DraftCommunicationInput,

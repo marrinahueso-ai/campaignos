@@ -2,16 +2,20 @@ import "server-only";
 
 import { GOOGLE_CALENDAR_API_BASE } from "@/lib/google-calendar/config";
 import type { GoogleCalendarApiEvent } from "@/lib/google-calendar/types";
+import { recordApiCall } from "@/lib/ops/record-api-call";
 
 export async function listGoogleCalendarEvents(input: {
   accessToken: string;
   calendarId?: string;
   timeMin: string;
   timeMax: string;
+  organizationId?: string | null;
 }): Promise<{ events: GoogleCalendarApiEvent[]; error: string | null }> {
   const calendarId = encodeURIComponent(input.calendarId?.trim() || "primary");
   const events: GoogleCalendarApiEvent[] = [];
   let pageToken: string | undefined;
+  const startedAt = Date.now();
+  let pages = 0;
 
   try {
     do {
@@ -30,10 +34,21 @@ export async function listGoogleCalendarEvents(input: {
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${input.accessToken}` },
       });
+      pages += 1;
 
       if (!response.ok) {
         const text = await response.text();
         console.error("Google Calendar list events failed:", response.status, text);
+        await recordApiCall({
+          provider: "google",
+          operation: "calendar.events.list",
+          startedAt,
+          success: false,
+          organizationId: input.organizationId,
+          httpStatus: response.status,
+          errorMessage: text.slice(0, 200),
+          metadata: { pages },
+        });
         return {
           events: [],
           error:
@@ -51,9 +66,28 @@ export async function listGoogleCalendarEvents(input: {
       pageToken = data.nextPageToken;
     } while (pageToken);
 
+    await recordApiCall({
+      provider: "google",
+      operation: "calendar.events.list",
+      startedAt,
+      success: true,
+      organizationId: input.organizationId,
+      metadata: { pages, eventCount: events.length },
+    });
+
     return { events, error: null };
   } catch (error) {
     console.error("Google Calendar list events error:", error);
+    await recordApiCall({
+      provider: "google",
+      operation: "calendar.events.list",
+      startedAt,
+      success: false,
+      organizationId: input.organizationId,
+      errorMessage:
+        error instanceof Error ? error.message : "Could not reach Google Calendar.",
+      metadata: { pages },
+    });
     return { events: [], error: "Could not reach Google Calendar." };
   }
 }

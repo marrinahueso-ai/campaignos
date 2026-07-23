@@ -183,6 +183,10 @@ Source URL: ${input.url}
 Is this source relevant to answering the question?`,
     model: resolveFastDraftModel(),
     maxTokens: 10,
+    usage: {
+      actionType: "inbox_ai",
+      feature: "inbox_ai_source_match",
+    },
   });
 
   if (!generation.success || !generation.text?.trim()) {

@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  metaOperationFromPath,
+  recordApiCall,
+} from "@/lib/ops/record-api-call";
+
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
 type GraphErrorPayload = {
@@ -39,6 +44,7 @@ export async function inboxGraphGet<T extends Record<string, unknown>>(
   path: string,
   params: Record<string, string>,
 ): Promise<InboxGraphResult<T>> {
+  const startedAt = Date.now();
   const url = new URL(graphUrl(path));
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -48,13 +54,32 @@ export async function inboxGraphGet<T extends Record<string, unknown>>(
   const payload = (await response.json()) as T & { error?: GraphErrorPayload };
 
   if (!response.ok || payload.error) {
-    return {
-      ok: false,
+    const result = {
+      ok: false as const,
       error: formatGraphError(payload.error ?? {}, response.status),
       errorCode: payload.error?.code,
     };
+    await recordApiCall({
+      provider: "meta",
+      operation: metaOperationFromPath("GET", path),
+      startedAt,
+      success: false,
+      httpStatus: response.status,
+      errorCode: result.errorCode,
+      errorMessage: result.error,
+      metadata: { surface: "inbox" },
+    });
+    return result;
   }
 
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("GET", path),
+    startedAt,
+    success: true,
+    httpStatus: response.status,
+    metadata: { surface: "inbox" },
+  });
   return { ok: true, data: payload };
 }
 
@@ -62,6 +87,7 @@ export async function inboxGraphPost<T extends Record<string, unknown>>(
   path: string,
   params: Record<string, string>,
 ): Promise<InboxGraphResult<T>> {
+  const startedAt = Date.now();
   const body = new URLSearchParams(params);
   const response = await fetch(graphUrl(path), {
     method: "POST",
@@ -72,13 +98,32 @@ export async function inboxGraphPost<T extends Record<string, unknown>>(
   const payload = (await response.json()) as T & { error?: GraphErrorPayload };
 
   if (!response.ok || payload.error) {
-    return {
-      ok: false,
+    const result = {
+      ok: false as const,
       error: formatGraphError(payload.error ?? {}, response.status),
       errorCode: payload.error?.code,
     };
+    await recordApiCall({
+      provider: "meta",
+      operation: metaOperationFromPath("POST", path),
+      startedAt,
+      success: false,
+      httpStatus: response.status,
+      errorCode: result.errorCode,
+      errorMessage: result.error,
+      metadata: { surface: "inbox" },
+    });
+    return result;
   }
 
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("POST", path),
+    startedAt,
+    success: true,
+    httpStatus: response.status,
+    metadata: { surface: "inbox" },
+  });
   return { ok: true, data: payload };
 }
 
@@ -86,6 +131,7 @@ export async function inboxGraphDelete<T extends Record<string, unknown>>(
   path: string,
   params: Record<string, string>,
 ): Promise<InboxGraphResult<T>> {
+  const startedAt = Date.now();
   const url = new URL(graphUrl(path));
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -95,13 +141,32 @@ export async function inboxGraphDelete<T extends Record<string, unknown>>(
   const payload = (await response.json()) as T & { error?: GraphErrorPayload };
 
   if (!response.ok || payload.error) {
-    return {
-      ok: false,
+    const result = {
+      ok: false as const,
       error: formatGraphError(payload.error ?? {}, response.status),
       errorCode: payload.error?.code,
     };
+    await recordApiCall({
+      provider: "meta",
+      operation: metaOperationFromPath("DELETE", path),
+      startedAt,
+      success: false,
+      httpStatus: response.status,
+      errorCode: result.errorCode,
+      errorMessage: result.error,
+      metadata: { surface: "inbox" },
+    });
+    return result;
   }
 
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("DELETE", path),
+    startedAt,
+    success: true,
+    httpStatus: response.status,
+    metadata: { surface: "inbox" },
+  });
   return { ok: true, data: payload };
 }
 

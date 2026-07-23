@@ -2,8 +2,8 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 22, 2026  
-**Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Architecture](../engineering/architecture.md)
+**Last updated:** July 23, 2026  
+**Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
 
@@ -143,8 +143,9 @@ RLS still requires **active** membership for data; app permission keys gate muta
 | Capability | Gate |
 |------------|------|
 | `/ops` Owner dashboard, agreements manage / counter-sign | Email on `HEY_RALLI_OWNER_EMAILS` (or `REPORT_A_PROBLEM_OWNER_EMAILS`) **and** active membership `campaign_role = admin` |
+| `/ops/ai-apis` Owner AI & APIs (usage, costs, connected APIs) | Same gate as `/ops` (`canAccessOwnerOps`) — see [ai-and-apis.md](../product/ai-and-apis.md) |
 
-Org **Admin** alone is **not** enough for `/ops`. Allowlist alone without an Admin seat is **not** enough. See `src/lib/ops/access.ts`, `src/lib/developer-agreements/access.ts`.
+Org **Admin** alone is **not** enough for `/ops` or `/ops/ai-apis`. Allowlist alone without an Admin seat is **not** enough. See `src/lib/ops/access.ts`, `src/lib/developer-agreements/access.ts`.
 
 ---
 

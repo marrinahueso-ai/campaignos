@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Volunteer Master + Insights pages documented
+**Last updated:** July 23, 2026 — Owner AI & APIs Phase 3 UI
 
 ---
 
@@ -22,6 +22,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Secure invite accept (`/invite/[token]`, set password) — **shipped**
 - Developer agreements gate (NDA + IP, in-app e-sign: full name + email + optional company + drawn signature; scroll-to-enable; signed receipt on panels; Hey Ralli-themed UI; audit log; executed-copy email CTA via app download API with token) — **shipped** (`/account/agreements`; owner manage at `/account/agreements/manage`; eng: [developer-agreements.md](../engineering/developer-agreements.md); QA: [developer-agreements.md](../qa/developer-agreements.md))
 - Owner dashboard (`/ops`) — platform metrics + **Developers signed** counter-sign queue — **shipped** (gated by `HEY_RALLI_OWNER_EMAILS` **and** Owner/`campaign_role=admin` seat)
+- Owner **AI & APIs** (`/ops/ai-apis`) — monitor AI usage, connected API usage, operating costs, customer consumption (tabs: AI APIs · Connected APIs); Owner sidebar group under Ops — **partial** (Phases 0–3: AI APIs tab live on real `ai_usage_log`; Connected tab placeholder until Phase 4; living: [ai-and-apis.md](./ai-and-apis.md); QA: [owner-ai-apis.md](../qa/owner-ai-apis.md))
 - Get started (one boarding flow) — **shipped**:
   - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → **stay on event** with overlay **Calendar → Brand → Team → Meta** (all skippable); also `/onboarding/brand`, `/onboarding/invite`, `/onboarding/meta`
   - Overlay CTAs: primary action · **Do this later** (advances stepper **in place**, stays on event) · **Stay on event** (dismisses overlay only)

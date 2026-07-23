@@ -224,12 +224,19 @@ export async function askRalliProductHelp(input: {
     });
   }
 
+  const membership = await getActiveMembership();
   const result = await generateText({
     systemPrompt: buildProductHelpSystemPrompt(input.pathname),
     userPrompt: question,
     maxTokens: 350,
     temperature: 0.3,
     model: resolveFastDraftModel(),
+    usage: {
+      actionType: "ask_ralli",
+      organizationId: membership?.organizationId ?? null,
+      eventId: input.eventId ?? null,
+      feature: "ask_ralli_product_help",
+    },
   });
 
   if (!result.success || !result.text?.trim()) {

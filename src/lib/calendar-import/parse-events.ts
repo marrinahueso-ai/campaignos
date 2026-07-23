@@ -273,6 +273,10 @@ ${text}`,
     maxTokens: CALENDAR_PARSE_MAX_TOKENS,
     temperature: 0.05,
     jsonMode: true,
+    usage: {
+      actionType: "calendar_import_parse",
+      feature: "calendar_import_parse",
+    },
   });
 
   const truncated =
@@ -396,6 +400,10 @@ Return the corrected full events list as JSON.`,
     maxTokens: CALENDAR_PARSE_MAX_TOKENS,
     temperature: 0.05,
     jsonMode: true,
+    usage: {
+      actionType: "calendar_import_parse",
+      feature: "calendar_import_refine",
+    },
   });
 
   if (!result.success || !result.text) {

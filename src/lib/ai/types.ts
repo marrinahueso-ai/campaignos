@@ -23,7 +23,23 @@ export type AiActionType =
   | "generate_event_brief"
   | "generate_creative_brief"
   | "orchestrate_artwork"
-  | "generate_artwork";
+  | "generate_artwork"
+  /** Phase 2+ call sites — accepted by logAiUsage today. */
+  | "ask_ralli"
+  | "inbox_ai"
+  | "calendar_import_parse"
+  | "tasks_generate"
+  | "playbook_insights";
+
+/** When set on generateText, usage is persisted to ai_usage_log (Phase 2). */
+export interface AiGenerateUsageContext {
+  actionType: AiActionType;
+  organizationId?: string | null;
+  eventId?: string | null;
+  userId?: string | null;
+  feature?: string | null;
+  channel?: CommunicationChannel | null;
+}
 
 export interface AiGenerateTextInput {
   systemPrompt: string;
@@ -36,6 +52,8 @@ export interface AiGenerateTextInput {
   imageUrl?: string | null;
   /** Request JSON object responses from OpenAI when supported. */
   jsonMode?: boolean;
+  /** Owner AI & APIs usage attribution — logs once per generateText call. */
+  usage?: AiGenerateUsageContext | null;
 }
 
 export interface AiGenerateTextResult {
@@ -113,6 +131,20 @@ export interface AiUsageLogInput {
   totalTokens: number | null;
   success: boolean;
   errorMessage?: string | null;
+  /** When set, skips event → org lookup. */
+  organizationId?: string | null;
+  userId?: string | null;
+  /** Owner UI feature label; defaults from actionType. */
+  feature?: string | null;
+  provider?: string | null;
+  latencyMs?: number | null;
+  /** Image / unit count for artwork pricing. */
+  imageUnits?: number | null;
+  /** Override computed estimate when caller knows cost. */
+  estimatedCostUsd?: number | null;
+  errorCode?: string | null;
+  requestId?: string | null;
+  environment?: "production" | "development" | null;
 }
 
 export interface EventBriefInput {

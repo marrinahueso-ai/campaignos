@@ -11,7 +11,6 @@ import { DraftPerformanceTracker } from "@/lib/ai/draft-performance";
 import { parseStrategyDraftResponse } from "@/lib/ai-strategy";
 import { scoreDraftAgainstBrandVoice } from "@/lib/brand-voice";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import {
   maxCompletionTokensForChannel,
   resolveDraftModel,
@@ -143,6 +142,11 @@ export async function draftCommunicationWithAi(
       userPrompt: prompts.userPrompt,
       model: draftModel,
       maxTokens,
+      usage: {
+        actionType: "draft_communication",
+        eventId: input.eventId,
+        channel: input.channel,
+      },
     }),
   );
 
@@ -156,18 +160,6 @@ export async function draftCommunicationWithAi(
   });
 
   if (!generation.success || !generation.text) {
-    await logAiUsage({
-      eventId: input.eventId,
-      actionType: "draft_communication",
-      channel: input.channel,
-      model: generation.model,
-      promptTokens: generation.promptTokens,
-      completionTokens: generation.completionTokens,
-      totalTokens: generation.totalTokens,
-      success: false,
-      errorMessage: generation.error,
-    });
-
     performance.printSummary();
     return {
       success: false,
@@ -208,18 +200,6 @@ export async function draftCommunicationWithAi(
   );
 
   if (versionNumber == null) {
-    await logAiUsage({
-      eventId: input.eventId,
-      actionType: "draft_communication",
-      channel: input.channel,
-      model: generation.model,
-      promptTokens: generation.promptTokens,
-      completionTokens: generation.completionTokens,
-      totalTokens: generation.totalTokens,
-      success: false,
-      errorMessage: "Could not save draft version.",
-    });
-
     performance.printSummary();
     return {
       success: false,
@@ -229,18 +209,6 @@ export async function draftCommunicationWithAi(
       versionNumber: null,
     };
   }
-
-  await logAiUsage({
-    eventId: input.eventId,
-    actionType: "draft_communication",
-    channel: input.channel,
-    model: generation.model,
-    promptTokens: generation.promptTokens,
-    completionTokens: generation.completionTokens,
-    totalTokens: generation.totalTokens,
-    success: true,
-    errorMessage: strategyExplanation,
-  });
 
   if (!input.performance) {
     performance.printSummary();

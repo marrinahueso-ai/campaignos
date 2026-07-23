@@ -1,6 +1,5 @@
 import { buildOrganizationVoiceProfile } from "@/lib/brand-voice/organization-voice";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import {
   EVENT_BRIEF_MAX_TOKENS,
@@ -63,18 +62,11 @@ export async function generateEventBrief(input: {
     }),
     maxTokens: EVENT_BRIEF_MAX_TOKENS,
     temperature: 0.7,
-  });
-
-  await logAiUsage({
-    eventId: input.eventId ?? null,
-    actionType: "generate_event_brief",
-    channel: null,
-    model: result.model,
-    promptTokens: result.promptTokens,
-    completionTokens: result.completionTokens,
-    totalTokens: result.totalTokens,
-    success: result.success,
-    errorMessage: result.error,
+    usage: {
+      actionType: "generate_event_brief",
+      eventId: input.eventId ?? null,
+      organizationId: organization?.id ?? null,
+    },
   });
 
   if (!result.success || !result.text) {

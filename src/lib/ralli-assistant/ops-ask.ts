@@ -169,6 +169,12 @@ export async function askRalliOpsCoach(input: {
     maxTokens: 400,
     temperature: 0.2,
     model: resolveFastDraftModel(),
+    usage: {
+      actionType: "ask_ralli",
+      organizationId: membership.organizationId,
+      eventId: resolution.event.id,
+      feature: "ask_ralli_ops",
+    },
   });
 
   if (!result.success || !result.text?.trim()) {

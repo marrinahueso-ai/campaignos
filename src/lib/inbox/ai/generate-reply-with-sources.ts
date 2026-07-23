@@ -266,6 +266,11 @@ async function generateSourceAwareDraft(input: {
     model: resolveFastDraftModel(),
     maxTokens: 300,
     temperature: 0.35,
+    usage: {
+      actionType: "inbox_ai",
+      organizationId: input.organization?.id ?? null,
+      feature: "inbox_ai_reply",
+    },
   });
 
   if (!generation.success || !generation.text?.trim()) {

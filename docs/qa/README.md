@@ -1,10 +1,11 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** July 22, 2026
+**Last updated:** July 23, 2026
 
 | Doc | Status |
 |-----|--------|
+| [owner-ai-apis.md](./owner-ai-apis.md) | **Living** — Owner AI & APIs access, honesty, instrumentation, Phase 5 accuracy lock |
 | [pre-handoff-readiness.md](./pre-handoff-readiness.md) | **Living** — Owner/PM checklist before inviting QA (env, accounts, smoke, handoff packet) |
 | [launch-checklist.md](./launch-checklist.md) | **Living** — soft launch / Production pass-fail checklist |
 | [architecture-overview.md](./architecture-overview.md) | **Living** |

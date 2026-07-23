@@ -184,6 +184,11 @@ export async function generateTasksForEvent(
     maxTokens: 900,
     temperature: 0.4,
     jsonMode: true,
+    usage: {
+      actionType: "tasks_generate",
+      eventId: input.event.id,
+      feature: "tasks_generate",
+    },
   });
 
   if (!result.success || !result.text) {

@@ -7,6 +7,7 @@ import {
   resolveDraftFallbackModel,
   resolveFastDraftModel,
 } from "@/lib/ai/models";
+import { logAiUsage } from "@/lib/ai/usage";
 
 const OPENAI_CHAT_URL = "https://api.openai.com/v1/chat/completions";
 
@@ -238,21 +239,59 @@ function failureResult(
   };
 }
 
+async function persistGenerateTextUsage(
+  input: AiGenerateTextInput,
+  result: AiGenerateTextResult,
+  startedAt: number,
+): Promise<void> {
+  const usage = input.usage;
+  if (!usage) return;
+
+  try {
+    await logAiUsage({
+      eventId: usage.eventId ?? null,
+      organizationId: usage.organizationId ?? null,
+      userId: usage.userId ?? null,
+      actionType: usage.actionType,
+      feature: usage.feature ?? null,
+      channel: usage.channel ?? null,
+      model: result.model,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+      totalTokens: result.totalTokens,
+      success: result.success,
+      errorMessage: result.error,
+      errorCode: result.errorCode,
+      latencyMs: Math.max(0, Date.now() - startedAt),
+    });
+  } catch (error) {
+    console.error("[ai-usage] generateText persist failed:", error);
+  }
+}
+
 export async function generateText(
   input: AiGenerateTextInput,
 ): Promise<AiGenerateTextResult> {
+  const startedAt = Date.now();
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   const configuredModel = input.model?.trim() || resolveFastDraftModel();
   const fallbackModel = resolveDraftFallbackModel(configuredModel);
 
+  const finish = async (result: AiGenerateTextResult) => {
+    await persistGenerateTextUsage(input, result, startedAt);
+    return result;
+  };
+
   if (!apiKey) {
     console.error("OpenAI API key is not configured server-side.");
-    return failureResult(
-      configuredModel,
-      "OpenAI API key is not configured.",
-      "missing_key",
-      configuredModel,
-      false,
+    return finish(
+      failureResult(
+        configuredModel,
+        "OpenAI API key is not configured.",
+        "missing_key",
+        configuredModel,
+        false,
+      ),
     );
   }
 
@@ -282,7 +321,7 @@ export async function generateText(
       const result = await requestChatCompletion(apiKey, model, input);
 
       if (result.ok) {
-        return {
+        return finish({
           success: true,
           text: result.text,
           model,
@@ -293,7 +332,7 @@ export async function generateText(
           errorCode: null,
           configuredModel,
           usedFallbackModel,
-        };
+        });
       }
 
       const parsed = parseOpenAiErrorBody(result.body);
@@ -319,7 +358,7 @@ export async function generateText(
         continue;
       }
 
-      return lastError;
+      return finish(lastError);
     } catch (error) {
       console.error("OpenAI request failed:", error);
       lastError = failureResult(
@@ -334,18 +373,18 @@ export async function generateText(
         continue;
       }
 
-      return lastError;
+      return finish(lastError);
     }
   }
 
-  return (
+  return finish(
     lastError ??
-    failureResult(
-      configuredModel,
-      "The drafting service couldn't respond right now.",
-      "api_error",
-      configuredModel,
-      false,
-    )
+      failureResult(
+        configuredModel,
+        "The drafting service couldn't respond right now.",
+        "api_error",
+        configuredModel,
+        false,
+      ),
   );
 }

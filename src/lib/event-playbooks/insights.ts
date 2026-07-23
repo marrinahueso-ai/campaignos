@@ -274,6 +274,11 @@ export async function generateEventPlaybookInsights(
     maxTokens: 1024,
     temperature: 0.5,
     jsonMode: true,
+    usage: {
+      actionType: "playbook_insights",
+      eventId: input.event.id,
+      feature: "playbook_insights",
+    },
   });
 
   if (!result.success || !result.text) {

@@ -93,6 +93,11 @@ export async function askRalliOrgBriefing(input: {
     maxTokens: 400,
     temperature: 0.2,
     model: resolveFastDraftModel(),
+    usage: {
+      actionType: "ask_ralli",
+      organizationId: membership.organizationId,
+      feature: "ask_ralli_org",
+    },
   });
 
   if (!result.success || !result.text?.trim()) {

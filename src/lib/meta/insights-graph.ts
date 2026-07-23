@@ -49,6 +49,7 @@ function formatGraphError(payload: GraphErrorPayload, status: number): string {
 }
 
 async function graphGet(path: string, params: Record<string, string>): Promise<GraphResult> {
+  const startedAt = Date.now();
   const url = new URL(graphUrl(path));
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -61,14 +62,37 @@ async function graphGet(path: string, params: Record<string, string>): Promise<G
     error?: GraphErrorPayload;
   };
 
+  const { metaOperationFromPath, recordApiCall } = await import(
+    "@/lib/ops/record-api-call"
+  );
+
   if (!response.ok || payload.error) {
-    return {
+    const result: GraphResult = {
       ok: false,
       error: formatGraphError(payload.error ?? {}, response.status),
       errorCode: payload.error?.code,
     };
+    await recordApiCall({
+      provider: "meta",
+      operation: metaOperationFromPath("GET", path),
+      startedAt,
+      success: false,
+      httpStatus: response.status,
+      errorCode: result.errorCode,
+      errorMessage: result.error,
+      metadata: { surface: "insights" },
+    });
+    return result;
   }
 
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("GET", path),
+    startedAt,
+    success: true,
+    httpStatus: response.status,
+    metadata: { surface: "insights" },
+  });
   return { ok: true, data: payload as Record<string, unknown> };
 }
 

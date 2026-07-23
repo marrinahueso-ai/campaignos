@@ -5,6 +5,10 @@ import {
   getMetaFacebookPageId,
 } from "@/lib/meta-publishing/config.server";
 import { prepareFacebookFeedImageBytes } from "@/lib/meta-publishing/facebook-feed-image";
+import {
+  metaOperationFromPath,
+  recordApiCall,
+} from "@/lib/ops/record-api-call";
 
 const DEFAULT_GRAPH_VERSION = "v21.0";
 
@@ -45,6 +49,7 @@ async function graphPost(
   path: string,
   params: Record<string, string>,
 ): Promise<GraphResult> {
+  const startedAt = Date.now();
   const body = new URLSearchParams(params);
 
   const response = await fetch(graphUrl(path), {
@@ -53,7 +58,17 @@ async function graphPost(
     body: body.toString(),
   });
 
-  return parseGraphPostResponse(response);
+  const result = await parseGraphPostResponse(response);
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("POST", path),
+    startedAt,
+    success: result.ok,
+    httpStatus: response.status,
+    errorCode: result.ok ? null : result.errorCode,
+    errorMessage: result.ok ? null : result.error,
+  });
+  return result;
 }
 
 async function graphPostMultipart(
@@ -61,6 +76,7 @@ async function graphPostMultipart(
   params: Record<string, string>,
   file: { bytes: Buffer; filename: string; contentType: string },
 ): Promise<GraphResult> {
+  const startedAt = Date.now();
   const form = new FormData();
 
   for (const [key, value] of Object.entries(params)) {
@@ -78,7 +94,18 @@ async function graphPostMultipart(
     body: form,
   });
 
-  return parseGraphPostResponse(response);
+  const result = await parseGraphPostResponse(response);
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("POST", path),
+    startedAt,
+    success: result.ok,
+    httpStatus: response.status,
+    errorCode: result.ok ? null : result.errorCode,
+    errorMessage: result.ok ? null : result.error,
+    metadata: { multipart: true },
+  });
+  return result;
 }
 
 async function parseGraphPostResponse(response: Response): Promise<GraphResult> {
@@ -101,6 +128,7 @@ async function parseGraphPostResponse(response: Response): Promise<GraphResult> 
 }
 
 async function graphGet(path: string, params: Record<string, string>): Promise<GraphResult> {
+  const startedAt = Date.now();
   const url = new URL(graphUrl(path));
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -115,14 +143,31 @@ async function graphGet(path: string, params: Record<string, string>): Promise<G
   };
 
   if (!response.ok || payload.error) {
-    return {
+    const result: GraphResult = {
       ok: false,
       error: formatGraphError(payload.error ?? {}, response.status),
       errorCode: payload.error?.code,
       errorType: payload.error?.type,
     };
+    await recordApiCall({
+      provider: "meta",
+      operation: metaOperationFromPath("GET", path),
+      startedAt,
+      success: false,
+      httpStatus: response.status,
+      errorCode: result.errorCode,
+      errorMessage: result.error,
+    });
+    return result;
   }
 
+  await recordApiCall({
+    provider: "meta",
+    operation: metaOperationFromPath("GET", path),
+    startedAt,
+    success: true,
+    httpStatus: response.status,
+  });
   return { ok: true, data: payload as Record<string, unknown> };
 }
 

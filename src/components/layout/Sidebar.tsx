@@ -4,8 +4,10 @@ import {
   BarChart3,
   CalendarRange,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Cpu,
   FolderOpen,
   Inbox,
   LayoutDashboard,
@@ -318,6 +320,8 @@ export function Sidebar({
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
+  const ownerSectionActive = pathname === "/ops" || pathname.startsWith("/ops/");
+  const [ownerOpsOpen, setOwnerOpsOpen] = useState(ownerSectionActive);
   const locationHash = useSyncExternalStore(
     subscribeToLocationHash,
     getLocationHash,
@@ -334,6 +338,10 @@ export function Sidebar({
     if (stored === "true") setExpanded(true);
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    if (ownerSectionActive) setOwnerOpsOpen(true);
+  }, [ownerSectionActive]);
 
   useEffect(() => {
     notifyLastEventIdListeners();
@@ -409,18 +417,7 @@ export function Sidebar({
           showLabels ? "px-4 py-6" : "px-2 py-4",
         )}
       >
-        {(
-          showOwnerOps
-            ? [
-                ...navItems,
-                {
-                  label: "Owner ops",
-                  href: "/ops",
-                  icon: Shield,
-                },
-              ]
-            : navItems
-        ).map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
+        {navItems.map(({ label, href, icon: Icon, badge, resolveHref, isActive: isActiveFn }) => {
           const linkHref = resolveHref ? resolveHref(pathname, lastEventId) : href;
           const isActive = isActiveFn
             ? isActiveFn(pathname, locationHash)
@@ -518,6 +515,91 @@ export function Sidebar({
             </Link>
           );
         })}
+
+        {showOwnerOps ? (
+          showLabels ? (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setOwnerOpsOpen((open) => !open)}
+                className={cn(
+                  "flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-colors",
+                  ownerSectionActive
+                    ? "text-cos-text"
+                    : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                )}
+                aria-expanded={ownerOpsOpen}
+              >
+                <Shield className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                <span className="flex-1 text-left tracking-wide">Owner</span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    ownerOpsOpen && "rotate-180",
+                  )}
+                  strokeWidth={1.5}
+                />
+              </button>
+              {ownerOpsOpen ? (
+                <div className="ml-4 space-y-0.5 border-l border-cos-border pl-2">
+                  <Link
+                    href="/ops"
+                    onClick={() => onNavigate?.()}
+                    className={cn(
+                      "block px-3 py-2 text-sm transition-colors",
+                      pathname === "/ops"
+                        ? "bg-cos-dark text-[#f6f2eb]"
+                        : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                    )}
+                  >
+                    Ops
+                  </Link>
+                  <Link
+                    href="/ops/ai-apis"
+                    onClick={() => onNavigate?.()}
+                    className={cn(
+                      "block px-3 py-2 text-sm transition-colors",
+                      pathname.startsWith("/ops/ai-apis")
+                        ? "bg-cos-dark text-[#f6f2eb]"
+                        : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                    )}
+                  >
+                    AI &amp; APIs
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-0.5 pt-2">
+              <Link
+                href="/ops"
+                title="Owner Ops"
+                onClick={() => onNavigate?.()}
+                className={cn(
+                  "group relative flex items-center justify-center p-2.5 text-sm transition-colors",
+                  pathname === "/ops"
+                    ? "bg-cos-dark text-[#f6f2eb]"
+                    : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                )}
+              >
+                <Shield className="h-4 w-4" strokeWidth={1.5} />
+              </Link>
+              <Link
+                href="/ops/ai-apis"
+                title="AI & APIs"
+                onClick={() => onNavigate?.()}
+                className={cn(
+                  "group relative flex items-center justify-center p-2.5 text-sm transition-colors",
+                  pathname.startsWith("/ops/ai-apis")
+                    ? "bg-cos-dark text-[#f6f2eb]"
+                    : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                )}
+              >
+                <Cpu className="h-4 w-4" strokeWidth={1.5} />
+              </Link>
+            </div>
+          )
+        ) : null}
 
         {/* Immediately under Insights (last nav item) — scrolls with nav, not footer-pinned. */}
         <div className={cn(showLabels ? "pt-3" : "flex justify-center pt-2")}>

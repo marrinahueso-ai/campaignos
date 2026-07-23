@@ -6,6 +6,7 @@ import {
   validateSignUpGeniusUrl,
   type ValidatedSignUpGeniusUrl,
 } from "@/lib/event-volunteers/url";
+import { recordApiCall } from "@/lib/ops/record-api-call";
 
 const FETCH_TIMEOUT_MS = 20_000;
 const USER_AGENT =
@@ -136,6 +137,22 @@ export async function readSignUpGeniusSignup(
     return { ok: false, error: userMessage(code), code };
   }
 
+  const startedAt = Date.now();
+  const result = await readSignUpGeniusSignupNetwork(validated);
+  await recordApiCall({
+    provider: "signupgenius",
+    operation: "signup.read",
+    startedAt,
+    success: result.ok,
+    errorCode: result.ok ? null : result.code,
+    errorMessage: result.ok ? null : result.error,
+  });
+  return result;
+}
+
+async function readSignUpGeniusSignupNetwork(
+  validated: ValidatedSignUpGeniusUrl,
+): Promise<SignUpGeniusReadResult> {
   try {
     const pageRes = await fetchWithTimeout(validated.normalizedHref, {
       method: "GET",

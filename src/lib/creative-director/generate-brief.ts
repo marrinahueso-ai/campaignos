@@ -1,5 +1,4 @@
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import { resolveFastDraftModel } from "@/lib/ai/models";
 import {
   buildCreativeBriefFromContext,
@@ -77,18 +76,10 @@ export async function generateEnhancedCreativeBrief(
     userPrompt: buildBriefEnhancementPrompt(context),
     maxTokens: BRIEF_MAX_TOKENS,
     temperature: 0.6,
-  });
-
-  await logAiUsage({
-    eventId: context.event.id,
-    actionType: "generate_creative_brief",
-    channel: null,
-    model: result.model,
-    promptTokens: result.promptTokens,
-    completionTokens: result.completionTokens,
-    totalTokens: result.totalTokens,
-    success: result.success,
-    errorMessage: result.error,
+    usage: {
+      actionType: "generate_creative_brief",
+      eventId: context.event.id,
+    },
   });
 
   if (!result.success || !result.text) {

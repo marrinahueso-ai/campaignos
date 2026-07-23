@@ -5,7 +5,6 @@ import { createConceptBatchId } from "@/lib/ai-artwork/mutations";
 import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
 import { generateText, isAiConfigured } from "@/lib/ai/provider";
-import { logAiUsage } from "@/lib/ai/usage";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import {
   resolveBrandContextForGeneration,
@@ -348,12 +347,21 @@ export async function generateCampaignBuilderCaption(input: {
   });
 
   const model = resolveMetaCaptionModel();
+  const captionUsage = {
+    actionType: "meta_social_caption" as const,
+    eventId: input.eventId,
+    organizationId: organization?.id ?? null,
+    channel: input.platform,
+    feature: "create_with_ai_caption",
+  };
+
   let generation = await generateText({
     systemPrompt: prompts.systemPrompt,
     userPrompt: prompts.userPrompt,
     model,
     maxTokens: 500,
     imageUrl: prompts.hasArtworkImage ? input.artworkImageUrl : undefined,
+    usage: captionUsage,
   });
 
   if ((!generation.success || !generation.text?.trim()) && prompts.hasArtworkImage) {
@@ -373,22 +381,11 @@ export async function generateCampaignBuilderCaption(input: {
       userPrompt: fallbackPrompts.userPrompt,
       model,
       maxTokens: 500,
+      usage: captionUsage,
     });
   }
 
   if (!generation.success || !generation.text?.trim()) {
-    await logAiUsage({
-      eventId: input.eventId,
-      actionType: "meta_social_caption",
-      channel: input.platform,
-      model: generation.model,
-      promptTokens: generation.promptTokens,
-      completionTokens: generation.completionTokens,
-      totalTokens: generation.totalTokens,
-      success: false,
-      errorMessage: generation.error,
-    });
-
     logCaptionGenerationDebug({
       eventId: input.eventId,
       milestone: input.milestone,
@@ -409,17 +406,6 @@ export async function generateCampaignBuilderCaption(input: {
   }
 
   const caption = normalizeCaption(generation.text);
-
-  await logAiUsage({
-    eventId: input.eventId,
-    actionType: "meta_social_caption",
-    channel: input.platform,
-    model: generation.model,
-    promptTokens: generation.promptTokens,
-    completionTokens: generation.completionTokens,
-    totalTokens: generation.totalTokens,
-    success: true,
-  });
 
   logCaptionGenerationDebug({
     eventId: input.eventId,
