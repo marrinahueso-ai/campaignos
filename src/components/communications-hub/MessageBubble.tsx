@@ -15,6 +15,7 @@ import { setInboxMessageReactionAction } from "@/lib/inbox/actions";
 import {
   BUBBLE_QUICK_REACTIONS,
   readLocalMessageReaction,
+  readMessageStickerUrl,
   type BubbleQuickReaction,
 } from "@/lib/inbox/stickers";
 import type { InboxMessage } from "@/lib/inbox/types";
@@ -22,6 +23,7 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const DOUBLE_TAP_MS = 320;
+const STICKER_PLACEHOLDER_BODY = "📎 Sticker";
 
 function MessageAvatar({
   avatarUrl,
@@ -74,6 +76,10 @@ export function MessageBubble({
   const [isPending, startTransition] = useTransition();
   const lastTapRef = useRef(0);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const stickerUrl = readMessageStickerUrl(message.metadata);
+  const textBody = message.body?.trim() ?? "";
+  const showTextBody =
+    Boolean(textBody) && !(stickerUrl && textBody === STICKER_PLACEHOLDER_BODY);
 
   useEffect(() => {
     setReaction(readLocalMessageReaction(message.metadata));
@@ -174,14 +180,28 @@ export function MessageBubble({
           }}
           aria-label={`Message from ${avatarName ?? "contact"}. Double-tap to react.`}
           className={cn(
-            "select-none rounded-2xl px-4 py-3 text-sm leading-relaxed touch-manipulation",
+            "select-none rounded-2xl text-sm leading-relaxed touch-manipulation",
+            stickerUrl && !showTextBody ? "p-2" : "px-4 py-3",
             isOutbound
               ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
               : "rounded-bl-md bg-[#eceae4] text-cos-text",
             isPending && "opacity-80",
           )}
         >
-          <p className="whitespace-pre-wrap">{message.body}</p>
+          {stickerUrl ? (
+            <img
+              src={stickerUrl}
+              alt="Sticker"
+              className={cn(
+                "max-h-40 max-w-[11rem] rounded-xl object-contain",
+                showTextBody && "mb-2",
+              )}
+              loading="lazy"
+            />
+          ) : null}
+          {showTextBody ? (
+            <p className="whitespace-pre-wrap">{message.body}</p>
+          ) : null}
         </div>
 
         {pickerOpen ? (

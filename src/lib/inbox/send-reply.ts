@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isCommentChannel } from "@/lib/inbox/constants";
 import { inboxGraphPost } from "@/lib/inbox/sync/graph-client";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 
@@ -8,6 +9,8 @@ export type SendInboxReplyInput = {
   thread: InboxThread;
   inboundMessage: InboxMessage;
   body: string;
+  /** Public HTTPS URL for a custom sticker / image attachment (DMs only). */
+  imageUrl?: string | null;
   pageId: string;
   pageAccessToken: string;
   instagramAccountId?: string | null;
@@ -17,6 +20,8 @@ export type SendInboxReplyResult = {
   success: boolean;
   externalSendId: string | null;
   error: string | null;
+  /** Set when an image attachment was delivered via Meta. */
+  sentImage?: boolean;
 };
 
 function formatSendReplyError(input: {
@@ -66,33 +71,100 @@ async function sendFacebookMessengerReply(input: {
   pageId: string;
   recipientId: string;
   body: string;
+  imageUrl?: string | null;
   pageAccessToken: string;
 }): Promise<SendInboxReplyResult> {
-  const result = await inboxGraphPost<{ message_id?: string; id?: string }>(
-    `/${input.pageId}/messages`,
-    {
-      recipient: JSON.stringify({ id: input.recipientId }),
-      messaging_type: "RESPONSE",
-      message: JSON.stringify({ text: input.body }),
-      access_token: input.pageAccessToken,
-    },
-  );
+  const imageUrl = input.imageUrl?.trim() || null;
+  const body = input.body.trim();
 
-  if (!result.ok) {
+  if (!imageUrl && !body) {
     return {
       success: false,
       externalSendId: null,
-      error: formatSendReplyError({
-        channelType: input.channelType,
-        graphError: result.error,
-        errorCode: result.errorCode,
-      }),
+      error: "Reply body is empty.",
     };
   }
 
-  const externalSendId =
-    String(result.data.message_id ?? result.data.id ?? "") || null;
-  return { success: true, externalSendId, error: null };
+  let lastExternalSendId: string | null = null;
+  let sentImage = false;
+
+  if (imageUrl) {
+    const imageResult = await inboxGraphPost<{ message_id?: string; id?: string }>(
+      `/${input.pageId}/messages`,
+      {
+        recipient: JSON.stringify({ id: input.recipientId }),
+        messaging_type: "RESPONSE",
+        message: JSON.stringify({
+          attachment: {
+            type: "image",
+            payload: {
+              url: imageUrl,
+              is_reusable: true,
+            },
+          },
+        }),
+        access_token: input.pageAccessToken,
+      },
+    );
+
+    if (!imageResult.ok) {
+      return {
+        success: false,
+        externalSendId: null,
+        error: formatSendReplyError({
+          channelType: input.channelType,
+          graphError: imageResult.error,
+          errorCode: imageResult.errorCode,
+        }),
+      };
+    }
+
+    lastExternalSendId =
+      String(imageResult.data.message_id ?? imageResult.data.id ?? "") || null;
+    sentImage = true;
+  }
+
+  if (body) {
+    const textResult = await inboxGraphPost<{ message_id?: string; id?: string }>(
+      `/${input.pageId}/messages`,
+      {
+        recipient: JSON.stringify({ id: input.recipientId }),
+        messaging_type: "RESPONSE",
+        message: JSON.stringify({ text: body }),
+        access_token: input.pageAccessToken,
+      },
+    );
+
+    if (!textResult.ok) {
+      // Image may already have been delivered — surface the text failure clearly.
+      const prefix = sentImage
+        ? "Sticker was sent, but the text reply failed: "
+        : "";
+      return {
+        success: false,
+        externalSendId: lastExternalSendId,
+        sentImage,
+        error:
+          prefix +
+          formatSendReplyError({
+            channelType: input.channelType,
+            graphError: textResult.error,
+            errorCode: textResult.errorCode,
+          }),
+      };
+    }
+
+    lastExternalSendId =
+      String(textResult.data.message_id ?? textResult.data.id ?? "") ||
+      lastExternalSendId;
+  }
+
+  return {
+    success: true,
+    externalSendId: lastExternalSendId,
+    error: null,
+    sentImage,
+  };
 }
 
 async function sendFacebookCommentReply(input: {
@@ -151,7 +223,18 @@ export async function sendInboxReply(
   input: SendInboxReplyInput,
 ): Promise<SendInboxReplyResult> {
   const body = input.body.trim();
-  if (!body) {
+  const imageUrl = input.imageUrl?.trim() || null;
+
+  if (imageUrl && isCommentChannel(input.channelType)) {
+    return {
+      success: false,
+      externalSendId: null,
+      error:
+        "Image stickers can’t be sent as comment replies — Meta only accepts text on comments. Use Messenger or Instagram DMs, or paste text instead.",
+    };
+  }
+
+  if (!body && !imageUrl) {
     return { success: false, externalSendId: null, error: "Reply body is empty." };
   }
 
@@ -173,6 +256,7 @@ export async function sendInboxReply(
         pageId: input.pageId,
         recipientId,
         body,
+        imageUrl,
         pageAccessToken: input.pageAccessToken,
       });
     }
@@ -194,6 +278,7 @@ export async function sendInboxReply(
         pageId: input.pageId,
         recipientId,
         body,
+        imageUrl,
         pageAccessToken: input.pageAccessToken,
       });
     }

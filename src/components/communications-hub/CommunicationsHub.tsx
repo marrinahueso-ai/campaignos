@@ -47,10 +47,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
     };
   }, []);
 
-  const defaultQueueFilter = useMemo(
-    () => pickDefaultQueueFilter(threads.length, computeQueueCounts(threads, messagesByThreadId)),
-    [threads, messagesByThreadId],
-  );
+  const defaultQueueFilter = useMemo(() => pickDefaultQueueFilter(), []);
 
   const [queueFilter, setQueueFilter] = useState<CommunicationsQueueFilter>(defaultQueueFilter);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +59,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const clearFilters = useCallback(() => {
     setSearchQuery("");
     setChannelFilter("all");
-    setQueueFilter("all");
+    setQueueFilter("unread");
     setSelectedThreadId(null);
     setMobileShowDetail(false);
     setMobileShowAiPanel(false);
@@ -173,7 +170,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     channelFilter !== "all" ||
-    (queueFilter !== "all" && queueFilter !== defaultQueueFilter);
+    queueFilter !== defaultQueueFilter;
 
   function handleQueueFilterChange(filter: CommunicationsQueueFilter) {
     setQueueFilter(filter);
@@ -184,7 +181,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
 
   function handleAiQueueClick() {
     setQueueFilter((current) =>
-      current === "waiting_on_ai" ? "all" : "waiting_on_ai",
+      current === "waiting_on_ai" ? "unread" : "waiting_on_ai",
     );
     setSelectedThreadId(null);
     setMobileShowDetail(false);
@@ -242,9 +239,6 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
           <div className="flex min-h-[min(760px,calc(100vh-13rem))] flex-col xl:flex-row">
             <CommunicationsQueuePanel
               threads={filteredThreads}
-              totalThreadCount={
-                threads.filter((thread) => thread.status !== "archived").length
-              }
               messagesByThreadId={messagesByThreadId}
               selectedThreadId={selectedThreadId}
               queueFilter={queueFilter}
@@ -260,9 +254,9 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
               <EmptyState
                 icon={MessageCircle}
                 title="No conversations in this queue"
-                description="Try another queue filter or clear filters to see all conversations."
+                description="Try another queue filter or clear filters to return to Unread."
                 action={{
-                  label: "Clear filters and show all conversations",
+                  label: "Clear filters and show Unread",
                   onClick: clearFilters,
                 }}
                 className="flex min-h-0 flex-1 items-center justify-center py-16"

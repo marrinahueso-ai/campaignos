@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CAMPAIGN_FILES_BUCKET } from "@/lib/campaign-files/constants";
 import { EVENT_ASSETS_BUCKET } from "@/lib/event-workspace/storage";
+import {
+  ORGANIZATION_STICKERS_BUCKET,
+  buildOrganizationStickerStoragePath,
+} from "@/lib/inbox/sticker-constants";
 import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/constants";
 import { buildVendorDocumentStoragePath, buildVendorLogoStoragePath } from "@/lib/vendors/storage";
 
@@ -18,9 +22,16 @@ describe("Phase C3 storage membership RLS contract", () => {
   it("keeps org-prefixed buckets keyed by organization_id first folder", () => {
     const docPath = buildVendorDocumentStoragePath(orgId, vendorId, "contract.pdf", eventId);
     const logoPath = buildVendorLogoStoragePath(orgId, vendorId, "logo.png");
+    const stickerPath = buildOrganizationStickerStoragePath({
+      organizationId: orgId,
+      stickerId: "44444444-4444-4444-8444-444444444444",
+      mimeType: "image/png",
+    });
     assert.equal(docPath.split("/")[0], orgId);
     assert.equal(logoPath.split("/")[0], orgId);
+    assert.equal(stickerPath.split("/")[0], orgId);
     assert.equal(VENDOR_DOCUMENTS_BUCKET, "vendor-documents");
+    assert.equal(ORGANIZATION_STICKERS_BUCKET, "organization-stickers");
   });
 
   it("keeps event-prefixed buckets keyed by event_id first folder", () => {
@@ -43,11 +54,13 @@ describe("Phase C3 storage membership RLS contract", () => {
       "event-assets",
       "campaign-files",
       "school-assets",
+      "organization-stickers",
     ]);
     // Private: Storage API + signed URLs gated by membership
     assert.equal(privateBuckets.has("vendor-documents"), true);
     // Public: API gated; HTTP /object/public/ URLs still work until signed-URL migration
     assert.equal(publicBucketsApiHardened.has("event-assets"), true);
+    assert.equal(publicBucketsApiHardened.has("organization-stickers"), true);
   });
 
   it("rejects non-uuid first folders at the policy helper layer (contract)", () => {

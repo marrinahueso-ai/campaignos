@@ -16,23 +16,30 @@ import {
   Heart,
   Loader2,
   Paperclip,
+  Plus,
   Smile,
   Sparkles,
   Sticker,
   ThumbsUp,
+  X,
 } from "lucide-react";
 import { Theme, type EmojiClickData } from "emoji-picker-react";
 import {
   approveInboxReplyAction,
+  deleteOrganizationStickerAction,
   generateInboxAiDraftAction,
+  listOrganizationStickersAction,
   sendInboxReplyAction,
+  uploadOrganizationStickerAction,
 } from "@/lib/inbox/actions";
 import { CommunicationsParentPostCard } from "@/components/communications-hub/CommunicationsParentPostCard";
 import { hasCommentPostPreview } from "@/lib/inbox/comment-post-preview";
+import { isCommentChannel } from "@/lib/inbox/constants";
 import { deriveAiConfidenceScore } from "@/lib/inbox/queue-utils";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import { INBOX_STICKER_PACK } from "@/lib/inbox/stickers";
 import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
+import type { OrganizationSticker } from "@/types/organization-stickers";
 import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
@@ -104,10 +111,18 @@ export function CommunicationsReplySection({
   const [draftRequested, setDraftRequested] = useState(false);
   const [composerPicker, setComposerPicker] = useState<ComposerPicker>(null);
   const [attachmentNotice, setAttachmentNotice] = useState<string | null>(null);
+  const [orgStickers, setOrgStickers] = useState<OrganizationSticker[]>([]);
+  const [stickersLoading, setStickersLoading] = useState(false);
+  const [stickerUploading, setStickerUploading] = useState(false);
+  const [pendingSticker, setPendingSticker] = useState<OrganizationSticker | null>(
+    null,
+  );
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stickerUploadInputRef = useRef<HTMLInputElement>(null);
   const composerPickerRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
+  const commentThread = isCommentChannel(thread.channelType);
 
   const participantFirstName =
     thread.participantName?.trim().split(/\s+/)[0] ?? "contact";
@@ -131,8 +146,27 @@ export function CommunicationsReplySection({
     setAttachmentNotice(null);
     setDraftRequested(false);
     setComposerPicker(null);
+    setPendingSticker(null);
     selectionRef.current = { start: 0, end: 0 };
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
+
+  const loadOrgStickers = useCallback(async () => {
+    setStickersLoading(true);
+    const result = await listOrganizationStickersAction();
+    setStickersLoading(false);
+    if (result.success) {
+      setOrgStickers(result.stickers);
+      return;
+    }
+    setAttachmentNotice(result.error ?? "Could not load stickers.");
+  }, []);
+
+  useEffect(() => {
+    if (composerPicker !== "sticker") {
+      return;
+    }
+    void loadOrgStickers();
+  }, [composerPicker, loadOrgStickers]);
 
   useEffect(() => {
     if (!composerPicker) {
@@ -206,11 +240,24 @@ export function CommunicationsReplySection({
     insertIntoReply(emojiData.emoji);
   }
 
-  function handleStickerSelect(emoji: string) {
+  function handleQuickEmojiStickerSelect(emoji: string) {
     insertIntoReply(emoji);
     setComposerPicker(null);
+    setAttachmentNotice(null);
+  }
+
+  function handleCustomStickerSelect(sticker: OrganizationSticker) {
+    if (commentThread) {
+      setAttachmentNotice(
+        "Image stickers can’t be sent as comment replies — Meta only accepts text on comments. Use Messenger or Instagram DMs.",
+      );
+      setComposerPicker(null);
+      return;
+    }
+    setPendingSticker(sticker);
+    setComposerPicker(null);
     setAttachmentNotice(
-      "Stickers insert as emoji for now — Meta replies are text-only (custom sticker send isn’t available yet).",
+      "Sticker attached — Send will deliver it as an image in this DM.",
     );
   }
 
@@ -222,8 +269,45 @@ export function CommunicationsReplySection({
       return;
     }
     setAttachmentNotice(
-      "Attachments aren't supported for Meta replies yet — send text only for now.",
+      "Attachments aren't supported for Meta replies yet — send text only for now. Use Stickers to upload reusable images for DMs.",
     );
+  }
+
+  function handleStickerUploadSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setStickerUploading(true);
+    setAttachmentNotice(null);
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("file", file);
+      const result = await uploadOrganizationStickerAction(formData);
+      setStickerUploading(false);
+      if (!result.success || !result.sticker) {
+        setAttachmentNotice(result.error ?? "Could not upload sticker.");
+        return;
+      }
+      setOrgStickers((current) => [result.sticker!, ...current]);
+      setAttachmentNotice(`Added “${result.sticker.label}” to your sticker pack.`);
+    });
+  }
+
+  function handleDeleteOrgSticker(stickerId: string) {
+    startTransition(async () => {
+      const result = await deleteOrganizationStickerAction({ stickerId });
+      if (!result.success) {
+        setAttachmentNotice(result.error ?? "Could not delete sticker.");
+        return;
+      }
+      setOrgStickers((current) => current.filter((item) => item.id !== stickerId));
+      setPendingSticker((current) =>
+        current?.id === stickerId ? null : current,
+      );
+    });
   }
 
   const requestDraft = useCallback(
@@ -306,7 +390,8 @@ export function CommunicationsReplySection({
       ? [replyTarget.aiSourceUsed.answerFrom.label]
       : []);
   const sendBody = manualReply.trim() || displayBody;
-  const canSend = Boolean(sendBody.trim()) && !isPending;
+  const canSend =
+    (Boolean(sendBody.trim()) || pendingSticker != null) && !isPending;
 
   function handleApproveAndSend() {
     if (!replyTarget) {
@@ -316,13 +401,26 @@ export function CommunicationsReplySection({
     startTransition(async () => {
       setActionError(null);
 
-      const bodyToSend = sendBody;
-      if (!bodyToSend.trim()) {
-        setActionError("Write a reply before sending.");
+      const bodyToSend = sendBody.trim();
+      if (!bodyToSend && !pendingSticker) {
+        setActionError("Write a reply or choose a sticker before sending.");
         return;
       }
 
-      if (!isApproved || isEditing || bodyToSend !== (replyTarget.approvedBody ?? "")) {
+      if (pendingSticker && commentThread) {
+        setActionError(
+          "Image stickers can’t be sent as comment replies — Meta only accepts text on comments.",
+        );
+        return;
+      }
+
+      // Sticker-only DM replies can skip text approval.
+      const needsTextApproval =
+        Boolean(bodyToSend) &&
+        !isSent &&
+        (!isApproved || isEditing || bodyToSend !== (replyTarget.approvedBody ?? ""));
+
+      if (needsTextApproval) {
         const approveResult = await approveInboxReplyAction({
           messageId: replyTarget.id,
           body: bodyToSend,
@@ -333,7 +431,11 @@ export function CommunicationsReplySection({
         }
       }
 
-      const sendResult = await sendInboxReplyAction({ messageId: replyTarget.id });
+      const sendResult = await sendInboxReplyAction({
+        messageId: replyTarget.id,
+        body: isSent || pendingSticker ? bodyToSend || undefined : undefined,
+        stickerId: pendingSticker?.id ?? null,
+      });
       if (!sendResult.success) {
         setActionError(sendResult.error ?? "Could not send reply.");
         return;
@@ -341,6 +443,8 @@ export function CommunicationsReplySection({
 
       setIsEditing(false);
       setManualReply("");
+      setPendingSticker(null);
+      setAttachmentNotice(null);
       router.refresh();
     });
   }
@@ -449,6 +553,37 @@ export function CommunicationsReplySection({
       </div>
 
       <div className="relative z-30 mt-4 overflow-visible rounded-xl border border-cos-border bg-cos-card px-4 py-3">
+        {pendingSticker ? (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-cos-border bg-cos-bg/60 px-3 py-2">
+            <img
+              src={pendingSticker.publicUrl}
+              alt={pendingSticker.label}
+              className="h-14 w-14 rounded-md object-contain bg-white"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-cos-text">
+                {pendingSticker.label}
+              </p>
+              <p className="text-[11px] text-cos-muted">
+                {commentThread
+                  ? "Won’t send on comments — switch to a DM thread"
+                  : "Ready to send as an image sticker"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingSticker(null);
+                setAttachmentNotice(null);
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-white hover:text-cos-text"
+              aria-label="Remove sticker"
+              title="Remove sticker"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
         <textarea
           ref={replyTextareaRef}
           value={manualReply}
@@ -471,6 +606,14 @@ export function CommunicationsReplySection({
           accept="image/*,.pdf,.doc,.docx,.txt"
           className="hidden"
           onChange={handleAttachSelected}
+          tabIndex={-1}
+        />
+        <input
+          ref={stickerUploadInputRef}
+          type="file"
+          accept="image/png,image/webp,image/gif,image/jpeg"
+          className="hidden"
+          onChange={handleStickerUploadSelected}
           tabIndex={-1}
         />
         <div className="mt-2 flex items-center justify-between gap-2">
@@ -560,28 +703,107 @@ export function CommunicationsReplySection({
             ) : null}
             {composerPicker === "sticker" ? (
               <div
-                className="absolute bottom-full left-0 z-50 mb-2 w-64 rounded-xl border border-cos-border bg-white p-3 shadow-lg"
+                className="absolute bottom-full left-0 z-50 mb-2 w-72 rounded-xl border border-cos-border bg-white p-3 shadow-lg"
                 role="dialog"
                 aria-label="Sticker picker"
               >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-medium tracking-wide text-cos-muted uppercase">
+                    Your stickers
+                  </p>
+                  <button
+                    type="button"
+                    disabled={stickerUploading || isPending}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => stickerUploadInputRef.current?.click()}
+                    className="inline-flex items-center gap-1 rounded-full border border-cos-border bg-white px-2 py-0.5 text-[11px] font-medium text-cos-text transition-colors hover:border-cos-dark disabled:opacity-50"
+                  >
+                    {stickerUploading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3" />
+                    )}
+                    Add
+                  </button>
+                </div>
                 <p className="mb-2 text-[11px] leading-snug text-cos-muted">
-                  Built-in stickers insert into your reply. Meta custom sticker send
-                  isn’t available yet.
+                  Upload PNG, WebP, GIF, or JPEG (max 2 MB).{" "}
+                  {commentThread
+                    ? "Sending images works in DMs only — comments stay text-only."
+                    : "Selecting one attaches it to this DM reply."}
                 </p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {INBOX_STICKER_PACK.map((sticker) => (
-                    <button
-                      key={sticker.id}
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => handleStickerSelect(sticker.emoji)}
-                      className="inline-flex h-12 flex-col items-center justify-center rounded-lg text-2xl transition-colors hover:bg-cos-bg"
-                      aria-label={sticker.label}
-                      title={sticker.label}
-                    >
-                      {sticker.emoji}
-                    </button>
-                  ))}
+                {stickersLoading ? (
+                  <div className="flex h-24 items-center justify-center text-xs text-cos-muted">
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    Loading stickers…
+                  </div>
+                ) : orgStickers.length === 0 ? (
+                  <button
+                    type="button"
+                    disabled={stickerUploading || isPending}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => stickerUploadInputRef.current?.click()}
+                    className="flex h-24 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-cos-border text-xs text-cos-muted transition-colors hover:border-cos-dark hover:text-cos-text"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Upload your first sticker
+                  </button>
+                ) : (
+                  <div className="grid max-h-48 grid-cols-4 gap-1.5 overflow-y-auto">
+                    {orgStickers.map((sticker) => (
+                      <div key={sticker.id} className="group relative">
+                        <button
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => handleCustomStickerSelect(sticker)}
+                          className={cn(
+                            "flex h-14 w-full items-center justify-center overflow-hidden rounded-lg border border-transparent bg-cos-bg/50 transition-colors hover:border-cos-border hover:bg-cos-bg",
+                            pendingSticker?.id === sticker.id &&
+                              "border-cos-dark ring-1 ring-cos-dark",
+                          )}
+                          aria-label={sticker.label}
+                          title={sticker.label}
+                        >
+                          <img
+                            src={sticker.publicUrl}
+                            alt=""
+                            className="h-full w-full object-contain p-1"
+                            loading="lazy"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => handleDeleteOrgSticker(sticker.id)}
+                          className="absolute -top-1 -right-1 hidden h-5 w-5 items-center justify-center rounded-full border border-cos-border bg-white text-cos-muted shadow-sm group-hover:inline-flex hover:text-red-600"
+                          aria-label={`Delete ${sticker.label}`}
+                          title="Delete sticker"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 border-t border-cos-border pt-2">
+                  <p className="mb-1.5 text-[11px] font-medium tracking-wide text-cos-muted uppercase">
+                    Quick emoji
+                  </p>
+                  <div className="grid grid-cols-8 gap-1">
+                    {INBOX_STICKER_PACK.map((sticker) => (
+                      <button
+                        key={sticker.id}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handleQuickEmojiStickerSelect(sticker.emoji)}
+                        className="inline-flex h-8 items-center justify-center rounded-md text-lg transition-colors hover:bg-cos-bg"
+                        aria-label={sticker.label}
+                        title={sticker.label}
+                      >
+                        {sticker.emoji}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             ) : null}

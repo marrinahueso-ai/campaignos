@@ -1,8 +1,7 @@
-/** Built-in sticker pack for Communications Hub replies.
+/** Built-in quick emoji pack + helpers for Communications Hub reactions.
  *
- * Meta Graph reply paths in this app are text-only today, and custom sticker
- * send is not available. These stickers insert as large emoji into the
- * composer so the UX stays useful until Meta sticker/attachment send lands.
+ * Custom image stickers live in `organization_stickers` (Supabase storage).
+ * This emoji pack remains a lightweight insert into the text composer.
  */
 
 export type InboxSticker = {
@@ -44,4 +43,14 @@ export function readLocalMessageReaction(
     return null;
   }
   return isBubbleQuickReaction(metadata.localReaction) ? metadata.localReaction : null;
+}
+
+export function readMessageStickerUrl(
+  metadata: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!metadata) {
+    return null;
+  }
+  const url = metadata.stickerUrl;
+  return typeof url === "string" && url.trim() ? url : null;
 }

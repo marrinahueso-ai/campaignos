@@ -2,34 +2,32 @@ import { isReplyChannel } from "@/lib/inbox/constants";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
 import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
 
+/** Primary inbox folders + Deleted; waiting_on_ai is TopBar AI Queue only. */
 export type CommunicationsQueueFilter =
-  | "all"
-  | "needs_reply"
   | "unread"
-  | "waiting_on_ai"
-  | "ready_to_send"
-  | "assigned_to_me"
   | "follow_up"
   | "completed"
-  | "archived";
+  | "archived"
+  | "waiting_on_ai";
 
 export interface CommunicationsQueueCounts {
   needsReply: number;
   unread: number;
   waitingOnAi: number;
   readyToSend: number;
-  assignedToMe: number;
   followUp: number;
   completed: number;
   archived: number;
 }
 
 export interface ThreadQueueState {
-  needsReply: boolean;
+  /** Active inbox home: not deleted and not marked done (includes follow-up). */
   unread: boolean;
+  needsReply: boolean;
   waitingOnAi: boolean;
   readyToSend: boolean;
   followUp: boolean;
+  /** Manually marked done (Check action) — Done folder. */
   completed: boolean;
 }
 
@@ -37,19 +35,20 @@ export function classifyThreadQueueState(
   thread: InboxThread,
   messages: InboxMessage[],
 ): ThreadQueueState {
-  const unread = thread.unreadCount > 0;
-  const followUp = thread.followUp && thread.status !== "archived";
+  const isArchived = thread.status === "archived";
+  const followUp = thread.followUp && !isArchived;
+  const completed = Boolean(thread.markedDone) && !isArchived;
+  // Unread = default home for everything that isn't Done or Deleted.
+  const unread = !isArchived && !thread.markedDone;
+
   const replyTarget = resolveInboxReplyTarget({
     channelType: thread.channelType,
     messages,
   });
 
   if (!isReplyChannel(thread.channelType)) {
-    const completed =
-      thread.markedDone ||
-      thread.status === "sent" ||
-      thread.status === "archived";
-    const needsReply = !completed && thread.status === "pending";
+    const needsReply =
+      unread && !completed && thread.status === "pending";
     return {
       needsReply,
       unread,
@@ -61,10 +60,6 @@ export function classifyThreadQueueState(
   }
 
   if (!replyTarget) {
-    const completed =
-      thread.markedDone ||
-      thread.status === "sent" ||
-      thread.status === "archived";
     return {
       needsReply: false,
       unread,
@@ -75,19 +70,16 @@ export function classifyThreadQueueState(
     };
   }
 
-  // Prefer message-level completion. Do not keep a thread "completed" after
-  // send just because thread.status is still "sent" when a newer inbound is pending.
   // Manual Done (marked_done) still wins until a new inbound clears it.
-  const completed =
-    thread.markedDone ||
-    thread.status === "archived" ||
-    replyTarget.status === "sent" ||
-    replyTarget.status === "archived";
-
-  const needsReply = !completed && replyTarget.status === "pending";
+  // Sent/approved reply status drives AI workflow labels, not the Done folder.
+  const replySettled =
+    replyTarget.status === "sent" || replyTarget.status === "archived";
+  const needsReply =
+    unread && !completed && !replySettled && replyTarget.status === "pending";
   const waitingOnAi =
     needsReply && !replyTarget.aiDraftBody?.trim() && !replyTarget.approvedBody?.trim();
-  const readyToSend = !completed && replyTarget.status === "approved";
+  const readyToSend =
+    unread && !completed && replyTarget.status === "approved";
 
   return {
     needsReply,
@@ -108,7 +100,6 @@ export function computeQueueCounts(
     unread: 0,
     waitingOnAi: 0,
     readyToSend: 0,
-    assignedToMe: 0,
     followUp: 0,
     completed: 0,
     archived: 0,
@@ -179,34 +170,25 @@ export function filterThreadsForCommunicationsHub(input: {
     const state = classifyThreadQueueState(thread, messages);
 
     switch (input.queueFilter) {
-      case "all":
-        // Active inbox only — deleted conversations live under Deleted.
-        return thread.status !== "archived";
-      case "needs_reply":
-        return thread.status !== "archived" && state.needsReply;
       case "unread":
-        return thread.status !== "archived" && state.unread;
+        // Active home: not deleted, not marked done (follow-up stays here).
+        return state.unread;
       case "waiting_on_ai":
         return thread.status !== "archived" && state.waitingOnAi;
-      case "ready_to_send":
-        return thread.status !== "archived" && state.readyToSend;
-      case "assigned_to_me":
-        return false;
       case "follow_up":
-        return thread.status !== "archived" && state.followUp;
+        // Starred threads, including those also marked done.
+        return state.followUp;
       case "completed":
-        return thread.status !== "archived" && state.completed;
+        return state.completed;
       case "archived":
         return thread.status === "archived";
     }
   });
 }
 
-export function pickDefaultQueueFilter(
-  totalThreads: number,
-  counts: CommunicationsQueueCounts,
-): "all" | "needs_reply" {
-  return counts.needsReply >= totalThreads ? "needs_reply" : "all";
+/** Default inbox home is always Unread. */
+export function pickDefaultQueueFilter(): "unread" {
+  return "unread";
 }
 
 /** Returns null when no AI draft/source check has run yet (do not invent a score). */

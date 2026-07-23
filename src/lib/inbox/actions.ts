@@ -17,7 +17,13 @@ import {
   missingFacebookCommentReplyScopes,
   missingInstagramCommentScopes,
 } from "@/lib/inbox/scopes";
-import { isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
+import { isCommentChannel, isReplyChannel, isTaggedChannel } from "@/lib/inbox/constants";
+import {
+  deleteOrganizationSticker,
+  getOrganizationStickerById,
+  listOrganizationStickers,
+  uploadOrganizationSticker,
+} from "@/lib/inbox/organization-stickers";
 import { isBubbleQuickReaction } from "@/lib/inbox/stickers";
 import { subscribeMetaInboxWebhooks } from "@/lib/inbox/sync/subscribe-webhooks";
 import { syncInboxForOrganization } from "@/lib/inbox/sync/sync-organization";
@@ -29,6 +35,7 @@ import {
 import { getMetaConnectionForCurrentOrg } from "@/lib/meta-publishing/connection";
 import { createClient } from "@/lib/supabase/server";
 import type { InboxAiSourceUsed } from "@/types/inbox-ai-sources";
+import type { OrganizationSticker } from "@/types/organization-stickers";
 
 export type InboxActionResult = {
   success: boolean;
@@ -311,6 +318,8 @@ export async function sendInboxReplyAction(input: {
    * `sent`. First replies still use the approved body on the seed message.
    */
   body?: string;
+  /** Optional org sticker to send as a Meta image attachment (DMs only). */
+  stickerId?: string | null;
 }): Promise<InboxReplyActionResult> {
   const access = await requireInboxPermission();
   if (!access.ok) {
@@ -328,18 +337,39 @@ export async function sendInboxReplyAction(input: {
   const followUpBody = input.body?.trim() || null;
   const isFollowUp = message.status === "sent";
   let bodyToSend: string;
+  let stickerImageUrl: string | null = null;
+  let stickerId: string | null = null;
+
+  if (input.stickerId) {
+    const sticker = await getOrganizationStickerById({
+      organizationId: access.organizationId,
+      stickerId: input.stickerId,
+    });
+    if (!sticker) {
+      return { success: false, error: "Sticker not found." };
+    }
+    stickerImageUrl = sticker.publicUrl;
+    stickerId = sticker.id;
+  }
 
   if (isFollowUp) {
-    if (!followUpBody) {
-      return { success: false, error: "Write a reply before sending." };
+    if (!followUpBody && !stickerImageUrl) {
+      return { success: false, error: "Write a reply or choose a sticker before sending." };
     }
-    bodyToSend = followUpBody;
+    bodyToSend = followUpBody ?? "";
+  } else if (stickerImageUrl && !message.approvedBody?.trim() && !followUpBody) {
+    // Sticker-only first reply can skip text approval.
+    bodyToSend = "";
   } else if (message.status === "approved" && message.approvedBody?.trim()) {
     bodyToSend = message.approvedBody.trim();
+  } else if (followUpBody) {
+    bodyToSend = followUpBody;
   } else {
     return {
       success: false,
-      error: "Approve the reply before sending.",
+      error: stickerImageUrl
+        ? "Approve the text reply before sending, or send the sticker alone."
+        : "Approve the reply before sending.",
     };
   }
 
@@ -353,6 +383,14 @@ export async function sendInboxReplyAction(input: {
 
   if (!isReplyChannel(thread.channelType)) {
     return { success: false, error: "This thread type does not support replies." };
+  }
+
+  if (stickerImageUrl && isCommentChannel(thread.channelType)) {
+    return {
+      success: false,
+      error:
+        "Image stickers can’t be sent as comment replies — Meta only accepts text on comments. Use Messenger or Instagram DMs instead.",
+    };
   }
 
   const connection = await getMetaConnectionForCurrentOrg();
@@ -404,6 +442,7 @@ export async function sendInboxReplyAction(input: {
     thread,
     inboundMessage: message,
     body: bodyToSend,
+    imageUrl: stickerImageUrl,
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
     instagramAccountId: connection.instagramAccountId,
@@ -415,6 +454,17 @@ export async function sendInboxReplyAction(input: {
 
   const now = new Date().toISOString();
   const supabase = await createClient();
+  const localBody =
+    bodyToSend ||
+    (stickerImageUrl ? "📎 Sticker" : "");
+  const outboundMetadata: Record<string, unknown> = {
+    replyToMessageId: message.id,
+    followUp: isFollowUp,
+  };
+  if (stickerImageUrl) {
+    outboundMetadata.stickerUrl = stickerImageUrl;
+    outboundMetadata.stickerId = stickerId;
+  }
 
   if (!isFollowUp) {
     const { error: inboundError } = await supabase
@@ -442,21 +492,21 @@ export async function sendInboxReplyAction(input: {
     channel_type: message.channelType,
     external_message_id: sendResult.externalSendId ?? `local:${message.id}:${now}`,
     direction: "outbound",
-    body: bodyToSend,
+    body: localBody,
     sender_name: connection.pageName ?? "You",
     sender_external_id: connection.facebookPageId,
     sent_at: now,
     status: "sent",
     sent_to_platform_at: now,
     external_send_id: sendResult.externalSendId,
-    metadata: { replyToMessageId: message.id, followUp: isFollowUp },
+    metadata: outboundMetadata,
   });
 
   await supabase
     .from("inbox_threads")
     .update({
       status: "sent",
-      last_message_snippet: bodyToSend.slice(0, 120),
+      last_message_snippet: localBody.slice(0, 120),
       last_message_at: now,
       updated_at: now,
     })
@@ -466,6 +516,69 @@ export async function sendInboxReplyAction(input: {
   revalidateInboxRoutes();
   revalidatePath("/settings/meta");
   return { success: true, status: "sent" };
+}
+
+export async function listOrganizationStickersAction(): Promise<{
+  success: boolean;
+  stickers: OrganizationSticker[];
+  error?: string | null;
+}> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, stickers: [], error: access.error };
+  }
+
+  const stickers = await listOrganizationStickers(access.organizationId);
+  return { success: true, stickers };
+}
+
+export async function uploadOrganizationStickerAction(formData: FormData): Promise<{
+  success: boolean;
+  sticker: OrganizationSticker | null;
+  error?: string | null;
+}> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, sticker: null, error: access.error };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size <= 0) {
+    return { success: false, sticker: null, error: "Choose a sticker image to upload." };
+  }
+
+  const result = await uploadOrganizationSticker({
+    organizationId: access.organizationId,
+    file,
+  });
+
+  if (!result.sticker) {
+    return { success: false, sticker: null, error: result.error };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true, sticker: result.sticker };
+}
+
+export async function deleteOrganizationStickerAction(input: {
+  stickerId: string;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const result = await deleteOrganizationSticker({
+    organizationId: access.organizationId,
+    stickerId: input.stickerId,
+  });
+
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
 }
 
 export async function repostTaggedPostAction(input: {

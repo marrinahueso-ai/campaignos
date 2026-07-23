@@ -13,7 +13,6 @@ type QueueItem = {
   id: CommunicationsQueueFilter;
   label: string;
   countKey?: keyof CommunicationsQueueCounts;
-  shell?: boolean;
 };
 
 /** Primary Meta-like chips shown in the horizontal row. */
@@ -23,13 +22,8 @@ const PRIMARY_CHIPS: QueueItem[] = [
   { id: "completed", label: "Done", countKey: "completed" },
 ];
 
-/** Secondary / AI workflow filters — Manage menu (not deleted). */
+/** Manage menu — Deleted only (AI workflow folders removed). */
 const MANAGE_ITEMS: QueueItem[] = [
-  { id: "all", label: "All conversations" },
-  { id: "needs_reply", label: "Needs Reply", countKey: "needsReply" },
-  { id: "waiting_on_ai", label: "Waiting on AI", countKey: "waitingOnAi" },
-  { id: "ready_to_send", label: "Ready to Send", countKey: "readyToSend" },
-  { id: "assigned_to_me", label: "Assigned to Me", countKey: "assignedToMe", shell: true },
   { id: "archived", label: "Deleted", countKey: "archived" },
 ];
 
@@ -75,6 +69,9 @@ function threadStatusLabel(
     return "Deleted";
   }
   const state = classifyThreadQueueState(thread, messages);
+  if (state.completed) {
+    return "Done";
+  }
   if (state.readyToSend) {
     return "Ready to Send";
   }
@@ -84,26 +81,21 @@ function threadStatusLabel(
   if (state.needsReply) {
     return "Needs Reply";
   }
-  if (state.completed) {
-    return "Done";
-  }
   return null;
 }
 
 function itemCount(
   item: QueueItem,
   queueCounts: CommunicationsQueueCounts,
-  totalThreadCount: number,
 ): number {
   if (item.countKey) {
     return queueCounts[item.countKey];
   }
-  return totalThreadCount;
+  return 0;
 }
 
 interface CommunicationsQueuePanelProps {
   threads: InboxThread[];
-  totalThreadCount: number;
   messagesByThreadId: Record<string, InboxMessage[]>;
   selectedThreadId: string | null;
   queueFilter: CommunicationsQueueFilter;
@@ -115,7 +107,6 @@ interface CommunicationsQueuePanelProps {
 
 export function CommunicationsQueuePanel({
   threads,
-  totalThreadCount,
   messagesByThreadId,
   selectedThreadId,
   queueFilter,
@@ -127,9 +118,7 @@ export function CommunicationsQueuePanel({
   const [manageOpen, setManageOpen] = useState(false);
   const manageMenuId = useId();
 
-  const activeSecondary = MANAGE_ITEMS.find(
-    (item) => item.id !== "all" && item.id === queueFilter,
-  );
+  const activeSecondary = MANAGE_ITEMS.find((item) => item.id === queueFilter);
   const manageHighlightsSecondary = Boolean(activeSecondary);
 
   useEffect(() => {
@@ -148,7 +137,8 @@ export function CommunicationsQueuePanel({
   }, [manageOpen]);
 
   function selectFilter(id: CommunicationsQueueFilter) {
-    onQueueFilterChange(queueFilter === id && id !== "all" ? "all" : id);
+    // Clicking the active filter returns to Unread (default home).
+    onQueueFilterChange(queueFilter === id && id !== "unread" ? "unread" : id);
     setManageOpen(false);
   }
 
@@ -171,7 +161,7 @@ export function CommunicationsQueuePanel({
             aria-label="Conversation filters"
           >
             {chipsToShow.map((item) => {
-              const count = itemCount(item, queueCounts, totalThreadCount);
+              const count = itemCount(item, queueCounts);
               const active = queueFilter === item.id;
 
               return (
@@ -237,7 +227,7 @@ export function CommunicationsQueuePanel({
                 >
                   <ul className="space-y-0.5">
                     {MANAGE_ITEMS.map((item) => {
-                      const count = itemCount(item, queueCounts, totalThreadCount);
+                      const count = itemCount(item, queueCounts);
                       const active = queueFilter === item.id;
 
                       return (
@@ -246,16 +236,11 @@ export function CommunicationsQueuePanel({
                             type="button"
                             role="menuitem"
                             onClick={() => selectFilter(item.id)}
-                            disabled={item.shell}
-                            title={
-                              item.shell ? "Assignment tracking coming soon" : undefined
-                            }
                             className={cn(
                               "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                               active
                                 ? "bg-cos-dark text-[#f6f2eb]"
                                 : "text-cos-text hover:bg-cos-bg",
-                              item.shell && "opacity-60",
                             )}
                             aria-checked={active}
                           >
@@ -291,7 +276,8 @@ export function CommunicationsQueuePanel({
             thread.participantName ?? INBOX_CHANNEL_LABELS[thread.channelType];
           const statusLabel = threadStatusLabel(thread, messages);
           const selected = selectedThreadId === thread.id;
-          const unread = thread.unreadCount > 0 && thread.status !== "archived";
+          const hasUnreadMessages =
+            thread.unreadCount > 0 && thread.status !== "archived";
           const isFollowUp = thread.followUp && thread.status !== "archived";
 
           return (
@@ -331,7 +317,7 @@ export function CommunicationsQueuePanel({
                     <p
                       className={cn(
                         "truncate text-sm text-cos-text",
-                        unread ? "font-bold" : "font-semibold",
+                        hasUnreadMessages ? "font-bold" : "font-semibold",
                       )}
                     >
                       {displayName}
@@ -352,7 +338,7 @@ export function CommunicationsQueuePanel({
                         <p
                           className={cn(
                             "line-clamp-1 text-xs leading-snug",
-                            unread ? "font-medium text-cos-text" : "text-cos-muted",
+                            hasUnreadMessages ? "font-medium text-cos-text" : "text-cos-muted",
                           )}
                         >
                           {thread.lastMessageSnippet}
