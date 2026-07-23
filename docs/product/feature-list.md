@@ -4,13 +4,13 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Org Volunteer Master at `/volunteers`
+**Last updated:** July 23, 2026 — Public Features “See Hey Ralli in Action”
 
 ---
 
 ## Marketing & public
 - Landing / home — **shipped**
-- Features explorer / product demos — **shipped**
+- Features (`/features`) — **shipped** (“See Hey Ralli in Action”: Create with AI live Motion demo + static product stories for Plan Your Year, Approvals, Volunteer Intelligence, Communications Hub, Ask Ralli; private harness remains at `/dev/motion-engine`)
 - Pricing page ($29 / $59 / $99 marketing) — **shipped**; checkout **deferred**
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**
@@ -57,15 +57,15 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
-- Event detail Insights tab (`?tab=insights`) — **shipped** (event-scoped Meta post KPIs: Views / Reach / Interactions / Link clicks / Likes; comparison vs typical when ≥2 posts; Views Total / By post; Interactions breakdown; posts list with artwork/caption; sync footer; empty states for Meta not connected / no published posts / need sync; no Age & gender / Top countries / Follows / Saves)
+- Event detail Insights tab (`?tab=insights`) — **shipped** (event-scoped Meta post KPIs: Views / Reach / Interactions / Link clicks / Likes; comparison vs typical when ≥2 posts; Views Total / By post; Interactions breakdown; posts list with artwork/caption; sync footer; empty states for Meta not connected / no published posts / need sync; no Age & gender / Top countries / Follows / Saves) — living: [event-insights.md](./event-insights.md)
 - Event Tasks start empty (user-created); auto-seeded default planning checklist on event open — **removed**
 - Event detail hero stats (Milestones from Create with AI session when present else classic steps; Pending Approvals + Scheduled Posts from Approvals scheduling; Tasks from playbook tables; Filled from latest confirmed volunteer snapshot) — clickable to Create with AI / Approvals / Tasks / Volunteers — **shipped**
 - Event detail brand accents (sunburst palette tokens: navy / mustard / sage / terracotta on hero, stats, tabs, status badges) — **shipped**
-- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignments-first layout with compact Needs Snapshot / Quick Totals / Overall Filled strip and AI Assistant right rail; assignment table Filter + Date + Sort; summaries match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living doc: [signupgenius.md](../integrations/signupgenius.md))
+- Volunteers (SignUpGenius URL; review multi-select dates + sticky allowlist reapplied on refresh; assignments-first layout with compact Needs Snapshot / Quick Totals / Overall Filled strip and AI Assistant right rail; assignment table Filter + Date + Sort; summaries match filtered assignments; color-coded overall / per-assignment fill rate matching Volunteer Master bands) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md) · org overview: [volunteer-master.md](./volunteer-master.md))
 - Legacy planning hub — **partial** / legacy (fallback only; Phase 3 is default)
 
 ## Volunteers
-- Volunteer Master (`/volunteers`) — org-wide upcoming events with circular event artwork (approved square; initials fallback), color-coded fill rate (Critical → Fully Staffed), top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [signupgenius.md](../integrations/signupgenius.md))
+- Volunteer Master (`/volunteers`) — org-wide upcoming events with circular event artwork (approved square; initials fallback), color-coded fill rate (Critical → Fully Staffed), top roles, underfilled “This week” rail; search by event/role + filters (Upcoming / Needs people / Covered / All); KPI cards act as filters; deep-links to event Volunteers tab; aggregate counts only (no PII) — **shipped** (living: [volunteer-master.md](./volunteer-master.md) · import: [signupgenius.md](../integrations/signupgenius.md))
 - Auto-feed: events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning Volunteer Signup URL — **shipped**
 
 ## Create with AI (Campaign Builder)
@@ -176,7 +176,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Rule-based recommendations (“From your metrics” + details drawer) — **shipped**
 - Soft sync notes inline under recommendations (not full-page banner) — **shipped**
 - Connect Meta empty state with `returnTo=/insights` — **shipped**
-- Event-scoped Insights on event detail (`/events/[id]?tab=insights`) — **shipped** (aggregates `social_post_insights` via published `meta_publication_slots` for that event; org hub unchanged)
+- Event-scoped Insights on event detail (`/events/[id]?tab=insights`) — **shipped** (aggregates `social_post_insights` via published `meta_publication_slots` for that event; org hub unchanged) — living: [event-insights.md](./event-insights.md)
 - Organic vs ads breakdown, page visits, follows, conversations — **deferred** (not available from current Page insights sync; honest empty copy on chart)
 - Audience demographics overview (Age & gender, Top countries) — **deferred** (not shown on event Insights either)
 - LLM-generated narrative — **deferred**

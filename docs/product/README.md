@@ -1,11 +1,13 @@
 # Product
 
 **Purpose:** What shipped, product vision, and design blueprints.  
-**Last updated:** July 20, 2026
+**Last updated:** July 23, 2026
 
 | Doc | Status |
 |-----|--------|
 | [feature-list.md](./feature-list.md) | **Living** |
+| [volunteer-master.md](./volunteer-master.md) | **Living** — org `/volunteers` |
+| [event-insights.md](./event-insights.md) | **Living** — event `?tab=insights` |
 | [vision.md](./vision.md) | Planned stub |
 | [changelog.md](./changelog.md) | **Living** — process (Feature list is the record) |
 | [blueprints/](./blueprints/) | **Living** (from former `product-v2/`) |

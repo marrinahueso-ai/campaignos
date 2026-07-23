@@ -3,9 +3,9 @@ import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { StudioFeaturesPage } from "@/components/marketing/StudioFeaturesPage";
 
 export const metadata = {
-  title: "Features",
+  title: "Features — See Hey Ralli in Action",
   description:
-    "Explore Hey Ralli — campaign planning, artwork studio, unified calendar, posting heatmap, team approvals, and Meta publishing for PTO teams.",
+    "See how Hey Ralli turns one school event into campaigns, approvals, volunteer clarity, communications, and clear next steps — for PTO, PTA, and community teams.",
 };
 
 export default async function FeaturesPage() {

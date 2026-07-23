@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 22, 2026  
+**Last updated:** July 23, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -45,6 +45,8 @@ This is the documentation hub. Start here.
 | Architecture | [engineering/architecture.md](./engineering/architecture.md) |
 | Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
+| Volunteer Master | [product/volunteer-master.md](./product/volunteer-master.md) |
+| Event Insights | [product/event-insights.md](./product/event-insights.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |

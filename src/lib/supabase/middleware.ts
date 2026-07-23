@@ -30,6 +30,7 @@ const PUBLIC_PATHS = [
   "/api/cron",
   "/api/sentry-verify",
   "/dev/sentry-verify",
+  "/dev/motion-engine",
   "/api/monday/oauth/callback",
   "/api/canva/oauth/callback",
   "/api/meta/oauth/callback",
@@ -169,10 +170,13 @@ export async function updateSession(request: NextRequest) {
     }
 
     // After password gate: developers must sign required agreements before app access.
+    // Skip public paths (marketing + /dev/* harnesses) so logged-in sessions can still
+    // open local tooling without completing agreements first.
     if (
       !mustChangePassword &&
       pathname !== "/account/change-password" &&
-      !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
+      !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH) &&
+      !isPublicPath(pathname)
     ) {
       const mustSign = await userMustSignDeveloperAgreements(supabase, user.id);
       if (mustSign) {

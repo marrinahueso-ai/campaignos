@@ -56,10 +56,18 @@ CampignOS/
     │   ├── invite/               # Invite accept
     │   └── login/
     ├── components/               # UI by domain (unified-calendar, artwork-v2, tasks-v2, …)
+    ├── marketing/                # Isolated marketing motion engine + future demos (not product UI)
+    │   ├── engine/               # Shared timeline / primitives (Motion for React)
+    │   ├── demo-generator/       # Cursor DemoSpec contract + private demo registry
+    │   └── demos/                # Lazy-loaded marketing demos (harness-private until wired)
     ├── lib/                      # Server domain logic (see §5)
     ├── types/
     └── middleware.ts             # Session refresh + public route allowlist
 ```
+
+**Marketing motion engine:** reusable demo animation system at `src/marketing/engine`. Independent from dashboard, Supabase, and live Studio marketing pages (`src/components/marketing`). Dev harness: `/dev/motion-engine` (404 in production).
+
+**Marketing demo generator:** authoring contract at `src/marketing/demo-generator` — typed `DemoSpec`, validation, and private `demoRegistry` so Cursor can create consistent demos from a short command. Demos stay harness-private until intentionally integrated.
 
 **Primary nav routes:** `/dashboard`, `/calendar`, `/events`, `/create-with-ai` (redirects into Campaign Builder Creative Setup when events exist), `/approvals`, `/tasks`, `/inbox` (Communications Hub), `/files`, `/vendors`, `/insights`, plus Settings subtree.
 
