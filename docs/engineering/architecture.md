@@ -104,7 +104,7 @@ flowchart TB
 3. **Background:** Vercel Cron → `/api/cron/*` (often uses service-role admin client).  
 4. **OAuth:** Browser → `/api/{provider}/oauth/start` → provider → `/api/{provider}/oauth/callback` → org connection row.
 
-Multi-tenant rule: almost all rows are **organization-scoped**. Membership + RLS (migrations 064–067+) enforce access; app code also resolves active org via membership helpers.
+Multi-tenant rule: almost all rows are **organization-scoped**. Membership + RLS (migrations 064–067+) enforce access; app code also resolves active org via membership helpers. User-facing join / switch / gates: [access-and-onboarding.md](../security/access-and-onboarding.md).
 
 ---
 

@@ -287,7 +287,9 @@ export function StudioHomePage({
 
                 {authError === "auth" && (
                   <p className="mb-4 text-sm text-red-300">
-                    Sign-in link expired or invalid. Request a new one below.
+                    {showSetupForm
+                      ? "Sign-in link expired or invalid. Request a new one below."
+                      : "Sign-in link expired or invalid. Sign in with email and password or Google."}
                   </p>
                 )}
 
@@ -336,8 +338,8 @@ export function StudioHomePage({
                         </span>
                       </>
                     ) : null}{" "}
-                    (Google or Magic link) to join this team. This is not a new
-                    organization signup.
+                    (Google or email & password) to join this team. This is not
+                    a new organization signup.
                   </p>
                 )}
 

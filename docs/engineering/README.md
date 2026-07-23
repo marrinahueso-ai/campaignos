@@ -7,7 +7,8 @@
 |-----|--------|
 | [architecture.md](./architecture.md) | **Living** |
 | [ask-ralli-assistant.md](./ask-ralli-assistant.md) | **Living** — routing, sources, extend guide, QA matrix |
-| [access-control.md](./access-control.md) | **Living** |
+| [access-control.md](./access-control.md) | **Living** — templates, RLS, org switcher MVP |
+| User-facing access / onboarding | [../security/access-and-onboarding.md](../security/access-and-onboarding.md) | **Living** |
 | [storage-rls.md](./storage-rls.md) | **Living** |
 | [auth-welcome-email.md](./auth-welcome-email.md) | **Living** |
 | [developer-agreements.md](./developer-agreements.md) | **Living** — NDA/IP gate + in-app e-sign |

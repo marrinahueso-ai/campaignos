@@ -1,8 +1,9 @@
 # Access control — Phases A–C
 
 **Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete  
-**Last updated:** July 18, 2026  
+**Last updated:** July 22, 2026  
 **Deferred:** Phase E (Stripe / org billing) — document when finished  
+**Related:** [Access & multi-tenant onboarding](../security/access-and-onboarding.md) (user-facing join / switch / gates)
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
 

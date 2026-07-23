@@ -13,7 +13,7 @@ This is the documentation hub. Start here.
 
 | You are… | Open first |
 |----------|------------|
-| **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Local setup](./getting-started/local-setup.md) |
+| **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
 | **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron |
@@ -49,7 +49,9 @@ This is the documentation hub. Start here.
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |
 | Google Calendar | [integrations/google-calendar.md](./integrations/google-calendar.md) |
-| Access control | [engineering/access-control.md](./engineering/access-control.md) |
+| Access & multi-tenant onboarding | [security/access-and-onboarding.md](./security/access-and-onboarding.md) |
+| Access control (templates / RLS) | [engineering/access-control.md](./engineering/access-control.md) |
+| Multi-tenant isolation | [security/multi-tenant-isolation.md](./security/multi-tenant-isolation.md) |
 | Storage RLS | [engineering/storage-rls.md](./engineering/storage-rls.md) |
 | Welcome email | [engineering/auth-welcome-email.md](./engineering/auth-welcome-email.md) |
 | Developer agreements | [engineering/developer-agreements.md](./engineering/developer-agreements.md) |

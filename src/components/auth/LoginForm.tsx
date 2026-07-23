@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
-import { KeyRound, Loader2, Lock, Mail } from "lucide-react";
+import { KeyRound, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -38,7 +38,6 @@ export function LoginForm({
   foundingCodeRetry = false,
 }: LoginFormProps) {
   const isNewSchoolSignup = setupIntent && !inviteToken;
-  const [mode, setMode] = useState<"password" | "magic">("password");
   const [passwordState, passwordAction, passwordPending] = useActionState(
     signInWithPasswordAction,
     initialState,
@@ -57,16 +56,12 @@ export function LoginForm({
     ? retryPending
     : isNewSchoolSignup
       ? magicPending
-      : mode === "password"
-        ? passwordPending
-        : magicPending;
+      : passwordPending;
   const state = foundingCodeRetry
     ? retryState
     : isNewSchoolSignup
       ? magicState
-      : mode === "password"
-        ? passwordState
-        : magicState;
+      : passwordState;
 
   if (foundingCodeRetry) {
     return (
@@ -191,139 +186,61 @@ export function LoginForm({
         setupIntent={setupIntent}
       />
 
-      <div className="flex rounded-xl border border-cos-border bg-cos-bg/40 p-1">
-        <button
-          type="button"
-          className={cn(
-            "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            mode === "password"
-              ? "bg-white text-cos-text shadow-sm"
-              : "text-cos-muted hover:text-cos-text",
-          )}
-          onClick={() => setMode("password")}
+      <form action={passwordAction} className="space-y-5">
+        {inviteToken && (
+          <input type="hidden" name="inviteToken" value={inviteToken} />
+        )}
+        {nextPath && <input type="hidden" name="next" value={nextPath} />}
+
+        <Input
+          name="email"
+          label="Email"
+          type="email"
+          defaultValue={defaultEmail}
+          placeholder="you@yourorg.com"
+          required
+          autoComplete="email"
+          variant={isStudio ? "studio" : "default"}
+        />
+
+        <Input
+          name="password"
+          label="Password"
+          type="password"
+          placeholder="Password"
+          required
+          autoComplete="current-password"
+          variant={isStudio ? "studio" : "default"}
+        />
+
+        <Button
+          type="submit"
+          className={cn("w-full", isStudio && "tracking-wide uppercase")}
+          size={isStudio ? "lg" : "md"}
+          disabled={isPending}
         >
-          Email & password
-        </button>
-        <button
-          type="button"
-          className={cn(
-            "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            mode === "magic"
-              ? "bg-white text-cos-text shadow-sm"
-              : "text-cos-muted hover:text-cos-text",
+          {isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Signing in…
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" strokeWidth={1.5} />
+              Sign in
+            </>
           )}
-          onClick={() => setMode("magic")}
-        >
-          Magic link
-        </button>
-      </div>
+        </Button>
 
-      {mode === "password" ? (
-        <form action={passwordAction} className="space-y-5">
-          {inviteToken && (
-            <input type="hidden" name="inviteToken" value={inviteToken} />
-          )}
-          {nextPath && <input type="hidden" name="next" value={nextPath} />}
-
-          <Input
-            name="email"
-            label="Email"
-            type="email"
-            defaultValue={defaultEmail}
-            placeholder="you@yourorg.com"
-            required
-            autoComplete="email"
-            variant={isStudio ? "studio" : "default"}
-          />
-
-          <Input
-            name="password"
-            label="Password"
-            type="password"
-            placeholder="Password"
-            required
-            autoComplete="current-password"
-            variant={isStudio ? "studio" : "default"}
-          />
-
-          <Button
-            type="submit"
-            className={cn("w-full", isStudio && "tracking-wide uppercase")}
-            size={isStudio ? "lg" : "md"}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Signing in…
-              </>
-            ) : (
-              <>
-                <Lock className="h-4 w-4" strokeWidth={1.5} />
-                Sign in
-              </>
-            )}
-          </Button>
-
-          <p className="text-center text-xs leading-relaxed text-cos-muted">
-            {inviteToken
-              ? "New to Hey Ralli? Open your invite link to create a password first. Already have an account? Sign in here to join."
-              : "Your admin creates accounts in Settings → Team and shares email + password with you."}
-          </p>
-        </form>
-      ) : (
-        <form action={magicAction} className="space-y-5">
-          {inviteToken && (
-            <input type="hidden" name="inviteToken" value={inviteToken} />
-          )}
-          {nextPath && <input type="hidden" name="next" value={nextPath} />}
-
-          <Input
-            name="email"
-            label="Email"
-            type="email"
-            defaultValue={defaultEmail}
-            placeholder="you@yourorg.com"
-            required
-            autoComplete="email"
-            variant={isStudio ? "studio" : "default"}
-          />
-
-          <Button
-            type="submit"
-            className={cn("w-full", isStudio && "tracking-wide uppercase")}
-            size={isStudio ? "lg" : "md"}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Sending link…
-              </>
-            ) : (
-              <>
-                <Mail className="h-4 w-4" strokeWidth={1.5} />
-                Email me a sign-in link
-              </>
-            )}
-          </Button>
-
-          <p className="text-center text-xs leading-relaxed text-cos-muted">
-            {inviteToken
-              ? "Use the invited email. New members should open the Accept invite link to create a password."
-              : "Magic links require an existing account. Use Google sign-in or the email & password your admin shared."}
-          </p>
-        </form>
-      )}
+        <p className="text-center text-xs leading-relaxed text-cos-muted">
+          {inviteToken
+            ? "New to Hey Ralli? Open your invite link to create a password first. Already have an account? Sign in here to join."
+            : "Your admin creates accounts in Settings → Team and shares email + password with you."}
+        </p>
+      </form>
 
       {state.error && (
         <p className="text-sm text-cos-error-text">{state.error}</p>
-      )}
-
-      {mode === "magic" && state.success && state.message && (
-        <p className="border border-cos-success/30 bg-cos-success-bg px-4 py-3 text-sm text-cos-success-text">
-          {state.message}
-        </p>
       )}
     </div>
   );

@@ -1,16 +1,24 @@
 # Multi-tenant isolation
 
-**Status:** Planned stub  
-**Owner:** TBD  
-**Last updated:** July 20, 2026  
-**Related:** [Security](./README.md) · [Access control](../engineering/access-control.md) · [Documentation home](../README.md)
+**Status:** Living  
+**Owner:** Engineering  
+**Last updated:** July 22, 2026  
+**Related:** [Access & multi-tenant onboarding](./access-and-onboarding.md) · [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Security](./README.md)
 
 ## Purpose
 
-Guarantees for organization isolation (memberships, RLS, active org switcher) for QA and security review.
+Guarantees for organization isolation for QA and security review.
 
-## TODO
+## Summary
 
-- [ ] Membership + RLS summary
-- [ ] Org switcher behavior
-- [ ] Assign owner
+| Guarantee | Behavior |
+|-----------|----------|
+| Tenant key | `organization_id` (events via `school_years.organization_id`) |
+| Membership | Only `organization_users.status = active` grants org access |
+| Active org cookie | Never trusted alone; must match caller’s active membership |
+| Org switch | Assert membership → set cookie → redirect `/dashboard` |
+| RLS | Membership-scoped policies (migrations 064–067+); template permissions are **app-layer** |
+| Storage | Path folder 1 = org or event id; see [storage-rls.md](../engineering/storage-rls.md) |
+
+**User-facing join / switch / gates:** [access-and-onboarding.md](./access-and-onboarding.md).  
+**Templates, see-vs-work, Phase A–D history:** [access-control.md](../engineering/access-control.md).
