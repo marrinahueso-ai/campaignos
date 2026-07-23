@@ -47,3 +47,20 @@ export function formatRelativeTime(iso: string, now = Date.now()): string {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+/** Absolute + relative sync label for event Insights footer. */
+export function formatEventInsightsSyncLabel(
+  lastSyncAt: string | null,
+  now = Date.now(),
+): string {
+  if (!lastSyncAt) {
+    return "Not synced yet";
+  }
+  const absolute = new Date(lastSyncAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const relative = formatRelativeTime(lastSyncAt, now);
+  return relative ? `${absolute} (${relative})` : absolute;
+}

@@ -140,7 +140,8 @@ export async function renderEventsPhase3Detail(
     initialTab === "files" ||
     initialTab === "notes" ||
     initialTab === "vendors" ||
-    initialTab === "activity"
+    initialTab === "activity" ||
+    initialTab === "insights"
       ? initialTab
       : null;
 
@@ -191,6 +192,11 @@ export async function renderEventsPhase3Detail(
           initialWorkspace = {
             playbookActivity: data.playbookActivity,
             workspaceTimeline: data.workspaceTimeline,
+          };
+          break;
+        case "insights":
+          initialWorkspace = {
+            insightsData: data.insightsData,
           };
           break;
       }

@@ -313,6 +313,11 @@ export function eventVolunteersHref(eventId: string): string {
   return `/events/${encodeURIComponent(eventId)}?tab=volunteers`;
 }
 
+/** Event Detail Insights tab (event-scoped Meta post metrics). */
+export function eventInsightsHref(eventId: string): string {
+  return `/events/${encodeURIComponent(eventId)}?tab=insights`;
+}
+
 export function eventVendorsHref(eventId: string): string {
   return `/vendors?event=${encodeURIComponent(eventId)}`;
 }

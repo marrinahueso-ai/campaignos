@@ -53,6 +53,7 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 - **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
 - **Interactions** from `page_post_engagements` / derived post reactions
 - **Top content by views** carousel from recent Facebook Page posts + Instagram media (and Hey Ralli `meta_publication_slots` when available) with synced post insights (`post_media_view` / `post_total_media_view_unique`, reactions, clicks; comments/shares from the post object); Refresh discovers Page/IG feed media so posts published outside Hey Ralli still appear. Avoid requesting invalid insights names like `post_comments` / `post_shares` — Graph rejects the whole batch (#100).
+- **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) reuse the same synced `social_post_insights` rows, filtered through published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). KPIs: Views, Reach, Interactions, Link clicks, Likes; per-post list with artwork/caption when available; comparison banner vs median of posts on the same event when ≥2 posts exist. Cumulative “This event vs Typical” series uses real publish days only (no invented daily points). Org `/insights` hub is unchanged. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred and are not shown on the event tab.
 
 ### Inbox reactions (current)
 

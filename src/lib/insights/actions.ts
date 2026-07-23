@@ -32,6 +32,7 @@ export async function syncInsightsAction(input?: {
   });
 
   revalidatePath("/insights");
+  revalidatePath("/events", "layout");
 
   return result;
 }

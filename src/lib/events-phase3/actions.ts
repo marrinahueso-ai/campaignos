@@ -27,6 +27,7 @@ const LAZY_TABS = new Set<EventDetailLazyTab>([
   "notes",
   "vendors",
   "activity",
+  "insights",
 ]);
 
 export async function loadEventDetailTabAction(

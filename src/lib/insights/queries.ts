@@ -658,7 +658,7 @@ async function fetchLatestSyncRun(organizationId: string): Promise<{
   };
 }
 
-async function buildConnectionHealth(
+export async function getInsightsConnectionHealth(
   organizationId: string,
 ): Promise<InsightsConnectionHealth> {
   const connection = await getMetaConnectionForOrganization(organizationId);
@@ -736,7 +736,7 @@ export async function getInsightsPageData(input?: {
     range: input?.range,
   });
   const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to);
-  const connection = await buildConnectionHealth(organization.id);
+  const connection = await getInsightsConnectionHealth(organization.id);
 
   const [currentAccount, previousAccount, postInsights, previousPosts, activity] =
     await Promise.all([

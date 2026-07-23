@@ -144,6 +144,17 @@ describe("event-scoped tab loaders (source contract)", () => {
     );
   });
 
+  it("insights loader uses event-scoped insights query only", () => {
+    assert.match(loaders, /export async function loadEventInsightsTab/);
+    assert.match(loaders, /getEventInsightsPageData\(eventId\)/);
+    assert.doesNotMatch(loaders, /getInsightsPageData\(/);
+    const eventQueries = readSrc("../../insights/event-queries.ts");
+    assert.match(eventQueries, /export async function getEventInsightsPageData/);
+    assert.match(eventQueries, /\.eq\("event_id", eventId\)/);
+    assert.match(eventQueries, /social_post_insights/);
+    assert.match(eventQueries, /meta_publication_slots/);
+  });
+
   it("empty event tabs return without hub fan-out", () => {
     assert.match(loaders, /getEventPlaybookNotesForEvent/);
     assert.match(loaders, /getEventPlaybookActivityForEvent/);

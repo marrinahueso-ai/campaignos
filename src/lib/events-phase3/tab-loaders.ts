@@ -14,6 +14,8 @@ import {
   startTabTimer,
 } from "@/lib/events-phase3/tab-timing";
 import { getEventActivityLogForEvent } from "@/lib/event-workspace/queries";
+import { getEventInsightsPageData } from "@/lib/insights/event-queries";
+import type { EventInsightsPageData } from "@/lib/insights/types";
 import { getPlaybookById } from "@/lib/playbooks/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getTasksV2PageDataForEvent } from "@/lib/tasks-v2/queries";
@@ -34,7 +36,8 @@ export type EventDetailLazyTab =
   | "files"
   | "notes"
   | "vendors"
-  | "activity";
+  | "activity"
+  | "insights";
 
 export type EventDetailApprovalsTabData = {
   tab: "approvals";
@@ -74,13 +77,19 @@ export type EventDetailActivityTabData = {
   workspaceTimeline: ActivityLogEntry[];
 };
 
+export type EventDetailInsightsTabData = {
+  tab: "insights";
+  insightsData: EventInsightsPageData;
+};
+
 export type EventDetailTabData =
   | EventDetailApprovalsTabData
   | EventDetailTasksTabData
   | EventDetailFilesTabData
   | EventDetailNotesTabData
   | EventDetailVendorsTabData
-  | EventDetailActivityTabData;
+  | EventDetailActivityTabData
+  | EventDetailInsightsTabData;
 
 export async function getEventPlaybookName(
   eventId: string,
@@ -195,6 +204,18 @@ export async function loadEventActivityTab(
   return { tab: "activity", playbookActivity, workspaceTimeline };
 }
 
+export async function loadEventInsightsTab(
+  eventId: string,
+  _context: EventDetailTabContext,
+): Promise<EventDetailInsightsTabData> {
+  void _context;
+  const insightsData = await getEventInsightsPageData(eventId);
+  if (!insightsData) {
+    throw new Error("Unable to load event insights.");
+  }
+  return { tab: "insights", insightsData };
+}
+
 export async function loadEventDetailTabData(
   tab: EventDetailLazyTab,
   context: EventDetailTabContext,
@@ -214,6 +235,8 @@ export async function loadEventDetailTabData(
       return loadEventVendorsTab(eventId, context);
     case "activity":
       return loadEventActivityTab(eventId, context);
+    case "insights":
+      return loadEventInsightsTab(eventId, context);
     default: {
       const exhaustive: never = tab;
       throw new Error(`Unsupported tab: ${exhaustive}`);

@@ -51,6 +51,7 @@ import type {
   EventDetailTabData,
 } from "@/lib/events-phase3/tab-loaders";
 import type { UnifiedApprovalsPageData } from "@/lib/approvals-scheduling/types";
+import type { EventInsightsPageData } from "@/lib/insights/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 import type { TasksV2PageData } from "@/types/tasks-v2";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
@@ -118,6 +119,18 @@ const EventVendorsSection = dynamic(
   },
 );
 
+const EventInsightsTab = dynamic(
+  () =>
+    import("@/components/events-phase3/EventInsightsTab").then(
+      (mod) => mod.EventInsightsTab,
+    ),
+  {
+    loading: () => (
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+    ),
+  },
+);
+
 export type EventDetailTab =
   | "responsibilities"
   | "create-with-ai"
@@ -126,6 +139,7 @@ export type EventDetailTab =
   | "files"
   | "notes"
   | "volunteers"
+  | "insights"
   | "vendors"
   | "activity";
 
@@ -134,6 +148,7 @@ const TABS: { id: EventDetailTab; label: string }[] = [
   { id: "tasks", label: "Tasks" },
   { id: "create-with-ai", label: "Create with AI" },
   { id: "volunteers", label: "Volunteers" },
+  { id: "insights", label: "Insights" },
   { id: "responsibilities", label: "Responsibilities" },
   { id: "notes", label: "Notes" },
   { id: "files", label: "Files" },
@@ -150,6 +165,7 @@ const LAZY_TABS = new Set<EventDetailTab>([
   "notes",
   "vendors",
   "activity",
+  "insights",
 ]);
 
 export type EventApprovalFlowStep = {
@@ -165,6 +181,7 @@ export type EventDetailWorkspacePanels = {
   workspaceTimeline?: ActivityLogEntry[];
   approvalsData?: UnifiedApprovalsPageData;
   tasksV2Data?: TasksV2PageData;
+  insightsData?: EventInsightsPageData;
   eventVendorsData?: EventVendorsData;
   vendorDirectory?: {
     categories: VendorCategory[];
@@ -252,6 +269,19 @@ function TabSkeleton({ tab }: { tab: EventDetailTab }) {
           <SkeletonBar className="h-10 w-2/3" />
         </div>
       );
+    case "insights":
+      return (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+            <SkeletonBar className="h-24 w-full" />
+          </div>
+          <SkeletonBar className="h-48 w-full" />
+        </div>
+      );
     default:
       return (
         <div className="rounded-xl border border-cos-border bg-cos-card p-4">
@@ -276,6 +306,7 @@ function loadedTabsFromWorkspace(
   ) {
     initial.add("activity");
   }
+  if (workspace.insightsData) initial.add("insights");
   return initial;
 }
 
@@ -328,6 +359,12 @@ function seedTabCache(
       tab: "activity",
       playbookActivity: workspace.playbookActivity ?? [],
       workspaceTimeline: workspace.workspaceTimeline ?? [],
+    });
+  }
+  if (workspace.insightsData) {
+    cache.set(eventTabCacheKey(eventId, "insights"), {
+      tab: "insights",
+      insightsData: workspace.insightsData,
     });
   }
 }
@@ -405,6 +442,11 @@ export function EventDetailShell({
             ...prev,
             playbookActivity: data.playbookActivity,
             workspaceTimeline: data.workspaceTimeline,
+          };
+        case "insights":
+          return {
+            ...prev,
+            insightsData: data.insightsData,
           };
         default:
           return prev;
@@ -757,8 +799,14 @@ export function EventDetailShell({
               <button
                 key={entry.id}
                 type="button"
+                data-testid={`event-detail-tab-${entry.id}`}
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => {
                   setTab(entry.id);
+                  router.replace(
+                    `/events/${encodeURIComponent(event.id)}?tab=${entry.id}`,
+                    { scroll: false },
+                  );
                 }}
                 className={cn(
                   "rounded-t-md border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
@@ -1055,6 +1103,12 @@ export function EventDetailShell({
                 </ul>
               )}
             </div>
+          ) : null}
+
+          {tab === "insights" &&
+          panelData.insightsData &&
+          loadedTabs.has("insights") ? (
+            <EventInsightsTab data={panelData.insightsData} />
           ) : null}
       </div>
     </div>

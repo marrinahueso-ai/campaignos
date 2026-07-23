@@ -131,3 +131,71 @@ export type InsightsPageData = {
    */
   unavailableMetricNotes: string[];
 };
+
+/** Event detail Insights tab — scoped to published posts for one event. */
+export type EventInsightsEmptyState = "connect" | "no_posts" | "sync";
+
+export type EventInsightsKpiKey =
+  | "views"
+  | "reach"
+  | "interactions"
+  | "linkClicks"
+  | "likes";
+
+export type EventInsightsKpis = Record<EventInsightsKpiKey, number>;
+
+export type EventInsightsComparison = {
+  metric: "views";
+  direction: "more" | "fewer";
+  /** Short highlight phrase, e.g. "more views". */
+  highlight: string;
+  /** Full sentence without the highlight words duplicated awkwardly. */
+  messageBefore: string;
+  messageAfter: string;
+};
+
+export type EventInsightsViewsSeriesPoint = {
+  date: string;
+  /** 1-based index from first publish day (Day 1…). */
+  dayIndex: number;
+  eventViews: number;
+  typicalViews: number;
+};
+
+export type EventInsightsPost = {
+  id: string;
+  slotId: string | null;
+  title: string;
+  captionSnippet: string | null;
+  thumbnailUrl: string | null;
+  platform: "facebook" | "instagram";
+  placement: "feed" | "story" | null;
+  publishedAt: string | null;
+  views: number;
+  reach: number;
+  interactions: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  linkClicks: number;
+  externalPostId: string;
+  externalUrl: string | null;
+};
+
+export type EventInsightsPageData = {
+  eventId: string;
+  connection: InsightsConnectionHealth;
+  kpis: EventInsightsKpis;
+  comparison: EventInsightsComparison | null;
+  /**
+   * Cumulative views by publish day when ≥2 dated posts exist.
+   * Null when a line chart would require inventing daily points.
+   */
+  viewsSeries: EventInsightsViewsSeriesPoint[] | null;
+  posts: EventInsightsPost[];
+  publishedSlotCount: number;
+  hasSyncedMetrics: boolean;
+  emptyState: EventInsightsEmptyState | null;
+  lastSyncAt: string | null;
+  syncInProgress: boolean;
+};

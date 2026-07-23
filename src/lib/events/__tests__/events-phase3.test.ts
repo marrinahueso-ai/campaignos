@@ -4,6 +4,7 @@ import {
   createWithAiHref,
   eventApprovalsHref,
   eventDetailApprovalsHref,
+  eventInsightsHref,
   eventFilesHref,
   eventNotesHref,
   eventTasksGlobalHref,
@@ -318,7 +319,7 @@ describe("Phase 3 deep links and fallback flag", () => {
     assert.equal(eventApprovalsHref("evt-123"), "/approvals?event=evt-123");
   });
 
-  it("scopes tasks, files, notes, and volunteers to the event detail tabs", () => {
+  it("scopes tasks, files, notes, volunteers, and insights to the event detail tabs", () => {
     assert.equal(
       eventDetailApprovalsHref("evt-123"),
       "/events/evt-123?tab=approvals",
@@ -331,6 +332,7 @@ describe("Phase 3 deep links and fallback flag", () => {
       eventVolunteersHref("evt-123"),
       "/events/evt-123?tab=volunteers",
     );
+    assert.equal(eventInsightsHref("evt-123"), "/events/evt-123?tab=insights");
   });
 
   it("exports fallback flag helper (default enabled)", () => {
