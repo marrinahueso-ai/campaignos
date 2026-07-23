@@ -1,14 +1,13 @@
 import { isReplyChannel } from "@/lib/inbox/constants";
 import { resolveInboxReplyTarget } from "@/lib/inbox/reply-target";
-import type { InboxChannelType, InboxMessage, InboxThread } from "@/lib/inbox/types";
+import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
 
-/** Primary inbox folders + Deleted; waiting_on_ai is TopBar AI Queue only. */
+/** Primary inbox folders + Deleted (Manage). */
 export type CommunicationsQueueFilter =
   | "unread"
   | "follow_up"
   | "completed"
-  | "archived"
-  | "waiting_on_ai";
+  | "archived";
 
 export interface CommunicationsQueueCounts {
   needsReply: number;
@@ -141,28 +140,14 @@ function matchesSearch(thread: InboxThread, query: string): boolean {
   return haystack.includes(normalized);
 }
 
-function matchesChannelFilter(
-  thread: InboxThread,
-  channelFilter: "all" | InboxChannelType,
-): boolean {
-  if (channelFilter === "all") {
-    return true;
-  }
-  return thread.channelType === channelFilter;
-}
-
 export function filterThreadsForCommunicationsHub(input: {
   threads: InboxThread[];
   messagesByThreadId: Record<string, InboxMessage[]>;
   queueFilter: CommunicationsQueueFilter;
   searchQuery: string;
-  channelFilter: "all" | InboxChannelType;
 }): InboxThread[] {
   return input.threads.filter((thread) => {
     if (!matchesSearch(thread, input.searchQuery)) {
-      return false;
-    }
-    if (!matchesChannelFilter(thread, input.channelFilter)) {
       return false;
     }
 
@@ -173,8 +158,6 @@ export function filterThreadsForCommunicationsHub(input: {
       case "unread":
         // Active home: not deleted, not marked done (follow-up stays here).
         return state.unread;
-      case "waiting_on_ai":
-        return thread.status !== "archived" && state.waitingOnAi;
       case "follow_up":
         // Starred threads, including those also marked done.
         return state.followUp;

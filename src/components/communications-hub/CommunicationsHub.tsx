@@ -10,7 +10,7 @@ import { CommunicationsWorkspace } from "@/components/communications-hub/Communi
 import { CommunicationsAiPanel } from "@/components/communications-hub/CommunicationsWorkspacePanels";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { markInboxThreadReadAction, refreshInboxConnectionStatusAction } from "@/lib/inbox/actions";
-import type { InboxChannelType, InboxConnectionStatus, InboxPageData } from "@/lib/inbox/types";
+import type { InboxConnectionStatus, InboxPageData } from "@/lib/inbox/types";
 import {
   computeQueueCounts,
   filterThreadsForCommunicationsHub,
@@ -51,14 +51,12 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
 
   const [queueFilter, setQueueFilter] = useState<CommunicationsQueueFilter>(defaultQueueFilter);
   const [searchQuery, setSearchQuery] = useState("");
-  const [channelFilter, setChannelFilter] = useState<"all" | InboxChannelType>("all");
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [mobileShowAiPanel, setMobileShowAiPanel] = useState(false);
 
   const clearFilters = useCallback(() => {
     setSearchQuery("");
-    setChannelFilter("all");
     setQueueFilter("unread");
     setSelectedThreadId(null);
     setMobileShowDetail(false);
@@ -67,7 +65,6 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
 
   const resetToDefault = useCallback(() => {
     setSearchQuery("");
-    setChannelFilter("all");
     setQueueFilter(defaultQueueFilter);
     setSelectedThreadId(null);
     setMobileShowDetail(false);
@@ -141,9 +138,8 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
         messagesByThreadId,
         queueFilter,
         searchQuery,
-        channelFilter,
       }),
-    [threads, messagesByThreadId, queueFilter, searchQuery, channelFilter],
+    [threads, messagesByThreadId, queueFilter, searchQuery],
   );
 
   const selectedThread = useMemo(
@@ -168,21 +164,10 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const showConnectionEmptyState =
     !connection.metaConnected && !connection.metaConfiguredViaEnv;
   const hasActiveFilters =
-    searchQuery.trim().length > 0 ||
-    channelFilter !== "all" ||
-    queueFilter !== defaultQueueFilter;
+    searchQuery.trim().length > 0 || queueFilter !== defaultQueueFilter;
 
   function handleQueueFilterChange(filter: CommunicationsQueueFilter) {
     setQueueFilter(filter);
-    setSelectedThreadId(null);
-    setMobileShowDetail(false);
-    setMobileShowAiPanel(false);
-  }
-
-  function handleAiQueueClick() {
-    setQueueFilter((current) =>
-      current === "waiting_on_ai" ? "unread" : "waiting_on_ai",
-    );
     setSelectedThreadId(null);
     setMobileShowDetail(false);
     setMobileShowAiPanel(false);
@@ -213,12 +198,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
       <CommunicationsTopBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        channelFilter={channelFilter}
-        onChannelFilterChange={setChannelFilter}
-        queueCounts={queueCounts}
         connection={connection}
-        onAiQueueClick={handleAiQueueClick}
-        aiQueueActive={queueFilter === "waiting_on_ai"}
         hasActiveFilters={hasActiveFilters}
         onClearFilters={clearFilters}
       />

@@ -1,20 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Sparkles } from "lucide-react";
-import type { InboxChannelType, InboxConnectionStatus } from "@/lib/inbox/types";
-import type { CommunicationsQueueCounts } from "@/lib/inbox/queue-utils";
-import { cn } from "@/lib/utils/cn";
+import { Search } from "lucide-react";
+import type { InboxConnectionStatus } from "@/lib/inbox/types";
 
 interface CommunicationsTopBarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  channelFilter: "all" | InboxChannelType;
-  onChannelFilterChange: (value: "all" | InboxChannelType) => void;
-  queueCounts: CommunicationsQueueCounts;
   connection: InboxConnectionStatus;
-  onAiQueueClick: () => void;
-  aiQueueActive: boolean;
   hasActiveFilters: boolean;
   onClearFilters: () => void;
 }
@@ -99,12 +92,7 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
 export function CommunicationsTopBar({
   searchQuery,
   onSearchChange,
-  channelFilter,
-  onChannelFilterChange,
-  queueCounts,
   connection,
-  onAiQueueClick,
-  aiQueueActive,
   hasActiveFilters,
   onClearFilters,
 }: CommunicationsTopBarProps) {
@@ -125,55 +113,6 @@ export function CommunicationsTopBar({
             className="h-10 w-full rounded-full border border-cos-border bg-cos-card pl-9 pr-4 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
           />
         </label>
-
-        <select
-          aria-label="Filter by campaign"
-          disabled
-          title="Campaign filtering coming soon"
-          className="h-10 rounded-full border border-cos-border bg-cos-bg px-4 text-sm text-cos-muted"
-        >
-          <option>All Campaigns</option>
-        </select>
-
-        <select
-          aria-label="Filter by channel"
-          value={channelFilter}
-          onChange={(event) =>
-            onChannelFilterChange(event.target.value as "all" | InboxChannelType)
-          }
-          className="h-10 rounded-full border border-cos-border bg-cos-card px-4 text-sm text-cos-text focus:border-cos-dark focus:outline-none"
-        >
-          <option value="all">All Channels</option>
-          <option value="facebook_message">Facebook Messages</option>
-          <option value="instagram_dm">Instagram DMs</option>
-          <option value="facebook_comment">Facebook Comments</option>
-          <option value="instagram_comment">Instagram Comments</option>
-          <option value="facebook_tag">Facebook Mentions</option>
-          <option value="instagram_tag">Instagram Mentions</option>
-        </select>
-
-        <button
-          type="button"
-          onClick={onAiQueueClick}
-          className={cn(
-            "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors",
-            aiQueueActive
-              ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-              : queueCounts.waitingOnAi > 0
-                ? "border-[#1a1a1a] bg-[#1a1a1a] text-white"
-                : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark",
-          )}
-          aria-label={`AI queue: ${queueCounts.waitingOnAi} waiting`}
-          aria-pressed={aiQueueActive}
-        >
-          <Sparkles className="h-4 w-4" aria-hidden />
-          AI Queue
-          {queueCounts.waitingOnAi > 0 ? (
-            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/15 px-1.5 text-[11px] font-semibold tabular-nums">
-              {queueCounts.waitingOnAi}
-            </span>
-          ) : null}
-        </button>
 
         {hasActiveFilters ? (
           <button

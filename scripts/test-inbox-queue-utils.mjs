@@ -146,8 +146,6 @@ function filterThreadsForCommunicationsHub({
         return state.completed;
       case "archived":
         return thread.status === "archived";
-      case "waiting_on_ai":
-        return thread.status !== "archived" && state.waitingOnAi;
       default:
         return false;
     }
