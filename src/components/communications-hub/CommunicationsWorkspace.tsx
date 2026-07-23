@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, ArrowLeft, ChevronDown, UserPlus } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, ChevronDown, User, UserPlus } from "lucide-react";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
@@ -38,6 +38,37 @@ function participantInitials(name: string | null): string {
   return name.slice(0, 2).toUpperCase();
 }
 
+function MessageAvatar({
+  avatarUrl,
+  name,
+}: {
+  avatarUrl: string | null;
+  name: string | null;
+}) {
+  const initials = participantInitials(name);
+
+  return (
+    <div
+      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cos-bg text-[10px] font-semibold text-cos-text"
+      aria-hidden
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      ) : initials !== "?" ? (
+        initials
+      ) : (
+        <User className="h-4 w-4 text-cos-muted" strokeWidth={1.75} />
+      )}
+    </div>
+  );
+}
+
 function threadChannelDisplayLabel(thread: InboxThread): string {
   switch (thread.channelType) {
     case "instagram_dm":
@@ -60,9 +91,17 @@ function threadChannelDisplayLabel(thread: InboxThread): string {
 function ThreadMessageTimeline({
   messages,
   channelType,
+  participantName,
+  participantAvatarUrl,
+  pageAvatarUrl,
+  pageName,
 }: {
   messages: InboxMessage[];
   channelType: InboxThread["channelType"];
+  participantName: string | null;
+  participantAvatarUrl: string | null;
+  pageAvatarUrl: string | null;
+  pageName: string | null;
 }) {
   const timelineMessages = getTimelineMessages(messages, channelType);
 
@@ -77,34 +116,49 @@ function ThreadMessageTimeline({
   const seedMessageId = timelineMessages[0]?.id ?? null;
 
   return (
-    <ul className="flex flex-col gap-4" role="list">
+    <ul className="flex flex-col gap-3" role="list">
       {timelineMessages.map((message) => {
         const isOutbound = isOutboundTimelineMessage(message, { seedMessageId });
+        const avatarUrl = isOutbound
+          ? pageAvatarUrl
+          : participantAvatarUrl;
+        const avatarName = isOutbound
+          ? pageName
+          : message.senderName ?? participantName;
 
         return (
-          <li key={message.id} className={cn("max-w-[85%]", isOutbound && "ml-auto")}>
-            <div
-              className={cn(
-                "rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                isOutbound
-                  ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
-                  : "rounded-bl-md bg-[#eceae4] text-cos-text",
-              )}
-            >
-              <p className="whitespace-pre-wrap">{message.body}</p>
-            </div>
-            {message.sentAt ? (
-              <time
+          <li
+            key={message.id}
+            className={cn(
+              "flex max-w-[85%] items-end gap-2",
+              isOutbound && "ml-auto flex-row-reverse",
+            )}
+          >
+            <MessageAvatar avatarUrl={avatarUrl} name={avatarName} />
+            <div className="min-w-0">
+              <div
                 className={cn(
-                  "mt-1.5 block px-1 text-xs text-cos-muted",
-                  isOutbound && "text-right",
+                  "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                  isOutbound
+                    ? "rounded-br-md bg-cos-dark text-[#f6f2eb]"
+                    : "rounded-bl-md bg-[#eceae4] text-cos-text",
                 )}
-                dateTime={message.sentAt}
               >
-                {formatMessageTime(message.sentAt)}
-                {isOutbound ? " · Sent" : null}
-              </time>
-            ) : null}
+                <p className="whitespace-pre-wrap">{message.body}</p>
+              </div>
+              {message.sentAt ? (
+                <time
+                  className={cn(
+                    "mt-1.5 block px-1 text-xs text-cos-muted",
+                    isOutbound && "text-right",
+                  )}
+                  dateTime={message.sentAt}
+                >
+                  {formatMessageTime(message.sentAt)}
+                  {isOutbound ? " · Sent" : null}
+                </time>
+              ) : null}
+            </div>
           </li>
         );
       })}
@@ -282,7 +336,14 @@ export function CommunicationsWorkspace({
         ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-          <ThreadMessageTimeline messages={messages} channelType={thread.channelType} />
+          <ThreadMessageTimeline
+            messages={messages}
+            channelType={thread.channelType}
+            participantName={thread.participantName}
+            participantAvatarUrl={thread.participantAvatarUrl}
+            pageAvatarUrl={thread.pageAvatarUrl}
+            pageName={pageName}
+          />
 
           {isTaggedChannel(thread.channelType) ? (
             <div className="mt-4 border-t border-cos-border pt-4">

@@ -123,7 +123,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
-- Comment/tag detail panel shows original parent post (caption + artwork) — **shipped**
+- Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**
+- Messenger timeline always shows a profile picture (or initials/fallback) next to every bubble — **shipped**
+- Reply composer toolbar: emoji picker + 👍/❤️ quick-insert — **shipped**; attachments — **deferred** (Meta reply path is text-only)
 - Campaign filter / assign owner — **deferred**
 - Gmail inbox — **deferred**
 

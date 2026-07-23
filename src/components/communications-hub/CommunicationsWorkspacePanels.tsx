@@ -1,14 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
-  ExternalLink,
+  Heart,
   Loader2,
   Paperclip,
   Smile,
   Sparkles,
+  ThumbsUp,
 } from "lucide-react";
 import {
   approveInboxReplyAction,
@@ -24,6 +32,21 @@ import { formatMessageTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
 const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+const QUICK_EMOJIS = [
+  "😀",
+  "😊",
+  "😂",
+  "😍",
+  "🙏",
+  "👏",
+  "🎉",
+  "👍",
+  "❤️",
+  "🙌",
+  "💯",
+  "✨",
+] as const;
 
 function renderTextWithLinks(text: string) {
   const parts = text.split(URL_PATTERN);
@@ -78,6 +101,9 @@ export function CommunicationsReplySection({
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [draftRequested, setDraftRequested] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const participantFirstName =
     thread.participantName?.trim().split(/\s+/)[0] ?? "contact";
@@ -88,7 +114,47 @@ export function CommunicationsReplySection({
     setIsEditing(false);
     setActionError(null);
     setDraftRequested(false);
+    setEmojiPickerOpen(false);
   }, [replyTarget?.id, initialBody, replyTarget?.status]);
+
+  useEffect(() => {
+    if (!emojiPickerOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setEmojiPickerOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [emojiPickerOpen]);
+
+  const insertIntoReply = useCallback((text: string) => {
+    const textarea = replyTextareaRef.current;
+    const start = textarea?.selectionStart ?? null;
+    const end = textarea?.selectionEnd ?? null;
+
+    setManualReply((current) => {
+      const insertAt = start ?? current.length;
+      const insertEnd = end ?? current.length;
+      return `${current.slice(0, insertAt)}${text}${current.slice(insertEnd)}`;
+    });
+
+    requestAnimationFrame(() => {
+      if (!textarea) {
+        return;
+      }
+      textarea.focus();
+      const cursor = (start ?? textarea.value.length) + text.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }, []);
 
   const requestDraft = useCallback(
     (options?: { forceRegenerate?: boolean }) => {
@@ -314,6 +380,7 @@ export function CommunicationsReplySection({
 
       <div className="mt-4 rounded-xl border border-cos-border bg-cos-card px-4 py-3">
         <textarea
+          ref={replyTextareaRef}
           value={manualReply}
           onChange={(event) => setManualReply(event.target.value)}
           rows={3}
@@ -322,25 +389,71 @@ export function CommunicationsReplySection({
           aria-label={`Reply to ${participantFirstName}`}
           className="w-full resize-none bg-transparent text-sm leading-relaxed text-cos-text placeholder:text-cos-muted focus:outline-none disabled:opacity-60"
         />
-        <div className="mt-2 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
-            aria-label="Attach file"
-            title="Attachments coming soon"
-            disabled
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text"
-            aria-label="Add emoji"
-            title="Emoji picker coming soon"
-            disabled
-          >
-            <Smile className="h-4 w-4" />
-          </button>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="relative flex items-center gap-0.5" ref={emojiPickerRef}>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted opacity-60"
+              aria-label="Attach file"
+              title="Attachments not supported yet — Meta replies are text-only"
+              disabled
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => setEmojiPickerOpen((open) => !open)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              aria-label="Add emoji"
+              aria-expanded={emojiPickerOpen}
+              title="Add emoji"
+            >
+              <Smile className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => insertIntoReply("👍")}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              aria-label="Insert thumbs up"
+              title="Insert 👍"
+            >
+              <ThumbsUp className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => insertIntoReply("❤️")}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg hover:text-cos-text disabled:opacity-50"
+              aria-label="Insert heart"
+              title="Insert ❤️"
+            >
+              <Heart className="h-4 w-4" />
+            </button>
+            {emojiPickerOpen ? (
+              <div
+                className="absolute bottom-full left-0 z-20 mb-2 grid w-52 grid-cols-6 gap-1 rounded-xl border border-cos-border bg-white p-2 shadow-lg"
+                role="listbox"
+                aria-label="Emoji picker"
+              >
+                {QUICK_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    role="option"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-base transition-colors hover:bg-cos-bg"
+                    onClick={() => {
+                      insertIntoReply(emoji);
+                      setEmojiPickerOpen(false);
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             disabled={!canSend}
@@ -407,15 +520,8 @@ export function CommunicationsAiPanel({
     replyTarget?.body?.trim() ||
     thread.lastMessageSnippet?.trim() ||
     "Select a conversation to see context.";
-
-  const takeActionItems = [
-    { label: "Create FAQ", href: null },
-    { label: "Create Newsletter Item", href: null, shell: true },
-    { label: "Add to Playbook", href: "/playbooks" },
-    { label: "Create Task", href: "/tasks" },
-    { label: "Save for AI Training", href: null, shell: true },
-    { label: "Forward to Committee", href: null, shell: true },
-  ] as const;
+  const showConfidence = confidence != null;
+  const showSources = sourcesChecked.length > 0;
 
   return (
     <aside
@@ -448,33 +554,30 @@ export function CommunicationsAiPanel({
             </div>
           )}
 
-          <div>
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-                Confidence
-              </h3>
-              <span className="text-sm font-semibold text-[#1a6b4a] tabular-nums">
-                {confidence == null ? "—" : `${confidence}%`}
-              </span>
+          {showConfidence ? (
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
+                  Confidence
+                </h3>
+                <span className="text-sm font-semibold text-[#1a6b4a] tabular-nums">
+                  {confidence}%
+                </span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-cos-bg">
+                <div
+                  className="h-full rounded-full bg-[#1a6b4a] transition-all"
+                  style={{ width: `${confidence}%` }}
+                />
+              </div>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-cos-bg">
-              <div
-                className="h-full rounded-full bg-[#1a6b4a] transition-all"
-                style={{ width: `${confidence ?? 0}%` }}
-              />
-            </div>
-            {confidence == null ? (
-              <p className="mt-1.5 text-[11px] text-cos-muted">
-                Appears after AI generates a draft.
-              </p>
-            ) : null}
-          </div>
+          ) : null}
 
-          <div>
-            <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-              Sources Searched
-            </h3>
-            {sourcesChecked.length > 0 ? (
+          {showSources ? (
+            <div>
+              <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
+                Sources Searched
+              </h3>
               <ul className="mt-2 space-y-1.5" role="list">
                 {sourcesChecked.map((source) => (
                   <li
@@ -494,62 +597,8 @@ export function CommunicationsAiPanel({
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-2 text-xs text-cos-muted">
-                Sources appear after AI generates a draft.
-              </p>
-            )}
-          </div>
-
-          <div>
-            <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-              Similar Past Questions
-            </h3>
-            <p className="mt-2 text-xs text-cos-muted italic">
-              Coming soon — will surface related inbox history from your organization.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-              Take Action
-            </h3>
-            <ul className="mt-2 space-y-1" role="list">
-              {takeActionItems.map((item) =>
-                item.href && !("shell" in item && item.shell) ? (
-                  <li key={item.label}>
-                    <a
-                      href={item.href}
-                      className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-cos-text transition-colors hover:bg-cos-bg"
-                    >
-                      {item.label}
-                      <ExternalLink className="h-3.5 w-3.5 text-cos-muted" aria-hidden />
-                    </a>
-                  </li>
-                ) : (
-                  <li key={item.label}>
-                    <button
-                      type="button"
-                      disabled
-                      title="Coming soon"
-                      className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm text-cos-muted opacity-60"
-                    >
-                      {item.label}
-                    </button>
-                  </li>
-                ),
-              )}
-            </ul>
-          </div>
-
-          <div className="rounded-xl border border-cos-border bg-cos-bg p-3">
-            <h3 className="text-xs font-semibold tracking-wide text-cos-muted uppercase">
-              Related Campaign
-            </h3>
-            <p className="mt-2 text-sm text-cos-muted italic">
-              Campaign linking from inbox threads is not wired yet.
-            </p>
-          </div>
+            </div>
+          ) : null}
         </section>
       </div>
     </aside>
