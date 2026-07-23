@@ -94,7 +94,7 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
       </div>
 
       {!configured ? (
-        <div className="flex h-48 flex-col items-center justify-center gap-1 px-3 text-center">
+        <div className="flex h-80 max-h-[min(22rem,50vh)] flex-col items-center justify-center gap-1 px-3 text-center">
           <p className="text-sm font-medium text-cos-text">GIF search isn’t set up yet</p>
           <p className="text-xs leading-snug text-cos-muted">
             {message?.includes("GIPHY_API_KEY")
@@ -103,33 +103,33 @@ export function GiphyGifPicker({ onSelect, className }: GiphyGifPickerProps) {
           </p>
         </div>
       ) : loading ? (
-        <div className="flex h-48 items-center justify-center text-xs text-cos-muted">
+        <div className="flex h-80 max-h-[min(22rem,50vh)] items-center justify-center text-xs text-cos-muted">
           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
           Loading GIFs…
         </div>
       ) : gifs.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center gap-1 px-3 text-center">
+        <div className="flex h-80 max-h-[min(22rem,50vh)] flex-col items-center justify-center gap-1 px-3 text-center">
           <p className="text-sm text-cos-text">No GIFs found</p>
           <p className="text-xs text-cos-muted">
             {message ?? (debouncedQuery ? "Try a different search." : "Trending is empty right now.")}
           </p>
         </div>
       ) : (
-        <div className="grid max-h-64 grid-cols-2 gap-1.5 overflow-y-auto">
+        <div className="grid h-80 max-h-[min(22rem,50vh)] grid-cols-2 content-start items-start gap-2 overflow-y-auto">
           {gifs.map((gif) => (
             <button
               key={gif.id}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onSelect(gif)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
+              className="group relative aspect-square w-full min-h-[7.5rem] shrink-0 overflow-hidden rounded-lg bg-cos-bg/60 transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-cos-dark"
               aria-label={gif.title || "Select GIF"}
               title={gif.title || "Select GIF"}
             >
               <img
                 src={gif.previewUrl}
                 alt=""
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
                 loading="lazy"
               />
             </button>
