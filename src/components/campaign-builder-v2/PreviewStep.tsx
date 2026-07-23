@@ -734,7 +734,7 @@ export function PreviewStep() {
             selectedPreview.artwork.feedUrl ?? selectedPreview.artwork.storyUrl
           }
           onClose={() => setCaptionModalOpen(false)}
-          onApply={(text) => {
+          onApply={(text, options) => {
             const captionPlatforms = (() => {
               const fromFormats = captionPlatformsForFormats(
                 selectedPreview.enabledFormats,
@@ -763,7 +763,9 @@ export function PreviewStep() {
                 contentStatus,
               ),
             });
-            setCaptionModalOpen(false);
+            if (options?.close !== false) {
+              setCaptionModalOpen(false);
+            }
           }}
         />
       )}

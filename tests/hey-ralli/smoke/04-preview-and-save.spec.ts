@@ -78,7 +78,7 @@ test.describe("Preview generation and captions", () => {
 
     const marker = `Caption smoke ${Date.now()}`;
     await previewCaption.fill(marker);
-    await dialog.getByRole("button", { name: /apply caption/i }).click();
+    await dialog.getByRole("button", { name: /save caption|apply caption/i }).click();
     await expect(dialog).toHaveCount(0);
 
     // Caption applies into session; debounced server save starts ~800ms later.

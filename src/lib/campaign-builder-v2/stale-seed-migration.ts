@@ -175,20 +175,18 @@ export function sanitizeSeedPurpose(
   return trimmed;
 }
 
+/**
+ * True only for exact early-seed demo captions.
+ *
+ * Do not use broad substring checks (e.g. "volunteer") — real campaigns like
+ * Volunteer Badge Making Session legitimately include that word, and wiping them
+ * on every normalize/hydrate made Preview look like captions never saved.
+ */
 export function isStaleDemoCaption(text: string | null | undefined): boolean {
   const trimmed = text?.trim() ?? "";
   if (!trimmed) {
     return false;
   }
 
-  const lower = normalizeComparable(trimmed);
-  if (KNOWN_STALE_DEMO_CAPTIONS.has(lower)) {
-    return true;
-  }
-
-  return (
-    lower.includes("volunteer") ||
-    lower.includes("sign up today") ||
-    lower.includes("volunteer spots")
-  );
+  return KNOWN_STALE_DEMO_CAPTIONS.has(normalizeComparable(trimmed));
 }

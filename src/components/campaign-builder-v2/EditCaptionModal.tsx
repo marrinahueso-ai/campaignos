@@ -32,7 +32,8 @@ interface EditCaptionModalProps {
   playbookName?: string | null;
   artworkImageUrl?: string | null;
   onClose: () => void;
-  onApply: (text: string) => void;
+  /** Persist caption into the session. Pass close:false to keep the modal open (e.g. after regenerate). */
+  onApply: (text: string, options?: { close?: boolean }) => void;
 }
 
 export function EditCaptionModal({
@@ -53,10 +54,12 @@ export function EditCaptionModal({
   const [previewCaption, setPreviewCaption] = useState(currentCaption);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
   async function handleRegenerate() {
     setIsGenerating(true);
     setErrorMessage(null);
+    setSavedNotice(null);
     try {
       const result = await regenerateCaptionAction({
         eventId,
@@ -64,7 +67,7 @@ export function EditCaptionModal({
         platform: milestone.platforms[0] ?? "facebook",
         instructions,
         tone,
-        currentCaption,
+        currentCaption: previewCaption || currentCaption,
         inspiration,
         milestone,
         artworkImageUrl,
@@ -72,6 +75,9 @@ export function EditCaptionModal({
       });
       if (result.success) {
         setPreviewCaption(result.caption);
+        // Auto-save so regenerate is never lost if the user dismisses the modal.
+        onApply(result.caption, { close: false });
+        setSavedNotice("Caption saved");
       } else {
         setErrorMessage(result.message);
       }
@@ -89,10 +95,14 @@ export function EditCaptionModal({
       footer={
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            Close
           </Button>
-          <Button onClick={() => onApply(previewCaption)}>
-            Apply caption
+          <Button
+            onClick={() => {
+              onApply(previewCaption, { close: true });
+            }}
+          >
+            Save caption
           </Button>
         </div>
       }
@@ -100,7 +110,7 @@ export function EditCaptionModal({
       <div className="space-y-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <Textarea
-            label="Current caption"
+            label="Saved caption"
             value={currentCaption}
             readOnly
             rows={5}
@@ -159,15 +169,24 @@ export function EditCaptionModal({
         <Textarea
           label="Preview new caption"
           value={previewCaption}
-          onChange={(e) => setPreviewCaption(e.target.value)}
+          onChange={(e) => {
+            setPreviewCaption(e.target.value);
+            setSavedNotice(null);
+          }}
           rows={4}
         />
 
         <div className="flex items-center justify-between gap-4">
           {errorMessage ? (
             <p className="text-sm text-red-600">{errorMessage}</p>
+          ) : savedNotice ? (
+            <p className="text-sm text-cos-success" role="status">
+              {savedNotice}
+            </p>
           ) : (
-            <span />
+            <span className="text-sm text-cos-muted">
+              Regenerating saves automatically. Use Save caption for manual edits.
+            </span>
           )}
           <Button onClick={() => void handleRegenerate()} disabled={isGenerating}>
             <Sparkles className="h-4 w-4" strokeWidth={1.5} />

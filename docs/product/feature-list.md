@@ -83,7 +83,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Legacy Creative Studio — **stub** / redirected away
 
 ## Captions, Meta & publishing
-- Caption generation/editing — **shipped**
+- Caption generation/editing — **shipped** (Create with AI: regenerate auto-saves; hydrate no longer strips legitimate captions that mention volunteers)
+- Caption Apply hydrate: saved captions stick after Edit caption / regenerate / refresh (exact known seed demos only are cleared) — **shipped**
 - Meta connect (Facebook Page + Instagram) — **shipped**
 - Create with AI Delivery method: **Publish Now** (default) posts to Meta on approve; Schedule / Email manual / Draft remain — **shipped** (legacy “Publish automatically” / `auto-publish` normalizes to Publish Now)
 - Schedule / publish now / publish ready bundles (Review & Publish + Meta bundles) — **shipped**

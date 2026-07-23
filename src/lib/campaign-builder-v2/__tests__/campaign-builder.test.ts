@@ -10,6 +10,7 @@ import {
 import { buildDefaultSession, localSessionKey } from "../seed-data.ts";
 import { toCreativeConfiguration } from "../creative-config.ts";
 import {
+  isStaleDemoCaption,
   isStaleSeedNote,
   sanitizeGlobalAiGuidance,
   sanitizeSeedNotes,
@@ -334,6 +335,25 @@ describe("stale seed migration", () => {
   it("preserves custom user notes", () => {
     assert.equal(sanitizeSeedNotes("Feature our carnival theme colors"), "Feature our carnival theme colors");
   });
+
+  it("only flags exact known demo captions as stale — not real volunteer copy", () => {
+    assert.equal(
+      isStaleDemoCaption(
+        "Mark your calendars! Our Back to School Fair is coming up on August 15. Join us for food, fun, and community connection. See you there!",
+      ),
+      true,
+    );
+    assert.equal(
+      isStaleDemoCaption(
+        "Join us for Volunteer Badge Making Session — celebrate our volunteers!",
+      ),
+      false,
+    );
+    assert.equal(
+      isStaleDemoCaption("Volunteer spots are open — sign up today"),
+      false,
+    );
+  });
 });
 
 describe("normalizeCampaignBuilderSession", () => {
@@ -368,6 +388,8 @@ describe("normalizeCampaignBuilderSession", () => {
 
   it("renames Two-Week Reminder and strips stale volunteer notes", () => {
     const defaults = buildDefaultSession("evt-1", "Back to School Fair", "2026-08-17");
+    const staleDemoCaption =
+      "Mark your calendars! Our Back to School Fair is coming up on August 15. Join us for food, fun, and community connection. See you there!";
     const normalized = normalizeCampaignBuilderSession(
       {
         milestones: defaults.milestones.map((milestone) =>
@@ -388,7 +410,7 @@ describe("normalizeCampaignBuilderSession", () => {
                 captions: [
                   {
                     platform: "facebook",
-                    text: "Volunteer spots are open — sign up today",
+                    text: staleDemoCaption,
                   },
                   { platform: "instagram", text: "" },
                 ],
@@ -411,6 +433,39 @@ describe("normalizeCampaignBuilderSession", () => {
       (content) => content.milestoneId === "ms-two-week",
     );
     assert.equal(preview?.captions[0]?.text, "");
+  });
+
+  it("preserves real volunteer-event captions through normalize/hydrate", () => {
+    const defaults = buildDefaultSession("evt-1", "Volunteer Badge Making", "2026-09-09");
+    const realCaption =
+      "Get ready for our Volunteer Badge Making Session on September 9, 2026! Celebrate our amazing volunteers.";
+    const firstPreview = defaults.previewContents[0];
+    assert.ok(firstPreview);
+
+    const normalized = normalizeCampaignBuilderSession(
+      {
+        previewContents: defaults.previewContents.map((preview, index) =>
+          index === 0
+            ? {
+                ...preview,
+                captions: [
+                  { platform: "facebook", text: realCaption },
+                  { platform: "instagram", text: realCaption },
+                ],
+              }
+            : preview,
+        ),
+      },
+      "evt-1",
+      "Volunteer Badge Making",
+      "2026-09-09",
+    );
+
+    const preview = normalized.previewContents.find(
+      (content) => content.milestoneId === firstPreview.milestoneId,
+    );
+    assert.equal(preview?.captions[0]?.text, realCaption);
+    assert.equal(preview?.captions[1]?.text, realCaption);
   });
 
   it("resets auto-enabled logo inclusion unless user explicitly opted in", () => {
