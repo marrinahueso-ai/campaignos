@@ -305,6 +305,11 @@ export async function approveInboxReplyAction(input: {
 
 export async function sendInboxReplyAction(input: {
   messageId: string;
+  /**
+   * Optional body for follow-up replies after the seed message is already
+   * `sent`. First replies still use the approved body on the seed message.
+   */
+  body?: string;
 }): Promise<InboxReplyActionResult> {
   const access = await requireInboxPermission();
   if (!access.ok) {
@@ -319,7 +324,18 @@ export async function sendInboxReplyAction(input: {
     return { success: false, error: "Message not found." };
   }
 
-  if (message.status !== "approved" || !message.approvedBody?.trim()) {
+  const followUpBody = input.body?.trim() || null;
+  const isFollowUp = message.status === "sent";
+  let bodyToSend: string;
+
+  if (isFollowUp) {
+    if (!followUpBody) {
+      return { success: false, error: "Write a reply before sending." };
+    }
+    bodyToSend = followUpBody;
+  } else if (message.status === "approved" && message.approvedBody?.trim()) {
+    bodyToSend = message.approvedBody.trim();
+  } else {
     return {
       success: false,
       error: "Approve the reply before sending.",
@@ -386,7 +402,7 @@ export async function sendInboxReplyAction(input: {
     channelType: thread.channelType,
     thread,
     inboundMessage: message,
-    body: message.approvedBody,
+    body: bodyToSend,
     pageId: connection.facebookPageId,
     pageAccessToken: connection.pageAccessToken,
     instagramAccountId: connection.instagramAccountId,
@@ -399,22 +415,24 @@ export async function sendInboxReplyAction(input: {
   const now = new Date().toISOString();
   const supabase = await createClient();
 
-  const { error: inboundError } = await supabase
-    .from("inbox_messages")
-    .update({
-      status: "sent",
-      sent_to_platform_at: now,
-      external_send_id: sendResult.externalSendId,
-      updated_at: now,
-    })
-    .eq("id", message.id)
-    .eq("organization_id", access.organizationId);
+  if (!isFollowUp) {
+    const { error: inboundError } = await supabase
+      .from("inbox_messages")
+      .update({
+        status: "sent",
+        sent_to_platform_at: now,
+        external_send_id: sendResult.externalSendId,
+        updated_at: now,
+      })
+      .eq("id", message.id)
+      .eq("organization_id", access.organizationId);
 
-  if (inboundError) {
-    return {
-      success: false,
-      error: "Reply was sent but could not update message status.",
-    };
+    if (inboundError) {
+      return {
+        success: false,
+        error: "Reply was sent but could not update message status.",
+      };
+    }
   }
 
   await supabase.from("inbox_messages").insert({
@@ -423,21 +441,21 @@ export async function sendInboxReplyAction(input: {
     channel_type: message.channelType,
     external_message_id: sendResult.externalSendId ?? `local:${message.id}:${now}`,
     direction: "outbound",
-    body: message.approvedBody,
+    body: bodyToSend,
     sender_name: connection.pageName ?? "You",
     sender_external_id: connection.facebookPageId,
     sent_at: now,
     status: "sent",
     sent_to_platform_at: now,
     external_send_id: sendResult.externalSendId,
-    metadata: { replyToMessageId: message.id },
+    metadata: { replyToMessageId: message.id, followUp: isFollowUp },
   });
 
   await supabase
     .from("inbox_threads")
     .update({
       status: "sent",
-      last_message_snippet: message.approvedBody.slice(0, 120),
+      last_message_snippet: bodyToSend.slice(0, 120),
       last_message_at: now,
       updated_at: now,
     })
