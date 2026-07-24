@@ -31,6 +31,7 @@ import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions"
 import {
   dashboardWidgetSupportsColor,
   getDashboardCardTone,
+  isDarkDashboardCardColor,
 } from "@/lib/today/dashboard-widget-colors";
 import {
   applyDashboardWidgetSelection,
@@ -616,7 +617,7 @@ function SortableWidgetFrame({
       </div>
       <div
         className={cn(
-          "h-full",
+          "group/card h-full",
           uniform && "flex flex-col [&>*]:h-full [&>*]:min-h-0",
           // Colored cards: one outer radius clips the fill so cream ring/shadow
           // from the inner section cannot show as square “ghost” edges.
@@ -624,6 +625,13 @@ function SortableWidgetFrame({
             "overflow-hidden rounded-2xl shadow-[0_2px_4px_rgba(42,38,34,0.08),0_10px_22px_rgba(42,38,34,0.12)] [&>section]:rounded-none [&>section]:bg-transparent [&>section]:shadow-none [&>section]:ring-0",
           editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
         )}
+        data-card-tone={
+          colorable && color
+            ? isDarkDashboardCardColor(color)
+              ? "dark"
+              : "light"
+            : undefined
+        }
         style={tone?.style}
       >
         {children}

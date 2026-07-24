@@ -18,23 +18,24 @@ const FILL_RATE_BAND_STYLES: Record<
   { text: string; bar: string }
 > = {
   critical: {
-    text: "text-cos-error-text",
+    // Dark card tones (data-card-tone on DashboardOverview frame) need lighter %.
+    text: "text-cos-error-text group-data-[card-tone=dark]/card:text-red-300",
     bar: "bg-cos-error",
   },
   needs_attention: {
-    text: "text-orange-800",
+    text: "text-orange-800 group-data-[card-tone=dark]/card:text-orange-300",
     bar: "bg-orange-500",
   },
   fair_progress: {
-    text: "text-amber-800",
+    text: "text-amber-800 group-data-[card-tone=dark]/card:text-amber-200",
     bar: "bg-amber-400",
   },
   healthy: {
-    text: "text-cos-success-text",
+    text: "text-cos-success-text group-data-[card-tone=dark]/card:text-emerald-300",
     bar: "bg-cos-success",
   },
   fully_staffed: {
-    text: "text-cos-success-text",
+    text: "text-cos-success-text group-data-[card-tone=dark]/card:text-emerald-300",
     bar: "bg-cos-success",
   },
 };
