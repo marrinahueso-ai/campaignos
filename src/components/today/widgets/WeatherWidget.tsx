@@ -6,12 +6,13 @@ import { cn } from "@/lib/utils/cn";
 import type {
   OrganizationLocation,
   TodayWeatherContext,
+  WeatherHourlyPoint,
   WeatherSnapshot,
 } from "@/lib/weather/types";
 
 interface WeatherWidgetProps {
   weather: TodayWeatherContext;
-  /** Compact pin for the overview top-right corner. */
+  /** Full pin for the overview top-right corner. */
   compact?: boolean;
 }
 
@@ -26,33 +27,50 @@ export function WeatherWidget({
     return (
       <section
         className={cn(
-          "rounded-2xl bg-cos-bg-alt px-4 py-3 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]",
+          "flex h-full min-h-[14.5rem] flex-col justify-between rounded-2xl bg-cos-bg-alt px-5 py-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]",
         )}
       >
         {resolved ? (
-          <div className="flex items-center gap-3">
-            <CloudSun
-              className="h-7 w-7 shrink-0 text-cos-brand-sage"
-              aria-hidden
-            />
-            <div className="min-w-0">
-              <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-display text-2xl leading-none text-cos-text">
-                  {Math.round(resolved.weather.temperatureF)}°
-                </span>
-                <span className="truncate text-sm text-cos-muted">
-                  {resolved.weather.condition}
-                </span>
-              </p>
-              <p className="mt-0.5 truncate text-xs text-cos-muted">
-                {resolved.location.label}
-                {isLive ? "" : " · typical for season"}
+          <>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <CloudSun
+                  className="h-5 w-5 shrink-0 text-cos-brand-sage"
+                  aria-hidden
+                />
+                <h3 className="text-sm font-semibold text-cos-text">Weather</h3>
+              </div>
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                  <span className="font-display text-5xl leading-none text-cos-text">
+                    {Math.round(resolved.weather.temperatureF)}°
+                  </span>
+                  <span className="truncate text-sm text-cos-muted">
+                    {resolved.weather.condition}
+                  </span>
+                </p>
+                <p className="mt-2 truncate text-xs text-cos-muted">
+                  {resolved.location.label}
+                  {isLive ? "" : " · typical for season"}
+                </p>
+              </div>
+            </div>
+            <HourlyStrip hours={resolved.weather.hourly} />
+          </>
+        ) : (
+          <div className="flex h-full flex-col justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <CloudSun
+                  className="h-5 w-5 shrink-0 text-cos-brand-sage"
+                  aria-hidden
+                />
+                <h3 className="text-sm font-semibold text-cos-text">Weather</h3>
+              </div>
+              <p className="text-sm text-cos-muted">
+                Set your school city for local weather.
               </p>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <p className="text-xs text-cos-muted">Set your school city for weather.</p>
             <Link
               href="/settings/organization"
               className="text-xs font-medium text-cos-brand-sage hover:text-cos-brand-navy"
@@ -68,25 +86,28 @@ export function WeatherWidget({
   return (
     <DashboardWidgetCard icon={CloudSun} title="Weather" showMenu={false}>
       {resolved ? (
-        <div className="flex items-start gap-3">
-          <CloudSun
-            className="mt-0.5 h-8 w-8 shrink-0 text-cos-brand-sage"
-            aria-hidden
-          />
-          <div>
-            <p className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-display text-3xl leading-none text-cos-text">
-                {Math.round(resolved.weather.temperatureF)}°
-              </span>
-              <span className="text-sm text-cos-muted">
-                {resolved.weather.condition}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-cos-muted">
-              {resolved.location.label}
-              {isLive ? "" : " · typical for season"}
-            </p>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <CloudSun
+              className="mt-0.5 h-8 w-8 shrink-0 text-cos-brand-sage"
+              aria-hidden
+            />
+            <div>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-display text-3xl leading-none text-cos-text">
+                  {Math.round(resolved.weather.temperatureF)}°
+                </span>
+                <span className="text-sm text-cos-muted">
+                  {resolved.weather.condition}
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-cos-muted">
+                {resolved.location.label}
+                {isLive ? "" : " · typical for season"}
+              </p>
+            </div>
           </div>
+          <HourlyStrip hours={resolved.weather.hourly} />
         </div>
       ) : (
         <div className="space-y-2">
@@ -105,12 +126,56 @@ export function WeatherWidget({
   );
 }
 
+function HourlyStrip({ hours }: { hours: WeatherHourlyPoint[] }) {
+  if (hours.length === 0) return null;
+
+  return (
+    <div className="border-t border-cos-border/60 pt-3">
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-cos-muted">
+        Next hours
+      </p>
+      <ul className="grid grid-cols-4 gap-1">
+        {hours.slice(0, 4).map((hour) => (
+          <li
+            key={hour.hourLabel}
+            className="flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-center"
+          >
+            <span className="text-[11px] text-cos-muted">{hour.hourLabel}</span>
+            <span className="font-display text-lg leading-none text-cos-text">
+              {Math.round(hour.temperatureF)}°
+            </span>
+            <span className="truncate text-[10px] leading-tight text-cos-muted">
+              {shortCondition(hour.condition)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function shortCondition(condition: string): string {
+  if (condition === "Partly cloudy") return "Clouds";
+  if (condition === "Light breeze") return "Breeze";
+  return condition;
+}
+
 function resolveSnapshotWeather(weather: TodayWeatherContext): {
   location: OrganizationLocation;
   weather: WeatherSnapshot;
 } | null {
   if (weather.location && weather.weather) {
-    return { location: weather.location, weather: weather.weather };
+    const snapshot = weather.weather;
+    if (snapshot.hourly?.length) {
+      return { location: weather.location, weather: snapshot };
+    }
+    return {
+      location: weather.location,
+      weather: {
+        ...snapshot,
+        hourly: getMockWeatherSnapshot(weather.location).hourly,
+      },
+    };
   }
   if (weather.location) {
     return {

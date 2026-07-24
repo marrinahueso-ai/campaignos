@@ -625,7 +625,17 @@ export const previewWeather: TodayWeatherContext = {
     zip: null,
     query: "US",
   },
-  weather: { temperatureF: 89, condition: "Sunny", source: "mock" },
+  weather: {
+    temperatureF: 89,
+    condition: "Sunny",
+    source: "mock",
+    hourly: [
+      { hourLabel: "1pm", temperatureF: 90, condition: "Sunny" },
+      { hourLabel: "2pm", temperatureF: 91, condition: "Sunny" },
+      { hourLabel: "3pm", temperatureF: 90, condition: "Sunny" },
+      { hourLabel: "4pm", temperatureF: 88, condition: "Partly cloudy" },
+    ],
+  },
   displayLine: "89° and sunny",
 };
 

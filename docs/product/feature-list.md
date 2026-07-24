@@ -55,9 +55,9 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
 - **Drag-and-drop** tile rearrange anytime via card grip (saves on drop; Weather pinned; Edit still removes) — **shipped**
 - Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events), **Insights** (7d KPI pulse) — **shipped**
-- **Up Next** hero + **Calendar** share one row; **Weather** pinned compact in the overview top-right corner above the rail — **shipped**
+- **Up Next** hero + **Calendar** share one row; **Weather** pinned full tile in the overview top-right corner above the rail (current + next 4 hours) — **shipped**
 - **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
-- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; mini calendar school events for the month; This Week school **events** only — **shipped**
+- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; hourly via Open-Meteo when coords available (else OWM 3h / seasonal mock); mini calendar school events for the month; This Week school **events** only — **shipped**
 - Approvals/published pulse cards + waiting-on companion lists on home (pre-overview) — **removed**
 
 ## Events

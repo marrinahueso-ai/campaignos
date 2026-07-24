@@ -267,7 +267,7 @@ export function DashboardOverview({
           </div>
 
           {hasPinnedWeather ? (
-            <div className="lg:sticky lg:top-4 lg:z-20">
+            <div className="h-full min-h-[14.5rem] lg:sticky lg:top-4 lg:z-20">
               <PinnedWeatherFrame
                 editing={editing}
                 onRemove={() =>
@@ -451,7 +451,7 @@ function PinnedWeatherFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative">
+    <div className="relative h-full">
       {editing ? (
         <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
           <span className="rounded-md bg-cos-card/90 px-1.5 py-0.5 text-[11px] font-medium text-cos-muted ring-1 ring-black/[0.06]">
@@ -468,7 +468,10 @@ function PinnedWeatherFrame({
         </div>
       ) : null}
       <div
-        className={cn(editing && "rounded-2xl ring-2 ring-cos-brand-sage/25")}
+        className={cn(
+          "h-full",
+          editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
+        )}
       >
         {children}
       </div>

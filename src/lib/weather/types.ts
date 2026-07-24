@@ -11,10 +11,19 @@ export interface OrganizationLocation {
 
 export type WeatherSource = "api" | "mock" | "unavailable";
 
+export interface WeatherHourlyPoint {
+  /** Local hour label, e.g. "1pm" */
+  hourLabel: string;
+  temperatureF: number;
+  condition: string;
+}
+
 export interface WeatherSnapshot {
   temperatureF: number;
   condition: string;
   source: WeatherSource;
+  /** Next few hours (typically 4) for the overview pin. */
+  hourly: WeatherHourlyPoint[];
 }
 
 export interface TodayWeatherContext {
