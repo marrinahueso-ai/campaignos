@@ -13,6 +13,10 @@ interface DashboardWidgetColorPickerProps {
   label: string;
   value: string | null;
   onChange: (color: string | null) => void;
+  /** Palette icon (default) or a live color swatch/dot trigger. */
+  variant?: "palette" | "dot";
+  /** Display color for `variant="dot"` when `value` is null (product default). */
+  swatchColor?: string | null;
 }
 
 const PANEL_WIDTH = 224; // w-56
@@ -23,6 +27,8 @@ export function DashboardWidgetColorPicker({
   label,
   value,
   onChange,
+  variant = "palette",
+  swatchColor = null,
 }: DashboardWidgetColorPickerProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
@@ -33,6 +39,8 @@ export function DashboardWidgetColorPicker({
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const current = normalizeDashboardCardColor(value);
+  const dotColor =
+    normalizeDashboardCardColor(swatchColor) ?? current ?? "#ebe4d9";
 
   useEffect(() => {
     setMounted(true);
@@ -166,20 +174,27 @@ export function DashboardWidgetColorPicker({
       : null;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative inline-flex">
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
           setOpen((prev) => !prev);
         }}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text"
+        className={cn(
+          variant === "dot"
+            ? "h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10 transition-transform hover:scale-125"
+            : "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text",
+        )}
+        style={variant === "dot" ? { backgroundColor: dotColor } : undefined}
         aria-label={`Change color for ${label}`}
         aria-expanded={open}
         aria-controls={panelId}
-        title="Card color"
+        title={`${label} color`}
       >
-        <Palette className="h-3.5 w-3.5" aria-hidden />
+        {variant === "palette" ? (
+          <Palette className="h-3.5 w-3.5" aria-hidden />
+        ) : null}
       </button>
       {panel}
     </div>

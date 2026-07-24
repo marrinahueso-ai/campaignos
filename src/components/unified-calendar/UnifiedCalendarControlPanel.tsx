@@ -13,7 +13,13 @@ import {
   Upload,
 } from "lucide-react";
 import Link from "next/link";
+import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { Button } from "@/components/ui/Button";
+import type { CalendarLayerColorMap } from "@/components/unified-calendar/CalendarLayerColorsContext";
+import {
+  DEFAULT_CALENDAR_LAYER_COLORS,
+  type CalendarLayerColors,
+} from "@/lib/communications-calendar/calendar-layout";
 import {
   UNIFIED_CALENDAR_LAYERS,
   type CalendarLayerId,
@@ -43,6 +49,10 @@ interface UnifiedCalendarControlPanelProps {
   view: PlanningCalendarView;
   periodLabel: string;
   activeLayers: Set<CalendarLayerId>;
+  /** Resolved colors (defaults filled in) for swatches + calendar chips. */
+  layerColors?: CalendarLayerColorMap;
+  /** Stored overrides only — null/missing means product default. */
+  layerColorOverrides?: CalendarLayerColors;
   upcomingItems: PlanningCalendarItem[];
   showImportList?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
@@ -53,6 +63,7 @@ interface UnifiedCalendarControlPanelProps {
   onNext: () => void;
   onToday: () => void;
   onLayersChange: (layers: Set<CalendarLayerId>) => void;
+  onLayerColorChange?: (layerId: CalendarLayerId, color: string | null) => void;
   onSelectUpcomingItem: (item: PlanningCalendarItem) => void;
   /** Hides Import/Review actions and the upcoming list — used for marketing screen capture. */
   compact?: boolean;
@@ -62,6 +73,8 @@ export function UnifiedCalendarControlPanel({
   view,
   periodLabel,
   activeLayers,
+  layerColors = DEFAULT_CALENDAR_LAYER_COLORS,
+  layerColorOverrides = {},
   upcomingItems,
   showImportList = true,
   postingHeatmap = null,
@@ -72,6 +85,7 @@ export function UnifiedCalendarControlPanel({
   onNext,
   onToday,
   onLayersChange,
+  onLayerColorChange,
   onSelectUpcomingItem,
   compact = false,
 }: UnifiedCalendarControlPanelProps) {
@@ -159,6 +173,7 @@ export function UnifiedCalendarControlPanel({
           <span className="text-xs font-medium uppercase tracking-wide text-cos-muted">Show</span>
           {UNIFIED_CALENDAR_LAYERS.map((layer) => {
             const active = activeLayers.has(layer.id);
+            const resolved = layerColors[layer.id];
             return (
               <button
                 key={layer.id}
@@ -172,12 +187,21 @@ export function UnifiedCalendarControlPanel({
                     : "bg-cos-bg text-cos-muted hover:text-cos-text",
                 )}
               >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    active ? layer.accent : "bg-cos-border",
-                  )}
-                />
+                {onLayerColorChange ? (
+                  <DashboardWidgetColorPicker
+                    label={layer.label}
+                    value={layerColorOverrides[layer.id] ?? null}
+                    swatchColor={resolved}
+                    variant="dot"
+                    onChange={(color) => onLayerColorChange(layer.id, color)}
+                  />
+                ) : (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
+                    style={{ backgroundColor: resolved }}
+                    aria-hidden
+                  />
+                )}
                 {layer.label}
               </button>
             );

@@ -10,6 +10,10 @@ import {
   endCalendarDragSession,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
 import {
+  resolveItemLayerColor,
+  useCalendarLayerColors,
+} from "@/components/unified-calendar/CalendarLayerColorsContext";
+import {
   DISPLAY_STATUS_LABELS,
   DISPLAY_STATUS_STYLES,
   getCalendarItemDisplayTitle,
@@ -18,6 +22,7 @@ import {
   isMetaMilestoneItem,
   isPlanningItemDraggable,
 } from "@/lib/communications-calendar/unified-calendar-layers";
+import { getDashboardCardTone } from "@/lib/today/dashboard-widget-colors";
 import { heatmapChipElevatedClasses } from "@/lib/posting-analytics/heatmap-ui";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
@@ -72,8 +77,11 @@ export function PlanningCalendarItemChip({
   onSelect,
   onDragError,
 }: PlanningCalendarItemChipProps) {
+  const layerColors = useCalendarLayerColors();
   const displayStatus = getDisplayStatus(item);
   const statusStyles = DISPLAY_STATUS_STYLES[displayStatus];
+  const layerColor = resolveItemLayerColor(item, layerColors);
+  const tone = layerColor ? getDashboardCardTone(layerColor) : null;
   const channelLabel = getPrimaryChannelLabel(item);
   const isMetaPost = isMetaMilestoneItem(item);
   const displayTitle = getCalendarItemDisplayTitle(item);
@@ -147,6 +155,7 @@ export function PlanningCalendarItemChip({
       aria-label={displayTitle}
       data-testid={`calendar-chip-${item.id}`}
       data-draggable={isDraggable ? "true" : "false"}
+      style={tone?.style}
       className={cn(
         "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-lg border text-left transition-shadow duration-150",
         isDraggable
@@ -155,10 +164,12 @@ export function PlanningCalendarItemChip({
         elevatedOnHeatmap
           ? "hover:shadow-md hover:ring-2 hover:ring-cos-border"
           : "hover:shadow-sm hover:ring-2 hover:ring-cos-border/80",
-        elevatedOnHeatmap
-          ? heatmapChipElevatedClasses(displayStatus)
-          : cn(statusStyles.bg, statusStyles.border),
-        item.isToday && displayStatus !== "overdue" && "ring-2 ring-cos-primary/40",
+        !tone &&
+          (elevatedOnHeatmap
+            ? heatmapChipElevatedClasses(displayStatus)
+            : cn(statusStyles.bg, statusStyles.border)),
+        tone && "border-transparent",
+        item.isToday && displayStatus !== "overdue" && !tone && "ring-2 ring-cos-primary/40",
         compact ? "px-1.5 py-1.5" : "px-2 py-2",
       )}
     >
@@ -168,9 +179,11 @@ export function PlanningCalendarItemChip({
           data-testid={`calendar-chip-grip-${item.id}`}
           className={cn(
             "calendar-drag-handle pointer-events-none shrink-0 select-none rounded p-1",
-            isMetaPost
-              ? "text-cos-accent"
-              : "text-cos-border group-hover:text-cos-accent",
+            tone
+              ? "text-cos-muted"
+              : isMetaPost
+                ? "text-cos-accent"
+                : "text-cos-border group-hover:text-cos-accent",
           )}
         >
           <GripVertical className={compact ? "h-4 w-4" : "h-4 w-4"} />
@@ -181,7 +194,7 @@ export function PlanningCalendarItemChip({
           className={cn(
             "truncate font-medium leading-snug",
             compact ? "text-[11px]" : "text-xs",
-            statusStyles.text,
+            tone ? "text-cos-text" : statusStyles.text,
           )}
         >
           {displayTitle}
@@ -196,11 +209,10 @@ export function PlanningCalendarItemChip({
           ) : null}
           <span
             className={cn(
-              "rounded px-1 py-0.5 text-[9px] font-medium",
-              statusStyles.bg,
-              statusStyles.text,
-              "ring-1",
-              statusStyles.border,
+              "rounded px-1 py-0.5 text-[9px] font-medium ring-1",
+              tone
+                ? "bg-cos-card text-cos-text border-cos-border"
+                : cn(statusStyles.bg, statusStyles.text, statusStyles.border),
             )}
           >
             {DISPLAY_STATUS_LABELS[displayStatus]}

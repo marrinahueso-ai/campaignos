@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarImportPlanList } from "@/components/unified-calendar/CalendarImportPlanList";
+import { CalendarLayerColorsProvider } from "@/components/unified-calendar/CalendarLayerColorsContext";
 import { UnifiedCalendarControlPanel } from "@/components/unified-calendar/UnifiedCalendarControlPanel";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
 import { PlanningCalendarDetailPanel } from "@/components/communications-planning-calendar/PlanningCalendarDetailPanel";
@@ -13,6 +14,13 @@ import {
   applyOptimisticReschedule,
   matchesDragPayload,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
+import { saveCalendarLayoutAction } from "@/lib/communications-calendar/calendar-layout-actions";
+import {
+  defaultCalendarLayout,
+  resolveCalendarLayerColors,
+  setCalendarLayerColor,
+  type CalendarLayout,
+} from "@/lib/communications-calendar/calendar-layout";
 import {
   filterItemsByLayers,
   getDefaultActiveLayers,
@@ -41,9 +49,13 @@ import type {
 
 interface UnifiedCalendarShellProps {
   data: PlanningCalendarData;
+  initialLayout?: CalendarLayout;
 }
 
-export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
+export function UnifiedCalendarShell({
+  data,
+  initialLayout,
+}: UnifiedCalendarShellProps) {
   const router = useRouter();
   const today = getTodayDateString();
   const initialFocus = getInitialCalendarFocus(data.items, today);
@@ -55,6 +67,41 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers,
   );
+  const [layout, setLayout] = useState(
+    () => initialLayout ?? defaultCalendarLayout(),
+  );
+  const layoutRef = useRef(layout);
+  const [layoutError, setLayoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialLayout) return;
+    setLayout(initialLayout);
+    layoutRef.current = initialLayout;
+  }, [initialLayout]);
+
+  const layerColors = useMemo(
+    () => resolveCalendarLayerColors(layout),
+    [layout],
+  );
+
+  function handleLayerColorChange(
+    layerId: CalendarLayerId,
+    color: string | null,
+  ) {
+    const previous = layoutRef.current;
+    const next = setCalendarLayerColor(previous, layerId, color);
+    layoutRef.current = next;
+    setLayout(next);
+    setLayoutError(null);
+    void (async () => {
+      const result = await saveCalendarLayoutAction(next);
+      if (!result.success) {
+        layoutRef.current = previous;
+        setLayout(previous);
+        setLayoutError(result.error ?? "Could not save calendar colors.");
+      }
+    })();
+  }
   const [showPostingHeatmap, setShowPostingHeatmap] = useState(
     () => data.postingHeatmap != null,
   );
@@ -212,17 +259,26 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
     enrichedItems.find((entry) => entry.id === selectedItem.id);
 
   return (
+    <CalendarLayerColorsProvider colors={layerColors}>
     <div className="mx-auto max-w-[1600px] space-y-3 pb-8">
+      {layoutError ? (
+        <p className="text-sm text-cos-error" role="alert">
+          {layoutError}
+        </p>
+      ) : null}
       <UnifiedCalendarControlPanel
         view={view}
         periodLabel={periodLabel}
         activeLayers={activeLayers}
+        layerColors={layerColors}
+        layerColorOverrides={layout.colors ?? {}}
         upcomingItems={upcomingItems}
         onViewChange={setView}
         onPrevious={goPrevious}
         onNext={goNext}
         onToday={goToday}
         onLayersChange={setActiveLayers}
+        onLayerColorChange={handleLayerColorChange}
         onSelectUpcomingItem={setSelectedItem}
         postingHeatmap={data.postingHeatmap}
         showPostingHeatmap={showPostingHeatmap && data.postingHeatmap != null}
@@ -300,5 +356,6 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
         </>
       )}
     </div>
+    </CalendarLayerColorsProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UnifiedCalendarShell } from "@/components/unified-calendar/UnifiedCalendarShell";
+import { getCalendarLayoutForCurrentUser } from "@/lib/communications-calendar/calendar-layout-queries";
 import { getPlanningCalendarData } from "@/lib/communications-calendar/planning-queries";
 
 export const metadata = {
@@ -27,8 +28,16 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 }
 
 async function CalendarPageContent() {
-  const planningData = await getPlanningCalendarData();
-  return <UnifiedCalendarShell data={planningData} />;
+  const [planningData, initialLayout] = await Promise.all([
+    getPlanningCalendarData(),
+    getCalendarLayoutForCurrentUser(),
+  ]);
+  return (
+    <UnifiedCalendarShell
+      data={planningData}
+      initialLayout={initialLayout}
+    />
+  );
 }
 
 function CalendarPageFallback() {
