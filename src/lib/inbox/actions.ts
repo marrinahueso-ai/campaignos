@@ -1150,7 +1150,16 @@ export async function assignInboxThreadAction(input: {
     .eq("organization_id", access.organizationId);
 
   if (error) {
-    return { success: false, error: "Could not update assignment." };
+    console.error("[inbox] assign thread failed:", error.message);
+    return {
+      success: false,
+      error:
+        error.message.includes("assigned_user_id") ||
+        error.code === "PGRST204" ||
+        error.code === "42703"
+          ? "Assignment is not available yet. Ask an admin to run the latest database migration."
+          : "Could not update assignment.",
+    };
   }
 
   revalidateInboxRoutes();

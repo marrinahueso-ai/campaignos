@@ -120,8 +120,18 @@ function ThreadMessageTimeline({
   );
 }
 
-const threadActionButtonClassName =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-cos-border bg-white text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-60";
+const threadActionIdleClassName =
+  "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]";
+
+const threadActionActiveClassName =
+  "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark";
+
+function threadActionButtonClassName(active = false) {
+  return cn(
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl transition-all duration-200 disabled:opacity-60 disabled:hover:translate-y-0",
+    active ? threadActionActiveClassName : threadActionIdleClassName,
+  );
+}
 
 interface CommunicationsWorkspaceProps {
   thread: InboxThread | null;
@@ -367,10 +377,13 @@ export function CommunicationsWorkspace({
               title="Follow up"
               aria-label={isFollowUp ? "Remove follow up" : "Follow up"}
               aria-pressed={isFollowUp}
-              className={threadActionButtonClassName}
+              className={threadActionButtonClassName(isFollowUp)}
             >
               <Star
-                className={cn("h-4 w-4", isFollowUp ? "text-[#f59e0b]" : "text-cos-text")}
+                className={cn(
+                  "h-4 w-4",
+                  isFollowUp ? "text-[#f5c842]" : "text-cos-text",
+                )}
                 fill={isFollowUp ? "currentColor" : "none"}
                 aria-hidden
               />
@@ -382,10 +395,10 @@ export function CommunicationsWorkspace({
               title="Done"
               aria-label={thread.markedDone ? "Undo done" : "Done"}
               aria-pressed={isDone}
-              className={threadActionButtonClassName}
+              className={threadActionButtonClassName(isDone)}
             >
               <Check
-                className={cn("h-4 w-4", isDone ? "text-emerald-700" : "text-cos-text")}
+                className={cn("h-4 w-4", isDone ? "text-white" : "text-cos-text")}
                 strokeWidth={2.25}
                 aria-hidden
               />
@@ -396,9 +409,12 @@ export function CommunicationsWorkspace({
               disabled={isActing}
               title={isArchived ? "Restore" : "Delete"}
               aria-label={isArchived ? "Restore conversation" : "Delete"}
-              className={threadActionButtonClassName}
+              className={threadActionButtonClassName(isArchived)}
             >
-              <Trash2 className="h-4 w-4 text-cos-text" aria-hidden />
+              <Trash2
+                className={cn("h-4 w-4", isArchived ? "text-white" : "text-cos-text")}
+                aria-hidden
+              />
             </button>
             <div className="relative hidden sm:block">
               <button
@@ -419,10 +435,10 @@ export function CommunicationsWorkspace({
                 aria-expanded={assignOpen}
                 aria-controls={assignMenuId}
                 className={cn(
-                  "inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                  "inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-2xl px-3 text-xs font-medium transition-all duration-200 disabled:opacity-60 disabled:hover:translate-y-0",
                   localAssignee.assignedUserId
-                    ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
-                    : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark hover:bg-cos-bg",
+                    ? threadActionActiveClassName
+                    : threadActionIdleClassName,
                 )}
               >
                 {localAssignee.assigneeInitials ? (
@@ -431,7 +447,7 @@ export function CommunicationsWorkspace({
                       "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
                       localAssignee.assignedUserId
                         ? "bg-white/15 text-white"
-                        : "bg-cos-bg text-cos-muted",
+                        : "bg-white/60 text-cos-muted",
                     )}
                     aria-hidden
                   >
