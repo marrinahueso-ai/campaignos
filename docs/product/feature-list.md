@@ -191,7 +191,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Insights — soft launch **complete**
 - **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)
-  - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty
+  - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty; idle/selected colors match Events home summary cards (`bg-cos-bg-alt` / `bg-cos-dark`)
   - Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar)
   - Platform filter (All / Facebook / Instagram) on KPIs, chart, and top content
   - Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse

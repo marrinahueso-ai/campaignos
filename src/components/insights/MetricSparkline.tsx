@@ -25,7 +25,8 @@ export function MetricSparkline({
           x2={width - padding}
           y1={height / 2}
           y2={height / 2}
-          stroke="rgba(42,38,34,0.12)"
+          stroke={stroke}
+          strokeOpacity={0.35}
           strokeWidth="1.5"
         />
       </svg>
