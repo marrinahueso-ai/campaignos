@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TasksV2EventGroupSection } from "@/components/tasks-v2/TasksV2EventGroup";
 import { TasksV2Toolbar } from "@/components/tasks-v2/TasksV2Toolbar";
 import type {
@@ -20,33 +20,12 @@ interface TasksV2MainTableProps {
 export function TasksV2MainTable({
   eventGroups,
   canEdit,
-  events,
   orgMembers,
 }: TasksV2MainTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<TaskHubSortMode>("default");
   const [statusFilter, setStatusFilter] = useState<TaskHubStatusFilter>("all");
   const [personFilter, setPersonFilter] = useState("");
-  /** Bumps when New Task is chosen so the target group creates immediately. */
-  const [createRequest, setCreateRequest] = useState<{
-    eventId: string;
-    nonce: number;
-  } | null>(null);
-
-  const toolbarEvents = useMemo(() => {
-    if (eventGroups.length === 0) {
-      return events;
-    }
-    return eventGroups.map((group) => ({
-      eventId: group.eventId,
-      eventTitle: group.eventTitle,
-      eventDate: group.eventDate,
-    }));
-  }, [eventGroups, events]);
-
-  const clearCreateRequest = useCallback(() => {
-    setCreateRequest(null);
-  }, []);
 
   const totalTasks = useMemo(
     () => eventGroups.reduce((sum, group) => sum + group.tasks.length, 0),
@@ -108,20 +87,7 @@ export function TasksV2MainTable({
         onPersonFilterChange={setPersonFilter}
         taskCount={totalTasks}
         filteredCount={filteredCount}
-        canEdit={canEdit}
-        events={toolbarEvents}
         orgMembers={orgMembers}
-        onNewTask={(eventId) => {
-          setSearchQuery("");
-          setStatusFilter("all");
-          setPersonFilter("");
-          setCreateRequest({ eventId, nonce: Date.now() });
-          requestAnimationFrame(() => {
-            document
-              .getElementById(`tasks-v2-event-${eventId}`)
-              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          });
-        }}
       />
 
       <div className="space-y-0 divide-y divide-cos-border">
@@ -135,12 +101,6 @@ export function TasksV2MainTable({
             statusFilter={statusFilter}
             sortMode={sortMode}
             personFilter={personFilter}
-            createRequestNonce={
-              createRequest?.eventId === group.eventId
-                ? createRequest.nonce
-                : null
-            }
-            onCreateRequestHandled={clearCreateRequest}
           />
         ))}
       </div>

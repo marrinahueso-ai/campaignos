@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import {
   ArrowDownAZ,
-  ChevronDown,
   Filter,
   Layers,
   MoreHorizontal,
-  Plus,
   Search,
   User,
 } from "lucide-react";
@@ -16,7 +13,7 @@ import type {
   TaskHubSortMode,
   TaskHubStatusFilter,
 } from "@/lib/task-hub/list-filters";
-import type { TaskHubEventOption, TaskHubOrgMember } from "@/types/task-hub";
+import type { TaskHubOrgMember } from "@/types/task-hub";
 
 const SORT_OPTIONS: { value: TaskHubSortMode; label: string }[] = [
   { value: "default", label: "Manual order" },
@@ -45,12 +42,7 @@ interface TasksV2ToolbarProps {
   onPersonFilterChange: (value: string) => void;
   taskCount: number;
   filteredCount: number;
-  canEdit: boolean;
-  events: TaskHubEventOption[];
   orgMembers: TaskHubOrgMember[];
-  onNewTask: (eventId: string) => void;
-  isCreating?: boolean;
-  createError?: string | null;
 }
 
 function ToolbarButton({
@@ -82,103 +74,14 @@ export function TasksV2Toolbar({
   onPersonFilterChange,
   taskCount,
   filteredCount,
-  canEdit,
-  events,
   orgMembers,
-  onNewTask,
-  isCreating = false,
-  createError = null,
 }: TasksV2ToolbarProps) {
   const isFiltered =
     searchQuery.trim() !== "" || statusFilter !== "all" || personFilter !== "";
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onPointerDown(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [menuOpen]);
-
-  function pickEvent(eventId: string) {
-    setMenuOpen(false);
-    onNewTask(eventId);
-  }
-
-  function handleNewTaskClick() {
-    if (events.length === 0 || isCreating) {
-      return;
-    }
-    if (events.length === 1) {
-      pickEvent(events[0]!.eventId);
-      return;
-    }
-    setMenuOpen((open) => !open);
-  }
 
   return (
     <div className="space-y-3 border-b border-cos-border bg-cos-card px-4 py-3">
-      {/* Line 1: actions + filters */}
       <div className="flex flex-wrap items-center gap-2">
-        {canEdit && events.length > 0 ? (
-          <div className="relative inline-flex" ref={menuRef}>
-            <button
-              type="button"
-              onClick={handleNewTaskClick}
-              disabled={isCreating}
-              aria-haspopup={events.length > 1 ? "menu" : undefined}
-              aria-expanded={events.length > 1 ? menuOpen : undefined}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#2a2622] px-3 text-xs font-medium text-[#f6f2eb] transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {isCreating ? "Creating…" : "New Task"}
-              {events.length > 1 ? (
-                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-              ) : null}
-            </button>
-            {menuOpen && events.length > 1 ? (
-              <div
-                role="menu"
-                className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-md border border-cos-border bg-cos-card py-1 shadow-lg"
-              >
-                <p className="px-3 py-1.5 text-[10px] font-semibold tracking-wide text-cos-muted uppercase">
-                  Create task for
-                </p>
-                {events.map((event) => (
-                  <button
-                    key={event.eventId}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => pickEvent(event.eventId)}
-                    className="flex w-full flex-col px-3 py-2 text-left text-xs hover:bg-cos-bg"
-                  >
-                    <span className="font-medium text-cos-text">
-                      {event.eventTitle}
-                    </span>
-                    {event.eventDate ? (
-                      <span className="text-cos-muted">{event.eventDate}</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
         <ToolbarButton label="Person" icon={User}>
           <select
             value={personFilter}
@@ -254,11 +157,7 @@ export function TasksV2Toolbar({
         </span>
       </div>
 
-      {/* Line 2: search on the right */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-end">
-        {createError ? (
-          <p className="text-xs text-cos-danger sm:mr-auto">{createError}</p>
-        ) : null}
+      <div className="flex justify-end">
         <label className="relative w-full sm:max-w-md sm:min-w-[20rem]">
           <Search
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"

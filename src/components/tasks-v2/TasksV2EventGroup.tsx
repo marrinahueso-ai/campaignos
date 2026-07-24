@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TasksV2AddTaskRow } from "@/components/tasks-v2/TasksV2AddTaskRow";
 import { TasksV2TaskDetailDrawer } from "@/components/tasks-v2/TasksV2TaskDetailDrawer";
@@ -27,9 +27,6 @@ interface TasksV2EventGroupSectionProps {
   sortMode: import("@/lib/task-hub/list-filters").TaskHubSortMode;
   /** Filter by auth user id (preferred) or legacy display name. */
   personFilter: string;
-  /** When set, create a new task in this group (toolbar New Task). */
-  createRequestNonce?: number | null;
-  onCreateRequestHandled?: () => void;
 }
 
 export function TasksV2EventGroupSection({
@@ -40,12 +37,9 @@ export function TasksV2EventGroupSection({
   statusFilter,
   sortMode,
   personFilter,
-  createRequestNonce = null,
-  onCreateRequestHandled,
 }: TasksV2EventGroupSectionProps) {
   const [pending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(false);
-  const processedCreateNonceRef = useRef<number | null>(null);
   const [tasks, setTasks] = useState(initialGroup.tasks);
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(() => new Set());
   const [taskStatuses, setTaskStatuses] = useState<
@@ -66,63 +60,6 @@ export function TasksV2EventGroupSection({
     setTaskStatuses({});
     setPendingTaskIds(new Set());
   }, [tasksSyncKey, initialGroup.tasks]);
-
-  useEffect(() => {
-    if (createRequestNonce == null || !canEdit) {
-      return;
-    }
-    if (processedCreateNonceRef.current === createRequestNonce) {
-      return;
-    }
-    processedCreateNonceRef.current = createRequestNonce;
-
-    // Clear the toolbar request so later renders don't re-trigger.
-    onCreateRequestHandled?.();
-    setCollapsed(false);
-
-    const eventId = initialGroup.eventId;
-    const eventTitle = initialGroup.eventTitle;
-    const eventDate = initialGroup.eventDate;
-    const eventHref = initialGroup.eventHref;
-
-    startTransition(async () => {
-      const result = await createTaskHubTaskAction(eventId, {
-        title: "New task",
-      });
-      if (!result.success || !result.taskId) {
-        return;
-      }
-      const now = new Date().toISOString();
-      const taskId = result.taskId;
-      setTasks((current) => [
-        ...current,
-        {
-          id: taskId,
-          eventId,
-          title: "New task",
-          status: "todo",
-          dueDate: null,
-          assigneeName: null,
-          assigneeInitials: null,
-          assigneeUserId: null,
-          groupId: null,
-          notes: null,
-          sortOrder: current.length,
-          createdAt: now,
-          updatedAt: now,
-          event: {
-            eventId,
-            eventTitle,
-            eventDate,
-            eventHref,
-          },
-        },
-      ]);
-      setSelectedTaskId(taskId);
-    });
-    // Only re-run when toolbar issues a new create nonce.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [createRequestNonce]);
 
   const filteredTasks = useMemo(() => {
     let result = filterAndSortTasks(tasks, {
