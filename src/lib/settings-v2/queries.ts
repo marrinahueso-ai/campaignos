@@ -7,7 +7,6 @@ import {
   getCanvaConnectionForCurrentOrg,
   isCanvaConnectionConfigured,
 } from "@/lib/canva/connection";
-import { isCanvaIntegrationConfigured } from "@/lib/canva/config";
 import { getCustomInboxAiSources } from "@/lib/organizations/inbox-ai-sources/queries";
 import { getOrganizationIntelligence } from "@/lib/organization-intelligence/queries";
 import { WRITING_STYLES } from "@/lib/organization-intelligence/constants";
@@ -139,7 +138,8 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       description: "Import designs and assets into campaign artwork",
       connected: isCanvaConnectionConfigured(canvaConnection),
       manageHref: "/settings/canva",
-      available: isCanvaIntegrationConfigured(),
+      // Always list Canva so schools can find Connect; panel explains missing env.
+      available: true,
     },
     {
       id: "monday",

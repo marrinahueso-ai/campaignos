@@ -94,13 +94,26 @@ export function IntegrationLogo({ id, className }: IntegrationLogoProps) {
   switch (id) {
     case "canva":
       return (
-        <LogoFrame className={className} backgroundClassName="bg-[#00C4CC]">
-          <svg viewBox="0 0 24 24" className="h-6 w-6" role="img" aria-label="Canva">
-            <circle cx="12" cy="12" r="7" fill="#fff" />
-            <path
-              fill="#00C4CC"
-              d="M12 7.5c1.2 0 2.2.4 3 1.1-.6.7-1 1.6-1 2.6 0 1.1.4 2 1 2.6-.8.7-1.8 1.1-3 1.1-2.5 0-4.5-2-4.5-4.5S9.5 7.5 12 7.5Z"
-            />
+        <LogoFrame className={className} backgroundClassName="bg-white">
+          <svg viewBox="0 0 64 64" className="h-8 w-8" role="img" aria-label="Canva">
+            <defs>
+              <linearGradient id="canvaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#00C4CC" />
+                <stop offset="100%" stopColor="#7D2AE8" />
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="30" fill="url(#canvaGrad)" />
+            <text
+              x="32"
+              y="38"
+              textAnchor="middle"
+              fill="#fff"
+              fontSize="16"
+              fontFamily="Georgia, 'Times New Roman', serif"
+              fontStyle="italic"
+            >
+              Canva
+            </text>
           </svg>
         </LogoFrame>
       );
