@@ -403,6 +403,12 @@ export function TasksV2Shell({
                 Organize work, assign tasks, and track progress across campaigns and
                 events you can access.
               </p>
+              {data.tasksCapped ? (
+                <p className="mt-2 text-sm text-cos-muted" role="status">
+                  Showing the first {data.tasksCap?.toLocaleString() ?? "1,000"} tasks.
+                  Open an event&apos;s Tasks tab for the full list on that event.
+                </p>
+              ) : null}
             </div>
             <div className="w-full lg:max-w-md lg:shrink-0">
               <TasksV2SummaryCards

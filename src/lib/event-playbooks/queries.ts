@@ -85,17 +85,24 @@ export async function getEventPlaybookEvents(
 
 export async function getEventPlaybookTasksForEvents(
   eventIds: string[],
+  options?: { limit?: number },
 ): Promise<EventPlaybookTaskRow[]> {
   if (eventIds.length === 0 || !(await areEventPlaybookTablesAvailable())) {
     return [];
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("event_playbook_tasks")
     .select(PLAYBOOK_TASK_SELECT)
     .in("event_id", eventIds)
     .order("sort_order", { ascending: true });
+
+  if (options?.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingSchemaError(error)) {

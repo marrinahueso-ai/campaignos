@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 23, 2026 — Owner AI & APIs Phase 5 accuracy tooling
+**Last updated:** July 24, 2026 — Files/Tasks/Inbox SSR soft caps (perf Priority 2)
 
 ---
 
@@ -154,6 +154,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Communications Hub (inbox)
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
+- Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies, unread badge ≤500 threads) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
 - Thread workspace, reply, mark read — **shipped**
 - Inbox AI drafts + approve-then-send — **shipped**
 - Comment/tag detail panel shows original parent post (caption + artwork); clutter placeholders (similar questions, take-action list, related campaign) removed — **shipped**
@@ -173,6 +174,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Tasks — soft launch **complete**
 - Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
+- Org Tasks hub SSR soft-capped at 1000 tasks (event Tasks tab uncapped; notice when truncated) — **shipped** (perf)
 - Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - Main Table toolbar: person/status/sort as Files-style dropdowns (no Person/Filter/Sort labels); search on the same row — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
@@ -190,6 +192,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Files
 - Global + event-scoped library (upload, search, categorize, metadata) — **shipped**
+- Org Files SSR soft-capped at 400 newest files (event detail 200; notice when truncated) — **shipped** (perf)
 - Event detail Files tab uses the same `FilesDocumentsShell` as `/files` (DnD upload, search, sort, lean toolbar; event locked / no event carousel) — **shipped**
 - Files & Documents toolbar: type/category/status/date filters + upload + search on one row; search by file or event name (global); event/platform/uploader dropdowns removed — **shipped**
 - Drag-and-drop upload on Files & Documents (page drop opens upload dialog with file preselected) — **shipped**

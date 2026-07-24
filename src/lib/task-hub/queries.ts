@@ -19,6 +19,7 @@ import {
   resolveTaskHubViewScope,
   taskHubScopeLabel,
 } from "@/lib/task-hub/access";
+import { TASK_HUB_ORG_FETCH_CAP } from "@/lib/task-hub/constants";
 import { groupTasksByCommittee } from "@/lib/task-hub/group-tasks";
 import { buildTaskHubOrgMembers } from "@/lib/task-hub/org-members";
 import { isOpenTaskStatus } from "@/lib/event-playbooks/task-status";
@@ -104,10 +105,13 @@ export async function getTaskHubPageData(
   ]);
   const events = filterEventsForTaskHub(allEvents, access);
   const eventIds = events.map((event) => event.id);
-  const taskRows =
+  const cap = TASK_HUB_ORG_FETCH_CAP;
+  const taskRowsRaw =
     eventIds.length > 0
-      ? await getEventPlaybookTasksForEvents(eventIds)
+      ? await getEventPlaybookTasksForEvents(eventIds, { limit: cap + 1 })
       : [];
+  const tasksCapped = taskRowsRaw.length > cap;
+  const taskRows = tasksCapped ? taskRowsRaw.slice(0, cap) : taskRowsRaw;
 
   // All committees — visibility is event-access, not chair-of-committee.
   const committees = groupTasksByCommittee({
@@ -219,6 +223,8 @@ export async function getTaskHubPageData(
     canEdit,
     orgMembers,
     events: eventOptions,
+    tasksCapped,
+    tasksCap: cap,
   };
 }
 

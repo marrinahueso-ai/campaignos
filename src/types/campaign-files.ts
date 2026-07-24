@@ -71,6 +71,9 @@ export interface FilesPageData {
   eventList: Event[];
   uploaderNames: string[];
   currentUserName: string | null;
+  /** True when org-wide fetch hit FILES_ORG_FETCH_CAP (newest files kept). */
+  listCapped?: boolean;
+  listCap?: number;
 }
 
 export type FilesViewMode = "list" | "grid";

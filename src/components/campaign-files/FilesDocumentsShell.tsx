@@ -376,6 +376,13 @@ export function FilesDocumentsShell({
         </div>
       ) : null}
 
+      {data.listCapped ? (
+        <p className="text-sm text-cos-muted" role="status">
+          Showing the {data.listCap?.toLocaleString() ?? "recent"} newest files. Narrow by
+          event or filters if you need an older file.
+        </p>
+      ) : null}
+
       <div className="border border-cos-border bg-cos-card p-4">
         <div className="flex flex-wrap items-center gap-2">
           <FilterSelect

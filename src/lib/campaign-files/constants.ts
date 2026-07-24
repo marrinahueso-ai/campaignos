@@ -79,6 +79,13 @@ export const MAX_CAMPAIGN_FILE_BYTES = 25 * 1024 * 1024;
 
 export const FILES_PAGE_SIZE = 10;
 
+/**
+ * Soft cap for org-wide Files page SSR. Client still paginates at FILES_PAGE_SIZE;
+ * this bounds memory/TTFB as libraries grow. Single-event loads use FILES_EVENT_FETCH_CAP.
+ */
+export const FILES_ORG_FETCH_CAP = 400;
+export const FILES_EVENT_FETCH_CAP = 200;
+
 export const CAMPAIGN_FILES_MIGRATION = "046_campaign_files_enhanced.sql";
 
 export function categoryLabel(category: CampaignFileCategory): string {

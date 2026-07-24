@@ -1,6 +1,10 @@
 import "server-only";
 
 import { getAuthUser } from "@/lib/auth/queries";
+import {
+  FILES_EVENT_FETCH_CAP,
+  FILES_ORG_FETCH_CAP,
+} from "@/lib/campaign-files/constants";
 import { mapCampaignFileRow } from "@/lib/campaign-files/filters";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import {
@@ -27,36 +31,56 @@ export async function areCampaignFilesEnhanced(): Promise<boolean> {
   return !error || !isMissingSchemaError(error);
 }
 
-export async function getAllCampaignFiles(): Promise<CampaignFile[]> {
+export async function getAllCampaignFiles(options?: {
+  limit?: number;
+}): Promise<{ files: CampaignFile[]; capped: boolean; cap: number }> {
+  const cap = options?.limit ?? FILES_ORG_FETCH_CAP;
   if (!(await areEventPlaybookTablesAvailable())) {
-    return [];
+    return { files: [], capped: false, cap };
   }
 
   const supabase = await createClient();
+  // Fetch one extra row to detect whether the soft cap truncated the library.
   const { data, error } = await supabase
     .from("event_playbook_files")
     .select("*")
-    .order("uploaded_at", { ascending: false });
+    .order("uploaded_at", { ascending: false })
+    .limit(cap + 1);
 
   if (error) {
     if (isMissingSchemaError(error)) {
-      return [];
+      return { files: [], capped: false, cap };
     }
     console.error("Failed to fetch campaign files:", error.message);
-    return [];
+    return { files: [], capped: false, cap };
   }
 
-  return ((data ?? []) as CampaignFileRow[]).map(mapCampaignFileRow);
+  const rows = (data ?? []) as CampaignFileRow[];
+  const capped = rows.length > cap;
+  const files = (capped ? rows.slice(0, cap) : rows).map(mapCampaignFileRow);
+  return { files, capped, cap };
 }
 
-export async function getCampaignFilesForEvent(eventId: string): Promise<CampaignFile[]> {
-  const files = await getCampaignFilesForEvents([eventId]);
-  return files;
+export async function getCampaignFilesForEvent(
+  eventId: string,
+  options?: { limit?: number },
+): Promise<{ files: CampaignFile[]; capped: boolean; cap: number }> {
+  const cap = options?.limit ?? FILES_EVENT_FETCH_CAP;
+  const files = await getCampaignFilesForEvents([eventId], {
+    limit: cap + 1,
+  });
+  const capped = files.length > cap;
+  return {
+    files: capped ? files.slice(0, cap) : files,
+    capped,
+    cap,
+  };
 }
 
 /** One query for many events — avoids N+1 on vendor Documents / multi-event views. */
 export async function getCampaignFilesForEvents(
   eventIds: string[],
+  options?: { limit?: number },
 ): Promise<CampaignFile[]> {
   const uniqueIds = Array.from(new Set(eventIds.filter(Boolean)));
   if (uniqueIds.length === 0) {
@@ -68,11 +92,17 @@ export async function getCampaignFilesForEvents(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("event_playbook_files")
     .select("*")
     .in("event_id", uniqueIds)
     .order("uploaded_at", { ascending: false });
+
+  if (options?.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingSchemaError(error)) {
@@ -154,6 +184,8 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
     eventList: [],
     uploaderNames: [],
     currentUserName: authUser?.displayName ?? null,
+    listCapped: false,
+    listCap: FILES_ORG_FETCH_CAP,
   };
 
   if (!tablesAvailable) {
@@ -161,9 +193,10 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
   }
 
   const eventList = await getEventPlaybookEvents(organization?.id ?? null);
-  const files = eventId
+  const loaded = eventId
     ? await getCampaignFilesForEvent(eventId)
-    : await getAllCampaignFiles();
+    : await getAllCampaignFiles({ limit: FILES_ORG_FETCH_CAP });
+  const files = loaded.files;
 
   const eventTitles = new Map(
     eventList.map((event) => [event.id, { title: event.title, date: event.date }]),
@@ -194,6 +227,8 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
     eventList,
     uploaderNames: collectUploaderNames(files),
     currentUserName: authUser?.displayName ?? null,
+    listCapped: loaded.capped,
+    listCap: loaded.cap,
   };
 }
 
@@ -214,10 +249,13 @@ export async function getFilesPageDataForEvent(
       eventList: [],
       uploaderNames: [],
       currentUserName: authUser?.displayName ?? null,
+      listCapped: false,
+      listCap: FILES_EVENT_FETCH_CAP,
     };
   }
 
-  const files = await getCampaignFilesForEvent(event.id);
+  const loaded = await getCampaignFilesForEvent(event.id);
+  const files = loaded.files;
   const artworkMap = await getEventArtworkMap([event.id]);
 
   return {
@@ -235,5 +273,7 @@ export async function getFilesPageDataForEvent(
     eventList: [event],
     uploaderNames: collectUploaderNames(files),
     currentUserName: authUser?.displayName ?? null,
+    listCapped: loaded.capped,
+    listCap: loaded.cap,
   };
 }

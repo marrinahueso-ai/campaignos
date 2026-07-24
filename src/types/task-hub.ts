@@ -74,4 +74,7 @@ export interface TaskHubPageData {
   canEdit: boolean;
   orgMembers: TaskHubOrgMember[];
   events: TaskHubEventOption[];
+  /** True when org-wide fetch hit TASK_HUB_ORG_FETCH_CAP. */
+  tasksCapped?: boolean;
+  tasksCap?: number;
 }

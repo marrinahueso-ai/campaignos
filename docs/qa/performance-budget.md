@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** July 22, 2026  
+**Last updated:** July 24, 2026  
 **Related:** [Testing guide](./testing-guide.md) · [Launch checklist](./launch-checklist.md)
 
 ## Target
@@ -68,6 +68,7 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 ## Hot path notes (July 24, 2026)
 
 - **`getMetaPublishBundles` is read-only** — does not call `syncMetaPublicationSlots` / write slots on GET. Approvals previews, calendar item preview, and planning-hub loads stay read-only. Mutations use `syncAndGetMetaPublishBundles` (or explicit `syncMetaPublicationSlots`) when slots must be created/updated.
+- **List fetch soft caps (Priority 2)** — org Files SSR caps at `FILES_ORG_FETCH_CAP` (400; event detail `FILES_EVENT_FETCH_CAP` 200); Tasks hub org load at `TASK_HUB_ORG_FETCH_CAP` (1000; event Tasks tab uncapped); Inbox threads `INBOX_THREAD_FETCH_CAP` (50), messages `INBOX_MESSAGES_PER_THREAD_CAP` (40) / `INBOX_MESSAGES_FETCH_CAP`, unread badge sums at most `INBOX_UNREAD_BADGE_THREAD_CAP` (500) thread rows; channel sidebar counts use `head: true` exact counts (no full thread row scan).
 
 ## Not covered here
 

@@ -1,5 +1,18 @@
 import type { InboxChannelType } from "@/lib/inbox/types";
 
+/** Thread list page size for Communications Hub. */
+export const INBOX_THREAD_FETCH_CAP = 50;
+
+/** Max messages loaded per thread on initial page (newest kept). */
+export const INBOX_MESSAGES_PER_THREAD_CAP = 40;
+
+/** Hard ceiling on messages fetched before per-thread trim. */
+export const INBOX_MESSAGES_FETCH_CAP =
+  INBOX_THREAD_FETCH_CAP * INBOX_MESSAGES_PER_THREAD_CAP;
+
+/** Unread badge: max thread rows to sum (avoids scanning entire org inbox). */
+export const INBOX_UNREAD_BADGE_THREAD_CAP = 500;
+
 export const INBOX_CHANNEL_TYPES: InboxChannelType[] = [
   "instagram_dm",
   "facebook_message",

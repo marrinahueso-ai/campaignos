@@ -6,6 +6,13 @@ import {
   isMetaConnectionConfigured,
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
+import {
+  INBOX_CHANNEL_TYPES,
+  INBOX_MESSAGES_FETCH_CAP,
+  INBOX_MESSAGES_PER_THREAD_CAP,
+  INBOX_THREAD_FETCH_CAP,
+  INBOX_UNREAD_BADGE_THREAD_CAP,
+} from "@/lib/inbox/constants";
 import { mapInboxMessageRow, mapInboxThreadRow } from "@/lib/inbox/mappers";
 import { buildInboxOrgMembers } from "@/lib/inbox/org-members";
 import { getOrganizationInboxSettings } from "@/lib/inbox/settings";
@@ -87,23 +94,36 @@ function buildConnectionStatus(
 
 async function getInboxChannelCounts(organizationId: string): Promise<InboxChannelCounts> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("inbox_threads")
-    .select("channel_type")
-    .eq("organization_id", organizationId);
+  const counts = emptyChannelCounts();
 
-  if (error || !data) {
+  const [allResult, ...channelResults] = await Promise.all([
+    supabase
+      .from("inbox_threads")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organizationId),
+    ...INBOX_CHANNEL_TYPES.map((channelType) =>
+      supabase
+        .from("inbox_threads")
+        .select("*", { count: "exact", head: true })
+        .eq("organization_id", organizationId)
+        .eq("channel_type", channelType),
+    ),
+  ]);
+
+  if (allResult.error) {
     return emptyChannelCounts();
   }
 
-  const counts = emptyChannelCounts();
-  for (const row of data as Pick<InboxThreadRow, "channel_type">[]) {
-    counts.all += 1;
-    counts[row.channel_type] += 1;
-    if (row.channel_type === "instagram_tag" || row.channel_type === "facebook_tag") {
-      counts.tagged += 1;
+  counts.all = allResult.count ?? 0;
+  for (let index = 0; index < INBOX_CHANNEL_TYPES.length; index += 1) {
+    const channelType = INBOX_CHANNEL_TYPES[index];
+    const result = channelResults[index];
+    if (result.error) {
+      continue;
     }
+    counts[channelType] = result.count ?? 0;
   }
+  counts.tagged = counts.instagram_tag + counts.facebook_tag;
 
   return counts;
 }
@@ -131,7 +151,7 @@ async function listInboxThreadsForOrganization(organizationId: string) {
     .select("*")
     .eq("organization_id", organizationId)
     .order("last_message_at", { ascending: false, nullsFirst: false })
-    .limit(50);
+    .limit(INBOX_THREAD_FETCH_CAP);
 
   if (error || !data) {
     return [];
@@ -149,12 +169,14 @@ async function listMessagesForThreads(
   }
 
   const supabase = await createClient();
+  // Newest-first so a global fetch cap still keeps recent messages per thread.
   const { data, error } = await supabase
     .from("inbox_messages")
     .select("*")
     .eq("organization_id", organizationId)
     .in("thread_id", threadIds)
-    .order("sent_at", { ascending: true, nullsFirst: false });
+    .order("sent_at", { ascending: false, nullsFirst: false })
+    .limit(INBOX_MESSAGES_FETCH_CAP);
 
   if (error || !data) {
     return {};
@@ -166,7 +188,15 @@ async function listMessagesForThreads(
     if (!grouped[message.threadId]) {
       grouped[message.threadId] = [];
     }
-    grouped[message.threadId].push(message);
+    const bucket = grouped[message.threadId];
+    if (bucket.length < INBOX_MESSAGES_PER_THREAD_CAP) {
+      bucket.push(message);
+    }
+  }
+
+  // UI expects chronological order within each thread.
+  for (const threadId of Object.keys(grouped)) {
+    grouped[threadId].reverse();
   }
 
   return grouped;
@@ -184,7 +214,9 @@ export const getInboxUnreadCountForCurrentOrg = cache(
     .from("inbox_threads")
     .select("unread_count")
     .eq("organization_id", organization.id)
-    .gt("unread_count", 0);
+    .gt("unread_count", 0)
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .limit(INBOX_UNREAD_BADGE_THREAD_CAP);
 
   if (error || !data) {
     return 0;
