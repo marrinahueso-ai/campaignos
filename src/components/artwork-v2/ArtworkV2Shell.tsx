@@ -1,22 +1,66 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CanvaDesignPicker } from "@/components/canva/CanvaDesignPicker";
 import {
   ArtworkCampaignWorkspace,
 } from "@/components/event-workspace/artwork/ArtworkCampaignWorkspace";
-import { ArtworkV2ApprovedScreen } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
-import {
-  ArtworkV2BatchGenerateScreen,
-  type ArtworkV2BatchMilestoneProgress,
-} from "@/components/artwork-v2/ArtworkV2BatchGenerateScreen";
-import { ArtworkV2CreatorScreen } from "@/components/artwork-v2/ArtworkV2CreatorScreen";
-import {
-  ArtworkV2PickerScreen,
-  type ArtworkV2PickerEntry,
-} from "@/components/artwork-v2/ArtworkV2PickerScreen";
-import { ArtworkV2ReviewScreen } from "@/components/artwork-v2/ArtworkV2ReviewScreen";
+import type { ArtworkV2ApprovedFormat } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
+import type { ArtworkV2BatchMilestoneProgress } from "@/components/artwork-v2/ArtworkV2BatchGenerateScreen";
+import type { ArtworkV2PickerEntry } from "@/components/artwork-v2/ArtworkV2PickerScreen";
+
+const ArtworkScreenFallback = () => (
+  <div className="min-h-[16rem] animate-pulse rounded-sm bg-cos-bg/40" aria-hidden />
+);
+
+const CanvaDesignPicker = dynamic(
+  () =>
+    import("@/components/canva/CanvaDesignPicker").then(
+      (mod) => mod.CanvaDesignPicker,
+    ),
+  { ssr: false },
+);
+
+const ArtworkV2ApprovedScreen = dynamic(
+  () =>
+    import("@/components/artwork-v2/ArtworkV2ApprovedScreen").then(
+      (mod) => mod.ArtworkV2ApprovedScreen,
+    ),
+  { loading: ArtworkScreenFallback },
+);
+
+const ArtworkV2BatchGenerateScreen = dynamic(
+  () =>
+    import("@/components/artwork-v2/ArtworkV2BatchGenerateScreen").then(
+      (mod) => mod.ArtworkV2BatchGenerateScreen,
+    ),
+  { loading: ArtworkScreenFallback },
+);
+
+const ArtworkV2CreatorScreen = dynamic(
+  () =>
+    import("@/components/artwork-v2/ArtworkV2CreatorScreen").then(
+      (mod) => mod.ArtworkV2CreatorScreen,
+    ),
+  { loading: ArtworkScreenFallback },
+);
+
+const ArtworkV2PickerScreen = dynamic(
+  () =>
+    import("@/components/artwork-v2/ArtworkV2PickerScreen").then(
+      (mod) => mod.ArtworkV2PickerScreen,
+    ),
+  { loading: ArtworkScreenFallback },
+);
+
+const ArtworkV2ReviewScreen = dynamic(
+  () =>
+    import("@/components/artwork-v2/ArtworkV2ReviewScreen").then(
+      (mod) => mod.ArtworkV2ReviewScreen,
+    ),
+  { loading: ArtworkScreenFallback },
+);
 import {
   adjustArtworkV2Action,
   approveArtworkV2Action,
@@ -60,7 +104,6 @@ import type { ArtworkV2Reference, ArtworkV2ReviewVersion, ArtworkV2Step } from "
 import type { ArtworkGenerationMode } from "@/lib/artwork-v2/generation-mode";
 import { buildArtworkDownloadFilename } from "@/lib/artwork-v2/download";
 import { normalizeReviewVersionIndices, ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
-import type { ArtworkV2ApprovedFormat } from "@/components/artwork-v2/ArtworkV2ApprovedScreen";
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import {

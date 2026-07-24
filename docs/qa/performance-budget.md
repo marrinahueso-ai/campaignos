@@ -72,6 +72,7 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 - **Optimistic mutations skip `router.refresh` (Priority 3)** — Task Hub list/board/calendar status + reorder, GroupedTaskChecklist status/reorder, caption field generate/save/approve/unapprove/sync, Campaign Captions generate/save, and Preview clear-milestone rely on local state (create/delete and milestone-wide approve still refresh).
 - **Insights pulse is lean (Priority 4)** — Today widget uses `getInsightsPulseData` (connection + account KPIs for 7d only). Full `/insights` still uses `getInsightsPageData` (posts, series, activity, breakdowns).
 - **Membership / hot helpers (Priority 5)** — layout `listActiveMemberships` + `getActiveMembership` share one cached `organization_users` load; `getOrganizationById`, `getOrganizationUsers`, playbook-with-steps, and team-access workload are request-`cache()`’d so metadata + page do not double-fetch.
+- **Client code-split (Priority 6)** — Ask Ralli dialog loads on open (sidebar pin stays eager); Event Detail Volunteers tab is `next/dynamic` like other heavy tabs; Create with AI Artwork stack loads via dynamic `CampaignCreativeTab` + lazy ArtworkV2 step screens (campaign workspace stays on the default path).
 
 ## Not covered here
 

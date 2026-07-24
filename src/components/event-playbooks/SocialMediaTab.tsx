@@ -1,13 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { CampaignWorkspaceTabs, stepFromHash } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import { subscribeToLocationHash, setLocationHash } from "@/lib/navigation/location-hash";
 import { CampaignPlanPage } from "@/components/event-workspace/plan/CampaignPlanPage";
-import { CampaignCreativeTab } from "@/components/event-workspace/CampaignCreativeTab";
 import { CampaignScheduleStep } from "@/components/event-workspace/CampaignScheduleStep";
 import { CampaignReviewPublishStep } from "@/components/event-workspace/CampaignReviewPublishStep";
 import { CampaignPublishedStep } from "@/components/event-workspace/CampaignPublishedStep";
+
+const CampaignCreativeTab = dynamic(
+  () =>
+    import("@/components/event-workspace/CampaignCreativeTab").then(
+      (mod) => mod.CampaignCreativeTab,
+    ),
+  {
+    loading: () => (
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+    ),
+  },
+);
 import type { CampaignWorkflowStep } from "@/components/event-workspace/CampaignWorkspaceTabs";
 import type { AiAssistantStatus } from "@/lib/ai";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";

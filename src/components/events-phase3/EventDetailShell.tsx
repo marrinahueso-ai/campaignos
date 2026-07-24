@@ -18,7 +18,6 @@ import {
   Clock,
   Users,
 } from "lucide-react";
-import { EventVolunteersTab } from "@/components/events-phase3/EventVolunteersTab";
 import { EventDetailHero } from "@/components/events-phase3/EventDetailHero";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
 import type { EventDetailHeroStatTab } from "@/components/events-phase3/EventDetailHeroStatsStrip";
@@ -123,6 +122,18 @@ const EventInsightsTab = dynamic(
   () =>
     import("@/components/events-phase3/EventInsightsTab").then(
       (mod) => mod.EventInsightsTab,
+    ),
+  {
+    loading: () => (
+      <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
+    ),
+  },
+);
+
+const EventVolunteersTab = dynamic(
+  () =>
+    import("@/components/events-phase3/EventVolunteersTab").then(
+      (mod) => mod.EventVolunteersTab,
     ),
   {
     loading: () => (
