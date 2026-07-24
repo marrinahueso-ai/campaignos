@@ -1,18 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { PlanningCalendarItemChip } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
+import type { PlanningDragPayload } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import {
   captureDropPayload,
+  clearDropTargetActive,
   executeRescheduleDrop,
+  setDropTargetActive,
   useCalendarDragState,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
 import { getScoreForCell } from "@/lib/posting-analytics/compute-heatmap";
 import {
   formatHourLabel,
   heatmapCellBackground,
-  heatmapDropTargetBackground,
   resolveItemHour,
 } from "@/lib/posting-analytics/heatmap-ui";
 import {
@@ -33,14 +35,18 @@ import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 type EnrichedItem = PlanningCalendarItem & { isOverdue: boolean; isToday: boolean };
 
-type DropTarget =
-  | { date: string; hour: "allday" }
-  | { date: string; hour: number };
+type DropHour = "allday" | number;
 
 interface PlanningCalendarWeekViewProps {
   items: EnrichedItem[];
   anchorDate: string;
   onSelectItem: (item: PlanningCalendarItem) => void;
+  onOptimisticReschedule: (
+    payload: PlanningDragPayload,
+    date: string,
+    hour?: number,
+  ) => void;
+  onRescheduleFailed: (payload: PlanningDragPayload) => void;
   onRescheduled: () => void;
   postingHeatmap?: PostingHeatmapData | null;
   showPostingHeatmap?: boolean;
@@ -51,18 +57,12 @@ const HOUR_ROWS = Array.from(
   (_, index) => WEEK_VIEW_START_HOUR + index,
 );
 
-function dropTargetKey(target: DropTarget | null): string | null {
-  if (!target) {
-    return null;
-  }
-
-  return `${target.date}:${target.hour}`;
-}
-
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
   onSelectItem,
+  onOptimisticReschedule,
+  onRescheduleFailed,
   onRescheduled,
   postingHeatmap = null,
   showPostingHeatmap = true,
@@ -70,13 +70,11 @@ export function PlanningCalendarWeekView({
   const today = getTodayDateString();
   const weekDates = useMemo(() => getWeekDates(anchorDate), [anchorDate]);
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
-  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
     "error",
   );
   const { handleDragOver } = useCalendarDragState();
-  const [isPending, startTransition] = useTransition();
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
   const placementByDate = useMemo(
@@ -101,20 +99,6 @@ export function PlanningCalendarWeekView({
     return map;
   }, [postingHeatmap, showPostingHeatmap, weekDates]);
 
-  const dropHighlightBackground = useMemo(
-    () => heatmapDropTargetBackground(),
-    [],
-  );
-
-  useEffect(() => {
-    function clearDropTarget() {
-      setDropTarget(null);
-    }
-
-    document.addEventListener("dragend", clearDropTarget);
-    return () => document.removeEventListener("dragend", clearDropTarget);
-  }, []);
-
   const showToast = useCallback(
     (message: string, variant: "error" | "success" | "warning") => {
       setToastVariant(variant);
@@ -129,52 +113,62 @@ export function PlanningCalendarWeekView({
   );
 
   const handleDrop = useCallback(
-    (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
+    (date: string, hour: DropHour, event: React.DragEvent<HTMLDivElement>) => {
+      clearDropTargetActive(event.currentTarget);
       const payload = captureDropPayload(event);
-      setDropTarget(null);
 
       if (!payload) {
         showToast("Could not read the dragged item. Try again.", "error");
         return;
       }
 
-      startTransition(async () => {
-        await executeRescheduleDrop({
-          date,
-          payload,
-          ...(typeof hour === "number" ? { hour, timezone } : {}),
-          onRescheduled,
-          onSuccess: (message) => showToast(message, "success"),
-          onWarning: (message) => showToast(message, "warning"),
-          onError: (message) => showToast(message, "error"),
-        });
+      const hourValue = typeof hour === "number" ? hour : undefined;
+      onOptimisticReschedule(payload, date, hourValue);
+
+      void executeRescheduleDrop({
+        date,
+        payload,
+        ...(hourValue !== undefined ? { hour: hourValue, timezone } : {}),
+        onRescheduled,
+        onSuccess: (message) => showToast(message, "success"),
+        onWarning: (message) => showToast(message, "warning"),
+        onError: (message) => {
+          onRescheduleFailed(payload);
+          showToast(message, "error");
+        },
       });
     },
-    [onRescheduled, showToast, timezone],
+    [
+      onOptimisticReschedule,
+      onRescheduleFailed,
+      onRescheduled,
+      showToast,
+      timezone,
+    ],
   );
 
-  const handleCellDragOver = useCallback(
-    (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
+  const bindDropTarget = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
       handleDragOver(event);
-      setDropTarget((current) =>
-        current?.date === date && current.hour === hour
-          ? current
-          : { date, hour },
-      );
+      setDropTargetActive(event.currentTarget, true);
     },
     [handleDragOver],
   );
 
-  const activeDropKey = dropTargetKey(dropTarget);
+  const unbindDropTarget = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      const next = event.relatedTarget;
+      if (next instanceof Node && event.currentTarget.contains(next)) {
+        return;
+      }
+      setDropTargetActive(event.currentTarget, false);
+    },
+    [],
+  );
 
   return (
     <>
-      <div
-        className={cn(
-          "overflow-hidden rounded-2xl border border-cos-border bg-white shadow-sm",
-          isPending && "opacity-80",
-        )}
-      >
+      <div className="overflow-hidden rounded-2xl border border-cos-border bg-white shadow-sm">
         <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-cos-border bg-cos-bg">
           <div aria-hidden className="border-r border-cos-border" />
           {weekDates.map((date) => {
@@ -217,7 +211,10 @@ export function PlanningCalendarWeekView({
           </div>
 
           {weekDates.map((date) => {
-            const placement = placementByDate.get(date) ?? { allDay: [], byHour: new Map() };
+            const placement = placementByDate.get(date) ?? {
+              allDay: [],
+              byHour: new Map(),
+            };
             const isTodayColumn = date === today;
 
             return (
@@ -230,13 +227,11 @@ export function PlanningCalendarWeekView({
               >
                 <div
                   data-testid={`calendar-drop-week-${date}-allday`}
-                  onDragOver={(event) => handleCellDragOver(date, "allday", event)}
+                  onDragEnter={bindDropTarget}
+                  onDragOver={bindDropTarget}
+                  onDragLeave={unbindDropTarget}
                   onDrop={(event) => handleDrop(date, "allday", event)}
-                  className={cn(
-                    "calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5",
-                    activeDropKey === `${date}:allday` &&
-                      "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
-                  )}
+                  className="calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5"
                 >
                   {placement.allDay.length > 0 ? (
                     <div className="space-y-1">
@@ -262,25 +257,23 @@ export function PlanningCalendarWeekView({
 
                 {HOUR_ROWS.map((hour) => {
                   const hourItems: EnrichedItem[] = placement.byHour.get(hour) ?? [];
-                  const isDropTarget = activeDropKey === `${date}:${hour}`;
-                  const heatmapBackground = heatmapBackgroundByCell.get(`${date}:${hour}`);
+                  const heatmapBackground = heatmapBackgroundByCell.get(
+                    `${date}:${hour}`,
+                  );
 
                   return (
                     <div
                       key={`${date}-${hour}`}
                       data-testid={`calendar-drop-week-${date}-${hour}`}
-                      onDragOver={(event) => handleCellDragOver(date, hour, event)}
+                      onDragEnter={bindDropTarget}
+                      onDragOver={bindDropTarget}
+                      onDragLeave={unbindDropTarget}
                       onDrop={(event) => handleDrop(date, hour, event)}
-                      className={cn(
-                        "calendar-drop-target relative h-12 border-b border-cos-border/60",
-                        isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
-                      )}
+                      className="calendar-drop-target relative h-12 border-b border-cos-border/60"
                       style={
                         heatmapBackground
                           ? { backgroundColor: heatmapBackground }
-                          : isDropTarget
-                            ? { backgroundColor: dropHighlightBackground }
-                            : undefined
+                          : undefined
                       }
                     >
                       {hourItems.length > 0 && (
@@ -296,11 +289,6 @@ export function PlanningCalendarWeekView({
                             />
                           ))}
                         </div>
-                      )}
-                      {isDropTarget && hourItems.length === 0 && (
-                        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[10px] font-medium text-indigo-600">
-                          {formatHourLabel(hour)}
-                        </p>
                       )}
                     </div>
                   );

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { reschedulePlanningItem } from "@/lib/communications-calendar/planning-mutations";
 import { rescheduleNativeMetaSchedulesForMilestone } from "@/lib/meta-publishing/native-schedule";
@@ -19,6 +20,54 @@ function parseMetaMilestoneRelativeDay(
 
   const relativeDay = Number.parseInt(sourceId.slice(prefix.length), 10);
   return Number.isFinite(relativeDay) ? relativeDay : null;
+}
+
+async function syncMetaScheduleInBackground(input: {
+  eventId: string;
+  relativeDay: number;
+}) {
+  try {
+    const supabase = await createClient();
+    const { data: slot } = await supabase
+      .from("meta_publication_slots")
+      .select("scheduled_for, graph_schedule_id")
+      .eq("event_id", input.eventId)
+      .eq("relative_day", input.relativeDay)
+      .not("graph_schedule_id", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (!slot?.scheduled_for || !slot.graph_schedule_id) {
+      return;
+    }
+
+    const graphResult = await rescheduleNativeMetaSchedulesForMilestone({
+      eventId: input.eventId,
+      relativeDay: input.relativeDay,
+      scheduledFor: slot.scheduled_for as string,
+    });
+
+    if (graphResult.warnings.length > 0) {
+      console.warn(
+        "[calendar-dnd] Meta schedule sync warning:",
+        graphResult.warnings[0],
+      );
+      try {
+        const { reportIntegrationError } = await import(
+          "@/lib/monitoring/report-error"
+        );
+        reportIntegrationError("meta", new Error(graphResult.warnings[0]!), {
+          action: "reschedulePlanningItemAction.metaSync",
+          eventId: input.eventId,
+          relativeDay: input.relativeDay,
+        });
+      } catch {
+        // Monitoring is best-effort.
+      }
+    }
+  } catch (error) {
+    console.error("[calendar-dnd] Meta schedule sync failed:", error);
+  }
 }
 
 export async function reschedulePlanningItemAction(input: {
@@ -67,39 +116,24 @@ export async function reschedulePlanningItemAction(input: {
     return { success: false, error: "Unable to reschedule this item." };
   }
 
-  let warning: string | null = null;
-
+  // Return as soon as CampignOS DB is updated. Meta Graph sync can take seconds
+  // and must not block calendar DnD feel.
   if (input.sourceType === "meta_milestone" && input.eventId) {
     const relativeDay = parseMetaMilestoneRelativeDay(
       input.sourceId,
       input.eventId,
     );
     if (relativeDay !== null) {
-      const supabase = await createClient();
-      const { data: slot } = await supabase
-        .from("meta_publication_slots")
-        .select("scheduled_for, graph_schedule_id")
-        .eq("event_id", input.eventId)
-        .eq("relative_day", relativeDay)
-        .not("graph_schedule_id", "is", null)
-        .limit(1)
-        .maybeSingle();
-
-      if (slot?.scheduled_for && slot.graph_schedule_id) {
-        const graphResult = await rescheduleNativeMetaSchedulesForMilestone({
-          eventId: input.eventId,
+      after(() =>
+        syncMetaScheduleInBackground({
+          eventId: input.eventId!,
           relativeDay,
-          scheduledFor: slot.scheduled_for as string,
-        });
-
-        if (graphResult.warnings.length > 0) {
-          warning = `Calendar updated, but Meta schedule sync had issues: ${graphResult.warnings[0]}`;
-        }
-      }
+        }),
+      );
     }
   }
 
   revalidatePath("/communications/calendar");
   revalidatePath("/calendar");
-  return { success: true, error: null, warning };
+  return { success: true, error: null };
 }

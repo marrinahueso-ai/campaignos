@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarImportPlanList } from "@/components/unified-calendar/CalendarImportPlanList";
 import { UnifiedCalendarControlPanel } from "@/components/unified-calendar/UnifiedCalendarControlPanel";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
 import { PlanningCalendarDetailPanel } from "@/components/communications-planning-calendar/PlanningCalendarDetailPanel";
+import type { PlanningDragPayload } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import { PlanningCalendarMonthView } from "@/components/communications-planning-calendar/PlanningCalendarMonthView";
 import { PlanningCalendarWeekView } from "@/components/communications-planning-calendar/PlanningCalendarWeekView";
+import {
+  applyOptimisticReschedule,
+  matchesDragPayload,
+} from "@/components/communications-planning-calendar/planning-calendar-dnd";
 import {
   filterItemsByLayers,
   getDefaultActiveLayers,
@@ -54,7 +59,14 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
     () => data.postingHeatmap != null,
   );
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
+  const [localItems, setLocalItems] = useState(data.items);
+  const itemsSnapshotRef = useRef(data.items);
   const hasAutoFocused = useRef(false);
+
+  useEffect(() => {
+    setLocalItems(data.items);
+    itemsSnapshotRef.current = data.items;
+  }, [data.items]);
 
   useEffect(() => {
     if (window.matchMedia("(max-width: 768px)").matches) {
@@ -75,8 +87,8 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
   }, [data.items, today]);
 
   const enrichedItems = useMemo(
-    () => data.items.map((item) => enrichItemFlags(item, today)),
-    [data.items, today],
+    () => localItems.map((item) => enrichItemFlags(item, today)),
+    [localItems, today],
   );
 
   const filteredItems = useMemo(
@@ -171,9 +183,29 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
     }
   }
 
-  function handleRescheduled() {
+  const handleOptimisticReschedule = useCallback(
+    (payload: PlanningDragPayload, date: string, hour?: number) => {
+      const timezone = data.postingHeatmap?.timezone ?? "America/Chicago";
+      setLocalItems((current) => {
+        itemsSnapshotRef.current = current;
+        return current.map((item) =>
+          matchesDragPayload(item, payload)
+            ? applyOptimisticReschedule(item, date, hour, timezone)
+            : item,
+        );
+      });
+    },
+    [data.postingHeatmap?.timezone],
+  );
+
+  const handleRescheduleFailed = useCallback((_payload: PlanningDragPayload) => {
+    setLocalItems(itemsSnapshotRef.current);
+  }, []);
+
+  const handleRescheduled = useCallback(() => {
+    // Background refresh — chip already moved optimistically.
     router.refresh();
-  }
+  }, [router]);
 
   const selectedEnriched =
     selectedItem &&
@@ -222,6 +254,8 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
           year={year}
           month={month}
           onSelectItem={setSelectedItem}
+          onOptimisticReschedule={handleOptimisticReschedule}
+          onRescheduleFailed={handleRescheduleFailed}
           onRescheduled={handleRescheduled}
         />
       )}
@@ -230,6 +264,8 @@ export function UnifiedCalendarShell({ data }: UnifiedCalendarShellProps) {
           items={filteredItems}
           anchorDate={weekAnchor}
           onSelectItem={setSelectedItem}
+          onOptimisticReschedule={handleOptimisticReschedule}
+          onRescheduleFailed={handleRescheduleFailed}
           onRescheduled={handleRescheduled}
           postingHeatmap={data.postingHeatmap}
           showPostingHeatmap={showPostingHeatmap}

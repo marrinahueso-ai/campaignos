@@ -7,13 +7,23 @@ import {
   parseDragPayload,
   type PlanningDragPayload,
 } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
+import { localDateHourToIso } from "@/lib/posting-analytics/timezone-utils";
+import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 export const CALENDAR_DRAGGING_CLASS = "calendar-dragging";
 
 let dragSessionActive = false;
+let dragSessionSafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
 function syncDragSessionDom(active: boolean) {
   document.documentElement.classList.toggle(CALENDAR_DRAGGING_CLASS, active);
+}
+
+function clearDragSessionSafetyTimer() {
+  if (dragSessionSafetyTimer != null) {
+    clearTimeout(dragSessionSafetyTimer);
+    dragSessionSafetyTimer = null;
+  }
 }
 
 /** Synchronous — call from chip dragstart before React state updates. */
@@ -24,10 +34,16 @@ export function beginCalendarDragSession() {
 
   dragSessionActive = true;
   syncDragSessionDom(true);
+  clearDragSessionSafetyTimer();
+  // Prevent a stuck html.calendar-dragging class if dragend never fires.
+  dragSessionSafetyTimer = setTimeout(() => {
+    endCalendarDragSession();
+  }, 15_000);
 }
 
 /** Synchronous — call from dragend/drop. Safe to call multiple times. */
 export function endCalendarDragSession() {
+  clearDragSessionSafetyTimer();
   if (!dragSessionActive) {
     return;
   }
@@ -52,6 +68,41 @@ export function readDragPayload(
   const raw =
     transfer.getData(DRAG_MIME) || transfer.getData("text/plain");
   return parseDragPayload(raw);
+}
+
+export function matchesDragPayload(
+  item: PlanningCalendarItem,
+  payload: PlanningDragPayload,
+): boolean {
+  return (
+    item.id === payload.id ||
+    (item.sourceId === payload.sourceId &&
+      item.sourceType === payload.sourceType)
+  );
+}
+
+/** Instant local move for calendar chips — do not wait on the server action. */
+export function applyOptimisticReschedule(
+  item: PlanningCalendarItem,
+  date: string,
+  hour?: number,
+  timezone?: string,
+): PlanningCalendarItem {
+  let scheduledAt = item.scheduledAt ?? null;
+
+  if (typeof hour === "number" && timezone) {
+    scheduledAt = localDateHourToIso(date, hour, timezone);
+  } else if (scheduledAt?.includes("T")) {
+    scheduledAt = `${date}${scheduledAt.slice(scheduledAt.indexOf("T"))}`;
+  } else {
+    scheduledAt = `${date}T12:00:00.000Z`;
+  }
+
+  return {
+    ...item,
+    scheduledDate: date,
+    scheduledAt,
+  };
 }
 
 /**
@@ -110,11 +161,33 @@ export function useCalendarDragState() {
   return { handleDragOver };
 }
 
+/** Mark a drop cell active via DOM — avoids React re-renders during drag. */
+export function setDropTargetActive(
+  element: HTMLElement | null,
+  active: boolean,
+) {
+  if (!element) {
+    return;
+  }
+  if (active) {
+    element.setAttribute("data-drop-active", "true");
+  } else {
+    element.removeAttribute("data-drop-active");
+  }
+}
+
+export function clearDropTargetActive(element: EventTarget | null) {
+  if (element instanceof HTMLElement) {
+    element.removeAttribute("data-drop-active");
+  }
+}
+
 export type RescheduleDropInput = {
   date: string;
   hour?: number;
   timezone?: string;
   payload: PlanningDragPayload;
+  onOptimistic?: () => void;
   onRescheduled: () => void;
   onSuccess: (message: string) => void;
   onWarning?: (message: string) => void;
@@ -135,6 +208,8 @@ export async function executeRescheduleDrop(
   input: RescheduleDropInput,
 ): Promise<void> {
   const { payload } = input;
+
+  input.onOptimistic?.();
 
   const result = await reschedulePlanningItemAction({
     sourceType: payload.sourceType,

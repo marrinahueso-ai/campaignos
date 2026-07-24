@@ -87,7 +87,7 @@ export function PlanningCalendarItemChip({
   }
 
   function handleDragStart(event: React.DragEvent<HTMLDivElement>) {
-    didDragRef.current = false;
+    didDragRef.current = true;
     event.currentTarget.setAttribute("data-dragging", "true");
 
     try {
@@ -110,10 +110,6 @@ export function PlanningCalendarItemChip({
       reportDragStartFailure(error);
       event.preventDefault();
     }
-  }
-
-  function handleDrag(_event: React.DragEvent<HTMLDivElement>) {
-    didDragRef.current = true;
   }
 
   function handleDragEnd(event: React.DragEvent<HTMLDivElement>) {
@@ -143,7 +139,6 @@ export function PlanningCalendarItemChip({
     <div
       draggable={isDraggable}
       onDragStart={isDraggable ? handleDragStart : undefined}
-      onDrag={isDraggable ? handleDrag : undefined}
       onDragEnd={isDraggable ? handleDragEnd : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

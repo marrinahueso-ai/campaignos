@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
 import { PlanningCalendarDetailPanel } from "@/components/communications-planning-calendar/PlanningCalendarDetailPanel";
@@ -8,9 +8,14 @@ import {
   ChannelLegend,
   PlanningCalendarFiltersBar,
 } from "@/components/communications-planning-calendar/PlanningCalendarFilters";
+import type { PlanningDragPayload } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import { PlanningCalendarMonthView } from "@/components/communications-planning-calendar/PlanningCalendarMonthView";
 import { PlanningCalendarToolbar } from "@/components/communications-planning-calendar/PlanningCalendarToolbar";
 import { PlanningCalendarWeekView } from "@/components/communications-planning-calendar/PlanningCalendarWeekView";
+import {
+  applyOptimisticReschedule,
+  matchesDragPayload,
+} from "@/components/communications-planning-calendar/planning-calendar-dnd";
 import { UpcomingDeadlinesStrip } from "@/components/communications-planning-calendar/UpcomingDeadlinesStrip";
 import { DEFAULT_FILTERS } from "@/lib/communications-calendar/channel-styles";
 import {
@@ -48,6 +53,13 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
   const [weekAnchor, setWeekAnchor] = useState(today);
   const [filters, setFilters] = useState<PlanningCalendarFilters>(DEFAULT_FILTERS);
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
+  const [localItems, setLocalItems] = useState(data.items);
+  const itemsSnapshotRef = useRef(data.items);
+
+  useEffect(() => {
+    setLocalItems(data.items);
+    itemsSnapshotRef.current = data.items;
+  }, [data.items]);
 
   useEffect(() => {
     if (window.matchMedia("(max-width: 768px)").matches) {
@@ -57,15 +69,15 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
 
   const events = useMemo(() => {
     const map = new Map<string, string>();
-    for (const item of data.items) {
+    for (const item of localItems) {
       map.set(item.eventId, item.eventTitle);
     }
     return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
-  }, [data.items]);
+  }, [localItems]);
 
   const enrichedItems = useMemo(
-    () => data.items.map((item) => enrichItemFlags(item, today)),
-    [data.items, today],
+    () => localItems.map((item) => enrichItemFlags(item, today)),
+    [localItems, today],
   );
 
   const filteredItems = useMemo(
@@ -118,9 +130,28 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
     }
   }
 
-  function handleRescheduled() {
+  const handleOptimisticReschedule = useCallback(
+    (payload: PlanningDragPayload, date: string, hour?: number) => {
+      const timezone = data.postingHeatmap?.timezone ?? "America/Chicago";
+      setLocalItems((current) => {
+        itemsSnapshotRef.current = current;
+        return current.map((item) =>
+          matchesDragPayload(item, payload)
+            ? applyOptimisticReschedule(item, date, hour, timezone)
+            : item,
+        );
+      });
+    },
+    [data.postingHeatmap?.timezone],
+  );
+
+  const handleRescheduleFailed = useCallback((_payload: PlanningDragPayload) => {
+    setLocalItems(itemsSnapshotRef.current);
+  }, []);
+
+  const handleRescheduled = useCallback(() => {
     router.refresh();
-  }
+  }, [router]);
 
   const selectedEnriched =
     selectedItem &&
@@ -157,6 +188,8 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
             year={year}
             month={month}
             onSelectItem={setSelectedItem}
+            onOptimisticReschedule={handleOptimisticReschedule}
+            onRescheduleFailed={handleRescheduleFailed}
             onRescheduled={handleRescheduled}
           />
         )}
@@ -165,6 +198,8 @@ export function PlanningCalendarShell({ data }: PlanningCalendarShellProps) {
             items={filteredItems}
             anchorDate={weekAnchor}
             onSelectItem={setSelectedItem}
+            onOptimisticReschedule={handleOptimisticReschedule}
+            onRescheduleFailed={handleRescheduleFailed}
             onRescheduled={handleRescheduled}
           />
         )}

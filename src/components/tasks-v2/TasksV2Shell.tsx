@@ -87,22 +87,35 @@ export function TasksV2Shell({
   const lockedId = lockedEventId?.trim() || null;
   const [localTab, setLocalTab] = useState<TasksV2ViewTab>("main_table");
   const [localMyView, setLocalMyView] = useState<TasksV2MyViewId | null>(null);
+  const urlSummaryFilter = embedded
+    ? null
+    : parseTasksV2SummaryFilter(searchParams.get("summary"));
+  // Local state so summary tiles paint instantly; URL stays shareable without
+  // waiting on Next router.replace for every click.
+  const [summaryFilter, setSummaryFilter] =
+    useState<TasksV2SummaryFilter | null>(urlSummaryFilter);
 
+  useEffect(() => {
+    setSummaryFilter(urlSummaryFilter);
+  }, [urlSummaryFilter]);
+
+  // Summary cards are Main Table filters — keep that view even when URL tab
+  // hasn't caught up yet (we sync ?summary= via history.replaceState).
   const activeTab = embedded
     ? localTab
-    : parseTasksV2Tab(searchParams.get("tab"));
+    : summaryFilter
+      ? "main_table"
+      : parseTasksV2Tab(searchParams.get("tab"));
 
   const myViewFilter: TasksV2MyViewId | null = embedded
     ? localMyView
-    : activeTab === "my_tasks" ||
-        (activeTab === "kanban" && parseMyView(searchParams.get("view")))
-      ? (parseMyView(searchParams.get("view")) ??
-        (activeTab === "my_tasks" ? "my_tasks" : null))
-      : null;
-
-  const summaryFilter: TasksV2SummaryFilter | null = embedded
-    ? null
-    : parseTasksV2SummaryFilter(searchParams.get("summary"));
+    : summaryFilter
+      ? null
+      : activeTab === "my_tasks" ||
+          (activeTab === "kanban" && parseMyView(searchParams.get("view")))
+        ? (parseMyView(searchParams.get("view")) ??
+          (activeTab === "my_tasks" ? "my_tasks" : null))
+        : null;
 
   const eventFilter =
     lockedId ??
@@ -114,7 +127,12 @@ export function TasksV2Shell({
       if (embedded) {
         return;
       }
-      const params = new URLSearchParams(searchParams.toString());
+      // Prefer live location so history.replaceState summary syncs aren't lost.
+      const params = new URLSearchParams(
+        typeof window !== "undefined"
+          ? window.location.search
+          : searchParams.toString(),
+      );
       for (const [key, value] of Object.entries(updates)) {
         if (value === null) {
           params.delete(key);
@@ -126,6 +144,27 @@ export function TasksV2Shell({
       router.replace(query ? `/tasks?${query}` : "/tasks", { scroll: false });
     },
     [embedded, router, searchParams],
+  );
+
+  const syncSummaryToUrl = useCallback(
+    (next: TasksV2SummaryFilter | null) => {
+      if (embedded || typeof window === "undefined") {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (next) {
+        params.set("summary", next);
+        params.delete("tab");
+        params.delete("view");
+        params.delete("mview");
+      } else {
+        params.delete("summary");
+      }
+      const query = params.toString();
+      const href = query ? `/tasks?${query}` : "/tasks";
+      window.history.replaceState(window.history.state, "", href);
+    },
+    [embedded],
   );
 
   const handleTabChange = useCallback(
@@ -144,6 +183,11 @@ export function TasksV2Shell({
       const keepPersonal =
         (tab === "my_tasks" || tab === "kanban") &&
         (myViewFilter !== null || activeTab === "my_tasks");
+
+      // Leaving Main Table clears summary — update local state immediately.
+      if (tab !== "main_table") {
+        setSummaryFilter(null);
+      }
 
       replaceParams({
         tab: tab === "main_table" ? null : tab,
@@ -180,6 +224,7 @@ export function TasksV2Shell({
         return;
       }
 
+      setSummaryFilter(null);
       replaceParams({
         tab: "my_tasks",
         view,
@@ -197,15 +242,10 @@ export function TasksV2Shell({
       }
 
       const next = summaryFilter === filter ? null : filter;
-      replaceParams({
-        summary: next,
-        // Summary cards filter the Main Table (not My Views).
-        tab: null,
-        view: null,
-        mview: null,
-      });
+      setSummaryFilter(next);
+      syncSummaryToUrl(next);
     },
-    [embedded, replaceParams, summaryFilter],
+    [embedded, summaryFilter, syncSummaryToUrl],
   );
 
   // Legacy ?tab=files deep links → strip tab (Files lives on /files sidebar)

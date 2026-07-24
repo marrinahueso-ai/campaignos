@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
+import type { PlanningDragPayload } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import {
   captureDropPayload,
+  clearDropTargetActive,
   executeRescheduleDrop,
+  setDropTargetActive,
   useCalendarDragState,
 } from "@/components/communications-planning-calendar/planning-calendar-dnd";
 import { UnifiedCalendarDayContent } from "@/components/unified-calendar/UnifiedCalendarDayContent";
@@ -18,6 +21,8 @@ interface PlanningCalendarMonthViewProps {
   year: number;
   month: number;
   onSelectItem: (item: PlanningCalendarItem) => void;
+  onOptimisticReschedule: (payload: PlanningDragPayload, date: string) => void;
+  onRescheduleFailed: (payload: PlanningDragPayload) => void;
   onRescheduled: () => void;
 }
 
@@ -26,29 +31,20 @@ export function PlanningCalendarMonthView({
   year,
   month,
   onSelectItem,
+  onOptimisticReschedule,
+  onRescheduleFailed,
   onRescheduled,
 }: PlanningCalendarMonthViewProps) {
   const today = getTodayDateString();
   const dates = useMemo(() => getMonthGridDates(year, month), [year, month]);
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
     "error",
   );
   const { handleDragOver } = useCalendarDragState();
-  const [isPending, startTransition] = useTransition();
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
-
-  useEffect(() => {
-    function clearDropTarget() {
-      setDropTarget(null);
-    }
-
-    document.addEventListener("dragend", clearDropTarget);
-    return () => document.removeEventListener("dragend", clearDropTarget);
-  }, []);
 
   const showToast = useCallback(
     (message: string, variant: "error" | "success" | "warning") => {
@@ -65,36 +61,35 @@ export function PlanningCalendarMonthView({
 
   const handleDrop = useCallback(
     (date: string, event: React.DragEvent<HTMLDivElement>) => {
+      clearDropTargetActive(event.currentTarget);
       const payload = captureDropPayload(event);
-      setDropTarget(null);
 
       if (!payload) {
         showToast("Could not read the dragged item. Try again.", "error");
         return;
       }
 
-      startTransition(async () => {
-        await executeRescheduleDrop({
-          date,
-          payload,
-          onRescheduled,
-          onSuccess: (message) => showToast(message, "success"),
-          onWarning: (message) => showToast(message, "warning"),
-          onError: (message) => showToast(message, "error"),
-        });
+      // Move the chip immediately; persist in the background.
+      onOptimisticReschedule(payload, date);
+
+      void executeRescheduleDrop({
+        date,
+        payload,
+        onRescheduled,
+        onSuccess: (message) => showToast(message, "success"),
+        onWarning: (message) => showToast(message, "warning"),
+        onError: (message) => {
+          onRescheduleFailed(payload);
+          showToast(message, "error");
+        },
       });
     },
-    [onRescheduled, showToast],
+    [onOptimisticReschedule, onRescheduleFailed, onRescheduled, showToast],
   );
 
   return (
     <>
-      <div
-        className={cn(
-          "overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm",
-          isPending && "opacity-80",
-        )}
-      >
+      <div className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
         <div className="grid grid-cols-7 border-b border-cos-border bg-cos-bg/60">
           {weekdays.map((day) => (
             <div
@@ -111,21 +106,33 @@ export function PlanningCalendarMonthView({
             const dateObj = parseLocalDate(date);
             const inMonth = dateObj.getMonth() === month;
             const dayItems = itemsByDate.get(date) ?? [];
-            const isDropTarget = dropTarget === date;
 
             return (
               <div
                 key={date}
                 data-testid={`calendar-drop-month-${date}`}
+                onDragEnter={(event) => {
+                  handleDragOver(event);
+                  setDropTargetActive(event.currentTarget, true);
+                }}
                 onDragOver={(event) => {
                   handleDragOver(event);
-                  setDropTarget((current) => (current === date ? current : date));
+                  setDropTargetActive(event.currentTarget, true);
+                }}
+                onDragLeave={(event) => {
+                  const next = event.relatedTarget;
+                  if (
+                    next instanceof Node &&
+                    event.currentTarget.contains(next)
+                  ) {
+                    return;
+                  }
+                  setDropTargetActive(event.currentTarget, false);
                 }}
                 onDrop={(event) => handleDrop(date, event)}
                 className={cn(
                   "calendar-drop-target relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0",
                   !inMonth && "bg-cos-bg/40",
-                  isDropTarget && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
                 )}
               >
                 <div className="mb-2 flex items-center justify-between">

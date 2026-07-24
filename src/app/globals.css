@@ -409,6 +409,12 @@ body {
     transition: none !important;
   }
 
+  /* DOM-only drop highlight — no React state during dragover. */
+  .calendar-drop-target[data-drop-active="true"] {
+    background-color: color-mix(in srgb, var(--cos-info, #dbeafe) 40%, white);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cos-primary, #2a2622) 30%, transparent);
+  }
+
   .calendar-drag-chip[draggable="true"] {
     -webkit-user-drag: element;
     user-select: none;

@@ -113,7 +113,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; Publish Now skips native Graph schedule and publishes immediately; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Meta planner / Calendar show Publish Now + custom-date slots even when `relative_day` is outside the playbook (sync no longer deletes committed orphans; bundles merge orphan days) — **shipped**
 - Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
-- Calendar DnD drag feel optimized (drop-target updates only on cell change; no React state on every dragover; transitions disabled while dragging) — **shipped**
+- Calendar DnD drag feel optimized (DOM drop highlights; optimistic chip move; Meta Graph sync after response; no pending dim / router wait before UI updates) — **shipped**
 - Posting schedule preferences — **shipped**
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)
 
@@ -165,7 +165,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
 - Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
-- Summary cards (Tasks due / Overdue / Completed) as clickable Main Table filters (`?summary=`; click again clears to all; selected = dark brown + white) — **shipped**
+- Summary cards (Tasks due / Overdue / Completed) as clickable Main Table filters (`?summary=`; click again clears to all; selected = dark brown + white; local-state filter + history URL sync for instant click feel) — **shipped**
 - My Tasks (assignee = signed-in user via `assignee_user_id`) — **shipped**
 - My Views filters (Assigned / This Week / Overdue / Completed) — **shipped**
 - Kanban board (by status) — **shipped**

@@ -32,10 +32,12 @@ describe("meta_milestone calendar DnD — no re-approval", () => {
     assert.doesNotMatch(metaCase, /status:\s*["']approved["']/);
   });
 
-  it("planning-actions syncs Graph after DB success and prefers warning over rollback", () => {
+  it("planning-actions syncs Graph after DB success without blocking the DnD response", () => {
     const source = readSource("../planning-actions.ts");
     assert.match(source, /rescheduleNativeMetaSchedulesForMilestone/);
-    assert.match(source, /warning/);
-    assert.match(source, /Calendar updated, but Meta schedule sync had issues/);
+    assert.match(source, /after\(/);
+    assert.match(source, /syncMetaScheduleInBackground/);
+    // DB write returns first; Meta Graph runs in after() so DnD stays snappy.
+    assert.match(source, /Return as soon as CampignOS DB is updated/);
   });
 });
