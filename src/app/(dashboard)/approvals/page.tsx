@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { ApprovalsSchedulingHub } from "@/components/approvals-scheduling/ApprovalsSchedulingHub";
+import { getApprovalsLayoutForCurrentUser } from "@/lib/approvals-scheduling/approvals-layout-queries";
 import { getUnifiedApprovalsSchedulingData } from "@/lib/approvals-scheduling/queries";
 import { backfillMetaApprovalRequests } from "@/lib/event-workspace/meta-approval-sync";
 
@@ -13,7 +14,10 @@ interface ApprovalsPageProps {
 
 export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps) {
   const params = await searchParams;
-  const data = await getUnifiedApprovalsSchedulingData();
+  const [data, initialSummaryLayout] = await Promise.all([
+    getUnifiedApprovalsSchedulingData(),
+    getApprovalsLayoutForCurrentUser(),
+  ]);
 
   // Write-owned sync after the response — keep Approvals accurate without
   // blocking document TTFB or running on every layout navigation.
@@ -30,6 +34,7 @@ export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps
     <ApprovalsSchedulingHub
       {...data}
       initialEventFilter={params.event ?? null}
+      initialSummaryLayout={initialSummaryLayout}
     />
   );
 }

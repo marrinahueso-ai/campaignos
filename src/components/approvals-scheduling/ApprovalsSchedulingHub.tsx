@@ -22,6 +22,10 @@ import {
   tabMatchesItem,
   unifiedItemNeedsPreviewEnrichment,
 } from "@/lib/approvals-scheduling/status";
+import {
+  defaultApprovalsLayout,
+  type ApprovalsLayout,
+} from "@/lib/approvals-scheduling/approvals-layout";
 import type {
   UnifiedApprovalsPageData,
   UnifiedApprovalItem,
@@ -36,6 +40,7 @@ interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
   lockedEventId?: string | null;
   /** Compact chrome for embedding inside Event Detail. */
   embedded?: boolean;
+  initialSummaryLayout?: ApprovalsLayout;
 }
 
 export function ApprovalsSchedulingHub({
@@ -47,7 +52,9 @@ export function ApprovalsSchedulingHub({
   initialEventFilter = null,
   lockedEventId = null,
   embedded = false,
+  initialSummaryLayout,
 }: ApprovalsSchedulingHubProps) {
+  const summaryLayout = initialSummaryLayout ?? defaultApprovalsLayout();
   const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const lockedId = lockedEventId?.trim() || null;
   const [activeTab, setActiveTab] = useState<UnifiedTabId>("all");
@@ -257,6 +264,7 @@ export function ApprovalsSchedulingHub({
           summary={scopedSummary}
           activeFilter={activeTab}
           onFilterChange={setActiveTab}
+          initialLayout={summaryLayout}
         />
       ) : null}
 

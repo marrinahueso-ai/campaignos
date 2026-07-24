@@ -125,7 +125,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
-- Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
+- Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.approvals_layout`; approve / request changes, campaign & view-scope filters, search, badges — **shipped**
 - Approvals hub: unused Filters button removed; search matches campaign/milestone, status, assignee, next action, delivery/platforms, and schedule — **shipped**
 - Event detail Approvals tab: same table without status filter tabs/search chrome; sortable column headers (default schedule ascending) — **shipped**
 - Approvals table Actions column shows **View** only (approve / request changes stay in the review drawer) — **shipped**
