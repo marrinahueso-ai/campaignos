@@ -1,23 +1,18 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { Camera, ExternalLink, Mail, Phone, Plus } from "lucide-react";
-import { useRef, useState, useTransition } from "react";
+import { Plus } from "lucide-react";
+import { useState, useTransition } from "react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { CategoryPill } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
+import { VendorCard } from "@/components/vendors/VendorCard";
 import { loadEventVendorDirectoryAction } from "@/lib/events-phase3/actions";
 import {
   assignVendorToEventAction,
   removeVendorFromEventAction,
-  uploadVendorLogoAction,
 } from "@/lib/vendors/actions";
-import { formatVendorWebsite, vendorInitials } from "@/lib/vendors/filters";
-import type { EventVendorRow, EventVendorsData, VendorCategory } from "@/types/vendors";
+import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 
 interface EventVendorsSectionProps {
   eventId: string;
@@ -28,202 +23,6 @@ interface EventVendorsSectionProps {
   directoryHref?: string;
   /** When true, load directory picker only when Add Existing / Create New opens. */
   deferDirectoryLoad?: boolean;
-}
-
-function formatAddress(vendor: EventVendorRow["vendor"]): string | null {
-  const line = [vendor.addressLine1, vendor.city, vendor.state, vendor.postalCode]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(", ");
-  return line || null;
-}
-
-function EventVendorCard({
-  row,
-  eventId,
-  canWrite,
-  pending,
-  onRemove,
-  onLogoUploaded,
-}: {
-  row: EventVendorRow;
-  eventId: string;
-  canWrite: boolean;
-  pending: boolean;
-  onRemove: (assignmentId: string) => void;
-  onLogoUploaded: () => void;
-}) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [logoError, setLogoError] = useState<string | null>(null);
-  const [uploading, startUpload] = useTransition();
-  const contactName = row.primaryContact?.name ?? null;
-  const contactEmail = row.primaryContact?.email ?? row.vendor.email;
-  const contactPhone = row.primaryContact?.phone ?? row.vendor.phone;
-  const website = formatVendorWebsite(row.vendor.website);
-  const address = formatAddress(row.vendor);
-
-  function handleLogoChange(fileList: FileList | null) {
-    const file = fileList?.[0];
-    if (!file) {
-      return;
-    }
-
-    setLogoError(null);
-    startUpload(async () => {
-      const formData = new FormData();
-      formData.set("vendorId", row.vendor.id);
-      formData.set("eventId", eventId);
-      formData.set("file", file);
-      const result = await uploadVendorLogoAction(formData);
-      if (!result.success) {
-        setLogoError(result.error ?? "Unable to upload logo.");
-        return;
-      }
-      onLogoUploaded();
-    });
-  }
-
-  return (
-    <Card padding="none" className="flex h-full flex-col overflow-hidden border border-cos-border">
-      <div className="relative flex h-24 items-center justify-center bg-cos-bg">
-        {row.logoUrl ? (
-          <Image
-            src={row.logoUrl}
-            alt={`${row.vendor.name} logo`}
-            fill
-            className="object-contain p-2.5"
-            sizes="220px"
-            unoptimized
-          />
-        ) : (
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cos-accent-soft text-sm font-semibold text-cos-dark">
-            {vendorInitials(row.vendor.name)}
-          </span>
-        )}
-        {canWrite && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              className="hidden"
-              onChange={(event) => {
-                handleLogoChange(event.target.files);
-                event.target.value = "";
-              }}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="absolute bottom-2 right-2 h-7 px-2 text-xs"
-              disabled={uploading || pending}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera className="mr-1 h-3 w-3" />
-              {uploading ? "Uploading…" : row.logoUrl ? "Change logo" : "Add logo"}
-            </Button>
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <Link
-              href={`/vendors/${row.vendor.id}`}
-              className="font-display text-base leading-snug text-cos-text hover:underline"
-            >
-              {row.vendor.name}
-            </Link>
-            {row.category && (
-              <div className="mt-1">
-                <CategoryPill category={row.category} />
-              </div>
-            )}
-          </div>
-          <Badge variant={row.assignmentStatus === "confirmed" ? "success" : "warning"}>
-            {row.assignmentStatus}
-          </Badge>
-        </div>
-
-        <dl className="space-y-1.5 text-xs">
-          <div>
-            <dt className="text-[10px] uppercase tracking-wide text-cos-muted">Contact</dt>
-            <dd className="text-cos-text">{contactName ?? "No contact listed"}</dd>
-          </div>
-          {contactEmail && (
-            <div className="flex items-center gap-1.5 text-cos-text">
-              <Mail className="h-3 w-3 shrink-0 text-cos-muted" />
-              <a href={`mailto:${contactEmail}`} className="truncate hover:underline">
-                {contactEmail}
-              </a>
-            </div>
-          )}
-          {contactPhone && (
-            <div className="flex items-center gap-1.5 text-cos-text">
-              <Phone className="h-3 w-3 shrink-0 text-cos-muted" />
-              <a href={`tel:${contactPhone}`} className="hover:underline">
-                {contactPhone}
-              </a>
-            </div>
-          )}
-          {website && (
-            <div className="flex items-center gap-1.5 text-cos-text">
-              <ExternalLink className="h-3 w-3 shrink-0 text-cos-muted" />
-              <a
-                href={row.vendor.website?.startsWith("http") ? row.vendor.website : `https://${website}`}
-                target="_blank"
-                rel="noreferrer"
-                className="truncate hover:underline"
-              >
-                {website}
-              </a>
-            </div>
-          )}
-          {address && (
-            <div>
-              <dt className="text-[10px] uppercase tracking-wide text-cos-muted">Address</dt>
-              <dd className="leading-snug text-cos-text">{address}</dd>
-            </div>
-          )}
-          {row.vendor.notesSummary && (
-            <div>
-              <dt className="text-[10px] uppercase tracking-wide text-cos-muted">Notes</dt>
-              <dd className="line-clamp-2 text-cos-muted">{row.vendor.notesSummary}</dd>
-            </div>
-          )}
-        </dl>
-
-        {logoError && (
-          <p className="text-xs text-red-600" role="alert">
-            {logoError}
-          </p>
-        )}
-
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-cos-border pt-2">
-          <Link
-            href={`/vendors/${row.vendor.id}`}
-            className="text-xs font-medium text-cos-accent hover:underline"
-          >
-            View profile
-          </Link>
-          {canWrite && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
-              disabled={pending || uploading}
-              onClick={() => onRemove(row.assignmentId)}
-            >
-              Remove
-            </Button>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 export function EventVendorsSection({
@@ -355,13 +154,20 @@ export function EventVendorsSection({
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,16rem))] gap-3">
           {data.vendors.map((row) => (
-            <EventVendorCard
+            <VendorCard
               key={row.assignmentId}
-              row={row}
-              eventId={eventId}
+              vendor={row.vendor}
+              category={row.category}
+              primaryContact={row.primaryContact}
+              logoUrl={row.logoUrl}
+              statusLabel={row.assignmentStatus}
+              statusVariant={
+                row.assignmentStatus === "confirmed" ? "success" : "warning"
+              }
               canWrite={data.canWrite}
               pending={pending}
-              onRemove={handleRemove}
+              eventId={eventId}
+              onRemove={() => handleRemove(row.assignmentId)}
               onLogoUploaded={() => {
                 void refreshVendorsTab();
               }}

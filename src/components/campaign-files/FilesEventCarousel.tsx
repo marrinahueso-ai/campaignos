@@ -233,7 +233,9 @@ export function FilesEventCarousel({
           <SortableContext items={order} strategy={horizontalListSortingStrategy}>
             <div
               className={cn(
-                "flex gap-3 overflow-x-auto pb-1 pr-10",
+                // Padding keeps selected ring + ring-offset from clipping on the
+                // scroll edges (overflow-x-auto also clips the cross axis).
+                "flex gap-3 overflow-x-auto px-1 py-1.5 pr-10",
                 activeId && "select-none",
               )}
             >
@@ -365,116 +367,84 @@ function SortableEventCard({
   const tone = color ? getDashboardCardTone(color) : null;
   const darkTone = Boolean(tone && tone.text === "#fffcf7");
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    ...(active ? { transition: "none" } : null),
-    ...(tone?.style ?? null),
-  };
-
   return (
+    // Outer: selection ring (must not use overflow-hidden — that clips ring-offset).
+    // Inner: color fill + radius clip.
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        ...(active ? { transition: "none" } : null),
+      }}
       className={cn(
-        "relative shrink-0 overflow-hidden rounded-2xl",
+        "relative shrink-0 rounded-2xl",
         variant === "all" ? "min-w-[9.5rem]" : "min-w-[11rem]",
         isDragging && "z-20 opacity-0",
-        !tone &&
-          (selected
-            ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
-            : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"),
-        tone &&
-          "shadow-[0_2px_4px_rgba(42,38,34,0.08),0_10px_22px_rgba(42,38,34,0.12)]",
-        tone &&
-          selected &&
-          "ring-2 ring-cos-dark ring-offset-2 ring-offset-[var(--cos-bg)]",
-        editing && "ring-1 ring-cos-brand-sage/35",
+        selected &&
+          "ring-2 ring-cos-dark ring-offset-2 ring-offset-[var(--cos-bg,#fffcf7)]",
+        editing && !selected && "ring-1 ring-cos-brand-sage/35",
       )}
     >
-      {editing ? (
-        <div className="absolute right-1.5 top-1.5 z-20 flex items-center gap-1">
-          <DashboardWidgetColorPicker
-            label={title}
-            value={color}
-            onChange={onColorChange}
-          />
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
-            aria-label={`Drag to reorder ${title}`}
-            title="Drag to reorder"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="h-3.5 w-3.5" aria-hidden />
-          </button>
-        </div>
-      ) : null}
-      <button
-        type="button"
-        onClick={onSelect}
-        aria-pressed={selected}
+      <div
+        style={tone?.style}
         className={cn(
-          "w-full text-left transition-transform duration-200 hover:-translate-y-0.5",
-          variant === "all"
-            ? "flex flex-col gap-2 px-4 py-3"
-            : "flex items-center gap-3 px-3 py-3",
+          "relative overflow-hidden rounded-2xl",
+          !tone &&
+            (selected
+              ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)]"
+              : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"),
+          tone &&
+            "shadow-[0_2px_4px_rgba(42,38,34,0.08),0_10px_22px_rgba(42,38,34,0.12)]",
         )}
       >
-        {variant === "all" ? (
-          <>
-            <FolderOpen
-              className={cn(
-                "h-5 w-5",
-                tone
-                  ? darkTone
-                    ? "text-white/75"
-                    : "text-cos-muted"
-                  : selected
-                    ? "text-white/70"
-                    : "text-cos-muted",
-              )}
-              strokeWidth={1.5}
+        {editing ? (
+          <div className="absolute right-1.5 top-1.5 z-20 flex items-center gap-1">
+            <DashboardWidgetColorPicker
+              label={title}
+              value={color}
+              onChange={onColorChange}
             />
-            <span
-              className={cn(
-                "text-sm font-medium",
-                tone
-                  ? "text-cos-text"
-                  : selected
-                    ? "text-white"
-                    : "text-cos-text",
-              )}
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
+              aria-label={`Drag to reorder ${title}`}
+              title="Drag to reorder"
+              {...attributes}
+              {...listeners}
             >
-              {title}
-            </span>
-            <span
-              className={cn(
-                "text-xs",
-                tone
-                  ? darkTone
-                    ? "text-white/75"
-                    : "text-cos-muted"
-                  : selected
-                    ? "text-white/70"
-                    : "text-cos-muted",
-              )}
-            >
-              {subtitle}
-            </span>
-          </>
-        ) : (
-          <>
-            <EventThumbnail
-              artworkUrl={artworkUrl}
-              title={title}
-              selected={selected}
-              darkTone={darkTone}
-            />
-            <span className="min-w-0">
+              <GripVertical className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-pressed={selected}
+          className={cn(
+            "w-full text-left transition-transform duration-200 hover:-translate-y-0.5",
+            variant === "all"
+              ? "flex flex-col gap-2 px-4 py-3"
+              : "flex items-center gap-3 px-3 py-3",
+          )}
+        >
+          {variant === "all" ? (
+            <>
+              <FolderOpen
+                className={cn(
+                  "h-5 w-5",
+                  tone
+                    ? darkTone
+                      ? "text-white/75"
+                      : "text-cos-muted"
+                    : selected
+                      ? "text-white/70"
+                      : "text-cos-muted",
+                )}
+                strokeWidth={1.5}
+              />
               <span
                 className={cn(
-                  "block truncate text-sm font-medium",
+                  "text-sm font-medium",
                   tone
                     ? "text-cos-text"
                     : selected
@@ -498,10 +468,47 @@ function SortableEventCard({
               >
                 {subtitle}
               </span>
-            </span>
-          </>
-        )}
-      </button>
+            </>
+          ) : (
+            <>
+              <EventThumbnail
+                artworkUrl={artworkUrl}
+                title={title}
+                selected={selected}
+                darkTone={darkTone}
+              />
+              <span className="min-w-0">
+                <span
+                  className={cn(
+                    "block truncate text-sm font-medium",
+                    tone
+                      ? "text-cos-text"
+                      : selected
+                        ? "text-white"
+                        : "text-cos-text",
+                  )}
+                >
+                  {title}
+                </span>
+                <span
+                  className={cn(
+                    "text-xs",
+                    tone
+                      ? darkTone
+                        ? "text-white/75"
+                        : "text-cos-muted"
+                      : selected
+                        ? "text-white/70"
+                        : "text-cos-muted",
+                  )}
+                >
+                  {subtitle}
+                </span>
+              </span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
