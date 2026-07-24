@@ -55,6 +55,8 @@ export interface TodayPageData {
   waitingOnMe: TodayActionItem[];
   waitingOnOthers: TodayWaitingOnOthersItem[];
   thisWeek: TodayWeekEntry[];
+  /** Calendar-month school events only (no posts / schedule steps) for the mini calendar. */
+  monthEvents: TodayWeekEntry[];
   upcomingEvents: TodayEventProgress[];
   teammateNote: string;
   goodNews: TodayGoodNews;

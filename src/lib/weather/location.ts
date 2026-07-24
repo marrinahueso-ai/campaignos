@@ -2,19 +2,40 @@ import type { Organization } from "@/types";
 import type { OrganizationLocation } from "@/lib/weather/types";
 
 const CITY_STATE_ABBR =
-  /^([^,]+),\s*([A-Za-z]{2,})\s*(?:\d{5}(?:-\d{4})?)?$/;
+  /^([^,]+),\s*([A-Za-z]{2})\s*(?:\d{5}(?:-\d{4})?)?$/;
 
 const CITY_STATE_NAME =
   /^([^,]+),\s*([A-Za-z][A-Za-z\s.]{1,28})$/;
 
 /**
- * Derives a city/state label from organization fields (no schema changes).
- * Prefers district when it looks like "City, ST" or "City, State".
+ * Derives a city/state label for weather.
+ * Prefers dedicated weather_city / weather_state, then "City, ST" in district,
+ * then a cleaned freeform district string.
  */
 export function parseOrganizationLocation(
   organization: Organization | null,
 ): OrganizationLocation | null {
   if (!organization) return null;
+
+  const weatherCity = organization.weatherCity?.trim();
+  const weatherState = organization.weatherState?.trim();
+  if (weatherCity && weatherState) {
+    const state = normalizeState(weatherState);
+    return {
+      label: `${weatherCity}, ${state}`,
+      city: weatherCity,
+      state,
+      query: `${weatherCity}, ${state}, US`,
+    };
+  }
+  if (weatherCity) {
+    return {
+      label: weatherCity,
+      city: weatherCity,
+      state: "",
+      query: `${weatherCity}, US`,
+    };
+  }
 
   const district = organization.district?.trim();
   if (district) {
@@ -43,9 +64,31 @@ export function parseOrganizationLocation(
         };
       }
     }
+
+    const cleaned = cleanDistrictForWeather(district);
+    if (cleaned) {
+      return {
+        label: cleaned,
+        city: cleaned,
+        state: "",
+        query: `${cleaned}, US`,
+      };
+    }
   }
 
   return null;
+}
+
+function cleanDistrictForWeather(district: string): string | null {
+  const cleaned = district
+    .replace(/\b(public\s+)?schools?\b/gi, "")
+    .replace(/\bschool\s+district\b/gi, "")
+    .replace(/\bdistrict\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[,\s]+$/g, "");
+
+  return cleaned.length >= 2 ? cleaned : null;
 }
 
 function normalizeState(value: string): string {

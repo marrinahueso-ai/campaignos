@@ -119,6 +119,8 @@ async function resolveOrganization(
       id: organizationId,
       name: organizationName,
       district: null,
+      weatherCity: null,
+      weatherState: null,
       schoolYear: null,
       mascot: null,
       principal: null,

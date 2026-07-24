@@ -103,15 +103,35 @@ export async function getTodayPageData(
 
   const todayWindow = resolveTodayPlanningWindow(resolvedOrganization?.schoolYear ?? null);
 
-  const [upcomingCampaignEvents, eventsInWindow, firstName] = await Promise.all([
-    getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
-    getEventsInDateRange(
-      todayWindow.startDate,
-      todayWindow.endDate,
-      resolvedOrganization?.id ?? null,
-    ),
-    getTodayGreetingName(resolvedOrganization),
-  ]);
+  const [yearText, monthText] = today.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const monthStart =
+    year && month
+      ? `${year}-${String(month).padStart(2, "0")}-01`
+      : today;
+  const monthLastDay =
+    year && month ? new Date(year, month, 0).getDate() : 28;
+  const monthEnd =
+    year && month
+      ? `${year}-${String(month).padStart(2, "0")}-${String(monthLastDay).padStart(2, "0")}`
+      : addDaysToDateOnly(today, 7);
+
+  const [upcomingCampaignEvents, eventsInWindow, monthEvents, firstName] =
+    await Promise.all([
+      getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
+      getEventsInDateRange(
+        todayWindow.startDate,
+        todayWindow.endDate,
+        resolvedOrganization?.id ?? null,
+      ),
+      getEventsInDateRange(
+        monthStart,
+        monthEnd,
+        resolvedOrganization?.id ?? null,
+      ),
+      getTodayGreetingName(resolvedOrganization),
+    ]);
 
   const eventsForRaw = mergeEventsById(upcomingCampaignEvents, eventsInWindow);
   const eventIds = eventsForRaw.map((event) => event.id);
@@ -141,6 +161,7 @@ export async function getTodayPageData(
     firstName,
     planningItems,
     events: upcomingCampaignEvents,
+    monthEvents,
     weekEvents,
     stepsByEventId,
     intelligenceByEventId,

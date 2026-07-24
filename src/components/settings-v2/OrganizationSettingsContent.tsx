@@ -49,7 +49,17 @@ export async function OrganizationSettingsContent({
           }
         >
           <DetailRow label="Name" value={organization.name} />
-          <DetailRow label="Location" value={organization.district} />
+          <DetailRow label="District" value={organization.district} />
+          <DetailRow
+            label="Weather"
+            value={
+              organization.weatherCity
+                ? [organization.weatherCity, organization.weatherState]
+                    .filter(Boolean)
+                    .join(", ")
+                : null
+            }
+          />
           <DetailRow label="Timezone" value={organization.timezone} />
           <DetailRow label="Type" value="PTO" />
           <DetailRow label="Website" value={organization.ptoWebsite ?? organization.schoolWebsite} />

@@ -54,26 +54,33 @@ export function SnapshotMiniCalendar({
                   : "flex flex-col items-center gap-1 py-0.5"
               }
             >
-              {hasActivity && (
+              {hasActivity ? (
                 <DayTooltip date={day.date} entries={dayEntries} />
-              )}
+              ) : null}
 
               <span
+                title={
+                  hasActivity
+                    ? dayEntries.map((entry) => entry.title).join(", ")
+                    : undefined
+                }
                 className={
                   isToday
                     ? "flex h-7 w-7 items-center justify-center rounded-full bg-cos-success-bg text-xs font-medium text-cos-success-text ring-1 ring-cos-success/25"
                     : hasActivity
-                      ? "flex h-7 w-7 items-center justify-center rounded-full text-xs text-cos-text/80 transition-colors group-hover/day:bg-cos-bg"
+                      ? "flex h-7 w-7 cursor-default items-center justify-center rounded-full text-xs font-medium text-cos-text ring-1 ring-cos-accent/30 transition-colors group-hover/day:bg-cos-accent/15 group-hover/day:ring-cos-accent/50"
                       : "text-xs text-cos-text/80"
                 }
               >
                 {day.dayNumber}
               </span>
 
-              {hasActivity && (
+              {hasActivity ? (
                 <span className="flex gap-0.5" aria-hidden>
-                  <span className="h-1 w-1 rounded-full bg-cos-success" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-cos-accent" />
                 </span>
+              ) : (
+                <span className="h-1.5" aria-hidden />
               )}
             </div>
           );

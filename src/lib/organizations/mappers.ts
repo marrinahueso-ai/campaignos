@@ -13,6 +13,8 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
     id: row.id,
     name: row.name,
     district: row.district,
+    weatherCity: row.weather_city ?? null,
+    weatherState: row.weather_state ?? null,
     schoolYear: row.school_year,
     mascot: row.mascot,
     principal: row.principal,

@@ -341,6 +341,8 @@ export async function updateOrganizationProfile(input: {
   name: string;
   timezone: string;
   district?: string | null;
+  weatherCity?: string | null;
+  weatherState?: string | null;
   schoolYear?: string | null;
   principal?: string | null;
   mascot?: string | null;
@@ -354,6 +356,8 @@ export async function updateOrganizationProfile(input: {
       name: input.name.trim(),
       timezone: input.timezone.trim(),
       district: input.district?.trim() || null,
+      weather_city: input.weatherCity?.trim() || null,
+      weather_state: input.weatherState?.trim() || null,
       school_year: input.schoolYear?.trim() || null,
       principal: input.principal?.trim() || null,
       mascot: input.mascot?.trim() || null,

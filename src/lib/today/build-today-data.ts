@@ -26,6 +26,8 @@ interface BuildTodayDataInput {
   firstName: string | null;
   planningItems: PlanningCalendarItem[];
   events: Event[];
+  /** School events dated in the visible mini-calendar month. */
+  monthEvents: Event[];
   weekEvents: Event[];
   stepsByEventId: Map<string, EventCommunicationStep[]>;
   intelligenceByEventId?: Map<string, CampaignIntelligence>;
@@ -384,6 +386,44 @@ export function buildThisWeek(
     }));
 }
 
+/** Mini-calendar markers: real school events only (no schedule steps / published posts). */
+export function buildMonthEventEntries(
+  events: Event[],
+  today: string,
+): TodayWeekEntry[] {
+  const [yearText, monthText] = today.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (!year || !month) {
+    return [];
+  }
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const lastDay = new Date(year, month, 0).getDate();
+  const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+  return events
+    .filter(
+      (event) =>
+        event.status !== "archived" &&
+        event.date >= start &&
+        event.date <= end,
+    )
+    .sort((a, b) => {
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
+      }
+      return a.title.localeCompare(b.title);
+    })
+    .map((event) => ({
+      id: `event-${event.id}`,
+      date: event.date,
+      title: event.title,
+      eventTitle: null,
+      kind: "event" as const,
+      href: `/events/${event.id}`,
+    }));
+}
+
 export function buildUpcomingEventProgress(
   events: Event[],
   stepsByEventId: Map<string, EventCommunicationStep[]>,
@@ -537,6 +577,7 @@ export function buildTodayPageData(input: BuildTodayDataInput): TodayPageData {
     waitingOnMe,
     waitingOnOthers,
     thisWeek: buildThisWeek(input.planningItems, input.today, strategyByEventId),
+    monthEvents: buildMonthEventEntries(input.monthEvents, input.today),
     upcomingEvents,
     teammateNote: buildTeammateNote({
       attentionCount,

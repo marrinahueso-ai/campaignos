@@ -70,10 +70,12 @@ async function DashboardSnapshotBlock({
   organization,
   today,
   weekEntries,
+  monthEvents,
 }: {
   organization: Organization;
   today: string;
   weekEntries: TodayWeekEntry[];
+  monthEvents: TodayWeekEntry[];
 }) {
   const weatherContext = await getTodayWeatherContext(organization);
   return (
@@ -81,6 +83,7 @@ async function DashboardSnapshotBlock({
       today={today}
       weather={weatherContext}
       weekEntries={weekEntries}
+      monthEvents={monthEvents}
     />
   );
 }
@@ -155,6 +158,7 @@ export default async function DashboardPage() {
                 today={today}
                 weather={WEATHER_PLACEHOLDER}
                 weekEntries={todayData.thisWeek}
+                monthEvents={todayData.monthEvents}
               />
             }
           >
@@ -162,6 +166,7 @@ export default async function DashboardPage() {
               organization={organization}
               today={today}
               weekEntries={todayData.thisWeek}
+              monthEvents={todayData.monthEvents}
             />
           </Suspense>
           {todayData.goodNews.fallbackMessage && recentPublished.length === 0 && (

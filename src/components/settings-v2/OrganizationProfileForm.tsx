@@ -79,6 +79,24 @@ export function OrganizationProfileForm({
       </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <Input
+          name="weatherCity"
+          label="Weather city"
+          defaultValue={organization.weatherCity ?? ""}
+          placeholder="Franklin"
+        />
+        <Input
+          name="weatherState"
+          label="Weather state"
+          defaultValue={organization.weatherState ?? ""}
+          placeholder="TN"
+        />
+      </div>
+      <p className="-mt-2 text-xs text-cos-muted">
+        Used for live weather on the Dashboard. Prefer City + State (e.g. Franklin,
+        TN) so forecasts match your school.
+      </p>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Input
           name="principal"
           label="Principal"
           defaultValue={organization.principal ?? ""}

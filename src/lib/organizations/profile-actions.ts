@@ -38,6 +38,8 @@ export async function updateOrganizationProfileAction(
     name,
     timezone,
     district: formData.get("district")?.toString().trim() || null,
+    weatherCity: formData.get("weatherCity")?.toString().trim() || null,
+    weatherState: formData.get("weatherState")?.toString().trim() || null,
     schoolYear: formData.get("schoolYear")?.toString().trim() || null,
     principal: formData.get("principal")?.toString().trim() || null,
     mascot: formData.get("mascot")?.toString().trim() || null,

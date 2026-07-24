@@ -53,7 +53,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Dashboard (Today)
 - Personalized Today hero, What’s Next, approvals/published pulse — **shipped**
 - Waiting on you / waiting on others — **shipped**
-- Week ahead / upcoming events + weather context — **shipped**
+- Week ahead / upcoming events + weather context — **shipped** (live weather from org Weather city/state + `WEATHER_API_KEY`; mini calendar shows school **events** for the month with hover titles — not schedule steps or published posts)
 
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)

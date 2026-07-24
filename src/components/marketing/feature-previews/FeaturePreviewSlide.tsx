@@ -88,6 +88,9 @@ function FeaturePreviewSlideContent({
             today={PREVIEW_TODAY}
             weather={previewWeather}
             weekEntries={previewWeekEntries}
+            monthEvents={previewWeekEntries.filter(
+              (entry) => entry.kind === "event",
+            )}
           />
         </div>
       );

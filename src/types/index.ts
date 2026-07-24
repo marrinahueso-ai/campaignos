@@ -108,6 +108,10 @@ export interface Organization {
   id: string;
   name: string;
   district: string | null;
+  /** City for live Today weather (preferred over district parsing). */
+  weatherCity: string | null;
+  /** US state for live Today weather. */
+  weatherState: string | null;
   schoolYear: string | null;
   mascot: string | null;
   principal: string | null;
@@ -129,6 +133,8 @@ export interface OrganizationRow {
   id: string;
   name: string;
   district: string | null;
+  weather_city?: string | null;
+  weather_state?: string | null;
   school_year: string | null;
   mascot: string | null;
   principal: string | null;
