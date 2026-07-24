@@ -72,7 +72,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Volunteer Master page** (`/volunteers`, sidebar **Volunteers**) — **shipped** (living: [volunteer-master.md](./volunteer-master.md) · import: [signupgenius.md](../integrations/signupgenius.md))
   - Org-wide staffing scan: which events need people and how filled SignUpGenius / planning signup roles are
   - Auto-feed: non-archived school-year events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning `volunteer_signup` URL; scoped by viewer’s event access
-  - KPI cards (clickable filters): Total Volunteers · Overall Fill Rate · Underfilled Roles · Upcoming Events (next 60 days); default chip filter **Upcoming**
+  - KPI cards (clickable filters): Total Volunteers · Overall Fill Rate · Underfilled Roles · Upcoming Events (next 60 days); default chip filter **Upcoming**; idle/selected colors match Events home summary cards (`bg-cos-bg-alt` / `bg-cos-dark`)
   - Search (event title or role) + chips: Upcoming · Needs people · Covered · All (Covered = confirmed snapshot, fill ≥ 100%, zero underfilled roles)
   - Events table: circular artwork (approved square when filled; else initials), Fill Rate with shared color bands (Critical → Fully Staffed), Top Roles (up to 3), expand row with Open Volunteers tab / Open signup / underfilled copy
   - **This week** rail: underfilled roles for events dated this calendar week (Sun start; cap 8); View all underfilled roles → underfilled filter
@@ -120,6 +120,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Approvals & scheduling
 - Unified Approvals hub (pending, changes, scheduled, published) — **shipped**
 - Status summary cards as clickable workflow filters (Assigned to Me / Changes Requested / In Queue / Scheduled / Published; click again to clear to All; Posted row status remains in the table under Scheduled coverage); approve / request changes, campaign & view-scope filters, search, badges — **shipped**
+- Approvals hub: unused Filters button removed; search matches campaign/milestone, status, assignee, next action, delivery/platforms, and schedule — **shipped**
 - Event detail Approvals tab: same table without status filter tabs/search chrome; sortable column headers (default schedule ascending) — **shipped**
 - Approvals table Actions column shows **View** only (approve / request changes stay in the review drawer) — **shipped**
 - Change-requested items show the approver comment + **Edit Artwork** / **Change Date** CTAs (Approvals drawer + email; Edit Artwork → Create with AI Preview + edit-artwork modal for that milestone; Change Date → Preview Campaign for that milestone); Preview/Review banners keep caption / Change Date / artwork paths plus **Send for re-approval**; resubmit emails the Team Access approver again (`Resubmitted for approval: …`, with fallback to the prior assignee if the current role has no email; UI confirms the recipient address) — **shipped**

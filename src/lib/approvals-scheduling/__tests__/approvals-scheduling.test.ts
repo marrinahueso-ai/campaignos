@@ -90,6 +90,26 @@ describe("searchMatchesItem", () => {
     assert.equal(searchMatchesItem(item, "save the"), true);
     assert.equal(searchMatchesItem(item, "winter gala"), false);
   });
+
+  it("matches sortable column fields (status, assignee, delivery, schedule)", () => {
+    const item = buildItem({
+      workflowStatus: "scheduled",
+      statusDetail: "Ready for Meta",
+      assigneeName: "Jamie Lee",
+      nextAction: "Awaiting publish",
+      deliveryMethod: "manual-email",
+      platforms: ["facebook", "instagram"],
+      scheduleLabel: "Jun 12, 2026 9:00 AM",
+    });
+
+    assert.equal(searchMatchesItem(item, "scheduled"), true);
+    assert.equal(searchMatchesItem(item, "jamie"), true);
+    assert.equal(searchMatchesItem(item, "awaiting publish"), true);
+    assert.equal(searchMatchesItem(item, "manual email"), true);
+    assert.equal(searchMatchesItem(item, "ig"), true);
+    assert.equal(searchMatchesItem(item, "jun 12"), true);
+    assert.equal(searchMatchesItem(item, "not-a-match-xyz"), false);
+  });
 });
 
 describe("sortApprovalItems", () => {

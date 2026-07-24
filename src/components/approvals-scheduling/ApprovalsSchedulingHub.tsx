@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   ApprovalFlowGuide,
@@ -10,7 +10,6 @@ import { ApprovalsTable } from "@/components/approvals-scheduling/ApprovalsTable
 import { SummaryCards } from "@/components/approvals-scheduling/SummaryCards";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
-import { Button } from "@/components/ui/Button";
 import {
   approveUnifiedItemAction,
   enrichUnifiedApprovalItemPreviewAction,
@@ -184,7 +183,8 @@ export function ApprovalsSchedulingHub({
         type="search"
         value={searchQuery}
         onChange={(event) => setSearchQuery(event.target.value)}
-        placeholder="Search approvals..."
+        placeholder="Search campaign, status, assignee…"
+        aria-label="Search approvals by campaign, status, assignee, next action, delivery, or schedule"
         className="w-full border border-cos-border bg-cos-card py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
       />
     </label>
@@ -245,11 +245,6 @@ export function ApprovalsSchedulingHub({
                   <option value="all">All</option>
                 </select>
               ) : null}
-
-              <Button type="button" variant="secondary" size="sm">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
             </div>
 
             {searchField}
