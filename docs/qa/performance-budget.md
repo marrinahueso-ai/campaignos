@@ -65,6 +65,10 @@ Prefer Production: `HEY_RALLI_BASE_URL=https://heyralli.com npm run test:hey-ral
 4. Auth / AI generation / Meta OAuth are **out of scope** for the 2s page budget.
 5. Client-side sidebar navigations are measured separately (closer to real in-app UX).
 
+## Hot path notes (July 24, 2026)
+
+- **`getMetaPublishBundles` is read-only** — does not call `syncMetaPublicationSlots` / write slots on GET. Approvals previews, calendar item preview, and planning-hub loads stay read-only. Mutations use `syncAndGetMetaPublishBundles` (or explicit `syncMetaPublicationSlots`) when slots must be created/updated.
+
 ## Not covered here
 
 - Lighthouse CI / Core Web Vitals on Production (optional follow-up)

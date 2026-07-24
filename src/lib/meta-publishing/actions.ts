@@ -5,7 +5,13 @@ import { hasPermission } from "@/lib/access-templates/effective-access";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { ensureMetaMilestoneApprovalRequest } from "@/lib/event-workspace/meta-approval-sync";
 import { getApprovalActorFromSession } from "@/lib/event-workspace/get-approval-actor";
-import { getMetaPublishBundles, bundleHasAutoPublishTargets, bundleIsManualStoryOnly, bundleIsSchedulable } from "@/lib/meta-publishing/bundles";
+import {
+  getMetaPublishBundles,
+  syncAndGetMetaPublishBundles,
+  bundleHasAutoPublishTargets,
+  bundleIsManualStoryOnly,
+  bundleIsSchedulable,
+} from "@/lib/meta-publishing/bundles";
 import { publishDueMetaMilestonesForEvent } from "@/lib/meta-publishing/publish-due";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
 import {
@@ -18,7 +24,7 @@ import {
   getMetaPublicationSlotsForEvent,
   syncMetaPublicationSlots,
 } from "@/lib/meta-publishing/sync-slots";
-import type { MetaPublishActionResult } from "@/lib/meta-publishing/types";
+import type { MetaPublishActionResult, MetaPublishBundle } from "@/lib/meta-publishing/types";
 import { createClient } from "@/lib/supabase/server";
 
 function revalidateMetaPaths(eventId: string): void {
@@ -69,7 +75,7 @@ async function updateSlotsForMilestones(input: {
 async function sendManualStoryPostKitIfNeeded(
   eventId: string,
   relativeDay: number,
-  bundle: Awaited<ReturnType<typeof getMetaPublishBundles>>[number],
+  bundle: MetaPublishBundle,
 ): Promise<string | null> {
   if (!surfacesNeedManualStoryEmail(bundle.metaPublishSurfaces, bundle.storyManualPublish)) {
     return null;
@@ -92,7 +98,7 @@ async function scheduleManualStoryOnlyBundle(
   eventId: string,
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
-  const bundle = (await getMetaPublishBundles(eventId)).find(
+  const bundle = (await syncAndGetMetaPublishBundles(eventId)).find(
     (entry) => entry.relativeDay === relativeDay,
   );
 
@@ -121,7 +127,7 @@ async function publishManualStoryOnlyBundle(
   relativeDay: number,
 ): Promise<MetaPublishActionResult> {
   const supabase = await createClient();
-  const bundle = (await getMetaPublishBundles(eventId)).find(
+  const bundle = (await syncAndGetMetaPublishBundles(eventId)).find(
     (entry) => entry.relativeDay === relativeDay,
   );
 
@@ -168,7 +174,7 @@ export async function publishMetaBundleNowAction(
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
-  const bundle = (await getMetaPublishBundles(eventId)).find(
+  const bundle = (await syncAndGetMetaPublishBundles(eventId)).find(
     (entry) => entry.relativeDay === relativeDay,
   );
 
@@ -236,7 +242,7 @@ export async function publishAllActionableMetaBundlesNowAction(
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
-  const bundles = await getMetaPublishBundles(eventId);
+  const bundles = await syncAndGetMetaPublishBundles(eventId);
   const actionable = bundles.filter(
     (bundle) =>
       bundleHasAutoPublishTargets(bundle) &&
@@ -292,8 +298,7 @@ export async function scheduleAllReadyMetaBundlesAction(
     return { success: false, error: "You do not have permission to schedule posts." };
   }
 
-  await syncMetaPublicationSlots(eventId);
-  const bundles = await getMetaPublishBundles(eventId);
+  const bundles = await syncAndGetMetaPublishBundles(eventId);
   const readyBundles = bundles.filter((bundle) => bundleIsSchedulable(bundle));
 
   if (readyBundles.length === 0) {
@@ -361,8 +366,7 @@ export async function scheduleMetaBundlesAtAction(
     return { success: false, error: "Choose a valid date and time." };
   }
 
-  await syncMetaPublicationSlots(eventId);
-  const bundles = await getMetaPublishBundles(eventId);
+  const bundles = await syncAndGetMetaPublishBundles(eventId);
   const readyBundles = bundles.filter((bundle) => {
     if (!bundleIsSchedulable(bundle)) {
       return false;
@@ -480,7 +484,7 @@ export async function publishAllApprovedMetaBundlesAction(
     return { success: false, error: "You do not have permission to publish posts." };
   }
 
-  const bundles = await getMetaPublishBundles(eventId);
+  const bundles = await syncAndGetMetaPublishBundles(eventId);
   const toPublish = bundles.filter(
     (bundle) => bundle.status === "approved" || bundle.status === "failed",
   );
@@ -635,8 +639,7 @@ export async function scheduleMetaBundleAction(
     return { success: false, error: "You do not have permission to schedule posts." };
   }
 
-  await syncMetaPublicationSlots(eventId);
-  const bundle = (await getMetaPublishBundles(eventId)).find(
+  const bundle = (await syncAndGetMetaPublishBundles(eventId)).find(
     (entry) => entry.relativeDay === relativeDay,
   );
 

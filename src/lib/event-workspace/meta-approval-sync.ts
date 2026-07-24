@@ -7,7 +7,10 @@ import {
   getMetaSocialCaptionsForEvent,
   isMilestoneCaptionsApproved,
 } from "@/lib/meta-captions/queries";
-import { getMetaPublishBundles } from "@/lib/meta-publishing/bundles";
+import {
+  getMetaPublishBundles,
+  syncAndGetMetaPublishBundles,
+} from "@/lib/meta-publishing/bundles";
 import { isCommunicationApprovable } from "@/lib/event-workspace/approval-workflow";
 import {
   cancelDuplicatePendingApprovalRequests,
@@ -164,6 +167,8 @@ export async function ensureMetaMilestoneApprovalRequest(
   relativeDay: number,
   actor?: ApprovalActor | null,
 ): Promise<boolean> {
+  // Prefer caller sync (syncMetaApprovalRequestsForEvent / schedule actions).
+  // Read-only here so nested calls after syncAndGet do not write again.
   const [event, bundles, captions] = await Promise.all([
     getEventById(eventId),
     getMetaPublishBundles(eventId),
@@ -299,7 +304,7 @@ export async function syncMetaApprovalRequestsForEvent(
   eventId: string,
   actor?: ApprovalActor | null,
 ): Promise<number> {
-  const bundles = await getMetaPublishBundles(eventId);
+  const bundles = await syncAndGetMetaPublishBundles(eventId);
   let synced = 0;
 
   for (const bundle of bundles) {

@@ -40,8 +40,8 @@ import {
   type SessionMilestoneRef,
 } from "@/lib/meta-publishing/cb2-artwork-identity";
 import {
-  ensureMetaPublicationSlots,
   getMetaPublicationSlotsForEvent,
+  syncMetaPublicationSlots,
 } from "@/lib/meta-publishing/sync-slots";
 import { isCommittedMetaSlotStatus } from "@/lib/meta-publishing/slot-status";
 import type {
@@ -394,8 +394,11 @@ function milestoneTitlesAtDay(
   return [...new Set(titles)];
 }
 
-/** Request-cached per eventId so Approvals queue + publishing paths share one load. */
-export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
+/**
+ * Read-only bundle assembly from existing slots/steps/assets.
+ * Does **not** sync or write meta_publication_slots — safe for RSC GET / previews.
+ */
+async function loadMetaPublishBundles(
   eventId: string,
 ): Promise<MetaPublishBundle[]> {
   const event = await getEventById(eventId);
@@ -403,7 +406,6 @@ export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
     return [];
   }
 
-  await ensureMetaPublicationSlots(eventId);
   const slots = await getMetaPublicationSlotsForEvent(eventId);
 
   const [assets, metaCaptions, stepsResult, cb2ArtworkIndex, session] =
@@ -624,7 +626,25 @@ export const getMetaPublishBundles = cache(async function getMetaPublishBundles(
     [...bundles, ...orphanBundles],
     sessionMilestoneNames,
   );
-});
+}
+
+/** Request-cached read path — Approvals queue, calendar preview, event shell. */
+export const getMetaPublishBundles = cache(loadMetaPublishBundles);
+
+/**
+ * Sync slots (writes) then load bundles. Use from server actions / mutations only —
+ * never from page/layout GET loaders.
+ *
+ * Populates the request cache via `getMetaPublishBundles` so follow-up reads in the
+ * same action see post-sync data. Callers must not call `getMetaPublishBundles`
+ * before this in the same request (stale cache).
+ */
+export async function syncAndGetMetaPublishBundles(
+  eventId: string,
+): Promise<MetaPublishBundle[]> {
+  await syncMetaPublicationSlots(eventId);
+  return getMetaPublishBundles(eventId);
+}
 
 export function countBundlesByStatus(
   bundles: MetaPublishBundle[],

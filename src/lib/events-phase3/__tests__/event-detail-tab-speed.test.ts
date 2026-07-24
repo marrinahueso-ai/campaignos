@@ -104,4 +104,5 @@ describe("targeted event tab speed contracts", () => {
     assert.doesNotMatch(approvals, /getPlanningCalendarData\(\)/);
     assert.match(approvals, /fetchCampaignBuilderSchedulingItems/);
   });
+
 });
