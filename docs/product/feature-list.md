@@ -51,10 +51,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Role simulator (dev/test, gated) — **shipped**
 
 ## Dashboard (Today)
-- Lean Today home (Mock A): calm greeting (no “TODAY” eyebrow / attention tally), **Up Next** hero with 1:1 artwork frame (no wide crop) + gradient overlay + sage badge, weather + mini calendar + This Week (school **events** only, `Day · title` rows) — **shipped**
-- Attention links under Up Next (counts only, hide when zero): to review → Approvals · need volunteers (underfilled **events**) → Volunteers · tasks this week → Tasks My View — **shipped**
-- Approvals/published pulse cards + waiting-on companion lists on home — **removed** (use Approvals / Tasks / Volunteers)
-- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; mini calendar school events for the month with hover titles — **shipped**
+- **Your overview** board (Phase 1): greeting + header (**+ Add** / **Edit** stubbed for Phase 2) · 2-col main (**Up Next**, **Attention**, **Waiting on me**, **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb (defaults until customized) — **shipped**
+- Compact **Up Next** widget (1:1 artwork + Schedule CTA) — **shipped**
+- **Attention** metric rows (counts only, hide when zero): to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
+- Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; mini calendar school events for the month; This Week school **events** only — **shipped**
+- Approvals/published pulse cards + waiting-on companion lists on home (pre-overview) — **removed**
+- Phase 2: real Add/Edit picker + reorder — **planned**
+- Phase 3: richer optional widgets (approvals/tasks/volunteers/insights) — **planned**
 
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)

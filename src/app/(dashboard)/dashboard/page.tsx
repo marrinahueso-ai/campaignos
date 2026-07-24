@@ -1,19 +1,26 @@
 import { Suspense } from "react";
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
-import { TodayAttentionLinks } from "@/components/today/TodayAttentionLinks";
+import { DashboardOverview } from "@/components/today/DashboardOverview";
 import { TodayHero } from "@/components/today/TodayHero";
-import { TodaySnapshot } from "@/components/today/TodaySnapshot";
-import { WhatsNextSectionSuspense } from "@/components/today/WhatsNextSectionSuspense";
+import { UpNextWidgetSuspense } from "@/components/today/UpNextWidgetSuspense";
+import { AttentionWidget } from "@/components/today/widgets/AttentionWidget";
+import { CalendarWidget } from "@/components/today/widgets/CalendarWidget";
+import { GoodNewsWidget } from "@/components/today/widgets/GoodNewsWidget";
+import { ThisWeekWidget } from "@/components/today/widgets/ThisWeekWidget";
+import { WaitingOnMeWidget } from "@/components/today/widgets/WaitingOnMeWidget";
+import { WeatherWidget } from "@/components/today/widgets/WeatherWidget";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getDashboardLayoutForCurrentUser } from "@/lib/today/dashboard-layout";
+import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/today/dashboard-widgets";
 import { getTodayAttentionCounts } from "@/lib/today/attention-counts";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { getTodayWeatherContext } from "@/lib/weather/queries";
 import type { Organization } from "@/types";
-import type { TodayWeekEntry } from "@/types/today";
+import type { TodayAttentionCounts, TodayWeekEntry } from "@/types/today";
 import type { TodayWeatherContext } from "@/lib/weather/types";
 import { GraduationCap } from "lucide-react";
 
@@ -36,6 +43,12 @@ const WEATHER_PLACEHOLDER: TodayWeatherContext = {
   displayLine: "Local weather unavailable",
 };
 
+const ATTENTION_PLACEHOLDER: TodayAttentionCounts = {
+  reviewCount: 0,
+  volunteerCount: 0,
+  tasksThisWeekCount: 0,
+};
+
 async function DashboardOnboardingBlock() {
   const onboardingChecklist = await getOnboardingChecklistForCurrentOrg();
   if (
@@ -47,31 +60,14 @@ async function DashboardOnboardingBlock() {
   return <OnboardingChecklistCards items={onboardingChecklist.items} />;
 }
 
-async function DashboardAttentionBlock() {
+async function AttentionWidgetBlock() {
   const counts = await getTodayAttentionCounts();
-  return <TodayAttentionLinks counts={counts} />;
+  return <AttentionWidget counts={counts} />;
 }
 
-async function DashboardSnapshotBlock({
-  organization,
-  today,
-  weekEntries,
-  monthEvents,
-}: {
-  organization: Organization;
-  today: string;
-  weekEntries: TodayWeekEntry[];
-  monthEvents: TodayWeekEntry[];
-}) {
+async function WeatherWidgetBlock({ organization }: { organization: Organization }) {
   const weatherContext = await getTodayWeatherContext(organization);
-  return (
-    <TodaySnapshot
-      today={today}
-      weather={weatherContext}
-      weekEntries={weekEntries}
-      monthEvents={monthEvents}
-    />
-  );
+  return <WeatherWidget weather={weatherContext} />;
 }
 
 export default async function DashboardPage() {
@@ -94,53 +90,86 @@ export default async function DashboardPage() {
     );
   }
 
-  // Critical path for usable UI (hero heading + What's Next).
-  // Weather, onboarding checklist, and attention counts stream in after.
-  const todayData = await getTodayPageData(organization);
+  const [todayData, layout] = await Promise.all([
+    getTodayPageData(organization),
+    getDashboardLayoutForCurrentUser(),
+  ]);
   const today = getTodayDateString();
+  const resolvedLayout = layout ?? DEFAULT_DASHBOARD_LAYOUT;
+
+  const mainWidgets = resolvedLayout.main.map((id) => {
+    switch (id) {
+      case "up_next":
+        return (
+          <UpNextWidgetSuspense
+            key={id}
+            whatsNext={todayData.whatsNext}
+            organizationName={organization.name}
+          />
+        );
+      case "attention":
+        return (
+          <Suspense key={id} fallback={<AttentionWidget counts={ATTENTION_PLACEHOLDER} />}>
+            <AttentionWidgetBlock />
+          </Suspense>
+        );
+      case "waiting_me":
+        return <WaitingOnMeWidget key={id} items={todayData.waitingOnMe} />;
+      case "good_news":
+        return <GoodNewsWidget key={id} goodNews={todayData.goodNews} />;
+      default:
+        return null;
+    }
+  });
+
+  const railWidgets = resolvedLayout.rail.map((id) => {
+    switch (id) {
+      case "weather":
+        return (
+          <Suspense key={id} fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} />}>
+            <WeatherWidgetBlock organization={organization} />
+          </Suspense>
+        );
+      case "calendar":
+        return (
+          <CalendarWidget
+            key={id}
+            today={today}
+            monthEvents={todayData.monthEvents}
+          />
+        );
+      case "this_week":
+        return (
+          <ThisWeekWidget
+            key={id}
+            today={today}
+            weekEntries={todayData.thisWeek as TodayWeekEntry[]}
+          />
+        );
+      default:
+        return null;
+    }
+  });
 
   return (
     <div className="studio-page pb-12">
-      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-x-10">
-        <div className="min-w-0 flex-1 lg:max-w-[calc((100%-2.5rem)*8/12)]">
-          <TodayHero
-            firstName={todayData.firstName}
-            attentionCount={todayData.attentionCount}
-            teammateNote={todayData.teammateNote}
-            timezone={organization?.timezone ?? "America/Chicago"}
-          />
-          <div className="mt-8 flex flex-col gap-6 lg:mt-10">
-            <Suspense fallback={null}>
-              <DashboardOnboardingBlock />
-            </Suspense>
-            <div className="flex flex-col gap-4">
-              <WhatsNextSectionSuspense whatsNext={todayData.whatsNext} />
-              <Suspense fallback={null}>
-                <DashboardAttentionBlock />
-              </Suspense>
-            </div>
-          </div>
-        </div>
+      <TodayHero
+        firstName={todayData.firstName}
+        attentionCount={todayData.attentionCount}
+        teammateNote={todayData.teammateNote}
+        timezone={organization.timezone ?? "America/Chicago"}
+      />
 
-        <div className="mt-8 flex w-full flex-col gap-8 lg:mt-0 lg:max-w-sm lg:flex-none lg:basis-[calc((100%-2.5rem)*4/12)] lg:gap-10">
-          <Suspense
-            fallback={
-              <TodaySnapshot
-                today={today}
-                weather={WEATHER_PLACEHOLDER}
-                weekEntries={todayData.thisWeek}
-                monthEvents={todayData.monthEvents}
-              />
-            }
-          >
-            <DashboardSnapshotBlock
-              organization={organization}
-              today={today}
-              weekEntries={todayData.thisWeek}
-              monthEvents={todayData.monthEvents}
-            />
-          </Suspense>
-        </div>
+      <div className="mt-8 space-y-6 lg:mt-10">
+        <Suspense fallback={null}>
+          <DashboardOnboardingBlock />
+        </Suspense>
+
+        <DashboardOverview
+          layout={resolvedLayout}
+          main={mainWidgets}
+          rail={railWidgets}
+        />
       </div>
     </div>
   );

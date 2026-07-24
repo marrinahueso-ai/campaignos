@@ -20,81 +20,75 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
 
   return (
     <section>
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-2xl bg-cos-brand-navy shadow-sm",
-          // 1:1 frame so square campaign artwork isn’t cropped into a wide banner.
-          imageUrl ? "aspect-square w-full max-w-xl" : "min-h-[280px] sm:min-h-[320px]",
-        )}
-      >
-        {imageUrl ? (
-          <div className="absolute inset-0">
-            {isOptimizableImageUrl(imageUrl) ? (
-              <Image
-                src={imageUrl}
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 512px) 100vw, 36rem"
-                className="object-cover object-center"
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={imageUrl}
-                alt=""
-                className="h-full w-full object-cover object-center"
-              />
-            )}
-            <div
-              className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-black/10"
-              aria-hidden
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-black/10"
-              aria-hidden
-            />
-          </div>
-        ) : (
+      <div className="relative overflow-hidden rounded-2xl bg-cos-brand-navy shadow-sm">
+        {!imageUrl ? (
           <div
             className="absolute inset-0 bg-gradient-to-br from-cos-brand-navy via-[#243352] to-cos-brand-sage"
             aria-hidden
           />
-        )}
+        ) : null}
 
         <div
           className={cn(
-            "relative flex h-full flex-col justify-between gap-8 p-6 sm:p-8",
-            !imageUrl && "min-h-[280px] sm:min-h-[320px]",
+            "relative",
+            imageUrl &&
+              "grid grid-cols-1 sm:grid-cols-[10.5rem_1fr] md:grid-cols-[12rem_1fr]",
           )}
         >
-          <span className="inline-flex w-fit rounded-md bg-cos-brand-sage-soft px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-cos-brand-sage uppercase">
-            Up next
-          </span>
+          {imageUrl ? (
+            <div className="relative aspect-square overflow-hidden sm:aspect-auto sm:min-h-full">
+              {isOptimizableImageUrl(imageUrl) ? (
+                <Image
+                  src={imageUrl}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 100vw, 12rem"
+                  className="object-cover object-center"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+              )}
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10 sm:bg-gradient-to-r sm:from-transparent sm:to-black/40"
+                aria-hidden
+              />
+            </div>
+          ) : null}
 
-          <div className="max-w-lg space-y-3">
-            <h2 className="font-display text-3xl leading-tight text-white sm:text-4xl">
-              {eventTitle}
-            </h2>
-            {metaParts.length > 0 && (
-              <p className="text-sm text-white/85">
-                {metaParts.join(" · ")}
-              </p>
+          <div
+            className={cn(
+              "relative flex flex-col justify-between gap-4 p-5 sm:p-6",
+              imageUrl ? "min-h-0 sm:min-h-[10.5rem] md:min-h-[12rem]" : "min-h-[11rem]",
             )}
-            {whatsNext.href && (
-              <div className="pt-1">
-                <Link
-                  href={whatsNext.href}
-                  className={
-                    imageUrl
-                      ? "inline-flex items-center rounded-full bg-white px-5 py-2.5 text-sm font-medium text-cos-brand-navy transition-opacity hover:opacity-90"
-                      : "inline-flex items-center rounded-full bg-white/95 px-5 py-2.5 text-sm font-medium text-cos-brand-navy transition-opacity hover:opacity-90"
-                  }
-                >
-                  {ctaLabel}
-                </Link>
-              </div>
-            )}
+          >
+            <span className="inline-flex w-fit rounded-md bg-cos-brand-sage-soft px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-cos-brand-sage uppercase">
+              Up next
+            </span>
+
+            <div className="max-w-md space-y-2">
+              <h2 className="font-display text-2xl leading-tight text-white sm:text-[1.75rem]">
+                {eventTitle}
+              </h2>
+              {metaParts.length > 0 && (
+                <p className="text-sm text-white/85">{metaParts.join(" · ")}</p>
+              )}
+              {whatsNext.href && (
+                <div className="pt-0.5">
+                  <Link
+                    href={whatsNext.href}
+                    className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-medium text-cos-brand-navy transition-opacity hover:opacity-90"
+                  >
+                    {ctaLabel}
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
