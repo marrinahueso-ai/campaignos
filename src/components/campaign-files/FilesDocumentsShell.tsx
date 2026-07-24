@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Calendar,
   ChevronLeft,
@@ -10,7 +10,7 @@ import {
   Grid3x3,
   List,
   Search,
-  SlidersHorizontal,
+  Upload,
 } from "lucide-react";
 import { FileEditDialog } from "@/components/campaign-files/FileEditDialog";
 import { FilePlatformIcons } from "@/components/campaign-files/FilePlatformIcons";
@@ -113,8 +113,10 @@ export function FilesDocumentsShell({
   const [viewMode, setViewMode] = useState<FilesViewMode>("list");
   const [page, setPage] = useState(1);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragDepthRef = useRef(0);
   const [editFile, setEditFile] = useState<CampaignFile | null>(null);
-  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState(() =>
     createDefaultFilesFilterState(presetEventId),
@@ -122,6 +124,57 @@ export function FilesDocumentsShell({
   const [carouselEventId, setCarouselEventId] = useState<string | "all">(
     presetEventId ?? "all",
   );
+
+  function isFileDrag(event: DragEvent) {
+    return Array.from(event.dataTransfer.types).includes("Files");
+  }
+
+  function openUploadWithFile(file: File | null) {
+    setPendingUploadFile(file);
+    setUploadOpen(true);
+  }
+
+  function handlePageDragEnter(event: DragEvent) {
+    if (!isFileDrag(event) || uploadOpen) {
+      return;
+    }
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDraggingFiles(true);
+  }
+
+  function handlePageDragLeave(event: DragEvent) {
+    if (!isFileDrag(event) || uploadOpen) {
+      return;
+    }
+    event.preventDefault();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setIsDraggingFiles(false);
+    }
+  }
+
+  function handlePageDragOver(event: DragEvent) {
+    if (!isFileDrag(event) || uploadOpen) {
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handlePageDrop(event: DragEvent) {
+    if (!isFileDrag(event) || uploadOpen) {
+      return;
+    }
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDraggingFiles(false);
+    const file = event.dataTransfer.files?.[0] ?? null;
+    if (file) {
+      openUploadWithFile(file);
+    }
+  }
 
   const eventMap = useMemo(() => {
     const map = new Map<string, CampaignFileEventSummary>();
@@ -196,7 +249,28 @@ export function FilesDocumentsShell({
   }
 
   return (
-    <div className="space-y-6">
+    <div
+      className="relative space-y-6"
+      onDragEnter={handlePageDragEnter}
+      onDragLeave={handlePageDragLeave}
+      onDragOver={handlePageDragOver}
+      onDrop={handlePageDrop}
+    >
+      {isDraggingFiles && !uploadOpen ? (
+        <div
+          className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center border-2 border-dashed border-cos-accent bg-cos-bg/90"
+          aria-hidden
+        >
+          <div className="flex flex-col items-center gap-2 px-6 text-center">
+            <Upload className="h-8 w-8 text-cos-accent" strokeWidth={1.5} />
+            <p className="font-display text-xl text-cos-text">Drop file to upload</p>
+            <p className="text-sm text-cos-muted">
+              PDF, Word, Excel, PNG, or JPG up to 25 MB
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {!isEventScope ? (
         <div>
           <h1 className="font-display text-3xl text-cos-text">Files &amp; Documents</h1>
@@ -329,7 +403,7 @@ export function FilesDocumentsShell({
 
         {/* Row 2: upload + date range + secondary filters */}
         <div className="flex flex-wrap items-center gap-2">
-          <FileUploadButton onClick={() => setUploadOpen(true)} />
+          <FileUploadButton onClick={() => openUploadWithFile(null)} />
 
           <label className="inline-flex h-9 items-center gap-2 border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted">
             <Calendar className="h-3.5 w-3.5" />
@@ -352,38 +426,12 @@ export function FilesDocumentsShell({
 
           <button
             type="button"
-            onClick={() => setShowMoreFilters((open) => !open)}
-            className="inline-flex h-9 items-center gap-1.5 border border-cos-border bg-cos-card px-3 text-xs font-medium text-cos-text hover:bg-cos-bg"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            More filters
-          </button>
-
-          <button
-            type="button"
             onClick={clearAllFilters}
             className="text-xs font-medium text-cos-muted hover:text-cos-text"
           >
             Clear all
           </button>
         </div>
-
-        {showMoreFilters && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-cos-border pt-3">
-            <FilterSelect
-              ariaLabel="Filter by uploader"
-              value={filters.uploader}
-              options={[
-                { value: "all", label: "All uploaders" },
-                ...data.uploaderNames.map((name) => ({
-                  value: name,
-                  label: name,
-                })),
-              ]}
-              onChange={(value) => updateFilter("uploader", value)}
-            />
-          </div>
-        )}
       </div>
 
       {!isEventScope && data.events.length > 0 && (
@@ -454,15 +502,22 @@ export function FilesDocumentsShell({
       )}
 
       {filteredFiles.length === 0 ? (
-        <div className="border border-dashed border-cos-border bg-cos-card px-6 py-16 text-center">
+        <div
+          className={cn(
+            "border border-dashed bg-cos-card px-6 py-16 text-center transition-colors",
+            isDraggingFiles
+              ? "border-cos-accent bg-cos-bg-alt"
+              : "border-cos-border",
+          )}
+        >
           <FolderOpen className="mx-auto h-10 w-10 text-cos-muted" strokeWidth={1.5} />
           <p className="mt-4 font-display text-xl text-cos-text">No files yet</p>
           <p className="mt-2 text-sm text-cos-muted">
-            Upload vendor lists, flyers, contracts, and other campaign documents to keep everything
-            in one place.
+            Drag and drop a file here, or upload vendor lists, flyers, contracts, and other campaign
+            documents to keep everything in one place.
           </p>
           <div className="mt-6">
-            <FileUploadButton onClick={() => setUploadOpen(true)} />
+            <FileUploadButton onClick={() => openUploadWithFile(null)} />
           </div>
         </div>
       ) : viewMode === "list" ? (
@@ -681,10 +736,14 @@ export function FilesDocumentsShell({
 
       <FileUploadDialog
         open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
+        onClose={() => {
+          setUploadOpen(false);
+          setPendingUploadFile(null);
+        }}
         events={data.eventList}
         lockedEventId={lockedEventId}
         defaultUploaderName={data.currentUserName}
+        initialFile={pendingUploadFile}
       />
 
       {editFile && (

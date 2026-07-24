@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { uploadCampaignFileAction } from "@/lib/campaign-files/actions";
@@ -19,6 +19,7 @@ interface FileUploadDialogProps {
   events: Event[];
   lockedEventId?: string;
   defaultUploaderName?: string | null;
+  initialFile?: File | null;
 }
 
 export function FileUploadDialog({
@@ -26,6 +27,7 @@ export function FileUploadDialog({
   onClose,
   events,
   lockedEventId,
+  initialFile = null,
 }: FileUploadDialogProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +36,17 @@ export function FileUploadDialog({
   const [category, setCategory] = useState<CampaignFileCategory>("other");
   const [platforms, setPlatforms] = useState<CampaignFilePlatform[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    setSelectedFile(initialFile);
+    setError(null);
+    setDragOver(false);
+  }, [open, initialFile]);
 
   if (!open) {
     return null;
@@ -186,14 +198,45 @@ export function FileUploadDialog({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full flex-col items-center gap-2 border border-dashed border-cos-border bg-cos-bg/60 px-4 py-8 text-sm text-cos-muted transition-colors hover:border-cos-accent hover:text-cos-text"
+              onDragEnter={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDragOver(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                event.dataTransfer.dropEffect = "copy";
+                setDragOver(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDragOver(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDragOver(false);
+                const file = event.dataTransfer.files?.[0] ?? null;
+                if (file) {
+                  setSelectedFile(file);
+                  setError(null);
+                }
+              }}
+              className={cn(
+                "flex w-full flex-col items-center gap-2 border border-dashed bg-cos-bg/60 px-4 py-8 text-sm transition-colors",
+                dragOver
+                  ? "border-cos-accent bg-cos-bg text-cos-text"
+                  : "border-cos-border text-cos-muted hover:border-cos-accent hover:text-cos-text",
+              )}
             >
               <Upload className="h-6 w-6" strokeWidth={1.5} />
               {selectedFile ? (
                 <span className="font-medium text-cos-text">{selectedFile.name}</span>
               ) : (
                 <>
-                  <span>Click to choose a file</span>
+                  <span>Drag & drop or click to choose a file</span>
                   <span className="text-xs">PDF, Word, Excel, PNG, or JPG up to 25 MB</span>
                 </>
               )}

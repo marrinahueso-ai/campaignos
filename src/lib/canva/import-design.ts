@@ -2,7 +2,7 @@ import "server-only";
 
 import type { ArtworkWorkflowItem } from "@/lib/creative-studio/artwork-workflow";
 import {
-  createCanvaPngExportJob,
+  createCanvaImageExportJob,
   downloadCanvaExportUrl,
   waitForCanvaExportJob,
 } from "@/lib/canva/api-client";
@@ -27,18 +27,39 @@ export async function exportCanvaDesignAsPngBytes(
     width?: number;
     height?: number;
     filenameBase?: string;
+    /** When true, omit width/height so Canva exports at the design’s native size. */
+    useDesignDefaultSize?: boolean;
   },
 ): Promise<{ bytes: Buffer; filename: string } | { error: string }> {
-  const exportJobId = await createCanvaPngExportJob(accessToken, designId, {
-    width: options?.width ?? 1080,
-    height: options?.height ?? 1080,
+  const dimensions = options?.useDesignDefaultSize
+    ? undefined
+    : {
+        width: options?.width,
+        height: options?.height,
+      };
+
+  const dimensionOpts = dimensions
+    ? { width: dimensions.width, height: dimensions.height }
+    : {};
+
+  let started = await createCanvaImageExportJob(accessToken, designId, {
+    ...dimensionOpts,
+    type: "png",
   });
 
-  if (!exportJobId) {
-    return { error: "Could not start Canva export." };
+  // Some designs export as JPG when PNG is refused.
+  if ("error" in started) {
+    started = await createCanvaImageExportJob(accessToken, designId, {
+      ...dimensionOpts,
+      type: "jpg",
+    });
   }
 
-  const exportResult = await waitForCanvaExportJob(accessToken, exportJobId);
+  if ("error" in started) {
+    return { error: started.error };
+  }
+
+  const exportResult = await waitForCanvaExportJob(accessToken, started.jobId);
   if ("error" in exportResult) {
     return exportResult;
   }
@@ -57,9 +78,10 @@ export async function exportCanvaDesignAsPngBytes(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+  const ext = downloadUrl.toLowerCase().includes(".jpg") ? "jpg" : "png";
   return {
     bytes,
-    filename: `${safeTitle || "canva-artwork"}.png`,
+    filename: `${safeTitle || "canva-artwork"}.${ext}`,
   };
 }
 

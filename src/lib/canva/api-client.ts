@@ -7,11 +7,15 @@ import type {
   CanvaListDesignsResponse,
 } from "@/lib/canva/types";
 
+type CanvaFetchResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number; message: string; code?: string };
+
 async function canvaFetch<T>(
   accessToken: string,
   path: string,
   init?: RequestInit,
-): Promise<T | null> {
+): Promise<CanvaFetchResult<T>> {
   const response = await fetch(`${CANVA_API_BASE}${path}`, {
     ...init,
     headers: {
@@ -23,21 +27,24 @@ async function canvaFetch<T>(
   if (!response.ok) {
     const text = await response.text();
     console.error(`Canva API ${path} failed:`, response.status, text);
-    return null;
+    let message = `Canva request failed (${response.status}).`;
+    let code: string | undefined;
+    try {
+      const parsed = JSON.parse(text) as { message?: string; code?: string };
+      if (parsed.message?.trim()) message = parsed.message.trim();
+      if (parsed.code?.trim()) code = parsed.code.trim();
+    } catch {
+      if (text.trim()) message = text.trim().slice(0, 240);
+    }
+    return { ok: false, status: response.status, message, code };
   }
 
-  return (await response.json()) as T;
+  return { ok: true, data: (await response.json()) as T };
 }
 
-export async function listCanvaDesigns(
-  accessToken: string,
-  limit = 25,
-): Promise<CanvaDesignSummary[]> {
-  const payload = await canvaFetch<CanvaListDesignsResponse>(
-    accessToken,
-    `/designs?ownership=owned&sort=modified_descending&limit=${limit}`,
-  );
-
+function mapDesignList(
+  payload: CanvaListDesignsResponse | null | undefined,
+): CanvaDesignSummary[] {
   if (!payload?.items) {
     return [];
   }
@@ -51,24 +58,47 @@ export async function listCanvaDesigns(
   }));
 }
 
-export async function createCanvaPngExportJob(
+export async function listCanvaDesigns(
+  accessToken: string,
+  limit = 25,
+): Promise<CanvaDesignSummary[]> {
+  // Include owned + shared so school/team designs the user can open in Canva appear.
+  const result = await canvaFetch<CanvaListDesignsResponse>(
+    accessToken,
+    `/designs?ownership=any&sort_by=modified_descending&limit=${limit}`,
+  );
+
+  if (!result.ok) {
+    return [];
+  }
+
+  return mapDesignList(result.data);
+}
+
+export async function createCanvaImageExportJob(
   accessToken: string,
   designId: string,
-  dimensions?: { width?: number; height?: number },
-): Promise<string | null> {
+  options?: {
+    width?: number;
+    height?: number;
+    /** Prefer png; jpg is used as a fallback for some design types. */
+    type?: "png" | "jpg";
+  },
+): Promise<{ jobId: string } | { error: string }> {
   const format: Record<string, unknown> = {
-    type: "png",
+    type: options?.type ?? "png",
     export_quality: "regular",
   };
 
-  if (dimensions?.width) {
-    format.width = dimensions.width;
+  // Prefer default design size — forcing 1080x1080 can 403 on Free/upscale limits.
+  if (options?.width) {
+    format.width = options.width;
   }
-  if (dimensions?.height) {
-    format.height = dimensions.height;
+  if (options?.height) {
+    format.height = options.height;
   }
 
-  const payload = await canvaFetch<CanvaExportJobResponse>(accessToken, "/exports", {
+  const result = await canvaFetch<CanvaExportJobResponse>(accessToken, "/exports", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -77,7 +107,35 @@ export async function createCanvaPngExportJob(
     }),
   });
 
-  return payload?.job?.id ?? null;
+  if (!result.ok) {
+    if (result.status === 403 || result.code === "permission_denied") {
+      return {
+        error:
+          "Canva blocked export for this design under the connected account. Even if you “own” it in the UI, it may live on a school Team. Disconnect → log into that Team in Canva → Connect again. Or try a simple design created under your personal Home (not a Team folder). Docs/whiteboards often can’t export as images.",
+      };
+    }
+    return { error: result.message || "Could not start Canva export." };
+  }
+
+  const jobId = result.data.job?.id;
+  if (!jobId) {
+    return { error: "Could not start Canva export." };
+  }
+
+  return { jobId };
+}
+
+/** @deprecated Use createCanvaImageExportJob */
+export async function createCanvaPngExportJob(
+  accessToken: string,
+  designId: string,
+  dimensions?: { width?: number; height?: number },
+): Promise<{ jobId: string } | { error: string }> {
+  return createCanvaImageExportJob(accessToken, designId, {
+    width: dimensions?.width,
+    height: dimensions?.height,
+    type: "png",
+  });
 }
 
 export async function waitForCanvaExportJob(
@@ -89,12 +147,16 @@ export async function waitForCanvaExportJob(
   const delayMs = options?.delayMs ?? 1500;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const payload = await canvaFetch<CanvaExportJobResponse>(
+    const result = await canvaFetch<CanvaExportJobResponse>(
       accessToken,
       `/exports/${exportJobId}`,
     );
 
-    const job = payload?.job;
+    if (!result.ok) {
+      return { error: result.message || "Could not check Canva export status." };
+    }
+
+    const job = result.data.job;
     if (!job) {
       return { error: "Could not check Canva export status." };
     }

@@ -879,15 +879,18 @@ export async function importCanvaDesignAsCampaignInspirationAction(
 
   const labelBase = designTitle?.trim() || "Canva design";
   const exported = await exportCanvaDesignAsPngBytes(accessToken, designId, {
-    width: 1080,
-    height: 1080,
     filenameBase: labelBase,
+    // Native size avoids Free-plan upscale / aspect 403s on export.
+    useDesignDefaultSize: true,
   });
   if ("error" in exported) {
     return { success: false, message: exported.error };
   }
 
-  const dataUrl = `data:image/png;base64,${exported.bytes.toString("base64")}`;
+  const contentType = exported.filename.toLowerCase().endsWith(".jpg")
+    ? "image/jpeg"
+    : "image/png";
+  const dataUrl = `data:${contentType};base64,${exported.bytes.toString("base64")}`;
   const imageId = `inspiration-canva-${Date.now()}`;
   const persisted = await persistInspirationImages(eventId, [
     {
