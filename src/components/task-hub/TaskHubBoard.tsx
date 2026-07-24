@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -47,7 +46,6 @@ const COLUMN_META: Record<
 };
 
 export function TaskHubBoard({ data }: TaskHubBoardProps) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [tasks, setTasks] = useState<TaskHubTaskItem[]>(() =>
     flattenCommitteeTasks(data.committees),
@@ -127,7 +125,6 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
           entry.id === task.id ? { ...entry, status } : entry,
         ),
       );
-      router.refresh();
     });
   }
 
@@ -186,7 +183,6 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
           entry.id === task.id ? { ...entry, status: targetStatus } : entry,
         ),
       );
-      router.refresh();
     });
 
     setDragOverColumn(null);
@@ -288,16 +284,21 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
                               next.delete(task.id);
                               return next;
                             });
-                            if (result.success) {
-                              setTasks((current) =>
-                                current.map((entry) =>
-                                  entry.id === task.id
-                                    ? { ...entry, status: nextStatus }
-                                    : entry,
-                                ),
-                              );
-                              router.refresh();
+                            if (!result.success) {
+                              setTaskStatuses((currentMap) => {
+                                const next = { ...currentMap };
+                                delete next[task.id];
+                                return next;
+                              });
+                              return;
                             }
+                            setTasks((current) =>
+                              current.map((entry) =>
+                                entry.id === task.id
+                                  ? { ...entry, status: nextStatus }
+                                  : entry,
+                              ),
+                            );
                           });
                         }}
                       />
@@ -344,14 +345,34 @@ export function TaskHubBoard({ data }: TaskHubBoardProps) {
                       ...currentMap,
                       [task.id]: nextStatus,
                     }));
+                    setPendingTaskIds((current) => new Set(current).add(task.id));
                     startTransition(async () => {
-                      await updateTaskHubTaskStatusAction(
+                      const result = await updateTaskHubTaskStatusAction(
                         task.eventId,
                         task.id,
                         nextStatus,
                         task.title,
                       );
-                      router.refresh();
+                      setPendingTaskIds((current) => {
+                        const next = new Set(current);
+                        next.delete(task.id);
+                        return next;
+                      });
+                      if (!result.success) {
+                        setTaskStatuses((currentMap) => {
+                          const next = { ...currentMap };
+                          delete next[task.id];
+                          return next;
+                        });
+                        return;
+                      }
+                      setTasks((current) =>
+                        current.map((entry) =>
+                          entry.id === task.id
+                            ? { ...entry, status: nextStatus }
+                            : entry,
+                        ),
+                      );
                     });
                   }}
                 />

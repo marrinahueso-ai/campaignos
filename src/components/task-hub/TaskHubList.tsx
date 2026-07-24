@@ -169,7 +169,14 @@ export function TaskHubList({
         return;
       }
 
-      router.refresh();
+      setCommittees((current) =>
+        current.map((group) => ({
+          ...group,
+          tasks: group.tasks.map((entry) =>
+            entry.id === task.id ? { ...entry, status: nextStatus } : entry,
+          ),
+        })),
+      );
     });
   }
 
@@ -194,6 +201,24 @@ export function TaskHubList({
       return;
     }
 
+    const previousCommittees = committees;
+    setCommittees((current) =>
+      current.map((group) => ({
+        ...group,
+        tasks: group.tasks.map((entry) =>
+          entry.id === task.id
+            ? {
+                ...entry,
+                ...(input.title !== undefined ? { title: input.title } : {}),
+                ...(input.dueDate !== undefined ? { dueDate: input.dueDate } : {}),
+                ...(input.assigneeName !== undefined
+                  ? { assigneeName: input.assigneeName }
+                  : {}),
+              }
+            : entry,
+        ),
+      })),
+    );
     setPendingTaskIds((current) => new Set(current).add(task.id));
 
     startTransition(async () => {
@@ -210,8 +235,8 @@ export function TaskHubList({
         return next;
       });
 
-      if (result.success) {
-        router.refresh();
+      if (!result.success) {
+        setCommittees(previousCommittees);
       }
     });
   }
@@ -280,8 +305,6 @@ export function TaskHubList({
       );
       if (!result.success) {
         setCommittees(previousCommittees);
-      } else {
-        router.refresh();
       }
     });
   }

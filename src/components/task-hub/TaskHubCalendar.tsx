@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -44,7 +43,6 @@ interface TaskHubCalendarProps {
 type CalendarGranularity = "week" | "month";
 
 export function TaskHubCalendar({ data }: TaskHubCalendarProps) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const today = getTodayDateString();
   const parsedToday = parseLocalDate(today);
@@ -128,9 +126,7 @@ export function TaskHubCalendar({ data }: TaskHubCalendarProps) {
           delete next[task.id];
           return next;
         });
-        return;
       }
-      router.refresh();
     });
   }
 

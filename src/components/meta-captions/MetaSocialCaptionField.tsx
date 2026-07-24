@@ -53,20 +53,21 @@ export function MetaSocialCaptionField({
   userRole,
   disabled = false,
 }: MetaSocialCaptionFieldProps) {
-  const router = useRouter();
   const [content, setContent] = useState(caption.content ?? "");
+  const [localStatus, setLocalStatus] = useState(caption.status);
   const [isEditing, setIsEditing] = useState(!caption.content);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setContent(caption.content ?? "");
+    setLocalStatus(caption.status);
     setIsEditing(!caption.content);
     setError(null);
   }, [caption.content, caption.status, caption.id]);
 
   const hasContent = Boolean(content.trim());
-  const isApproved = caption.status === "approved";
+  const isApproved = localStatus === "approved";
   const canApprove = canApproveDraft(userRole) && hasContent && !isApproved;
   const canUnapprove = canApproveDraft(userRole) && isApproved;
 
@@ -78,7 +79,11 @@ export function MetaSocialCaptionField({
         setError(result.error ?? "Unable to generate caption.");
         return;
       }
-      router.refresh();
+      if (result.content?.trim()) {
+        setContent(result.content);
+        setLocalStatus("draft");
+        setIsEditing(true);
+      }
     });
   }
 
@@ -95,8 +100,8 @@ export function MetaSocialCaptionField({
         setError(result.error ?? "Unable to save caption.");
         return;
       }
+      setLocalStatus("draft");
       setIsEditing(false);
-      router.refresh();
     });
   }
 
@@ -108,8 +113,8 @@ export function MetaSocialCaptionField({
         setError(result.error ?? "Unable to unapprove caption.");
         return;
       }
+      setLocalStatus("draft");
       setIsEditing(true);
-      router.refresh();
     });
   }
 
@@ -134,8 +139,8 @@ export function MetaSocialCaptionField({
         setError(result.error ?? "Unable to approve caption.");
         return;
       }
+      setLocalStatus("approved");
       setIsEditing(false);
-      router.refresh();
     });
   }
 
@@ -147,7 +152,12 @@ export function MetaSocialCaptionField({
         setError(result.error ?? "Unable to sync story from feed.");
         return;
       }
-      router.refresh();
+      const next = result.content?.trim() || feedCaption?.trim() || "";
+      if (next) {
+        setContent(next);
+        setLocalStatus("draft");
+        setIsEditing(true);
+      }
     });
   }
 
@@ -408,6 +418,7 @@ export function MetaSocialCaptionMilestoneCard({
         setError(result.error ?? "Unable to approve milestone.");
         return;
       }
+      // Both placements flip server-side; refresh so field badges stay in sync.
       router.refresh();
     });
   }

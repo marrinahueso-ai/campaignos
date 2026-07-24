@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — Files/Tasks/Inbox SSR soft caps (perf Priority 2)
+**Last updated:** July 24, 2026 — Optimistic task/caption mutations skip router.refresh (perf Priority 3)
 
 ---
 
@@ -175,6 +175,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Tasks — soft launch **complete**
 - Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
 - Org Tasks hub SSR soft-capped at 1000 tasks (event Tasks tab uncapped; notice when truncated) — **shipped** (perf)
+- Task status/reorder + caption save/generate keep optimistic UI without full `router.refresh` — **shipped** (perf)
 - Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - Main Table toolbar: person/status/sort as Files-style dropdowns (no Person/Filter/Sort labels); search on the same row — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)

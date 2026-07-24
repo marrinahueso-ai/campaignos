@@ -300,7 +300,6 @@ export function PreviewStep() {
         `Cleared ${result.artworkCleared} artwork reference(s) and ${result.captionsCleared} caption(s).`,
       );
       setClearModalOpen(false);
-      router.refresh();
     } finally {
       setClearSubmitting(false);
     }

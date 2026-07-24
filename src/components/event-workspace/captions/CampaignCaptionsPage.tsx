@@ -283,7 +283,6 @@ export function CampaignCaptionsPage({
           ...current,
           [selectedDay]: newOption.id,
         }));
-        router.refresh();
       }
     } catch {
       setError("Unable to generate captions. Refresh the page and try again.");
@@ -333,7 +332,6 @@ export function CampaignCaptionsPage({
         };
         const newOption = { id: createOptionId(), text: content };
         setOptionsForDay(selectedDay, [...currentOptions, newOption]);
-        router.refresh();
       }
     } catch {
       setError("Unable to generate captions. Refresh the page and try again.");
@@ -370,9 +368,7 @@ export function CampaignCaptionsPage({
         );
         if (!result.success) {
           setError(result.error ?? "Unable to save caption.");
-          return;
         }
-        router.refresh();
       } catch {
         setError("Unable to save caption. Refresh the page and try again.");
       } finally {

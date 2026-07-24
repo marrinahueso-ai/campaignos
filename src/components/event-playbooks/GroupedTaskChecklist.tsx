@@ -95,9 +95,7 @@ export function GroupedTaskChecklist({
       if (!result.success) {
         setSections(previous);
         setError(result.error);
-        return;
       }
-      router.refresh();
     });
   }
 
@@ -192,10 +190,7 @@ export function GroupedTaskChecklist({
 
       if (!result.success) {
         setSections(buildTaskChecklistSections(groupsFromServer, previousTasks));
-        return;
       }
-
-      router.refresh();
     });
   }
 
