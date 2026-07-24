@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { TasksV2EventGroupSection } from "@/components/tasks-v2/TasksV2EventGroup";
 import { TasksV2Toolbar } from "@/components/tasks-v2/TasksV2Toolbar";
 import type {
@@ -27,6 +27,11 @@ export function TasksV2MainTable({
   const [sortMode, setSortMode] = useState<TaskHubSortMode>("default");
   const [statusFilter, setStatusFilter] = useState<TaskHubStatusFilter>("all");
   const [personFilter, setPersonFilter] = useState("");
+  const [expandAddEventId, setExpandAddEventId] = useState<string | null>(null);
+
+  const clearExpandAddRequest = useCallback(() => {
+    setExpandAddEventId(null);
+  }, []);
 
   const totalTasks = useMemo(
     () => eventGroups.reduce((sum, group) => sum + group.tasks.length, 0),
@@ -91,8 +96,13 @@ export function TasksV2MainTable({
         canEdit={canEdit}
         events={events}
         orgMembers={orgMembers}
-        onNewTask={() => {
-          /* New task via per-group Add task rows */
+        onNewTask={(eventId) => {
+          setExpandAddEventId(eventId);
+          requestAnimationFrame(() => {
+            document
+              .getElementById(`tasks-v2-event-${eventId}`)
+              ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          });
         }}
       />
 
@@ -107,6 +117,8 @@ export function TasksV2MainTable({
             statusFilter={statusFilter}
             sortMode={sortMode}
             personFilter={personFilter}
+            requestExpandAdd={expandAddEventId === group.eventId}
+            onExpandAddHandled={clearExpandAddRequest}
           />
         ))}
       </div>

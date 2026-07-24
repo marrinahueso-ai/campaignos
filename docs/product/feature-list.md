@@ -187,7 +187,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar)
   - Platform filter (All / Facebook / Instagram) on KPIs, chart, and top content
   - Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse
-  - Content breakdown, platforms, recent activity
+  - Platforms + recent activity (content breakdown removed — redundant with Platforms)
   - Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to`
   - Refresh from Meta + CSV export
   - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline under recommendations

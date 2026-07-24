@@ -6,7 +6,6 @@ import { TasksV2AddTaskRow } from "@/components/tasks-v2/TasksV2AddTaskRow";
 import { TasksV2TaskDetailDrawer } from "@/components/tasks-v2/TasksV2TaskDetailDrawer";
 import { TasksV2TaskRow } from "@/components/tasks-v2/TasksV2TaskRow";
 import { readTasksV2DragPayload } from "@/components/tasks-v2/tasks-v2-dnd";
-import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import {
   createTaskHubTaskAction,
   reorderTaskHubTasksAction,
@@ -28,6 +27,8 @@ interface TasksV2EventGroupSectionProps {
   sortMode: import("@/lib/task-hub/list-filters").TaskHubSortMode;
   /** Filter by auth user id (preferred) or legacy display name. */
   personFilter: string;
+  requestExpandAdd?: boolean;
+  onExpandAddHandled?: () => void;
 }
 
 export function TasksV2EventGroupSection({
@@ -38,8 +39,9 @@ export function TasksV2EventGroupSection({
   statusFilter,
   sortMode,
   personFilter,
+  requestExpandAdd = false,
+  onExpandAddHandled,
 }: TasksV2EventGroupSectionProps) {
-  const refreshTasksTab = useEventTabMutationRefresh("tasks");
   const [pending, startTransition] = useTransition();
   const [collapsed, setCollapsed] = useState(false);
   const [tasks, setTasks] = useState(initialGroup.tasks);
@@ -62,6 +64,11 @@ export function TasksV2EventGroupSection({
     setTaskStatuses({});
     setPendingTaskIds(new Set());
   }, [tasksSyncKey, initialGroup.tasks]);
+
+  useEffect(() => {
+    if (!requestExpandAdd) return;
+    setCollapsed(false);
+  }, [requestExpandAdd]);
 
   const filteredTasks = useMemo(() => {
     let result = filterAndSortTasks(tasks, {
@@ -121,17 +128,43 @@ export function TasksV2EventGroupSection({
             item.id === task.id ? { ...item, status } : item,
           ),
         );
-        await refreshTasksTab();
       }
     });
   }
 
   function handleAddTask(title: string) {
     startTransition(async () => {
-      const result = await createTaskHubTaskAction(initialGroup.eventId, { title });
-      if (result.success) {
-        await refreshTasksTab();
+      const result = await createTaskHubTaskAction(initialGroup.eventId, {
+        title,
+      });
+      if (!result.success || !result.taskId) {
+        return;
       }
+      const now = new Date().toISOString();
+      setTasks((current) => [
+        ...current,
+        {
+          id: result.taskId!,
+          eventId: initialGroup.eventId,
+          title,
+          status: "todo",
+          dueDate: null,
+          assigneeName: null,
+          assigneeInitials: null,
+          assigneeUserId: null,
+          groupId: null,
+          notes: null,
+          sortOrder: current.length,
+          createdAt: now,
+          updatedAt: now,
+          event: {
+            eventId: initialGroup.eventId,
+            eventTitle: initialGroup.eventTitle,
+            eventDate: initialGroup.eventDate,
+            eventHref: initialGroup.eventHref,
+          },
+        },
+      ]);
     });
   }
 
@@ -175,8 +208,6 @@ export function TasksV2EventGroupSection({
       });
       if (!result.success) {
         setTasks(initialGroup.tasks);
-      } else {
-        await refreshTasksTab();
       }
     });
   }
@@ -203,8 +234,6 @@ export function TasksV2EventGroupSection({
       });
       if (!result.success) {
         setTasks(initialGroup.tasks);
-      } else {
-        await refreshTasksTab();
       }
     });
   }
@@ -235,13 +264,15 @@ export function TasksV2EventGroupSection({
 
     setTasks(reordered);
     startTransition(async () => {
-      await reorderTaskHubTasksAction(
+      const result = await reorderTaskHubTasksAction(
         reordered.map((task) => ({
           id: task.id,
           eventId: task.event.eventId,
         })),
       );
-      await refreshTasksTab();
+      if (!result.success) {
+        setTasks(initialGroup.tasks);
+      }
     });
   }
 
@@ -250,7 +281,10 @@ export function TasksV2EventGroupSection({
   }
 
   return (
-    <section className="overflow-hidden border border-cos-border bg-cos-card">
+    <section
+      id={`tasks-v2-event-${initialGroup.eventId}`}
+      className="overflow-hidden border border-cos-border bg-cos-card"
+    >
       <button
         type="button"
         onClick={() => setCollapsed((value) => !value)}
@@ -319,6 +353,8 @@ export function TasksV2EventGroupSection({
                 <TasksV2AddTaskRow
                   disabled={!canEdit}
                   isPending={pending}
+                  requestExpand={requestExpandAdd}
+                  onRequestExpandHandled={onExpandAddHandled}
                   onAdd={handleAddTask}
                 />
               )}

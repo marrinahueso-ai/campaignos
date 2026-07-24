@@ -208,8 +208,110 @@ export function FilesDocumentsShell({
       ) : null}
 
       <div className="space-y-3 border border-cos-border bg-cos-card p-4">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-          <label className="relative min-w-[12rem] flex-1">
+        {/* Row 1: facet filters + view toggle, search on the right (matches Vendors) */}
+        <div className="flex flex-wrap items-center gap-2">
+          {!isEventScope && (
+            <FilterSelect
+              ariaLabel="Filter by event"
+              value={filters.eventId}
+              options={[
+                { value: "all", label: "All events" },
+                ...data.eventList.map((event) => ({
+                  value: event.id,
+                  label: event.title,
+                })),
+              ]}
+              onChange={(value) => {
+                updateFilter("eventId", value);
+                setCarouselEventId(value);
+              }}
+            />
+          )}
+
+          <FilterSelect
+            ariaLabel="Filter by file type"
+            value={filters.fileType}
+            options={[
+              { value: "all", label: "All file types" },
+              ...CAMPAIGN_FILE_TYPES.map((option) => ({
+                value: option.value,
+                label: option.label,
+              })),
+            ]}
+            onChange={(value) => updateFilter("fileType", value)}
+          />
+
+          <FilterSelect
+            ariaLabel="Filter by category"
+            value={filters.category}
+            options={[
+              { value: "all", label: "All categories" },
+              ...CAMPAIGN_FILE_CATEGORIES.map((option) => ({
+                value: option.value,
+                label: option.label,
+              })),
+            ]}
+            onChange={(value) => updateFilter("category", value)}
+          />
+
+          <FilterSelect
+            ariaLabel="Filter by platform"
+            value={filters.platform}
+            options={[
+              { value: "all", label: "All platforms" },
+              ...CAMPAIGN_FILE_PLATFORMS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              })),
+            ]}
+            onChange={(value) => updateFilter("platform", value)}
+          />
+
+          <FilterSelect
+            ariaLabel="Filter by status"
+            value={filters.status}
+            options={[
+              { value: "all", label: "All statuses" },
+              ...CAMPAIGN_FILE_STATUSES.map((option) => ({
+                value: option.value,
+                label: option.label,
+              })),
+            ]}
+            onChange={(value) => updateFilter("status", value)}
+          />
+
+          <div className="inline-flex border border-cos-border bg-cos-bg p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "p-2 transition-colors",
+                viewMode === "grid"
+                  ? "bg-cos-card text-cos-text"
+                  : "text-cos-muted hover:text-cos-text",
+              )}
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+            >
+              <Grid3x3 className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-2 transition-colors",
+                viewMode === "list"
+                  ? "bg-cos-card text-cos-text"
+                  : "text-cos-muted hover:text-cos-text",
+              )}
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+            >
+              <List className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+
+          <label className="relative ml-auto min-w-[14rem] flex-1 sm:max-w-sm">
             <Search
               className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
               strokeWidth={1.5}
@@ -219,117 +321,16 @@ export function FilesDocumentsShell({
               value={filters.search}
               onChange={(event) => updateFilter("search", event.target.value)}
               placeholder="Search files..."
+              aria-label="Search files"
               className="h-9 w-full border border-cos-border bg-cos-bg py-0 pr-3 pl-9 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
             />
           </label>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {!isEventScope && (
-              <FilterSelect
-                ariaLabel="Filter by event"
-                value={filters.eventId}
-                options={[
-                  { value: "all", label: "All events" },
-                  ...data.eventList.map((event) => ({
-                    value: event.id,
-                    label: event.title,
-                  })),
-                ]}
-                onChange={(value) => {
-                  updateFilter("eventId", value);
-                  setCarouselEventId(value);
-                }}
-              />
-            )}
-
-            <FilterSelect
-              ariaLabel="Filter by file type"
-              value={filters.fileType}
-              options={[
-                { value: "all", label: "All file types" },
-                ...CAMPAIGN_FILE_TYPES.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                })),
-              ]}
-              onChange={(value) => updateFilter("fileType", value)}
-            />
-
-            <FilterSelect
-              ariaLabel="Filter by category"
-              value={filters.category}
-              options={[
-                { value: "all", label: "All categories" },
-                ...CAMPAIGN_FILE_CATEGORIES.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                })),
-              ]}
-              onChange={(value) => updateFilter("category", value)}
-            />
-
-            <FilterSelect
-              ariaLabel="Filter by platform"
-              value={filters.platform}
-              options={[
-                { value: "all", label: "All platforms" },
-                ...CAMPAIGN_FILE_PLATFORMS.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                })),
-              ]}
-              onChange={(value) => updateFilter("platform", value)}
-            />
-
-            <FilterSelect
-              ariaLabel="Filter by status"
-              value={filters.status}
-              options={[
-                { value: "all", label: "All statuses" },
-                ...CAMPAIGN_FILE_STATUSES.map((option) => ({
-                  value: option.value,
-                  label: option.label,
-                })),
-              ]}
-              onChange={(value) => updateFilter("status", value)}
-            />
-
-            <div className="inline-flex border border-cos-border bg-cos-bg p-0.5">
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "p-2 transition-colors",
-                  viewMode === "grid"
-                    ? "bg-cos-card text-cos-text"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
-                aria-label="Grid view"
-                aria-pressed={viewMode === "grid"}
-              >
-                <Grid3x3 className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "p-2 transition-colors",
-                  viewMode === "list"
-                    ? "bg-cos-card text-cos-text"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
-                aria-label="List view"
-                aria-pressed={viewMode === "list"}
-              >
-                <List className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-            </div>
-
-            <FileUploadButton onClick={() => setUploadOpen(true)} />
-          </div>
         </div>
 
+        {/* Row 2: upload + date range + secondary filters */}
         <div className="flex flex-wrap items-center gap-2">
+          <FileUploadButton onClick={() => setUploadOpen(true)} />
+
           <label className="inline-flex h-9 items-center gap-2 border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted">
             <Calendar className="h-3.5 w-3.5" />
             <input

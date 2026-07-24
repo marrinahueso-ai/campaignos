@@ -123,7 +123,7 @@ export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="flex flex-wrap justify-center gap-3">
         <KpiCard
           icon={Users}
           label="Total Volunteers"
@@ -292,7 +292,7 @@ function KpiCard({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "flex min-h-[7rem] flex-col items-start gap-2 rounded-2xl px-5 py-5 text-left transition-all duration-200",
+        "flex min-h-[7rem] w-full max-w-[17.5rem] flex-1 basis-[14rem] flex-col items-start gap-2 rounded-2xl px-5 py-5 text-left transition-all duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-bg",
         active
           ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"

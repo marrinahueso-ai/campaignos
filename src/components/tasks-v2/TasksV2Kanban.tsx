@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -94,7 +93,6 @@ const FOCUS_COLUMN_META: Record<
 };
 
 export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
-  const router = useRouter();
   const [boardMode, setBoardMode] = useState<TasksV2KanbanBoardMode>("focus");
   const [pending, startTransition] = useTransition();
   const sourceTasks = useMemo(
@@ -186,7 +184,6 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
           entry.id === task.id ? { ...entry, status } : entry,
         ),
       );
-      router.refresh();
     });
   }
 
@@ -237,10 +234,7 @@ export function TasksV2Kanban({ eventGroups, canEdit }: TasksV2KanbanProps) {
       if (!result.success) {
         setTasks(sourceTasks);
         setTaskStatuses({});
-        return;
       }
-
-      router.refresh();
     });
   }
 

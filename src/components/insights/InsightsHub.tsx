@@ -16,7 +16,6 @@ import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
 import { getInsightsDataNote } from "@/lib/insights/connection-messages";
-import { formatInsightsNumber } from "@/lib/insights/format";
 import type {
   InsightsKpiKey,
   InsightsPageData,
@@ -253,42 +252,8 @@ export function InsightsHub({ data }: InsightsHubProps) {
             platformFilter={platformFilter}
           />
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <InsightsSectionCard title="Content breakdown">
-              {data.contentBreakdown.length > 0 ? (
-                <div className="space-y-3">
-                  {data.contentBreakdown.map((item) => (
-                    <div key={item.label} className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2 text-sm">
-                        <span className="truncate font-medium text-cos-text">
-                          {item.label}
-                        </span>
-                        <span className="shrink-0 tabular-nums text-cos-muted">
-                          {item.percent}%
-                        </span>
-                      </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-cos-bg">
-                        <div
-                          className="h-full rounded-full bg-cos-accent"
-                          style={{ width: `${item.percent}%` }}
-                        />
-                      </div>
-                      <p className="text-[11px] text-cos-muted">
-                        {item.count} post{item.count === 1 ? "" : "s"} ·{" "}
-                        {formatInsightsNumber(item.engagement)} eng
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-cos-muted">
-                  No post-level insights for this period.
-                </p>
-              )}
-            </InsightsSectionCard>
-
+          <div className="grid gap-4 lg:grid-cols-2">
             <PlatformComparison platforms={data.platformComparison} />
-
             <LiveActivityFeed events={data.activity} />
           </div>
 

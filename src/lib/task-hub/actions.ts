@@ -18,12 +18,25 @@ import { resolveSiteUrlFromHeaders } from "@/lib/site/url";
 import type { EventPlaybookTaskStatus } from "@/types/event-playbooks";
 
 function revalidateTaskHubPaths(eventIds: string[]) {
+  // Keep the hot path light — full /events + /calendar refreshes made every
+  // field save feel slow on the Tasks page.
   revalidatePath("/tasks");
   for (const eventId of eventIds) {
-    revalidatePath("/events");
     revalidatePath(`/events/${eventId}`);
   }
-  revalidatePath("/calendar");
+}
+
+function queueMondayTaskSync(
+  organizationId: string,
+  taskId: string,
+  eventId: string,
+  mode: "create" | "update",
+): void {
+  void syncTaskToMonday(organizationId, taskId, eventId, mode).catch(
+    (error) => {
+      console.error("[task-hub] Monday sync failed:", error);
+    },
+  );
 }
 
 async function resolveOrigin(): Promise<string> {
@@ -118,7 +131,7 @@ export async function updateTaskHubTaskStatusAction(
     return { success: false, error: "Unable to update task." };
   }
 
-  await syncTaskToMonday(access.organizationId, taskId, eventId, "update");
+  queueMondayTaskSync(access.organizationId, taskId, eventId, "update");
   revalidateTaskHubPaths([eventId]);
   return { success: true, error: null };
 }
@@ -181,7 +194,7 @@ export async function updateTaskHubTaskAction(
     return { success: false, error: "Unable to update task." };
   }
 
-  await syncTaskToMonday(access.organizationId, taskId, eventId, "update");
+  queueMondayTaskSync(access.organizationId, taskId, eventId, "update");
   revalidateTaskHubPaths([eventId]);
   return { success: true, error: null };
 }
@@ -224,7 +237,7 @@ export async function createTaskHubTaskAction(
     return { success: false, error: "Unable to create task.", taskId: null };
   }
 
-  await syncTaskToMonday(access.organizationId, taskId, eventId, "create");
+  queueMondayTaskSync(access.organizationId, taskId, eventId, "create");
   revalidateTaskHubPaths([eventId]);
   return { success: true, error: null, taskId };
 }
