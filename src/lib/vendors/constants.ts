@@ -5,7 +5,6 @@ export const VENDOR_PAGE_SIZE = 10;
 export const VENDOR_STATUSES = [
   { value: "all", label: "All Statuses" },
   { value: "active", label: "Active" },
-  { value: "pending", label: "Pending" },
   { value: "blocked", label: "Blocked" },
   { value: "archived", label: "Archived" },
 ] as const;
@@ -14,7 +13,6 @@ export const VENDOR_DIRECTORY_TABS = [
   { id: "all" as const, label: "All Vendors" },
   { id: "favorites" as const, label: "Favorites" },
   { id: "past" as const, label: "Past Vendors" },
-  { id: "pending" as const, label: "Pending" },
   { id: "blocked" as const, label: "Blocked" },
 ];
 

@@ -34,10 +34,17 @@ interface VendorDirectoryShellProps {
 function directoryStatus(row: VendorDirectoryRow): {
   label: string;
   variant: "success" | "warning" | "default";
-} {
+} | null {
+  if (row.vendor.status === "blocked") {
+    return { label: "blocked", variant: "warning" };
+  }
+  if (row.vendor.status === "archived") {
+    return { label: "archived", variant: "default" };
+  }
+
   const assignment = row.latestAssignment;
   if (!assignment) {
-    return { label: row.vendor.status, variant: "default" };
+    return null;
   }
 
   switch (assignment.assignmentStatus) {
@@ -46,9 +53,9 @@ function directoryStatus(row: VendorDirectoryRow): {
     case "completed":
       return { label: "completed", variant: "success" };
     case "pending":
-      return { label: "pending", variant: "warning" };
     case "cancelled":
-      return { label: "cancelled", variant: "default" };
+      // Pending is not a directory concept — omit the badge.
+      return null;
   }
 }
 
@@ -66,7 +73,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         eventId: searchParams.get("event") ?? "all",
         categoryId: searchParams.get("category") ?? "all",
         status: searchParams.get("status") ?? "all",
-        tab: (searchParams.get("tab") as VendorDirectoryTab) ?? "all",
+        tab: normalizeDirectoryTab(searchParams.get("tab")),
       }),
     [searchParams],
   );
@@ -224,11 +231,12 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
                 category={row.category}
                 primaryContact={row.primaryContact}
                 logoUrl={row.logoUrl}
-                statusLabel={status.label}
-                statusVariant={status.variant}
+                statusLabel={status?.label ?? ""}
+                statusVariant={status?.variant ?? "default"}
                 canWrite={data.canWrite}
                 onSelect={() => setSelectedRow(row)}
                 onLogoUploaded={() => router.refresh()}
+                onFavoriteChange={() => router.refresh()}
               />
             );
           })}
@@ -294,6 +302,14 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
       />
     </div>
   );
+}
+
+function normalizeDirectoryTab(raw: string | null): VendorDirectoryTab {
+  if (raw === "favorites" || raw === "past" || raw === "blocked") {
+    return raw;
+  }
+  // Legacy ?tab=pending → All Vendors
+  return "all";
 }
 
 function SummaryCard({

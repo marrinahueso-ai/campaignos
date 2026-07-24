@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { Button } from "@/components/ui/Button";
@@ -34,6 +35,7 @@ export function EventVendorsSection({
   directoryHref,
   deferDirectoryLoad = false,
 }: EventVendorsSectionProps) {
+  const router = useRouter();
   const refreshVendorsTab = useEventTabMutationRefresh("vendors");
   const [addOpen, setAddOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
@@ -170,6 +172,10 @@ export function EventVendorsSection({
               onRemove={() => handleRemove(row.assignmentId)}
               onLogoUploaded={() => {
                 void refreshVendorsTab();
+              }}
+              onFavoriteChange={() => {
+                void refreshVendorsTab();
+                router.refresh();
               }}
             />
           ))}

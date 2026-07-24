@@ -57,11 +57,6 @@ function matchesTab(row: VendorDirectoryRow, tab: VendorDirectoryTab): boolean {
       return row.vendor.isFavorite && row.vendor.status !== "archived";
     case "blocked":
       return row.vendor.status === "blocked";
-    case "pending":
-      return (
-        row.vendor.status === "pending" ||
-        row.latestAssignment?.assignmentStatus === "pending"
-      );
     case "past": {
       if (row.vendor.status === "archived") {
         return true;

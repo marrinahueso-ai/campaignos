@@ -19,6 +19,7 @@ import {
   mapVendorNoteRow,
   mapVendorRow,
 } from "@/lib/vendors/mappers";
+import { getCampaignFilesForEvent } from "@/lib/campaign-files/queries";
 import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/storage";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -31,6 +32,7 @@ import type {
   VendorDirectoryPageData,
   VendorDirectoryRow,
   VendorEventAssignmentRow,
+  VendorEventFileGroup,
   VendorEventSummary,
   VendorRow,
 } from "@/types/vendors";
@@ -395,6 +397,25 @@ export async function getVendorDetailData(
     .filter((value): value is VendorEventSummary => value !== null)
     .sort((left, right) => left.eventDate.localeCompare(right.eventDate));
 
+  const eventFiles: VendorEventFileGroup[] = (
+    await Promise.all(
+      assignmentSummaries.map(async (assignment) => {
+        const files = await getCampaignFilesForEvent(assignment.eventId);
+        return {
+          eventId: assignment.eventId,
+          eventTitle: assignment.eventTitle,
+          eventDate: assignment.eventDate,
+          files: files.map((file) => ({
+            id: file.id,
+            name: file.name,
+            category: file.category,
+            uploadedAt: file.uploadedAt,
+          })),
+        };
+      }),
+    )
+  ).filter((group) => group.files.length > 0);
+
   return {
     vendor,
     category: vendor.categoryId ? categoryMap.get(vendor.categoryId) ?? null : null,
@@ -406,6 +427,7 @@ export async function getVendorDetailData(
     documents: ((documentsResult.data ?? []) as import("@/types/vendors").VendorDocumentRow[])
       .filter((row) => !row.deleted_at)
       .map(mapVendorDocumentRow),
+    eventFiles,
     activityLogs: (activityResult.data ?? []).map((row) =>
       mapVendorActivityLogRow(
         row as {

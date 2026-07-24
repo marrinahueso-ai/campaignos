@@ -155,8 +155,6 @@ export function VendorEditModal({
               }
               options={[
                 { value: "active", label: "Active" },
-                { value: "pending", label: "Pending" },
-                { value: "blocked", label: "Blocked" },
                 { value: "archived", label: "Archived" },
               ]}
             />

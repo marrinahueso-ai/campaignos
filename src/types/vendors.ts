@@ -20,7 +20,6 @@ export type VendorDirectoryTab =
   | "all"
   | "favorites"
   | "past"
-  | "pending"
   | "blocked";
 
 export interface VendorCategory {
@@ -245,6 +244,18 @@ export interface VendorDirectoryPageData {
   canManage: boolean;
 }
 
+export interface VendorEventFileGroup {
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+  files: Array<{
+    id: string;
+    name: string;
+    category: string;
+    uploadedAt: string;
+  }>;
+}
+
 export interface VendorDetailData {
   vendor: Vendor;
   category: VendorCategory | null;
@@ -252,6 +263,8 @@ export interface VendorDetailData {
   assignments: VendorEventSummary[];
   notes: VendorNote[];
   documents: VendorDocument[];
+  /** Campaign files from events this vendor is linked to. */
+  eventFiles: VendorEventFileGroup[];
   activityLogs: VendorActivityLog[];
   canWrite: boolean;
   canManage: boolean;

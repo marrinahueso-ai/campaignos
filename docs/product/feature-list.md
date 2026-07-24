@@ -198,9 +198,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Vendors
 - Directory (card grid matching event vendor cards), add/archive, profile, link to events — **shipped**
+- Favorite star on card upper-right; directory tabs: All / Favorites / Past / Blocked (Pending removed) — **shipped**
 - Directory peek drawer: single **View Profile** CTA; edit vendor from profile only — **shipped**
-- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**; Contracts / Communications — **partial** (shell)
-- Payments and Settings profile tabs — **removed** (not in product UI; archive stays on profile header)
+- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**; Communications — **partial** (shell)
+- Documents = Files from linked events (contracts live there); legacy vendor uploads still listed — **shipped**
+- Notes: event-style compose (type + voice) via `addVendorNoteAction` — **shipped**
+- Block vendor (required reason saved as note) + Unblock — **shipped**
+- Payments / Settings / Contracts / Pending directory tab — **removed** from product UI
 
 ## Insights — soft launch **complete**
 - **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)

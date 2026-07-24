@@ -2,13 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, ExternalLink, Mail, Phone } from "lucide-react";
-import { useRef, useState, useTransition } from "react";
+import { Camera, ExternalLink, Mail, Phone, Star } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CategoryPill } from "@/components/vendors/VendorDetailDrawer";
-import { uploadVendorLogoAction } from "@/lib/vendors/actions";
+import {
+  toggleVendorFavoriteAction,
+  uploadVendorLogoAction,
+} from "@/lib/vendors/actions";
 import { formatVendorWebsite, vendorInitials } from "@/lib/vendors/filters";
 import type { Vendor, VendorCategory, VendorContact } from "@/types/vendors";
 import { cn } from "@/lib/utils/cn";
@@ -41,6 +44,8 @@ export interface VendorCardProps {
   onLogoUploaded?: () => void;
   /** Card-body click (ignores links/buttons) — e.g. open directory drawer. */
   onSelect?: () => void;
+  /** After favorite toggle (e.g. router.refresh). */
+  onFavoriteChange?: () => void;
   className?: string;
 }
 
@@ -57,16 +62,37 @@ export function VendorCard({
   onRemove,
   onLogoUploaded,
   onSelect,
+  onFavoriteChange,
   className,
 }: VendorCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [uploading, startUpload] = useTransition();
+  const [favoriting, startFavorite] = useTransition();
+  const [optimisticFavorite, setOptimisticFavorite] = useState(vendor.isFavorite);
   const contactName = primaryContact?.name ?? null;
   const contactEmail = primaryContact?.email ?? vendor.email;
   const contactPhone = primaryContact?.phone ?? vendor.phone;
   const website = formatVendorWebsite(vendor.website);
   const address = formatVendorCardAddress(vendor);
+
+  useEffect(() => {
+    setOptimisticFavorite(vendor.isFavorite);
+  }, [vendor.isFavorite]);
+
+  function toggleFavorite() {
+    if (!canWrite) return;
+    const next = !optimisticFavorite;
+    setOptimisticFavorite(next);
+    startFavorite(async () => {
+      const result = await toggleVendorFavoriteAction(vendor.id, next);
+      if (!result.success) {
+        setOptimisticFavorite(!next);
+        return;
+      }
+      onFavoriteChange?.();
+    });
+  }
 
   function handleLogoChange(fileList: FileList | null) {
     const file = fileList?.[0];
@@ -124,6 +150,26 @@ export function VendorCard({
             {vendorInitials(vendor.name)}
           </span>
         )}
+        <button
+          type="button"
+          aria-label={
+            optimisticFavorite ? "Remove from favorites" : "Add to favorites"
+          }
+          aria-pressed={optimisticFavorite}
+          disabled={!canWrite || favoriting || pending}
+          onClick={toggleFavorite}
+          className={cn(
+            "absolute top-2 right-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-cos-border/80 bg-cos-card/95 text-cos-muted shadow-sm transition-colors hover:text-cos-accent disabled:opacity-50",
+            optimisticFavorite && "text-cos-accent",
+          )}
+        >
+          <Star
+            className={cn(
+              "h-4 w-4",
+              optimisticFavorite && "fill-cos-accent text-cos-accent",
+            )}
+          />
+        </button>
         {canWrite && (
           <>
             <input
@@ -166,7 +212,9 @@ export function VendorCard({
               </div>
             )}
           </div>
-          <Badge variant={statusVariant}>{statusLabel}</Badge>
+          {statusLabel ? (
+            <Badge variant={statusVariant}>{statusLabel}</Badge>
+          ) : null}
         </div>
 
         <dl className="space-y-1.5 text-xs">

@@ -248,6 +248,72 @@ export async function updateVendorStatusAction(
   return updateVendorAction(vendorId, { status });
 }
 
+/** Block a vendor and record the required reason as a vendor note. */
+export async function blockVendorAction(
+  vendorId: string,
+  reason: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireWritableOrg();
+  if ("error" in access) {
+    return { success: false, error: access.error };
+  }
+
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    return { success: false, error: "A reason is required to block a vendor." };
+  }
+
+  const vendor = await getVendorRowById(vendorId);
+  if (!vendor || vendor.organizationId !== access.organizationId) {
+    return { success: false, error: "Vendor not found." };
+  }
+
+  const noteOk = await addVendorNote(
+    access.organizationId,
+    vendorId,
+    `Blocked: ${trimmed}`,
+  );
+  if (!noteOk) {
+    return { success: false, error: "Unable to save the block reason as a note." };
+  }
+
+  const result = await updateVendor(vendorId, access.organizationId, {
+    status: "blocked",
+  });
+  if (!result.success) {
+    return { success: false, error: result.error ?? "Unable to block vendor." };
+  }
+
+  revalidateVendorPaths(vendorId);
+  return { success: true, error: null };
+}
+
+export async function unblockVendorAction(
+  vendorId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireWritableOrg();
+  if ("error" in access) {
+    return { success: false, error: access.error };
+  }
+
+  const vendor = await getVendorRowById(vendorId);
+  if (!vendor || vendor.organizationId !== access.organizationId) {
+    return { success: false, error: "Vendor not found." };
+  }
+
+  await addVendorNote(access.organizationId, vendorId, "Unblocked: status set to active.");
+
+  const result = await updateVendor(vendorId, access.organizationId, {
+    status: "active",
+  });
+  if (!result.success) {
+    return { success: false, error: result.error ?? "Unable to unblock vendor." };
+  }
+
+  revalidateVendorPaths(vendorId);
+  return { success: true, error: null };
+}
+
 export async function uploadVendorDocumentAction(
   formData: FormData,
 ): Promise<{ success: boolean; error: string | null; downloadUrl?: string | null }> {
