@@ -66,10 +66,12 @@ export function DashboardOverview({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      // Small distance only — avoids stealing clicks without a press-hold delay.
+      activationConstraint: { distance: 2 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 180, tolerance: 8 },
+      // Distance-based (not delay) so touch drag feels as immediate as mouse.
+      activationConstraint: { distance: 4 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -493,11 +495,16 @@ function SortableWidgetFrame({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({
+    id,
+    transition: { duration: 120, easing: "ease-out" },
+    animateLayoutChanges: () => false,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    // Follow the pointer with no lag; keep a short settle on siblings.
+    transition: isDragging ? undefined : transition,
   };
 
   return (
