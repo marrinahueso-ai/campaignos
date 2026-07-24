@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, type DragEvent } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -31,9 +34,13 @@ import {
   categoryLabel,
 } from "@/lib/campaign-files/constants";
 import {
+  DEFAULT_FILES_SORT_DIRECTION,
+  DEFAULT_FILES_SORT_FIELD,
   createDefaultFilesFilterState,
   filterCampaignFiles,
+  nextFilesSortState,
   paginateFiles,
+  sortCampaignFiles,
   totalPages,
 } from "@/lib/campaign-files/filters";
 import { formatFileSize, formatUploadedDate } from "@/lib/campaign-files/format";
@@ -41,9 +48,45 @@ import type {
   CampaignFile,
   CampaignFileEventSummary,
   FilesPageData,
+  FilesSortDirection,
+  FilesSortField,
   FilesViewMode,
 } from "@/types/campaign-files";
 import { cn } from "@/lib/utils/cn";
+
+const SORTABLE_COLUMNS: {
+  key: FilesSortField;
+  label: string;
+  globalOnly?: boolean;
+}[] = [
+  { key: "name", label: "File name" },
+  { key: "event", label: "Event", globalOnly: true },
+  { key: "type", label: "Type" },
+  { key: "category", label: "Category" },
+  { key: "platform", label: "Platform" },
+  { key: "uploaded", label: "Uploaded" },
+  { key: "size", label: "Size" },
+];
+
+function FilesSortIcon({
+  field,
+  sortField,
+  sortDirection,
+}: {
+  field: FilesSortField;
+  sortField: FilesSortField;
+  sortDirection: FilesSortDirection;
+}) {
+  if (sortField !== field) {
+    return <ArrowUpDown className="h-3 w-3 opacity-40" strokeWidth={1.5} />;
+  }
+
+  return sortDirection === "asc" ? (
+    <ArrowUp className="h-3 w-3" strokeWidth={1.5} />
+  ) : (
+    <ArrowDown className="h-3 w-3" strokeWidth={1.5} />
+  );
+}
 
 interface FilesDocumentsShellProps {
   data: FilesPageData;
@@ -124,6 +167,12 @@ export function FilesDocumentsShell({
   const [carouselEventId, setCarouselEventId] = useState<string | "all">(
     presetEventId ?? "all",
   );
+  const [sortField, setSortField] = useState<FilesSortField>(
+    DEFAULT_FILES_SORT_FIELD,
+  );
+  const [sortDirection, setSortDirection] = useState<FilesSortDirection>(
+    DEFAULT_FILES_SORT_DIRECTION,
+  );
 
   function isFileDrag(event: DragEvent) {
     return Array.from(event.dataTransfer.types).includes("Files");
@@ -184,6 +233,14 @@ export function FilesDocumentsShell({
     return map;
   }, [data.events]);
 
+  const eventTitles = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const event of data.events) {
+      map.set(event.eventId, event.title);
+    }
+    return map;
+  }, [data.events]);
+
   const effectiveEventFilter = isEventScope
     ? lockedEventId ?? "all"
     : carouselEventId !== "all"
@@ -191,17 +248,32 @@ export function FilesDocumentsShell({
       : filters.eventId;
 
   const filteredFiles = useMemo(() => {
-    return filterCampaignFiles(data.files, {
+    const filtered = filterCampaignFiles(data.files, {
       ...filters,
       eventId: effectiveEventFilter,
     });
-  }, [data.files, filters, effectiveEventFilter]);
+    return sortCampaignFiles(filtered, sortField, sortDirection, eventTitles);
+  }, [
+    data.files,
+    filters,
+    effectiveEventFilter,
+    sortField,
+    sortDirection,
+    eventTitles,
+  ]);
 
   const pageCount = totalPages(filteredFiles.length, FILES_PAGE_SIZE);
   const currentPage = Math.min(page, pageCount);
   const pageFiles = paginateFiles(filteredFiles, currentPage, FILES_PAGE_SIZE);
   const rangeStart = filteredFiles.length === 0 ? 0 : (currentPage - 1) * FILES_PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * FILES_PAGE_SIZE, filteredFiles.length);
+
+  function handleSort(field: FilesSortField) {
+    const next = nextFilesSortState(sortField, sortDirection, field);
+    setSortField(next.field);
+    setSortDirection(next.direction);
+    setPage(1);
+  }
 
   function updateFilter<K extends keyof typeof filters>(
     key: K,
@@ -536,13 +608,37 @@ export function FilesDocumentsShell({
                     aria-label="Select all files on this page"
                   />
                 </th>
-                <th className="px-3 py-3">File name</th>
-                {!isEventScope && <th className="px-3 py-3">Event</th>}
-                <th className="px-3 py-3">Type</th>
-                <th className="px-3 py-3">Category</th>
-                <th className="px-3 py-3">Platform</th>
-                <th className="px-3 py-3">Uploaded</th>
-                <th className="px-3 py-3">Size</th>
+                {SORTABLE_COLUMNS.filter(
+                  (column) => !column.globalOnly || !isEventScope,
+                ).map((column) => (
+                  <th
+                    key={column.key}
+                    className="px-3 py-3"
+                    aria-sort={
+                      sortField === column.key
+                        ? sortDirection === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort(column.key)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 transition-colors hover:text-cos-text",
+                        sortField === column.key && "text-cos-text",
+                      )}
+                    >
+                      {column.label}
+                      <FilesSortIcon
+                        field={column.key}
+                        sortField={sortField}
+                        sortDirection={sortDirection}
+                      />
+                    </button>
+                  </th>
+                ))}
                 <th className="px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>

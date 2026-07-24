@@ -179,6 +179,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Global + event-scoped library (upload, search, categorize, metadata) — **shipped**
 - Files & Documents toolbar: type/status/date filters + search; uploader “More filters” removed — **shipped**
 - Drag-and-drop upload on Files & Documents (page drop opens upload dialog with file preselected) — **shipped**
+- Sortable list columns (name, event, type, category, platform, uploaded, size); default newest uploaded — **shipped**
 
 ## Vendors
 - Directory, add/edit/archive, profile, link to events — **shipped**

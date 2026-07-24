@@ -75,6 +75,17 @@ export interface FilesPageData {
 
 export type FilesViewMode = "list" | "grid";
 
+export type FilesSortField =
+  | "name"
+  | "event"
+  | "type"
+  | "category"
+  | "platform"
+  | "uploaded"
+  | "size";
+
+export type FilesSortDirection = "asc" | "desc";
+
 export interface FilesFilterState {
   search: string;
   eventId: string | "all";
