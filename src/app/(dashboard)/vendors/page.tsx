@@ -6,12 +6,40 @@ export const metadata = {
   title: "Vendor Directory",
 };
 
-export default async function VendorsPage() {
-  const data = await getVendorDirectoryPageData();
-
+export default function VendorsPage() {
   return (
-    <Suspense fallback={<div className="studio-page p-8 text-sm text-cos-muted">Loading vendors...</div>}>
-      <VendorDirectoryShell data={data} />
+    <Suspense fallback={<VendorsLoadingFallback />}>
+      <VendorsPageContent />
     </Suspense>
+  );
+}
+
+async function VendorsPageContent() {
+  const data = await getVendorDirectoryPageData();
+  return <VendorDirectoryShell data={data} />;
+}
+
+function VendorsLoadingFallback() {
+  return (
+    <div className="studio-page space-y-6 pb-12">
+      <div className="h-10 w-64 animate-pulse rounded-lg bg-cos-bg-alt" />
+      <div className="h-4 w-full max-w-xl animate-pulse rounded bg-cos-bg-alt" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-24 animate-pulse rounded-2xl bg-cos-bg-alt"
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,16rem))] gap-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-64 animate-pulse rounded-2xl bg-cos-bg-alt"
+          />
+        ))}
+      </div>
+    </div>
   );
 }

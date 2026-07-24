@@ -8,7 +8,7 @@ import {
   History,
   Star,
 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -56,11 +56,22 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
   const [blockReason, setBlockReason] = useState("");
   const [blockError, setBlockError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [isFavorite, setIsFavorite] = useState(data.vendor.isFavorite);
+
+  useEffect(() => {
+    setIsFavorite(data.vendor.isFavorite);
+  }, [data.vendor.isFavorite]);
 
   function toggleFavorite() {
+    if (!data.canWrite) return;
+    const next = !isFavorite;
+    setIsFavorite(next);
     startTransition(async () => {
-      await toggleVendorFavoriteAction(data.vendor.id, !data.vendor.isFavorite);
-      router.refresh();
+      const result = await toggleVendorFavoriteAction(data.vendor.id, next);
+      if (!result.success) {
+        setIsFavorite(!next);
+      }
+      // No router.refresh — star is optimistic; server action revalidates for next visit.
     });
   }
 
@@ -120,15 +131,15 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
               <h1 className="font-display text-4xl text-cos-text">{data.vendor.name}</h1>
               <button
                 type="button"
-                aria-label={data.vendor.isFavorite ? "Remove favorite" : "Add favorite"}
+                aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
                 onClick={toggleFavorite}
-                disabled={!data.canWrite || pending}
+                disabled={!data.canWrite}
                 className="text-cos-muted hover:text-cos-accent disabled:opacity-50"
               >
                 <Star
                   className={cn(
                     "h-5 w-5",
-                    data.vendor.isFavorite && "fill-cos-accent text-cos-accent",
+                    isFavorite && "fill-cos-accent text-cos-accent",
                   )}
                 />
               </button>

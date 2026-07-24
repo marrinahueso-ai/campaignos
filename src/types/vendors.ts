@@ -259,6 +259,8 @@ export interface VendorEventFileGroup {
 export interface VendorDetailData {
   vendor: Vendor;
   category: VendorCategory | null;
+  /** Full org category list for Edit modal — avoids a second round-trip. */
+  categories: VendorCategory[];
   contacts: VendorContact[];
   assignments: VendorEventSummary[];
   notes: VendorNote[];

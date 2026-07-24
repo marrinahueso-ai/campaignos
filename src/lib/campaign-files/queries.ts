@@ -50,6 +50,19 @@ export async function getAllCampaignFiles(): Promise<CampaignFile[]> {
 }
 
 export async function getCampaignFilesForEvent(eventId: string): Promise<CampaignFile[]> {
+  const files = await getCampaignFilesForEvents([eventId]);
+  return files;
+}
+
+/** One query for many events — avoids N+1 on vendor Documents / multi-event views. */
+export async function getCampaignFilesForEvents(
+  eventIds: string[],
+): Promise<CampaignFile[]> {
+  const uniqueIds = Array.from(new Set(eventIds.filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
   if (!(await areEventPlaybookTablesAvailable())) {
     return [];
   }
@@ -58,14 +71,14 @@ export async function getCampaignFilesForEvent(eventId: string): Promise<Campaig
   const { data, error } = await supabase
     .from("event_playbook_files")
     .select("*")
-    .eq("event_id", eventId)
+    .in("event_id", uniqueIds)
     .order("uploaded_at", { ascending: false });
 
   if (error) {
     if (isMissingSchemaError(error)) {
       return [];
     }
-    console.error("Failed to fetch event campaign files:", error.message);
+    console.error("Failed to fetch campaign files for events:", error.message);
     return [];
   }
 

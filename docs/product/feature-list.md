@@ -204,6 +204,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Documents = Files from linked events (contracts live there); legacy vendor uploads still listed — **shipped**
 - Notes: event-style compose (type + voice) via `addVendorNoteAction` — **shipped**
 - Block vendor (required reason saved as note) + Unblock — **shipped**
+- Performance: profile detail is single-fetch + batched event files; directory tabs/search stay client-local (no soft-nav flash); favorites/notes update optimistically — **shipped**
 - Payments / Settings / Contracts / Pending directory tab — **removed** from product UI
 
 ## Insights — soft launch **complete**

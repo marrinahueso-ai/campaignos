@@ -44,8 +44,8 @@ export interface VendorCardProps {
   onLogoUploaded?: () => void;
   /** Card-body click (ignores links/buttons) — e.g. open directory drawer. */
   onSelect?: () => void;
-  /** After favorite toggle (e.g. router.refresh). */
-  onFavoriteChange?: () => void;
+  /** After favorite toggle succeeds (pass next value for local list patches). */
+  onFavoriteChange?: (isFavorite: boolean) => void;
   className?: string;
 }
 
@@ -90,7 +90,7 @@ export function VendorCard({
         setOptimisticFavorite(!next);
         return;
       }
-      onFavoriteChange?.();
+      onFavoriteChange?.(next);
     });
   }
 

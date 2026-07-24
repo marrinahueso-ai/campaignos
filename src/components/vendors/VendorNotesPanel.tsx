@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Mic, MicOff, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -50,17 +49,21 @@ export function VendorNotesPanel({
   summary,
   canWrite,
 }: VendorNotesPanelProps) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [localNotes, setLocalNotes] = useState(notes);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     setVoiceSupported(Boolean(getSpeechRecognitionConstructor()));
   }, []);
+
+  useEffect(() => {
+    setLocalNotes(notes);
+  }, [notes]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
@@ -120,14 +123,29 @@ export function VendorNotesPanel({
   function handleSubmit() {
     setError(null);
     stopListening();
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    const optimistic: VendorNote = {
+      id: `optimistic-${Date.now()}`,
+      organizationId: "",
+      vendorId,
+      content: trimmed,
+      createdByName: "You",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setLocalNotes((prev) => [optimistic, ...prev]);
+    setContent("");
+
     startTransition(async () => {
-      const result = await addVendorNoteAction(vendorId, content);
+      const result = await addVendorNoteAction(vendorId, trimmed);
       if (!result.success) {
+        setLocalNotes((prev) => prev.filter((note) => note.id !== optimistic.id));
+        setContent(trimmed);
         setError(result.error ?? "Unable to save note.");
-        return;
       }
-      setContent("");
-      router.refresh();
+      // No full-page refresh — note is already on screen; action revalidates for next visit.
     });
   }
 
@@ -204,9 +222,9 @@ export function VendorNotesPanel({
         <CardHeader>
           <CardTitle>Notes</CardTitle>
         </CardHeader>
-        {notes.length > 0 ? (
+        {localNotes.length > 0 ? (
           <ul className="mt-4 space-y-4">
-            {notes.map((note) => (
+            {localNotes.map((note) => (
               <li key={note.id} className="border-l-2 border-cos-border pl-4">
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-cos-text">
                   {note.content}

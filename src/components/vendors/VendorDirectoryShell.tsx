@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
@@ -21,6 +21,7 @@ import {
   totalVendorPages,
 } from "@/lib/vendors/filters";
 import type {
+  VendorDirectoryFilters,
   VendorDirectoryPageData,
   VendorDirectoryRow,
   VendorDirectoryTab,
@@ -59,28 +60,118 @@ function directoryStatus(row: VendorDirectoryRow): {
   }
 }
 
+function filtersFromSearchParams(
+  searchParams: URLSearchParams,
+): VendorDirectoryFilters {
+  return createDefaultVendorFilters({
+    search: searchParams.get("q") ?? "",
+    eventId: searchParams.get("event") ?? "all",
+    categoryId: searchParams.get("category") ?? "all",
+    status: searchParams.get("status") ?? "all",
+    tab: normalizeDirectoryTab(searchParams.get("tab")),
+  });
+}
+
+function writeFiltersToUrl(filters: VendorDirectoryFilters) {
+  const params = new URLSearchParams();
+  if (filters.search.trim()) {
+    params.set("q", filters.search.trim());
+  }
+  if (filters.eventId !== "all") {
+    params.set("event", filters.eventId);
+  }
+  if (filters.categoryId !== "all") {
+    params.set("category", filters.categoryId);
+  }
+  if (filters.status !== "all") {
+    params.set("status", filters.status);
+  }
+  if (filters.tab !== "all") {
+    params.set("tab", filters.tab);
+  }
+  const query = params.toString();
+  const href = query ? `/vendors?${query}` : "/vendors";
+  // replaceState keeps the URL shareable without a Next soft-nav / Suspense flash.
+  window.history.replaceState(window.history.state, "", href);
+}
+
 export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<VendorDirectoryRow | null>(null);
+  const [filters, setFilters] = useState(() =>
+    filtersFromSearchParams(searchParams),
+  );
+  const [searchInput, setSearchInput] = useState(
+    () => filtersFromSearchParams(searchParams).search,
+  );
+  const [favoriteOverrides, setFavoriteOverrides] = useState<
+    Record<string, boolean>
+  >({});
 
-  const filters = useMemo(
+  // Browser back/forward — rehydrate from the address bar.
+  useEffect(() => {
+    const onPopState = () => {
+      const next = filtersFromSearchParams(
+        new URLSearchParams(window.location.search),
+      );
+      setFilters(next);
+      setSearchInput(next.search);
+      setPage(1);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  // Debounce URL sync for search only — list filtering stays instant.
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setFilters((prev) => {
+        if (prev.search === searchInput) {
+          return prev;
+        }
+        const next = { ...prev, search: searchInput };
+        writeFiltersToUrl(next);
+        return next;
+      });
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setFavoriteOverrides({});
+  }, [data.vendors]);
+
+  const rows = useMemo(
     () =>
-      createDefaultVendorFilters({
-        search: searchParams.get("q") ?? "",
-        eventId: searchParams.get("event") ?? "all",
-        categoryId: searchParams.get("category") ?? "all",
-        status: searchParams.get("status") ?? "all",
-        tab: normalizeDirectoryTab(searchParams.get("tab")),
+      data.vendors.map((row) => {
+        const override = favoriteOverrides[row.vendor.id];
+        if (override === undefined) {
+          return row;
+        }
+        return {
+          ...row,
+          vendor: { ...row.vendor, isFavorite: override },
+        };
       }),
-    [searchParams],
+    [data.vendors, favoriteOverrides],
+  );
+
+  const activeFilters = useMemo(
+    () => ({ ...filters, search: searchInput }),
+    [filters, searchInput],
   );
 
   const filteredRows = useMemo(
-    () => filterVendorDirectoryRows(data.vendors, filters),
-    [data.vendors, filters],
+    () => filterVendorDirectoryRows(rows, activeFilters),
+    [rows, activeFilters],
+  );
+
+  const favoriteCount = useMemo(
+    () => rows.filter((row) => row.vendor.isFavorite).length,
+    [rows],
   );
 
   const pageCount = totalVendorPages(filteredRows.length, VENDOR_PAGE_SIZE);
@@ -90,16 +181,16 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
     filteredRows.length === 0 ? 0 : (currentPage - 1) * VENDOR_PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * VENDOR_PAGE_SIZE, filteredRows.length);
 
-  function updateQuery(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (!value || value === "all") {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
+  function updateFilter<K extends keyof VendorDirectoryFilters>(
+    key: K,
+    value: VendorDirectoryFilters[K],
+  ) {
     setPage(1);
-    const query = params.toString();
-    router.replace(query ? `/vendors?${query}` : "/vendors");
+    setFilters((prev) => {
+      const next = { ...prev, [key]: value };
+      writeFiltersToUrl(next);
+      return next;
+    });
   }
 
   const migrationNeeded = data.vendors.length === 0 && data.categories.length === 0;
@@ -139,7 +230,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
               label: event.title,
             })),
           ]}
-          onChange={(value) => updateQuery("event", value)}
+          onChange={(value) => updateFilter("eventId", value)}
           ariaLabel="Filter by event"
         />
         <FilterSelect
@@ -151,7 +242,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
               label: category.name,
             })),
           ]}
-          onChange={(value) => updateQuery("category", value)}
+          onChange={(value) => updateFilter("categoryId", value)}
           ariaLabel="Filter by category"
         />
         <FilterSelect
@@ -160,15 +251,18 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
             value: status.value,
             label: status.label,
           }))}
-          onChange={(value) => updateQuery("status", value)}
+          onChange={(value) => updateFilter("status", value)}
           ariaLabel="Filter by status"
         />
         <div className="relative min-w-[14rem] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cos-muted" />
           <input
             type="search"
-            value={filters.search}
-            onChange={(event) => updateQuery("q", event.target.value)}
+            value={searchInput}
+            onChange={(event) => {
+              setSearchInput(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search vendors..."
             aria-label="Search vendors"
             className="h-9 w-full border border-cos-border bg-cos-card pl-9 pr-3 text-sm text-cos-text outline-none focus:border-cos-dark"
@@ -193,7 +287,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         />
         <SummaryCard
           label="Favorite Vendors"
-          value={String(data.summary.favoriteVendors)}
+          value={String(favoriteCount)}
           detail="frequently used"
         />
       </div>
@@ -203,7 +297,7 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
           <button
             key={tab.id}
             type="button"
-            onClick={() => updateQuery("tab", tab.id === "all" ? "" : tab.id)}
+            onClick={() => updateFilter("tab", tab.id)}
             className={cn(
               "px-4 py-2.5 text-sm transition-colors",
               filters.tab === tab.id
@@ -236,7 +330,12 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
                 canWrite={data.canWrite}
                 onSelect={() => setSelectedRow(row)}
                 onLogoUploaded={() => router.refresh()}
-                onFavoriteChange={() => router.refresh()}
+                onFavoriteChange={(isFavorite) => {
+                  setFavoriteOverrides((prev) => ({
+                    ...prev,
+                    [row.vendor.id]: isFavorite,
+                  }));
+                }}
               />
             );
           })}

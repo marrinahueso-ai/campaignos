@@ -19,7 +19,7 @@ import {
   mapVendorNoteRow,
   mapVendorRow,
 } from "@/lib/vendors/mappers";
-import { getCampaignFilesForEvent } from "@/lib/campaign-files/queries";
+import { getCampaignFilesForEvents } from "@/lib/campaign-files/queries";
 import { VENDOR_DOCUMENTS_BUCKET } from "@/lib/vendors/storage";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -296,7 +296,7 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
   };
 }
 
-export async function getVendorById(vendorId: string) {
+export const getVendorById = cache(async (vendorId: string) => {
   if (!(await areVendorTablesAvailable())) {
     return null;
   }
@@ -314,138 +314,180 @@ export async function getVendorById(vendorId: string) {
   }
 
   return mapVendorRow(data as VendorRow);
-}
+});
 
-export async function getVendorDetailData(
-  vendorId: string,
-): Promise<VendorDetailData | null> {
-  const organization = await getCurrentOrganization();
-  const [canWrite, canManage] = await Promise.all([
-    hasPermission("draft_edit"),
-    hasPermission("manage_people"),
-  ]);
-  const vendor = await getVendorById(vendorId);
+/** Lightweight title for metadata — avoids loading notes/files twice per navigation. */
+export const getVendorNameForMetadata = cache(
+  async (vendorId: string): Promise<string | null> => {
+    const vendor = await getVendorById(vendorId);
+    return vendor?.name ?? null;
+  },
+);
 
-  if (!organization || !vendor || vendor.organizationId !== organization.id) {
-    return null;
-  }
+export const getVendorDetailData = cache(
+  async (vendorId: string): Promise<VendorDetailData | null> => {
+    const organization = await getCurrentOrganization();
+    const [canWrite, canManage] = await Promise.all([
+      hasPermission("draft_edit"),
+      hasPermission("manage_people"),
+    ]);
+    const vendor = await getVendorById(vendorId);
 
-  const supabase = await createClient();
+    if (!organization || !vendor || vendor.organizationId !== organization.id) {
+      return null;
+    }
 
-  const [
-    categories,
-    contactsResult,
-    assignmentsResult,
-    notesResult,
-    documentsResult,
-    activityResult,
-    events,
-  ] = await Promise.all([
-    getVendorCategories(organization.id),
-    supabase
-      .from("vendor_contacts")
-      .select("*")
-      .eq("vendor_id", vendorId)
-      .order("is_primary", { ascending: false }),
-    supabase
-      .from("vendor_event_assignments")
-      .select("*")
-      .eq("vendor_id", vendorId)
-      .is("deleted_at", null),
-    supabase
-      .from("vendor_notes")
-      .select("*")
-      .eq("vendor_id", vendorId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("vendor_documents")
-      .select("*")
-      .eq("vendor_id", vendorId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("vendor_activity_logs")
-      .select("*")
-      .eq("vendor_id", vendorId)
-      .order("created_at", { ascending: false })
-      .limit(50),
-    getOrgEventsForVendors(organization.id),
-  ]);
+    const supabase = await createClient();
 
-  const categoryMap = new Map(categories.map((category) => [category.id, category]));
-  const eventMap = new Map(events.map((event) => [event.id, event]));
+    const [
+      categories,
+      contactsResult,
+      assignmentsResult,
+      notesResult,
+      documentsResult,
+      activityResult,
+    ] = await Promise.all([
+      getVendorCategories(organization.id),
+      supabase
+        .from("vendor_contacts")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .order("is_primary", { ascending: false }),
+      supabase
+        .from("vendor_event_assignments")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .is("deleted_at", null),
+      supabase
+        .from("vendor_notes")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_documents")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vendor_activity_logs")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
 
-  const assignments = ((assignmentsResult.data ?? []) as VendorEventAssignmentRow[]).map(
-    mapVendorAssignmentRow,
-  );
+    const categoryMap = new Map(
+      categories.map((category) => [category.id, category]),
+    );
+    const assignments = (
+      (assignmentsResult.data ?? []) as VendorEventAssignmentRow[]
+    ).map(mapVendorAssignmentRow);
 
-  const assignmentSummaries: VendorEventSummary[] = assignments
-    .map((assignment) => {
-      const event = eventMap.get(assignment.eventId);
-      if (!event) {
-        return null;
-      }
-      return {
-        assignmentId: assignment.id,
-        eventId: assignment.eventId,
-        eventTitle: event.title,
-        eventDate: event.date,
-        assignmentStatus: assignment.assignmentStatus,
-      };
-    })
-    .filter((value): value is VendorEventSummary => value !== null)
-    .sort((left, right) => left.eventDate.localeCompare(right.eventDate));
+    const eventIds = Array.from(
+      new Set(assignments.map((assignment) => assignment.eventId)),
+    );
 
-  const eventFiles: VendorEventFileGroup[] = (
-    await Promise.all(
-      assignmentSummaries.map(async (assignment) => {
-        const files = await getCampaignFilesForEvent(assignment.eventId);
+    // Only the linked events — not the whole org calendar.
+    const { data: eventRows } =
+      eventIds.length > 0
+        ? await supabase
+            .from("events")
+            .select("id, title, date")
+            .in("id", eventIds)
+        : { data: [] as Array<{ id: string; title: string; date: string }> };
+
+    const eventMap = new Map(
+      (eventRows ?? []).map((row) => [
+        row.id as string,
+        { title: row.title as string, date: row.date as string },
+      ]),
+    );
+
+    const assignmentSummaries: VendorEventSummary[] = assignments
+      .map((assignment) => {
+        const event = eventMap.get(assignment.eventId);
+        if (!event) {
+          return null;
+        }
         return {
+          assignmentId: assignment.id,
           eventId: assignment.eventId,
-          eventTitle: assignment.eventTitle,
-          eventDate: assignment.eventDate,
-          files: files.map((file) => ({
-            id: file.id,
-            name: file.name,
-            category: file.category,
-            uploadedAt: file.uploadedAt,
-          })),
+          eventTitle: event.title,
+          eventDate: event.date,
+          assignmentStatus: assignment.assignmentStatus,
         };
-      }),
-    )
-  ).filter((group) => group.files.length > 0);
+      })
+      .filter((value): value is VendorEventSummary => value !== null)
+      .sort((left, right) => left.eventDate.localeCompare(right.eventDate));
 
-  return {
-    vendor,
-    category: vendor.categoryId ? categoryMap.get(vendor.categoryId) ?? null : null,
-    contacts: ((contactsResult.data ?? []) as VendorContactRow[]).map(mapVendorContactRow),
-    assignments: assignmentSummaries,
-    notes: ((notesResult.data ?? []) as import("@/types/vendors").VendorNoteRow[]).map(
-      mapVendorNoteRow,
-    ),
-    documents: ((documentsResult.data ?? []) as import("@/types/vendors").VendorDocumentRow[])
-      .filter((row) => !row.deleted_at)
-      .map(mapVendorDocumentRow),
-    eventFiles,
-    activityLogs: (activityResult.data ?? []).map((row) =>
-      mapVendorActivityLogRow(
-        row as {
-          id: string;
-          organization_id: string;
-          vendor_id: string;
-          event_id: string | null;
-          action: string;
-          details: string | null;
-          actor_name: string | null;
-          created_at: string;
-        },
+    // One files query for all linked events (not N round-trips).
+    const allEventFiles = await getCampaignFilesForEvents(eventIds);
+    const filesByEvent = new Map<string, typeof allEventFiles>();
+    for (const file of allEventFiles) {
+      const list = filesByEvent.get(file.eventId) ?? [];
+      list.push(file);
+      filesByEvent.set(file.eventId, list);
+    }
+
+    const eventFiles = assignmentSummaries.flatMap((assignment) => {
+      const files = filesByEvent.get(assignment.eventId) ?? [];
+      if (files.length === 0) {
+        return [] as VendorEventFileGroup[];
+      }
+      const group: VendorEventFileGroup = {
+        eventId: assignment.eventId,
+        eventTitle: assignment.eventTitle,
+        eventDate: assignment.eventDate,
+        files: files.map((file) => ({
+          id: file.id,
+          name: file.name,
+          category: String(file.category),
+          uploadedAt: file.uploadedAt,
+        })),
+      };
+      return [group];
+    });
+
+    return {
+      vendor,
+      category: vendor.categoryId
+        ? (categoryMap.get(vendor.categoryId) ?? null)
+        : null,
+      categories,
+      contacts: ((contactsResult.data ?? []) as VendorContactRow[]).map(
+        mapVendorContactRow,
       ),
-    ),
-    canWrite,
-    canManage,
-  };
-}
+      assignments: assignmentSummaries,
+      notes: (
+        (notesResult.data ?? []) as import("@/types/vendors").VendorNoteRow[]
+      ).map(mapVendorNoteRow),
+      documents: (
+        (documentsResult.data ?? []) as import("@/types/vendors").VendorDocumentRow[]
+      )
+        .filter((row) => !row.deleted_at)
+        .map(mapVendorDocumentRow),
+      eventFiles,
+      activityLogs: (activityResult.data ?? []).map((row) =>
+        mapVendorActivityLogRow(
+          row as {
+            id: string;
+            organization_id: string;
+            vendor_id: string;
+            event_id: string | null;
+            action: string;
+            details: string | null;
+            actor_name: string | null;
+            created_at: string;
+          },
+        ),
+      ),
+      canWrite,
+      canManage,
+    };
+  },
+);
 
 export async function getEventVendorsData(
   eventId: string,
