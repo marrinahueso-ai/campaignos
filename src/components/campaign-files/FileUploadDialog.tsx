@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ChevronDown, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { uploadCampaignFileAction } from "@/lib/campaign-files/actions";
 import {
@@ -274,9 +274,8 @@ export function FileUploadButton({ onClick, className }: FileUploadButtonProps) 
         className,
       )}
     >
-      <span className="text-base leading-none">+</span>
+      <Upload className="h-4 w-4" strokeWidth={1.5} />
       Upload file
-      <ChevronDown className="h-4 w-4 opacity-80" strokeWidth={1.5} />
     </button>
   );
 }

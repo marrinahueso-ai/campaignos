@@ -27,7 +27,6 @@ import {
 import {
   CAMPAIGN_FILES_MIGRATION,
   CAMPAIGN_FILE_CATEGORIES,
-  CAMPAIGN_FILE_PLATFORMS,
   CAMPAIGN_FILE_STATUSES,
   CAMPAIGN_FILE_TYPES,
   FILES_PAGE_SIZE,
@@ -248,10 +247,14 @@ export function FilesDocumentsShell({
       : filters.eventId;
 
   const filteredFiles = useMemo(() => {
-    const filtered = filterCampaignFiles(data.files, {
-      ...filters,
-      eventId: effectiveEventFilter,
-    });
+    const filtered = filterCampaignFiles(
+      data.files,
+      {
+        ...filters,
+        eventId: effectiveEventFilter,
+      },
+      eventTitles,
+    );
     return sortCampaignFiles(filtered, sortField, sortDirection, eventTitles);
   }, [
     data.files,
@@ -356,24 +359,6 @@ export function FilesDocumentsShell({
       <div className="space-y-3 border border-cos-border bg-cos-card p-4">
         {/* Row 1: facet filters + view toggle, search on the right (matches Vendors) */}
         <div className="flex flex-wrap items-center gap-2">
-          {!isEventScope && (
-            <FilterSelect
-              ariaLabel="Filter by event"
-              value={filters.eventId}
-              options={[
-                { value: "all", label: "All events" },
-                ...data.eventList.map((event) => ({
-                  value: event.id,
-                  label: event.title,
-                })),
-              ]}
-              onChange={(value) => {
-                updateFilter("eventId", value);
-                setCarouselEventId(value);
-              }}
-            />
-          )}
-
           <FilterSelect
             ariaLabel="Filter by file type"
             value={filters.fileType}
@@ -398,19 +383,6 @@ export function FilesDocumentsShell({
               })),
             ]}
             onChange={(value) => updateFilter("category", value)}
-          />
-
-          <FilterSelect
-            ariaLabel="Filter by platform"
-            value={filters.platform}
-            options={[
-              { value: "all", label: "All platforms" },
-              ...CAMPAIGN_FILE_PLATFORMS.map((option) => ({
-                value: option.value,
-                label: option.label,
-              })),
-            ]}
-            onChange={(value) => updateFilter("platform", value)}
           />
 
           <FilterSelect
@@ -466,8 +438,12 @@ export function FilesDocumentsShell({
               type="search"
               value={filters.search}
               onChange={(event) => updateFilter("search", event.target.value)}
-              placeholder="Search files..."
-              aria-label="Search files"
+              placeholder={
+                isEventScope ? "Search files..." : "Search files or events..."
+              }
+              aria-label={
+                isEventScope ? "Search files" : "Search files or events"
+              }
               className="h-9 w-full border border-cos-border bg-cos-bg py-0 pr-3 pl-9 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
             />
           </label>

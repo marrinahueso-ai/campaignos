@@ -1,0 +1,35 @@
+---
+description: Always provide a conventional git commit summary after finishing code changes
+alwaysApply: true
+---
+
+# Git commit summary (required)
+
+After finishing a task that changes files, **always** end with a ready-to-paste git commit summary — even if the user has not asked to commit yet, and even if they commit themselves.
+
+## Format
+
+Use conventional commits (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`):
+
+```text
+<type>(optional-scope): <imperative summary, ~50–72 chars>
+
+Optional 1–3 sentence body: why + notable behavior, not a file list.
+```
+
+## Rules
+
+- Focus on **why** / user-facing outcome, not every file touched.
+- One logical change → one message. If the session mixed unrelated work, give **separate** summaries per concern.
+- Do not invent issue numbers unless the user referenced one (`#123`).
+- If you also create the commit (only when the user asks), use this same message via HEREDOC — do not skip the summary in chat.
+- If the working tree is already committed by the user with a vague message, still offer the improved summary they can use next time (or for amend only if they explicitly ask).
+
+## Example
+
+```text
+feat(files): add sortable columns and drag-and-drop upload
+
+List headers sort filtered files; dropping a file opens the upload
+dialog with it preselected. Removes unused uploader filter chrome.
+```

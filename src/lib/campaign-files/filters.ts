@@ -87,6 +87,7 @@ export function createDefaultFilesFilterState(
 export function filterCampaignFiles(
   files: CampaignFile[],
   filters: FilesFilterState,
+  eventTitles: Map<string, string> = new Map(),
 ): CampaignFile[] {
   const search = filters.search.trim().toLowerCase();
 
@@ -138,8 +139,13 @@ export function filterCampaignFiles(
       }
     }
 
-    if (search && !file.name.toLowerCase().includes(search)) {
-      return false;
+    if (search) {
+      const eventTitle = (eventTitles.get(file.eventId) ?? "").toLowerCase();
+      const matchesName = file.name.toLowerCase().includes(search);
+      const matchesEvent = eventTitle.includes(search);
+      if (!matchesName && !matchesEvent) {
+        return false;
+      }
     }
 
     return true;

@@ -177,9 +177,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Files
 - Global + event-scoped library (upload, search, categorize, metadata) — **shipped**
-- Files & Documents toolbar: type/status/date filters + search; uploader “More filters” removed — **shipped**
+- Event detail Files tab uses the same `FilesDocumentsShell` as `/files` (DnD upload, search, sort, lean toolbar; event locked / no event carousel) — **shipped**
+- Files & Documents toolbar: type/category/status/date filters; search by file or event name (global); event/platform/uploader dropdowns removed — **shipped**
 - Drag-and-drop upload on Files & Documents (page drop opens upload dialog with file preselected) — **shipped**
 - Sortable list columns (name, event, type, category, platform, uploaded, size); default newest uploaded — **shipped**
+- Upload control is a primary button (no faux dropdown chevron) — **shipped**
 
 ## Vendors
 - Directory, add/edit/archive, profile, link to events — **shipped**
