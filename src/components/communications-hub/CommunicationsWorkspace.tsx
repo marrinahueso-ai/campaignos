@@ -529,6 +529,16 @@ export function CommunicationsWorkspace({
           </p>
         ) : null}
 
+        {localAssignee.assigneeName ? (
+          <div className="flex shrink-0 items-center gap-2 border-b border-cos-border bg-cos-bg px-5 py-2.5">
+            <UserPlus className="h-3.5 w-3.5 shrink-0 text-cos-muted" aria-hidden />
+            <p className="min-w-0 text-xs text-cos-text">
+              <span className="text-cos-muted">This chat is assigned to: </span>
+              <span className="font-semibold">{localAssignee.assigneeName}</span>
+            </p>
+          </div>
+        ) : null}
+
         <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pt-6 pb-5 scroll-pt-6">
           <ThreadMessageTimeline
             messages={messages}

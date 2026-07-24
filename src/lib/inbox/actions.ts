@@ -1096,6 +1096,11 @@ export async function unarchiveInboxThreadAction(input: {
   return { success: true };
 }
 
+/**
+ * Assign (or unassign) a conversation owner.
+ * Metadata only — does not change unread, follow-up, done, or deleted state.
+ * Follow up / Done / Delete stay the normal next actions for whoever handles it.
+ */
 export async function assignInboxThreadAction(input: {
   threadId: string;
   /** Pass null to unassign. */
@@ -1132,6 +1137,7 @@ export async function assignInboxThreadAction(input: {
 
   const now = new Date().toISOString();
   const supabase = await createClient();
+  // Only assignee columns — never touch unread_count, follow_up, marked_done, or status.
   const { error } = await supabase
     .from("inbox_threads")
     .update({

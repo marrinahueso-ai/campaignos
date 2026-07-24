@@ -335,6 +335,11 @@ export function CommunicationsQueuePanel({
                           {statusLabel}
                         </span>
                       ) : null}
+                      {thread.assigneeName ? (
+                        <p className="line-clamp-1 text-[11px] leading-snug text-cos-muted">
+                          Assigned to {thread.assigneeName}
+                        </p>
+                      ) : null}
                       {thread.lastMessageSnippet ? (
                         <p
                           className={cn(

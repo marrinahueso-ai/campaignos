@@ -154,6 +154,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Double-tap / double-click message bubble → quick 👍 / ❤️ reaction bar synced to Meta when supported — **shipped** (Facebook/Instagram comments: Graph LIKE only — ❤️ maps to Like with honest UI copy; Messenger/IG DMs: `sender_action` react/unreact with the emoji; tagged threads stay Hey Ralli–local; metadata written only after Meta success; clear error if Graph rejects; IG comment likes need `instagram_manage_engagement` + reconnect)
 - Jumbo emoji: emoji-only message bodies (1 = largest, 2–3 = large) render oversized in timeline bubbles; same sizing while composing in the reply textarea — **shipped**
 - Thread actions: Follow up (star), Done, Delete (with confirm); Assign to team member (active org login users); queue filters Unread / Follow up / Done / Deleted — **shipped**
+- Assign is ownership metadata only (banner + queue “Assigned to …”); does not change unread / Done / Follow up / Delete — assignee still uses those actions — **shipped**
 - Queue model: Unread is the default home (not Done, not Deleted; Follow up stays in Unread); Follow up = starred and not deleted; Done = marked done; Deleted via Manage — **shipped**
 - Queue UI: Meta-style horizontal filter chips (Unread, Follow up, Done); Manage menu has Deleted only (AI workflow folders removed); list rows with platform badge, follow-up star, accent selected edge — **shipped** (search stays in top bar only)
 - Top bar: search + Meta connection badge only — All Campaigns / All Channels dropdowns and AI Queue button removed (queues are Unread / Follow up / Done / Deleted) — **shipped**
@@ -165,6 +166,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Tasks — soft launch **complete**
 - Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
 - Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
+- Main Table toolbar: person/status/sort as Files-style dropdowns (no Person/Filter/Sort labels); search on the same row — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
 - Summary cards (Tasks due / Overdue / Completed) as clickable Main Table filters (`?summary=`; click again clears to all; selected = dark brown + white; local-state filter + history URL sync for instant click feel) — **shipped**
 - My Tasks (assignee = signed-in user via `assignee_user_id`) — **shipped**

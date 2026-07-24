@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  ArrowDownAZ,
-  Filter,
-  Layers,
-  MoreHorizontal,
-  Search,
-  User,
-} from "lucide-react";
+import { MoreHorizontal, Search } from "lucide-react";
 import { taskStatusLabel } from "@/lib/event-playbooks/task-status";
 import type {
   TaskHubSortMode,
@@ -45,21 +38,30 @@ interface TasksV2ToolbarProps {
   orgMembers: TaskHubOrgMember[];
 }
 
-function ToolbarButton({
-  label,
-  icon: Icon,
-  children,
+function FilterSelect<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
 }: {
-  label: string;
-  icon: typeof Filter;
-  children?: React.ReactNode;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+  ariaLabel: string;
 }) {
   return (
-    <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted transition-colors hover:border-cos-accent/50 hover:text-cos-text">
-      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      <span className="hidden sm:inline">{label}</span>
-      {children}
-    </label>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as T)}
+      aria-label={ariaLabel}
+      className="h-9 min-w-0 border border-cos-border bg-cos-card px-2.5 text-xs text-cos-text outline-none focus:border-cos-dark"
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -79,86 +81,55 @@ export function TasksV2Toolbar({
   const isFiltered =
     searchQuery.trim() !== "" || statusFilter !== "all" || personFilter !== "";
 
+  const personOptions = [
+    { value: "", label: "All people" },
+    ...orgMembers
+      .filter((member) => member.userId)
+      .map((member) => ({
+        value: member.userId!,
+        label: member.displayName,
+      })),
+  ];
+
   return (
-    <div className="space-y-3 border-b border-cos-border bg-cos-card px-4 py-3">
+    <div className="border-b border-cos-border bg-cos-card px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <ToolbarButton label="Person" icon={User}>
-          <select
-            value={personFilter}
-            onChange={(event) => onPersonFilterChange(event.target.value)}
-            aria-label="Filter by person"
-            className="max-w-[8rem] cursor-pointer bg-transparent text-xs font-medium text-cos-text outline-none"
-          >
-            <option value="">All</option>
-            {orgMembers
-              .filter((member) => member.userId)
-              .map((member) => (
-                <option key={member.id} value={member.userId!}>
-                  {member.displayName}
-                </option>
-              ))}
-          </select>
-        </ToolbarButton>
+        <FilterSelect
+          ariaLabel="Filter by person"
+          value={personFilter}
+          options={personOptions}
+          onChange={onPersonFilterChange}
+        />
 
-        <ToolbarButton label="Filter" icon={Filter}>
-          <select
-            value={statusFilter}
-            onChange={(event) =>
-              onStatusFilterChange(event.target.value as TaskHubStatusFilter)
-            }
-            aria-label="Filter by status"
-            className="max-w-[7rem] cursor-pointer bg-transparent text-xs font-medium text-cos-text outline-none"
-          >
-            {STATUS_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </ToolbarButton>
+        <FilterSelect
+          ariaLabel="Filter by status"
+          value={statusFilter}
+          options={STATUS_FILTER_OPTIONS}
+          onChange={onStatusFilterChange}
+        />
 
-        <ToolbarButton label="Sort" icon={ArrowDownAZ}>
-          <select
-            value={sortMode}
-            onChange={(event) =>
-              onSortChange(event.target.value as TaskHubSortMode)
-            }
-            aria-label="Sort tasks"
-            className="max-w-[7rem] cursor-pointer bg-transparent text-xs font-medium text-cos-text outline-none"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </ToolbarButton>
-
-        <button
-          type="button"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted transition-colors hover:text-cos-text"
-        >
-          <Layers className="h-3.5 w-3.5" aria-hidden />
-          <span className="hidden sm:inline">Group by</span>
-        </button>
+        <FilterSelect
+          ariaLabel="Sort tasks"
+          value={sortMode}
+          options={SORT_OPTIONS}
+          onChange={onSortChange}
+        />
 
         <button
           type="button"
           aria-label="More options"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text"
+          className="inline-flex h-9 w-9 items-center justify-center border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
 
-        <span className="ml-auto text-xs text-cos-muted tabular-nums">
+        <span className="text-xs text-cos-muted tabular-nums">
           {isFiltered
             ? `${filteredCount} of ${taskCount}`
             : `${taskCount} tasks`}
         </span>
-      </div>
 
-      <div className="flex justify-end">
-        <label className="relative w-full sm:max-w-md sm:min-w-[20rem]">
+        <label className="relative ml-auto min-w-[12rem] flex-1 basis-[14rem] sm:max-w-sm">
           <Search
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
             aria-hidden
@@ -169,7 +140,7 @@ export function TasksV2Toolbar({
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search tasks..."
             aria-label="Search tasks"
-            className="h-10 w-full rounded-md border border-cos-border bg-cos-bg py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-1 focus:ring-cos-accent/25"
+            className="h-9 w-full border border-cos-border bg-cos-bg py-0 pr-3 pl-9 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
           />
         </label>
       </div>
