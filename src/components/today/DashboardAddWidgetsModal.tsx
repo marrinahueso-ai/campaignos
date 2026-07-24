@@ -26,7 +26,7 @@ export function DashboardAddWidgetsModal({
   onApply,
   pending = false,
 }: DashboardAddWidgetsModalProps) {
-  const catalog = useMemo(() => getAddableDashboardWidgets(2), []);
+  const catalog = useMemo(() => getAddableDashboardWidgets(3), []);
   const [selected, setSelected] = useState<Set<DashboardWidgetId>>(new Set());
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   Check,
   ChevronDown,
@@ -37,6 +38,7 @@ export function DashboardOverview({
   widgets,
   className,
 }: DashboardOverviewProps) {
+  const router = useRouter();
   const [layout, setLayout] = useState(initialLayout);
   const layoutRef = useRef(initialLayout);
   const [editing, setEditing] = useState(false);
@@ -64,7 +66,10 @@ export function DashboardOverview({
         layoutRef.current = previous;
         setLayout(previous);
         setError(result.error ?? "Could not save dashboard layout.");
+        return;
       }
+      // Pull server widgets for newly added Phase 3 cards (e.g. Insights).
+      router.refresh();
     });
   }
 
@@ -95,7 +100,7 @@ export function DashboardOverview({
   }
 
   function handleApplyAdd(selectedIds: DashboardWidgetId[]) {
-    const next = applyDashboardWidgetSelection(layout, selectedIds, 2);
+    const next = applyDashboardWidgetSelection(layout, selectedIds, 3);
     setAddOpen(false);
     persist(next);
   }
@@ -230,9 +235,7 @@ function WidgetRegion({
   onMove: (id: DashboardWidgetId, direction: -1 | 1) => void;
   emptyLabel: string;
 }) {
-  const visible = ids.filter((id) => widgets[id] != null);
-
-  if (visible.length === 0) {
+  if (ids.length === 0) {
     return (
       <div
         className={cn(
@@ -251,20 +254,29 @@ function WidgetRegion({
         stacked ? "flex flex-col gap-4" : "grid gap-4 sm:grid-cols-2",
       )}
     >
-      {visible.map((id, index) => (
+      {ids.map((id, index) => (
         <EditableWidgetFrame
           key={`${region}-${id}`}
           id={id}
           editing={editing}
           canMoveUp={index > 0}
-          canMoveDown={index < visible.length - 1}
+          canMoveDown={index < ids.length - 1}
           onRemove={() => onRemove(id)}
           onMoveUp={() => onMove(id, -1)}
           onMoveDown={() => onMove(id, 1)}
         >
-          {widgets[id]}
+          {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
         </EditableWidgetFrame>
       ))}
+    </div>
+  );
+}
+
+function WidgetLoadingPlaceholder({ id }: { id: DashboardWidgetId }) {
+  const label = getDashboardWidgetDefinition(id)?.label ?? "Widget";
+  return (
+    <div className="rounded-2xl bg-cos-bg-alt p-5 text-sm text-cos-muted shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
+      Loading {label}…
     </div>
   );
 }
