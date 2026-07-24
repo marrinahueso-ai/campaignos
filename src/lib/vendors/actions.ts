@@ -10,6 +10,7 @@ import {
   archiveVendor,
   assignVendorToEvent,
   createVendor,
+  deleteVendor,
   getVendorDocumentSignedUrl,
   getVendorRowById,
   removeVendorFromEvent,
@@ -92,7 +93,17 @@ export async function createVendorAction(
   }
 
   revalidateVendorPaths(result.id, input.eventId);
-  return { success: true, vendorId: result.id, error: result.error };
+
+  // Vendor row may exist even when the event link failed — surface that clearly.
+  if (result.error) {
+    return {
+      success: false,
+      vendorId: result.id,
+      error: result.error,
+    };
+  }
+
+  return { success: true, vendorId: result.id, error: null };
 }
 
 export async function updateVendorAction(
@@ -166,6 +177,32 @@ export async function archiveVendorAction(
   }
 
   return { success, error: success ? null : "Unable to archive vendor." };
+}
+
+export async function deleteVendorAction(
+  vendorId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const organization = await getCurrentOrganization();
+
+  if (!organization) {
+    return { success: false, error: "Complete School Setup before managing vendors." };
+  }
+
+  if (!(await hasPermission("manage_people"))) {
+    return { success: false, error: "Only admins can delete vendors." };
+  }
+
+  const vendor = await getVendorRowById(vendorId);
+  if (!vendor || vendor.organizationId !== organization.id) {
+    return { success: false, error: "Vendor not found." };
+  }
+
+  const success = await deleteVendor(vendorId, organization.id);
+  if (success) {
+    revalidateVendorPaths(vendorId);
+  }
+
+  return { success, error: success ? null : "Unable to delete vendor." };
 }
 
 export async function assignVendorToEventAction(

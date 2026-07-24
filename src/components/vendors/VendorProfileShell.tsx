@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Archive,
   ArrowLeft,
+  Ban,
   FileText,
   History,
+  Pencil,
+  ShieldCheck,
   Star,
+  Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
@@ -18,6 +24,7 @@ import { VendorNotesPanel } from "@/components/vendors/VendorNotesPanel";
 import {
   archiveVendorAction,
   blockVendorAction,
+  deleteVendorAction,
   downloadVendorDocumentAction,
   toggleVendorFavoriteAction,
   unblockVendorAction,
@@ -31,16 +38,14 @@ type ProfileTab =
   | "events"
   | "documents"
   | "notes"
-  | "activity"
-  | "communications";
+  | "activity";
 
-const TABS: Array<{ id: ProfileTab; label: string; shell?: boolean }> = [
+const TABS: Array<{ id: ProfileTab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "events", label: "Events" },
   { id: "documents", label: "Documents" },
   { id: "notes", label: "Notes" },
   { id: "activity", label: "Activity" },
-  { id: "communications", label: "Communications", shell: true },
 ];
 
 interface VendorProfileShellProps {
@@ -81,6 +86,22 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
     }
     startTransition(async () => {
       const result = await archiveVendorAction(data.vendor.id);
+      if (result.success) {
+        router.push("/vendors");
+      }
+    });
+  }
+
+  function handleDelete() {
+    if (
+      !confirm(
+        "Delete this vendor? They’ll be removed from the directory. You can’t undo this from the app.",
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await deleteVendorAction(data.vendor.id);
       if (result.success) {
         router.push("/vendors");
       }
@@ -129,20 +150,29 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-display text-4xl text-cos-text">{data.vendor.name}</h1>
-              <button
-                type="button"
-                aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-                onClick={toggleFavorite}
-                disabled={!data.canWrite}
-                className="text-cos-muted hover:text-cos-accent disabled:opacity-50"
-              >
-                <Star
-                  className={cn(
-                    "h-5 w-5",
-                    isFavorite && "fill-cos-accent text-cos-accent",
-                  )}
-                />
-              </button>
+              <div className="group/icon-action relative">
+                <div
+                  role="tooltip"
+                  className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap border border-cos-border bg-cos-card px-2 py-1 text-[11px] text-cos-text opacity-0 shadow-md transition-opacity duration-150 group-hover/icon-action:opacity-100 group-focus-within/icon-action:opacity-100"
+                >
+                  {isFavorite ? "Remove favorite" : "Add favorite"}
+                </div>
+                <button
+                  type="button"
+                  aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+                  title={isFavorite ? "Remove favorite" : "Add favorite"}
+                  onClick={toggleFavorite}
+                  disabled={!data.canWrite}
+                  className="text-cos-muted hover:text-cos-accent disabled:opacity-50"
+                >
+                  <Star
+                    className={cn(
+                      "h-5 w-5",
+                      isFavorite && "fill-cos-accent text-cos-accent",
+                    )}
+                  />
+                </button>
+              </div>
             </div>
             {data.category && <CategoryPill category={data.category} />}
             <Badge
@@ -153,40 +183,49 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
             </Badge>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {data.canWrite && (
-            <Button type="button" size="sm" onClick={() => setEditOpen(true)}>
-              Edit Vendor
-            </Button>
+            <IconActionButton
+              label="Edit vendor"
+              icon={Pencil}
+              variant="primary"
+              onClick={() => setEditOpen(true)}
+            />
           )}
           {data.canWrite && !isBlocked && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
+            <IconActionButton
+              label="Block vendor"
+              icon={Ban}
               onClick={() => {
                 setBlockError(null);
                 setBlockOpen(true);
               }}
-            >
-              Block
-            </Button>
+            />
           )}
           {data.canWrite && isBlocked && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
+            <IconActionButton
+              label="Unblock vendor"
+              icon={ShieldCheck}
               disabled={pending}
               onClick={handleUnblock}
-            >
-              Unblock
-            </Button>
+            />
           )}
           {data.canManage && (
-            <Button type="button" size="sm" variant="secondary" onClick={handleArchive}>
-              Archive
-            </Button>
+            <IconActionButton
+              label="Archive vendor"
+              icon={Archive}
+              disabled={pending}
+              onClick={handleArchive}
+            />
+          )}
+          {data.canManage && (
+            <IconActionButton
+              label="Delete vendor"
+              icon={Trash2}
+              variant="danger"
+              disabled={pending}
+              onClick={handleDelete}
+            />
           )}
         </div>
       </div>
@@ -205,7 +244,6 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
             )}
           >
             {item.label}
-            {item.shell ? " *" : ""}
           </button>
         ))}
       </div>
@@ -228,7 +266,6 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
         />
       )}
       {tab === "activity" && <ActivityPanel logs={data.activityLogs} />}
-      {tab === "communications" && <CommunicationsShell />}
 
       {blockOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/25 p-4 backdrop-blur-sm">
@@ -502,15 +539,46 @@ function ActivityPanel({ logs }: { logs: VendorDetailData["activityLogs"] }) {
   );
 }
 
-function CommunicationsShell() {
+function IconActionButton({
+  label,
+  icon: Icon,
+  onClick,
+  disabled,
+  variant = "default",
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: "default" | "primary" | "danger";
+}) {
   return (
-    <Card className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-      <p className="font-display text-xl text-cos-text">Communications</p>
-      <p className="max-w-md text-sm text-cos-muted">
-        This tab is a shell for the current release. Core vendor data lives in Overview,
-        Events, Documents, Notes, and Activity.
-      </p>
-    </Card>
+    <div className="group/icon-action relative">
+      <div
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap border border-cos-border bg-cos-card px-2 py-1 text-[11px] text-cos-text opacity-0 shadow-md transition-opacity duration-150 group-hover/icon-action:opacity-100 group-focus-within/icon-action:opacity-100"
+      >
+        {label}
+      </div>
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(
+          "inline-flex h-9 w-9 items-center justify-center border transition-colors disabled:opacity-50",
+          variant === "primary" &&
+            "border-cos-dark bg-cos-dark text-white hover:bg-cos-dark/90",
+          variant === "default" &&
+            "border-cos-border bg-cos-card text-cos-text hover:border-cos-muted hover:bg-cos-bg",
+          variant === "danger" &&
+            "border-cos-border bg-cos-card text-cos-muted hover:border-red-300 hover:bg-red-50 hover:text-red-700",
+        )}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </button>
+    </div>
   );
 }
 

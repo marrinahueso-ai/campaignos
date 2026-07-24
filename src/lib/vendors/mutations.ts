@@ -254,6 +254,29 @@ export async function archiveVendor(
   return !error;
 }
 
+/** Soft-delete — removes from directory; assignment history rows remain for audit. */
+export async function deleteVendor(
+  vendorId: string,
+  organizationId: string,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("vendors")
+    .update({
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", vendorId)
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null);
+
+  if (!error) {
+    await logVendorActivity(organizationId, vendorId, "deleted", "Vendor deleted");
+  }
+
+  return !error;
+}
+
 export async function assignVendorToEvent(
   organizationId: string,
   vendorId: string,

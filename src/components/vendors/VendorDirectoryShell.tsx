@@ -397,6 +397,9 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         onClose={() => setAddOpen(false)}
         categories={data.categories}
         events={data.events}
+        defaultEventId={
+          filters.eventId !== "all" ? filters.eventId : undefined
+        }
         onCreated={() => router.refresh()}
       />
     </div>

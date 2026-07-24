@@ -197,15 +197,17 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - “Files organized by event” carousel cards use Events home summary colors (idle `bg-cos-bg-alt` / selected `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.files_layout` — **shipped**
 
 ## Vendors
-- Directory (card grid matching event vendor cards), add/archive, profile, link to events — **shipped**
+- Directory (card grid matching event vendor cards), add/archive/delete, profile, link to events — **shipped**
+- Profile header actions: icon buttons with hover tooltips (Edit, Block/Unblock, Archive, Delete) — **shipped**
+- Add Vendor wizard: Basics → Connect event → Review; creates assignment on save (defaults Confirmed); directory event filter pre-selects the event — **shipped**
 - Favorite star on card upper-right; directory tabs: All / Favorites / Past / Blocked (Pending removed) — **shipped**
 - Directory peek drawer: single **View Profile** CTA; edit vendor from profile only — **shipped**
-- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**; Communications — **partial** (shell)
+- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**
 - Documents = Files from linked events (contracts live there); legacy vendor uploads still listed — **shipped**
 - Notes: event-style compose (type + voice) via `addVendorNoteAction` — **shipped**
 - Block vendor (required reason saved as note) + Unblock — **shipped**
 - Performance: profile detail is single-fetch + batched event files; directory tabs/search stay client-local (no soft-nav flash); favorites/notes update optimistically — **shipped**
-- Payments / Settings / Contracts / Pending directory tab — **removed** from product UI
+- Payments / Settings / Contracts / Communications profile tab / Pending directory tab — **removed** from product UI
 
 ## Insights — soft launch **complete**
 - **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)
