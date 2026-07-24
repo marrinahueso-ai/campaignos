@@ -25,7 +25,8 @@ export async function getTodayAttentionCounts(): Promise<TodayAttentionCounts> {
 
   return {
     reviewCount: approvals.assignedToMe.length,
-    volunteerCount: volunteers.kpis.underfilledRoleCount,
+    // Events that still need people — role totals read as noise on home (e.g. 67).
+    volunteerCount: volunteers.kpis.underfilledEventCount,
     tasksThisWeekCount: tasksThisWeek.length,
   };
 }

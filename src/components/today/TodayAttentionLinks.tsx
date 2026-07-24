@@ -47,9 +47,9 @@ export function TodayAttentionLinks({ counts }: TodayAttentionLinksProps) {
 
   return (
     <nav aria-label="Needs attention" className="pt-1">
-      <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-cos-text/80">
+      <ul className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-cos-brand-navy/80">
         {links.map((link, index) => (
-          <li key={link.href} className="flex items-center gap-x-2">
+          <li key={link.href} className="flex items-center gap-x-3">
             {index > 0 && (
               <span aria-hidden className="text-cos-muted">
                 ·
@@ -57,7 +57,7 @@ export function TodayAttentionLinks({ counts }: TodayAttentionLinksProps) {
             )}
             <Link
               href={link.href}
-              className="underline decoration-cos-border underline-offset-4 transition-colors hover:text-cos-primary hover:decoration-cos-primary/40"
+              className="underline decoration-cos-border underline-offset-[5px] transition-colors hover:text-cos-brand-navy hover:decoration-cos-brand-sage/50"
             >
               {link.label}
             </Link>

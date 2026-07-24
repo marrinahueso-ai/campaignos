@@ -17,7 +17,6 @@ export function SnapshotMiniCalendar({
   const { year, month } = parseDate(today);
   const monthLabel = new Date(year, month, 1).toLocaleDateString("en-US", {
     month: "long",
-    year: "numeric",
   });
   const days = buildMonthDays(year, month);
   // Dashboard mini calendar shows events only — not schedule, milestones, or posts.
@@ -26,7 +25,7 @@ export function SnapshotMiniCalendar({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-cos-muted">{monthLabel}</p>
+      <p className="text-sm font-medium text-cos-brand-navy">{monthLabel}</p>
       <div className="grid grid-cols-7 gap-y-2">
         {WEEKDAY_LABELS.map((label, index) => (
           <span

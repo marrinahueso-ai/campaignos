@@ -109,7 +109,7 @@ export default async function DashboardPage() {
             teammateNote={todayData.teammateNote}
             timezone={organization?.timezone ?? "America/Chicago"}
           />
-          <div className="mt-6 flex flex-col gap-8 lg:mt-7 lg:gap-10">
+          <div className="mt-8 flex flex-col gap-6 lg:mt-10">
             <Suspense fallback={null}>
               <DashboardOnboardingBlock />
             </Suspense>

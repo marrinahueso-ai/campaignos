@@ -51,8 +51,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Role simulator (dev/test, gated) — **shipped**
 
 ## Dashboard (Today)
-- Lean Today home: greeting + status, big **Up Next**, weather, mini calendar, This Week (school **events** only) — **shipped**
-- Attention links under Up Next (counts only, hide when zero): to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
+- Lean Today home (Mock A): calm greeting (no “TODAY” eyebrow / attention tally), full-bleed **Up Next** hero with artwork + sage badge, weather + mini calendar + This Week (school **events** only, `Day · title` rows) — **shipped**
+- Attention links under Up Next (counts only, hide when zero): to review → Approvals · need volunteers (underfilled **events**) → Volunteers · tasks this week → Tasks My View — **shipped**
 - Approvals/published pulse cards + waiting-on companion lists on home — **removed** (use Approvals / Tasks / Volunteers)
 - Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; mini calendar school events for the month with hover titles — **shipped**
 
