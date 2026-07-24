@@ -57,6 +57,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
+- Events Home action summary cards (clickable filters: Next 60 Days · Needs Setup · Ready to Run · Needs Follow-up · Done; default Next 60 Days; counts scoped to school-year filter; overlap allowed) — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))

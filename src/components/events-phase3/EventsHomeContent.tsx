@@ -25,6 +25,7 @@ import {
   totalCampaignPages,
 } from "@/lib/events/campaign-page-filters";
 import {
+  EVENTS_HOME_DEFAULT_SUMMARY,
   EVENTS_HOME_SUMMARY_CARDS,
   EVENTS_HOME_SUMMARY_OVERLAP_NOTE,
   buildEventsHomeMonthFilterOptions,
@@ -73,7 +74,9 @@ export function EventsHomeContent({
 }: EventsHomeContentProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | Event["status"]>("all");
-  const [summary, setSummary] = useState<EventsHomeSummaryKey | "all">("all");
+  const [summary, setSummary] = useState<EventsHomeSummaryKey | "all">(
+    EVENTS_HOME_DEFAULT_SUMMARY,
+  );
   const [monthFilter, setMonthFilter] = useState<EventsHomeMonthFilter>("all");
   const [responsibleFilter, setResponsibleFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -84,9 +87,16 @@ export function EventsHomeContent({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
+  const eventsForSummary = useMemo(() => {
+    if (schoolYearFilter === "all") {
+      return events;
+    }
+    return events.filter((event) => event.schoolYearId === schoolYearFilter);
+  }, [events, schoolYearFilter]);
+
   const summaryCounts = useMemo(
-    () => countEventsHomeSummary(events, today),
-    [events, today],
+    () => countEventsHomeSummary(eventsForSummary, today),
+    [eventsForSummary, today],
   );
 
   const monthOptions = useMemo(

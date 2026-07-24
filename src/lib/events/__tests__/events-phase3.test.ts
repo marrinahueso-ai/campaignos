@@ -230,7 +230,7 @@ describe("Phase 3 responsibility mapping", () => {
 });
 
 describe("Phase 3 Events Home summary", () => {
-  it("counts planning/active/upcoming/completed honestly", () => {
+  it("counts action lenses honestly", () => {
     const today = "2026-07-15";
     const events = [
       eventStub({ id: "1", title: "A", status: "draft", date: "2026-08-01" }),
@@ -254,14 +254,14 @@ describe("Phase 3 Events Home summary", () => {
       }),
     ];
     const counts = countEventsHomeSummary(events, today);
-    assert.equal(counts.total, 4);
-    assert.equal(counts.planning, 1);
-    assert.equal(counts.active, 1);
-    assert.equal(counts.completed, 2);
-    assert.ok(counts.upcoming >= 1);
+    assert.equal(counts.next_60_days, 2);
+    assert.equal(counts.needs_setup, 1);
+    assert.equal(counts.ready_to_run, 1);
+    assert.equal(counts.needs_follow_up, 1);
+    assert.equal(counts.done, 1);
   });
 
-  it("allows intentional overlap between Active and Upcoming", () => {
+  it("allows intentional overlap between Next 60 days and Ready to run", () => {
     const today = "2026-07-15";
     const event = eventStub({
       id: "overlap",
@@ -270,9 +270,9 @@ describe("Phase 3 Events Home summary", () => {
       date: "2026-08-01",
     });
     const counts = countEventsHomeSummary([event], today);
-    assert.equal(counts.active, 1);
-    assert.equal(counts.upcoming, 1);
-    assert.equal(counts.total, 1);
+    assert.equal(counts.ready_to_run, 1);
+    assert.equal(counts.next_60_days, 1);
+    assert.equal(counts.needs_setup, 0);
   });
 });
 
