@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, BarChart3 } from "lucide-react";
 import { DashboardWidgetCard } from "@/components/today/DashboardWidgetCard";
-import type { InsightsKpi, InsightsPageData } from "@/lib/insights/types";
+import type { InsightsKpi, InsightsPulseData } from "@/lib/insights/types";
 
 interface InsightsPulseWidgetProps {
-  data: InsightsPageData | null;
+  data: InsightsPulseData | null;
 }
 
 const PULSE_KEYS = ["reach", "engagement", "views"] as const;
@@ -74,9 +74,9 @@ export function InsightsPulseWidget({ data }: InsightsPulseWidgetProps) {
               </li>
             ))}
           </ul>
-          {data.recommendation?.summary ? (
+          {data.recommendationSummary ? (
             <p className="mt-4 line-clamp-2 text-xs text-cos-muted">
-              {data.recommendation.summary}
+              {data.recommendationSummary}
             </p>
           ) : null}
           <Link

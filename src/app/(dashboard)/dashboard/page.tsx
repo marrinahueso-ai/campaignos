@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
-import { getInsightsPageData } from "@/lib/insights/queries";
+import { getInsightsPulseData } from "@/lib/insights/queries";
 import { getDashboardLayoutForCurrentUser } from "@/lib/today/dashboard-layout";
 import { getDashboardRichListData } from "@/lib/today/dashboard-rich-widgets";
 import {
@@ -126,7 +126,7 @@ async function VolunteersWidgetBlock() {
 }
 
 async function InsightsPulseWidgetBlock() {
-  const data = await getInsightsPageData({ range: "7d" });
+  const data = await getInsightsPulseData({ range: "7d" });
   return <InsightsPulseWidget data={data} />;
 }
 

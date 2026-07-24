@@ -132,6 +132,19 @@ export type InsightsPageData = {
   unavailableMetricNotes: string[];
 };
 
+/**
+ * Lean Today/Dashboard Insights pulse — account-level KPIs only.
+ * Skips post enrichment, time series, activity, and platform breakdowns.
+ */
+export type InsightsPulseData = {
+  dateRange: InsightsDateRange;
+  connection: InsightsConnectionHealth;
+  /** Subset used by the widget: reach, engagement, views. */
+  kpis: InsightsKpi[];
+  recommendationSummary: string | null;
+  hasAnyMetrics: boolean;
+};
+
 /** Event detail Insights tab — scoped to published posts for one event. */
 export type EventInsightsEmptyState = "connect" | "no_posts" | "sync";
 

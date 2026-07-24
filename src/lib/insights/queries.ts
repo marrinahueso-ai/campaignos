@@ -18,6 +18,7 @@ import type {
   InsightsPageData,
   InsightsPlatform,
   InsightsPlatformTotals,
+  InsightsPulseData,
   InsightsTimeSeriesPoint,
   InsightsTopPost,
 } from "@/lib/insights/types";
@@ -718,6 +719,118 @@ function resolveUnavailableReason(connection: InsightsConnectionHealth): string 
   }
 
   return "No synced metrics yet — run a sync to pull data from Meta.";
+}
+
+const PULSE_KPI_KEYS: Array<{ key: InsightsKpiKey; label: string }> = [
+  { key: "views", label: "Views" },
+  { key: "reach", label: "Reach" },
+  { key: "engagement", label: "Interactions" },
+];
+
+function buildPulseKpis(input: {
+  current: AccountInsightRow[];
+  previous: AccountInsightRow[];
+  unavailableReason: string | null;
+}): InsightsKpi[] {
+  const hasData = input.current.length > 0;
+
+  return PULSE_KPI_KEYS.map(({ key, label }) => {
+    const value = hasData
+      ? resolveKpiValue({
+          key,
+          accountRows: input.current,
+          postRows: [],
+        })
+      : null;
+    const previousValue = hasData
+      ? resolveKpiValue({
+          key,
+          accountRows: input.previous,
+          postRows: [],
+        })
+      : null;
+
+    return {
+      key,
+      label,
+      value,
+      previousValue,
+      changePercent:
+        value != null && previousValue != null
+          ? computeChangePercent(value, previousValue)
+          : null,
+      unavailableReason: hasData ? null : input.unavailableReason,
+      sparkline: [],
+    };
+  });
+}
+
+/**
+ * Today/Dashboard Insights widget — account metrics + connection only.
+ * Prefer this over {@link getInsightsPageData} for the pulse card.
+ */
+export async function getInsightsPulseData(input?: {
+  range?: string | null;
+}): Promise<InsightsPulseData | null> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return null;
+  }
+
+  const dateRange = resolveInsightsDateRange({
+    range: input?.range ?? "7d",
+  });
+  const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to);
+  const connection = await getInsightsConnectionHealth(organization.id);
+
+  // Connect / reconnect UI does not need metric rows.
+  if (!connection.metaConnected || connection.reconnectRequired) {
+    return {
+      dateRange,
+      connection,
+      kpis: [],
+      recommendationSummary: null,
+      hasAnyMetrics: false,
+    };
+  }
+
+  const [currentAccount, previousAccount] = await Promise.all([
+    fetchAccountInsights({
+      organizationId: organization.id,
+      from: dateRange.from,
+      to: dateRange.to,
+    }),
+    fetchAccountInsights({
+      organizationId: organization.id,
+      from: previousPeriod.from,
+      to: previousPeriod.to,
+    }),
+  ]);
+
+  const hasAnyMetrics = currentAccount.length > 0;
+  const unavailableReason = hasAnyMetrics
+    ? null
+    : resolveUnavailableReason(connection);
+  const kpis = buildPulseKpis({
+    current: currentAccount,
+    previous: previousAccount,
+    unavailableReason,
+  });
+  const recommendation = buildInsightsRecommendation({
+    kpis,
+    contentBreakdown: [],
+    platformComparison: [],
+    topPosts: [],
+    hasAnyMetrics,
+  });
+
+  return {
+    dateRange,
+    connection,
+    kpis,
+    recommendationSummary: recommendation?.summary ?? null,
+    hasAnyMetrics,
+  };
 }
 
 export async function getInsightsPageData(input?: {
