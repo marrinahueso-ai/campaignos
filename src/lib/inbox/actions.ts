@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidateInboxRoutes } from "@/lib/inbox/revalidate-paths";
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { generateInboxAiDraft } from "@/lib/inbox/ai-draft";
@@ -10,6 +11,7 @@ import {
   getInboxThreadById,
   getLatestReplyTarget,
 } from "@/lib/inbox/message-queries";
+import { buildInboxOrgMembers } from "@/lib/inbox/org-members";
 import { canApproveReplyAnchor } from "@/lib/inbox/reply-target";
 import { refreshInboxScopesFromPageToken, getOrganizationInboxSettings } from "@/lib/inbox/settings";
 import { sendInboxReply } from "@/lib/inbox/send-reply";
@@ -1088,6 +1090,61 @@ export async function unarchiveInboxThreadAction(input: {
 
   if (error) {
     return { success: false, error: "Could not restore conversation." };
+  }
+
+  revalidateInboxRoutes();
+  return { success: true };
+}
+
+export async function assignInboxThreadAction(input: {
+  threadId: string;
+  /** Pass null to unassign. */
+  assignedUserId: string | null;
+}): Promise<InboxActionResult> {
+  const access = await requireInboxPermission();
+  if (!access.ok) {
+    return { success: false, error: access.error };
+  }
+
+  const thread = await getInboxThreadById({
+    organizationId: access.organizationId,
+    threadId: input.threadId,
+  });
+  if (!thread) {
+    return { success: false, error: "Thread not found." };
+  }
+
+  let assigneeName: string | null = null;
+  let assigneeInitials: string | null = null;
+
+  if (input.assignedUserId) {
+    const member = buildInboxOrgMembers(
+      await getOrganizationUsers(access.organizationId),
+    ).find((entry) => entry.userId === input.assignedUserId);
+
+    if (!member) {
+      return { success: false, error: "Team member not found." };
+    }
+
+    assigneeName = member.displayName;
+    assigneeInitials = member.initials;
+  }
+
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inbox_threads")
+    .update({
+      assigned_user_id: input.assignedUserId,
+      assignee_name: assigneeName,
+      assignee_initials: assigneeInitials,
+      updated_at: now,
+    })
+    .eq("id", input.threadId)
+    .eq("organization_id", access.organizationId);
+
+  if (error) {
+    return { success: false, error: "Could not update assignment." };
   }
 
   revalidateInboxRoutes();

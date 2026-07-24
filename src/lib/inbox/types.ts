@@ -29,10 +29,21 @@ export interface InboxThread {
   status: InboxItemStatus;
   followUp: boolean;
   markedDone: boolean;
+  assignedUserId: string | null;
+  assigneeName: string | null;
+  assigneeInitials: string | null;
   syncedAt: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Active org members available for conversation assignment. */
+export interface InboxOrgMember {
+  id: string;
+  userId: string;
+  displayName: string;
+  initials: string;
 }
 
 export interface InboxMessage {
@@ -97,6 +108,7 @@ export interface InboxPageData {
   threads: InboxThread[];
   messagesByThreadId: Record<string, InboxMessage[]>;
   channelCounts: InboxChannelCounts;
+  orgMembers: InboxOrgMember[];
   oauthError: string | null;
   connectedJustNow: boolean;
 }

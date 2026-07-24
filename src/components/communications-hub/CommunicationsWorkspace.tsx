@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import { INBOX_CHANNEL_LABELS, isReplyChannel, isTaggedChannel } from "@/lib/inb
 import { hasThreadPostPermalink } from "@/lib/inbox/comment-post-preview";
 import {
   archiveInboxThreadAction,
+  assignInboxThreadAction,
   markInboxThreadDoneAction,
   toggleInboxThreadFollowUpAction,
   unarchiveInboxThreadAction,
@@ -26,7 +27,7 @@ import {
   getTimelineMessages,
   isOutboundTimelineMessage,
 } from "@/lib/inbox/timeline-messages";
-import type { InboxMessage, InboxThread } from "@/lib/inbox/types";
+import type { InboxMessage, InboxOrgMember, InboxThread } from "@/lib/inbox/types";
 import { cn } from "@/lib/utils/cn";
 import { MessageBubble } from "@/components/communications-hub/MessageBubble";
 import {
@@ -125,6 +126,7 @@ const threadActionButtonClassName =
 interface CommunicationsWorkspaceProps {
   thread: InboxThread | null;
   messages: InboxMessage[];
+  orgMembers?: InboxOrgMember[];
   pageName?: string | null;
   showBack?: boolean;
   onBack?: () => void;
@@ -137,6 +139,7 @@ interface CommunicationsWorkspaceProps {
 export function CommunicationsWorkspace({
   thread,
   messages,
+  orgMembers = [],
   pageName = null,
   showBack,
   onBack,
@@ -146,8 +149,48 @@ export function CommunicationsWorkspace({
   className,
 }: CommunicationsWorkspaceProps) {
   const router = useRouter();
+  const assignMenuId = useId();
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActing, startActionTransition] = useTransition();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [localAssignee, setLocalAssignee] = useState<{
+    assignedUserId: string | null;
+    assigneeName: string | null;
+    assigneeInitials: string | null;
+  }>({
+    assignedUserId: thread?.assignedUserId ?? null,
+    assigneeName: thread?.assigneeName ?? null,
+    assigneeInitials: thread?.assigneeInitials ?? null,
+  });
+
+  useEffect(() => {
+    setLocalAssignee({
+      assignedUserId: thread?.assignedUserId ?? null,
+      assigneeName: thread?.assigneeName ?? null,
+      assigneeInitials: thread?.assigneeInitials ?? null,
+    });
+    setAssignOpen(false);
+  }, [
+    thread?.id,
+    thread?.assignedUserId,
+    thread?.assigneeName,
+    thread?.assigneeInitials,
+  ]);
+
+  useEffect(() => {
+    if (!assignOpen) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAssignOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [assignOpen]);
 
   const isArchived = thread?.status === "archived";
   const queueState = thread ? classifyThreadQueueState(thread, messages) : null;
@@ -225,6 +268,41 @@ export function CommunicationsWorkspace({
     });
   }
 
+  function handleAssign(assignedUserId: string | null) {
+    if (!thread) {
+      return;
+    }
+
+    const member = assignedUserId
+      ? orgMembers.find((entry) => entry.userId === assignedUserId)
+      : null;
+    const next = {
+      assignedUserId,
+      assigneeName: member?.displayName ?? null,
+      assigneeInitials: member?.initials ?? null,
+    };
+
+    setAssignOpen(false);
+    setActionError(null);
+    setLocalAssignee(next);
+    startActionTransition(async () => {
+      const result = await assignInboxThreadAction({
+        threadId: thread.id,
+        assignedUserId,
+      });
+      if (!result.success) {
+        setLocalAssignee({
+          assignedUserId: thread.assignedUserId,
+          assigneeName: thread.assigneeName,
+          assigneeInitials: thread.assigneeInitials,
+        });
+        setActionError(result.error ?? "Could not update assignment.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   if (!thread) {
     return (
       <div
@@ -243,17 +321,7 @@ export function CommunicationsWorkspace({
 
   const displayName =
     thread.participantName ?? INBOX_CHANNEL_LABELS[thread.channelType];
-  const statusLabel = isArchived
-    ? "Deleted"
-    : queueState?.readyToSend
-      ? "Ready to Send"
-      : queueState?.waitingOnAi
-        ? "Waiting on AI"
-        : queueState?.needsReply
-          ? "Needs Reply"
-          : isDone
-            ? "Done"
-            : "Open";
+  const assignLabel = localAssignee.assigneeName?.trim() || "Assign";
 
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-1", className)}>
@@ -292,10 +360,6 @@ export function CommunicationsWorkspace({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden items-center gap-1 rounded-full border border-cos-border bg-cos-bg px-3 py-1.5 text-xs font-medium text-cos-text sm:inline-flex">
-              {statusLabel}
-              <ChevronDown className="h-3.5 w-3.5 text-cos-muted" aria-hidden />
-            </span>
             <button
               type="button"
               onClick={handleFollowUpToggle}
@@ -336,15 +400,122 @@ export function CommunicationsWorkspace({
             >
               <Trash2 className="h-4 w-4 text-cos-text" aria-hidden />
             </button>
-            <button
-              type="button"
-              disabled
-              title="Assignment coming soon"
-              className="hidden h-9 items-center gap-1.5 rounded-full border border-cos-border px-3 text-xs font-medium text-cos-muted opacity-60 sm:inline-flex"
-            >
-              <UserPlus className="h-3.5 w-3.5" aria-hidden />
-              Assign
-            </button>
+            <div className="relative hidden sm:block">
+              <button
+                type="button"
+                onClick={() => setAssignOpen((open) => !open)}
+                disabled={isActing}
+                title={
+                  localAssignee.assigneeName
+                    ? `Assigned to ${localAssignee.assigneeName}`
+                    : "Assign to team member"
+                }
+                aria-label={
+                  localAssignee.assigneeName
+                    ? `Assigned to ${localAssignee.assigneeName}. Change assignment`
+                    : "Assign to team member"
+                }
+                aria-haspopup="menu"
+                aria-expanded={assignOpen}
+                aria-controls={assignMenuId}
+                className={cn(
+                  "inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                  localAssignee.assignedUserId
+                    ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
+                    : "border-cos-border bg-cos-card text-cos-text hover:border-cos-dark hover:bg-cos-bg",
+                )}
+              >
+                {localAssignee.assigneeInitials ? (
+                  <span
+                    className={cn(
+                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
+                      localAssignee.assignedUserId
+                        ? "bg-white/15 text-white"
+                        : "bg-cos-bg text-cos-muted",
+                    )}
+                    aria-hidden
+                  >
+                    {localAssignee.assigneeInitials}
+                  </span>
+                ) : (
+                  <UserPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                )}
+                <span className="truncate">{assignLabel}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+              </button>
+
+              {assignOpen ? (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Close assign menu"
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setAssignOpen(false)}
+                  />
+                  <div
+                    id={assignMenuId}
+                    role="menu"
+                    aria-label="Assign conversation"
+                    className="absolute right-0 z-50 mt-1.5 w-56 rounded-xl border border-cos-border bg-cos-card p-1.5 shadow-lg"
+                  >
+                    {orgMembers.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-cos-muted">
+                        No team members with login access yet.
+                      </p>
+                    ) : (
+                      <ul className="max-h-64 space-y-0.5 overflow-y-auto">
+                        <li role="none">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => handleAssign(null)}
+                            className={cn(
+                              "flex w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                              !localAssignee.assignedUserId
+                                ? "bg-cos-dark text-[#f6f2eb]"
+                                : "text-cos-text hover:bg-cos-bg",
+                            )}
+                          >
+                            Unassigned
+                          </button>
+                        </li>
+                        {orgMembers.map((member) => {
+                          const active = localAssignee.assignedUserId === member.userId;
+                          return (
+                            <li key={member.id} role="none">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => handleAssign(member.userId)}
+                                className={cn(
+                                  "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                                  active
+                                    ? "bg-cos-dark text-[#f6f2eb]"
+                                    : "text-cos-text hover:bg-cos-bg",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
+                                    active
+                                      ? "bg-white/15 text-white"
+                                      : "bg-cos-bg text-cos-muted",
+                                  )}
+                                  aria-hidden
+                                >
+                                  {member.initials}
+                                </span>
+                                <span className="truncate">{member.displayName}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
             {hasThreadPostPermalink(thread) ? (
               <InboxDirectPostLinkButton thread={thread} />
             ) : null}

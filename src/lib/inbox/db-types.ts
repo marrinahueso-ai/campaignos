@@ -20,6 +20,9 @@ export interface InboxThreadRow {
   status: InboxItemStatus;
   follow_up: boolean;
   marked_done: boolean;
+  assigned_user_id: string | null;
+  assignee_name: string | null;
+  assignee_initials: string | null;
   synced_at: string | null;
   metadata: Record<string, unknown>;
   created_at: string;

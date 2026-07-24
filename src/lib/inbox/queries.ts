@@ -1,3 +1,4 @@
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { isMetaIntegrationConfigured } from "@/lib/meta-publishing/config.server";
 import {
   getMetaConnectionForCurrentOrg,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/meta-publishing/connection";
 import { getMetaOAuthErrorMessage } from "@/lib/meta-publishing/connection-utils";
 import { mapInboxMessageRow, mapInboxThreadRow } from "@/lib/inbox/mappers";
+import { buildInboxOrgMembers } from "@/lib/inbox/org-members";
 import { getOrganizationInboxSettings } from "@/lib/inbox/settings";
 import {
   hasFacebookCommentReplyScopes,
@@ -242,6 +244,7 @@ export async function getInboxPageData(options?: {
       threads: [],
       messagesByThreadId: {},
       channelCounts: emptyChannelCounts(),
+      orgMembers: [],
       oauthError: options?.oauthErrorCode
         ? getMetaOAuthErrorMessage(options.oauthErrorCode)
         : null,
@@ -249,9 +252,10 @@ export async function getInboxPageData(options?: {
     };
   }
 
-  const [threads, channelCounts] = await Promise.all([
+  const [threads, channelCounts, orgUsers] = await Promise.all([
     listInboxThreadsForOrganization(organization.id),
     getInboxChannelCounts(organization.id),
+    getOrganizationUsers(organization.id),
   ]);
 
   const messagesByThreadId = await listMessagesForThreads(
@@ -264,6 +268,7 @@ export async function getInboxPageData(options?: {
     threads,
     messagesByThreadId,
     channelCounts,
+    orgMembers: buildInboxOrgMembers(orgUsers),
     oauthError: options?.oauthErrorCode
       ? getMetaOAuthErrorMessage(options.oauthErrorCode)
       : null,

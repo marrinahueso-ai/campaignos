@@ -153,12 +153,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Reply composer toolbar: full emoji picker (`emoji-picker-react`, search/categories) + org custom image stickers (upload PNG/WebP/GIF/JPEG to `organization_stickers` / `organization-stickers` bucket; picker shows images; DM send via Meta image attachment) + GIPHY GIF picker (search + trending via server proxy `/api/giphy/*`; rating `r`; page size 48 with Load more/`offset`; DM-only on `facebook_message` / `instagram_dm`; size-safe CDN URL sent as Meta image attachment like stickers; requires `GIPHY_API_KEY`) + quick emoji pack + 👍/❤️ quick-insert — **shipped**; comment/tag threads stay text-only for stickers/GIFs (clear notice); attachment icon still shows Meta text-only notice for generic files — **shipped**
 - Double-tap / double-click message bubble → quick 👍 / ❤️ reaction bar synced to Meta when supported — **shipped** (Facebook/Instagram comments: Graph LIKE only — ❤️ maps to Like with honest UI copy; Messenger/IG DMs: `sender_action` react/unreact with the emoji; tagged threads stay Hey Ralli–local; metadata written only after Meta success; clear error if Graph rejects; IG comment likes need `instagram_manage_engagement` + reconnect)
 - Jumbo emoji: emoji-only message bodies (1 = largest, 2–3 = large) render oversized in timeline bubbles; same sizing while composing in the reply textarea — **shipped**
-- Thread actions: Follow up (star), Done, Delete (with confirm); queue filters Unread / Follow up / Done / Deleted — **shipped**
+- Thread actions: Follow up (star), Done, Delete (with confirm); Assign to team member (active org login users); queue filters Unread / Follow up / Done / Deleted — **shipped**
 - Queue model: Unread is the default home (not Done, not Deleted; Follow up stays in Unread); Follow up = starred and not deleted; Done = marked done; Deleted via Manage — **shipped**
 - Queue UI: Meta-style horizontal filter chips (Unread, Follow up, Done); Manage menu has Deleted only (AI workflow folders removed); list rows with platform badge, follow-up star, accent selected edge — **shipped** (search stays in top bar only)
 - Top bar: search + Meta connection badge only — All Campaigns / All Channels dropdowns and AI Queue button removed (queues are Unread / Follow up / Done / Deleted) — **shipped**
 - Platform badges by channel: Messenger bolt for `facebook_message`, IG paper-plane for `instagram_dm`, Facebook “f” / Instagram logo for comments & tags — **shipped** (queue avatar corner + thread header)
-- Campaign filter / assign owner — **deferred**
+- Non-interactive Open status chip removed from thread header — **shipped**
+- Campaign filter — **deferred**
 - Gmail inbox — **deferred**
 
 ## Tasks — soft launch **complete**

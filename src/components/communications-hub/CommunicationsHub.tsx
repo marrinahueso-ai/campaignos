@@ -27,7 +27,7 @@ interface CommunicationsHubProps {
 export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const router = useRouter();
   const [connection, setConnection] = useState<InboxConnectionStatus>(data.connection);
-  const { threads, messagesByThreadId } = data;
+  const { threads, messagesByThreadId, orgMembers } = data;
 
   useEffect(() => {
     setConnection(data.connection);
@@ -248,6 +248,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                   messages={
                     selectedThread ? messagesByThreadId[selectedThread.id] ?? [] : []
                   }
+                  orgMembers={orgMembers}
                   pageName={connection.pageName}
                   showBack
                   onBack={() => {
