@@ -42,6 +42,9 @@ import { getDashboardCardTone } from "@/lib/today/dashboard-widget-colors";
 import type { CampaignFileEventSummary } from "@/types/campaign-files";
 import { cn } from "@/lib/utils/cn";
 
+/** Fixed footprint so All events + event tiles stay uniform in the carousel. */
+const EVENT_CARD_SIZE = "h-[4.75rem] w-[13.5rem]";
+
 interface FilesEventCarouselProps {
   events: CampaignFileEventSummary[];
   totalFileCount: number;
@@ -291,15 +294,32 @@ export function FilesEventCarousel({
           </SortableContext>
           <DragOverlay dropAnimation={null} zIndex={50}>
             {activeId === FILES_ALL_EVENTS_KEY ? (
-              <div className="flex min-w-[9.5rem] cursor-grabbing flex-col gap-2 rounded-2xl bg-cos-bg-alt px-4 py-3 shadow-lg ring-1 ring-cos-brand-sage/40">
-                <FolderOpen className="h-5 w-5 text-cos-muted" strokeWidth={1.5} />
-                <span className="text-sm font-medium text-cos-text">All events</span>
-                <span className="text-xs text-cos-muted">
-                  {totalFileCount} {totalFileCount === 1 ? "file" : "files"}
+              <div
+                className={cn(
+                  EVENT_CARD_SIZE,
+                  "flex cursor-grabbing items-center gap-3 rounded-2xl bg-cos-bg-alt px-3 py-3 shadow-lg ring-1 ring-cos-brand-sage/40",
+                )}
+              >
+                <FolderOpen
+                  className="h-8 w-8 shrink-0 text-cos-muted"
+                  strokeWidth={1.5}
+                />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-cos-text">
+                    All events
+                  </span>
+                  <span className="text-xs text-cos-muted">
+                    {totalFileCount} {totalFileCount === 1 ? "file" : "files"}
+                  </span>
                 </span>
               </div>
             ) : activeEvent ? (
-              <div className="flex min-w-[11rem] cursor-grabbing items-center gap-3 rounded-2xl bg-cos-bg-alt px-3 py-3 shadow-lg ring-1 ring-cos-brand-sage/40">
+              <div
+                className={cn(
+                  EVENT_CARD_SIZE,
+                  "flex cursor-grabbing items-center gap-3 rounded-2xl bg-cos-bg-alt px-3 py-3 shadow-lg ring-1 ring-cos-brand-sage/40",
+                )}
+              >
                 <EventThumbnail
                   artworkUrl={activeEvent.artwork?.imageUrl ?? null}
                   title={activeEvent.title}
@@ -378,7 +398,7 @@ function SortableEventCard({
       }}
       className={cn(
         "relative shrink-0 rounded-2xl",
-        variant === "all" ? "min-w-[9.5rem]" : "min-w-[11rem]",
+        EVENT_CARD_SIZE,
         isDragging && "z-20 opacity-0",
         selected &&
           "ring-2 ring-cos-dark ring-offset-2 ring-offset-[var(--cos-bg,#fffcf7)]",
@@ -388,7 +408,7 @@ function SortableEventCard({
       <div
         style={tone?.style}
         className={cn(
-          "relative overflow-hidden rounded-2xl",
+          "relative h-full overflow-hidden rounded-2xl",
           !tone &&
             (selected
               ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)]"
@@ -420,93 +440,58 @@ function SortableEventCard({
           type="button"
           onClick={onSelect}
           aria-pressed={selected}
-          className={cn(
-            "w-full text-left transition-transform duration-200 hover:-translate-y-0.5",
-            variant === "all"
-              ? "flex flex-col gap-2 px-4 py-3"
-              : "flex items-center gap-3 px-3 py-3",
-          )}
+          className="flex h-full w-full items-center gap-3 px-3 py-3 text-left transition-transform duration-200 hover:-translate-y-0.5"
         >
           {variant === "all" ? (
-            <>
-              <FolderOpen
-                className={cn(
-                  "h-5 w-5",
-                  tone
-                    ? darkTone
-                      ? "text-white/75"
-                      : "text-cos-muted"
-                    : selected
-                      ? "text-white/70"
-                      : "text-cos-muted",
-                )}
-                strokeWidth={1.5}
-              />
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  tone
-                    ? "text-cos-text"
-                    : selected
-                      ? "text-white"
-                      : "text-cos-text",
-                )}
-              >
-                {title}
-              </span>
-              <span
-                className={cn(
-                  "text-xs",
-                  tone
-                    ? darkTone
-                      ? "text-white/75"
-                      : "text-cos-muted"
-                    : selected
-                      ? "text-white/70"
-                      : "text-cos-muted",
-                )}
-              >
-                {subtitle}
-              </span>
-            </>
+            <FolderOpen
+              className={cn(
+                "h-8 w-8 shrink-0",
+                tone
+                  ? darkTone
+                    ? "text-white/75"
+                    : "text-cos-muted"
+                  : selected
+                    ? "text-white/70"
+                    : "text-cos-muted",
+              )}
+              strokeWidth={1.5}
+            />
           ) : (
-            <>
-              <EventThumbnail
-                artworkUrl={artworkUrl}
-                title={title}
-                selected={selected}
-                darkTone={darkTone}
-              />
-              <span className="min-w-0">
-                <span
-                  className={cn(
-                    "block truncate text-sm font-medium",
-                    tone
-                      ? "text-cos-text"
-                      : selected
-                        ? "text-white"
-                        : "text-cos-text",
-                  )}
-                >
-                  {title}
-                </span>
-                <span
-                  className={cn(
-                    "text-xs",
-                    tone
-                      ? darkTone
-                        ? "text-white/75"
-                        : "text-cos-muted"
-                      : selected
-                        ? "text-white/70"
-                        : "text-cos-muted",
-                  )}
-                >
-                  {subtitle}
-                </span>
-              </span>
-            </>
+            <EventThumbnail
+              artworkUrl={artworkUrl}
+              title={title}
+              selected={selected}
+              darkTone={darkTone}
+            />
           )}
+          <span className="min-w-0 flex-1">
+            <span
+              className={cn(
+                "block truncate text-sm font-medium",
+                tone
+                  ? "text-cos-text"
+                  : selected
+                    ? "text-white"
+                    : "text-cos-text",
+              )}
+            >
+              {title}
+            </span>
+            <span
+              className={cn(
+                "block truncate text-xs",
+                tone
+                  ? darkTone
+                    ? "text-white/75"
+                    : "text-cos-muted"
+                  : selected
+                    ? "text-white/70"
+                    : "text-cos-muted",
+              )}
+            >
+              {subtitle}
+            </span>
+          </span>
         </button>
       </div>
     </div>

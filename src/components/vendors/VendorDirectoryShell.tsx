@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
 import { VendorCard } from "@/components/vendors/VendorCard";
+import { VendorDirectorySummaryCards } from "@/components/vendors/VendorDirectorySummaryCards";
 import {
   VENDORS_MIGRATION,
   VENDOR_DIRECTORY_TABS,
@@ -20,6 +21,7 @@ import {
   paginateVendorRows,
   totalVendorPages,
 } from "@/lib/vendors/filters";
+import type { VendorsDirectoryLayout } from "@/lib/vendors/vendors-directory-layout";
 import type {
   VendorDirectoryFilters,
   VendorDirectoryPageData,
@@ -30,6 +32,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface VendorDirectoryShellProps {
   data: VendorDirectoryPageData;
+  summaryLayout: VendorsDirectoryLayout;
 }
 
 function directoryStatus(row: VendorDirectoryRow): {
@@ -95,7 +98,10 @@ function writeFiltersToUrl(filters: VendorDirectoryFilters) {
   window.history.replaceState(window.history.state, "", href);
 }
 
-export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
+export function VendorDirectoryShell({
+  data,
+  summaryLayout,
+}: VendorDirectoryShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
@@ -270,27 +276,38 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label="Total Vendors"
-          value={String(data.summary.totalVendors)}
-        />
-        <SummaryCard
-          label="Confirmed"
-          value={String(data.summary.confirmedThisYear)}
-          detail="this year"
-        />
-        <SummaryCard
-          label="Upcoming Events"
-          value={String(data.summary.upcomingEventsWithVendors)}
-          detail="with vendors"
-        />
-        <SummaryCard
-          label="Favorite Vendors"
-          value={String(favoriteCount)}
-          detail="frequently used"
-        />
-      </div>
+      <VendorDirectorySummaryCards
+        initialLayout={summaryLayout}
+        cards={[
+          {
+            key: "total_vendors",
+            label: "Total Vendors",
+            value: String(data.summary.totalVendors),
+            active: filters.tab === "all",
+            onSelect: () => updateFilter("tab", "all"),
+          },
+          {
+            key: "confirmed",
+            label: "Confirmed",
+            value: String(data.summary.confirmedThisYear),
+            detail: "this year",
+          },
+          {
+            key: "upcoming_events",
+            label: "Upcoming Events",
+            value: String(data.summary.upcomingEventsWithVendors),
+            detail: "with vendors",
+          },
+          {
+            key: "favorite_vendors",
+            label: "Favorite Vendors",
+            value: String(favoriteCount),
+            detail: "frequently used",
+            active: filters.tab === "favorites",
+            onSelect: () => updateFilter("tab", "favorites"),
+          },
+        ]}
+      />
 
       <div className="flex flex-wrap gap-1 border-b border-cos-border">
         {VENDOR_DIRECTORY_TABS.map((tab) => (
@@ -412,28 +429,6 @@ function normalizeDirectoryTab(raw: string | null): VendorDirectoryTab {
   }
   // Legacy ?tab=pending → All Vendors
   return "all";
-}
-
-function SummaryCard({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-}) {
-  return (
-    <div className="flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
-      <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-        {label}
-      </p>
-      <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
-        {value}
-      </p>
-      {detail ? <p className="text-xs text-cos-muted">{detail}</p> : null}
-    </div>
-  );
 }
 
 function FilterSelect({

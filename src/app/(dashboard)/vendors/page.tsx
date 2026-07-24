@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { VendorDirectoryShell } from "@/components/vendors/VendorDirectoryShell";
 import { getVendorDirectoryPageData } from "@/lib/vendors/queries";
+import { getVendorsDirectoryLayoutForCurrentUser } from "@/lib/vendors/vendors-directory-layout-queries";
 
 export const metadata = {
   title: "Vendor Directory",
@@ -15,8 +16,11 @@ export default function VendorsPage() {
 }
 
 async function VendorsPageContent() {
-  const data = await getVendorDirectoryPageData();
-  return <VendorDirectoryShell data={data} />;
+  const [data, summaryLayout] = await Promise.all([
+    getVendorDirectoryPageData(),
+    getVendorsDirectoryLayoutForCurrentUser(),
+  ]);
+  return <VendorDirectoryShell data={data} summaryLayout={summaryLayout} />;
 }
 
 function VendorsLoadingFallback() {
