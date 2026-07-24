@@ -37,3 +37,12 @@ export interface OutdoorEventsContext {
   hasOutdoorEventsThisWeek: boolean;
   helperLine: string | null;
 }
+
+/** School event today or tomorrow for weather tip copy. */
+export interface WeatherNearbyEvent {
+  id: string;
+  title: string;
+  /** YYYY-MM-DD */
+  date: string;
+  isOutdoor: boolean;
+}

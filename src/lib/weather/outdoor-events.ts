@@ -10,11 +10,17 @@ const GOOD_WEATHER_PATTERN =
 const WATCH_WEATHER_PATTERN =
   /\b(rain|storm|thunder|snow|ice|wind|cold|freezing|fog|overcast|drizzle)\b/i;
 
+export function textLooksOutdoor(...parts: Array<string | null | undefined>): boolean {
+  return OUTDOOR_PATTERN.test(parts.filter(Boolean).join(" "));
+}
+
 export function isOutdoorEvent(event: Event): boolean {
-  const haystack = [event.title, event.location, event.description, event.audience]
-    .filter(Boolean)
-    .join(" ");
-  return OUTDOOR_PATTERN.test(haystack);
+  return textLooksOutdoor(
+    event.title,
+    event.location,
+    event.description,
+    event.audience,
+  );
 }
 
 export function getOutdoorEventsContext(

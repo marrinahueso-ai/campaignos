@@ -14,11 +14,14 @@ interface WeatherWidgetProps {
   weather: TodayWeatherContext;
   /** Full pin for the overview top-right corner. */
   compact?: boolean;
+  /** Fun tip tying weather to events today / tomorrow. */
+  insight?: string | null;
 }
 
 export function WeatherWidget({
   weather,
   compact = false,
+  insight = null,
 }: WeatherWidgetProps) {
   const resolved = resolveSnapshotWeather(weather);
   const isLive = resolved?.weather.source === "api";
@@ -27,7 +30,7 @@ export function WeatherWidget({
     return (
       <section
         className={cn(
-          "flex h-full min-h-[14.5rem] flex-col justify-between rounded-2xl bg-cos-bg-alt px-5 py-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]",
+          "flex flex-col justify-between gap-4 rounded-2xl bg-cos-bg-alt px-5 py-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]",
         )}
       >
         {resolved ? (
@@ -54,6 +57,9 @@ export function WeatherWidget({
                   {isLive ? "" : " · typical for season"}
                 </p>
               </div>
+              {insight ? (
+                <p className="text-sm leading-snug text-cos-text/90">{insight}</p>
+              ) : null}
             </div>
             <HourlyStrip hours={resolved.weather.hourly} />
           </>
@@ -107,6 +113,9 @@ export function WeatherWidget({
               </p>
             </div>
           </div>
+          {insight ? (
+            <p className="text-sm leading-snug text-cos-text/90">{insight}</p>
+          ) : null}
           <HourlyStrip hours={resolved.weather.hourly} />
         </div>
       ) : (

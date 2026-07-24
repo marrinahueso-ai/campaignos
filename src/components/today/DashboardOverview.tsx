@@ -43,12 +43,15 @@ export type DashboardWidgetNodes = Partial<
 interface DashboardOverviewProps {
   initialLayout: DashboardLayout;
   widgets: DashboardWidgetNodes;
+  /** Greeting / onboarding — left column, top-aligned with Weather. */
+  header?: React.ReactNode;
   className?: string;
 }
 
 export function DashboardOverview({
   initialLayout,
   widgets,
+  header,
   className,
 }: DashboardOverviewProps) {
   const router = useRouter();
@@ -240,50 +243,29 @@ export function DashboardOverview({
         onDragCancel={handleDragCancel}
       >
         {/*
-          Board grid:
-          [ header + actions ] [ Weather pin ]
-          [ Up Next / tiles  ] [ Calendar…  ]
-          So Up Next and Calendar share the same top edge.
+          One board column pair from the top:
+          [ greeting + Add/Edit + main ] [ Weather + Calendar… ]
+          Weather top aligns with Good morning.
         */}
         <div
           className={cn(
-            "grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-x-6",
+            "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-x-6",
             activeId && "select-none",
           )}
         >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-cos-text">
-                Your overview
-              </h2>
-              <div className="flex items-center gap-2">{overviewActions}</div>
+          <div className="min-w-0 space-y-6">
+            {header}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {overviewActions}
+              </div>
+              {editing ? (
+                <p className="text-sm text-cos-muted">
+                  Remove tiles you don&apos;t need, then tap Done. Drag the grip
+                  to rearrange — Weather stays pinned top right.
+                </p>
+              ) : null}
             </div>
-            {editing ? (
-              <p className="text-sm text-cos-muted">
-                Remove tiles you don&apos;t need, then tap Done. Drag the grip
-                to rearrange — Weather stays pinned top right.
-              </p>
-            ) : null}
-          </div>
-
-          {hasPinnedWeather ? (
-            <div className="h-full min-h-[14.5rem] lg:sticky lg:top-4 lg:z-20">
-              <PinnedWeatherFrame
-                editing={editing}
-                onRemove={() =>
-                  updateDraft((current) =>
-                    removeDashboardWidget(current, "weather"),
-                  )
-                }
-              >
-                {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
-              </PinnedWeatherFrame>
-            </div>
-          ) : (
-            <div className="hidden lg:block" aria-hidden />
-          )}
-
-          <div className="min-w-0">
             <WidgetRegion
               region="main"
               ids={mainIds}
@@ -296,7 +278,19 @@ export function DashboardOverview({
             />
           </div>
 
-          <aside className="flex w-full flex-col gap-4">
+          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:z-20">
+            {hasPinnedWeather ? (
+              <PinnedWeatherFrame
+                editing={editing}
+                onRemove={() =>
+                  updateDraft((current) =>
+                    removeDashboardWidget(current, "weather"),
+                  )
+                }
+              >
+                {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
+              </PinnedWeatherFrame>
+            ) : null}
             <WidgetRegion
               region="rail"
               ids={railIds}
@@ -451,7 +445,7 @@ function PinnedWeatherFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative h-full">
+    <div className="relative">
       {editing ? (
         <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
           <span className="rounded-md bg-cos-card/90 px-1.5 py-0.5 text-[11px] font-medium text-cos-muted ring-1 ring-black/[0.06]">
@@ -468,10 +462,7 @@ function PinnedWeatherFrame({
         </div>
       ) : null}
       <div
-        className={cn(
-          "h-full",
-          editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
-        )}
+        className={cn(editing && "rounded-2xl ring-2 ring-cos-brand-sage/25")}
       >
         {children}
       </div>

@@ -30,10 +30,22 @@ import {
 import { getTodayAttentionCounts } from "@/lib/today/attention-counts";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
+import {
+  collectNearbyWeatherEvents,
+  getWeatherEventInsight,
+} from "@/lib/weather/insight";
+import { getMockWeatherSnapshot } from "@/lib/weather/mock";
 import { getTodayWeatherContext } from "@/lib/weather/queries";
 import type { Organization } from "@/types";
-import type { TodayAttentionCounts, TodayWeekEntry } from "@/types/today";
-import type { TodayWeatherContext } from "@/lib/weather/types";
+import type {
+  TodayAttentionCounts,
+  TodayPageData,
+  TodayWeekEntry,
+} from "@/types/today";
+import type {
+  TodayWeatherContext,
+  WeatherNearbyEvent,
+} from "@/lib/weather/types";
 import { GraduationCap } from "lucide-react";
 
 export const metadata = {
@@ -77,9 +89,25 @@ async function AttentionWidgetBlock() {
   return <AttentionWidget counts={counts} />;
 }
 
-async function WeatherWidgetBlock({ organization }: { organization: Organization }) {
+async function WeatherWidgetBlock({
+  organization,
+  nearbyEvents,
+  today,
+}: {
+  organization: Organization;
+  nearbyEvents: WeatherNearbyEvent[];
+  today: string;
+}) {
   const weatherContext = await getTodayWeatherContext(organization);
-  return <WeatherWidget weather={weatherContext} compact />;
+  const snapshot =
+    weatherContext.weather ??
+    (weatherContext.location
+      ? getMockWeatherSnapshot(weatherContext.location)
+      : null);
+  const insight = getWeatherEventInsight(snapshot, nearbyEvents, today);
+  return (
+    <WeatherWidget weather={weatherContext} compact insight={insight} />
+  );
 }
 
 async function ApprovalsWidgetBlock() {
@@ -104,10 +132,11 @@ async function InsightsPulseWidgetBlock() {
 
 function buildWidgetNodes(
   organization: Organization,
-  todayData: Awaited<ReturnType<typeof getTodayPageData>>,
+  todayData: TodayPageData,
   today: string,
   layout: DashboardLayout,
 ): DashboardWidgetNodes {
+  const nearbyWeatherEvents = collectNearbyWeatherEvents(todayData, today);
   const widgets: DashboardWidgetNodes = {
     up_next: (
       <UpNextWidgetSuspense
@@ -124,7 +153,11 @@ function buildWidgetNodes(
     good_news: <GoodNewsWidget goodNews={todayData.goodNews} />,
     weather: (
       <Suspense fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} compact />}>
-        <WeatherWidgetBlock organization={organization} />
+        <WeatherWidgetBlock
+          organization={organization}
+          nearbyEvents={nearbyWeatherEvents}
+          today={today}
+        />
       </Suspense>
     ),
     calendar: (
@@ -195,20 +228,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="studio-page pb-12">
-      <TodayHero
-        firstName={todayData.firstName}
-        attentionCount={todayData.attentionCount}
-        teammateNote={todayData.teammateNote}
-        timezone={organization.timezone ?? "America/Chicago"}
+      <DashboardOverview
+        initialLayout={layout}
+        widgets={widgets}
+        header={
+          <div className="space-y-6">
+            <TodayHero
+              firstName={todayData.firstName}
+              attentionCount={todayData.attentionCount}
+              teammateNote={todayData.teammateNote}
+              timezone={organization.timezone ?? "America/Chicago"}
+            />
+            <Suspense fallback={null}>
+              <DashboardOnboardingBlock />
+            </Suspense>
+          </div>
+        }
       />
-
-      <div className="mt-8 space-y-6 lg:mt-10">
-        <Suspense fallback={null}>
-          <DashboardOnboardingBlock />
-        </Suspense>
-
-        <DashboardOverview initialLayout={layout} widgets={widgets} />
-      </div>
     </div>
   );
 }
