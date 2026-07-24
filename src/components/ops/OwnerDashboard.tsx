@@ -36,21 +36,17 @@ function MetricCard({
   icon: typeof Users;
 }) {
   return (
-    <div className="rounded-2xl border border-cos-border bg-cos-card p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cos-muted">
-            {label}
-          </p>
-          <p className="mt-2 font-serif text-3xl text-cos-text tabular-nums">
-            {value.toLocaleString()}
-          </p>
-          {hint ? <p className="mt-1 text-xs text-cos-muted">{hint}</p> : null}
-        </div>
-        <span className="rounded-xl bg-cos-bg p-2 text-cos-muted">
-          <Icon className="h-5 w-5" strokeWidth={1.5} />
-        </span>
+    <div className="flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
+      <div className="flex items-center justify-center gap-2">
+        <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+          {label}
+        </p>
+        <Icon className="h-4 w-4 shrink-0 text-cos-muted" aria-hidden />
       </div>
+      <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
+        {value.toLocaleString()}
+      </p>
+      {hint ? <p className="text-xs text-cos-muted">{hint}</p> : null}
     </div>
   );
 }
