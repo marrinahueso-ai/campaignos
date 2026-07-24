@@ -123,26 +123,140 @@ export function isDashboardWidgetId(value: unknown): value is DashboardWidgetId 
   return typeof value === "string" && KNOWN_IDS.has(value as DashboardWidgetId);
 }
 
+function cloneDefaultLayout(): DashboardLayout {
+  return {
+    version: 1,
+    main: [...DEFAULT_DASHBOARD_LAYOUT.main],
+    rail: [...DEFAULT_DASHBOARD_LAYOUT.rail],
+  };
+}
+
+function uniqueWidgetIds(ids: DashboardWidgetId[]): DashboardWidgetId[] {
+  const seen = new Set<DashboardWidgetId>();
+  const next: DashboardWidgetId[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next;
+}
+
 export function normalizeDashboardLayout(raw: unknown): DashboardLayout {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ...DEFAULT_DASHBOARD_LAYOUT };
+    return cloneDefaultLayout();
   }
 
   const record = raw as Record<string, unknown>;
-  const main = Array.isArray(record.main)
-    ? record.main.filter(isDashboardWidgetId)
-    : [];
-  const rail = Array.isArray(record.rail)
-    ? record.rail.filter(isDashboardWidgetId)
-    : [];
+  const hasMain = Array.isArray(record.main);
+  const hasRail = Array.isArray(record.rail);
 
-  if (main.length === 0 && rail.length === 0) {
-    return { ...DEFAULT_DASHBOARD_LAYOUT };
+  // Empty prefs object means product default.
+  if (!hasMain && !hasRail) {
+    return cloneDefaultLayout();
   }
 
+  const main = uniqueWidgetIds(
+    hasMain
+      ? (record.main as unknown[]).filter(isDashboardWidgetId)
+      : [...DEFAULT_DASHBOARD_LAYOUT.main],
+  );
+  const mainSet = new Set(main);
+  const rail = uniqueWidgetIds(
+    (hasRail
+      ? (record.rail as unknown[]).filter(isDashboardWidgetId)
+      : [...DEFAULT_DASHBOARD_LAYOUT.rail]
+    ).filter((id) => !mainSet.has(id)),
+  );
+
+  return { version: 1, main, rail };
+}
+
+/** Widgets available in the Add catalog for a given phase. */
+export function getAddableDashboardWidgets(
+  maxPhase: 1 | 2 | 3 = 2,
+): DashboardWidgetDefinition[] {
+  return DASHBOARD_WIDGET_CATALOG.filter((entry) => entry.phase <= maxPhase);
+}
+
+export function getDashboardWidgetDefinition(
+  id: DashboardWidgetId,
+): DashboardWidgetDefinition | undefined {
+  return DASHBOARD_WIDGET_CATALOG.find((entry) => entry.id === id);
+}
+
+export function defaultRegionForWidget(
+  id: DashboardWidgetId,
+): DashboardWidgetRegion {
+  const region = getDashboardWidgetDefinition(id)?.region ?? "main";
+  return region === "both" ? "main" : region;
+}
+
+export function layoutContainsWidget(
+  layout: DashboardLayout,
+  id: DashboardWidgetId,
+): boolean {
+  return layout.main.includes(id) || layout.rail.includes(id);
+}
+
+/** Apply Add-modal checkbox selection while preserving existing order. */
+export function applyDashboardWidgetSelection(
+  current: DashboardLayout,
+  selectedIds: readonly DashboardWidgetId[],
+  maxPhase: 1 | 2 | 3 = 2,
+): DashboardLayout {
+  const allowed = new Set(
+    getAddableDashboardWidgets(maxPhase).map((entry) => entry.id),
+  );
+  const selected = new Set(
+    selectedIds.filter((id) => allowed.has(id)),
+  );
+
+  const main = current.main.filter((id) => selected.has(id));
+  const rail = current.rail.filter((id) => selected.has(id));
+  const placed = new Set<DashboardWidgetId>([...main, ...rail]);
+
+  for (const id of selected) {
+    if (placed.has(id)) continue;
+    const region = defaultRegionForWidget(id);
+    if (region === "rail") {
+      rail.push(id);
+    } else {
+      main.push(id);
+    }
+    placed.add(id);
+  }
+
+  return normalizeDashboardLayout({ version: 1, main, rail });
+}
+
+export function removeDashboardWidget(
+  layout: DashboardLayout,
+  id: DashboardWidgetId,
+): DashboardLayout {
+  return normalizeDashboardLayout({
+    version: 1,
+    main: layout.main.filter((entry) => entry !== id),
+    rail: layout.rail.filter((entry) => entry !== id),
+  });
+}
+
+export function moveDashboardWidget(
+  layout: DashboardLayout,
+  region: DashboardWidgetRegion,
+  id: DashboardWidgetId,
+  direction: -1 | 1,
+): DashboardLayout {
+  const list = [...layout[region]];
+  const index = list.indexOf(id);
+  if (index < 0) return layout;
+  const target = index + direction;
+  if (target < 0 || target >= list.length) return layout;
+  const [item] = list.splice(index, 1);
+  list.splice(target, 0, item);
   return {
     version: 1,
-    main: main.length > 0 ? main : [...DEFAULT_DASHBOARD_LAYOUT.main],
-    rail: rail.length > 0 ? rail : [...DEFAULT_DASHBOARD_LAYOUT.rail],
+    main: region === "main" ? list : layout.main,
+    rail: region === "rail" ? list : layout.rail,
   };
 }

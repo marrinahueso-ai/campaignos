@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
-import { DashboardOverview } from "@/components/today/DashboardOverview";
+import {
+  DashboardOverview,
+  type DashboardWidgetNodes,
+} from "@/components/today/DashboardOverview";
 import { TodayHero } from "@/components/today/TodayHero";
 import { UpNextWidgetSuspense } from "@/components/today/UpNextWidgetSuspense";
 import { AttentionWidget } from "@/components/today/widgets/AttentionWidget";
@@ -14,7 +17,6 @@ import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getDashboardLayoutForCurrentUser } from "@/lib/today/dashboard-layout";
-import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/today/dashboard-widgets";
 import { getTodayAttentionCounts } from "@/lib/today/attention-counts";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
@@ -95,61 +97,37 @@ export default async function DashboardPage() {
     getDashboardLayoutForCurrentUser(),
   ]);
   const today = getTodayDateString();
-  const resolvedLayout = layout ?? DEFAULT_DASHBOARD_LAYOUT;
 
-  const mainWidgets = resolvedLayout.main.map((id) => {
-    switch (id) {
-      case "up_next":
-        return (
-          <UpNextWidgetSuspense
-            key={id}
-            whatsNext={todayData.whatsNext}
-            organizationName={organization.name}
-          />
-        );
-      case "attention":
-        return (
-          <Suspense key={id} fallback={<AttentionWidget counts={ATTENTION_PLACEHOLDER} />}>
-            <AttentionWidgetBlock />
-          </Suspense>
-        );
-      case "waiting_me":
-        return <WaitingOnMeWidget key={id} items={todayData.waitingOnMe} />;
-      case "good_news":
-        return <GoodNewsWidget key={id} goodNews={todayData.goodNews} />;
-      default:
-        return null;
-    }
-  });
-
-  const railWidgets = resolvedLayout.rail.map((id) => {
-    switch (id) {
-      case "weather":
-        return (
-          <Suspense key={id} fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} />}>
-            <WeatherWidgetBlock organization={organization} />
-          </Suspense>
-        );
-      case "calendar":
-        return (
-          <CalendarWidget
-            key={id}
-            today={today}
-            monthEvents={todayData.monthEvents}
-          />
-        );
-      case "this_week":
-        return (
-          <ThisWeekWidget
-            key={id}
-            today={today}
-            weekEntries={todayData.thisWeek as TodayWeekEntry[]}
-          />
-        );
-      default:
-        return null;
-    }
-  });
+  // Always mount Phase 1 widgets so Add can show them without a refresh.
+  const widgets: DashboardWidgetNodes = {
+    up_next: (
+      <UpNextWidgetSuspense
+        whatsNext={todayData.whatsNext}
+        organizationName={organization.name}
+      />
+    ),
+    attention: (
+      <Suspense fallback={<AttentionWidget counts={ATTENTION_PLACEHOLDER} />}>
+        <AttentionWidgetBlock />
+      </Suspense>
+    ),
+    waiting_me: <WaitingOnMeWidget items={todayData.waitingOnMe} />,
+    good_news: <GoodNewsWidget goodNews={todayData.goodNews} />,
+    weather: (
+      <Suspense fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} />}>
+        <WeatherWidgetBlock organization={organization} />
+      </Suspense>
+    ),
+    calendar: (
+      <CalendarWidget today={today} monthEvents={todayData.monthEvents} />
+    ),
+    this_week: (
+      <ThisWeekWidget
+        today={today}
+        weekEntries={todayData.thisWeek as TodayWeekEntry[]}
+      />
+    ),
+  };
 
   return (
     <div className="studio-page pb-12">
@@ -165,11 +143,7 @@ export default async function DashboardPage() {
           <DashboardOnboardingBlock />
         </Suspense>
 
-        <DashboardOverview
-          layout={resolvedLayout}
-          main={mainWidgets}
-          rail={railWidgets}
-        />
+        <DashboardOverview initialLayout={layout} widgets={widgets} />
       </div>
     </div>
   );

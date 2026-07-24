@@ -7,7 +7,7 @@ interface DashboardWidgetCardProps {
   title: string;
   children: React.ReactNode;
   className?: string;
-  /** Hide ··· until Phase 2 card menus ship. */
+  /** Decorative ··· affordance; Edit mode handles remove/reorder. */
   showMenu?: boolean;
 }
 
@@ -31,14 +31,12 @@ export function DashboardWidgetCard({
           <h2 className="truncate text-sm font-semibold text-cos-text">{title}</h2>
         </div>
         {showMenu ? (
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-cos-muted transition-colors hover:bg-cos-card hover:text-cos-text"
-            aria-label={`${title} options`}
-            title="Options coming soon"
+          <span
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-cos-muted"
+            aria-hidden
           >
-            <MoreHorizontal className="h-4 w-4" aria-hidden />
-          </button>
+            <MoreHorizontal className="h-4 w-4" />
+          </span>
         ) : null}
       </div>
       <div className="min-h-0 flex-1">{children}</div>
