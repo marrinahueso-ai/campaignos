@@ -16,6 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import { FileEditDialog } from "@/components/campaign-files/FileEditDialog";
+import { FilesEventCarousel } from "@/components/campaign-files/FilesEventCarousel";
 import { FilePlatformIcons } from "@/components/campaign-files/FilePlatformIcons";
 import { FileRowActions } from "@/components/campaign-files/FileRowActions";
 import { FileTypeBadge } from "@/components/campaign-files/FileTypeBadge";
@@ -43,6 +44,10 @@ import {
   totalPages,
 } from "@/lib/campaign-files/filters";
 import { formatFileSize, formatUploadedDate } from "@/lib/campaign-files/format";
+import {
+  defaultFilesLayout,
+  type FilesLayout,
+} from "@/lib/campaign-files/files-layout";
 import type {
   CampaignFile,
   CampaignFileEventSummary,
@@ -92,6 +97,7 @@ interface FilesDocumentsShellProps {
   scope?: "global" | "event";
   lockedEventId?: string;
   initialEventId?: string;
+  initialEventLayout?: FilesLayout;
 }
 
 function EventThumbnail({
@@ -129,14 +135,6 @@ function EventThumbnail({
   );
 }
 
-const eventCarouselCardClassName = (selected: boolean) =>
-  cn(
-    "shrink-0 rounded-2xl text-left transition-all duration-200",
-    selected
-      ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
-      : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]",
-  );
-
 function FilterSelect<T extends string>({
   value,
   options,
@@ -169,7 +167,9 @@ export function FilesDocumentsShell({
   scope = "global",
   lockedEventId,
   initialEventId,
+  initialEventLayout,
 }: FilesDocumentsShellProps) {
+  const eventLayout = initialEventLayout ?? defaultFilesLayout();
   const isEventScope = scope === "event";
   const presetEventId = lockedEventId ?? initialEventId;
   const [viewMode, setViewMode] = useState<FilesViewMode>("list");
@@ -498,100 +498,18 @@ export function FilesDocumentsShell({
         </div>
       </div>
 
-      {!isEventScope && data.events.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-cos-text">
-            Files organized by event
-          </h2>
-          <div className="relative">
-            <div className="flex gap-3 overflow-x-auto pb-1 pr-10">
-              <button
-                type="button"
-                onClick={() => {
-                  setCarouselEventId("all");
-                  updateFilter("eventId", "all");
-                }}
-                className={cn(
-                  "flex min-w-[9.5rem] flex-col gap-2 px-4 py-3",
-                  eventCarouselCardClassName(carouselEventId === "all"),
-                )}
-              >
-                <FolderOpen
-                  className={cn(
-                    "h-5 w-5",
-                    carouselEventId === "all" ? "text-white/70" : "text-cos-muted",
-                  )}
-                  strokeWidth={1.5}
-                />
-                <span
-                  className={cn(
-                    "text-sm font-medium",
-                    carouselEventId === "all" ? "text-white" : "text-cos-text",
-                  )}
-                >
-                  All events
-                </span>
-                <span
-                  className={cn(
-                    "text-xs",
-                    carouselEventId === "all" ? "text-white/70" : "text-cos-muted",
-                  )}
-                >
-                  {data.files.length} {data.files.length === 1 ? "file" : "files"}
-                </span>
-              </button>
-
-              {data.events.map((event) => {
-                const selected = carouselEventId === event.eventId;
-                return (
-                  <button
-                    key={event.eventId}
-                    type="button"
-                    onClick={() => {
-                      setCarouselEventId(event.eventId);
-                      updateFilter("eventId", event.eventId);
-                    }}
-                    className={cn(
-                      "flex min-w-[11rem] items-center gap-3 px-3 py-3",
-                      eventCarouselCardClassName(selected),
-                    )}
-                  >
-                    <EventThumbnail
-                      artworkUrl={event.artwork?.imageUrl ?? null}
-                      title={event.title}
-                      selected={selected}
-                    />
-                    <span className="min-w-0">
-                      <span
-                        className={cn(
-                          "block truncate text-sm font-medium",
-                          selected ? "text-white" : "text-cos-text",
-                        )}
-                      >
-                        {event.title}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-xs",
-                          selected ? "text-white/70" : "text-cos-muted",
-                        )}
-                      >
-                        {event.fileCount} {event.fileCount === 1 ? "file" : "files"}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <span
-              className="pointer-events-none absolute top-1/2 right-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted shadow-sm"
-              aria-hidden
-            >
-              <ChevronRight className="h-4 w-4" />
-            </span>
-          </div>
-        </section>
-      )}
+      {!isEventScope && data.events.length > 0 ? (
+        <FilesEventCarousel
+          events={data.events}
+          totalFileCount={data.files.length}
+          selectedKey={carouselEventId}
+          initialLayout={eventLayout}
+          onSelect={(key) => {
+            setCarouselEventId(key);
+            updateFilter("eventId", key);
+          }}
+        />
+      ) : null}
 
       {filteredFiles.length === 0 ? (
         <div

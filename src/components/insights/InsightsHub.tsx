@@ -14,6 +14,10 @@ import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
 import { getInsightsDataNote } from "@/lib/insights/connection-messages";
+import {
+  defaultInsightsLayout,
+  type InsightsLayout,
+} from "@/lib/insights/insights-layout";
 import type {
   InsightsKpiKey,
   InsightsPageData,
@@ -23,6 +27,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface InsightsHubProps {
   data: InsightsPageData;
+  initialKpiLayout?: InsightsLayout;
 }
 
 function filterTopPosts(
@@ -74,7 +79,11 @@ function filterKpisForPlatform(
   });
 }
 
-export function InsightsHub({ data }: InsightsHubProps) {
+export function InsightsHub({
+  data,
+  initialKpiLayout,
+}: InsightsHubProps) {
+  const kpiLayout = initialKpiLayout ?? defaultInsightsLayout();
   const router = useRouter();
   const [platformFilter, setPlatformFilter] = useState<InsightsPlatform>("all");
   const [selectedMetric, setSelectedMetric] = useState<InsightsKpiKey>("views");
@@ -218,6 +227,7 @@ export function InsightsHub({ data }: InsightsHubProps) {
             comparisonLabel="vs prior period"
             selectedKey={selectedMetric}
             onSelect={setSelectedMetric}
+            initialLayout={kpiLayout}
           />
 
           <InsightsRecommendationsFooter

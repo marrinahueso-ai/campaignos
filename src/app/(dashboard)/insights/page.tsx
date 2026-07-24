@@ -1,4 +1,5 @@
 import { InsightsHub } from "@/components/insights/InsightsHub";
+import { getInsightsLayoutForCurrentUser } from "@/lib/insights/insights-layout-queries";
 import { getInsightsPageData } from "@/lib/insights/queries";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,14 @@ interface InsightsPageProps {
 
 export default async function InsightsPage({ searchParams }: InsightsPageProps) {
   const params = await searchParams;
-  const data = await getInsightsPageData({
-    from: params.from,
-    to: params.to,
-    range: params.range,
-  });
+  const [data, initialKpiLayout] = await Promise.all([
+    getInsightsPageData({
+      from: params.from,
+      to: params.to,
+      range: params.range,
+    }),
+    getInsightsLayoutForCurrentUser(),
+  ]);
 
   if (!data) {
     return (
@@ -36,5 +40,5 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
     );
   }
 
-  return <InsightsHub data={data} />;
+  return <InsightsHub data={data} initialKpiLayout={initialKpiLayout} />;
 }
