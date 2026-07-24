@@ -17,48 +17,61 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Pencil } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  GripVertical,
+  Pencil,
+  UserPlus,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
-import { saveEventsHomeLayoutAction } from "@/lib/events/events-home-layout-actions";
+import { saveVolunteersMasterLayoutAction } from "@/lib/event-volunteers/volunteers-master-layout-actions";
 import {
-  reorderEventsHomeCard,
-  setEventsHomeCardColor,
-  type EventsHomeLayout,
-} from "@/lib/events/events-home-layout";
-import {
-  EVENTS_HOME_SUMMARY_CARDS,
-  EVENTS_HOME_SUMMARY_OVERLAP_NOTE,
-  type EventsHomeSummaryKey,
-} from "@/lib/events/events-home-summary";
+  reorderVolunteersMasterKpi,
+  setVolunteersMasterKpiColor,
+  type VolunteersMasterKpiKey,
+  type VolunteersMasterLayout,
+} from "@/lib/event-volunteers/volunteers-master-layout";
 import { getDashboardCardTone } from "@/lib/today/dashboard-widget-colors";
 import { cn } from "@/lib/utils/cn";
 
-interface EventsHomeSummaryCardsProps {
-  counts: Record<EventsHomeSummaryKey, number>;
-  selected: EventsHomeSummaryKey | "all";
-  onSelect: (key: EventsHomeSummaryKey | "all") => void;
-  initialLayout: EventsHomeLayout;
+export type VolunteersMasterKpiCardModel = {
+  key: VolunteersMasterKpiKey;
+  label: string;
+  value: string;
+  description: string;
+  active: boolean;
+  onSelect: () => void;
+};
+
+const KPI_ICONS: Record<VolunteersMasterKpiKey, LucideIcon> = {
+  total_volunteers: Users,
+  fill_rate: CheckCircle2,
+  underfilled: UserPlus,
+  upcoming: CalendarDays,
+};
+
+interface VolunteersMasterKpiCardsProps {
+  cards: VolunteersMasterKpiCardModel[];
+  initialLayout: VolunteersMasterLayout;
 }
 
-const LABEL_BY_KEY = Object.fromEntries(
-  EVENTS_HOME_SUMMARY_CARDS.map((card) => [card.key, card.label]),
-) as Record<EventsHomeSummaryKey, string>;
-
-export function EventsHomeSummaryCards({
-  counts,
-  selected,
-  onSelect,
+export function VolunteersMasterKpiCards({
+  cards,
   initialLayout,
-}: EventsHomeSummaryCardsProps) {
+}: VolunteersMasterKpiCardsProps) {
   const [layout, setLayout] = useState(initialLayout);
   const layoutRef = useRef(initialLayout);
   const [editing, setEditing] = useState(false);
-  const [activeId, setActiveId] = useState<EventsHomeSummaryKey | null>(null);
+  const [activeId, setActiveId] = useState<VolunteersMasterKpiKey | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,15 +92,16 @@ export function EventsHomeSummaryCards({
     }),
   );
 
-  const order = layout.order;
+  const cardByKey = new Map(cards.map((card) => [card.key, card]));
+  const order = layout.order.filter((key) => cardByKey.has(key));
 
-  function persist(next: EventsHomeLayout) {
+  function persist(next: VolunteersMasterLayout) {
     const previous = layoutRef.current;
     layoutRef.current = next;
     setLayout(next);
     setError(null);
     void (async () => {
-      const result = await saveEventsHomeLayoutAction(next);
+      const result = await saveVolunteersMasterLayoutAction(next);
       if (!result.success) {
         layoutRef.current = previous;
         setLayout(previous);
@@ -98,7 +112,7 @@ export function EventsHomeSummaryCards({
 
   function handleDragStart(event: DragStartEvent) {
     if (!editing) return;
-    setActiveId(event.active.id as EventsHomeSummaryKey);
+    setActiveId(event.active.id as VolunteersMasterKpiKey);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -106,9 +120,11 @@ export function EventsHomeSummaryCards({
     setActiveId(null);
     if (!editing || !over || active.id === over.id) return;
 
-    const activeKey = active.id as EventsHomeSummaryKey;
-    const overKey = over.id as EventsHomeSummaryKey;
-    const next = reorderEventsHomeCard(layoutRef.current, activeKey, overKey);
+    const next = reorderVolunteersMasterKpi(
+      layoutRef.current,
+      active.id as VolunteersMasterKpiKey,
+      over.id as VolunteersMasterKpiKey,
+    );
     if (next.order.join() === layoutRef.current.order.join()) return;
     persist(next);
   }
@@ -117,7 +133,7 @@ export function EventsHomeSummaryCards({
     setActiveId(null);
   }
 
-  const activeLabel = activeId ? LABEL_BY_KEY[activeId] : null;
+  const activeCard = activeId ? cardByKey.get(activeId) : null;
 
   return (
     <div className="space-y-2">
@@ -165,69 +181,65 @@ export function EventsHomeSummaryCards({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <SortableContext items={order} strategy={horizontalListSortingStrategy}>
+        <SortableContext items={order} strategy={rectSortingStrategy}>
           <div
             className={cn(
-              "grid gap-3 sm:grid-cols-2 lg:grid-cols-5",
+              "flex flex-wrap justify-center gap-3",
               activeId && "select-none",
             )}
           >
-            {order.map((key) => (
-              <SortableSummaryCard
-                key={key}
-                id={key}
-                label={LABEL_BY_KEY[key]}
-                count={counts[key]}
-                selected={selected === key}
-                color={layout.colors?.[key] ?? null}
-                editing={editing}
-                onSelect={() =>
-                  onSelect(selected === key ? "all" : key)
-                }
-                onColorChange={(color) =>
-                  persist(setEventsHomeCardColor(layoutRef.current, key, color))
-                }
-              />
-            ))}
+            {order.map((key) => {
+              const card = cardByKey.get(key);
+              if (!card) return null;
+              return (
+                <SortableKpiCard
+                  key={key}
+                  card={card}
+                  color={layout.colors?.[key] ?? null}
+                  editing={editing}
+                  onColorChange={(color) =>
+                    persist(
+                      setVolunteersMasterKpiColor(
+                        layoutRef.current,
+                        key,
+                        color,
+                      ),
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         </SortableContext>
         <DragOverlay dropAnimation={null} zIndex={50}>
-          {activeLabel && activeId ? (
-            <div className="flex min-h-[6rem] w-full max-w-[11rem] cursor-grabbing flex-col items-center justify-center gap-1.5 rounded-2xl bg-cos-bg-alt px-4 py-5 text-center shadow-lg ring-1 ring-cos-brand-sage/40">
+          {activeCard ? (
+            <div className="flex min-h-[7rem] w-full max-w-[17.5rem] cursor-grabbing flex-col items-center justify-center gap-2 rounded-2xl bg-cos-bg-alt px-5 py-5 text-center shadow-lg ring-1 ring-cos-brand-sage/40">
               <p className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-                {activeLabel}
+                {activeCard.label}
               </p>
               <p className="font-display text-3xl leading-none text-cos-text tabular-nums">
-                {counts[activeId]}
+                {activeCard.value}
               </p>
             </div>
           ) : null}
         </DragOverlay>
       </DndContext>
-      <p className="text-xs text-cos-muted">{EVENTS_HOME_SUMMARY_OVERLAP_NOTE}</p>
     </div>
   );
 }
 
-function SortableSummaryCard({
-  id,
-  label,
-  count,
-  selected,
+function SortableKpiCard({
+  card,
   color,
   editing,
-  onSelect,
   onColorChange,
 }: {
-  id: EventsHomeSummaryKey;
-  label: string;
-  count: number;
-  selected: boolean;
+  card: VolunteersMasterKpiCardModel;
   color: string | null;
   editing: boolean;
-  onSelect: () => void;
   onColorChange: (color: string | null) => void;
 }) {
+  const Icon = KPI_ICONS[card.key];
   const { active } = useDndContext();
   const {
     attributes,
@@ -236,7 +248,7 @@ function SortableSummaryCard({
     transform,
     isDragging,
   } = useSortable({
-    id,
+    id: card.key,
     disabled: !editing,
     animateLayoutChanges: () => false,
     transition: null,
@@ -255,16 +267,16 @@ function SortableSummaryCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative min-h-[6rem] overflow-hidden rounded-2xl",
+        "relative min-h-[7rem] w-full max-w-[17.5rem] flex-1 basis-[14rem] overflow-hidden rounded-2xl",
         isDragging && "z-20 opacity-0",
         !tone &&
-          (selected
+          (card.active
             ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
             : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]"),
         tone &&
           "shadow-[0_2px_4px_rgba(42,38,34,0.08),0_10px_22px_rgba(42,38,34,0.12)]",
         tone &&
-          selected &&
+          card.active &&
           "ring-2 ring-cos-dark ring-offset-2 ring-offset-[var(--cos-bg)]",
         editing && "ring-1 ring-cos-brand-sage/35",
       )}
@@ -272,14 +284,14 @@ function SortableSummaryCard({
       {editing ? (
         <div className="absolute right-2 top-2 z-20 flex items-center gap-1">
           <DashboardWidgetColorPicker
-            label={label}
+            label={card.label}
             value={color}
             onChange={onColorChange}
           />
           <button
             type="button"
             className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
-            aria-label={`Drag to reorder ${label}`}
+            aria-label={`Drag to reorder ${card.label}`}
             title="Drag to reorder"
             {...attributes}
             {...listeners}
@@ -290,35 +302,68 @@ function SortableSummaryCard({
       ) : null}
       <button
         type="button"
-        onClick={onSelect}
-        className="flex min-h-[6rem] w-full flex-col items-center justify-center gap-1.5 px-4 py-5 text-center transition-transform duration-200 hover:-translate-y-0.5"
+        onClick={card.onSelect}
+        aria-pressed={card.active}
+        className={cn(
+          "flex min-h-[7rem] w-full flex-col items-center justify-center gap-2 px-5 py-5 text-center transition-transform duration-200 hover:-translate-y-0.5",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-bg",
+        )}
       >
-        <p
-          className={cn(
-            "text-xs font-medium tracking-wide uppercase",
-            tone
-              ? darkTone
-                ? "text-white/75"
-                : "text-cos-muted"
-              : selected
-                ? "text-white/70"
-                : "text-cos-muted",
-          )}
-        >
-          {label}
-        </p>
-        <p
+        <div className="flex items-center justify-center gap-2">
+          <span
+            className={cn(
+              "text-xs font-medium tracking-wide uppercase",
+              tone
+                ? darkTone
+                  ? "text-white/75"
+                  : "text-cos-muted"
+                : card.active
+                  ? "text-white/70"
+                  : "text-cos-muted",
+            )}
+          >
+            {card.label}
+          </span>
+          <Icon
+            className={cn(
+              "h-4 w-4 shrink-0",
+              tone
+                ? darkTone
+                  ? "text-white/80"
+                  : "text-cos-muted"
+                : card.active
+                  ? "text-white/80"
+                  : "text-cos-muted",
+            )}
+            aria-hidden
+          />
+        </div>
+        <span
           className={cn(
             "font-display text-3xl leading-none tabular-nums",
             tone
               ? "text-cos-text"
-              : selected
+              : card.active
                 ? "text-white"
                 : "text-cos-text",
           )}
         >
-          {count}
-        </p>
+          {card.value}
+        </span>
+        <span
+          className={cn(
+            "text-xs",
+            tone
+              ? darkTone
+                ? "text-white/75"
+                : "text-cos-muted"
+              : card.active
+                ? "text-white/70"
+                : "text-cos-muted",
+          )}
+        >
+          {card.description}
+        </span>
       </button>
     </div>
   );

@@ -3,16 +3,16 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  CalendarDays,
-  CheckCircle2,
   ChevronDown,
   ExternalLink,
   RefreshCw,
   Search,
-  UserPlus,
-  Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  VolunteersMasterKpiCards,
+  type VolunteersMasterKpiCardModel,
+} from "@/components/volunteers/VolunteersMasterKpiCards";
 import { eventVolunteersHref } from "@/lib/events/event-responsibility";
 import {
   filterVolunteersMasterEvents,
@@ -24,6 +24,10 @@ import {
   type VolunteersMasterPageData,
   type VolunteersMasterUnderfilledRole,
 } from "@/lib/event-volunteers/org-master-shared";
+import type {
+  VolunteersMasterKpiKey,
+  VolunteersMasterLayout,
+} from "@/lib/event-volunteers/volunteers-master-layout";
 import { formatDateTime, formatLocalDate } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
@@ -55,6 +59,7 @@ const FILL_RATE_BAND_STYLES: Record<
 
 interface VolunteersMasterShellProps {
   data: VolunteersMasterPageData;
+  initialKpiLayout: VolunteersMasterLayout;
 }
 
 const FILTER_CHIPS: Array<{ id: VolunteersMasterFilter; label: string }> = [
@@ -63,12 +68,6 @@ const FILTER_CHIPS: Array<{ id: VolunteersMasterFilter; label: string }> = [
   { id: "covered", label: "Covered" },
   { id: "all", label: "All" },
 ];
-
-type KpiCardKey =
-  | "total_volunteers"
-  | "fill_rate"
-  | "underfilled"
-  | "upcoming";
 
 function formatEventDateLabel(date: string): string {
   return formatLocalDate(date, {
@@ -92,7 +91,10 @@ function toggleFilter(
   return current === next ? "all" : next;
 }
 
-export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
+export function VolunteersMasterShell({
+  data,
+  initialKpiLayout,
+}: VolunteersMasterShellProps) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<VolunteersMasterFilter>("upcoming");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -102,7 +104,7 @@ export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
     [data.events, filter, search],
   );
 
-  const activeKpi: KpiCardKey | null =
+  const activeKpi: VolunteersMasterKpiKey | null =
     filter === "upcoming"
       ? "upcoming"
       : filter === "needs_people" || filter === "underfilled"
@@ -112,6 +114,49 @@ export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
           : filter === "all"
             ? "total_volunteers"
             : null;
+
+  const kpiCards: VolunteersMasterKpiCardModel[] = [
+    {
+      key: "total_volunteers",
+      label: "Total Volunteers",
+      value: String(data.kpis.totalVolunteers),
+      description: "Across all upcoming events.",
+      active: activeKpi === "total_volunteers",
+      onSelect: () => setFilter("all"),
+    },
+    {
+      key: "fill_rate",
+      label: "Overall Fill Rate",
+      value:
+        data.kpis.overallFillRatePercent === null
+          ? "—"
+          : `${data.kpis.overallFillRatePercent}%`,
+      description: "All roles.",
+      active: activeKpi === "fill_rate",
+      onSelect: () => setFilter(toggleFilter(filter, "covered")),
+    },
+    {
+      key: "underfilled",
+      label: "Underfilled Roles",
+      value: String(data.kpis.underfilledRoleCount),
+      description:
+        data.kpis.underfilledEventCount === 0
+          ? "None right now."
+          : `Across ${data.kpis.underfilledEventCount} event${
+              data.kpis.underfilledEventCount === 1 ? "" : "s"
+            }.`,
+      active: activeKpi === "underfilled",
+      onSelect: () => setFilter(toggleFilter(filter, "needs_people")),
+    },
+    {
+      key: "upcoming",
+      label: "Upcoming Events",
+      value: String(data.kpis.upcomingEventCount),
+      description: "Next 60 days.",
+      active: activeKpi === "upcoming",
+      onSelect: () => setFilter(toggleFilter(filter, "upcoming")),
+    },
+  ];
 
   return (
     <div className="studio-page space-y-6 pb-12">
@@ -123,50 +168,10 @@ export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-3">
-        <KpiCard
-          icon={Users}
-          label="Total Volunteers"
-          value={String(data.kpis.totalVolunteers)}
-          description="Across all upcoming events."
-          active={activeKpi === "total_volunteers"}
-          onClick={() => setFilter("all")}
-        />
-        <KpiCard
-          icon={CheckCircle2}
-          label="Overall Fill Rate"
-          value={
-            data.kpis.overallFillRatePercent === null
-              ? "—"
-              : `${data.kpis.overallFillRatePercent}%`
-          }
-          description="All roles."
-          active={activeKpi === "fill_rate"}
-          onClick={() => setFilter(toggleFilter(filter, "covered"))}
-        />
-        <KpiCard
-          icon={UserPlus}
-          label="Underfilled Roles"
-          value={String(data.kpis.underfilledRoleCount)}
-          description={
-            data.kpis.underfilledEventCount === 0
-              ? "None right now."
-              : `Across ${data.kpis.underfilledEventCount} event${
-                  data.kpis.underfilledEventCount === 1 ? "" : "s"
-                }.`
-          }
-          active={activeKpi === "underfilled"}
-          onClick={() => setFilter(toggleFilter(filter, "needs_people"))}
-        />
-        <KpiCard
-          icon={CalendarDays}
-          label="Upcoming Events"
-          value={String(data.kpis.upcomingEventCount)}
-          description="Next 60 days."
-          active={activeKpi === "upcoming"}
-          onClick={() => setFilter(toggleFilter(filter, "upcoming"))}
-        />
-      </div>
+      <VolunteersMasterKpiCards
+        cards={kpiCards}
+        initialLayout={initialKpiLayout}
+      />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-md">
@@ -268,66 +273,6 @@ export function VolunteersMasterShell({ data }: VolunteersMasterShellProps) {
         </p>
       </footer>
     </div>
-  );
-}
-
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  description,
-  active,
-  onClick,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: string;
-  description: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "flex min-h-[7rem] w-full max-w-[17.5rem] flex-1 basis-[14rem] flex-col items-center justify-center gap-2 rounded-2xl px-5 py-5 text-center transition-all duration-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-bg",
-        active
-          ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
-          : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]",
-      )}
-    >
-      <div className="flex items-center justify-center gap-2">
-        <span
-          className={cn(
-            "text-xs font-medium tracking-wide uppercase",
-            active ? "text-white/70" : "text-cos-muted",
-          )}
-        >
-          {label}
-        </span>
-        <Icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            active ? "text-white/80" : "text-cos-muted",
-          )}
-          aria-hidden
-        />
-      </div>
-      <span
-        className={cn(
-          "font-display text-3xl leading-none tabular-nums",
-          active ? "text-white" : "text-cos-text",
-        )}
-      >
-        {value}
-      </span>
-      <span className={cn("text-xs", active ? "text-white/70" : "text-cos-muted")}>
-        {description}
-      </span>
-    </button>
   );
 }
 

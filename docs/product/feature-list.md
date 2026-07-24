@@ -64,7 +64,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Events
 - Events list, create, edit — **shipped** (list thumbnails fall back to promoted approved-square artwork when the row is outside the upcoming/first-page prefetch window)
-- Events Home action summary cards (clickable filters: Next 60 Days · Needs Setup · Ready to Run · Needs Follow-up · Done; default Next 60 Days; counts scoped to school-year filter; overlap allowed; **Edit cards** mode for per-user drag-and-drop order + portaled color picker via `organization_users.events_home_layout`) — **shipped**
+- Events Home action summary cards (clickable filters: Next 60 Days · Needs Setup · Ready to Run · Needs Follow-up · Done; default Next 60 Days; counts scoped to school-year filter; overlap allowed; **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.events_home_layout`) — **shipped**
 - Events list filtered PDF export (All Events header download; current list filters only — not upcoming carousel) — **shipped**
 - Event detail workspace (tabs: Approvals, Tasks, Create with AI [handoff], Volunteers, Insights, Responsibilities, Notes, Files, Vendors, Activity; default Approvals) — **shipped**
 - Event detail Insights tab — see **Insights** below (living: [event-insights.md](./event-insights.md))
@@ -78,7 +78,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - **Volunteer Master page** (`/volunteers`, sidebar **Volunteers**) — **shipped** (living: [volunteer-master.md](./volunteer-master.md) · import: [signupgenius.md](../integrations/signupgenius.md))
   - Org-wide staffing scan: which events need people and how filled SignUpGenius / planning signup roles are
   - Auto-feed: non-archived school-year events with an active SignUpGenius source (`pending_review` / `connected` / `error`) **or** a non-empty planning `volunteer_signup` URL; scoped by viewer’s event access
-  - KPI cards (clickable filters): Total Volunteers · Overall Fill Rate · Underfilled Roles · Upcoming Events (next 60 days); default chip filter **Upcoming**; idle/selected colors match Events home summary cards (`bg-cos-bg-alt` / `bg-cos-dark`)
+  - KPI cards (clickable filters): Total Volunteers · Overall Fill Rate · Underfilled Roles · Upcoming Events (next 60 days); default chip filter **Upcoming**; idle/selected colors match Events home summary cards (`bg-cos-bg-alt` / `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.volunteers_master_layout`
   - Search (event title or role) + chips: Upcoming · Needs people · Covered · All (Covered = confirmed snapshot, fill ≥ 100%, zero underfilled roles)
   - Events table: circular artwork (approved square when filled; else initials), Fill Rate with shared color bands (Critical → Fully Staffed), Top Roles (up to 3), expand row with Open Volunteers tab / Open signup / underfilled copy
   - **This week** rail: underfilled roles for events dated this calendar week (Sun start; cap 8); View all underfilled roles → underfilled filter
