@@ -15,6 +15,7 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
     district: row.district,
     weatherCity: row.weather_city ?? null,
     weatherState: row.weather_state ?? null,
+    weatherZip: row.weather_zip ?? null,
     schoolYear: row.school_year,
     mascot: row.mascot,
     principal: row.principal,

@@ -53,11 +53,14 @@ export async function OrganizationSettingsContent({
           <DetailRow
             label="Weather"
             value={
-              organization.weatherCity
-                ? [organization.weatherCity, organization.weatherState]
-                    .filter(Boolean)
-                    .join(", ")
-                : null
+              [
+                organization.weatherCity && organization.weatherState
+                  ? `${organization.weatherCity}, ${organization.weatherState}`
+                  : organization.weatherCity,
+                organization.weatherZip ? `ZIP ${organization.weatherZip}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || null
             }
           />
           <DetailRow label="Timezone" value={organization.timezone} />

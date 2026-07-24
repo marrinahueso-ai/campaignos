@@ -1,12 +1,14 @@
 import type { OrganizationLocation, WeatherSnapshot } from "@/lib/weather/types";
 
 interface OpenWeatherResponse {
+  name?: string;
   main?: { temp?: number };
   weather?: { main?: string; description?: string }[];
 }
 
 /**
  * Optional live weather via OpenWeatherMap (server-side only).
+ * Prefers ZIP lookup when set — more accurate than city name.
  * Set WEATHER_API_KEY in environment — never exposed to the browser.
  */
 export async function fetchWeatherFromApi(
@@ -14,7 +16,11 @@ export async function fetchWeatherFromApi(
   apiKey: string,
 ): Promise<WeatherSnapshot | null> {
   const url = new URL("https://api.openweathermap.org/data/2.5/weather");
-  url.searchParams.set("q", location.query);
+  if (location.zip) {
+    url.searchParams.set("zip", `${location.zip},US`);
+  } else {
+    url.searchParams.set("q", location.query);
+  }
   url.searchParams.set("appid", apiKey);
   url.searchParams.set("units", "imperial");
 

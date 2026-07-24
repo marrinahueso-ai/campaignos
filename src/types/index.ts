@@ -112,6 +112,8 @@ export interface Organization {
   weatherCity: string | null;
   /** US state for live Today weather. */
   weatherState: string | null;
+  /** US ZIP for live Today weather (preferred OpenWeather lookup). */
+  weatherZip: string | null;
   schoolYear: string | null;
   mascot: string | null;
   principal: string | null;
@@ -135,6 +137,7 @@ export interface OrganizationRow {
   district: string | null;
   weather_city?: string | null;
   weather_state?: string | null;
+  weather_zip?: string | null;
   school_year: string | null;
   mascot: string | null;
   principal: string | null;

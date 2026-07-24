@@ -7,25 +7,46 @@ const CITY_STATE_ABBR =
 const CITY_STATE_NAME =
   /^([^,]+),\s*([A-Za-z][A-Za-z\s.]{1,28})$/;
 
+const US_ZIP = /^(\d{5})(?:-\d{4})?$/;
+
 /**
- * Derives a city/state label for weather.
- * Prefers dedicated weather_city / weather_state, then "City, ST" in district,
- * then a cleaned freeform district string.
+ * Derives a location for weather.
+ * Prefers weather ZIP, then city/state, then district parsing.
  */
 export function parseOrganizationLocation(
   organization: Organization | null,
 ): OrganizationLocation | null {
   if (!organization) return null;
 
-  const weatherCity = organization.weatherCity?.trim();
-  const weatherState = organization.weatherState?.trim();
-  if (weatherCity && weatherState) {
-    const state = normalizeState(weatherState);
+  const zip = normalizeZip(organization.weatherZip);
+  const weatherCity = organization.weatherCity?.trim() || "";
+  const weatherState = organization.weatherState?.trim()
+    ? normalizeState(organization.weatherState.trim())
+    : "";
+
+  if (zip) {
+    const label =
+      weatherCity && weatherState
+        ? `${weatherCity}, ${weatherState}`
+        : weatherCity || zip;
     return {
-      label: `${weatherCity}, ${state}`,
+      label,
+      city: weatherCity || zip,
+      state: weatherState,
+      zip,
+      query: weatherCity && weatherState
+        ? `${weatherCity}, ${weatherState}, US`
+        : `${zip}, US`,
+    };
+  }
+
+  if (weatherCity && weatherState) {
+    return {
+      label: `${weatherCity}, ${weatherState}`,
       city: weatherCity,
-      state,
-      query: `${weatherCity}, ${state}, US`,
+      state: weatherState,
+      zip: null,
+      query: `${weatherCity}, ${weatherState}, US`,
     };
   }
   if (weatherCity) {
@@ -33,6 +54,7 @@ export function parseOrganizationLocation(
       label: weatherCity,
       city: weatherCity,
       state: "",
+      zip: null,
       query: `${weatherCity}, US`,
     };
   }
@@ -47,6 +69,7 @@ export function parseOrganizationLocation(
         label: `${city}, ${state}`,
         city,
         state,
+        zip: null,
         query: `${city}, ${state}, US`,
       };
     }
@@ -60,6 +83,7 @@ export function parseOrganizationLocation(
           label: `${city}, ${state}`,
           city,
           state,
+          zip: null,
           query: `${city}, ${state}, US`,
         };
       }
@@ -71,12 +95,20 @@ export function parseOrganizationLocation(
         label: cleaned,
         city: cleaned,
         state: "",
+        zip: null,
         query: `${cleaned}, US`,
       };
     }
   }
 
   return null;
+}
+
+export function normalizeZip(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  const match = trimmed.match(US_ZIP);
+  return match ? match[1]! : null;
 }
 
 function cleanDistrictForWeather(district: string): string | null {

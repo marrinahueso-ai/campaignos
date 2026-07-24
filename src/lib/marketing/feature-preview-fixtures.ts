@@ -618,7 +618,13 @@ export const previewWeekEntries: TodayWeekEntry[] = [
 ];
 
 export const previewWeather: TodayWeatherContext = {
-  location: { label: "Oak Ridge", city: "Oak Ridge", state: "TN", query: "US" },
+  location: {
+    label: "Oak Ridge",
+    city: "Oak Ridge",
+    state: "TN",
+    zip: null,
+    query: "US",
+  },
   weather: { temperatureF: 89, condition: "Sunny", source: "mock" },
   displayLine: "89° and sunny",
 };

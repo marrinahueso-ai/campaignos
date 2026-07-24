@@ -121,6 +121,7 @@ async function resolveOrganization(
       district: null,
       weatherCity: null,
       weatherState: null,
+      weatherZip: null,
       schoolYear: null,
       mascot: null,
       principal: null,

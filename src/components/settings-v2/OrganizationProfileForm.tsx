@@ -77,12 +77,12 @@ export function OrganizationProfileForm({
           defaultValue={organization.schoolYear ?? ""}
         />
       </div>
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-3">
         <Input
           name="weatherCity"
           label="Weather city"
           defaultValue={organization.weatherCity ?? ""}
-          placeholder="Franklin"
+          placeholder="Brentwood"
         />
         <Input
           name="weatherState"
@@ -90,10 +90,18 @@ export function OrganizationProfileForm({
           defaultValue={organization.weatherState ?? ""}
           placeholder="TN"
         />
+        <Input
+          name="weatherZip"
+          label="Weather ZIP"
+          defaultValue={organization.weatherZip ?? ""}
+          placeholder="37027"
+          inputMode="numeric"
+          autoComplete="postal-code"
+        />
       </div>
       <p className="-mt-2 text-xs text-cos-muted">
-        Used for live weather on the Dashboard. Prefer City + State (e.g. Franklin,
-        TN) so forecasts match your school.
+        Used for live weather on the Dashboard. ZIP is preferred for accuracy;
+        city and state are shown as the label.
       </p>
       <div className="grid gap-6 sm:grid-cols-2">
         <Input

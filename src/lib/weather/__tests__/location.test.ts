@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseOrganizationLocation } from "../location.ts";
+import { normalizeZip, parseOrganizationLocation } from "../location.ts";
 import type { Organization } from "../../../types/index.ts";
 
 function org(partial: Partial<Organization>): Organization {
@@ -10,6 +10,7 @@ function org(partial: Partial<Organization>): Organization {
     district: null,
     weatherCity: null,
     weatherState: null,
+    weatherZip: null,
     schoolYear: null,
     mascot: null,
     principal: null,
@@ -29,7 +30,23 @@ function org(partial: Partial<Organization>): Organization {
 }
 
 describe("parseOrganizationLocation", () => {
-  it("prefers weather city and state", () => {
+  it("prefers weather ZIP for API lookup", () => {
+    const location = parseOrganizationLocation(
+      org({
+        weatherCity: "Brentwood",
+        weatherState: "TN",
+        weatherZip: "37027",
+      }),
+    );
+    assert.equal(location?.zip, "37027");
+    assert.equal(location?.label, "Brentwood, TN");
+  });
+
+  it("normalizes ZIP+4 to 5-digit ZIP", () => {
+    assert.equal(normalizeZip("37027-1234"), "37027");
+  });
+
+  it("prefers weather city and state when ZIP unset", () => {
     const location = parseOrganizationLocation(
       org({
         district: "Williamson County Schools",
@@ -38,6 +55,7 @@ describe("parseOrganizationLocation", () => {
       }),
     );
     assert.equal(location?.label, "Franklin, TN");
+    assert.equal(location?.zip, null);
     assert.equal(location?.query, "Franklin, TN, US");
   });
 

@@ -1,9 +1,11 @@
 export interface OrganizationLocation {
-  /** Display label, e.g. "Brentwood, TN" */
+  /** Display label, e.g. "Brentwood, TN" or "37027" */
   label: string;
   city: string;
   state: string;
-  /** Query string for a future geocoding / weather API */
+  /** US ZIP when set — preferred OpenWeather lookup */
+  zip: string | null;
+  /** Fallback city/state query string when zip is unset */
   query: string;
 }
 
