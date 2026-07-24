@@ -25,9 +25,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { Check, GripVertical, Pencil, Plus, X } from "lucide-react";
 import { DashboardAddWidgetsModal } from "@/components/today/DashboardAddWidgetsModal";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
-import { DashboardWidgetColorProvider } from "@/components/today/DashboardWidgetColorContext";
 import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions";
-import { dashboardWidgetSupportsColor } from "@/lib/today/dashboard-widget-colors";
+import {
+  dashboardWidgetSupportsColor,
+  getDashboardCardTone,
+} from "@/lib/today/dashboard-widget-colors";
 import {
   applyDashboardWidgetSelection,
   getDashboardWidgetColor,
@@ -526,6 +528,8 @@ function SortableWidgetFrame({
 }) {
   const label = getDashboardWidgetDefinition(id)?.label ?? id;
   const colorable = dashboardWidgetSupportsColor(id);
+  const tone =
+    colorable && color ? getDashboardCardTone(color) : null;
   const {
     attributes,
     listeners,
@@ -598,10 +602,9 @@ function SortableWidgetFrame({
           uniform && "flex flex-col [&>*]:h-full [&>*]:min-h-0",
           editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
         )}
+        style={tone?.style}
       >
-        <DashboardWidgetColorProvider color={colorable ? color : null}>
-          {children}
-        </DashboardWidgetColorProvider>
+        {children}
       </div>
     </div>
   );

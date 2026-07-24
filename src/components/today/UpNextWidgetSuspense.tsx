@@ -36,6 +36,7 @@ export function UpNextWidgetSuspense({
         <UpNextWidget
           whatsNext={whatsNext}
           artwork={null}
+          artworkLoading={Boolean(whatsNext.eventId)}
           organizationName={organizationName}
         />
       }

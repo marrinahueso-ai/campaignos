@@ -10,12 +10,15 @@ interface UpNextWidgetProps {
   whatsNext: TodayWhatsNext;
   artwork: HeroArtworkSelection | null;
   organizationName?: string | null;
+  /** True while artwork is still streaming in — avoid the navy empty-state flash. */
+  artworkLoading?: boolean;
 }
 
 export function UpNextWidget({
   whatsNext,
   artwork,
   organizationName = null,
+  artworkLoading = false,
 }: UpNextWidgetProps) {
   const display = parseWhatsNextDisplay(whatsNext);
   const eventTitle = display.event ?? whatsNext.title;
@@ -37,7 +40,7 @@ export function UpNextWidget({
       className="overflow-hidden"
     >
       <div className="flex h-full flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-6">
-        <div className="relative mx-auto aspect-square w-full max-w-[18rem] shrink-0 overflow-hidden rounded-2xl bg-cos-card shadow-[0_12px_28px_rgba(42,38,34,0.14)] ring-1 ring-black/[0.06] sm:mx-0 sm:max-w-none sm:basis-[min(100%,17.5rem)]">
+        <div className="relative mx-auto aspect-square w-full max-w-[18rem] shrink-0 overflow-hidden rounded-2xl bg-cos-bg-alt shadow-[0_12px_28px_rgba(42,38,34,0.14)] ring-1 ring-black/[0.06] sm:mx-0 sm:max-w-none sm:basis-[min(100%,17.5rem)]">
           {imageUrl ? (
             isOptimizableImageUrl(imageUrl) ? (
               <Image
@@ -46,16 +49,21 @@ export function UpNextWidget({
                 fill
                 priority
                 sizes="(max-width: 640px) 18rem, 17.5rem"
-                className="object-cover object-center"
+                className="bg-cos-bg-alt object-cover object-center"
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={imageUrl}
                 alt=""
-                className="h-full w-full object-cover object-center"
+                className="h-full w-full bg-cos-bg-alt object-cover object-center"
               />
             )
+          ) : artworkLoading ? (
+            <div
+              className="h-full w-full animate-pulse bg-cos-bg-alt"
+              aria-hidden
+            />
           ) : (
             <div className="flex h-full items-center justify-center bg-gradient-to-br from-cos-brand-navy via-[#243352] to-cos-brand-sage px-6 text-center">
               <p className="font-display text-2xl leading-snug text-white sm:text-3xl">
