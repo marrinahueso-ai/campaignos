@@ -278,14 +278,17 @@ export async function getVendorDirectoryPageData(): Promise<VendorDirectoryPageD
       latestAssignment,
       assignmentCount: vendorAssignments.length,
       eventIds,
+      logoUrl: null,
     };
   });
 
+  const withLogos = await attachVendorLogoUrls(rows);
+
   return {
-    vendors: rows,
+    vendors: withLogos,
     categories,
     events,
-    summary: buildVendorDirectorySummary(rows, upcomingEventIds),
+    summary: buildVendorDirectorySummary(withLogos, upcomingEventIds),
     canWrite,
     canManage,
   };
@@ -508,26 +511,43 @@ export async function getEventVendorsData(
     .filter((value): value is EventVendorRow => value !== null)
     .sort((left, right) => left.vendor.name.localeCompare(right.vendor.name));
 
-  const logoPaths = vendors
+  const withLogos = await attachVendorLogoUrls(vendors);
+
+  return { vendors: withLogos, canWrite };
+}
+
+export async function getAllOrgVendorsForDedup(organizationId: string) {
+  return getOrgVendors(organizationId);
+}
+
+/** Resolve signed logo URLs for rows that carry `vendor.logoPath` + `logoUrl`. */
+async function attachVendorLogoUrls<
+  T extends { vendor: { logoPath: string | null }; logoUrl: string | null },
+>(rows: T[]): Promise<T[]> {
+  const logoPaths = rows
     .map((row) => row.vendor.logoPath)
     .filter((path): path is string => Boolean(path));
 
-  let signedByPath = new Map<string, string>();
-  if (logoPaths.length > 0) {
-    const { data: signedRows, error: signError } = await supabase.storage
-      .from(VENDOR_DOCUMENTS_BUCKET)
-      .createSignedUrls(logoPaths, 3600);
-
-    if (!signError && signedRows) {
-      signedByPath = new Map(
-        signedRows
-          .filter((row) => row.path && row.signedUrl && !row.error)
-          .map((row) => [row.path as string, row.signedUrl as string]),
-      );
-    }
+  if (logoPaths.length === 0) {
+    return rows;
   }
 
-  const withLogos = vendors.map((row) => {
+  const supabase = await createClient();
+  const { data: signedRows, error: signError } = await supabase.storage
+    .from(VENDOR_DOCUMENTS_BUCKET)
+    .createSignedUrls(logoPaths, 3600);
+
+  if (signError || !signedRows) {
+    return rows;
+  }
+
+  const signedByPath = new Map(
+    signedRows
+      .filter((row) => row.path && row.signedUrl && !row.error)
+      .map((row) => [row.path as string, row.signedUrl as string]),
+  );
+
+  return rows.map((row) => {
     if (!row.vendor.logoPath) {
       return row;
     }
@@ -536,10 +556,4 @@ export async function getEventVendorsData(
       logoUrl: signedByPath.get(row.vendor.logoPath) ?? null,
     };
   });
-
-  return { vendors: withLogos, canWrite };
-}
-
-export async function getAllOrgVendorsForDedup(organizationId: string) {
-  return getOrgVendors(organizationId);
 }

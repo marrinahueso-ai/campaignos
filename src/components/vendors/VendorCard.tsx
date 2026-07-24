@@ -39,6 +39,8 @@ export interface VendorCardProps {
   /** Event-assignment unlink. Omit on directory cards. */
   onRemove?: () => void;
   onLogoUploaded?: () => void;
+  /** Card-body click (ignores links/buttons) — e.g. open directory drawer. */
+  onSelect?: () => void;
   className?: string;
 }
 
@@ -54,6 +56,7 @@ export function VendorCard({
   eventId = null,
   onRemove,
   onLogoUploaded,
+  onSelect,
   className,
 }: VendorCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,8 +96,18 @@ export function VendorCard({
       padding="none"
       className={cn(
         "flex h-full flex-col overflow-hidden border border-cos-border",
+        onSelect && "cursor-pointer",
         className,
       )}
+      onClick={
+        onSelect
+          ? (event) => {
+              const target = event.target as HTMLElement;
+              if (target.closest("a, button, input, label")) return;
+              onSelect();
+            }
+          : undefined
+      }
     >
       <div className="relative flex h-24 items-center justify-center bg-cos-bg">
         {logoUrl ? (

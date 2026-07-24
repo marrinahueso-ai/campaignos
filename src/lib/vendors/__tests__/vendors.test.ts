@@ -19,6 +19,7 @@ function makeRow(overrides: Partial<VendorDirectoryRow> & { vendor: VendorDirect
     latestAssignment: null,
     assignmentCount: 0,
     eventIds: [],
+    logoUrl: null,
     ...overrides,
   };
 }

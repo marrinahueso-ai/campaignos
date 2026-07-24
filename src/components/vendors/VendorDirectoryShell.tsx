@@ -1,31 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MoreVertical, Plus, Search, Star } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/Table";
-import { CategoryPill, VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
+import { VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
+import { VendorCard } from "@/components/vendors/VendorCard";
 import { VendorEditModal } from "@/components/vendors/VendorEditModal";
-import { VENDORS_MIGRATION, VENDOR_DIRECTORY_TABS, VENDOR_PAGE_SIZE, VENDOR_STATUSES } from "@/lib/vendors/constants";
+import {
+  VENDORS_MIGRATION,
+  VENDOR_DIRECTORY_TABS,
+  VENDOR_PAGE_SIZE,
+  VENDOR_STATUSES,
+} from "@/lib/vendors/constants";
 import {
   createDefaultVendorFilters,
   filterVendorDirectoryRows,
-  formatVendorWebsite,
   paginateVendorRows,
   totalVendorPages,
-  vendorInitials,
 } from "@/lib/vendors/filters";
 import type {
   VendorDirectoryPageData,
@@ -38,32 +32,24 @@ interface VendorDirectoryShellProps {
   data: VendorDirectoryPageData;
 }
 
-function assignmentBadgeVariant(
-  status: NonNullable<VendorDirectoryRow["latestAssignment"]>["assignmentStatus"],
-): "success" | "warning" | "default" {
-  switch (status) {
-    case "confirmed":
-    case "completed":
-      return "success";
-    case "pending":
-      return "warning";
-    default:
-      return "default";
+function directoryStatus(row: VendorDirectoryRow): {
+  label: string;
+  variant: "success" | "warning" | "default";
+} {
+  const assignment = row.latestAssignment;
+  if (!assignment) {
+    return { label: row.vendor.status, variant: "default" };
   }
-}
 
-function assignmentLabel(
-  status: NonNullable<VendorDirectoryRow["latestAssignment"]>["assignmentStatus"],
-): string {
-  switch (status) {
+  switch (assignment.assignmentStatus) {
     case "confirmed":
-      return "Confirmed";
+      return { label: "confirmed", variant: "success" };
     case "completed":
-      return "Completed";
+      return { label: "completed", variant: "success" };
     case "pending":
-      return "Pending";
+      return { label: "pending", variant: "warning" };
     case "cancelled":
-      return "Cancelled";
+      return { label: "cancelled", variant: "default" };
   }
 }
 
@@ -225,158 +211,74 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         ))}
       </div>
 
-      <Card className="overflow-hidden p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vendor Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Event</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pageRows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-sm text-cos-muted">
-                  No vendors match your filters yet.
-                </TableCell>
-              </TableRow>
-            ) : (
-              pageRows.map((row) => (
-                <TableRow
-                  key={row.vendor.id}
-                  data-highlighted={selectedRow?.vendor.id === row.vendor.id}
-                  className="cursor-pointer"
-                  onClick={() => setSelectedRow(row)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cos-accent-soft text-xs font-semibold text-cos-dark">
-                        {vendorInitials(row.vendor.name)}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="truncate font-medium text-cos-text">
-                            {row.vendor.name}
-                          </p>
-                          {row.vendor.isFavorite && (
-                            <Star className="h-3.5 w-3.5 fill-cos-accent text-cos-accent" />
-                          )}
-                        </div>
-                        {formatVendorWebsite(row.vendor.website) && (
-                          <p className="truncate text-xs text-cos-muted">
-                            {formatVendorWebsite(row.vendor.website)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {row.category ? <CategoryPill category={row.category} /> : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-cos-text">
-                    {row.latestAssignment ? (
-                      <Link
-                        href={`/events/${row.latestAssignment.eventId}`}
-                        className="hover:underline"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {row.latestAssignment.eventTitle}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-cos-muted">
-                    {row.latestAssignment?.eventDate ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    {row.latestAssignment ? (
-                      <Badge
-                        variant={assignmentBadgeVariant(
-                          row.latestAssignment.assignmentStatus,
-                        )}
-                      >
-                        {assignmentLabel(row.latestAssignment.assignmentStatus)}
-                      </Badge>
-                    ) : (
-                      <Badge variant="default">{row.vendor.status}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    <p className="text-cos-text">
-                      {row.primaryContact?.name ?? "—"}
-                    </p>
-                    <p className="text-xs text-cos-muted">
-                      {row.primaryContact?.phone ?? row.vendor.phone ?? ""}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      type="button"
-                      aria-label="Vendor actions"
-                      className="p-1 text-cos-muted hover:text-cos-text"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedRow(row);
-                      }}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-cos-border px-4 py-3 text-sm text-cos-muted">
-          <p>
-            Showing {rangeStart}-{rangeEnd} of {filteredRows.length} vendors
-          </p>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={currentPage <= 1}
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-            >
-              Prev
-            </Button>
-            {Array.from({ length: pageCount }, (_, index) => index + 1)
-              .slice(0, 8)
-              .map((pageNumber) => (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  onClick={() => setPage(pageNumber)}
-                  className={cn(
-                    "h-8 min-w-8 px-2 text-sm",
-                    pageNumber === currentPage
-                      ? "bg-cos-dark text-white"
-                      : "text-cos-muted hover:bg-cos-bg",
-                  )}
-                >
-                  {pageNumber}
-                </button>
-              ))}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={currentPage >= pageCount}
-              onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
-            >
-              Next
-            </Button>
-          </div>
+      {pageRows.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-cos-muted">
+          No vendors match your filters yet.
+        </Card>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,16rem))] gap-3">
+          {pageRows.map((row) => {
+            const status = directoryStatus(row);
+            return (
+              <VendorCard
+                key={row.vendor.id}
+                vendor={row.vendor}
+                category={row.category}
+                primaryContact={row.primaryContact}
+                logoUrl={row.logoUrl}
+                statusLabel={status.label}
+                statusVariant={status.variant}
+                canWrite={data.canWrite}
+                onSelect={() => setSelectedRow(row)}
+                onLogoUploaded={() => router.refresh()}
+              />
+            );
+          })}
         </div>
-      </Card>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cos-muted">
+        <p>
+          Showing {rangeStart}-{rangeEnd} of {filteredRows.length} vendors
+        </p>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            Prev
+          </Button>
+          {Array.from({ length: pageCount }, (_, index) => index + 1)
+            .slice(0, 8)
+            .map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                onClick={() => setPage(pageNumber)}
+                className={cn(
+                  "h-8 min-w-8 px-2 text-sm",
+                  pageNumber === currentPage
+                    ? "bg-cos-dark text-white"
+                    : "text-cos-muted hover:bg-cos-bg",
+                )}
+              >
+                {pageNumber}
+              </button>
+            ))}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={currentPage >= pageCount}
+            onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
 
       <VendorDetailDrawer
         row={selectedRow}

@@ -217,6 +217,8 @@ export interface VendorDirectoryRow {
   latestAssignment: VendorEventSummary | null;
   assignmentCount: number;
   eventIds: string[];
+  /** Signed URL for logo display on directory cards. */
+  logoUrl: string | null;
 }
 
 export interface VendorDirectorySummary {
