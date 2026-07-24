@@ -288,7 +288,10 @@ export interface CreateVendorInput {
   contactEmail?: string | null;
   contactPhone?: string | null;
   notes?: string | null;
+  /** Single event (legacy / event-tab default). Prefer `eventIds` for multi-link. */
   eventId?: string | null;
+  /** One or more events to link on create (Vendor Master Add flow). */
+  eventIds?: string[];
   assignmentStatus?: VendorAssignmentStatus;
 }
 

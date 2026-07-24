@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { VendorFieldSelect } from "@/components/vendors/VendorFieldSelect";
 import { Textarea } from "@/components/ui/Textarea";
+import { loadEventVendorDirectoryAction } from "@/lib/events-phase3/actions";
 import { createVendorAction, assignVendorToEventAction } from "@/lib/vendors/actions";
 import type {
   CreateVendorInput,
@@ -17,11 +18,13 @@ import { cn } from "@/lib/utils/cn";
 
 type Step = "basics" | "event" | "review";
 
+type VendorEventOption = { id: string; title: string; date: string };
+
 interface VendorAddModalProps {
   open: boolean;
   onClose: () => void;
   categories: VendorCategory[];
-  events: Array<{ id: string; title: string; date: string }>;
+  events: VendorEventOption[];
   defaultEventId?: string;
   onCreated?: (vendorId: string) => void;
 }
@@ -42,15 +45,20 @@ const EMPTY_FORM: CreateVendorInput = {
   contactPhone: "",
   notes: "",
   eventId: null,
+  eventIds: [],
   // Confirmed so the directory card shows the event link (pending badges are hidden).
   assignmentStatus: "confirmed",
 };
 
+function seedEventIds(defaultEventId?: string): string[] {
+  return defaultEventId ? [defaultEventId] : [];
+}
+
 export function VendorAddModal({
   open,
   onClose,
-  categories,
-  events,
+  categories: initialCategories,
+  events: initialEvents,
   defaultEventId,
   onCreated,
 }: VendorAddModalProps) {
@@ -58,11 +66,16 @@ export function VendorAddModal({
   const [form, setForm] = useState<CreateVendorInput>({
     ...EMPTY_FORM,
     eventId: defaultEventId ?? null,
+    eventIds: seedEventIds(defaultEventId),
   });
   const [error, setError] = useState<string | null>(null);
   const [existingVendorId, setExistingVendorId] = useState<string | null>(null);
   const [createdVendorId, setCreatedVendorId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [categories, setCategories] = useState(initialCategories);
+  const [events, setEvents] = useState(initialEvents);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsLoadError, setEventsLoadError] = useState<string | null>(null);
 
   const categoryOptions = useMemo(
     () => categories.map((category) => ({ value: category.id, label: category.name })),
@@ -81,8 +94,18 @@ export function VendorAddModal({
     });
   }, [events]);
 
-  const selectedEventId = form.eventId ?? defaultEventId ?? null;
-  const selectedEvent = eventOptions.find((event) => event.id === selectedEventId);
+  const selectedEventIds = useMemo(() => {
+    const ids = form.eventIds?.length
+      ? form.eventIds
+      : form.eventId
+        ? [form.eventId]
+        : seedEventIds(defaultEventId);
+    return Array.from(new Set(ids.filter(Boolean)));
+  }, [form.eventIds, form.eventId, defaultEventId]);
+
+  const selectedEvents = eventOptions.filter((event) =>
+    selectedEventIds.includes(event.id),
+  );
 
   useEffect(() => {
     if (!open) {
@@ -92,11 +115,40 @@ export function VendorAddModal({
     setForm({
       ...EMPTY_FORM,
       eventId: defaultEventId ?? null,
+      eventIds: seedEventIds(defaultEventId),
       assignmentStatus: "confirmed",
     });
     setError(null);
     setExistingVendorId(null);
     setCreatedVendorId(null);
+    setCategories(initialCategories);
+    setEvents(initialEvents);
+    setEventsLoadError(null);
+
+    // Always refresh events when opening — Vendor Master depends on this list
+    // (Event tab can still link via defaultEventId alone).
+    let cancelled = false;
+    setEventsLoading(true);
+    void loadEventVendorDirectoryAction().then((result) => {
+      if (cancelled) return;
+      setEventsLoading(false);
+      if (!result.success) {
+        setEventsLoadError(result.error);
+        return;
+      }
+      setCategories((prev) =>
+        result.data.categories.length > 0 ? result.data.categories : prev,
+      );
+      setEvents((prev) =>
+        result.data.events.length > 0 ? result.data.events : prev,
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally only re-run when the dialog opens / default event changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid refetch loops from array identity
   }, [open, defaultEventId]);
 
   if (!open) {
@@ -110,9 +162,31 @@ export function VendorAddModal({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function toggleEvent(eventId: string) {
+    setForm((current) => {
+      const currentIds = current.eventIds?.length
+        ? current.eventIds
+        : current.eventId
+          ? [current.eventId]
+          : [];
+      const nextIds = currentIds.includes(eventId)
+        ? currentIds.filter((id) => id !== eventId)
+        : [...currentIds, eventId];
+      return {
+        ...current,
+        eventIds: nextIds,
+        eventId: nextIds[0] ?? null,
+      };
+    });
+  }
+
   function resetAndClose() {
     setStep("basics");
-    setForm({ ...EMPTY_FORM, eventId: defaultEventId ?? null });
+    setForm({
+      ...EMPTY_FORM,
+      eventId: defaultEventId ?? null,
+      eventIds: seedEventIds(defaultEventId),
+    });
     setError(null);
     setExistingVendorId(null);
     setCreatedVendorId(null);
@@ -125,7 +199,8 @@ export function VendorAddModal({
     startTransition(async () => {
       const payload: CreateVendorInput = {
         ...form,
-        eventId: selectedEventId,
+        eventIds: selectedEventIds,
+        eventId: selectedEventIds[0] ?? null,
       };
       const result = await createVendorAction(payload);
       if (!result.success || !result.vendorId) {
@@ -139,15 +214,14 @@ export function VendorAddModal({
     });
   }
 
-  function handleRetryLink() {
-    const vendorId = existingVendorId ?? createdVendorId;
-    const eventId = selectedEventId;
-    if (!vendorId || !eventId) {
-      setError("Choose an event to link this vendor.");
-      return;
+  async function linkVendorToSelectedEvents(vendorId: string) {
+    if (selectedEventIds.length === 0) {
+      setError("Choose at least one event to link this vendor.");
+      setStep("event");
+      return false;
     }
 
-    startTransition(async () => {
+    for (const eventId of selectedEventIds) {
       const result = await assignVendorToEventAction(
         vendorId,
         eventId,
@@ -155,8 +229,22 @@ export function VendorAddModal({
       );
       if (!result.success) {
         setError(result.error ?? "Unable to link vendor to event.");
-        return;
+        return false;
       }
+    }
+    return true;
+  }
+
+  function handleRetryLink() {
+    const vendorId = existingVendorId ?? createdVendorId;
+    if (!vendorId) {
+      setError("Choose an event to link this vendor.");
+      return;
+    }
+
+    startTransition(async () => {
+      const ok = await linkVendorToSelectedEvents(vendorId);
+      if (!ok) return;
       onCreated?.(vendorId);
       resetAndClose();
     });
@@ -169,25 +257,11 @@ export function VendorAddModal({
       );
       return;
     }
-    if (!selectedEventId) {
-      setError(
-        "No event selected to link this vendor to. Go back and choose an event.",
-      );
-      setStep("event");
-      return;
-    }
 
     startTransition(async () => {
       try {
-        const result = await assignVendorToEventAction(
-          existingVendorId,
-          selectedEventId,
-          form.assignmentStatus ?? "confirmed",
-        );
-        if (!result.success) {
-          setError(result.error ?? "Unable to link existing vendor.");
-          return;
-        }
+        const ok = await linkVendorToSelectedEvents(existingVendorId);
+        if (!ok) return;
         onCreated?.(existingVendorId);
         resetAndClose();
       } catch (linkError) {
@@ -312,15 +386,25 @@ export function VendorAddModal({
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium text-cos-text">
-                  Tie this vendor to an event
+                  Link to events
                 </p>
                 <p className="mt-1 text-sm text-cos-muted">
-                  Linking adds them on that event&apos;s Vendors tab and keeps history
-                  in the directory. You can skip this and link later.
+                  Select one or more events. The vendor will appear on each event&apos;s
+                  Vendors tab. You can skip and link later.
                 </p>
               </div>
 
-              {eventOptions.length === 0 ? (
+              {eventsLoading ? (
+                <p className="text-sm text-cos-muted">Loading events…</p>
+              ) : null}
+
+              {eventsLoadError ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {eventsLoadError}
+                </p>
+              ) : null}
+
+              {!eventsLoading && eventOptions.length === 0 ? (
                 <div className="rounded-lg border border-cos-border bg-cos-bg/60 p-4 text-sm text-cos-muted">
                   No events are available to link yet.{" "}
                   <Link href="/events" className="text-cos-dark underline">
@@ -328,22 +412,40 @@ export function VendorAddModal({
                   </Link>{" "}
                   first, or continue without linking.
                 </div>
-              ) : (
+              ) : null}
+
+              {eventOptions.length > 0 ? (
                 <>
-                  <Field label="Event">
-                    <VendorFieldSelect
-                      value={form.eventId ?? ""}
-                      onChange={(value) => updateField("eventId", value || null)}
-                      options={[
-                        { value: "", label: "No event yet" },
-                        ...eventOptions.map((event) => ({
-                          value: event.id,
-                          label: `${event.title} — ${event.date}`,
-                        })),
-                      ]}
-                    />
-                  </Field>
-                  {form.eventId ? (
+                  <div className="max-h-56 space-y-1 overflow-y-auto border border-cos-border p-2">
+                    {eventOptions.map((event) => {
+                      const checked = selectedEventIds.includes(event.id);
+                      return (
+                        <label
+                          key={event.id}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-3 px-2 py-2 text-sm transition-colors hover:bg-cos-bg",
+                            checked && "bg-cos-accent-soft/40",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleEvent(event.id)}
+                            className="mt-0.5 h-4 w-4 accent-cos-dark"
+                          />
+                          <span>
+                            <span className="block font-medium text-cos-text">
+                              {event.title}
+                            </span>
+                            <span className="block text-xs text-cos-muted">
+                              {event.date}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {selectedEventIds.length > 0 ? (
                     <Field label="Assignment status">
                       <VendorFieldSelect
                         value={form.assignmentStatus ?? "confirmed"}
@@ -362,7 +464,7 @@ export function VendorAddModal({
                     </Field>
                   ) : null}
                 </>
-              )}
+              ) : null}
 
               <Field label="Notes (optional)">
                 <Textarea
@@ -388,11 +490,16 @@ export function VendorAddModal({
               <ReviewItem label="Website" value={form.website || "—"} />
               <ReviewItem label="Contact" value={form.contactName || "—"} />
               <ReviewItem
-                label="Event"
+                label="Events"
                 value={
-                  selectedEvent
-                    ? `${selectedEvent.title} (${form.assignmentStatus ?? "confirmed"})`
-                    : "None — link later from the event or vendor profile"
+                  selectedEvents.length > 0
+                    ? selectedEvents
+                        .map(
+                          (event) =>
+                            `${event.title} (${form.assignmentStatus ?? "confirmed"})`,
+                        )
+                        .join("; ")
+                    : "None — link later from an event or this vendor's profile"
                 }
               />
               <ReviewItem label="Notes" value={form.notes || "—"} />
@@ -405,11 +512,11 @@ export function VendorAddModal({
               {existingVendorId ? (
                 <div className="rounded-lg border border-cos-border bg-cos-bg/50 p-3">
                   <p className="text-sm text-cos-muted">
-                    {selectedEventId
-                      ? "Link the existing vendor to this event instead of creating a duplicate."
+                    {selectedEventIds.length > 0
+                      ? "Link the existing vendor to the selected event(s) instead of creating a duplicate."
                       : "An existing vendor matched. Go back and choose an event, then link them."}
                   </p>
-                  {selectedEventId ? (
+                  {selectedEventIds.length > 0 ? (
                     <Button
                       type="button"
                       size="sm"
@@ -417,7 +524,7 @@ export function VendorAddModal({
                       onClick={handleLinkExisting}
                       disabled={pending}
                     >
-                      {pending ? "Linking..." : "Link existing vendor to event"}
+                      {pending ? "Linking..." : "Link existing vendor to event(s)"}
                     </Button>
                   ) : (
                     <Button
@@ -430,19 +537,19 @@ export function VendorAddModal({
                         setStep("event");
                       }}
                     >
-                      Choose an event
+                      Choose events
                     </Button>
                   )}
                 </div>
               ) : null}
-              {createdVendorId && selectedEventId && !existingVendorId ? (
+              {createdVendorId && selectedEventIds.length > 0 && !existingVendorId ? (
                 <Button
                   type="button"
                   size="sm"
                   onClick={handleRetryLink}
                   disabled={pending}
                 >
-                  {pending ? "Linking..." : "Retry linking to event"}
+                  {pending ? "Linking..." : "Retry linking to event(s)"}
                 </Button>
               ) : null}
             </div>
@@ -487,20 +594,20 @@ export function VendorAddModal({
             )}
             {step === "review" && (
               <>
-                {existingVendorId && selectedEventId ? (
+                {existingVendorId && selectedEventIds.length > 0 ? (
                   <Button
                     type="button"
                     onClick={handleLinkExisting}
                     disabled={pending}
                   >
-                    {pending ? "Linking..." : "Link existing vendor to event"}
+                    {pending ? "Linking..." : "Link existing vendor to event(s)"}
                   </Button>
                 ) : (
                   <Button type="button" onClick={handleSubmit} disabled={pending}>
                     {pending
                       ? "Saving..."
-                      : selectedEventId
-                        ? "Create & link to event"
+                      : selectedEventIds.length > 0
+                        ? `Create & link (${selectedEventIds.length})`
                         : "Create Vendor"}
                   </Button>
                 )}

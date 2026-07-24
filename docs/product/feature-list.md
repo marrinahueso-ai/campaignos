@@ -199,7 +199,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Vendors
 - Directory (card grid matching event vendor cards), add/archive/delete, profile, link to events — **shipped**
 - Profile header actions: icon buttons with hover tooltips (Edit, Block/Unblock, Archive, Delete) — **shipped**
-- Add Vendor wizard: Basics → Connect event → Review; creates assignment on save (defaults Confirmed); directory event filter pre-selects the event — **shipped**
+- Add Vendor wizard: Basics → Connect event → Review; Vendor Master loads events and supports multi-select link; Event tab pre-selects the current event; assignments default Confirmed — **shipped**
 - Favorite star on card upper-right; directory tabs: All / Favorites / Past / Blocked (Pending removed) — **shipped**
 - Directory peek drawer: single **View Profile** CTA; edit vendor from profile only — **shipped**
 - Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**

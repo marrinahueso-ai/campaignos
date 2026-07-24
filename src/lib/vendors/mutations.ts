@@ -128,12 +128,20 @@ export async function createVendor(
     });
   }
 
-  if (input.eventId) {
+  const eventIds = Array.from(
+    new Set(
+      [...(input.eventIds ?? []), ...(input.eventId ? [input.eventId] : [])].filter(
+        (id): id is string => Boolean(id?.trim()),
+      ),
+    ),
+  );
+
+  for (const eventId of eventIds) {
     const assignmentResult = await assignVendorToEvent(
       organizationId,
       vendorId,
-      input.eventId,
-      input.assignmentStatus ?? "pending",
+      eventId,
+      input.assignmentStatus ?? "confirmed",
     );
     if (!assignmentResult.success) {
       return { id: vendorId, error: assignmentResult.error };

@@ -121,6 +121,10 @@ async function getOrgAssignments(organizationId: string) {
 async function getOrgEventsForVendors(organizationId: string) {
   const schoolYearIds = await getOrganizationSchoolYearIds(organizationId);
   if (!schoolYearIds.length) {
+    console.warn(
+      "getOrgEventsForVendors: no school years for org",
+      organizationId,
+    );
     return [];
   }
 
@@ -133,6 +137,7 @@ async function getOrgEventsForVendors(organizationId: string) {
     .order("date", { ascending: true });
 
   if (error) {
+    console.error("getOrgEventsForVendors failed:", error.message);
     return [];
   }
 

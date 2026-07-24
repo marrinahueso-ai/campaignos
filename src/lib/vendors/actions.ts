@@ -92,7 +92,20 @@ export async function createVendorAction(
     };
   }
 
-  revalidateVendorPaths(result.id, input.eventId);
+  const linkedEventIds = Array.from(
+    new Set(
+      [...(input.eventIds ?? []), ...(input.eventId ? [input.eventId] : [])].filter(
+        (id): id is string => Boolean(id?.trim()),
+      ),
+    ),
+  );
+  if (linkedEventIds.length === 0) {
+    revalidateVendorPaths(result.id);
+  } else {
+    for (const eventId of linkedEventIds) {
+      revalidateVendorPaths(result.id, eventId);
+    }
+  }
 
   // Vendor row may exist even when the event link failed — surface that clearly.
   if (result.error) {
