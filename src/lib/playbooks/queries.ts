@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { calculateCommunicationHealth } from "@/lib/playbooks/health";
 import {
@@ -115,57 +116,61 @@ async function getStepCountsByPlaybookIds(
   return counts;
 }
 
-export async function getPlaybookById(
-  playbookId: string,
-): Promise<CommunicationPlaybook | null> {
-  const supabase = await createClient();
+export const getPlaybookById = cache(
+  async (playbookId: string): Promise<CommunicationPlaybook | null> => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("communication_playbooks")
-    .select("*")
-    .eq("id", playbookId)
-    .maybeSingle();
+    const { data, error } = await supabase
+      .from("communication_playbooks")
+      .select("*")
+      .eq("id", playbookId)
+      .maybeSingle();
 
-  if (error || !data) {
-    return null;
-  }
+    if (error || !data) {
+      return null;
+    }
 
-  const row = data as CommunicationPlaybookRow;
-  const stepCounts = await getStepCountsByPlaybookIds([row.id]);
+    const row = data as CommunicationPlaybookRow;
+    const stepCounts = await getStepCountsByPlaybookIds([row.id]);
 
-  return mapCommunicationPlaybookRow(row, stepCounts.get(row.id) ?? 0);
-}
+    return mapCommunicationPlaybookRow(row, stepCounts.get(row.id) ?? 0);
+  },
+);
 
-export async function getPlaybookSteps(
-  playbookId: string,
-): Promise<CommunicationPlaybookStep[]> {
-  const supabase = await createClient();
+export const getPlaybookSteps = cache(
+  async (playbookId: string): Promise<CommunicationPlaybookStep[]> => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("communication_playbook_steps")
-    .select("*")
-    .eq("playbook_id", playbookId)
-    .order("sort_order", { ascending: true });
+    const { data, error } = await supabase
+      .from("communication_playbook_steps")
+      .select("*")
+      .eq("playbook_id", playbookId)
+      .order("sort_order", { ascending: true });
 
-  if (error || !data) {
-    return [];
-  }
+    if (error || !data) {
+      return [];
+    }
 
-  return (data as CommunicationPlaybookStepRow[]).map(
-    mapCommunicationPlaybookStepRow,
-  );
-}
+    return (data as CommunicationPlaybookStepRow[]).map(
+      mapCommunicationPlaybookStepRow,
+    );
+  },
+);
 
-export async function getPlaybookWithSteps(playbookId: string): Promise<{
-  playbook: CommunicationPlaybook;
-  steps: CommunicationPlaybookStep[];
-} | null> {
-  const playbook = await getPlaybookById(playbookId);
-  if (!playbook) return null;
+export const getPlaybookWithSteps = cache(
+  async (
+    playbookId: string,
+  ): Promise<{
+    playbook: CommunicationPlaybook;
+    steps: CommunicationPlaybookStep[];
+  } | null> => {
+    const playbook = await getPlaybookById(playbookId);
+    if (!playbook) return null;
 
-  const steps = await getPlaybookSteps(playbookId);
-  return { playbook, steps };
-}
+    const steps = await getPlaybookSteps(playbookId);
+    return { playbook, steps };
+  },
+);
 
 export async function getDefaultPlaybookIdForEventType(
   eventType: EventType,

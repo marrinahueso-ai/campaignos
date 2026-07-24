@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — Lean Insights pulse query for Today widget (perf Priority 4)
+**Last updated:** July 24, 2026 — Collapse membership fan-out + cache hot helpers (perf Priority 5)
 
 ---
 
@@ -48,6 +48,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Invite / resend / cancel invite; deactivate / remove members — **shipped**
 - Event assignments — **shipped**
 - Permission gates (artwork, approve, publish, people, integrations, etc.) — **shipped**
+- Dashboard layout membership fan-out collapsed (one cached `organization_users` load for switcher + active seat; org-by-id / users / playbooks / people workload request-cached) — **shipped** (perf)
 - Role simulator (dev/test, gated) — **shipped**
 
 ## Dashboard (Today)

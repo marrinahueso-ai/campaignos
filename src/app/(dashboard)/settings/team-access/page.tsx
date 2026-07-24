@@ -5,12 +5,9 @@ import {
   accessHasPermission,
   getEffectiveAccess,
 } from "@/lib/access-templates/effective-access";
-import {
-  getActiveMembership,
-  getOrganizationUsers,
-} from "@/lib/auth/membership-queries";
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
-import { getOrganizationById } from "@/lib/organizations/queries";
 import {
   buildFallbackOrganizationWorkspaceData,
   getOrganizationWorkspaceData,
@@ -26,15 +23,11 @@ export const metadata = {
 };
 
 export default async function TeamAccessSettingsPage() {
-  const [user, membership, access] = await Promise.all([
+  const [user, organization, access] = await Promise.all([
     getAuthUser(),
-    getActiveMembership(),
+    getCurrentOrganization(),
     getEffectiveAccess(),
   ]);
-
-  const organization = membership
-    ? await getOrganizationById(membership.organizationId)
-    : null;
 
   if (!organization) {
     return (

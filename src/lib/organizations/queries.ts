@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getOrganizationById } from "@/lib/organizations/fetch-organization";
 import { createClient } from "@/lib/supabase/server";
 import {
   mapBrandAssetsRow,
@@ -13,6 +14,8 @@ import type {
   OrganizationRow,
   SchoolProfile,
 } from "@/types";
+
+export { getOrganizationById };
 
 export async function getOrganizations(): Promise<Organization[]> {
   const supabase = await createClient();
@@ -28,24 +31,6 @@ export async function getOrganizations(): Promise<Organization[]> {
   }
 
   return (data ?? []).map((row) => mapOrganizationRow(row as OrganizationRow));
-}
-
-export async function getOrganizationById(
-  id: string,
-): Promise<Organization | null> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return mapOrganizationRow(data as OrganizationRow);
 }
 
 /** @deprecated Use getCurrentOrganization — kept for compatibility. */

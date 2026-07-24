@@ -16,16 +16,13 @@ import {
 } from "@/lib/access-templates/effective-access";
 import { getAuthenticatedAppPath } from "@/lib/auth/post-auth-path";
 import { getAuthUser } from "@/lib/auth/queries";
-import {
-  getActiveMembership,
-  getOrganizationUsers,
-} from "@/lib/auth/membership-queries";
+import { getOrganizationUsers } from "@/lib/auth/membership-queries";
+import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import {
   getCampaignEventsByIds,
   getCampaignPageEvents,
 } from "@/lib/events/campaign-page-queries";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
-import { getOrganizationById } from "@/lib/organizations/queries";
 import {
   buildFallbackOrganizationWorkspaceData,
   getOrganizationWorkspaceData,
@@ -40,10 +37,7 @@ interface PersonProfilePageProps {
 export async function generateMetadata({ params }: PersonProfilePageProps) {
   const { memberId: rawId } = await params;
   const memberId = decodeURIComponent(rawId);
-  const membership = await getActiveMembership();
-  const organization = membership
-    ? await getOrganizationById(membership.organizationId)
-    : null;
+  const organization = await getCurrentOrganization();
   if (!organization) {
     return { title: "Person Profile" };
   }
@@ -80,15 +74,11 @@ export default async function TeamAccessPersonProfilePage({
   const { memberId: rawId } = await params;
   const memberId = decodeURIComponent(rawId);
 
-  const [membership, access, user] = await Promise.all([
-    getActiveMembership(),
+  const [organization, access, user] = await Promise.all([
+    getCurrentOrganization(),
     getEffectiveAccess(),
     getAuthUser(),
   ]);
-
-  const organization = membership
-    ? await getOrganizationById(membership.organizationId)
-    : null;
 
   if (!organization) {
     // Missing active membership used to 404 here after self-deactivate;

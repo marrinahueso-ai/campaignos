@@ -1,24 +1,10 @@
 import { cache } from "react";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { getAuthUser } from "@/lib/auth/queries";
+import { getOrganizationById } from "@/lib/organizations/fetch-organization";
 import { mapOrganizationRow } from "@/lib/organizations/mappers";
 import { createClient } from "@/lib/supabase/server";
 import type { Organization, OrganizationRow } from "@/types";
-
-async function fetchOrganizationById(id: string): Promise<Organization | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return mapOrganizationRow(data as OrganizationRow);
-}
 
 async function getLatestOrganizationLegacy(): Promise<Organization | null> {
   const supabase = await createClient();
@@ -47,7 +33,7 @@ export const getCurrentOrganization = cache(async (): Promise<Organization | nul
   if (user) {
     const membership = await getActiveMembership();
     if (membership) {
-      return fetchOrganizationById(membership.organizationId);
+      return getOrganizationById(membership.organizationId);
     }
 
     return null;

@@ -53,12 +53,11 @@ function organizationFromJoin(
 }
 
 /**
- * All active memberships for the signed-in user (oldest first).
- * Used for org switcher + active-org resolution. Never returns another
- * user's memberships — always filtered by auth.uid().
+ * One organization_users query per request for switcher + active seat.
+ * listActiveMemberships / getActiveMembership both derive from this.
  */
-export const listActiveMemberships = cache(
-  async (): Promise<ActiveOrganizationOption[]> => {
+const loadActiveMembershipRows = cache(
+  async (): Promise<ActiveMembershipRow[]> => {
     const user = await getAuthUser();
     if (!user) {
       return [];
@@ -69,9 +68,7 @@ export const listActiveMemberships = cache(
       .from("organization_users")
       .select(
         `
-        organization_id,
-        campaign_role,
-        created_at,
+        *,
         organizations ( id, name ),
         organization_roles ( name )
       `,
@@ -85,13 +82,24 @@ export const listActiveMemberships = cache(
     }
 
     if (error) {
-      console.error("Failed to list active memberships:", error.message);
+      console.error("Failed to load active memberships:", error.message);
       return [];
     }
 
+    return (data ?? []) as unknown as ActiveMembershipRow[];
+  },
+);
+
+/**
+ * All active memberships for the signed-in user (oldest first).
+ * Used for org switcher + active-org resolution. Never returns another
+ * user's memberships — always filtered by auth.uid().
+ */
+export const listActiveMemberships = cache(
+  async (): Promise<ActiveOrganizationOption[]> => {
+    const rows = await loadActiveMembershipRows();
     const options: ActiveOrganizationOption[] = [];
-    for (const raw of data ?? []) {
-      const row = raw as unknown as ActiveMembershipRow;
+    for (const row of rows) {
       const orgId = normalizeOrganizationId(row.organization_id);
       if (!orgId) {
         continue;
@@ -104,7 +112,6 @@ export const listActiveMemberships = cache(
         roleLabel: row.organization_roles?.name ?? null,
       });
     }
-
     return options;
   },
 );
@@ -117,37 +124,10 @@ export const listActiveMemberships = cache(
  */
 export const getActiveMembership = cache(
   async (): Promise<OrganizationMembership | null> => {
-    const user = await getAuthUser();
-    if (!user) {
+    const rows = await loadActiveMembershipRows();
+    if (rows.length === 0) {
       return null;
     }
-
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("organization_users")
-      .select(
-        `
-        *,
-        organization_roles ( name )
-      `,
-      )
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .order("created_at", { ascending: true });
-
-    if (error?.code === "42P01") {
-      return null;
-    }
-
-    if (error || !data?.length) {
-      return null;
-    }
-
-    const rows = data as Array<
-      OrganizationUserRow & {
-        organization_roles: { name: string } | null;
-      }
-    >;
 
     const membershipOrgIds = rows.map((row) => row.organization_id);
     const preferredOrganizationId = await readActiveOrganizationCookie();
@@ -212,46 +192,46 @@ export async function assertActiveMembershipInOrganization(
   return true;
 }
 
-export async function getOrganizationUsers(
-  organizationId: string,
-): Promise<OrganizationUser[]> {
-  const supabase = await createClient();
+export const getOrganizationUsers = cache(
+  async (organizationId: string): Promise<OrganizationUser[]> => {
+    const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("organization_users")
-    .select(
-      `
+    const { data, error } = await supabase
+      .from("organization_users")
+      .select(
+        `
       *,
       organization_roles ( name )
     `,
-    )
-    .eq("organization_id", organizationId)
-    .order("status", { ascending: true })
-    .order("email", { ascending: true });
+      )
+      .eq("organization_id", organizationId)
+      .order("status", { ascending: true })
+      .order("email", { ascending: true });
 
-  if (error?.code === "42P01") {
-    return [];
-  }
+    if (error?.code === "42P01") {
+      return [];
+    }
 
-  if (error) {
-    console.error("Failed to fetch organization users:", error.message);
-    return [];
-  }
+    if (error) {
+      console.error("Failed to fetch organization users:", error.message);
+      return [];
+    }
 
-  const assignmentsByUser =
-    await listOrganizationUserEventAssignmentsByOrg(organizationId);
+    const assignmentsByUser =
+      await listOrganizationUserEventAssignmentsByOrg(organizationId);
 
-  return (data ?? []).map((row) => {
-    const userRow = row as OrganizationUserRow & {
-      organization_roles: { name: string } | null;
-    };
-    return mapOrganizationUserRow(
-      userRow,
-      userRow.organization_roles?.name ?? null,
-      assignmentsByUser[userRow.id] ?? [],
-    );
-  });
-}
+    return (data ?? []).map((row) => {
+      const userRow = row as OrganizationUserRow & {
+        organization_roles: { name: string } | null;
+      };
+      return mapOrganizationUserRow(
+        userRow,
+        userRow.organization_roles?.name ?? null,
+        assignmentsByUser[userRow.id] ?? [],
+      );
+    });
+  },
+);
 
 export type InviteTokenLookup =
   | {

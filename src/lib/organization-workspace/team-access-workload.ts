@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import {
   areEventPlaybookTablesAvailable,
   getEventPlaybookEvents,
@@ -70,74 +71,74 @@ async function countPendingApprovalsByEventIds(
   return counts;
 }
 
-export async function getTeamAccessWorkloadIndex(
-  organizationId: string,
-): Promise<TeamAccessWorkloadIndex> {
-  const workspace = await getOrganizationWorkspaceData(organizationId);
-  if (!workspace) {
-    return { byCommitteeId: {} };
-  }
-
-  const byCommitteeId: Record<string, CommitteeWorkloadStats> = {};
-
-  for (const committee of workspace.committees) {
-    const bucket = ensureCommitteeBucket(byCommitteeId, committee.id);
-    const chairs = committee.contactName
-      ? committee.contactName.split(/[,·|/]+/).map((part) => part.trim()).filter(Boolean)
-      : [];
-    bucket.memberCount = new Set(chairs.map((name) => name.toLowerCase())).size;
-  }
-
-  const tablesAvailable = await areEventPlaybookTablesAvailable();
-  if (!tablesAvailable) {
-    return { byCommitteeId };
-  }
-
-  const events = await getEventPlaybookEvents(organizationId);
-  if (events.length === 0) {
-    return { byCommitteeId };
-  }
-
-  const ownershipMap = buildEventRosterOwnershipMap(events, workspace);
-  const committeesByName = new Map(
-    workspace.committees.map((committee) => [committee.name.toLowerCase(), committee]),
-  );
-
-  const eventIds = events.map((event) => event.id);
-  const [taskRows, pendingApprovalsByEvent] = await Promise.all([
-    getEventPlaybookTasksForEvents(eventIds),
-    countPendingApprovalsByEventIds(eventIds),
-  ]);
-
-  const tasksByEventId = new Map<string, EventPlaybookTaskRow[]>();
-  for (const row of taskRows) {
-    const bucket = tasksByEventId.get(row.event_id) ?? [];
-    bucket.push(row);
-    tasksByEventId.set(row.event_id, bucket);
-  }
-
-  for (const event of events) {
-    const ownership = ownershipMap.get(event.id);
-    const committeeName = ownership?.committeeName;
-    if (!committeeName) {
-      continue;
+export const getTeamAccessWorkloadIndex = cache(
+  async (organizationId: string): Promise<TeamAccessWorkloadIndex> => {
+    const workspace = await getOrganizationWorkspaceData(organizationId);
+    if (!workspace) {
+      return { byCommitteeId: {} };
     }
 
-    const committee = committeesByName.get(committeeName.toLowerCase());
-    if (!committee) {
-      continue;
+    const byCommitteeId: Record<string, CommitteeWorkloadStats> = {};
+
+    for (const committee of workspace.committees) {
+      const bucket = ensureCommitteeBucket(byCommitteeId, committee.id);
+      const chairs = committee.contactName
+        ? committee.contactName.split(/[,·|/]+/).map((part) => part.trim()).filter(Boolean)
+        : [];
+      bucket.memberCount = new Set(chairs.map((name) => name.toLowerCase())).size;
     }
 
-    const bucket = ensureCommitteeBucket(byCommitteeId, committee.id);
-    bucket.campaigns += 1;
+    const tablesAvailable = await areEventPlaybookTablesAvailable();
+    if (!tablesAvailable) {
+      return { byCommitteeId };
+    }
 
-    const eventTasks = tasksByEventId.get(event.id) ?? [];
-    bucket.openTasks += eventTasks.filter((task) => isOpenTaskStatus(task.status)).length;
-    bucket.approvalsWaiting += pendingApprovalsByEvent.get(event.id) ?? 0;
-  }
+    const events = await getEventPlaybookEvents(organizationId);
+    if (events.length === 0) {
+      return { byCommitteeId };
+    }
 
-  return { byCommitteeId };
-}
+    const ownershipMap = buildEventRosterOwnershipMap(events, workspace);
+    const committeesByName = new Map(
+      workspace.committees.map((committee) => [committee.name.toLowerCase(), committee]),
+    );
+
+    const eventIds = events.map((event) => event.id);
+    const [taskRows, pendingApprovalsByEvent] = await Promise.all([
+      getEventPlaybookTasksForEvents(eventIds),
+      countPendingApprovalsByEventIds(eventIds),
+    ]);
+
+    const tasksByEventId = new Map<string, EventPlaybookTaskRow[]>();
+    for (const row of taskRows) {
+      const bucket = tasksByEventId.get(row.event_id) ?? [];
+      bucket.push(row);
+      tasksByEventId.set(row.event_id, bucket);
+    }
+
+    for (const event of events) {
+      const ownership = ownershipMap.get(event.id);
+      const committeeName = ownership?.committeeName;
+      if (!committeeName) {
+        continue;
+      }
+
+      const committee = committeesByName.get(committeeName.toLowerCase());
+      if (!committee) {
+        continue;
+      }
+
+      const bucket = ensureCommitteeBucket(byCommitteeId, committee.id);
+      bucket.campaigns += 1;
+
+      const eventTasks = tasksByEventId.get(event.id) ?? [];
+      bucket.openTasks += eventTasks.filter((task) => isOpenTaskStatus(task.status)).length;
+      bucket.approvalsWaiting += pendingApprovalsByEvent.get(event.id) ?? 0;
+    }
+
+    return { byCommitteeId };
+  },
+);
 
 export async function getTeamAccessWorkloadForCurrentOrg(): Promise<TeamAccessWorkloadIndex> {
   const organizationId = await resolveScopedOrganizationId(undefined);
