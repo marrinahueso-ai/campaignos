@@ -6,9 +6,11 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   PointerSensor,
   TouchSensor,
   closestCenter,
+  useDndContext,
   type DragEndEvent,
   type DragStartEvent,
   useSensor,
@@ -100,13 +102,21 @@ export function DashboardOverview({
     [displayLayout.rail],
   );
 
-  function persist(next: DashboardLayout) {
+  /**
+   * Optimistic layout update (instant). Persist in the background like calendar DnD —
+   * never block the drag/drop paint on the server round-trip.
+   */
+  function persist(
+    next: DashboardLayout,
+    options: { refresh?: boolean } = {},
+  ) {
     const previous = layoutRef.current;
     const normalized = pinWeatherInLayout(next);
     layoutRef.current = normalized;
     setLayout(normalized);
     setError(null);
-    startTransition(async () => {
+
+    void (async () => {
       const result = await saveDashboardLayoutAction(normalized);
       if (!result.success) {
         layoutRef.current = previous;
@@ -114,8 +124,13 @@ export function DashboardOverview({
         setError(result.error ?? "Could not save dashboard layout.");
         return;
       }
-      router.refresh();
-    });
+      // Only refresh when newly added widgets need server-rendered data.
+      if (options.refresh) {
+        startTransition(() => {
+          router.refresh();
+        });
+      }
+    })();
   }
 
   function enterEdit() {
@@ -149,7 +164,7 @@ export function DashboardOverview({
   function handleApplyAdd(selectedIds: DashboardWidgetId[]) {
     const next = applyDashboardWidgetSelection(layout, selectedIds, 3);
     setAddOpen(false);
-    persist(next);
+    persist(next, { refresh: true });
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -158,6 +173,7 @@ export function DashboardOverview({
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    // Clear drag chrome first so the drop paint isn't competing with overlay state.
     setActiveId(null);
     if (!over || active.id === over.id) return;
 
@@ -182,6 +198,7 @@ export function DashboardOverview({
       return;
     }
 
+    // Instant board reorder; save happens off the UI thread path.
     persist(next);
   }
 
@@ -247,6 +264,9 @@ export function DashboardOverview({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
+        measuring={{
+          droppable: { strategy: MeasuringStrategy.BeforeDragging },
+        }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
@@ -329,9 +349,9 @@ export function DashboardOverview({
           </aside>
         </div>
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={null} zIndex={50}>
           {activeLabel ? (
-            <div className="rounded-2xl border border-cos-brand-sage/40 bg-cos-bg-alt px-4 py-3 text-sm font-semibold text-cos-text shadow-lg ring-1 ring-black/[0.06]">
+            <div className="w-56 cursor-grabbing rounded-2xl border border-cos-brand-sage/40 bg-cos-bg-alt px-4 py-3 text-sm font-semibold text-cos-text shadow-lg ring-1 ring-black/[0.06]">
               {activeLabel}
             </div>
           ) : null}
@@ -526,23 +546,24 @@ function SortableWidgetFrame({
   const colorable = dashboardWidgetSupportsColor(id);
   const tone =
     colorable && color ? getDashboardCardTone(color) : null;
+  const { active } = useDndContext();
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
   } = useSortable({
     id,
-    transition: { duration: 120, easing: "ease-out" },
+    // No layout animation — matches calendar “move now, persist later” feel.
     animateLayoutChanges: () => false,
+    transition: null,
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    // Follow the pointer with no lag; keep a short settle on siblings.
-    transition: isDragging ? undefined : transition,
+    // Skip CSS transitions while any drag is active (avoids hitching on heavy cards).
+    ...(active ? { transition: "none" } : null),
   };
 
   return (
@@ -553,7 +574,8 @@ function SortableWidgetFrame({
         "group relative min-w-0",
         uniform && "h-full min-h-[16.5rem]",
         className,
-        isDragging && "z-20 opacity-40",
+        // Hide the heavy card while dragging; DragOverlay is the lightweight preview.
+        isDragging && "z-20 opacity-0",
       )}
     >
       <div
