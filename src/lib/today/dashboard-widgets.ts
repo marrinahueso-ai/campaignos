@@ -169,7 +169,12 @@ export function normalizeDashboardLayout(raw: unknown): DashboardLayout {
     ).filter((id) => !mainSet.has(id)),
   );
 
-  return { version: 1, main, rail };
+  // Weather is a pinned top-right rail slot — always keep it first when present.
+  const pinnedRail = rail.includes("weather")
+    ? (["weather", ...rail.filter((id) => id !== "weather")] as DashboardWidgetId[])
+    : rail;
+
+  return { version: 1, main, rail: pinnedRail };
 }
 
 /** Widgets available in the Add catalog for a given phase. */

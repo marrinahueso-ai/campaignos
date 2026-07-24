@@ -7,6 +7,7 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   type DragEndEvent,
   type DragStartEvent,
@@ -21,8 +22,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, GripVertical, Pencil, Plus, X } from "lucide-react";
+import { Check, Pencil, Plus, X } from "lucide-react";
 import { DashboardAddWidgetsModal } from "@/components/today/DashboardAddWidgetsModal";
+import { DashboardWidgetDragProvider } from "@/components/today/DashboardWidgetDragContext";
 import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions";
 import {
   applyDashboardWidgetSelection,
@@ -62,7 +64,10 @@ export function DashboardOverview({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -70,15 +75,16 @@ export function DashboardOverview({
   );
 
   useEffect(() => {
-    if (editing || addOpen) return;
-    setLayout(initialLayout);
-    layoutRef.current = initialLayout;
-  }, [initialLayout, editing, addOpen]);
+    if (editing || addOpen || activeId) return;
+    setLayout(pinWeatherInLayout(initialLayout));
+    layoutRef.current = pinWeatherInLayout(initialLayout);
+  }, [initialLayout, editing, addOpen, activeId]);
 
   const displayLayout = draft ?? layout;
   const mainIds = displayLayout.main;
+  const hasPinnedWeather = displayLayout.rail.includes("weather");
   const railIds = useMemo(
-    () => pinWeatherFirst(displayLayout.rail),
+    () => displayLayout.rail.filter((id) => id !== "weather"),
     [displayLayout.rail],
   );
 
@@ -147,9 +153,25 @@ export function DashboardOverview({
     const overWidgetId = over.id as DashboardWidgetId;
     if (activeWidgetId === "weather") return;
 
-    updateDraft((current) =>
-      placeDashboardWidget(current, activeWidgetId, overWidgetId),
+    const next = placeDashboardWidget(
+      displayLayout,
+      activeWidgetId,
+      overWidgetId,
     );
+    if (
+      next.main.join() === displayLayout.main.join() &&
+      next.rail.join() === displayLayout.rail.join()
+    ) {
+      return;
+    }
+
+    if (editing) {
+      setDraft(pinWeatherInLayout(next));
+      return;
+    }
+
+    // Normal view: save as soon as you drop.
+    persist(next);
   }
 
   function handleDragCancel() {
@@ -212,8 +234,8 @@ export function DashboardOverview({
 
       {editing ? (
         <p className="text-sm text-cos-muted">
-          Drag tiles to rearrange, remove ones you don&apos;t need, then tap
-          Done to save. Weather stays pinned at the top right.
+          Remove tiles you don&apos;t need, then tap Done. Drag any grip icon
+          anytime to rearrange — Weather stays pinned top right.
         </p>
       ) : null}
 
@@ -230,7 +252,12 @@ export function DashboardOverview({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-x-6">
+        <div
+          className={cn(
+            "flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-x-6",
+            activeId && "select-none",
+          )}
+        >
           <div className="min-w-0 flex-1">
             <WidgetRegion
               region="main"
@@ -243,13 +270,37 @@ export function DashboardOverview({
               emptyLabel="No main widgets. Use Add to bring some back."
             />
           </div>
-          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
+          <aside className="flex w-full flex-col gap-4 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
+            {hasPinnedWeather ? (
+              <div
+                className={cn(
+                  "lg:sticky lg:top-4 lg:z-20",
+                  // Keep cream page wash behind the pin so scrolling tiles don’t bleed through.
+                  "lg:-mx-1 lg:bg-cos-bg lg:px-1 lg:pb-1",
+                )}
+              >
+                <PinnedWeatherFrame
+                  editing={editing}
+                  onRemove={() =>
+                    updateDraft((current) =>
+                      removeDashboardWidget(current, "weather"),
+                    )
+                  }
+                >
+                  {widgets.weather ?? (
+                    <WidgetLoadingPlaceholder id="weather" />
+                  )}
+                </PinnedWeatherFrame>
+              </div>
+            ) : null}
+
             <WidgetRegion
               region="rail"
               ids={railIds}
               widgets={widgets}
               editing={editing}
               stacked
+              hideEmpty={hasPinnedWeather}
               onRemove={(id) =>
                 updateDraft((current) => removeDashboardWidget(current, id))
               }
@@ -284,6 +335,7 @@ function WidgetRegion({
   widgets,
   editing,
   stacked = false,
+  hideEmpty = false,
   onRemove,
   emptyLabel,
 }: {
@@ -292,10 +344,12 @@ function WidgetRegion({
   widgets: DashboardWidgetNodes;
   editing: boolean;
   stacked?: boolean;
+  hideEmpty?: boolean;
   onRemove: (id: DashboardWidgetId) => void;
   emptyLabel: string;
 }) {
   if (ids.length === 0) {
+    if (hideEmpty) return null;
     return (
       <div
         className={cn(
@@ -308,22 +362,52 @@ function WidgetRegion({
     );
   }
 
+  // Main board: Up Next stays the hero; tiles beneath share equal columns + height.
+  if (!stacked) {
+    const heroId = ids.includes("up_next") ? ("up_next" as const) : null;
+    const tileIds = ids.filter((id) => id !== "up_next");
+
+    return (
+      <SortableContext items={ids} strategy={rectSortingStrategy}>
+        <div className="flex flex-col gap-4">
+          {heroId ? (
+            <SortableWidgetFrame
+              key={`${region}-${heroId}`}
+              id={heroId}
+              editing={editing}
+              onRemove={() => onRemove(heroId)}
+            >
+              {widgets[heroId] ?? <WidgetLoadingPlaceholder id={heroId} />}
+            </SortableWidgetFrame>
+          ) : null}
+          {tileIds.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-stretch">
+              {tileIds.map((id) => (
+                <SortableWidgetFrame
+                  key={`${region}-${id}`}
+                  id={id}
+                  editing={editing}
+                  uniform
+                  onRemove={() => onRemove(id)}
+                >
+                  {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
+                </SortableWidgetFrame>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </SortableContext>
+    );
+  }
+
   return (
-    <SortableContext
-      items={ids}
-      strategy={stacked ? verticalListSortingStrategy : rectSortingStrategy}
-    >
-      <div
-        className={cn(
-          stacked ? "flex flex-col gap-4" : "grid gap-4 sm:grid-cols-2",
-        )}
-      >
+    <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <div className="flex flex-col gap-4">
         {ids.map((id) => (
           <SortableWidgetFrame
             key={`${region}-${id}`}
             id={id}
             editing={editing}
-            className={id === "up_next" && !stacked ? "sm:col-span-2" : undefined}
             onRemove={() => onRemove(id)}
           >
             {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
@@ -355,21 +439,69 @@ function WidgetLoadingPlaceholder({ id }: { id: DashboardWidgetId }) {
   );
 }
 
+function PinnedWeatherFrame({
+  editing,
+  onRemove,
+  children,
+}: {
+  editing: boolean;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      {editing ? (
+        <div className="flex items-center justify-end gap-1">
+          <span className="mr-1 text-[11px] font-medium text-cos-muted">
+            Pinned
+          </span>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-error"
+            aria-label="Remove Weather"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
+      <DashboardWidgetDragProvider
+        value={{
+          attributes: {},
+          listeners: undefined,
+          disabled: true,
+          editing,
+        }}
+      >
+        <div
+          className={cn(
+            editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
+          )}
+        >
+          {children}
+        </div>
+      </DashboardWidgetDragProvider>
+    </div>
+  );
+}
+
 function SortableWidgetFrame({
   id,
   editing,
   onRemove,
   children,
   className,
+  uniform = false,
 }: {
   id: DashboardWidgetId;
   editing: boolean;
   onRemove: () => void;
   children: React.ReactNode;
   className?: string;
+  /** Equal footprint for tiles under Up Next. */
+  uniform?: boolean;
 }) {
   const label = getDashboardWidgetDefinition(id)?.label ?? id;
-  const weatherPinned = id === "weather";
   const {
     attributes,
     listeners,
@@ -377,10 +509,7 @@ function SortableWidgetFrame({
     transform,
     transition,
     isDragging,
-  } = useSortable({
-    id,
-    disabled: !editing || weatherPinned,
-  });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -392,27 +521,14 @@ function SortableWidgetFrame({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "space-y-2",
+        "relative flex min-w-0 flex-col gap-2",
+        uniform && "h-full min-h-[16.5rem]",
         className,
         isDragging && "z-20 opacity-40",
       )}
     >
       {editing ? (
-        <div className="flex items-center justify-end gap-1">
-          {weatherPinned ? (
-            <span className="mr-1 text-[11px] text-cos-muted">Pinned</span>
-          ) : (
-            <button
-              type="button"
-              className="inline-flex h-7 items-center gap-1 rounded-lg border border-cos-border bg-cos-card px-2 text-cos-muted transition-colors hover:text-cos-text"
-              aria-label={`Drag to move ${label}`}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-3.5 w-3.5" aria-hidden />
-              <span className="text-[11px] font-medium">Drag</span>
-            </button>
-          )}
+        <div className="flex shrink-0 items-center justify-end gap-1">
           <button
             type="button"
             onClick={onRemove}
@@ -423,14 +539,24 @@ function SortableWidgetFrame({
           </button>
         </div>
       ) : null}
-      <div
-        className={cn(
-          editing &&
-            "pointer-events-none select-none rounded-2xl ring-2 ring-cos-brand-sage/25",
-        )}
+      <DashboardWidgetDragProvider
+        value={{
+          attributes,
+          listeners,
+          disabled: false,
+          editing,
+        }}
       >
-        {children}
-      </div>
+        <div
+          className={cn(
+            "min-h-0 flex-1",
+            uniform && "flex h-full flex-col [&>*]:h-full [&>*]:min-h-0",
+            editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
+          )}
+        >
+          {children}
+        </div>
+      </DashboardWidgetDragProvider>
     </div>
   );
 }
