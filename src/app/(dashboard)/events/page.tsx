@@ -2,6 +2,7 @@ import { CampaignsPageContent } from "@/components/campaigns/CampaignsPageConten
 import { EventsHomeContent } from "@/components/events-phase3/EventsHomeContent";
 import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { collectEventsHomeArtworkEventIds } from "@/lib/events/events-home-artwork-ids";
+import { getEventsHomeLayoutForCurrentUser } from "@/lib/events/events-home-layout-queries";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
 import {
   resolveResponsiblePersonForEvent,
@@ -38,20 +39,27 @@ export default async function EventsPage() {
   const organization = await getCurrentOrganization();
   const phase3 = isEventsPhase3UiEnabled();
 
-  const [events, workspace, schoolYears, activeSchoolYear, committeeAssignments] =
-    await Promise.all([
-      getCampaignPageEvents(organization?.id ?? null),
-      organization
-        ? getOrganizationWorkspaceData(organization.id)
-        : Promise.resolve(null),
-      organization
-        ? getSchoolYearsForOrganization(organization.id)
-        : Promise.resolve([]),
-      organization ? getActiveSchoolYear(organization.id) : Promise.resolve(null),
-      organization
-        ? listCommitteeAssignmentsByOrg(organization.id)
-        : Promise.resolve([]),
-    ]);
+  const [
+    events,
+    workspace,
+    schoolYears,
+    activeSchoolYear,
+    committeeAssignments,
+    summaryLayout,
+  ] = await Promise.all([
+    getCampaignPageEvents(organization?.id ?? null),
+    organization
+      ? getOrganizationWorkspaceData(organization.id)
+      : Promise.resolve(null),
+    organization
+      ? getSchoolYearsForOrganization(organization.id)
+      : Promise.resolve([]),
+    organization ? getActiveSchoolYear(organization.id) : Promise.resolve(null),
+    organization
+      ? listCommitteeAssignmentsByOrg(organization.id)
+      : Promise.resolve([]),
+    getEventsHomeLayoutForCurrentUser(),
+  ]);
 
   const eventIds = events.map((event) => event.id);
 
@@ -161,6 +169,7 @@ export default async function EventsPage() {
         label: year.label,
       }))}
       activeSchoolYearId={activeSchoolYear?.id ?? null}
+      initialSummaryLayout={summaryLayout}
     />
   );
 }

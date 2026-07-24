@@ -24,10 +24,9 @@ import {
   paginateCampaignEvents,
   totalCampaignPages,
 } from "@/lib/events/campaign-page-filters";
+import { EventsHomeSummaryCards } from "@/components/events-phase3/EventsHomeSummaryCards";
 import {
   EVENTS_HOME_DEFAULT_SUMMARY,
-  EVENTS_HOME_SUMMARY_CARDS,
-  EVENTS_HOME_SUMMARY_OVERLAP_NOTE,
   buildEventsHomeMonthFilterOptions,
   countEventsHomeSummary,
   matchesEventsHomeMonth,
@@ -35,6 +34,7 @@ import {
   type EventsHomeMonthFilter,
   type EventsHomeSummaryKey,
 } from "@/lib/events/events-home-summary";
+import type { EventsHomeLayout } from "@/lib/events/events-home-layout";
 import {
   buildEventsListPdfFilename,
   downloadEventsListPdf,
@@ -61,6 +61,7 @@ interface EventsHomeContentProps {
   playbookNameByEventId?: Record<string, string | null>;
   schoolYears?: Array<{ id: string; label: string }>;
   activeSchoolYearId?: string | null;
+  initialSummaryLayout: EventsHomeLayout;
 }
 
 export function EventsHomeContent({
@@ -71,6 +72,7 @@ export function EventsHomeContent({
   playbookNameByEventId = {},
   schoolYears = [],
   activeSchoolYearId = null,
+  initialSummaryLayout,
 }: EventsHomeContentProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | Event["status"]>("all");
@@ -273,49 +275,15 @@ export function EventsHomeContent({
         </div>
       </header>
 
-      <div className="space-y-2">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {EVENTS_HOME_SUMMARY_CARDS.map((card) => {
-            const selected = summary === card.key;
-            return (
-              <button
-                key={card.key}
-                type="button"
-                onClick={() => {
-                  setSummary((current) =>
-                    current === card.key ? "all" : card.key,
-                  );
-                  resetPage();
-                }}
-                className={cn(
-                  "flex min-h-[6rem] flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-5 text-center transition-all duration-200",
-                  selected
-                    ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
-                    : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]",
-                )}
-              >
-                <p
-                  className={cn(
-                    "text-xs font-medium tracking-wide uppercase",
-                    selected ? "text-white/70" : "text-cos-muted",
-                  )}
-                >
-                  {card.label}
-                </p>
-                <p
-                  className={cn(
-                    "font-display text-3xl leading-none tabular-nums",
-                    selected ? "text-white" : "text-cos-text",
-                  )}
-                >
-                  {summaryCounts[card.key]}
-                </p>
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-xs text-cos-muted">{EVENTS_HOME_SUMMARY_OVERLAP_NOTE}</p>
-      </div>
+      <EventsHomeSummaryCards
+        counts={summaryCounts}
+        selected={summary}
+        initialLayout={initialSummaryLayout}
+        onSelect={(key) => {
+          setSummary(key);
+          resetPage();
+        }}
+      />
 
       <div className="flex flex-col gap-3 rounded-xl border border-cos-border bg-cos-card p-3 lg:flex-row lg:flex-wrap lg:items-center">
         <div className="relative min-w-0 flex-1 basis-[14rem]">
