@@ -3,6 +3,7 @@ import Link from "next/link";
 import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import type { TodayWhatsNext } from "@/types/today";
+import { cn } from "@/lib/utils/cn";
 
 interface WhatsNextSectionProps {
   whatsNext: TodayWhatsNext;
@@ -19,7 +20,13 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
 
   return (
     <section>
-      <div className="relative overflow-hidden rounded-2xl bg-cos-brand-navy shadow-sm">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl bg-cos-brand-navy shadow-sm",
+          // 1:1 frame so square campaign artwork isn’t cropped into a wide banner.
+          imageUrl ? "aspect-square w-full max-w-xl" : "min-h-[280px] sm:min-h-[320px]",
+        )}
+      >
         {imageUrl ? (
           <div className="absolute inset-0">
             {isOptimizableImageUrl(imageUrl) ? (
@@ -28,15 +35,15 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
                 alt=""
                 fill
                 priority
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                className="object-cover"
+                sizes="(max-width: 512px) 100vw, 36rem"
+                className="object-cover object-center"
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={imageUrl}
                 alt=""
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-center"
               />
             )}
             <div
@@ -44,7 +51,7 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
               aria-hidden
             />
             <div
-              className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10"
+              className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-black/10"
               aria-hidden
             />
           </div>
@@ -55,7 +62,12 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
           />
         )}
 
-        <div className="relative flex min-h-[280px] flex-col justify-between gap-8 p-6 sm:min-h-[320px] sm:p-8">
+        <div
+          className={cn(
+            "relative flex h-full flex-col justify-between gap-8 p-6 sm:p-8",
+            !imageUrl && "min-h-[280px] sm:min-h-[320px]",
+          )}
+        >
           <span className="inline-flex w-fit rounded-md bg-cos-brand-sage-soft px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-cos-brand-sage uppercase">
             Up next
           </span>
