@@ -403,6 +403,12 @@ body {
     pointer-events: none;
   }
 
+  /* Kill transitions while dragging so drop-target highlights feel instant. */
+  html.calendar-dragging .calendar-drop-target,
+  html.calendar-dragging .calendar-drag-chip {
+    transition: none !important;
+  }
+
   .calendar-drag-chip[draggable="true"] {
     -webkit-user-drag: element;
     user-select: none;

@@ -113,6 +113,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Meta-native Facebook Page feed schedule on Approve (`published=false` + `scheduled_publish_time`; Graph ids on `meta_publication_slots`) — **shipped** (Instagram / FB stories stay on CampignOS publish-when-due; Publish Now skips native Graph schedule and publishes immediately; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
 - Meta planner / Calendar show Publish Now + custom-date slots even when `relative_day` is outside the playbook (sync no longer deletes committed orphans; bundles merge orphan days) — **shipped**
 - Calendar DnD reschedule syncs Meta Graph schedule time without re-approval — **shipped** (DB always updates; Graph failure → warning toast, no rollback; QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md))
+- Calendar DnD drag feel optimized (drop-target updates only on cell change; no React state on every dragover; transitions disabled while dragging) — **shipped**
 - Posting schedule preferences — **shipped**
 - Weekly posting summary emails — **removed** (orphaned placeholder; not a product feature)
 

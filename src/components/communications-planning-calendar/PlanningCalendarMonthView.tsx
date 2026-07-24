@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import {
   captureDropPayload,
@@ -29,17 +29,26 @@ export function PlanningCalendarMonthView({
   onRescheduled,
 }: PlanningCalendarMonthViewProps) {
   const today = getTodayDateString();
-  const dates = getMonthGridDates(year, month);
+  const dates = useMemo(() => getMonthGridDates(year, month), [year, month]);
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
     "error",
   );
-  const { setIsDragging, handleDragOver } = useCalendarDragState();
+  const { handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
-  const itemsByDate = groupItemsByDate(items);
+  const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
+
+  useEffect(() => {
+    function clearDropTarget() {
+      setDropTarget(null);
+    }
+
+    document.addEventListener("dragend", clearDropTarget);
+    return () => document.removeEventListener("dragend", clearDropTarget);
+  }, []);
 
   const showToast = useCallback(
     (message: string, variant: "error" | "success" | "warning") => {
@@ -49,11 +58,15 @@ export function PlanningCalendarMonthView({
     [],
   );
 
+  const handleDragError = useCallback(
+    (message: string) => showToast(message, "error"),
+    [showToast],
+  );
+
   const handleDrop = useCallback(
     (date: string, event: React.DragEvent<HTMLDivElement>) => {
       const payload = captureDropPayload(event);
       setDropTarget(null);
-      setIsDragging(false);
 
       if (!payload) {
         showToast("Could not read the dragged item. Try again.", "error");
@@ -71,7 +84,7 @@ export function PlanningCalendarMonthView({
         });
       });
     },
-    [onRescheduled, setIsDragging, showToast],
+    [onRescheduled, showToast],
   );
 
   return (
@@ -98,6 +111,7 @@ export function PlanningCalendarMonthView({
             const dateObj = parseLocalDate(date);
             const inMonth = dateObj.getMonth() === month;
             const dayItems = itemsByDate.get(date) ?? [];
+            const isDropTarget = dropTarget === date;
 
             return (
               <div
@@ -105,45 +119,42 @@ export function PlanningCalendarMonthView({
                 data-testid={`calendar-drop-month-${date}`}
                 onDragOver={(event) => {
                   handleDragOver(event);
-                  setDropTarget(date);
+                  setDropTarget((current) => (current === date ? current : date));
                 }}
-                onDragLeave={() =>
-                  setDropTarget((current) => (current === date ? null : current))
-                }
                 onDrop={(event) => handleDrop(date, event)}
                 className={cn(
-                  "calendar-drop-target relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0 transition-colors duration-200",
+                  "calendar-drop-target relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0",
                   !inMonth && "bg-cos-bg/40",
-                  dropTarget === date && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
+                  isDropTarget && "bg-cos-info/40 ring-2 ring-inset ring-cos-primary/30",
                 )}
               >
                 <div className="mb-2 flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
-                        date === today
-                          ? "bg-cos-primary text-white shadow-sm"
-                          : inMonth
-                            ? "text-cos-text"
-                            : "text-cos-muted/60",
-                      )}
-                    >
-                      {dateObj.getDate()}
-                    </span>
-                    {dayItems.length > 0 && (
-                      <span className="text-[10px] font-medium text-cos-muted">
-                        {dayItems.length}
-                      </span>
+                  <span
+                    className={cn(
+                      "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
+                      date === today
+                        ? "bg-cos-primary text-white shadow-sm"
+                        : inMonth
+                          ? "text-cos-text"
+                          : "text-cos-muted/60",
                     )}
-                  </div>
+                  >
+                    {dateObj.getDate()}
+                  </span>
+                  {dayItems.length > 0 && (
+                    <span className="text-[10px] font-medium text-cos-muted">
+                      {dayItems.length}
+                    </span>
+                  )}
+                </div>
 
-                  <UnifiedCalendarDayContent
-                    items={dayItems}
-                    onSelectItem={onSelectItem}
-                    onDragError={(message) => showToast(message, "error")}
-                    compact
-                    itemLimit={5}
-                  />
+                <UnifiedCalendarDayContent
+                  items={dayItems}
+                  onSelectItem={onSelectItem}
+                  onDragError={handleDragError}
+                  compact
+                  itemLimit={5}
+                />
               </div>
             );
           })}

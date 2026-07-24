@@ -153,7 +153,7 @@ export function PlanningCalendarItemChip({
       data-testid={`calendar-chip-${item.id}`}
       data-draggable={isDraggable ? "true" : "false"}
       className={cn(
-        "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-lg border text-left transition-all duration-200",
+        "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-lg border text-left transition-shadow duration-150",
         isDraggable
           ? "cursor-grab touch-manipulation active:cursor-grabbing"
           : "cursor-pointer",

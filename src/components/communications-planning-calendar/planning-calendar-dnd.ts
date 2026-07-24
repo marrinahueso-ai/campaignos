@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { reschedulePlanningItemAction } from "@/lib/communications-calendar/planning-actions";
 import {
   DRAG_MIME,
@@ -54,20 +54,21 @@ export function readDragPayload(
   return parseDragPayload(raw);
 }
 
+/**
+ * Safari-safe document drag listeners. Uses refs/DOM only — no React state
+ * during drag (avoids full calendar re-renders on every dragover).
+ */
 export function useCalendarDragState() {
-  const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
 
   useEffect(() => {
     function startDrag() {
       isDraggingRef.current = true;
-      setIsDragging(true);
     }
 
     function endDrag() {
       isDraggingRef.current = false;
       endCalendarDragSession();
-      setIsDragging(false);
     }
 
     function handleDocumentDragOver(event: DragEvent) {
@@ -103,11 +104,10 @@ export function useCalendarDragState() {
     event.dataTransfer.dropEffect = "move";
     if (!isDraggingRef.current) {
       isDraggingRef.current = true;
-      setIsDragging(true);
     }
   }, []);
 
-  return { isDragging, setIsDragging, handleDragOver };
+  return { handleDragOver };
 }
 
 export type RescheduleDropInput = {

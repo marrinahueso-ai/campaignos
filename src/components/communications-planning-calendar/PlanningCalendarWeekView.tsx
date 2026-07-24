@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import { PlanningCalendarItemChip } from "@/components/communications-planning-calendar/PlanningCalendarItemChip";
 import {
@@ -59,14 +59,6 @@ function dropTargetKey(target: DropTarget | null): string | null {
   return `${target.date}:${target.hour}`;
 }
 
-function matchesDropTarget(
-  target: DropTarget | null,
-  date: string,
-  hour: DropTarget["hour"],
-): boolean {
-  return target?.date === date && target.hour === hour;
-}
-
 export function PlanningCalendarWeekView({
   items,
   anchorDate,
@@ -76,14 +68,14 @@ export function PlanningCalendarWeekView({
   showPostingHeatmap = true,
 }: PlanningCalendarWeekViewProps) {
   const today = getTodayDateString();
-  const weekDates = getWeekDates(anchorDate);
+  const weekDates = useMemo(() => getWeekDates(anchorDate), [anchorDate]);
   const timezone = postingHeatmap?.timezone ?? "America/Chicago";
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastVariant, setToastVariant] = useState<"error" | "success" | "warning">(
     "error",
   );
-  const { setIsDragging, handleDragOver } = useCalendarDragState();
+  const { handleDragOver } = useCalendarDragState();
   const [isPending, startTransition] = useTransition();
 
   const itemsByDate = useMemo(() => groupItemsByDate(items), [items]);
@@ -91,6 +83,37 @@ export function PlanningCalendarWeekView({
     () => buildItemPlacement(itemsByDate, timezone),
     [itemsByDate, timezone],
   );
+
+  const heatmapBackgroundByCell = useMemo(() => {
+    const map = new Map<string, string | undefined>();
+    if (!showPostingHeatmap || !postingHeatmap) {
+      return map;
+    }
+
+    for (const date of weekDates) {
+      const dayOfWeek = getDayOfWeek(date);
+      for (const hour of HOUR_ROWS) {
+        const score = getScoreForCell(postingHeatmap.scores, dayOfWeek, hour);
+        map.set(`${date}:${hour}`, heatmapCellBackground(score));
+      }
+    }
+
+    return map;
+  }, [postingHeatmap, showPostingHeatmap, weekDates]);
+
+  const dropHighlightBackground = useMemo(
+    () => heatmapDropTargetBackground(),
+    [],
+  );
+
+  useEffect(() => {
+    function clearDropTarget() {
+      setDropTarget(null);
+    }
+
+    document.addEventListener("dragend", clearDropTarget);
+    return () => document.removeEventListener("dragend", clearDropTarget);
+  }, []);
 
   const showToast = useCallback(
     (message: string, variant: "error" | "success" | "warning") => {
@@ -100,11 +123,15 @@ export function PlanningCalendarWeekView({
     [],
   );
 
+  const handleDragError = useCallback(
+    (message: string) => showToast(message, "error"),
+    [showToast],
+  );
+
   const handleDrop = useCallback(
     (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
       const payload = captureDropPayload(event);
       setDropTarget(null);
-      setIsDragging(false);
 
       if (!payload) {
         showToast("Could not read the dragged item. Try again.", "error");
@@ -123,13 +150,17 @@ export function PlanningCalendarWeekView({
         });
       });
     },
-    [onRescheduled, setIsDragging, showToast, timezone],
+    [onRescheduled, showToast, timezone],
   );
 
   const handleCellDragOver = useCallback(
     (date: string, hour: DropTarget["hour"], event: React.DragEvent<HTMLDivElement>) => {
       handleDragOver(event);
-      setDropTarget({ date, hour });
+      setDropTarget((current) =>
+        current?.date === date && current.hour === hour
+          ? current
+          : { date, hour },
+      );
     },
     [handleDragOver],
   );
@@ -186,7 +217,6 @@ export function PlanningCalendarWeekView({
           </div>
 
           {weekDates.map((date) => {
-            const dayOfWeek = getDayOfWeek(date);
             const placement = placementByDate.get(date) ?? { allDay: [], byHour: new Map() };
             const isTodayColumn = date === today;
 
@@ -201,14 +231,9 @@ export function PlanningCalendarWeekView({
                 <div
                   data-testid={`calendar-drop-week-${date}-allday`}
                   onDragOver={(event) => handleCellDragOver(date, "allday", event)}
-                  onDragLeave={() =>
-                    setDropTarget((current) =>
-                      matchesDropTarget(current, date, "allday") ? null : current,
-                    )
-                  }
                   onDrop={(event) => handleDrop(date, "allday", event)}
                   className={cn(
-                    "calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5 transition-colors",
+                    "calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5",
                     activeDropKey === `${date}:allday` &&
                       "bg-cos-accent-soft ring-2 ring-inset ring-indigo-300",
                   )}
@@ -221,7 +246,7 @@ export function PlanningCalendarWeekView({
                           item={item}
                           compact
                           onSelect={onSelectItem}
-                          onDragError={(message) => showToast(message, "error")}
+                          onDragError={handleDragError}
                         />
                       ))}
                       {placement.allDay.length > 4 && (
@@ -236,36 +261,25 @@ export function PlanningCalendarWeekView({
                 </div>
 
                 {HOUR_ROWS.map((hour) => {
-                  const score =
-                    showPostingHeatmap && postingHeatmap
-                      ? getScoreForCell(postingHeatmap.scores, dayOfWeek, hour)
-                      : 0;
                   const hourItems: EnrichedItem[] = placement.byHour.get(hour) ?? [];
                   const isDropTarget = activeDropKey === `${date}:${hour}`;
-                  const heatmapBackground = showPostingHeatmap
-                    ? heatmapCellBackground(score)
-                    : undefined;
+                  const heatmapBackground = heatmapBackgroundByCell.get(`${date}:${hour}`);
 
                   return (
                     <div
                       key={`${date}-${hour}`}
                       data-testid={`calendar-drop-week-${date}-${hour}`}
                       onDragOver={(event) => handleCellDragOver(date, hour, event)}
-                      onDragLeave={() =>
-                        setDropTarget((current) =>
-                          matchesDropTarget(current, date, hour) ? null : current,
-                        )
-                      }
                       onDrop={(event) => handleDrop(date, hour, event)}
                       className={cn(
-                        "calendar-drop-target relative h-12 border-b border-cos-border/60 transition-colors",
+                        "calendar-drop-target relative h-12 border-b border-cos-border/60",
                         isDropTarget && "z-20 ring-2 ring-inset ring-indigo-400",
                       )}
                       style={
                         heatmapBackground
                           ? { backgroundColor: heatmapBackground }
                           : isDropTarget
-                            ? { backgroundColor: heatmapDropTargetBackground() }
+                            ? { backgroundColor: dropHighlightBackground }
                             : undefined
                       }
                     >
@@ -278,7 +292,7 @@ export function PlanningCalendarWeekView({
                               compact
                               elevatedOnHeatmap={showPostingHeatmap}
                               onSelect={onSelectItem}
-                              onDragError={(message) => showToast(message, "error")}
+                              onDragError={handleDragError}
                             />
                           ))}
                         </div>
