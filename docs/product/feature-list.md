@@ -53,9 +53,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Dashboard (Today)
 - **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next**, **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
+- **Card colors** in Edit (palette + custom): per-user colors on Attention, Waiting on me, Good news, This week, Approvals, Tasks, Volunteers, Insights; text/surfaces auto-contrast; Weather / Up Next / Calendar excluded — **shipped**
 - **Drag-and-drop** tile rearrange anytime via card grip (saves on drop; Weather pinned; Edit still removes) — **shipped**
 - Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events with fill-rate bar + % to the right), **Insights** (7d KPI pulse) — **shipped**
-- **Weather** pinned top-right, top-aligned with the greeting; **Calendar** / rail stack beneath it; main column is greeting → Add/Edit → **Up Next** + tiles (current + next 4 hours + fun tip) — **shipped**
+- **Weather** pinned top-right with the greeting; **Up Next** + Add/Edit share a row with **Calendar** / rail (tight gap under buttons); weather tile includes next 4 hours + fun tip — **shipped**
 - **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
 - Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; hourly via Open-Meteo when coords available (else OWM 3h / seasonal mock); creative tip ties forecast to school events today/tomorrow (hot → water/sunscreen, cold → bundle up, rain → Plan B) — **shipped**
 - Mini calendar school events for the month; This Week school **events** only — **shipped**

@@ -1,3 +1,8 @@
+import {
+  dashboardWidgetSupportsColor,
+  normalizeDashboardCardColor,
+} from "@/lib/today/dashboard-widget-colors";
+
 export type DashboardWidgetId =
   | "up_next"
   | "attention"
@@ -13,10 +18,14 @@ export type DashboardWidgetId =
 
 export type DashboardWidgetRegion = "main" | "rail";
 
+/** Per-widget card background hex (only colorable widgets). */
+export type DashboardWidgetColors = Partial<Record<DashboardWidgetId, string>>;
+
 export interface DashboardLayout {
   version: 1;
   main: DashboardWidgetId[];
   rail: DashboardWidgetId[];
+  colors?: DashboardWidgetColors;
 }
 
 export interface DashboardWidgetDefinition {
@@ -131,6 +140,47 @@ function cloneDefaultLayout(): DashboardLayout {
   };
 }
 
+function normalizeWidgetColors(raw: unknown): DashboardWidgetColors | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return undefined;
+  }
+  const colors: DashboardWidgetColors = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isDashboardWidgetId(key)) continue;
+    if (!dashboardWidgetSupportsColor(key)) continue;
+    const hex = normalizeDashboardCardColor(value);
+    if (!hex) continue;
+    colors[key] = hex;
+  }
+  return Object.keys(colors).length > 0 ? colors : undefined;
+}
+
+function withLayoutColors(
+  layout: Pick<DashboardLayout, "main" | "rail">,
+  colors: DashboardWidgetColors | undefined,
+): DashboardLayout {
+  const next: DashboardLayout = {
+    version: 1,
+    main: layout.main,
+    rail: layout.rail,
+  };
+  if (colors && Object.keys(colors).length > 0) {
+    // Drop colors for widgets no longer on the board.
+    const onBoard = new Set([...layout.main, ...layout.rail]);
+    const pruned: DashboardWidgetColors = {};
+    for (const [id, hex] of Object.entries(colors) as Array<
+      [DashboardWidgetId, string]
+    >) {
+      if (!onBoard.has(id) || !dashboardWidgetSupportsColor(id)) continue;
+      pruned[id] = hex;
+    }
+    if (Object.keys(pruned).length > 0) {
+      next.colors = pruned;
+    }
+  }
+  return next;
+}
+
 function uniqueWidgetIds(ids: DashboardWidgetId[]): DashboardWidgetId[] {
   const seen = new Set<DashboardWidgetId>();
   const next: DashboardWidgetId[] = [];
@@ -174,7 +224,39 @@ export function normalizeDashboardLayout(raw: unknown): DashboardLayout {
     ? (["weather", ...rail.filter((id) => id !== "weather")] as DashboardWidgetId[])
     : rail;
 
-  return { version: 1, main, rail: pinnedRail };
+  return withLayoutColors(
+    { main, rail: pinnedRail },
+    normalizeWidgetColors(record.colors),
+  );
+}
+
+export function setDashboardWidgetColor(
+  layout: DashboardLayout,
+  id: DashboardWidgetId,
+  color: string | null,
+): DashboardLayout {
+  if (!dashboardWidgetSupportsColor(id)) {
+    return layout;
+  }
+  const colors: DashboardWidgetColors = { ...(layout.colors ?? {}) };
+  const hex = color ? normalizeDashboardCardColor(color) : null;
+  if (hex) {
+    colors[id] = hex;
+  } else {
+    delete colors[id];
+  }
+  return withLayoutColors(
+    { main: layout.main, rail: layout.rail },
+    Object.keys(colors).length > 0 ? colors : undefined,
+  );
+}
+
+export function getDashboardWidgetColor(
+  layout: DashboardLayout,
+  id: DashboardWidgetId,
+): string | null {
+  if (!dashboardWidgetSupportsColor(id)) return null;
+  return normalizeDashboardCardColor(layout.colors?.[id] ?? null);
 }
 
 /** Widgets available in the Add catalog for a given phase. */
@@ -255,15 +337,17 @@ export function placeDashboardWidget(
 
   if (sourceRegion === targetRegion) {
     if (sourceRegion === "main") {
-      return {
-        version: 1,
-        main: arrayMoveIds(
-          layout.main,
-          layout.main.indexOf(activeId),
-          layout.main.indexOf(overId),
-        ),
-        rail: layout.rail,
-      };
+      return withLayoutColors(
+        {
+          main: arrayMoveIds(
+            layout.main,
+            layout.main.indexOf(activeId),
+            layout.main.indexOf(overId),
+          ),
+          rail: layout.rail,
+        },
+        layout.colors,
+      );
     }
 
     // Rail: Weather stays index 0; reorder only among the rest.
@@ -275,11 +359,13 @@ export function placeDashboardWidget(
       movable.indexOf(activeId),
       movable.indexOf(overId),
     );
-    return {
-      version: 1,
-      main: layout.main,
-      rail: hasWeather ? ["weather", ...moved] : moved,
-    };
+    return withLayoutColors(
+      {
+        main: layout.main,
+        rail: hasWeather ? ["weather", ...moved] : moved,
+      },
+      layout.colors,
+    );
   }
 
   // Cross-region move.
@@ -289,13 +375,15 @@ export function placeDashboardWidget(
   if (targetRegion === "main") {
     const insertAt = nextMain.indexOf(overId);
     nextMain.splice(insertAt < 0 ? nextMain.length : insertAt, 0, activeId);
-    return {
-      version: 1,
-      main: nextMain,
-      rail: nextRail.includes("weather")
-        ? ["weather", ...nextRail.filter((id) => id !== "weather")]
-        : nextRail,
-    };
+    return withLayoutColors(
+      {
+        main: nextMain,
+        rail: nextRail.includes("weather")
+          ? ["weather", ...nextRail.filter((id) => id !== "weather")]
+          : nextRail,
+      },
+      layout.colors,
+    );
   }
 
   const hasWeather = layout.rail.includes("weather") || overId === "weather";
@@ -306,11 +394,13 @@ export function placeDashboardWidget(
     const insertAt = movable.indexOf(overId);
     movable.splice(insertAt < 0 ? movable.length : insertAt, 0, activeId);
   }
-  return {
-    version: 1,
-    main: nextMain,
-    rail: hasWeather ? ["weather", ...movable] : movable,
-  };
+  return withLayoutColors(
+    {
+      main: nextMain,
+      rail: hasWeather ? ["weather", ...movable] : movable,
+    },
+    layout.colors,
+  );
 }
 
 export function layoutContainsWidget(
@@ -348,7 +438,12 @@ export function applyDashboardWidgetSelection(
     placed.add(id);
   }
 
-  return normalizeDashboardLayout({ version: 1, main, rail });
+  return normalizeDashboardLayout({
+    version: 1,
+    main,
+    rail,
+    colors: current.colors,
+  });
 }
 
 export function removeDashboardWidget(
@@ -359,6 +454,7 @@ export function removeDashboardWidget(
     version: 1,
     main: layout.main.filter((entry) => entry !== id),
     rail: layout.rail.filter((entry) => entry !== id),
+    colors: layout.colors,
   });
 }
 
@@ -374,10 +470,12 @@ export function moveDashboardWidget(
   const target = index + direction;
   if (target < 0 || target >= list.length) return layout;
   const [item] = list.splice(index, 1);
-  list.splice(target, 0, item);
-  return {
-    version: 1,
-    main: region === "main" ? list : layout.main,
-    rail: region === "rail" ? list : layout.rail,
-  };
+  list.splice(target, 0, item!);
+  return withLayoutColors(
+    {
+      main: region === "main" ? list : layout.main,
+      rail: region === "rail" ? list : layout.rail,
+    },
+    layout.colors,
+  );
 }

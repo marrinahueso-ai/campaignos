@@ -24,12 +24,17 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Check, GripVertical, Pencil, Plus, X } from "lucide-react";
 import { DashboardAddWidgetsModal } from "@/components/today/DashboardAddWidgetsModal";
+import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
+import { DashboardWidgetColorProvider } from "@/components/today/DashboardWidgetColorContext";
 import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions";
+import { dashboardWidgetSupportsColor } from "@/lib/today/dashboard-widget-colors";
 import {
   applyDashboardWidgetSelection,
+  getDashboardWidgetColor,
   getDashboardWidgetDefinition,
   placeDashboardWidget,
   removeDashboardWidget,
+  setDashboardWidgetColor,
   type DashboardLayout,
   type DashboardWidgetId,
   type DashboardWidgetRegion,
@@ -245,43 +250,21 @@ export function DashboardOverview({
         onDragCancel={handleDragCancel}
       >
         {/*
-          One board column pair from the top:
-          [ greeting + Add/Edit + main ] [ Weather + Calendar… ]
-          Weather top aligns with Good morning.
+          Board grid (lg):
+          [ greeting ] [ Weather ]
+          [ Add/Edit + Up Next… ] [ Calendar… ]
+          So Weather lines up with Good morning, and Up Next with Calendar.
         */}
         <div
           className={cn(
-            "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-x-6",
+            "grid grid-cols-1 gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start",
             activeId && "select-none",
           )}
         >
-          <div className="min-w-0 space-y-6">
-            {header}
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                {overviewActions}
-              </div>
-              {editing ? (
-                <p className="text-sm text-cos-muted">
-                  Remove tiles you don&apos;t need, then tap Done. Drag the grip
-                  to rearrange — Weather stays pinned top right.
-                </p>
-              ) : null}
-            </div>
-            <WidgetRegion
-              region="main"
-              ids={mainIds}
-              widgets={widgets}
-              editing={editing}
-              onRemove={(id) =>
-                updateDraft((current) => removeDashboardWidget(current, id))
-              }
-              emptyLabel="No main widgets. Use Add to bring some back."
-            />
-          </div>
+          <div className="min-w-0">{header}</div>
 
-          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:z-20">
-            {hasPinnedWeather ? (
+          {hasPinnedWeather ? (
+            <div className="lg:sticky lg:top-4 lg:z-20">
               <PinnedWeatherFrame
                 editing={editing}
                 onRemove={() =>
@@ -292,16 +275,56 @@ export function DashboardOverview({
               >
                 {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
               </PinnedWeatherFrame>
+            </div>
+          ) : (
+            <div className="hidden lg:block" aria-hidden />
+          )}
+
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {overviewActions}
+            </div>
+            {editing ? (
+              <p className="text-sm text-cos-muted">
+                Remove tiles, change card colors (palette), then tap Done. Drag
+                the grip to rearrange — Weather, Up Next, and Calendar stay
+                fixed in look.
+              </p>
             ) : null}
+            <WidgetRegion
+              region="main"
+              ids={mainIds}
+              widgets={widgets}
+              layout={displayLayout}
+              editing={editing}
+              onRemove={(id) =>
+                updateDraft((current) => removeDashboardWidget(current, id))
+              }
+              onColorChange={(id, color) =>
+                updateDraft((current) =>
+                  setDashboardWidgetColor(current, id, color),
+                )
+              }
+              emptyLabel="No main widgets. Use Add to bring some back."
+            />
+          </div>
+
+          <aside className="flex w-full flex-col gap-4">
             <WidgetRegion
               region="rail"
               ids={railIds}
               widgets={widgets}
+              layout={displayLayout}
               editing={editing}
               stacked
               hideEmpty={false}
               onRemove={(id) =>
                 updateDraft((current) => removeDashboardWidget(current, id))
+              }
+              onColorChange={(id, color) =>
+                updateDraft((current) =>
+                  setDashboardWidgetColor(current, id, color),
+                )
               }
               emptyLabel="No rail widgets. Use Add to bring some back."
             />
@@ -332,19 +355,23 @@ function WidgetRegion({
   region,
   ids,
   widgets,
+  layout,
   editing,
   stacked = false,
   hideEmpty = false,
   onRemove,
+  onColorChange,
   emptyLabel,
 }: {
   region: DashboardWidgetRegion;
   ids: DashboardWidgetId[];
   widgets: DashboardWidgetNodes;
+  layout: DashboardLayout;
   editing: boolean;
   stacked?: boolean;
   hideEmpty?: boolean;
   onRemove: (id: DashboardWidgetId) => void;
+  onColorChange: (id: DashboardWidgetId, color: string | null) => void;
   emptyLabel: string;
 }) {
   if (ids.length === 0) {
@@ -373,7 +400,9 @@ function WidgetRegion({
               key={`${region}-${heroId}`}
               id={heroId}
               editing={editing}
+              color={getDashboardWidgetColor(layout, heroId)}
               onRemove={() => onRemove(heroId)}
+              onColorChange={(color) => onColorChange(heroId, color)}
             >
               {widgets[heroId] ?? <WidgetLoadingPlaceholder id={heroId} />}
             </SortableWidgetFrame>
@@ -386,7 +415,9 @@ function WidgetRegion({
                   id={id}
                   editing={editing}
                   uniform
+                  color={getDashboardWidgetColor(layout, id)}
                   onRemove={() => onRemove(id)}
+                  onColorChange={(color) => onColorChange(id, color)}
                 >
                   {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
                 </SortableWidgetFrame>
@@ -406,7 +437,9 @@ function WidgetRegion({
             key={`${region}-${id}`}
             id={id}
             editing={editing}
+            color={getDashboardWidgetColor(layout, id)}
             onRemove={() => onRemove(id)}
+            onColorChange={(color) => onColorChange(id, color)}
           >
             {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
           </SortableWidgetFrame>
@@ -475,19 +508,24 @@ function PinnedWeatherFrame({
 function SortableWidgetFrame({
   id,
   editing,
+  color,
   onRemove,
+  onColorChange,
   children,
   className,
   uniform = false,
 }: {
   id: DashboardWidgetId;
   editing: boolean;
+  color: string | null;
   onRemove: () => void;
+  onColorChange: (color: string | null) => void;
   children: React.ReactNode;
   className?: string;
   uniform?: boolean;
 }) {
   const label = getDashboardWidgetDefinition(id)?.label ?? id;
+  const colorable = dashboardWidgetSupportsColor(id);
   const {
     attributes,
     listeners,
@@ -526,6 +564,13 @@ function SortableWidgetFrame({
             "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
         )}
       >
+        {editing && colorable ? (
+          <DashboardWidgetColorPicker
+            label={label}
+            value={color}
+            onChange={onColorChange}
+          />
+        ) : null}
         {editing ? (
           <button
             type="button"
@@ -554,7 +599,9 @@ function SortableWidgetFrame({
           editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
         )}
       >
-        {children}
+        <DashboardWidgetColorProvider color={colorable ? color : null}>
+          {children}
+        </DashboardWidgetColorProvider>
       </div>
     </div>
   );
