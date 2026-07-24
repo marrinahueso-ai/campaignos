@@ -21,7 +21,6 @@ import {
   listMondayBoardsForSettingsPicker,
   resolveMondayWorkspaceId,
 } from "@/lib/monday/client";
-import { PTO_TEMPLATE_BOARD_NAME } from "@/lib/monday/constants";
 import { createPtoEventProjectPlanningBoard } from "@/lib/monday/template-board";
 import type { MondayBoardColumn } from "@/lib/monday/types";
 import { backfillOpenTasksToMonday } from "@/lib/monday/sync";
@@ -276,8 +275,6 @@ export async function createPtoTemplateBoardAction(): Promise<
     };
   }
 }
-
-export { PTO_TEMPLATE_BOARD_NAME };
 
 export async function getMondayBoardColumnsAction(boardId: string): Promise<{
   success: boolean;
