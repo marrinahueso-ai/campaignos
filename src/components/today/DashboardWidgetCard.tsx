@@ -1,8 +1,4 @@
-"use client";
-
 import type { LucideIcon } from "lucide-react";
-import { GripVertical, MoreHorizontal } from "lucide-react";
-import { useDashboardWidgetDragHandle } from "@/components/today/DashboardWidgetDragContext";
 import { cn } from "@/lib/utils/cn";
 
 interface DashboardWidgetCardProps {
@@ -10,7 +6,7 @@ interface DashboardWidgetCardProps {
   title: string;
   children: React.ReactNode;
   className?: string;
-  /** Hide the header control (Weather uses this). */
+  /** @deprecated Kept for call-site compatibility; header menus are owned by the overview frame. */
   showMenu?: boolean;
 }
 
@@ -21,13 +17,6 @@ export function DashboardWidgetCard({
   className,
   showMenu = true,
 }: DashboardWidgetCardProps) {
-  const drag = useDashboardWidgetDragHandle();
-  const canDrag = Boolean(drag && !drag.disabled);
-  const editing = Boolean(drag?.editing);
-  // Grip for drag anytime; decorative ··· only while editing (and not draggable).
-  const showDragHandle = showMenu && canDrag;
-  const showEllipsis = showMenu && editing && !canDrag;
-
   return (
     <section
       className={cn(
@@ -40,24 +29,9 @@ export function DashboardWidgetCard({
           <Icon className="h-4 w-4 shrink-0 text-cos-muted" aria-hidden />
           <h2 className="truncate text-sm font-semibold text-cos-text">{title}</h2>
         </div>
-        {showDragHandle ? (
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg text-cos-muted transition-colors hover:bg-cos-card hover:text-cos-text active:cursor-grabbing"
-            aria-label={`Drag to move ${title}`}
-            title="Drag to move"
-            {...drag!.attributes}
-            {...drag!.listeners}
-          >
-            <GripVertical className="h-4 w-4" aria-hidden />
-          </button>
-        ) : showEllipsis ? (
-          <span
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-cos-muted"
-            aria-hidden
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </span>
+        {/* Reserve room for the overview drag handle overlay (not used on pinned weather). */}
+        {showMenu ? (
+          <span className="inline-flex h-7 w-7 shrink-0" aria-hidden />
         ) : null}
       </div>
       <div className="min-h-0 flex-1">{children}</div>

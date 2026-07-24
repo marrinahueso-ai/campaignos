@@ -10,7 +10,7 @@ interface ThisWeekWidgetProps {
 
 export function ThisWeekWidget({ today, weekEntries }: ThisWeekWidgetProps) {
   return (
-    <DashboardWidgetCard icon={CalendarDays} title="This week" showMenu={false}>
+    <DashboardWidgetCard icon={CalendarDays} title="This week">
       <WeekAheadStrip entries={weekEntries} today={today} />
     </DashboardWidgetCard>
   );

@@ -10,7 +10,7 @@ interface CalendarWidgetProps {
 
 export function CalendarWidget({ today, monthEvents }: CalendarWidgetProps) {
   return (
-    <DashboardWidgetCard icon={CalendarRange} title="Calendar" showMenu={false}>
+    <DashboardWidgetCard icon={CalendarRange} title="Calendar">
       <SnapshotMiniCalendar today={today} entries={monthEvents} />
     </DashboardWidgetCard>
   );

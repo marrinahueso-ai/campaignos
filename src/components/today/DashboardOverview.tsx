@@ -22,9 +22,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { Check, GripVertical, Pencil, Plus, X } from "lucide-react";
 import { DashboardAddWidgetsModal } from "@/components/today/DashboardAddWidgetsModal";
-import { DashboardWidgetDragProvider } from "@/components/today/DashboardWidgetDragContext";
 import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions";
 import {
   applyDashboardWidgetSelection,
@@ -53,8 +52,8 @@ export function DashboardOverview({
   className,
 }: DashboardOverviewProps) {
   const router = useRouter();
-  const [layout, setLayout] = useState(initialLayout);
-  const layoutRef = useRef(initialLayout);
+  const [layout, setLayout] = useState(() => pinWeatherInLayout(initialLayout));
+  const layoutRef = useRef(pinWeatherInLayout(initialLayout));
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DashboardLayout | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -76,8 +75,9 @@ export function DashboardOverview({
 
   useEffect(() => {
     if (editing || addOpen || activeId) return;
-    setLayout(pinWeatherInLayout(initialLayout));
-    layoutRef.current = pinWeatherInLayout(initialLayout);
+    const next = pinWeatherInLayout(initialLayout);
+    setLayout(next);
+    layoutRef.current = next;
   }, [initialLayout, editing, addOpen, activeId]);
 
   const displayLayout = draft ?? layout;
@@ -170,7 +170,6 @@ export function DashboardOverview({
       return;
     }
 
-    // Normal view: save as soon as you drop.
     persist(next);
   }
 
@@ -234,8 +233,8 @@ export function DashboardOverview({
 
       {editing ? (
         <p className="text-sm text-cos-muted">
-          Remove tiles you don&apos;t need, then tap Done. Drag any grip icon
-          anytime to rearrange — Weather stays pinned top right.
+          Remove tiles you don&apos;t need, then tap Done. Drag the grip to
+          rearrange — Weather stays pinned top right.
         </p>
       ) : null}
 
@@ -275,7 +274,6 @@ export function DashboardOverview({
               <div
                 className={cn(
                   "lg:sticky lg:top-4 lg:z-20",
-                  // Keep cream page wash behind the pin so scrolling tiles don’t bleed through.
                   "lg:-mx-1 lg:bg-cos-bg lg:px-1 lg:pb-1",
                 )}
               >
@@ -362,7 +360,6 @@ function WidgetRegion({
     );
   }
 
-  // Main board: Up Next stays the hero; tiles beneath share equal columns + height.
   if (!stacked) {
     const heroId = ids.includes("up_next") ? ("up_next" as const) : null;
     const tileIds = ids.filter((id) => id !== "up_next");
@@ -449,38 +446,27 @@ function PinnedWeatherFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="relative">
       {editing ? (
-        <div className="flex items-center justify-end gap-1">
-          <span className="mr-1 text-[11px] font-medium text-cos-muted">
+        <div className="absolute right-3 top-3 z-20 flex items-center gap-1">
+          <span className="rounded-md bg-cos-card/90 px-1.5 py-0.5 text-[11px] font-medium text-cos-muted ring-1 ring-black/[0.06]">
             Pinned
           </span>
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-error"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-error"
             aria-label="Remove Weather"
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
         </div>
       ) : null}
-      <DashboardWidgetDragProvider
-        value={{
-          attributes: {},
-          listeners: undefined,
-          disabled: true,
-          editing,
-        }}
+      <div
+        className={cn(editing && "rounded-2xl ring-2 ring-cos-brand-sage/25")}
       >
-        <div
-          className={cn(
-            editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
-          )}
-        >
-          {children}
-        </div>
-      </DashboardWidgetDragProvider>
+        {children}
+      </div>
     </div>
   );
 }
@@ -498,7 +484,6 @@ function SortableWidgetFrame({
   onRemove: () => void;
   children: React.ReactNode;
   className?: string;
-  /** Equal footprint for tiles under Up Next. */
   uniform?: boolean;
 }) {
   const label = getDashboardWidgetDefinition(id)?.label ?? id;
@@ -521,42 +506,50 @@ function SortableWidgetFrame({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex min-w-0 flex-col gap-2",
+        "group relative min-w-0",
         uniform && "h-full min-h-[16.5rem]",
         className,
         isDragging && "z-20 opacity-40",
       )}
     >
-      {editing ? (
-        <div className="flex shrink-0 items-center justify-end gap-1">
+      <div
+        className={cn(
+          "absolute right-3 top-3 z-20 flex items-center gap-1",
+          // Keep cards clean; reveal drag controls on hover/focus or while editing.
+          !editing &&
+            "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
+        )}
+      >
+        {editing ? (
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-error"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-error"
             aria-label={`Remove ${label}`}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>
-        </div>
-      ) : null}
-      <DashboardWidgetDragProvider
-        value={{
-          attributes,
-          listeners,
-          disabled: false,
-          editing,
-        }}
-      >
-        <div
-          className={cn(
-            "min-h-0 flex-1",
-            uniform && "flex h-full flex-col [&>*]:h-full [&>*]:min-h-0",
-            editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
-          )}
+        ) : null}
+        <button
+          type="button"
+          className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
+          aria-label={`Drag to move ${label}`}
+          title="Drag to move"
+          {...attributes}
+          {...listeners}
         >
-          {children}
-        </div>
-      </DashboardWidgetDragProvider>
+          <GripVertical className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </div>
+      <div
+        className={cn(
+          "h-full",
+          uniform && "flex flex-col [&>*]:h-full [&>*]:min-h-0",
+          editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
