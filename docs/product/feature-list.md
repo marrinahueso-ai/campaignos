@@ -197,8 +197,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - “Files organized by event” carousel cards use Events home summary colors (idle `bg-cos-bg-alt` / selected `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.files_layout` — **shipped**
 
 ## Vendors
-- Directory, add/edit/archive, profile, link to events — **shipped**
-- Payments / contracts / communications tabs — **partial** (shell)
+- Directory (card grid matching event vendor cards), add/archive, profile, link to events — **shipped**
+- Directory peek drawer: single **View Profile** CTA; edit vendor from profile only — **shipped**
+- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**; Contracts / Communications — **partial** (shell)
+- Payments and Settings profile tabs — **removed** (not in product UI; archive stays on profile header)
 
 ## Insights — soft launch **complete**
 - **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)

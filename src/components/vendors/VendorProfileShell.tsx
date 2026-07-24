@@ -28,23 +28,19 @@ type ProfileTab =
   | "overview"
   | "events"
   | "documents"
-  | "payments"
   | "notes"
   | "activity"
   | "contracts"
-  | "communications"
-  | "settings";
+  | "communications";
 
 const TABS: Array<{ id: ProfileTab; label: string; shell?: boolean }> = [
   { id: "overview", label: "Overview" },
   { id: "events", label: "Events" },
   { id: "documents", label: "Documents" },
-  { id: "payments", label: "Payments", shell: true },
   { id: "notes", label: "Notes" },
   { id: "activity", label: "Activity" },
   { id: "contracts", label: "Contracts", shell: true },
   { id: "communications", label: "Communications", shell: true },
-  { id: "settings", label: "Settings", shell: true },
 ];
 
 interface VendorProfileShellProps {
@@ -156,11 +152,9 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
       )}
       {tab === "notes" && <NotesPanel notes={data.notes} summary={data.vendor.notesSummary} />}
       {tab === "activity" && <ActivityPanel logs={data.activityLogs} />}
-      {tab !== "overview" &&
-        tab !== "events" &&
-        tab !== "documents" &&
-        tab !== "notes" &&
-        tab !== "activity" && <ShellPanel tab={tab} />}
+      {(tab === "contracts" || tab === "communications") && (
+        <ShellPanel tab={tab} />
+      )}
 
       <VendorEditModal
         open={editOpen}
@@ -345,18 +339,11 @@ function ActivityPanel({ logs }: { logs: VendorDetailData["activityLogs"] }) {
   );
 }
 
-function ShellPanel({ tab }: { tab: ProfileTab }) {
-  const labels: Record<ProfileTab, string> = {
-    overview: "Overview",
-    events: "Events",
-    documents: "Documents",
-    payments: "Payments",
-    notes: "Notes",
-    activity: "Activity",
+function ShellPanel({ tab }: { tab: "contracts" | "communications" }) {
+  const labels = {
     contracts: "Contracts",
     communications: "Communications",
-    settings: "Settings",
-  };
+  } as const;
 
   return (
     <Card className="flex flex-col items-center justify-center gap-3 p-12 text-center">
