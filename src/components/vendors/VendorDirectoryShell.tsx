@@ -8,7 +8,6 @@ import { Card } from "@/components/ui/Card";
 import { VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
 import { VendorCard } from "@/components/vendors/VendorCard";
-import { VendorEditModal } from "@/components/vendors/VendorEditModal";
 import {
   VENDORS_MIGRATION,
   VENDOR_DIRECTORY_TABS,
@@ -59,7 +58,6 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<VendorDirectoryRow | null>(null);
-  const [editRow, setEditRow] = useState<VendorDirectoryRow | null>(null);
 
   const filters = useMemo(
     () =>
@@ -284,12 +282,6 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         row={selectedRow}
         open={Boolean(selectedRow)}
         onClose={() => setSelectedRow(null)}
-        onEdit={() => {
-          if (selectedRow) {
-            setEditRow(selectedRow);
-            setSelectedRow(null);
-          }
-        }}
         canWrite={data.canWrite}
       />
 
@@ -299,14 +291,6 @@ export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
         categories={data.categories}
         events={data.events}
         onCreated={() => router.refresh()}
-      />
-
-      <VendorEditModal
-        open={Boolean(editRow)}
-        onClose={() => setEditRow(null)}
-        vendor={editRow?.vendor ?? null}
-        categories={data.categories}
-        onSaved={() => router.refresh()}
       />
     </div>
   );

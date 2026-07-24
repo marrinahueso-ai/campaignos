@@ -31,7 +31,7 @@ export function VendorDrawer({
       />
       <aside
         className={cn(
-          "relative flex h-full w-full max-w-md flex-col border-l border-cos-border bg-cos-card shadow-2xl",
+          "relative flex h-full w-full max-w-md min-w-0 flex-col overflow-hidden border-l border-cos-border bg-cos-card shadow-2xl",
           className,
         )}
       >

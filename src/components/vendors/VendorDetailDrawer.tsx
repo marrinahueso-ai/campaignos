@@ -56,7 +56,6 @@ interface VendorDetailDrawerProps {
   row: VendorDirectoryRow | null;
   open: boolean;
   onClose: () => void;
-  onEdit: () => void;
   canWrite: boolean;
   notes?: string | null;
   assignments?: VendorEventSummary[];
@@ -66,7 +65,6 @@ export function VendorDetailDrawer({
   row,
   open,
   onClose,
-  onEdit,
   canWrite,
   notes,
   assignments = [],
@@ -101,14 +99,16 @@ export function VendorDetailDrawer({
 
   return (
     <VendorDrawer open={open} onClose={onClose}>
-      <div className="flex h-full flex-col overflow-y-auto px-6 pb-8 pt-14">
-        <div className="flex items-start gap-4">
+      <div className="flex h-full min-w-0 flex-col overflow-y-auto px-6 pb-8 pt-14">
+        <div className="flex min-w-0 items-start gap-4">
           <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-cos-accent-soft text-lg font-semibold text-cos-dark">
             {vendorInitials(vendor.name)}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="font-display text-2xl text-cos-text">{vendor.name}</h2>
+              <h2 className="min-w-0 break-words font-display text-2xl text-cos-text">
+                {vendor.name}
+              </h2>
               <button
                 type="button"
                 aria-label={vendor.isFavorite ? "Remove favorite" : "Add favorite"}
@@ -132,16 +132,13 @@ export function VendorDetailDrawer({
           </div>
         </div>
 
-        <div className="mt-6 flex gap-2">
-          <Button type="button" size="sm" onClick={onEdit} disabled={!canWrite}>
-            Edit Vendor
-          </Button>
-          <Button type="button" size="sm" variant="secondary" href={`/vendors/${vendor.id}`}>
+        <div className="mt-6">
+          <Button type="button" size="sm" href={`/vendors/${vendor.id}`}>
             View Profile
           </Button>
         </div>
 
-        <section className="mt-8 space-y-3">
+        <section className="mt-8 min-w-0 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
             Contact Information
           </h3>
@@ -166,26 +163,31 @@ export function VendorDetailDrawer({
         )}
 
         {displayAssignments.length > 0 && (
-          <section className="mt-6 space-y-3">
+          <section className="mt-6 min-w-0 space-y-3">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
               Events
             </h3>
-            <ul className="space-y-2">
+            <ul className="min-w-0 space-y-2">
               {displayAssignments.slice(0, 4).map((assignment) => (
                 <li
                   key={assignment.assignmentId}
-                  className="flex items-center justify-between gap-3 border border-cos-border px-3 py-2"
+                  className="flex min-w-0 items-center justify-between gap-3 overflow-hidden border border-cos-border px-3 py-2"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <Link
                       href={`/events/${assignment.eventId}`}
-                      className="truncate text-sm font-medium text-cos-text hover:underline"
+                      className="block truncate text-sm font-medium text-cos-text hover:underline"
                     >
                       {assignment.eventTitle}
                     </Link>
-                    <p className="text-xs text-cos-muted">{assignment.eventDate}</p>
+                    <p className="truncate text-xs text-cos-muted">
+                      {assignment.eventDate}
+                    </p>
                   </div>
-                  <Badge variant={assignmentBadgeVariant(assignment.assignmentStatus)}>
+                  <Badge
+                    variant={assignmentBadgeVariant(assignment.assignmentStatus)}
+                    className="shrink-0"
+                  >
                     {assignmentLabel(assignment.assignmentStatus)}
                   </Badge>
                 </li>
@@ -226,16 +228,21 @@ function ContactLine({
   vendorEmail: string | null;
   vendorPhone: string | null;
 }) {
-  const name = contact?.name ?? "—";
-  const title = contact?.title;
+  const name = contact?.name?.trim() || null;
+  const title = contact?.title?.trim() || null;
+  const showTitle =
+    Boolean(title) &&
+    title!.toLowerCase() !== (name ?? "").toLowerCase();
   const email = contact?.email ?? vendorEmail;
   const phone = contact?.phone ?? vendorPhone;
 
   return (
-    <div className="space-y-2 text-sm text-cos-text">
-      <p>
-        <span className="font-medium">{name}</span>
-        {title ? <span className="text-cos-muted">, {title}</span> : null}
+    <div className="min-w-0 space-y-2 text-sm text-cos-text">
+      <p className="min-w-0 break-words">
+        <span className="font-medium">{name ?? "No contact listed"}</span>
+        {showTitle ? (
+          <span className="text-cos-muted">, {title}</span>
+        ) : null}
       </p>
       {phone && <InfoRow icon={Phone} label={phone} href={`tel:${phone}`} />}
       {email && <InfoRow icon={Mail} label={email} href={`mailto:${email}`} />}
@@ -253,15 +260,15 @@ function InfoRow({
   href?: string;
 }) {
   const content = (
-    <span className="flex items-start gap-2 text-sm text-cos-text">
+    <span className="flex min-w-0 items-start gap-2 text-sm text-cos-text">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-cos-muted" strokeWidth={1.5} />
-      <span className="whitespace-pre-line">{label}</span>
+      <span className="min-w-0 break-words whitespace-pre-line">{label}</span>
     </span>
   );
 
   if (href) {
     return (
-      <a href={href} className="hover:underline">
+      <a href={href} className="block min-w-0 hover:underline">
         {content}
       </a>
     );
