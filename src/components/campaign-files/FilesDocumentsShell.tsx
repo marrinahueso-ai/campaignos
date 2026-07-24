@@ -97,25 +97,45 @@ interface FilesDocumentsShellProps {
 function EventThumbnail({
   artworkUrl,
   title,
+  selected = false,
 }: {
   artworkUrl: string | null;
   title: string;
+  selected?: boolean;
 }) {
   if (!artworkUrl) {
     return (
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-cos-bg text-[10px] font-semibold text-cos-muted">
+      <span
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded text-[10px] font-semibold",
+          selected ? "bg-white/15 text-white" : "bg-cos-bg text-cos-muted",
+        )}
+      >
         {title.slice(0, 1).toUpperCase()}
       </span>
     );
   }
 
   return (
-    <span className="h-8 w-8 shrink-0 overflow-hidden rounded bg-cos-bg ring-1 ring-cos-border/60">
+    <span
+      className={cn(
+        "h-8 w-8 shrink-0 overflow-hidden rounded",
+        selected ? "ring-1 ring-white/25" : "bg-cos-bg ring-1 ring-cos-border/60",
+      )}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={artworkUrl} alt="" className="h-full w-full object-cover" />
     </span>
   );
 }
+
+const eventCarouselCardClassName = (selected: boolean) =>
+  cn(
+    "shrink-0 rounded-2xl text-left transition-all duration-200",
+    selected
+      ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
+      : "bg-cos-bg-alt text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:-translate-y-0.5 hover:shadow-[0_1px_0_rgba(255,252,247,0.95)_inset,0_6px_12px_rgba(42,38,34,0.08),0_16px_32px_rgba(42,38,34,0.1)]",
+  );
 
 function FilterSelect<T extends string>({
   value,
@@ -356,8 +376,7 @@ export function FilesDocumentsShell({
         </div>
       ) : null}
 
-      <div className="space-y-3 border border-cos-border bg-cos-card p-4">
-        {/* Row 1: facet filters + view toggle, search on the right (matches Vendors) */}
+      <div className="border border-cos-border bg-cos-card p-4">
         <div className="flex flex-wrap items-center gap-2">
           <FilterSelect
             ariaLabel="Filter by file type"
@@ -429,28 +448,6 @@ export function FilesDocumentsShell({
             </button>
           </div>
 
-          <label className="relative ml-auto min-w-[14rem] flex-1 sm:max-w-sm">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
-              strokeWidth={1.5}
-            />
-            <input
-              type="search"
-              value={filters.search}
-              onChange={(event) => updateFilter("search", event.target.value)}
-              placeholder={
-                isEventScope ? "Search files..." : "Search files or events..."
-              }
-              aria-label={
-                isEventScope ? "Search files" : "Search files or events"
-              }
-              className="h-9 w-full border border-cos-border bg-cos-bg py-0 pr-3 pl-9 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
-            />
-          </label>
-        </div>
-
-        {/* Row 2: upload + date range + secondary filters */}
-        <div className="flex flex-wrap items-center gap-2">
           <FileUploadButton onClick={() => openUploadWithFile(null)} />
 
           <label className="inline-flex h-9 items-center gap-2 border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted">
@@ -479,6 +476,25 @@ export function FilesDocumentsShell({
           >
             Clear all
           </button>
+
+          <label className="relative ml-auto min-w-[12rem] flex-1 basis-[14rem] sm:max-w-sm">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
+              strokeWidth={1.5}
+            />
+            <input
+              type="search"
+              value={filters.search}
+              onChange={(event) => updateFilter("search", event.target.value)}
+              placeholder={
+                isEventScope ? "Search files..." : "Search files or events..."
+              }
+              aria-label={
+                isEventScope ? "Search files" : "Search files or events"
+              }
+              className="h-9 w-full border border-cos-border bg-cos-bg py-0 pr-3 pl-9 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
+            />
+          </label>
         </div>
       </div>
 
@@ -496,51 +512,79 @@ export function FilesDocumentsShell({
                   updateFilter("eventId", "all");
                 }}
                 className={cn(
-                  "flex min-w-[9.5rem] shrink-0 flex-col gap-2 border px-4 py-3 text-left transition-colors",
-                  carouselEventId === "all"
-                    ? "border-cos-accent bg-cos-bg-alt"
-                    : "border-cos-border bg-cos-card hover:bg-cos-bg",
+                  "flex min-w-[9.5rem] flex-col gap-2 px-4 py-3",
+                  eventCarouselCardClassName(carouselEventId === "all"),
                 )}
               >
-                <FolderOpen className="h-5 w-5 text-cos-muted" strokeWidth={1.5} />
-                <span className="text-sm font-medium text-cos-text">All events</span>
-                <span className="text-xs text-cos-muted">
+                <FolderOpen
+                  className={cn(
+                    "h-5 w-5",
+                    carouselEventId === "all" ? "text-white/70" : "text-cos-muted",
+                  )}
+                  strokeWidth={1.5}
+                />
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    carouselEventId === "all" ? "text-white" : "text-cos-text",
+                  )}
+                >
+                  All events
+                </span>
+                <span
+                  className={cn(
+                    "text-xs",
+                    carouselEventId === "all" ? "text-white/70" : "text-cos-muted",
+                  )}
+                >
                   {data.files.length} {data.files.length === 1 ? "file" : "files"}
                 </span>
               </button>
 
-              {data.events.map((event) => (
-                <button
-                  key={event.eventId}
-                  type="button"
-                  onClick={() => {
-                    setCarouselEventId(event.eventId);
-                    updateFilter("eventId", event.eventId);
-                  }}
-                  className={cn(
-                    "flex min-w-[11rem] shrink-0 items-center gap-3 border px-3 py-3 text-left transition-colors",
-                    carouselEventId === event.eventId
-                      ? "border-cos-accent bg-cos-bg-alt"
-                      : "border-cos-border bg-cos-card hover:bg-cos-bg",
-                  )}
-                >
-                  <EventThumbnail
-                    artworkUrl={event.artwork?.imageUrl ?? null}
-                    title={event.title}
-                  />
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-cos-text">
-                      {event.title}
+              {data.events.map((event) => {
+                const selected = carouselEventId === event.eventId;
+                return (
+                  <button
+                    key={event.eventId}
+                    type="button"
+                    onClick={() => {
+                      setCarouselEventId(event.eventId);
+                      updateFilter("eventId", event.eventId);
+                    }}
+                    className={cn(
+                      "flex min-w-[11rem] items-center gap-3 px-3 py-3",
+                      eventCarouselCardClassName(selected),
+                    )}
+                  >
+                    <EventThumbnail
+                      artworkUrl={event.artwork?.imageUrl ?? null}
+                      title={event.title}
+                      selected={selected}
+                    />
+                    <span className="min-w-0">
+                      <span
+                        className={cn(
+                          "block truncate text-sm font-medium",
+                          selected ? "text-white" : "text-cos-text",
+                        )}
+                      >
+                        {event.title}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs",
+                          selected ? "text-white/70" : "text-cos-muted",
+                        )}
+                      >
+                        {event.fileCount} {event.fileCount === 1 ? "file" : "files"}
+                      </span>
                     </span>
-                    <span className="text-xs text-cos-muted">
-                      {event.fileCount} {event.fileCount === 1 ? "file" : "files"}
-                    </span>
-                  </span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
             <span
-              className="pointer-events-none absolute top-1/2 right-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center border border-cos-border bg-cos-card text-cos-muted shadow-sm"
+              className="pointer-events-none absolute top-1/2 right-0 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted shadow-sm"
               aria-hidden
             >
               <ChevronRight className="h-4 w-4" />
