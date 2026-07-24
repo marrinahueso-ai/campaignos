@@ -27,10 +27,25 @@ export function TasksV2MainTable({
   const [sortMode, setSortMode] = useState<TaskHubSortMode>("default");
   const [statusFilter, setStatusFilter] = useState<TaskHubStatusFilter>("all");
   const [personFilter, setPersonFilter] = useState("");
-  const [expandAddEventId, setExpandAddEventId] = useState<string | null>(null);
+  /** Bumps when New Task is chosen so the target group creates immediately. */
+  const [createRequest, setCreateRequest] = useState<{
+    eventId: string;
+    nonce: number;
+  } | null>(null);
 
-  const clearExpandAddRequest = useCallback(() => {
-    setExpandAddEventId(null);
+  const toolbarEvents = useMemo(() => {
+    if (eventGroups.length === 0) {
+      return events;
+    }
+    return eventGroups.map((group) => ({
+      eventId: group.eventId,
+      eventTitle: group.eventTitle,
+      eventDate: group.eventDate,
+    }));
+  }, [eventGroups, events]);
+
+  const clearCreateRequest = useCallback(() => {
+    setCreateRequest(null);
   }, []);
 
   const totalTasks = useMemo(
@@ -94,10 +109,13 @@ export function TasksV2MainTable({
         taskCount={totalTasks}
         filteredCount={filteredCount}
         canEdit={canEdit}
-        events={events}
+        events={toolbarEvents}
         orgMembers={orgMembers}
         onNewTask={(eventId) => {
-          setExpandAddEventId(eventId);
+          setSearchQuery("");
+          setStatusFilter("all");
+          setPersonFilter("");
+          setCreateRequest({ eventId, nonce: Date.now() });
           requestAnimationFrame(() => {
             document
               .getElementById(`tasks-v2-event-${eventId}`)
@@ -117,8 +135,12 @@ export function TasksV2MainTable({
             statusFilter={statusFilter}
             sortMode={sortMode}
             personFilter={personFilter}
-            requestExpandAdd={expandAddEventId === group.eventId}
-            onExpandAddHandled={clearExpandAddRequest}
+            createRequestNonce={
+              createRequest?.eventId === group.eventId
+                ? createRequest.nonce
+                : null
+            }
+            onCreateRequestHandled={clearCreateRequest}
           />
         ))}
       </div>

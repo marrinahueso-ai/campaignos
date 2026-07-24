@@ -49,6 +49,8 @@ interface TasksV2ToolbarProps {
   events: TaskHubEventOption[];
   orgMembers: TaskHubOrgMember[];
   onNewTask: (eventId: string) => void;
+  isCreating?: boolean;
+  createError?: string | null;
 }
 
 function ToolbarButton({
@@ -61,7 +63,7 @@ function ToolbarButton({
   children?: React.ReactNode;
 }) {
   return (
-    <label className="inline-flex items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 py-1.5 text-xs text-cos-muted transition-colors hover:border-cos-accent/50 hover:text-cos-text">
+    <label className="inline-flex h-9 items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted transition-colors hover:border-cos-accent/50 hover:text-cos-text">
       <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span className="hidden sm:inline">{label}</span>
       {children}
@@ -84,6 +86,8 @@ export function TasksV2Toolbar({
   events,
   orgMembers,
   onNewTask,
+  isCreating = false,
+  createError = null,
 }: TasksV2ToolbarProps) {
   const isFiltered =
     searchQuery.trim() !== "" || statusFilter !== "all" || personFilter !== "";
@@ -116,6 +120,9 @@ export function TasksV2Toolbar({
   }
 
   function handleNewTaskClick() {
+    if (events.length === 0 || isCreating) {
+      return;
+    }
     if (events.length === 1) {
       pickEvent(events[0]!.eventId);
       return;
@@ -124,19 +131,21 @@ export function TasksV2Toolbar({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b border-cos-border bg-cos-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3 border-b border-cos-border bg-cos-card px-4 py-3">
+      {/* Line 1: actions + filters */}
       <div className="flex flex-wrap items-center gap-2">
-        {canEdit && events.length > 0 && (
+        {canEdit && events.length > 0 ? (
           <div className="relative inline-flex" ref={menuRef}>
             <button
               type="button"
               onClick={handleNewTaskClick}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              className="inline-flex items-center gap-1.5 rounded-md bg-[#2a2622] px-3 py-1.5 text-xs font-medium text-[#f6f2eb] transition-opacity hover:opacity-90"
+              disabled={isCreating}
+              aria-haspopup={events.length > 1 ? "menu" : undefined}
+              aria-expanded={events.length > 1 ? menuOpen : undefined}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#2a2622] px-3 text-xs font-medium text-[#f6f2eb] transition-opacity hover:opacity-90 disabled:opacity-60"
             >
               <Plus className="h-3.5 w-3.5" />
-              New Task
+              {isCreating ? "Creating…" : "New Task"}
               {events.length > 1 ? (
                 <ChevronDown className="h-3.5 w-3.5 opacity-70" />
               ) : null}
@@ -144,10 +153,10 @@ export function TasksV2Toolbar({
             {menuOpen && events.length > 1 ? (
               <div
                 role="menu"
-                className="absolute top-full left-0 z-30 mt-1 max-h-64 w-64 overflow-y-auto rounded-md border border-cos-border bg-cos-card py-1 shadow-lg"
+                className="absolute top-full left-0 z-30 mt-1 max-h-64 w-72 overflow-y-auto rounded-md border border-cos-border bg-cos-card py-1 shadow-lg"
               >
                 <p className="px-3 py-1.5 text-[10px] font-semibold tracking-wide text-cos-muted uppercase">
-                  Choose event
+                  Create task for
                 </p>
                 {events.map((event) => (
                   <button
@@ -168,21 +177,7 @@ export function TasksV2Toolbar({
               </div>
             ) : null}
           </div>
-        )}
-
-        <div className="relative min-w-0 flex-1 sm:max-w-[12rem]">
-          <Search
-            className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-cos-muted"
-            aria-hidden
-          />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search"
-            className="w-full rounded-md border border-cos-border bg-cos-bg py-1.5 pr-2 pl-8 text-xs text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-1 focus:ring-cos-accent/25"
-          />
-        </div>
+        ) : null}
 
         <ToolbarButton label="Person" icon={User}>
           <select
@@ -222,7 +217,9 @@ export function TasksV2Toolbar({
         <ToolbarButton label="Sort" icon={ArrowDownAZ}>
           <select
             value={sortMode}
-            onChange={(event) => onSortChange(event.target.value as TaskHubSortMode)}
+            onChange={(event) =>
+              onSortChange(event.target.value as TaskHubSortMode)
+            }
             aria-label="Sort tasks"
             className="max-w-[7rem] cursor-pointer bg-transparent text-xs font-medium text-cos-text outline-none"
           >
@@ -236,7 +233,7 @@ export function TasksV2Toolbar({
 
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 py-1.5 text-xs text-cos-muted transition-colors hover:text-cos-text"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-cos-border bg-cos-card px-2.5 text-xs text-cos-muted transition-colors hover:text-cos-text"
         >
           <Layers className="h-3.5 w-3.5" aria-hidden />
           <span className="hidden sm:inline">Group by</span>
@@ -245,15 +242,38 @@ export function TasksV2Toolbar({
         <button
           type="button"
           aria-label="More options"
-          className="inline-flex items-center rounded-md border border-cos-border bg-cos-card p-1.5 text-cos-muted transition-colors hover:text-cos-text"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text"
         >
           <MoreHorizontal className="h-4 w-4" />
         </button>
+
+        <span className="ml-auto text-xs text-cos-muted tabular-nums">
+          {isFiltered
+            ? `${filteredCount} of ${taskCount}`
+            : `${taskCount} tasks`}
+        </span>
       </div>
 
-      <span className="text-xs text-cos-muted tabular-nums">
-        {isFiltered ? `${filteredCount} of ${taskCount}` : `${taskCount} tasks`}
-      </span>
+      {/* Line 2: search on the right */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-end">
+        {createError ? (
+          <p className="text-xs text-cos-danger sm:mr-auto">{createError}</p>
+        ) : null}
+        <label className="relative w-full sm:max-w-md sm:min-w-[20rem]">
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search tasks..."
+            aria-label="Search tasks"
+            className="h-10 w-full rounded-md border border-cos-border bg-cos-bg py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-1 focus:ring-cos-accent/25"
+          />
+        </label>
+      </div>
     </div>
   );
 }

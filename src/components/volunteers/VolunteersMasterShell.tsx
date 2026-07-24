@@ -292,14 +292,14 @@ function KpiCard({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "flex min-h-[7rem] w-full max-w-[17.5rem] flex-1 basis-[14rem] flex-col items-start gap-2 rounded-2xl px-5 py-5 text-left transition-all duration-200",
+        "flex min-h-[7rem] w-full max-w-[17.5rem] flex-1 basis-[14rem] flex-col items-center justify-center gap-2 rounded-2xl px-5 py-5 text-center transition-all duration-200",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-accent focus-visible:ring-offset-2 focus-visible:ring-offset-cos-bg",
         active
           ? "bg-cos-dark text-white shadow-[0_12px_28px_rgba(42,38,34,0.22)] ring-1 ring-cos-dark"
           : "bg-cos-card text-cos-text shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04] hover:ring-cos-accent/40",
       )}
     >
-      <div className="flex w-full items-start justify-between gap-3">
+      <div className="flex items-center justify-center gap-2">
         <span
           className={cn(
             "text-xs font-medium tracking-wide uppercase",

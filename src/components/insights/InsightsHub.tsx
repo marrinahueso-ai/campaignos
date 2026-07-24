@@ -9,9 +9,7 @@ import { InsightsDateRangeSelector } from "@/components/insights/InsightsDateRan
 import { InsightsEmptyState } from "@/components/insights/InsightsEmptyState";
 import { InsightsKpiCards } from "@/components/insights/InsightsKpiCards";
 import { InsightsSectionCard } from "@/components/insights/InsightsSectionCard";
-import { LiveActivityFeed } from "@/components/insights/LiveActivityFeed";
 import { PerformanceChart } from "@/components/insights/PerformanceChart";
-import { PlatformComparison } from "@/components/insights/PlatformComparison";
 import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
@@ -251,11 +249,6 @@ export function InsightsHub({ data }: InsightsHubProps) {
             posts={filteredTopPosts}
             platformFilter={platformFilter}
           />
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <PlatformComparison platforms={data.platformComparison} />
-            <LiveActivityFeed events={data.activity} />
-          </div>
 
           {data.unavailableMetricNotes.length > 0 ? (
             <p className="text-xs leading-relaxed text-cos-muted">

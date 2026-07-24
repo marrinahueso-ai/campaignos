@@ -1,32 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 
 interface TasksV2AddTaskRowProps {
   disabled?: boolean;
   isPending?: boolean;
-  /** When true, open the inline title field (e.g. from toolbar New Task). */
-  requestExpand?: boolean;
-  onRequestExpandHandled?: () => void;
   onAdd: (title: string) => void;
 }
 
 export function TasksV2AddTaskRow({
   disabled,
   isPending,
-  requestExpand,
-  onRequestExpandHandled,
   onAdd,
 }: TasksV2AddTaskRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
-
-  useEffect(() => {
-    if (!requestExpand) return;
-    setExpanded(true);
-    onRequestExpandHandled?.();
-  }, [requestExpand, onRequestExpandHandled]);
 
   function handleSubmit() {
     const trimmed = title.trim();
