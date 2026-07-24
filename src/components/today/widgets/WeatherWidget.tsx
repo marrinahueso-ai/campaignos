@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CloudSun } from "lucide-react";
 import { DashboardWidgetCard } from "@/components/today/DashboardWidgetCard";
+import { WeatherConditionIcon } from "@/components/today/widgets/WeatherConditionIcon";
 import { getMockWeatherSnapshot } from "@/lib/weather/mock";
 import { cn } from "@/lib/utils/cn";
 import type {
@@ -37,14 +38,18 @@ export function WeatherWidget({
           <>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <CloudSun
-                  className="h-5 w-5 shrink-0 text-cos-brand-sage"
-                  aria-hidden
+                <WeatherConditionIcon
+                  condition={resolved.weather.condition}
+                  className="h-5 w-5"
                 />
                 <h3 className="text-sm font-semibold text-cos-text">Weather</h3>
               </div>
               <div className="min-w-0">
-                <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <WeatherConditionIcon
+                    condition={resolved.weather.condition}
+                    className="h-10 w-10"
+                  />
                   <span className="font-display text-5xl leading-none text-cos-text">
                     {Math.round(resolved.weather.temperatureF)}°
                   </span>
@@ -67,10 +72,7 @@ export function WeatherWidget({
           <div className="flex h-full flex-col justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <CloudSun
-                  className="h-5 w-5 shrink-0 text-cos-brand-sage"
-                  aria-hidden
-                />
+                <WeatherConditionIcon condition="Partly cloudy" className="h-5 w-5" />
                 <h3 className="text-sm font-semibold text-cos-text">Weather</h3>
               </div>
               <p className="text-sm text-cos-muted">
@@ -94,9 +96,9 @@ export function WeatherWidget({
       {resolved ? (
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <CloudSun
-              className="mt-0.5 h-8 w-8 shrink-0 text-cos-brand-sage"
-              aria-hidden
+            <WeatherConditionIcon
+              condition={resolved.weather.condition}
+              className="mt-0.5 h-10 w-10"
             />
             <div>
               <p className="flex flex-wrap items-baseline gap-x-2">
@@ -147,9 +149,14 @@ function HourlyStrip({ hours }: { hours: WeatherHourlyPoint[] }) {
         {hours.slice(0, 4).map((hour) => (
           <li
             key={hour.hourLabel}
-            className="flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-center"
+            className="flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-center"
           >
             <span className="text-[11px] text-cos-muted">{hour.hourLabel}</span>
+            <WeatherConditionIcon
+              condition={hour.condition}
+              className="h-7 w-7"
+              title={hour.condition}
+            />
             <span className="font-display text-lg leading-none text-cos-text">
               {Math.round(hour.temperatureF)}°
             </span>
