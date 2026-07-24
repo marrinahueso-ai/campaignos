@@ -18,7 +18,7 @@ export function WhatsNextSection({ whatsNext, artwork }: WhatsNextSectionProps) 
   return (
     <section>
       <div className="cos-card">
-        <p className="cos-section-title">Next up</p>
+        <p className="cos-section-title">Up next</p>
 
         <div
           className={

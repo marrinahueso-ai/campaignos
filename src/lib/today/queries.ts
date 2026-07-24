@@ -117,21 +117,33 @@ export async function getTodayPageData(
       ? `${year}-${String(month).padStart(2, "0")}-${String(monthLastDay).padStart(2, "0")}`
       : addDaysToDateOnly(today, 7);
 
-  const [upcomingCampaignEvents, eventsInWindow, monthEvents, firstName] =
-    await Promise.all([
-      getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
-      getEventsInDateRange(
-        todayWindow.startDate,
-        todayWindow.endDate,
-        resolvedOrganization?.id ?? null,
-      ),
-      getEventsInDateRange(
-        monthStart,
-        monthEnd,
-        resolvedOrganization?.id ?? null,
-      ),
-      getTodayGreetingName(resolvedOrganization),
-    ]);
+  const weekEndStr = addDaysToDateOnly(today, 7);
+
+  const [
+    upcomingCampaignEvents,
+    eventsInWindow,
+    monthEvents,
+    weekStripEvents,
+    firstName,
+  ] = await Promise.all([
+    getUpcomingEvents(UPCOMING_CAMPAIGN_LIMIT, resolvedOrganization?.id ?? null),
+    getEventsInDateRange(
+      todayWindow.startDate,
+      todayWindow.endDate,
+      resolvedOrganization?.id ?? null,
+    ),
+    getEventsInDateRange(
+      monthStart,
+      monthEnd,
+      resolvedOrganization?.id ?? null,
+    ),
+    getEventsInDateRange(
+      today,
+      weekEndStr,
+      resolvedOrganization?.id ?? null,
+    ),
+    getTodayGreetingName(resolvedOrganization),
+  ]);
 
   const eventsForRaw = mergeEventsById(upcomingCampaignEvents, eventsInWindow);
   const eventIds = eventsForRaw.map((event) => event.id);
@@ -148,12 +160,8 @@ export async function getTodayPageData(
     raw,
   );
 
-  const weekEndStr = addDaysToDateOnly(today, 7);
-  const weekEvents = upcomingCampaignEvents.filter(
-    (event) =>
-      event.date >= today &&
-      event.date <= weekEndStr &&
-      isCampaignPageStrategy(event.communicationStrategy),
+  const weekEvents = weekStripEvents.filter((event) =>
+    isCampaignPageStrategy(event.communicationStrategy),
   );
 
   return buildTodayPageData({
@@ -162,6 +170,7 @@ export async function getTodayPageData(
     planningItems,
     events: upcomingCampaignEvents,
     monthEvents,
+    weekStripEvents,
     weekEvents,
     stepsByEventId,
     intelligenceByEventId,

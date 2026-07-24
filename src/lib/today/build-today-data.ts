@@ -28,6 +28,9 @@ interface BuildTodayDataInput {
   events: Event[];
   /** School events dated in the visible mini-calendar month. */
   monthEvents: Event[];
+  /** School events dated today through +7 days (This Week strip). */
+  weekStripEvents: Event[];
+  /** Campaign-strategy events in the week (teammate note). */
   weekEvents: Event[];
   stepsByEventId: Map<string, EventCommunicationStep[]>;
   intelligenceByEventId?: Map<string, CampaignIntelligence>;
@@ -342,47 +345,36 @@ export function buildWaitingOnOthers(
     }));
 }
 
+/**
+ * Dashboard "This Week" strip: school events only (same rule as mini calendar).
+ * Reminder / schedule / publish steps stay on Communications — not here.
+ */
 export function buildThisWeek(
-  items: PlanningCalendarItem[],
+  events: Event[],
   today: string,
-  strategyByEventId?: Map<string, CommunicationStrategy>,
 ): TodayWeekEntry[] {
   const end = addDaysToDateOnly(today, 7);
 
-  return items
-    .filter((item) => {
-      if (item.scheduledDate < today || item.scheduledDate > end) return false;
-      if (strategyByEventId?.get(item.eventId) === "calendar_only") return false;
-      if (COMPLETE_STATUSES.has(item.status)) return false;
-      return (
-        item.sourceType === "event" ||
-        item.sourceType === "timeline_task" ||
-        item.sourceType === "scheduled_post"
-      );
-    })
+  return events
+    .filter(
+      (event) =>
+        event.status !== "archived" &&
+        event.date >= today &&
+        event.date <= end,
+    )
     .sort((a, b) => {
-      if (a.scheduledDate !== b.scheduledDate) {
-        return a.scheduledDate.localeCompare(b.scheduledDate);
+      if (a.date !== b.date) {
+        return a.date.localeCompare(b.date);
       }
       return a.title.localeCompare(b.title);
     })
-    .map((item) => ({
-      id: item.id,
-      date: item.scheduledDate,
-      title:
-        item.sourceType === "event"
-          ? item.title
-          : item.sourceType === "scheduled_post"
-            ? `Ready to publish — ${item.title}`
-            : item.title,
-      eventTitle: item.sourceType === "event" ? null : item.eventTitle,
-      kind:
-        item.sourceType === "event"
-          ? "event"
-          : item.sourceType === "scheduled_post"
-            ? "publishing"
-            : "communication",
-      href: item.sourceType === "event" ? stepHref(item.eventId) : stepHref(item.eventId),
+    .map((event) => ({
+      id: `event-${event.id}`,
+      date: event.date,
+      title: event.title,
+      eventTitle: null,
+      kind: "event" as const,
+      href: `/events/${event.id}`,
     }));
 }
 
@@ -576,7 +568,7 @@ export function buildTodayPageData(input: BuildTodayDataInput): TodayPageData {
     whatsNext: buildWhatsNext(input),
     waitingOnMe,
     waitingOnOthers,
-    thisWeek: buildThisWeek(input.planningItems, input.today, strategyByEventId),
+    thisWeek: buildThisWeek(input.weekStripEvents, input.today),
     monthEvents: buildMonthEventEntries(input.monthEvents, input.today),
     upcomingEvents,
     teammateNote: buildTeammateNote({

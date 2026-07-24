@@ -48,6 +48,12 @@ export interface TodayEventProgress {
   communicationStrategy: string;
 }
 
+export interface TodayAttentionCounts {
+  reviewCount: number;
+  volunteerCount: number;
+  tasksThisWeekCount: number;
+}
+
 export interface TodayPageData {
   firstName: string | null;
   attentionCount: number;

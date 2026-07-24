@@ -1,27 +1,26 @@
 import { Suspense } from "react";
 import { OnboardingChecklistCards } from "@/components/onboarding/OnboardingChecklistCards";
-import { TodayCompanionSection } from "@/components/today/TodayCompanionSection";
+import { TodayAttentionLinks } from "@/components/today/TodayAttentionLinks";
 import { TodayHero } from "@/components/today/TodayHero";
-import { TodayPulseSection } from "@/components/today/TodayPulseSection";
 import { TodaySnapshot } from "@/components/today/TodaySnapshot";
 import { WhatsNextSectionSuspense } from "@/components/today/WhatsNextSectionSuspense";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getApprovalQueueOverviewForCurrentUser } from "@/lib/event-workspace/approval-routing-queries";
 import { getOnboardingChecklistForCurrentOrg } from "@/lib/onboarding/actions";
 import { checklistNeedsAttention } from "@/lib/onboarding/state";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getTodayAttentionCounts } from "@/lib/today/attention-counts";
 import { getTodayPageData } from "@/lib/today/queries";
 import { getTodayDateString } from "@/lib/utils/dates";
 import { getTodayWeatherContext } from "@/lib/weather/queries";
 import type { Organization } from "@/types";
-import type { GoodNewsItem, TodayWeekEntry } from "@/types/today";
+import type { TodayWeekEntry } from "@/types/today";
 import type { TodayWeatherContext } from "@/lib/weather/types";
 import { GraduationCap } from "lucide-react";
 
 export const metadata = {
   title: "Dashboard",
   description:
-    "Your Hey Ralli today view — next campaign actions, approvals, and the week ahead.",
+    "Your Hey Ralli today view — next campaign actions and the week ahead.",
   alternates: {
     canonical: "/dashboard",
   },
@@ -48,22 +47,9 @@ async function DashboardOnboardingBlock() {
   return <OnboardingChecklistCards items={onboardingChecklist.items} />;
 }
 
-async function DashboardPulseBlock({
-  recentPublished,
-}: {
-  recentPublished: GoodNewsItem[];
-}) {
-  // Pulse only shows channel + event title — skip Meta/version preview enrichment.
-  const approvalQueue = await getApprovalQueueOverviewForCurrentUser(undefined, {
-    enrichPreviews: false,
-  });
-  return (
-    <TodayPulseSection
-      pendingApprovals={approvalQueue.assignedToMe}
-      totalPendingCount={approvalQueue.allPending.length}
-      recentPublished={recentPublished}
-    />
-  );
+async function DashboardAttentionBlock() {
+  const counts = await getTodayAttentionCounts();
+  return <TodayAttentionLinks counts={counts} />;
 }
 
 async function DashboardSnapshotBlock({
@@ -109,13 +95,9 @@ export default async function DashboardPage() {
   }
 
   // Critical path for usable UI (hero heading + What's Next).
-  // Weather, onboarding checklist, and approval pulse stream in after.
+  // Weather, onboarding checklist, and attention counts stream in after.
   const todayData = await getTodayPageData(organization);
-
   const today = getTodayDateString();
-  const recentPublished = todayData.goodNews.items.filter(
-    (item) => item.kind === "published",
-  );
 
   return (
     <div className="studio-page pb-12">
@@ -131,23 +113,12 @@ export default async function DashboardPage() {
             <Suspense fallback={null}>
               <DashboardOnboardingBlock />
             </Suspense>
-            <WhatsNextSectionSuspense whatsNext={todayData.whatsNext} />
-            <Suspense
-              fallback={
-                <TodayPulseSection
-                  pendingApprovals={[]}
-                  totalPendingCount={0}
-                  recentPublished={recentPublished}
-                />
-              }
-            >
-              <DashboardPulseBlock recentPublished={recentPublished} />
-            </Suspense>
-            <TodayCompanionSection
-              whatsNext={todayData.whatsNext}
-              waitingOnMe={todayData.waitingOnMe}
-              waitingOnOthers={todayData.waitingOnOthers}
-            />
+            <div className="flex flex-col gap-4">
+              <WhatsNextSectionSuspense whatsNext={todayData.whatsNext} />
+              <Suspense fallback={null}>
+                <DashboardAttentionBlock />
+              </Suspense>
+            </div>
           </div>
         </div>
 
@@ -169,11 +140,6 @@ export default async function DashboardPage() {
               monthEvents={todayData.monthEvents}
             />
           </Suspense>
-          {todayData.goodNews.fallbackMessage && recentPublished.length === 0 && (
-            <p className="text-sm leading-relaxed text-cos-muted">
-              {todayData.goodNews.fallbackMessage}
-            </p>
-          )}
         </div>
       </div>
     </div>
