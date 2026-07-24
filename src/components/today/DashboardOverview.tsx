@@ -252,21 +252,51 @@ export function DashboardOverview({
         onDragCancel={handleDragCancel}
       >
         {/*
-          Board grid (lg):
-          [ greeting ] [ Weather ]
-          [ Add/Edit + Up Next… ] [ Calendar… ]
-          So Weather lines up with Good morning, and Up Next with Calendar.
+          Two independent columns (not a 2×2 row grid):
+          Left stacks greeting → Add/Edit → Up Next…
+          Right stacks Weather → Calendar…
+          So a tall Weather card cannot open a blank gap under the greeting.
         */}
         <div
           className={cn(
-            "grid grid-cols-1 gap-x-6 gap-y-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start",
+            "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-x-6",
             activeId && "select-none",
           )}
         >
-          <div className="min-w-0">{header}</div>
+          <div className="min-w-0 space-y-4">
+            {header}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {overviewActions}
+              </div>
+              {editing ? (
+                <p className="text-sm text-cos-muted">
+                  Remove tiles, change card colors (palette), then tap Done.
+                  Drag the grip to rearrange — Weather, Up Next, and Calendar
+                  stay fixed in look.
+                </p>
+              ) : null}
+              <WidgetRegion
+                region="main"
+                ids={mainIds}
+                widgets={widgets}
+                layout={displayLayout}
+                editing={editing}
+                onRemove={(id) =>
+                  updateDraft((current) => removeDashboardWidget(current, id))
+                }
+                onColorChange={(id, color) =>
+                  updateDraft((current) =>
+                    setDashboardWidgetColor(current, id, color),
+                  )
+                }
+                emptyLabel="No main widgets. Use Add to bring some back."
+              />
+            </div>
+          </div>
 
-          {hasPinnedWeather ? (
-            <div className="lg:sticky lg:top-4 lg:z-20">
+          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:z-20">
+            {hasPinnedWeather ? (
               <PinnedWeatherFrame
                 editing={editing}
                 onRemove={() =>
@@ -277,41 +307,7 @@ export function DashboardOverview({
               >
                 {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
               </PinnedWeatherFrame>
-            </div>
-          ) : (
-            <div className="hidden lg:block" aria-hidden />
-          )}
-
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {overviewActions}
-            </div>
-            {editing ? (
-              <p className="text-sm text-cos-muted">
-                Remove tiles, change card colors (palette), then tap Done. Drag
-                the grip to rearrange — Weather, Up Next, and Calendar stay
-                fixed in look.
-              </p>
             ) : null}
-            <WidgetRegion
-              region="main"
-              ids={mainIds}
-              widgets={widgets}
-              layout={displayLayout}
-              editing={editing}
-              onRemove={(id) =>
-                updateDraft((current) => removeDashboardWidget(current, id))
-              }
-              onColorChange={(id, color) =>
-                updateDraft((current) =>
-                  setDashboardWidgetColor(current, id, color),
-                )
-              }
-              emptyLabel="No main widgets. Use Add to bring some back."
-            />
-          </div>
-
-          <aside className="flex w-full flex-col gap-4">
             <WidgetRegion
               region="rail"
               ids={railIds}
@@ -600,6 +596,10 @@ function SortableWidgetFrame({
         className={cn(
           "h-full",
           uniform && "flex flex-col [&>*]:h-full [&>*]:min-h-0",
+          // Colored cards: one outer radius clips the fill so cream ring/shadow
+          // from the inner section cannot show as square “ghost” edges.
+          tone &&
+            "overflow-hidden rounded-2xl shadow-[0_2px_4px_rgba(42,38,34,0.08),0_10px_22px_rgba(42,38,34,0.12)] [&>section]:rounded-none [&>section]:bg-transparent [&>section]:shadow-none [&>section]:ring-0",
           editing && "rounded-2xl ring-2 ring-cos-brand-sage/25",
         )}
         style={tone?.style}
