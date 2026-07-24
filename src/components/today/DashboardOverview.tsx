@@ -181,63 +181,51 @@ export function DashboardOverview({
     ? (getDashboardWidgetDefinition(activeId)?.label ?? activeId)
     : null;
 
+  const overviewActions = editing ? (
+    <>
+      <button
+        type="button"
+        onClick={cancelEdit}
+        disabled={isPending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={doneEdit}
+        disabled={isPending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-text px-3 text-sm font-medium text-cos-card transition-colors hover:opacity-90 disabled:opacity-50"
+      >
+        <Check className="h-3.5 w-3.5" aria-hidden />
+        {isPending ? "Saving…" : "Done"}
+      </button>
+    </>
+  ) : (
+    <>
+      <button
+        type="button"
+        onClick={() => setAddOpen(true)}
+        disabled={isPending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden />
+        Add
+      </button>
+      <button
+        type="button"
+        onClick={enterEdit}
+        disabled={isPending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
+      >
+        <Pencil className="h-3.5 w-3.5" aria-hidden />
+        Edit
+      </button>
+    </>
+  );
+
   return (
     <section className={cn("space-y-4", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-cos-text">Your overview</h2>
-        <div className="flex items-center gap-2">
-          {editing ? (
-            <>
-              <button
-                type="button"
-                onClick={cancelEdit}
-                disabled={isPending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={doneEdit}
-                disabled={isPending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-text px-3 text-sm font-medium text-cos-card transition-colors hover:opacity-90 disabled:opacity-50"
-              >
-                <Check className="h-3.5 w-3.5" aria-hidden />
-                {isPending ? "Saving…" : "Done"}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                disabled={isPending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={enterEdit}
-                disabled={isPending}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg disabled:opacity-50"
-              >
-                <Pencil className="h-3.5 w-3.5" aria-hidden />
-                Edit
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {editing ? (
-        <p className="text-sm text-cos-muted">
-          Remove tiles you don&apos;t need, then tap Done. Drag the grip to
-          rearrange — Weather stays pinned top right.
-        </p>
-      ) : null}
-
       {error ? (
         <p className="text-sm text-cos-error" role="alert">
           {error}
@@ -251,13 +239,31 @@ export function DashboardOverview({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
+        {/*
+          Two-column board from the top: header + main tiles on the left,
+          Weather pinned in the true top-right corner of the overview.
+        */}
         <div
           className={cn(
-            "flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-x-6",
+            "flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-x-6",
             activeId && "select-none",
           )}
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold text-cos-text">
+                Your overview
+              </h2>
+              <div className="flex items-center gap-2">{overviewActions}</div>
+            </div>
+
+            {editing ? (
+              <p className="text-sm text-cos-muted">
+                Remove tiles you don&apos;t need, then tap Done. Drag the grip
+                to rearrange — Weather stays pinned top right.
+              </p>
+            ) : null}
+
             <WidgetRegion
               region="main"
               ids={mainIds}
@@ -269,27 +275,19 @@ export function DashboardOverview({
               emptyLabel="No main widgets. Use Add to bring some back."
             />
           </div>
-          <aside className="flex w-full flex-col gap-4 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
+
+          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:z-20 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
             {hasPinnedWeather ? (
-              <div
-                className={cn(
-                  "lg:sticky lg:top-4 lg:z-20",
-                  "lg:-mx-1 lg:bg-cos-bg lg:px-1 lg:pb-1",
-                )}
+              <PinnedWeatherFrame
+                editing={editing}
+                onRemove={() =>
+                  updateDraft((current) =>
+                    removeDashboardWidget(current, "weather"),
+                  )
+                }
               >
-                <PinnedWeatherFrame
-                  editing={editing}
-                  onRemove={() =>
-                    updateDraft((current) =>
-                      removeDashboardWidget(current, "weather"),
-                    )
-                  }
-                >
-                  {widgets.weather ?? (
-                    <WidgetLoadingPlaceholder id="weather" />
-                  )}
-                </PinnedWeatherFrame>
-              </div>
+                {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
+              </PinnedWeatherFrame>
             ) : null}
 
             <WidgetRegion

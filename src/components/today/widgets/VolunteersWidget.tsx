@@ -26,9 +26,10 @@ export function VolunteersWidget({ items }: VolunteersWidgetProps) {
                   href={`/events/${event.id}?tab=volunteers`}
                   className="flex items-start gap-3 rounded-xl transition-colors hover:bg-cos-card/70"
                 >
-                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cos-card text-cos-muted ring-1 ring-black/[0.04]">
-                    <Users className="h-3.5 w-3.5" aria-hidden />
-                  </span>
+                  <EventArtworkThumb
+                    title={event.title}
+                    artworkUrl={event.artworkUrl}
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-cos-text">
                       {event.title}
@@ -53,6 +54,38 @@ export function VolunteersWidget({ items }: VolunteersWidgetProps) {
         </div>
       )}
     </DashboardWidgetCard>
+  );
+}
+
+function EventArtworkThumb({
+  title,
+  artworkUrl,
+}: {
+  title: string;
+  artworkUrl: string | null;
+}) {
+  if (artworkUrl) {
+    return (
+      <span className="mt-0.5 relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-cos-card ring-1 ring-black/[0.06]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={artworkUrl}
+          alt=""
+          className="h-full w-full object-cover object-center"
+          loading="lazy"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cos-card text-cos-muted ring-1 ring-black/[0.04]"
+      aria-hidden
+      title={title}
+    >
+      <Users className="h-3.5 w-3.5" />
+    </span>
   );
 }
 
