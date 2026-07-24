@@ -1,21 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Plus,
-  X,
-} from "lucide-react";
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Check, GripVertical, Pencil, Plus, X } from "lucide-react";
 import { DashboardAddWidgetsModal } from "@/components/today/DashboardAddWidgetsModal";
 import { saveDashboardLayoutAction } from "@/lib/today/dashboard-layout-actions";
 import {
   applyDashboardWidgetSelection,
   getDashboardWidgetDefinition,
-  moveDashboardWidget,
+  placeDashboardWidget,
   removeDashboardWidget,
   type DashboardLayout,
   type DashboardWidgetId,
@@ -45,7 +57,17 @@ export function DashboardOverview({
   const [draft, setDraft] = useState<DashboardLayout | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<DashboardWidgetId | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   useEffect(() => {
     if (editing || addOpen) return;
@@ -54,28 +76,33 @@ export function DashboardOverview({
   }, [initialLayout, editing, addOpen]);
 
   const displayLayout = draft ?? layout;
+  const mainIds = displayLayout.main;
+  const railIds = useMemo(
+    () => pinWeatherFirst(displayLayout.rail),
+    [displayLayout.rail],
+  );
 
   function persist(next: DashboardLayout) {
     const previous = layoutRef.current;
-    layoutRef.current = next;
-    setLayout(next);
+    const normalized = pinWeatherInLayout(next);
+    layoutRef.current = normalized;
+    setLayout(normalized);
     setError(null);
     startTransition(async () => {
-      const result = await saveDashboardLayoutAction(next);
+      const result = await saveDashboardLayoutAction(normalized);
       if (!result.success) {
         layoutRef.current = previous;
         setLayout(previous);
         setError(result.error ?? "Could not save dashboard layout.");
         return;
       }
-      // Pull server widgets for newly added Phase 3 cards (e.g. Insights).
       router.refresh();
     });
   }
 
   function enterEdit() {
     setAddOpen(false);
-    setDraft(layout);
+    setDraft(pinWeatherInLayout(layout));
     setEditing(true);
     setError(null);
   }
@@ -83,6 +110,7 @@ export function DashboardOverview({
   function cancelEdit() {
     setDraft(null);
     setEditing(false);
+    setActiveId(null);
   }
 
   function doneEdit() {
@@ -91,12 +119,13 @@ export function DashboardOverview({
     }
     setDraft(null);
     setEditing(false);
+    setActiveId(null);
   }
 
   function updateDraft(
     updater: (current: DashboardLayout) => DashboardLayout,
   ) {
-    setDraft((current) => updater(current ?? layout));
+    setDraft((current) => pinWeatherInLayout(updater(current ?? layout)));
   }
 
   function handleApplyAdd(selectedIds: DashboardWidgetId[]) {
@@ -104,6 +133,32 @@ export function DashboardOverview({
     setAddOpen(false);
     persist(next);
   }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as DashboardWidgetId);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    const activeWidgetId = active.id as DashboardWidgetId;
+    const overWidgetId = over.id as DashboardWidgetId;
+    if (activeWidgetId === "weather") return;
+
+    updateDraft((current) =>
+      placeDashboardWidget(current, activeWidgetId, overWidgetId),
+    );
+  }
+
+  function handleDragCancel() {
+    setActiveId(null);
+  }
+
+  const activeLabel = activeId
+    ? (getDashboardWidgetDefinition(activeId)?.label ?? activeId)
+    : null;
 
   return (
     <section className={cn("space-y-4", className)}>
@@ -157,7 +212,8 @@ export function DashboardOverview({
 
       {editing ? (
         <p className="text-sm text-cos-muted">
-          Reorder or remove widgets, then tap Done to save.
+          Drag tiles to rearrange, remove ones you don&apos;t need, then tap
+          Done to save. Weather stays pinned at the top right.
         </p>
       ) : null}
 
@@ -167,43 +223,49 @@ export function DashboardOverview({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-x-6">
-        <div className="min-w-0 flex-1">
-          <WidgetRegion
-            region="main"
-            ids={displayLayout.main}
-            widgets={widgets}
-            editing={editing}
-            onRemove={(id) =>
-              updateDraft((current) => removeDashboardWidget(current, id))
-            }
-            onMove={(id, direction) =>
-              updateDraft((current) =>
-                moveDashboardWidget(current, "main", id, direction),
-              )
-            }
-            emptyLabel="No main widgets. Use Add to bring some back."
-          />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-x-6">
+          <div className="min-w-0 flex-1">
+            <WidgetRegion
+              region="main"
+              ids={mainIds}
+              widgets={widgets}
+              editing={editing}
+              onRemove={(id) =>
+                updateDraft((current) => removeDashboardWidget(current, id))
+              }
+              emptyLabel="No main widgets. Use Add to bring some back."
+            />
+          </div>
+          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
+            <WidgetRegion
+              region="rail"
+              ids={railIds}
+              widgets={widgets}
+              editing={editing}
+              stacked
+              onRemove={(id) =>
+                updateDraft((current) => removeDashboardWidget(current, id))
+              }
+              emptyLabel="No rail widgets. Use Add to bring some back."
+            />
+          </aside>
         </div>
-        <aside className="flex w-full flex-col gap-4 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)]">
-          <WidgetRegion
-            region="rail"
-            ids={displayLayout.rail}
-            widgets={widgets}
-            editing={editing}
-            stacked
-            onRemove={(id) =>
-              updateDraft((current) => removeDashboardWidget(current, id))
-            }
-            onMove={(id, direction) =>
-              updateDraft((current) =>
-                moveDashboardWidget(current, "rail", id, direction),
-              )
-            }
-            emptyLabel="No rail widgets. Use Add to bring some back."
-          />
-        </aside>
-      </div>
+
+        <DragOverlay dropAnimation={null}>
+          {activeLabel ? (
+            <div className="rounded-2xl border border-cos-brand-sage/40 bg-cos-bg-alt px-4 py-3 text-sm font-semibold text-cos-text shadow-lg ring-1 ring-black/[0.06]">
+              {activeLabel}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <DashboardAddWidgetsModal
         open={addOpen}
@@ -223,7 +285,6 @@ function WidgetRegion({
   editing,
   stacked = false,
   onRemove,
-  onMove,
   emptyLabel,
 }: {
   region: DashboardWidgetRegion;
@@ -232,7 +293,6 @@ function WidgetRegion({
   editing: boolean;
   stacked?: boolean;
   onRemove: (id: DashboardWidgetId) => void;
-  onMove: (id: DashboardWidgetId, direction: -1 | 1) => void;
   emptyLabel: string;
 }) {
   if (ids.length === 0) {
@@ -249,27 +309,41 @@ function WidgetRegion({
   }
 
   return (
-    <div
-      className={cn(
-        stacked ? "flex flex-col gap-4" : "grid gap-4 sm:grid-cols-2",
-      )}
+    <SortableContext
+      items={ids}
+      strategy={stacked ? verticalListSortingStrategy : rectSortingStrategy}
     >
-      {ids.map((id, index) => (
-        <EditableWidgetFrame
-          key={`${region}-${id}`}
-          id={id}
-          editing={editing}
-          canMoveUp={index > 0}
-          canMoveDown={index < ids.length - 1}
-          onRemove={() => onRemove(id)}
-          onMoveUp={() => onMove(id, -1)}
-          onMoveDown={() => onMove(id, 1)}
-        >
-          {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
-        </EditableWidgetFrame>
-      ))}
-    </div>
+      <div
+        className={cn(
+          stacked ? "flex flex-col gap-4" : "grid gap-4 sm:grid-cols-2",
+        )}
+      >
+        {ids.map((id) => (
+          <SortableWidgetFrame
+            key={`${region}-${id}`}
+            id={id}
+            editing={editing}
+            className={id === "up_next" && !stacked ? "sm:col-span-2" : undefined}
+            onRemove={() => onRemove(id)}
+          >
+            {widgets[id] ?? <WidgetLoadingPlaceholder id={id} />}
+          </SortableWidgetFrame>
+        ))}
+      </div>
+    </SortableContext>
   );
+}
+
+function pinWeatherFirst(ids: DashboardWidgetId[]): DashboardWidgetId[] {
+  if (!ids.includes("weather")) return ids;
+  return ["weather", ...ids.filter((id) => id !== "weather")];
+}
+
+function pinWeatherInLayout(layout: DashboardLayout): DashboardLayout {
+  return {
+    ...layout,
+    rail: pinWeatherFirst(layout.rail),
+  };
 }
 
 function WidgetLoadingPlaceholder({ id }: { id: DashboardWidgetId }) {
@@ -281,49 +355,64 @@ function WidgetLoadingPlaceholder({ id }: { id: DashboardWidgetId }) {
   );
 }
 
-function EditableWidgetFrame({
+function SortableWidgetFrame({
   id,
   editing,
-  canMoveUp,
-  canMoveDown,
   onRemove,
-  onMoveUp,
-  onMoveDown,
   children,
+  className,
 }: {
   id: DashboardWidgetId;
   editing: boolean;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
   onRemove: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   const label = getDashboardWidgetDefinition(id)?.label ?? id;
+  const weatherPinned = id === "weather";
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id,
+    disabled: !editing || weatherPinned,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
-    <div className="space-y-2">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "space-y-2",
+        className,
+        isDragging && "z-20 opacity-40",
+      )}
+    >
       {editing ? (
         <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={!canMoveUp}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text disabled:opacity-30"
-            aria-label={`Move ${label} up`}
-          >
-            <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={!canMoveDown}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted transition-colors hover:text-cos-text disabled:opacity-30"
-            aria-label={`Move ${label} down`}
-          >
-            <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-          </button>
+          {weatherPinned ? (
+            <span className="mr-1 text-[11px] text-cos-muted">Pinned</span>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex h-7 items-center gap-1 rounded-lg border border-cos-border bg-cos-card px-2 text-cos-muted transition-colors hover:text-cos-text"
+              aria-label={`Drag to move ${label}`}
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-3.5 w-3.5" aria-hidden />
+              <span className="text-[11px] font-medium">Drag</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onRemove}

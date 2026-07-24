@@ -52,9 +52,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Dashboard (Today)
 - **Your overview** board: greeting + header · 2-col main (**Up Next**, **Attention**, **Waiting on me**, **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
-- **Add** / **Edit**: checkbox catalog + remove/reorder; Done/Apply saves optimistically — **shipped**
+- **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
+- **Drag-and-drop** tile rearrange in Edit mode (main grid + rail; Weather pinned) — **shipped**
 - Optional richer widgets (off by default): **Approvals** (assigned to me), **Tasks this week**, **Volunteers** (underfilled events), **Insights** (7d KPI pulse) — **shipped**
-- Compact **Up Next** widget (1:1 artwork + Schedule CTA) — **shipped**
+- **Up Next** hero widget (full-width main span, large 1:1 artwork + Schedule CTA) · **Weather** pinned sticky at top of right rail — **shipped**
 - **Attention** metric rows: to review → Approvals · need volunteers → Volunteers · tasks this week → Tasks My View — **shipped**
 - Live weather from org Weather ZIP preferred, then city/state + `WEATHER_API_KEY`; mini calendar school events for the month; This Week school **events** only — **shipped**
 - Approvals/published pulse cards + waiting-on companion lists on home (pre-overview) — **removed**

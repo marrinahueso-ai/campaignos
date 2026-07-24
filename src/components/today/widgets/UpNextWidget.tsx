@@ -22,12 +22,22 @@ export function UpNextWidget({
   const showArtwork = hasDisplayableArtwork(artwork);
   const imageUrl = showArtwork ? artwork!.imageUrl : null;
   const ctaLabel = whatsNext.ctaLabel ?? "Open campaign";
-  const metaLine = [display.due, organizationName].filter(Boolean).join(" · ");
+  const metaLine = [
+    display.due,
+    display.action,
+    organizationName,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <DashboardWidgetCard icon={CalendarDays} title="Up Next">
-      <div className="flex h-full flex-col gap-4">
-        <div className="relative mx-auto aspect-square w-full max-w-[11rem] overflow-hidden rounded-xl bg-cos-card ring-1 ring-black/[0.04]">
+    <DashboardWidgetCard
+      icon={CalendarDays}
+      title="Up Next"
+      className="overflow-hidden"
+    >
+      <div className="flex h-full flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-6">
+        <div className="relative mx-auto aspect-square w-full max-w-[18rem] shrink-0 overflow-hidden rounded-2xl bg-cos-card shadow-[0_12px_28px_rgba(42,38,34,0.14)] ring-1 ring-black/[0.06] sm:mx-0 sm:max-w-none sm:basis-[min(100%,17.5rem)]">
           {imageUrl ? (
             isOptimizableImageUrl(imageUrl) ? (
               <Image
@@ -35,7 +45,7 @@ export function UpNextWidget({
                 alt=""
                 fill
                 priority
-                sizes="11rem"
+                sizes="(max-width: 640px) 18rem, 17.5rem"
                 className="object-cover object-center"
               />
             ) : (
@@ -47,34 +57,34 @@ export function UpNextWidget({
               />
             )
           ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-br from-cos-brand-navy via-[#243352] to-cos-brand-sage px-4 text-center">
-              <p className="font-display text-lg leading-snug text-white">
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-cos-brand-navy via-[#243352] to-cos-brand-sage px-6 text-center">
+              <p className="font-display text-2xl leading-snug text-white sm:text-3xl">
                 {eventTitle}
               </p>
             </div>
           )}
         </div>
 
-        <div className="space-y-1 text-center sm:text-left">
-          <p className="font-display text-xl leading-snug text-cos-text">
-            {eventTitle}
-          </p>
-          {metaLine ? (
-            <p className="text-xs text-cos-muted">{metaLine}</p>
-          ) : display.action ? (
-            <p className="text-xs text-cos-muted">{display.action}</p>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-4 text-center sm:text-left">
+          <div className="space-y-2">
+            <p className="font-display text-2xl leading-tight text-cos-text sm:text-3xl">
+              {eventTitle}
+            </p>
+            {metaLine ? (
+              <p className="text-sm leading-relaxed text-cos-muted">{metaLine}</p>
+            ) : null}
+          </div>
+
+          {whatsNext.href ? (
+            <Link
+              href={whatsNext.href}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cos-dark px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 sm:mt-auto sm:w-auto sm:self-start sm:px-6"
+            >
+              <CalendarDays className="h-4 w-4" aria-hidden />
+              {ctaLabel}
+            </Link>
           ) : null}
         </div>
-
-        {whatsNext.href ? (
-          <Link
-            href={whatsNext.href}
-            className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cos-dark px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-            {ctaLabel}
-          </Link>
-        ) : null}
       </div>
     </DashboardWidgetCard>
   );

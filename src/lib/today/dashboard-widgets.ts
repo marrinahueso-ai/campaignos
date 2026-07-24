@@ -192,6 +192,122 @@ export function defaultRegionForWidget(
   return region === "both" ? "main" : region;
 }
 
+export function canPlaceDashboardWidgetInRegion(
+  id: DashboardWidgetId,
+  region: DashboardWidgetRegion,
+): boolean {
+  const allowed = getDashboardWidgetDefinition(id)?.region ?? "main";
+  return allowed === "both" || allowed === region;
+}
+
+function arrayMoveIds(
+  list: DashboardWidgetId[],
+  fromIndex: number,
+  toIndex: number,
+): DashboardWidgetId[] {
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex === toIndex ||
+    fromIndex >= list.length ||
+    toIndex >= list.length
+  ) {
+    return list;
+  }
+  const next = [...list];
+  const [item] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, item!);
+  return next;
+}
+
+/** Reorder or move a widget across main/rail (Weather stays pinned atop rail). */
+export function placeDashboardWidget(
+  layout: DashboardLayout,
+  activeId: DashboardWidgetId,
+  overId: DashboardWidgetId,
+): DashboardLayout {
+  if (activeId === overId || activeId === "weather") {
+    return layout;
+  }
+
+  const sourceRegion: DashboardWidgetRegion | null = layout.main.includes(
+    activeId,
+  )
+    ? "main"
+    : layout.rail.includes(activeId)
+      ? "rail"
+      : null;
+  const targetRegion: DashboardWidgetRegion | null = layout.main.includes(overId)
+    ? "main"
+    : layout.rail.includes(overId)
+      ? "rail"
+      : null;
+
+  if (!sourceRegion || !targetRegion) return layout;
+  if (!canPlaceDashboardWidgetInRegion(activeId, targetRegion)) {
+    return layout;
+  }
+
+  if (sourceRegion === targetRegion) {
+    if (sourceRegion === "main") {
+      return {
+        version: 1,
+        main: arrayMoveIds(
+          layout.main,
+          layout.main.indexOf(activeId),
+          layout.main.indexOf(overId),
+        ),
+        rail: layout.rail,
+      };
+    }
+
+    // Rail: Weather stays index 0; reorder only among the rest.
+    if (overId === "weather") return layout;
+    const hasWeather = layout.rail.includes("weather");
+    const movable = layout.rail.filter((id) => id !== "weather");
+    const moved = arrayMoveIds(
+      movable,
+      movable.indexOf(activeId),
+      movable.indexOf(overId),
+    );
+    return {
+      version: 1,
+      main: layout.main,
+      rail: hasWeather ? ["weather", ...moved] : moved,
+    };
+  }
+
+  // Cross-region move.
+  const nextMain = layout.main.filter((id) => id !== activeId);
+  const nextRail = layout.rail.filter((id) => id !== activeId);
+
+  if (targetRegion === "main") {
+    const insertAt = nextMain.indexOf(overId);
+    nextMain.splice(insertAt < 0 ? nextMain.length : insertAt, 0, activeId);
+    return {
+      version: 1,
+      main: nextMain,
+      rail: nextRail.includes("weather")
+        ? ["weather", ...nextRail.filter((id) => id !== "weather")]
+        : nextRail,
+    };
+  }
+
+  const hasWeather = layout.rail.includes("weather") || overId === "weather";
+  const movable = nextRail.filter((id) => id !== "weather");
+  if (overId === "weather") {
+    movable.unshift(activeId);
+  } else {
+    const insertAt = movable.indexOf(overId);
+    movable.splice(insertAt < 0 ? movable.length : insertAt, 0, activeId);
+  }
+  return {
+    version: 1,
+    main: nextMain,
+    rail: hasWeather ? ["weather", ...movable] : movable,
+  };
+}
+
 export function layoutContainsWidget(
   layout: DashboardLayout,
   id: DashboardWidgetId,
