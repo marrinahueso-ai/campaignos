@@ -240,30 +240,50 @@ export function DashboardOverview({
         onDragCancel={handleDragCancel}
       >
         {/*
-          Two-column board from the top: header + main tiles on the left,
-          Weather pinned in the true top-right corner of the overview.
+          Board grid:
+          [ header + actions ] [ Weather pin ]
+          [ Up Next / tiles  ] [ Calendar…  ]
+          So Up Next and Calendar share the same top edge.
         */}
         <div
           className={cn(
-            "flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-x-6",
+            "grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-x-6",
             activeId && "select-none",
           )}
         >
-          <div className="min-w-0 flex-1 space-y-4">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold text-cos-text">
                 Your overview
               </h2>
               <div className="flex items-center gap-2">{overviewActions}</div>
             </div>
-
             {editing ? (
               <p className="text-sm text-cos-muted">
                 Remove tiles you don&apos;t need, then tap Done. Drag the grip
                 to rearrange — Weather stays pinned top right.
               </p>
             ) : null}
+          </div>
 
+          {hasPinnedWeather ? (
+            <div className="lg:sticky lg:top-4 lg:z-20">
+              <PinnedWeatherFrame
+                editing={editing}
+                onRemove={() =>
+                  updateDraft((current) =>
+                    removeDashboardWidget(current, "weather"),
+                  )
+                }
+              >
+                {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
+              </PinnedWeatherFrame>
+            </div>
+          ) : (
+            <div className="hidden lg:block" aria-hidden />
+          )}
+
+          <div className="min-w-0">
             <WidgetRegion
               region="main"
               ids={mainIds}
@@ -276,27 +296,14 @@ export function DashboardOverview({
             />
           </div>
 
-          <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4 lg:z-20 lg:max-w-sm lg:flex-none lg:basis-[min(100%,20rem)] lg:self-start">
-            {hasPinnedWeather ? (
-              <PinnedWeatherFrame
-                editing={editing}
-                onRemove={() =>
-                  updateDraft((current) =>
-                    removeDashboardWidget(current, "weather"),
-                  )
-                }
-              >
-                {widgets.weather ?? <WidgetLoadingPlaceholder id="weather" />}
-              </PinnedWeatherFrame>
-            ) : null}
-
+          <aside className="flex w-full flex-col gap-4">
             <WidgetRegion
               region="rail"
               ids={railIds}
               widgets={widgets}
               editing={editing}
               stacked
-              hideEmpty={hasPinnedWeather}
+              hideEmpty={false}
               onRemove={(id) =>
                 updateDraft((current) => removeDashboardWidget(current, id))
               }

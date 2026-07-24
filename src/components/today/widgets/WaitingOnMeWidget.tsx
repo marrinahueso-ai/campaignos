@@ -28,9 +28,11 @@ export function WaitingOnMeWidget({ items }: WaitingOnMeWidgetProps) {
                     href={item.href}
                     className="flex items-start gap-3 rounded-xl transition-colors hover:bg-cos-card/70"
                   >
-                    <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cos-card text-cos-muted ring-1 ring-black/[0.04]">
-                      <Icon className="h-3.5 w-3.5" aria-hidden />
-                    </span>
+                    <ActionArtworkThumb
+                      title={item.eventTitle}
+                      artworkUrl={item.artworkUrl ?? null}
+                      FallbackIcon={Icon}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-cos-text">
                         {shortActionLabel(item.title)}
@@ -58,6 +60,37 @@ export function WaitingOnMeWidget({ items }: WaitingOnMeWidgetProps) {
         </div>
       )}
     </DashboardWidgetCard>
+  );
+}
+
+function ActionArtworkThumb({
+  title,
+  artworkUrl,
+  FallbackIcon,
+}: {
+  title: string;
+  artworkUrl: string | null;
+  FallbackIcon: typeof FileText;
+}) {
+  if (artworkUrl) {
+    return (
+      <span className="relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-cos-card ring-1 ring-black/[0.06]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={artworkUrl}
+          alt=""
+          className="h-full w-full object-cover object-center"
+          loading="lazy"
+        />
+        <span className="sr-only">{title}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cos-card text-cos-muted ring-1 ring-black/[0.04]">
+      <FallbackIcon className="h-3.5 w-3.5" aria-hidden />
+    </span>
   );
 }
 

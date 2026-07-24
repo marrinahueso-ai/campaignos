@@ -79,7 +79,7 @@ async function AttentionWidgetBlock() {
 
 async function WeatherWidgetBlock({ organization }: { organization: Organization }) {
   const weatherContext = await getTodayWeatherContext(organization);
-  return <WeatherWidget weather={weatherContext} />;
+  return <WeatherWidget weather={weatherContext} compact />;
 }
 
 async function ApprovalsWidgetBlock() {
@@ -123,7 +123,7 @@ function buildWidgetNodes(
     waiting_me: <WaitingOnMeWidget items={todayData.waitingOnMe} />,
     good_news: <GoodNewsWidget goodNews={todayData.goodNews} />,
     weather: (
-      <Suspense fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} />}>
+      <Suspense fallback={<WeatherWidget weather={WEATHER_PLACEHOLDER} compact />}>
         <WeatherWidgetBlock organization={organization} />
       </Suspense>
     ),

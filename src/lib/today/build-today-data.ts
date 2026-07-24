@@ -190,7 +190,11 @@ function stepCta(item: PlanningCalendarItem): string {
   return "Continue";
 }
 
-function toActionItem(item: PlanningCalendarItem, today: string): TodayActionItem {
+function toActionItem(
+  item: PlanningCalendarItem,
+  today: string,
+  artworkUrl: string | null = null,
+): TodayActionItem {
   return {
     id: item.id,
     eventId: item.eventId,
@@ -200,6 +204,7 @@ function toActionItem(item: PlanningCalendarItem, today: string): TodayActionIte
     isOverdue: item.scheduledDate < today,
     href: stepHref(item.eventId),
     ctaLabel: stepCta(item),
+    artworkUrl,
   };
 }
 

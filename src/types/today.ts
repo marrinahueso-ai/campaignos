@@ -18,6 +18,8 @@ export interface TodayActionItem {
   isOverdue: boolean;
   href: string;
   ctaLabel: string;
+  /** Event hero / approved-square artwork for dashboard list thumbs. */
+  artworkUrl?: string | null;
 }
 
 export interface TodayWaitingOnOthersItem {

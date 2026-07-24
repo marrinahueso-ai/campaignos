@@ -12,6 +12,8 @@ import { getCampaignIntelligenceForEventsFromRaw } from "@/lib/campaign-intellig
 import { getEventsInDateRange, getUpcomingEvents } from "@/lib/events/queries";
 import { isCampaignPageStrategy } from "@/lib/events/communication-strategy";
 import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
+import { hasDisplayableArtwork } from "@/lib/event-workspace/has-displayable-artwork";
 import { buildTodayPageData } from "@/lib/today/build-today-data";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 import { addDaysToDateOnly, getTodayDateString } from "@/lib/utils/dates";
@@ -164,7 +166,7 @@ export async function getTodayPageData(
     isCampaignPageStrategy(event.communicationStrategy),
   );
 
-  return buildTodayPageData({
+  const pageData = buildTodayPageData({
     today,
     firstName,
     planningItems,
@@ -176,4 +178,24 @@ export async function getTodayPageData(
     intelligenceByEventId,
     memoryHintsByEventId,
   });
+
+  const waitingEventIds = [
+    ...new Set(pageData.waitingOnMe.map((item) => item.eventId)),
+  ];
+  if (waitingEventIds.length === 0) {
+    return pageData;
+  }
+
+  const artworkMap = await getEventArtworkMap(waitingEventIds);
+  return {
+    ...pageData,
+    waitingOnMe: pageData.waitingOnMe.map((item) => {
+      const artwork = artworkMap.get(item.eventId) ?? null;
+      return {
+        ...item,
+        artworkUrl:
+          artwork && hasDisplayableArtwork(artwork) ? artwork.imageUrl : null,
+      };
+    }),
+  };
 }
