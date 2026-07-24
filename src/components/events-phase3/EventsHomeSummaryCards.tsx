@@ -22,7 +22,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { Check, GripVertical, Pencil } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
 import { saveEventsHomeLayoutAction } from "@/lib/events/events-home-layout-actions";
 import {
@@ -57,6 +57,7 @@ export function EventsHomeSummaryCards({
 }: EventsHomeSummaryCardsProps) {
   const [layout, setLayout] = useState(initialLayout);
   const layoutRef = useRef(initialLayout);
+  const [editing, setEditing] = useState(false);
   const [activeId, setActiveId] = useState<EventsHomeSummaryKey | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,13 +97,14 @@ export function EventsHomeSummaryCards({
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (!editing) return;
     setActiveId(event.active.id as EventsHomeSummaryKey);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setActiveId(null);
-    if (!over || active.id === over.id) return;
+    if (!editing || !over || active.id === over.id) return;
 
     const activeKey = active.id as EventsHomeSummaryKey;
     const overKey = over.id as EventsHomeSummaryKey;
@@ -119,11 +121,40 @@ export function EventsHomeSummaryCards({
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center justify-end gap-2">
+        {editing ? (
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-text px-3 text-sm font-medium text-cos-card transition-colors hover:opacity-90"
+          >
+            <Check className="h-3.5 w-3.5" aria-hidden />
+            Done
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-cos-border bg-cos-card px-3 text-sm font-medium text-cos-text transition-colors hover:bg-cos-bg"
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
+            Edit cards
+          </button>
+        )}
+      </div>
+
       {error ? (
         <p className="text-sm text-cos-error" role="alert">
           {error}
         </p>
       ) : null}
+
+      {editing ? (
+        <p className="text-xs text-cos-muted">
+          Drag to reorder · use the palette to color cards.
+        </p>
+      ) : null}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -149,6 +180,7 @@ export function EventsHomeSummaryCards({
                 count={counts[key]}
                 selected={selected === key}
                 color={layout.colors?.[key] ?? null}
+                editing={editing}
                 onSelect={() =>
                   onSelect(selected === key ? "all" : key)
                 }
@@ -183,6 +215,7 @@ function SortableSummaryCard({
   count,
   selected,
   color,
+  editing,
   onSelect,
   onColorChange,
 }: {
@@ -191,6 +224,7 @@ function SortableSummaryCard({
   count: number;
   selected: boolean;
   color: string | null;
+  editing: boolean;
   onSelect: () => void;
   onColorChange: (color: string | null) => void;
 }) {
@@ -203,6 +237,7 @@ function SortableSummaryCard({
     isDragging,
   } = useSortable({
     id,
+    disabled: !editing,
     animateLayoutChanges: () => false,
     transition: null,
   });
@@ -220,7 +255,7 @@ function SortableSummaryCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative min-h-[6rem] overflow-hidden rounded-2xl",
+        "relative min-h-[6rem] overflow-hidden rounded-2xl",
         isDragging && "z-20 opacity-0",
         !tone &&
           (selected
@@ -231,25 +266,28 @@ function SortableSummaryCard({
         tone &&
           selected &&
           "ring-2 ring-cos-dark ring-offset-2 ring-offset-[var(--cos-bg)]",
+        editing && "ring-1 ring-cos-brand-sage/35",
       )}
     >
-      <div className="absolute right-2 top-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        <DashboardWidgetColorPicker
-          label={label}
-          value={color}
-          onChange={onColorChange}
-        />
-        <button
-          type="button"
-          className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
-          aria-label={`Drag to reorder ${label}`}
-          title="Drag to reorder"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </div>
+      {editing ? (
+        <div className="absolute right-2 top-2 z-20 flex items-center gap-1">
+          <DashboardWidgetColorPicker
+            label={label}
+            value={color}
+            onChange={onColorChange}
+          />
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 cursor-grab items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text active:cursor-grabbing"
+            aria-label={`Drag to reorder ${label}`}
+            title="Drag to reorder"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
       <button
         type="button"
         onClick={onSelect}
