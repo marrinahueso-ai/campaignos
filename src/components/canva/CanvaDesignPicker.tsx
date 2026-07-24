@@ -66,8 +66,7 @@ export function CanvaDesignPicker({
               Choose from Canva
             </h3>
             <p className="mt-1 text-sm text-cos-muted">
-              Pick a design — we&apos;ll export it as PNG and add it as inspiration for this
-              artwork.
+              Pick a design — we&apos;ll export it as PNG and add it as inspiration.
             </p>
           </div>
           <button

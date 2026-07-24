@@ -101,7 +101,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
 - Logo in artwork — **shipped**
-- Canva import — **shipped** (config-dependent)
+- Canva import — **shipped** (config-dependent; Creative Setup Inspiration: **Import from Canva** → design picker → PNG stored as inspiration image; org Connect in Settings → Canva)
 - Legacy Creative Studio — **stub** / redirected away
 
 ## Captions, Meta & publishing

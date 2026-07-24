@@ -36,6 +36,13 @@ import {
 } from "@/lib/campaign-builder-v2/hero-sync";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { applyGenerationResultsToSession } from "@/lib/campaign-builder-v2/generation-session";
+import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
+import {
+  getCanvaConnectionForCurrentOrg,
+  getValidCanvaAccessToken,
+  isCanvaConnectionConfigured,
+} from "@/lib/canva/connection";
+import { exportCanvaDesignAsPngBytes } from "@/lib/canva/import-design";
 import { persistInspirationImages } from "@/lib/campaign-builder-v2/inspiration-storage";
 import { loadCampaignBuilderSession } from "@/lib/campaign-builder-v2/session-queries";
 import { saveCampaignBuilderSessionAction } from "@/lib/campaign-builder-v2/session";
@@ -825,6 +832,83 @@ export async function uploadInspirationImageAction(
     success: true,
     image: uploaded,
     message: "Inspiration image uploaded.",
+  };
+}
+
+/** Export a Canva design as PNG and store it as Creative Setup inspiration. */
+export async function importCanvaDesignAsCampaignInspirationAction(
+  eventId: string,
+  designId: string,
+  designTitle?: string | null,
+): Promise<{
+  success: boolean;
+  image?: InspirationImagePayload;
+  message: string;
+}> {
+  if (!(await hasPermission("upload_artwork"))) {
+    return {
+      success: false,
+      message: "You do not have permission to import artwork.",
+    };
+  }
+
+  const connection = await getCanvaConnectionForCurrentOrg();
+  if (!isCanvaConnectionConfigured(connection)) {
+    return {
+      success: false,
+      message: "Connect Canva in Settings first.",
+    };
+  }
+
+  const accessToken = await getValidCanvaAccessToken(connection);
+  if (!accessToken) {
+    return {
+      success: false,
+      message: "Canva session expired. Reconnect in Settings → Canva.",
+    };
+  }
+
+  const session = await loadCampaignBuilderSession(eventId);
+  const existingCount = session?.inspiration?.inspirationImages?.length ?? 0;
+  if (existingCount >= ARTWORK_V2_MAX_INSPIRATION_IMAGES) {
+    return {
+      success: false,
+      message: `You can attach up to ${ARTWORK_V2_MAX_INSPIRATION_IMAGES} inspiration images.`,
+    };
+  }
+
+  const labelBase = designTitle?.trim() || "Canva design";
+  const exported = await exportCanvaDesignAsPngBytes(accessToken, designId, {
+    width: 1080,
+    height: 1080,
+    filenameBase: labelBase,
+  });
+  if ("error" in exported) {
+    return { success: false, message: exported.error };
+  }
+
+  const dataUrl = `data:image/png;base64,${exported.bytes.toString("base64")}`;
+  const imageId = `inspiration-canva-${Date.now()}`;
+  const persisted = await persistInspirationImages(eventId, [
+    {
+      id: imageId,
+      label: `Canva: ${labelBase}`,
+      url: null,
+      dataUrl,
+    },
+  ]);
+
+  if (persisted.error || persisted.updatedImages.length === 0) {
+    return {
+      success: false,
+      message: persisted.error ?? "Could not store Canva inspiration image.",
+    };
+  }
+
+  return {
+    success: true,
+    image: persisted.updatedImages[0]!,
+    message: "Canva design added as inspiration.",
   };
 }
 

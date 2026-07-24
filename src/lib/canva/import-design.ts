@@ -20,16 +20,19 @@ function exportDimensionsForItem(item: ArtworkWorkflowItem): {
   return { width: 1080, height: 1080 };
 }
 
-export async function exportCanvaDesignAsPng(
+export async function exportCanvaDesignAsPngBytes(
   accessToken: string,
   designId: string,
-  item: ArtworkWorkflowItem,
+  options?: {
+    width?: number;
+    height?: number;
+    filenameBase?: string;
+  },
 ): Promise<{ bytes: Buffer; filename: string } | { error: string }> {
-  const exportJobId = await createCanvaPngExportJob(
-    accessToken,
-    designId,
-    exportDimensionsForItem(item),
-  );
+  const exportJobId = await createCanvaPngExportJob(accessToken, designId, {
+    width: options?.width ?? 1080,
+    height: options?.height ?? 1080,
+  });
 
   if (!exportJobId) {
     return { error: "Could not start Canva export." };
@@ -50,9 +53,23 @@ export async function exportCanvaDesignAsPng(
     return { error: "Could not download exported artwork from Canva." };
   }
 
-  const safeTitle = item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const safeTitle = (options?.filenameBase ?? "canva-artwork")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
   return {
     bytes,
     filename: `${safeTitle || "canva-artwork"}.png`,
   };
+}
+
+export async function exportCanvaDesignAsPng(
+  accessToken: string,
+  designId: string,
+  item: ArtworkWorkflowItem,
+): Promise<{ bytes: Buffer; filename: string } | { error: string }> {
+  return exportCanvaDesignAsPngBytes(accessToken, designId, {
+    ...exportDimensionsForItem(item),
+    filenameBase: item.label,
+  });
 }
