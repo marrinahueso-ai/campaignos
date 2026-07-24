@@ -59,7 +59,8 @@ async function syncMetaScheduleInBackground(input: {
         reportIntegrationError("meta", new Error(graphResult.warnings[0]!), {
           action: "reschedulePlanningItemAction.metaSync",
           eventId: input.eventId,
-          relativeDay: input.relativeDay,
+          milestoneId: String(input.relativeDay),
+          message: graphResult.warnings[0]!,
         });
       } catch {
         // Monitoring is best-effort.

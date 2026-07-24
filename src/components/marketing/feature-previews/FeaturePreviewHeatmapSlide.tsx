@@ -61,6 +61,8 @@ export function FeaturePreviewHeatmapSlide({
           postingHeatmap={previewPostingHeatmap}
           showPostingHeatmap={showPostingHeatmap}
           onSelectItem={() => {}}
+          onOptimisticReschedule={() => {}}
+          onRescheduleFailed={() => {}}
           onRescheduled={() => {}}
         />
       </div>

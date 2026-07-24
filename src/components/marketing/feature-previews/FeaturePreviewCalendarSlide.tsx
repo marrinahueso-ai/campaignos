@@ -49,6 +49,8 @@ export function FeaturePreviewCalendarSlide({
           year={2026}
           month={6}
           onSelectItem={() => {}}
+          onOptimisticReschedule={() => {}}
+          onRescheduleFailed={() => {}}
           onRescheduled={() => {}}
         />
       </div>
