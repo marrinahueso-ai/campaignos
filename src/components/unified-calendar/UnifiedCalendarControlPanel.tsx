@@ -175,16 +175,15 @@ export function UnifiedCalendarControlPanel({
             const active = activeLayers.has(layer.id);
             const resolved = layerColors[layer.id];
             return (
-              <button
+              // Sibling controls — never nest the color picker button inside the
+              // layer toggle (invalid HTML; clicks often never open the picker).
+              <div
                 key={layer.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => toggleLayer(layer.id)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                  "inline-flex items-center gap-1 rounded-full py-0.5 pl-1 pr-1 text-xs font-medium transition-colors",
                   active
                     ? "bg-cos-text text-cos-card"
-                    : "bg-cos-bg text-cos-muted hover:text-cos-text",
+                    : "bg-cos-bg text-cos-muted",
                 )}
               >
                 {onLayerColorChange ? (
@@ -197,13 +196,25 @@ export function UnifiedCalendarControlPanel({
                   />
                 ) : (
                   <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
+                    className="m-0.5 h-3.5 w-3.5 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] ring-1 ring-black/20"
                     style={{ backgroundColor: resolved }}
                     aria-hidden
                   />
                 )}
-                {layer.label}
-              </button>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleLayer(layer.id)}
+                  className={cn(
+                    "rounded-full px-2 py-1 transition-colors",
+                    active
+                      ? "text-cos-card hover:bg-white/10"
+                      : "hover:text-cos-text",
+                  )}
+                >
+                  {layer.label}
+                </button>
+              </div>
             );
           })}
 

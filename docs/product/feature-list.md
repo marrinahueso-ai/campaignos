@@ -135,7 +135,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Calendar
 - School-year calendar (month / week / agenda) — **shipped**
 - Layer toggles, detail panel — **shipped**
-- Show-layer color pickers (Events / Scheduled posts / Published): click the chip dot to set a color; calendar chips for that layer update to match; per-user via `organization_users.calendar_layout` — **shipped**
+- Show-layer color pickers (Events / Scheduled posts / Published): click the color swatch on each Show chip (not the label — label toggles visibility); calendar cards for that layer update to match; per-user via `organization_users.calendar_layout` — **shipped**
 - Drag-and-drop Meta posts: schedule-only (approval preserved); Graph reschedule when a native schedule id exists — **shipped** (QA: [meta-calendar-dnd.md](../qa/meta-calendar-dnd.md); not school-event import)
 - Posting heatmap (Calendar week view + planning suggestions; prefs + published Meta history; gated on org Meta connection) — **shipped**
 - Insights-weighted engagement heatmap — **deferred** (current scores use preferred windows + local publish times, not Meta Insights metrics)

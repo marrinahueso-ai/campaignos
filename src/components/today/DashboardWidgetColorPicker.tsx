@@ -178,19 +178,21 @@ export function DashboardWidgetColorPicker({
       <button
         type="button"
         onClick={(event) => {
+          event.preventDefault();
           event.stopPropagation();
           setOpen((prev) => !prev);
         }}
         className={cn(
           variant === "dot"
-            ? "h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10 transition-transform hover:scale-125"
+            ? // Larger hit target + dual ring so dark swatches stay visible on dark Show chips.
+              "m-0.5 h-3.5 w-3.5 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] ring-1 ring-black/25 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cos-brand-sage"
             : "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cos-border bg-cos-card text-cos-muted shadow-sm transition-colors hover:text-cos-text",
         )}
         style={variant === "dot" ? { backgroundColor: dotColor } : undefined}
-        aria-label={`Change color for ${label}`}
+        aria-label={`Change ${label} color (updates calendar cards)`}
         aria-expanded={open}
         aria-controls={panelId}
-        title={`${label} color`}
+        title={`Change ${label} color — updates calendar cards`}
       >
         {variant === "palette" ? (
           <Palette className="h-3.5 w-3.5" aria-hidden />
