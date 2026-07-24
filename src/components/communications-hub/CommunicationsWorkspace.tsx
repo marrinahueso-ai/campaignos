@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -141,6 +141,7 @@ interface CommunicationsWorkspaceProps {
   showBack?: boolean;
   onBack?: () => void;
   showAiPanel?: boolean;
+  onThreadPatch?: (threadId: string, patch: Partial<InboxThread>) => void;
   onArchived?: () => void;
   onMovedOutOfQueue?: () => void;
   className?: string;
@@ -154,6 +155,7 @@ export function CommunicationsWorkspace({
   showBack,
   onBack,
   showAiPanel = true,
+  onThreadPatch,
   onArchived,
   onMovedOutOfQueue,
   className,
@@ -161,31 +163,14 @@ export function CommunicationsWorkspace({
   const router = useRouter();
   const assignMenuId = useId();
   const [actionError, setActionError] = useState<string | null>(null);
-  const [isActing, startActionTransition] = useTransition();
   const [assignOpen, setAssignOpen] = useState(false);
-  const [localAssignee, setLocalAssignee] = useState<{
-    assignedUserId: string | null;
-    assigneeName: string | null;
-    assigneeInitials: string | null;
-  }>({
-    assignedUserId: thread?.assignedUserId ?? null,
-    assigneeName: thread?.assigneeName ?? null,
-    assigneeInitials: thread?.assigneeInitials ?? null,
-  });
+  const pendingActionRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setLocalAssignee({
-      assignedUserId: thread?.assignedUserId ?? null,
-      assigneeName: thread?.assigneeName ?? null,
-      assigneeInitials: thread?.assigneeInitials ?? null,
-    });
     setAssignOpen(false);
-  }, [
-    thread?.id,
-    thread?.assignedUserId,
-    thread?.assigneeName,
-    thread?.assigneeInitials,
-  ]);
+    setActionError(null);
+    pendingActionRef.current = null;
+  }, [thread?.id]);
 
   useEffect(() => {
     if (!assignOpen) {
@@ -206,15 +191,27 @@ export function CommunicationsWorkspace({
   const queueState = thread ? classifyThreadQueueState(thread, messages) : null;
   const isFollowUp = Boolean(thread?.followUp);
   const isDone = Boolean(queueState?.completed);
+  const localAssignee = {
+    assignedUserId: thread?.assignedUserId ?? null,
+    assigneeName: thread?.assigneeName ?? null,
+    assigneeInitials: thread?.assigneeInitials ?? null,
+  };
 
   function handleFollowUpToggle() {
-    if (!thread) {
+    if (!thread || pendingActionRef.current === "followUp") {
       return;
     }
+
+    const previous = thread.followUp;
+    const next = !previous;
+    pendingActionRef.current = "followUp";
     setActionError(null);
-    startActionTransition(async () => {
-      const result = await toggleInboxThreadFollowUpAction({ threadId: thread.id });
+    onThreadPatch?.(thread.id, { followUp: next });
+
+    void toggleInboxThreadFollowUpAction({ threadId: thread.id }).then((result) => {
+      pendingActionRef.current = null;
       if (!result.success) {
+        onThreadPatch?.(thread.id, { followUp: previous });
         setActionError(result.error ?? "Could not update follow-up.");
         return;
       }
@@ -223,25 +220,39 @@ export function CommunicationsWorkspace({
   }
 
   function handleDoneToggle() {
-    if (!thread) {
+    if (!thread || pendingActionRef.current === "done") {
       return;
     }
+
+    const previousMarkedDone = thread.markedDone;
+    const previousUnread = thread.unreadCount;
+    const nextMarkedDone = !previousMarkedDone;
+    pendingActionRef.current = "done";
     setActionError(null);
-    startActionTransition(async () => {
-      const result = await markInboxThreadDoneAction({ threadId: thread.id });
+    onThreadPatch?.(thread.id, {
+      markedDone: nextMarkedDone,
+      ...(nextMarkedDone ? { unreadCount: 0 } : {}),
+    });
+    if (nextMarkedDone) {
+      onMovedOutOfQueue?.();
+    }
+
+    void markInboxThreadDoneAction({ threadId: thread.id }).then((result) => {
+      pendingActionRef.current = null;
       if (!result.success) {
+        onThreadPatch?.(thread.id, {
+          markedDone: previousMarkedDone,
+          unreadCount: previousUnread,
+        });
         setActionError(result.error ?? "Could not update conversation.");
         return;
-      }
-      if (!thread.markedDone) {
-        onMovedOutOfQueue?.();
       }
       router.refresh();
     });
   }
 
   function handleDeleteToggle() {
-    if (!thread) {
+    if (!thread || pendingActionRef.current === "delete") {
       return;
     }
 
@@ -254,13 +265,34 @@ export function CommunicationsWorkspace({
       }
     }
 
+    const previousStatus = thread.status;
+    const previousMarkedDone = thread.markedDone;
+    const previousUnread = thread.unreadCount;
+    const nextStatus = isArchived ? "pending" : "archived";
+    pendingActionRef.current = "delete";
     setActionError(null);
-    startActionTransition(async () => {
-      const result = isArchived
-        ? await unarchiveInboxThreadAction({ threadId: thread.id })
-        : await archiveInboxThreadAction({ threadId: thread.id });
+    onThreadPatch?.(thread.id, {
+      status: nextStatus,
+      ...(nextStatus === "archived"
+        ? { unreadCount: 0, markedDone: false }
+        : { markedDone: false }),
+    });
+    if (!isArchived) {
+      onArchived?.();
+      onMovedOutOfQueue?.();
+    }
 
+    void (isArchived
+      ? unarchiveInboxThreadAction({ threadId: thread.id })
+      : archiveInboxThreadAction({ threadId: thread.id })
+    ).then((result) => {
+      pendingActionRef.current = null;
       if (!result.success) {
+        onThreadPatch?.(thread.id, {
+          status: previousStatus,
+          markedDone: previousMarkedDone,
+          unreadCount: previousUnread,
+        });
         setActionError(
           result.error ??
             (isArchived
@@ -269,23 +301,23 @@ export function CommunicationsWorkspace({
         );
         return;
       }
-
-      if (!isArchived) {
-        onArchived?.();
-        onMovedOutOfQueue?.();
-      }
       router.refresh();
     });
   }
 
   function handleAssign(assignedUserId: string | null) {
-    if (!thread) {
+    if (!thread || pendingActionRef.current === "assign") {
       return;
     }
 
     const member = assignedUserId
       ? orgMembers.find((entry) => entry.userId === assignedUserId)
       : null;
+    const previous = {
+      assignedUserId: thread.assignedUserId,
+      assigneeName: thread.assigneeName,
+      assigneeInitials: thread.assigneeInitials,
+    };
     const next = {
       assignedUserId,
       assigneeName: member?.displayName ?? null,
@@ -294,18 +326,16 @@ export function CommunicationsWorkspace({
 
     setAssignOpen(false);
     setActionError(null);
-    setLocalAssignee(next);
-    startActionTransition(async () => {
-      const result = await assignInboxThreadAction({
-        threadId: thread.id,
-        assignedUserId,
-      });
+    pendingActionRef.current = "assign";
+    onThreadPatch?.(thread.id, next);
+
+    void assignInboxThreadAction({
+      threadId: thread.id,
+      assignedUserId,
+    }).then((result) => {
+      pendingActionRef.current = null;
       if (!result.success) {
-        setLocalAssignee({
-          assignedUserId: thread.assignedUserId,
-          assigneeName: thread.assigneeName,
-          assigneeInitials: thread.assigneeInitials,
-        });
+        onThreadPatch?.(thread.id, previous);
         setActionError(result.error ?? "Could not update assignment.");
         return;
       }
@@ -373,7 +403,6 @@ export function CommunicationsWorkspace({
             <button
               type="button"
               onClick={handleFollowUpToggle}
-              disabled={isActing}
               title="Follow up"
               aria-label={isFollowUp ? "Remove follow up" : "Follow up"}
               aria-pressed={isFollowUp}
@@ -391,7 +420,6 @@ export function CommunicationsWorkspace({
             <button
               type="button"
               onClick={handleDoneToggle}
-              disabled={isActing}
               title="Done"
               aria-label={thread.markedDone ? "Undo done" : "Done"}
               aria-pressed={isDone}
@@ -406,7 +434,6 @@ export function CommunicationsWorkspace({
             <button
               type="button"
               onClick={handleDeleteToggle}
-              disabled={isActing}
               title={isArchived ? "Restore" : "Delete"}
               aria-label={isArchived ? "Restore conversation" : "Delete"}
               className={threadActionButtonClassName(isArchived)}
@@ -420,7 +447,6 @@ export function CommunicationsWorkspace({
               <button
                 type="button"
                 onClick={() => setAssignOpen((open) => !open)}
-                disabled={isActing}
                 title={
                   localAssignee.assigneeName
                     ? `Assigned to ${localAssignee.assigneeName}`

@@ -10,7 +10,11 @@ import { CommunicationsWorkspace } from "@/components/communications-hub/Communi
 import { CommunicationsAiPanel } from "@/components/communications-hub/CommunicationsWorkspacePanels";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { markInboxThreadReadAction, refreshInboxConnectionStatusAction } from "@/lib/inbox/actions";
-import type { InboxConnectionStatus, InboxPageData } from "@/lib/inbox/types";
+import type {
+  InboxConnectionStatus,
+  InboxPageData,
+  InboxThread,
+} from "@/lib/inbox/types";
 import {
   computeQueueCounts,
   filterThreadsForCommunicationsHub,
@@ -27,11 +31,24 @@ interface CommunicationsHubProps {
 export function CommunicationsHub({ data }: CommunicationsHubProps) {
   const router = useRouter();
   const [connection, setConnection] = useState<InboxConnectionStatus>(data.connection);
-  const { threads, messagesByThreadId, orgMembers } = data;
+  const { messagesByThreadId, orgMembers } = data;
+  const [threads, setThreads] = useState(data.threads);
 
   useEffect(() => {
     setConnection(data.connection);
   }, [data.connection]);
+
+  useEffect(() => {
+    setThreads(data.threads);
+  }, [data.threads]);
+
+  const patchThread = useCallback((threadId: string, patch: Partial<InboxThread>) => {
+    setThreads((current) =>
+      current.map((thread) =>
+        thread.id === threadId ? { ...thread, ...patch } : thread,
+      ),
+    );
+  }, []);
 
   // Defer Meta Graph health + page pictures until after first paint.
   useEffect(() => {
@@ -251,6 +268,7 @@ export function CommunicationsHub({ data }: CommunicationsHubProps) {
                   orgMembers={orgMembers}
                   pageName={connection.pageName}
                   showBack
+                  onThreadPatch={patchThread}
                   onBack={() => {
                     setMobileShowDetail(false);
                     setMobileShowAiPanel(false);
