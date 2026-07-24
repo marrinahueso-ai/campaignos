@@ -26,6 +26,11 @@ interface BuildTodayDataInput {
   firstName: string | null;
   planningItems: PlanningCalendarItem[];
   events: Event[];
+  /**
+   * Events tied to loaded planning items (may include past dates in the
+   * school-year window). Used to hide Waiting on me for events that already happened.
+   */
+  planningEvents?: Event[];
   /** School events dated in the visible mini-calendar month. */
   monthEvents: Event[];
   /** School events dated today through +7 days (This Week strip). */
@@ -316,11 +321,21 @@ export function buildWhatsNext(input: BuildTodayDataInput): TodayWhatsNext {
 export function buildWaitingOnMe(
   items: PlanningCalendarItem[],
   today: string,
+  eventDateById: Map<string, string> = new Map(),
   limit = 5,
 ): TodayActionItem[] {
+  // Only steps for events that have not happened yet (event date >= today).
   const actionable = stepItems(items)
-    .filter((item) => item.scheduledDate <= today || item.scheduledDate <= addDaysToDateOnly(today, 3))
+    .filter((item) => {
+      const eventDate = eventDateById.get(item.eventId);
+      return Boolean(eventDate && eventDate >= today);
+    })
     .sort((a, b) => {
+      const eventA = eventDateById.get(a.eventId) ?? a.scheduledDate;
+      const eventB = eventDateById.get(b.eventId) ?? b.scheduledDate;
+      if (eventA !== eventB) {
+        return eventA.localeCompare(eventB);
+      }
       if (a.scheduledDate !== b.scheduledDate) {
         return a.scheduledDate.localeCompare(b.scheduledDate);
       }
@@ -546,7 +561,19 @@ export function buildTodayPageData(input: BuildTodayDataInput): TodayPageData {
     strategyByEventId,
   );
 
-  const waitingOnMe = buildWaitingOnMe(campaignPlanningItems, input.today);
+  const eventDateById = new Map<string, string>();
+  for (const event of input.planningEvents ?? input.events) {
+    eventDateById.set(event.id, event.date);
+  }
+  for (const event of input.events) {
+    eventDateById.set(event.id, event.date);
+  }
+
+  const waitingOnMe = buildWaitingOnMe(
+    campaignPlanningItems,
+    input.today,
+    eventDateById,
+  );
   const waitingOnOthers = buildWaitingOnOthers(input.planningItems);
   const hasOverdueSteps = overdueSteps(campaignPlanningItems, input.today).length > 0;
   const attentionCount = stepItems(campaignPlanningItems).filter(

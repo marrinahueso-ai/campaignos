@@ -171,6 +171,7 @@ export async function getTodayPageData(
     firstName,
     planningItems,
     events: upcomingCampaignEvents,
+    planningEvents: eventsForRaw,
     monthEvents,
     weekStripEvents,
     weekEvents,
