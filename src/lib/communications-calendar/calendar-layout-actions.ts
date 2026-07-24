@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getActiveMembership } from "@/lib/auth/membership-queries";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -29,6 +28,7 @@ export async function saveCalendarLayoutAction(
     return { success: false, error: "Could not save calendar colors." };
   }
 
-  revalidatePath("/calendar");
+  // No revalidatePath — layout is already applied optimistically on the client.
+  // Refreshing /calendar can stack a Suspense/loading shell above the live grid.
   return { success: true };
 }

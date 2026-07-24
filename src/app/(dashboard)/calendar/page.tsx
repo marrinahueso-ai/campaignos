@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { UnifiedCalendarShell } from "@/components/unified-calendar/UnifiedCalendarShell";
 import { getCalendarLayoutForCurrentUser } from "@/lib/communications-calendar/calendar-layout-queries";
@@ -20,32 +19,18 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     redirect("/calendar/review");
   }
 
-  return (
-    <Suspense fallback={<CalendarPageFallback />}>
-      <CalendarPageContent />
-    </Suspense>
-  );
-}
-
-async function CalendarPageContent() {
+  // Single async page body — route `loading.tsx` covers the wait. Avoid a nested
+  // Suspense fallback here: revalidate/refresh can briefly stack that skeleton
+  // above the live calendar (looks like two calendars).
   const [planningData, initialLayout] = await Promise.all([
     getPlanningCalendarData(),
     getCalendarLayoutForCurrentUser(),
   ]);
+
   return (
     <UnifiedCalendarShell
       data={planningData}
       initialLayout={initialLayout}
     />
-  );
-}
-
-function CalendarPageFallback() {
-  return (
-    <div className="mx-auto max-w-[1600px] animate-pulse space-y-6 pb-8">
-      <div className="h-28 rounded-2xl bg-cos-bg-alt" />
-      <div className="h-32 rounded-2xl bg-cos-bg-alt" />
-      <div className="h-96 rounded-2xl bg-cos-bg-alt" />
-    </div>
   );
 }

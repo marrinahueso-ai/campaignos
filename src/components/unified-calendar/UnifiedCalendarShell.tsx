@@ -260,102 +260,102 @@ export function UnifiedCalendarShell({
 
   return (
     <CalendarLayerColorsProvider colors={layerColors}>
-    <div className="mx-auto max-w-[1600px] space-y-3 pb-8">
-      {layoutError ? (
-        <p className="text-sm text-cos-error" role="alert">
-          {layoutError}
-        </p>
-      ) : null}
-      <UnifiedCalendarControlPanel
-        view={view}
-        periodLabel={periodLabel}
-        activeLayers={activeLayers}
-        layerColors={layerColors}
-        layerColorOverrides={layout.colors ?? {}}
-        upcomingItems={upcomingItems}
-        onViewChange={setView}
-        onPrevious={goPrevious}
-        onNext={goNext}
-        onToday={goToday}
-        onLayersChange={setActiveLayers}
-        onLayerColorChange={handleLayerColorChange}
-        onSelectUpcomingItem={setSelectedItem}
-        postingHeatmap={data.postingHeatmap}
-        showPostingHeatmap={showPostingHeatmap && data.postingHeatmap != null}
-        onShowPostingHeatmapChange={
-          data.postingHeatmap != null ? setShowPostingHeatmap : undefined
-        }
-      />
-
-      {showEmptyPeriodHint && (
-        <div className="rounded-2xl border border-cos-border bg-cos-accent-soft px-5 py-4 text-sm text-cos-text">
-          <p className="font-medium">No events in {periodLabel}</p>
-          <p className="mt-1 text-cos-text">
-            Your imported dates are in other months. Use the arrows to browse, switch
-            to Agenda to see everything, or jump to the first event month.
+      <div className="mx-auto max-w-[1600px] space-y-3 pb-8">
+        {layoutError ? (
+          <p className="text-sm text-cos-error" role="alert">
+            {layoutError}
           </p>
-          <button
-            type="button"
-            onClick={goToFirstEvent}
-            className="mt-3 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-cos-text ring-1 ring-cos-border hover:bg-cos-accent-soft"
-          >
-            Go to first event
-          </button>
-        </div>
-      )}
-
-      {view === "month" && (
-        <PlanningCalendarMonthView
-          items={filteredItems}
-          year={year}
-          month={month}
-          onSelectItem={setSelectedItem}
-          onOptimisticReschedule={handleOptimisticReschedule}
-          onRescheduleFailed={handleRescheduleFailed}
-          onRescheduled={handleRescheduled}
-        />
-      )}
-      {view === "week" && (
-        <PlanningCalendarWeekView
-          items={filteredItems}
-          anchorDate={weekAnchor}
-          onSelectItem={setSelectedItem}
-          onOptimisticReschedule={handleOptimisticReschedule}
-          onRescheduleFailed={handleRescheduleFailed}
-          onRescheduled={handleRescheduled}
+        ) : null}
+        <UnifiedCalendarControlPanel
+          view={view}
+          periodLabel={periodLabel}
+          activeLayers={activeLayers}
+          layerColors={layerColors}
+          layerColorOverrides={layout.colors ?? {}}
+          upcomingItems={upcomingItems}
+          onViewChange={setView}
+          onPrevious={goPrevious}
+          onNext={goNext}
+          onToday={goToday}
+          onLayersChange={setActiveLayers}
+          onLayerColorChange={handleLayerColorChange}
+          onSelectUpcomingItem={setSelectedItem}
           postingHeatmap={data.postingHeatmap}
-          showPostingHeatmap={showPostingHeatmap}
+          showPostingHeatmap={showPostingHeatmap && data.postingHeatmap != null}
+          onShowPostingHeatmapChange={
+            data.postingHeatmap != null ? setShowPostingHeatmap : undefined
+          }
         />
-      )}
-      {view === "agenda" && (
-        <PlanningCalendarAgendaView
-          items={filteredItems}
-          onSelectItem={setSelectedItem}
-        />
-      )}
 
-      {view === "import-list" && (
-        <CalendarImportPlanList
-          events={data.importedEvents}
-          filename={data.importListFilename}
-        />
-      )}
+        {showEmptyPeriodHint && (
+          <div className="rounded-2xl border border-cos-border bg-cos-accent-soft px-5 py-4 text-sm text-cos-text">
+            <p className="font-medium">No events in {periodLabel}</p>
+            <p className="mt-1 text-cos-text">
+              Your imported dates are in other months. Use the arrows to browse, switch
+              to Agenda to see everything, or jump to the first event month.
+            </p>
+            <button
+              type="button"
+              onClick={goToFirstEvent}
+              className="mt-3 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-cos-text ring-1 ring-cos-border hover:bg-cos-accent-soft"
+            >
+              Go to first event
+            </button>
+          </div>
+        )}
 
-      {selectedEnriched && (
-        <>
-          <button
-            type="button"
-            aria-label="Close detail panel overlay"
-            className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-[1px]"
-            onClick={() => setSelectedItem(null)}
+        {view === "month" ? (
+          <PlanningCalendarMonthView
+            items={filteredItems}
+            year={year}
+            month={month}
+            onSelectItem={setSelectedItem}
+            onOptimisticReschedule={handleOptimisticReschedule}
+            onRescheduleFailed={handleRescheduleFailed}
+            onRescheduled={handleRescheduled}
           />
-          <PlanningCalendarDetailPanel
-            item={selectedEnriched}
-            onClose={() => setSelectedItem(null)}
+        ) : null}
+        {view === "week" ? (
+          <PlanningCalendarWeekView
+            items={filteredItems}
+            anchorDate={weekAnchor}
+            onSelectItem={setSelectedItem}
+            onOptimisticReschedule={handleOptimisticReschedule}
+            onRescheduleFailed={handleRescheduleFailed}
+            onRescheduled={handleRescheduled}
+            postingHeatmap={data.postingHeatmap}
+            showPostingHeatmap={showPostingHeatmap}
           />
-        </>
-      )}
-    </div>
+        ) : null}
+        {view === "agenda" ? (
+          <PlanningCalendarAgendaView
+            items={filteredItems}
+            onSelectItem={setSelectedItem}
+          />
+        ) : null}
+
+        {view === "import-list" ? (
+          <CalendarImportPlanList
+            events={data.importedEvents}
+            filename={data.importListFilename}
+          />
+        ) : null}
+
+        {selectedEnriched ? (
+          <>
+            <button
+              type="button"
+              aria-label="Close detail panel overlay"
+              className="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-[1px]"
+              onClick={() => setSelectedItem(null)}
+            />
+            <PlanningCalendarDetailPanel
+              item={selectedEnriched}
+              onClose={() => setSelectedItem(null)}
+            />
+          </>
+        ) : null}
+      </div>
     </CalendarLayerColorsProvider>
   );
 }
