@@ -29,8 +29,8 @@ Access today: founding codes, invites, `billing_exempt_at`. Paid plan gates and 
 
 | Phase | Status |
 |------:|--------|
-| 1 Metering (burn on `ai_usage_log`) | **In progress / shipping** |
-| 2 Sidebar widget | Pending |
+| 1 Metering (burn on `ai_usage_log`) | **Shipped** |
+| 2 Sidebar widget + billing blurb | **Shipped** |
 | 3 Owner per-org monitoring | Pending |
 | 4 Owner grant UI | Pending |
 | 5 Stripe + gates + trial | Pending |

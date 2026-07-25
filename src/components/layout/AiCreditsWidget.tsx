@@ -1,52 +1,136 @@
+import Link from "next/link";
+import { cn } from "@/lib/utils/cn";
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+
 interface AiCreditsWidgetProps {
-  used?: number;
-  total?: number;
-  resetLabel?: string;
+  data?: AiCreditsWidgetData | null;
   compact?: boolean;
 }
 
 export function AiCreditsWidget({
-  used = 18,
-  total = 50,
-  resetLabel = "Reset on Aug 1",
+  data = null,
   compact = false,
 }: AiCreditsWidgetProps) {
-  const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  if (!data) {
+    if (compact) {
+      return (
+        <div
+          className="flex h-10 w-10 items-center justify-center border border-cos-border bg-cos-bg/60"
+          title="AI credits unavailable"
+          aria-label="AI credits unavailable"
+        >
+          <span className="text-[10px] font-semibold text-cos-muted">—</span>
+        </div>
+      );
+    }
+    return (
+      <div className="border border-cos-border bg-cos-bg/40 p-4">
+        <p className="cos-section-title">AI credits</p>
+        <p className="mt-2 text-sm text-cos-muted">Loading balance…</p>
+      </div>
+    );
+  }
+
+  if (data.unlimited) {
+    if (compact) {
+      return (
+        <div
+          className="flex h-10 w-10 items-center justify-center border border-cos-border bg-cos-bg/60"
+          title="AI credits: unlimited"
+          aria-label="AI credits unlimited"
+        >
+          <span className="text-[10px] font-semibold text-cos-text">∞</span>
+        </div>
+      );
+    }
+    return (
+      <div className="border border-cos-border bg-cos-bg/40 p-4">
+        <p className="cos-section-title">AI credits</p>
+        <p className="mt-2 text-sm font-medium text-cos-text">Unlimited</p>
+        <p className="mt-2 text-xs text-cos-muted">
+          Founding / exempt — usage is logged, not capped.
+        </p>
+        <Link
+          href="/settings/billing-plan"
+          className="mt-2 inline-block text-xs font-medium text-cos-text underline-offset-2 hover:underline"
+        >
+          Billing & plan
+        </Link>
+      </div>
+    );
+  }
+
+  const { used, allowance, reserveBalance, softWarn, resetLabel } = data;
+  const percent =
+    allowance > 0 ? Math.min(100, Math.round((used / allowance) * 100)) : 0;
+  const remaining = Math.max(0, allowance - used);
 
   if (compact) {
     return (
       <div
-        className="flex h-10 w-10 items-center justify-center border border-cos-border bg-cos-bg/60"
-        title={`AI credits: ${used} / ${total} used`}
-        aria-label={`AI credits: ${used} of ${total} used. ${resetLabel}.`}
+        className={cn(
+          "flex h-10 w-10 items-center justify-center border bg-cos-bg/60",
+          softWarn
+            ? "border-cos-error text-cos-error-text"
+            : "border-cos-border text-cos-text",
+        )}
+        title={`AI credits: ${remaining} left of ${allowance}${
+          reserveBalance > 0 ? ` · ${reserveBalance} reserve` : ""
+        }`}
+        aria-label={`AI credits: ${used} of ${allowance} used this month. ${resetLabel}.${
+          softWarn ? " Low balance." : ""
+        }`}
       >
-        <span className="text-[10px] font-semibold tabular-nums text-cos-text">
-          {used}
-        </span>
+        <span className="text-[10px] font-semibold tabular-nums">{remaining}</span>
       </div>
     );
   }
 
   return (
-    <div className="border border-cos-border bg-cos-bg/40 p-4">
+    <div
+      className={cn(
+        "border bg-cos-bg/40 p-4",
+        softWarn ? "border-cos-error" : "border-cos-border",
+      )}
+    >
       <p className="cos-section-title">AI credits</p>
       <p className="mt-2 text-sm font-medium text-cos-text tabular-nums">
-        {used} / {total} used
+        {used} / {allowance} used
       </p>
       <div
         className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
         role="progressbar"
         aria-valuenow={used}
         aria-valuemin={0}
-        aria-valuemax={total}
-        aria-label={`${used} of ${total} AI credits used`}
+        aria-valuemax={allowance}
+        aria-label={`${used} of ${allowance} AI credits used this month`}
       >
         <div
-          className="h-full bg-cos-dark transition-[width]"
+          className={cn(
+            "h-full transition-[width]",
+            softWarn ? "bg-cos-error" : "bg-cos-dark",
+          )}
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-2 text-xs text-cos-muted">{resetLabel}</p>
+      {reserveBalance > 0 ? (
+        <p className="mt-2 text-xs text-cos-muted tabular-nums">
+          + {reserveBalance.toLocaleString()} reserve
+        </p>
+      ) : null}
+      {softWarn ? (
+        <p className="mt-2 text-xs font-medium text-cos-error-text">
+          Running low — {remaining} left this month
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-cos-muted">{resetLabel}</p>
+      )}
+      <Link
+        href="/settings/billing-plan"
+        className="mt-2 inline-block text-xs font-medium text-cos-text underline-offset-2 hover:underline"
+      >
+        Billing & plan
+      </Link>
     </div>
   );
 }

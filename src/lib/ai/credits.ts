@@ -17,6 +17,8 @@ import {
   SOFT_WARN_REMAINING_CREDITS,
 } from "@/lib/ai/credit-constants";
 import { splitBurnAcrossBuckets } from "@/lib/ai/credits-pure";
+import { toAiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 
 export {
   creditCostForAction,
@@ -254,6 +256,26 @@ export const getOrgAiCreditSnapshot = cache(
     const row = await ensurePeriodAllowance(orgId);
     if (!row) return null;
     return snapshotFromRow(row, orgId);
+  },
+);
+
+/** Client-safe widget payload for layouts / Sidebar. */
+export const getOrgAiCreditsWidgetData = cache(
+  async (
+    organizationId: string | null | undefined,
+  ): Promise<AiCreditsWidgetData | null> => {
+    const orgId = organizationId?.trim();
+    if (!orgId) return null;
+    const snap = await getOrgAiCreditSnapshot(orgId);
+    if (!snap) return null;
+    return toAiCreditsWidgetData({
+      unlimited: snap.unlimited,
+      used: snap.used,
+      allowance: snap.allowance,
+      reserveBalance: snap.reserveBalance,
+      softWarn: snap.softWarn,
+      periodYm: snap.periodYm,
+    });
   },
 );
 

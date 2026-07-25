@@ -1,4 +1,5 @@
 import { BillingPlanContent } from "@/components/settings-v2/BillingPlanContent";
+import { getOrgAiCreditsWidgetData } from "@/lib/ai/credits";
 import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 
@@ -11,12 +12,16 @@ export default async function BillingPlanSettingsPage() {
   const isFoundingPartner = organization
     ? isOrganizationBillingExempt(organization)
     : false;
+  const aiCredits = organization
+    ? await getOrgAiCreditsWidgetData(organization.id)
+    : null;
 
   return (
     <BillingPlanContent
       planLabel={isFoundingPartner ? "Founding Partner" : "Professional"}
       isFoundingPartner={isFoundingPartner}
       renewalLabel={null}
+      aiCredits={aiCredits}
     />
   );
 }

@@ -31,6 +31,7 @@ import {
 import { isCampaignBuilderV2Enabled } from "@/lib/campaign-builder-v2/feature-flag";
 import { dispatchCommunicationsHubReset } from "@/lib/communications-hub/events";
 import { cn } from "@/lib/utils/cn";
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 
 const STORAGE_KEY = "campaignos-sidebar-expanded";
 const LAST_EVENT_STORAGE_KEY = "campaignos-last-event-id";
@@ -253,6 +254,7 @@ interface SidebarProps {
   activeOrganizationId?: string | null;
   /** Hey Ralli platform owner ops link. */
   showOwnerOps?: boolean;
+  aiCredits?: AiCreditsWidgetData | null;
 }
 
 type NavBadgeVariant = "approval" | "changeRequest";
@@ -316,6 +318,7 @@ export function Sidebar({
   inboxUnreadCount = 0,
   activeOrganizationId = null,
   showOwnerOps = false,
+  aiCredits = null,
 }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(false);
@@ -614,7 +617,11 @@ export function Sidebar({
           showLabels ? "px-4 py-3" : "flex justify-center px-2 py-3",
         )}
       >
-        {showLabels ? <AiCreditsWidget /> : <AiCreditsWidget compact />}
+        {showLabels ? (
+          <AiCreditsWidget data={aiCredits} />
+        ) : (
+          <AiCreditsWidget data={aiCredits} compact />
+        )}
       </div>
     </aside>
   );

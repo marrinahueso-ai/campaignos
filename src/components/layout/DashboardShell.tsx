@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
 import type { DashboardBadgeCounts } from "@/lib/layout/dashboard-badge-types";
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -20,18 +21,21 @@ interface DashboardShellProps {
   organizations?: ActiveOrganizationOption[];
   activeOrganizationId?: string | null;
   showOwnerOps?: boolean;
+  aiCredits?: AiCreditsWidgetData | null;
 }
 
 function SidebarWithBadgePromise({
   badgeCountsPromise,
   activeOrganizationId,
   showOwnerOps,
+  aiCredits,
   forceExpanded,
   onNavigate,
 }: {
   badgeCountsPromise: Promise<DashboardBadgeCounts>;
   activeOrganizationId: string | null;
   showOwnerOps: boolean;
+  aiCredits?: AiCreditsWidgetData | null;
   forceExpanded?: boolean;
   onNavigate?: () => void;
 }) {
@@ -43,6 +47,7 @@ function SidebarWithBadgePromise({
       inboxUnreadCount={counts.inboxUnreadCount}
       activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
+      aiCredits={aiCredits}
       forceExpanded={forceExpanded}
       onNavigate={onNavigate}
     />
@@ -56,6 +61,7 @@ function ShellSidebar({
   inboxUnreadCount,
   activeOrganizationId,
   showOwnerOps,
+  aiCredits,
   forceExpanded,
   onNavigate,
 }: {
@@ -65,6 +71,7 @@ function ShellSidebar({
   inboxUnreadCount: number;
   activeOrganizationId: string | null;
   showOwnerOps: boolean;
+  aiCredits?: AiCreditsWidgetData | null;
   forceExpanded?: boolean;
   onNavigate?: () => void;
 }) {
@@ -75,6 +82,7 @@ function ShellSidebar({
       inboxUnreadCount={inboxUnreadCount}
       activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
+      aiCredits={aiCredits}
       forceExpanded={forceExpanded}
       onNavigate={onNavigate}
     />
@@ -90,6 +98,7 @@ function ShellSidebar({
         badgeCountsPromise={badgeCountsPromise}
         activeOrganizationId={activeOrganizationId}
         showOwnerOps={showOwnerOps}
+        aiCredits={aiCredits}
         forceExpanded={forceExpanded}
         onNavigate={onNavigate}
       />
@@ -107,6 +116,7 @@ export function DashboardShell({
   organizations = [],
   activeOrganizationId = null,
   showOwnerOps = false,
+  aiCredits = null,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -120,6 +130,7 @@ export function DashboardShell({
           inboxUnreadCount={inboxUnreadCount}
           activeOrganizationId={activeOrganizationId}
           showOwnerOps={showOwnerOps}
+          aiCredits={aiCredits}
         />
       </div>
 
@@ -139,6 +150,7 @@ export function DashboardShell({
               inboxUnreadCount={inboxUnreadCount}
               activeOrganizationId={activeOrganizationId}
               showOwnerOps={showOwnerOps}
+              aiCredits={aiCredits}
               forceExpanded
               onNavigate={() => setMobileOpen(false)}
             />

@@ -4,10 +4,13 @@ import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Badge } from "@/components/ui/Badge";
 
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+
 interface BillingPlanContentProps {
   planLabel: string;
   isFoundingPartner: boolean;
   renewalLabel: string | null;
+  aiCredits?: AiCreditsWidgetData | null;
 }
 
 const BILLING_LINKS = [
@@ -22,6 +25,7 @@ export function BillingPlanContent({
   planLabel,
   isFoundingPartner,
   renewalLabel,
+  aiCredits = null,
 }: BillingPlanContentProps) {
   return (
     <div className="space-y-6">
@@ -74,6 +78,37 @@ export function BillingPlanContent({
           </div>
         </SettingsV2Card>
       </div>
+
+      <SettingsV2Card title="AI credits">
+        {aiCredits?.unlimited ? (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            This organization has unlimited AI credits (founding / billing
+            exempt). Usage is still logged for ops. Monthly plan credits do not
+            apply.
+          </p>
+        ) : aiCredits ? (
+          <>
+            <p className="text-sm font-medium text-cos-text tabular-nums">
+              {aiCredits.used} / {aiCredits.allowance} used this month
+              {aiCredits.reserveBalance > 0
+                ? ` · ${aiCredits.reserveBalance.toLocaleString()} reserve`
+                : ""}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+              AI credits reset on the 1st of each month (UTC). Unused monthly
+              credits do not roll over. AI Reserve balances roll over until used.
+              Stripe Checkout is not connected yet — soft warnings only; hard
+              limits come later.
+            </p>
+            <p className="mt-2 text-xs text-cos-muted">{aiCredits.resetLabel}</p>
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            AI credits reset monthly. Stripe is not connected yet — balances are
+            metered with soft warnings only.
+          </p>
+        )}
+      </SettingsV2Card>
 
       <SettingsV2Card title="Billing sections">
         <ul className="divide-y divide-cos-border">

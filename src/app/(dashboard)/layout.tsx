@@ -9,6 +9,7 @@ import {
 import { getAuthUser } from "@/lib/auth/queries";
 import { loadDashboardBadgeCounts } from "@/lib/layout/dashboard-badge-counts";
 import { canAccessOwnerOps } from "@/lib/ops/access";
+import { getOrgAiCreditsWidgetData } from "@/lib/ai/credits";
 
 export default async function DashboardLayout({
   children,
@@ -25,6 +26,10 @@ export default async function DashboardLayout({
       canAccessOwnerOps(),
     ]);
 
+  const activeOrganizationId =
+    normalizeOrganizationId(activeMembership?.organizationId) ?? null;
+
+  const aiCredits = await getOrgAiCreditsWidgetData(activeOrganizationId);
   const badgeCountsPromise = loadDashboardBadgeCounts();
 
   return (
@@ -32,10 +37,9 @@ export default async function DashboardLayout({
       userEmail={user?.email ?? null}
       badgeCountsPromise={badgeCountsPromise}
       organizations={organizations}
-      activeOrganizationId={
-        normalizeOrganizationId(activeMembership?.organizationId) ?? null
-      }
+      activeOrganizationId={activeOrganizationId}
       showOwnerOps={showOwnerOps}
+      aiCredits={aiCredits}
     >
       {children}
       <Suspense fallback={null}>

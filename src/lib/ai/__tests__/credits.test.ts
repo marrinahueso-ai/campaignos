@@ -11,6 +11,10 @@ import {
   periodYmUtc,
 } from "../credit-constants.ts";
 import { splitBurnAcrossBuckets } from "../credits-pure.ts";
+import {
+  resetLabelForPeriodYm,
+  toAiCreditsWidgetData,
+} from "../ai-credits-widget-data.ts";
 
 describe("ai credit constants", () => {
   it("locks plan monthly allowances", () => {
@@ -46,6 +50,26 @@ describe("ai credit constants", () => {
     assert.equal(AI_RESERVE_SKUS.reserve.credits, 18_000);
     assert.equal(AI_RESERVE_SKUS.reserve_star.credits, 40_000);
     assert.equal(AI_RESERVE_SKUS.reserve_max.credits, 85_000);
+  });
+});
+
+describe("ai credits widget data", () => {
+  it("formats reset label for next UTC month", () => {
+    assert.equal(resetLabelForPeriodYm("2026-07"), "Resets Aug 1");
+    assert.equal(resetLabelForPeriodYm("2026-12"), "Resets Jan 1");
+  });
+
+  it("maps snapshot fields for the client widget", () => {
+    const data = toAiCreditsWidgetData({
+      unlimited: false,
+      used: 100,
+      allowance: 1200,
+      reserveBalance: 500,
+      softWarn: false,
+      periodYm: "2026-07",
+    });
+    assert.equal(data.resetLabel, "Resets Aug 1");
+    assert.equal(data.reserveBalance, 500);
   });
 });
 
