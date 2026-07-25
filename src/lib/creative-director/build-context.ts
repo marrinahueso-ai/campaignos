@@ -52,7 +52,7 @@ export async function buildCreativeDirectorContext(
     await Promise.all([
       getEventWorkspaceData(event.id),
       getEventPlaybookData(event.id),
-      getInspirationAssets(),
+      getInspirationAssets(organization?.id ?? null),
       organization ? getSchoolProfile() : Promise.resolve(null),
       organization
         ? loadStyleMemory(organization.id)

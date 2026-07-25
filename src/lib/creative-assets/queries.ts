@@ -105,14 +105,25 @@ export async function getAssetVersionsForEvent(
   return map;
 }
 
-export async function getInspirationAssets(): Promise<InspirationAsset[]> {
+export async function getInspirationAssets(
+  organizationId?: string | null,
+): Promise<InspirationAsset[]> {
   const supabase = await createClient();
   const organization = await getLatestOrganization();
+
+  // Active-org scope: event_assets RLS only requires *some* membership on the
+  // asset's event, so multi-org members must be further pinned to the
+  // current org's own events here — otherwise inspiration assets from every
+  // org they belong to bleed together.
+  const scopedEvents = await getActiveEvents(organizationId ?? organization?.id ?? null);
+  if (scopedEvents.length === 0) return [];
+  const scopedEventIds = scopedEvents.map((event) => event.id);
 
   const { data: assetRows, error } = await supabase
     .from("event_assets")
     .select(WORKSPACE_ASSET_SELECT)
     .eq("status", "uploaded")
+    .in("event_id", scopedEventIds)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -197,7 +208,7 @@ export async function getCreativeStudioContext(selectedEventId?: string | null) 
       // Full rows: Creative Studio panels read generationPrompt / settings.
       resolvedEventId ? getCampaignAssetsForEvent(resolvedEventId) : Promise.resolve([]),
       resolvedEventId ? getAssetVersionsForEvent(resolvedEventId) : Promise.resolve(new Map()),
-      getInspirationAssets(),
+      getInspirationAssets(organization?.id ?? null),
       organization ? getBrandKitItems(organization.id) : Promise.resolve([]),
       organization ? getSchoolProfile() : Promise.resolve(null),
     ]);

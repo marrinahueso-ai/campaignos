@@ -306,11 +306,21 @@ export const getVendorById = cache(async (vendorId: string) => {
     return null;
   }
 
+  // Active-org scope: vendors RLS only requires *some* membership on the
+  // vendor's org, so multi-org members must be further pinned to the
+  // current org here — otherwise another member org's vendor metadata
+  // (e.g. its name, via page <title>) would leak through.
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return null;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("vendors")
     .select("*")
     .eq("id", vendorId)
+    .eq("organization_id", organization.id)
     .is("deleted_at", null)
     .maybeSingle();
 

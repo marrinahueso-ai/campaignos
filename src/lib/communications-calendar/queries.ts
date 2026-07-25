@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveScopedOrgEventIds } from "@/lib/events/org-scope";
 import { PLACEHOLDER_APPROVALS } from "@/lib/communications-calendar/constants";
 import {
   PLANNING_EVENT_SELECT,
@@ -71,13 +72,25 @@ function buildDaySummaries(
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export async function getCommunicationsCalendarData(): Promise<CommunicationsCalendarData> {
+export async function getCommunicationsCalendarData(
+  organizationId?: string | null,
+): Promise<CommunicationsCalendarData> {
   const supabase = await createClient();
   const today = getTodayDateString();
+
+  // Active-org scope: events/steps/items RLS only requires *some*
+  // membership, so multi-org members must be further pinned to the current
+  // org's own events here — otherwise every member org's planning calendar
+  // data would bleed together.
+  const scopedEventIds = await resolveScopedOrgEventIds(organizationId);
+  if (scopedEventIds.length === 0) {
+    return { events: [], communications: [], publishing: [], approvals: [], daySummaries: [] };
+  }
 
   const { data: eventRows, error: eventsError } = await supabase
     .from("events")
     .select(PLANNING_EVENT_SELECT)
+    .in("id", scopedEventIds)
     .order("date", { ascending: true });
 
   const events: CalendarEventEntry[] = eventsError
@@ -99,6 +112,7 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
   const { data: stepRows } = await supabase
     .from("event_communication_steps")
     .select(PLANNING_STEP_SELECT)
+    .in("event_id", scopedEventIds)
     .order("due_date", { ascending: true });
 
   const typedStepRows = (stepRows ?? []) as unknown as EventCommunicationStepRow[];
@@ -137,6 +151,7 @@ export async function getCommunicationsCalendarData(): Promise<CommunicationsCal
     .from("communication_items")
     .select(PLANNING_ITEM_SELECT)
     .eq("status", "draft")
+    .in("event_id", scopedEventIds)
     .order("last_updated", { ascending: false });
 
   const items = (itemRows ?? []) as unknown as CommunicationItemRow[];
