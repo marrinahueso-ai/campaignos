@@ -1,20 +1,14 @@
+import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
+
 export const EVENT_ASSETS_BUCKET = "event-assets";
 
-export const ALLOWED_EVENT_ASSET_MIME_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-  "application/pdf",
-]);
-
-export const ALLOWED_EVENT_ASSET_EXTENSIONS = new Set([
+export const ALLOWED_EVENT_ASSET_EXTENSIONS = [
   ".png",
   ".jpg",
   ".jpeg",
   ".webp",
   ".pdf",
-]);
+] as const;
 
 export const MAX_EVENT_ASSET_BYTES = 10 * 1024 * 1024;
 
@@ -68,11 +62,20 @@ export function buildEventAssetStoragePath(
   return `${eventId}/${assetType}/${versionSegment}-${safeName}`;
 }
 
+/**
+ * Extension is authoritative (see resolveEventAssetContentType) — the MIME
+ * check here is just a fast, user-friendly reject for an obviously wrong
+ * file, not a security boundary on its own.
+ */
 export function isAllowedEventAssetFile(file: File): boolean {
-  if (ALLOWED_EVENT_ASSET_MIME_TYPES.has(file.type)) {
-    return true;
-  }
+  return resolveEventAssetContentType(file.name) !== null;
+}
 
-  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  return ALLOWED_EVENT_ASSET_EXTENSIONS.has(extension);
+/**
+ * Server-derived Content-Type for an event asset, from its extension only —
+ * never from the client-supplied `file.type`. Returns null to reject
+ * uploads with an unrecognized/disallowed extension.
+ */
+export function resolveEventAssetContentType(filename: string): string | null {
+  return resolveSafeUploadContentType(filename, ALLOWED_EVENT_ASSET_EXTENSIONS);
 }

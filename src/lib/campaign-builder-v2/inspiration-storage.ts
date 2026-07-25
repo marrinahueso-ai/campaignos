@@ -24,6 +24,15 @@ function buildInspirationStoragePath(
   return `${eventId}/campaign-builder-v2/inspiration/${batchId}/${index}-${safeName}`;
 }
 
+/** Data URLs are entirely client-authored — their declared MIME is no more
+ * trustworthy than a raw file.type header, so only allow real image types. */
+const ALLOWED_INSPIRATION_DATA_URL_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+
 async function uploadDataUrlImage(input: {
   eventId: string;
   batchId: string;
@@ -36,7 +45,13 @@ async function uploadDataUrlImage(input: {
     return { url: null, error: "Invalid inspiration image data." };
   }
 
-  const contentType = match[1]?.trim() || "image/png";
+  const contentType = match[1]?.trim().toLowerCase() || "";
+  if (!ALLOWED_INSPIRATION_DATA_URL_MIME_TYPES.has(contentType)) {
+    return {
+      url: null,
+      error: "Inspiration images must be PNG, JPG, WebP, or GIF.",
+    };
+  }
   const bytes = Buffer.from(match[2], "base64");
   const storagePath = buildInspirationStoragePath(
     input.eventId,

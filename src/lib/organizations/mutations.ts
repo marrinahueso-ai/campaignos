@@ -25,6 +25,10 @@ import type {
   OrganizationRow,
   SchoolSetupInput,
 } from "@/types";
+import {
+  IMAGE_UPLOAD_EXTENSIONS,
+  resolveSafeUploadContentType,
+} from "@/lib/uploads/safe-content-type";
 
 const SCHOOL_ASSETS_BUCKET = "school-assets";
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
@@ -33,8 +37,9 @@ async function uploadFile(
   bucket: string,
   path: string,
   file: File,
+  allowedExtensions?: readonly string[],
 ): Promise<string | null> {
-  const result = await uploadFileDetailed(bucket, path, file);
+  const result = await uploadFileDetailed(bucket, path, file, allowedExtensions);
   return "url" in result ? result.url : null;
 }
 
@@ -42,12 +47,28 @@ async function uploadFileDetailed(
   bucket: string,
   path: string,
   file: File,
+  allowedExtensions?: readonly string[],
 ): Promise<{ url: string } | { error: string }> {
   const supabase = await createClient();
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Never trust the client-supplied file.type for public-bucket logos:
+  // derive the stored Content-Type from a server-side extension allow-list
+  // so a renamed/spoofed upload can't be served back as HTML/SVG.
+  let contentType = file.type || "application/octet-stream";
+  if (allowedExtensions) {
+    const safeContentType = resolveSafeUploadContentType(
+      file.name,
+      allowedExtensions,
+    );
+    if (!safeContentType) {
+      return { error: "Unsupported file type." };
+    }
+    contentType = safeContentType;
+  }
+
   const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-    contentType: file.type || "application/octet-stream",
+    contentType,
     upsert: true,
   });
 
@@ -180,6 +201,7 @@ export async function createSchoolProfile(
       SCHOOL_ASSETS_BUCKET,
       `${organizationId}/pto-logo.${extension}`,
       files.ptoLogo,
+      IMAGE_UPLOAD_EXTENSIONS,
     );
   }
 
@@ -189,6 +211,7 @@ export async function createSchoolProfile(
       SCHOOL_ASSETS_BUCKET,
       `${organizationId}/school-logo.${extension}`,
       files.schoolLogo,
+      IMAGE_UPLOAD_EXTENSIONS,
     );
   }
 
@@ -420,6 +443,7 @@ export async function updateOrganizationBrand(input: {
       SCHOOL_ASSETS_BUCKET,
       `${input.organizationId}/pto-logo.${extension}`,
       input.ptoLogo,
+      IMAGE_UPLOAD_EXTENSIONS,
     );
     if ("error" in uploaded) {
       return { error: `Unable to upload PTO logo: ${uploaded.error}` };
@@ -434,6 +458,7 @@ export async function updateOrganizationBrand(input: {
       SCHOOL_ASSETS_BUCKET,
       `${input.organizationId}/school-logo.${extension}`,
       input.schoolLogo,
+      IMAGE_UPLOAD_EXTENSIONS,
     );
     if ("error" in uploaded) {
       return { error: `Unable to upload school logo: ${uploaded.error}` };
@@ -511,6 +536,7 @@ export async function updateOrganizationBrand(input: {
         SCHOOL_ASSETS_BUCKET,
         storagePath,
         extra.file,
+        IMAGE_UPLOAD_EXTENSIONS,
       );
       if ("error" in uploaded) {
         return {

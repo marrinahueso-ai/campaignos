@@ -1,4 +1,16 @@
 import { CAMPAIGN_FILES_BUCKET } from "@/lib/campaign-files/constants";
+import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
+
+export const ALLOWED_CAMPAIGN_FILE_EXTENSIONS = [
+  ".pdf",
+  ".docx",
+  ".doc",
+  ".xlsx",
+  ".xls",
+  ".png",
+  ".jpg",
+  ".jpeg",
+] as const;
 
 export function sanitizeCampaignFileFilename(filename: string): string {
   return filename.replace(/[^\w.-]/g, "_");
@@ -26,33 +38,20 @@ export function getCampaignFilePublicUrl(storagePath: string): string {
   return `${baseUrl}/storage/v1/object/public/${CAMPAIGN_FILES_BUCKET}/${normalizedPath}`;
 }
 
+/**
+ * Extension is authoritative (see resolveCampaignFileContentType) — this is
+ * just a fast, user-friendly reject for an obviously wrong file, not a
+ * security boundary on its own.
+ */
 export function isAllowedCampaignFile(file: File): boolean {
-  const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-  const allowedExtensions = new Set([
-    ".pdf",
-    ".docx",
-    ".doc",
-    ".xlsx",
-    ".xls",
-    ".png",
-    ".jpg",
-    ".jpeg",
-  ]);
+  return resolveCampaignFileContentType(file.name) !== null;
+}
 
-  if (allowedExtensions.has(extension)) {
-    return true;
-  }
-
-  const allowedMimeTypes = new Set([
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-  ]);
-
-  return allowedMimeTypes.has(file.type);
+/**
+ * Server-derived Content-Type for a campaign file, from its extension only —
+ * never from the client-supplied `file.type`. Returns null to reject
+ * uploads with an unrecognized/disallowed extension.
+ */
+export function resolveCampaignFileContentType(filename: string): string | null {
+  return resolveSafeUploadContentType(filename, ALLOWED_CAMPAIGN_FILE_EXTENSIONS);
 }

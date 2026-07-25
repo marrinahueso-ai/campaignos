@@ -16,6 +16,7 @@ import {
   buildEventAssetStoragePath,
   EVENT_ASSETS_BUCKET,
   getEventAssetPublicUrl,
+  resolveEventAssetContentType,
 } from "@/lib/event-workspace/storage";
 import type { EventOverviewInput, EventDetailsInput, CommunicationChannel } from "@/types/event-workspace";
 import type { Event } from "@/types";
@@ -303,10 +304,19 @@ export async function uploadEventAsset(
   );
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  // Callers already gate on isAllowedEventAssetFile, but derive the stored
+  // Content-Type from the extension ourselves rather than trusting
+  // file.type — never serve a public asset back as text/html.
+  const contentType = resolveEventAssetContentType(file.name);
+  if (!contentType) {
+    console.error("Rejected event asset upload with disallowed extension:", file.name);
+    return false;
+  }
+
   const { error: uploadError } = await supabase.storage
     .from(EVENT_ASSETS_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: file.type || "application/octet-stream",
+      contentType,
       upsert: false,
     });
 

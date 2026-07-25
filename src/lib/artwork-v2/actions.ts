@@ -16,6 +16,10 @@ import {
 import { getConceptById, getPendingConceptsForAsset } from "@/lib/ai-artwork/queries";
 import { isArtworkGenerationConfigured } from "@/lib/ai-artwork/provider";
 import { uploadArtworkBytes } from "@/lib/ai-artwork/storage";
+import {
+  IMAGE_UPLOAD_EXTENSIONS,
+  resolveSafeUploadContentType,
+} from "@/lib/uploads/safe-content-type";
 import { activateConceptAsAsset, snapshotAssetToVersion } from "@/lib/ai-artwork/versions";
 import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { hasPermission } from "@/lib/access-templates/effective-access";
@@ -340,16 +344,30 @@ async function resolveReferenceImageUrls(input: {
   for (const inspirationFile of input.inspirationFiles) {
     uploadIndex += 1;
     const bytes = Buffer.from(await inspirationFile.arrayBuffer());
+    const filename = inspirationFile.name || "inspiration.png";
+    // Never trust the client-supplied file.type for this public bucket —
+    // derive Content-Type from the extension and reject anything else.
+    const contentType = resolveSafeUploadContentType(
+      filename,
+      IMAGE_UPLOAD_EXTENSIONS,
+    );
+    if (!contentType) {
+      return {
+        urls: [],
+        inspirationAssetIds: [],
+        error: "Inspiration images must be PNG, JPG, WebP, or GIF.",
+      };
+    }
     const storagePath = buildReferenceStoragePath(
       input.eventId,
       input.batchId,
-      inspirationFile.name || "inspiration.png",
+      filename,
       uploadIndex,
     );
     const uploaded = await uploadArtworkBytes({
       storagePath,
       bytes,
-      contentType: inspirationFile.type || "image/png",
+      contentType,
     });
 
     if (!uploaded.success || !uploaded.publicUrl) {
@@ -1077,6 +1095,16 @@ export async function approveInspirationAsArtworkV2Action(
   } else {
     const inspirationFile = inspirationFiles[0]!;
     const bytes = Buffer.from(await inspirationFile.arrayBuffer());
+    const contentType = resolveSafeUploadContentType(
+      inspirationFile.name || filename,
+      IMAGE_UPLOAD_EXTENSIONS,
+    );
+    if (!contentType) {
+      return {
+        success: false,
+        error: "Inspiration images must be PNG, JPG, WebP, or GIF.",
+      };
+    }
     storagePath = buildApprovedArtworkStoragePath(
       eventId,
       resolved.item.assetType,
@@ -1087,7 +1115,7 @@ export async function approveInspirationAsArtworkV2Action(
     const uploaded = await uploadArtworkBytes({
       storagePath,
       bytes,
-      contentType: inspirationFile.type || "image/png",
+      contentType,
     });
 
     if (!uploaded.success || !uploaded.publicUrl) {

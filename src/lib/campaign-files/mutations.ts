@@ -5,6 +5,7 @@ import { detectFileType } from "@/lib/campaign-files/file-type";
 import {
   buildCampaignFileStoragePath,
   getCampaignFilePublicUrl,
+  resolveCampaignFileContentType,
 } from "@/lib/campaign-files/storage";
 import { logActivity } from "@/lib/event-playbooks/mutations";
 import { createClient } from "@/lib/supabase/server";
@@ -29,10 +30,18 @@ export async function uploadCampaignFile(
   const buffer = Buffer.from(await input.file.arrayBuffer());
   const fileType = detectFileType(input.file.name, input.file.type);
 
+  // Callers already gate on isAllowedCampaignFile, but derive the stored
+  // Content-Type from the extension ourselves rather than trusting
+  // file.type — never serve a public file back as text/html.
+  const contentType = resolveCampaignFileContentType(input.file.name);
+  if (!contentType) {
+    return { id: null, error: "Unsupported file type." };
+  }
+
   const { error: uploadError } = await supabase.storage
     .from(CAMPAIGN_FILES_BUCKET)
     .upload(storagePath, buffer, {
-      contentType: input.file.type || "application/octet-stream",
+      contentType,
       upsert: false,
     });
 
