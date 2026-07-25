@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, use, useState } from "react";
+import { ChunkLoadRecovery } from "@/components/layout/ChunkLoadRecovery";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
@@ -122,6 +123,7 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-screen bg-cos-bg">
+      <ChunkLoadRecovery />
       <div className="hidden shrink-0 lg:block">
         <ShellSidebar
           badgeCountsPromise={badgeCountsPromise}

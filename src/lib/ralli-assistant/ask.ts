@@ -31,16 +31,9 @@ import {
   matchPtoAdvisorTopic,
   shouldPreferPtoAdvisor,
 } from "@/lib/ralli-assistant/pto-advisor-knowledge";
+import type { AskRalliSource } from "@/lib/ralli-assistant/ask-types";
 
-export type AskRalliSource =
-  | "faq"
-  | "ai"
-  | "ops"
-  | "org"
-  | "content"
-  | "insights"
-  | "pto";
-
+export type { AskRalliSource } from "@/lib/ralli-assistant/ask-types";
 export type { AskRalliEventOption };
 
 export interface AskRalliAssistantResult {

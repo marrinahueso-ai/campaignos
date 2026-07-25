@@ -11,7 +11,7 @@ import {
   type AskRalliEventOption,
 } from "@/lib/ralli-assistant/event-resolver";
 import { prepareAnswerForDisplay } from "@/lib/ralli-assistant/answer-display";
-import type { AskRalliSource } from "@/lib/ralli-assistant/ask";
+import type { AskRalliSource } from "@/lib/ralli-assistant/ask-types";
 import { type ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 import { cn } from "@/lib/utils/cn";
 
