@@ -23,6 +23,7 @@ import {
 import { getCalendarWindowEventIds } from "@/lib/calendar-import/calendar-window-scope";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
+import { sanitizeFilenameForStorage } from "@/lib/uploads/sanitize-filename";
 
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
 
@@ -533,7 +534,7 @@ export async function uploadCalendarImportFile(
       };
   }
 
-  const storagePath = `${organizationId}/${Date.now()}-${file.name}`;
+  const storagePath = `${organizationId}/${Date.now()}-${sanitizeFilenameForStorage(file.name)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadError } = await supabase.storage
@@ -585,7 +586,10 @@ export async function createCalendarImportFromIcsText(
   client?: SupabaseClient,
 ): Promise<{ importRecord: CalendarImport | null; error: string | null }> {
   const supabase = await resolveDbClient(client);
-  const safeFilename = filename.trim() || "calendar-subscribe.ics";
+  const safeFilename = sanitizeFilenameForStorage(
+    filename.trim(),
+    "calendar-subscribe.ics",
+  );
   const storagePath = `${organizationId}/${Date.now()}-${safeFilename}`;
   const buffer = Buffer.from(icsText, "utf-8");
 

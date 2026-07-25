@@ -16,6 +16,7 @@ import {
 } from "@/lib/developer-agreements/queries";
 import { DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH } from "@/lib/developer-agreements/gate";
 import { sanitizeAgreementHtml } from "@/lib/developer-agreements/sanitize-html";
+import { sanitizeFilenameForStorage } from "@/lib/uploads/sanitize-filename";
 
 export type AgreementActionState = {
   error: string | null;
@@ -245,7 +246,7 @@ export async function publishDeveloperAgreementVersionAction(
 
     if (isSupabaseAdminConfigured()) {
       const admin = createAdminClient();
-      const path = `templates/${slug || documentId || "doc"}/${Date.now()}-${file.name}`;
+      const path = `templates/${slug || documentId || "doc"}/${Date.now()}-${sanitizeFilenameForStorage(file.name)}`;
       const { error: uploadError } = await admin.storage
         .from("developer-agreements")
         .upload(path, buffer, {

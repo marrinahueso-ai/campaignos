@@ -29,6 +29,7 @@ import {
   IMAGE_UPLOAD_EXTENSIONS,
   resolveSafeUploadContentType,
 } from "@/lib/uploads/safe-content-type";
+import { sanitizeFilenameForStorage } from "@/lib/uploads/sanitize-filename";
 
 const SCHOOL_ASSETS_BUCKET = "school-assets";
 const CALENDAR_UPLOADS_BUCKET = "calendar-uploads";
@@ -238,7 +239,7 @@ export async function createSchoolProfile(
       return { error: "Calendar file must be PDF, Word (.docx), Excel, CSV, or ICS." };
     }
 
-    const storagePath = `${organizationId}/${Date.now()}-${files.calendarFile.name}`;
+    const storagePath = `${organizationId}/${Date.now()}-${sanitizeFilenameForStorage(files.calendarFile.name)}`;
     const uploadedPath = await uploadFile(
       CALENDAR_UPLOADS_BUCKET,
       storagePath,
