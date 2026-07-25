@@ -6,6 +6,7 @@ import {
   FILES_ORG_FETCH_CAP,
 } from "@/lib/campaign-files/constants";
 import { mapCampaignFileRow } from "@/lib/campaign-files/filters";
+import { resolveFilesOrgQueryScope } from "@/lib/campaign-files/org-scope";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import {
   areEventPlaybookTablesAvailable,
@@ -31,34 +32,59 @@ export async function areCampaignFilesEnhanced(): Promise<boolean> {
   return !error || !isMissingSchemaError(error);
 }
 
+/**
+ * Active-org Files library (never all memberships).
+ * RLS still allows multi-org membership rows — this filter is the tenant UX gate.
+ */
+export async function getCampaignFilesForOrganization(
+  organizationId: string | null | undefined,
+  options?: {
+    limit?: number;
+    /** When set, must belong to this organization or the result is empty. */
+    eventId?: string | null;
+  },
+): Promise<{ files: CampaignFile[]; capped: boolean; cap: number }> {
+  const cap = options?.limit ?? FILES_ORG_FETCH_CAP;
+  if (!organizationId || !(await areEventPlaybookTablesAvailable())) {
+    return { files: [], capped: false, cap };
+  }
+
+  const eventList = await getEventPlaybookEvents(organizationId);
+  const scope = resolveFilesOrgQueryScope({
+    orgEventIds: eventList.map((event) => event.id),
+    requestedEventId: options?.eventId,
+  });
+
+  if (scope.kind === "none") {
+    return { files: [], capped: false, cap };
+  }
+
+  if (scope.kind === "one") {
+    return getCampaignFilesForEvent(scope.eventId, { limit: cap });
+  }
+
+  const files = await getCampaignFilesForEvents(scope.eventIds, {
+    limit: cap + 1,
+  });
+  const capped = files.length > cap;
+  return {
+    files: capped ? files.slice(0, cap) : files,
+    capped,
+    cap,
+  };
+}
+
+/**
+ * @deprecated Use `getCampaignFilesForOrganization` — unscoped list leaked
+ * files across orgs for multi-membership users.
+ */
 export async function getAllCampaignFiles(options?: {
   limit?: number;
 }): Promise<{ files: CampaignFile[]; capped: boolean; cap: number }> {
-  const cap = options?.limit ?? FILES_ORG_FETCH_CAP;
-  if (!(await areEventPlaybookTablesAvailable())) {
-    return { files: [], capped: false, cap };
-  }
-
-  const supabase = await createClient();
-  // Fetch one extra row to detect whether the soft cap truncated the library.
-  const { data, error } = await supabase
-    .from("event_playbook_files")
-    .select("*")
-    .order("uploaded_at", { ascending: false })
-    .limit(cap + 1);
-
-  if (error) {
-    if (isMissingSchemaError(error)) {
-      return { files: [], capped: false, cap };
-    }
-    console.error("Failed to fetch campaign files:", error.message);
-    return { files: [], capped: false, cap };
-  }
-
-  const rows = (data ?? []) as CampaignFileRow[];
-  const capped = rows.length > cap;
-  const files = (capped ? rows.slice(0, cap) : rows).map(mapCampaignFileRow);
-  return { files, capped, cap };
+  const organization = await getLatestOrganization();
+  return getCampaignFilesForOrganization(organization?.id ?? null, {
+    limit: options?.limit,
+  });
 }
 
 export async function getCampaignFilesForEvent(
@@ -127,7 +153,19 @@ export async function getCampaignFileById(fileId: string): Promise<CampaignFile 
     return null;
   }
 
-  return mapCampaignFileRow(data as CampaignFileRow);
+  const file = mapCampaignFileRow(data as CampaignFileRow);
+
+  // Active-org gate: membership RLS alone still allows other orgs' files.
+  const organization = await getLatestOrganization().catch(() => null);
+  if (!organization?.id) {
+    return null;
+  }
+  const orgEvents = await getEventPlaybookEvents(organization.id).catch(() => []);
+  if (!orgEvents.some((event) => event.id === file.eventId)) {
+    return null;
+  }
+
+  return file;
 }
 
 function buildEventSummaries(
@@ -193,24 +231,30 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
   }
 
   const eventList = await getEventPlaybookEvents(organization?.id ?? null);
-  const loaded = eventId
-    ? await getCampaignFilesForEvent(eventId)
-    : await getAllCampaignFiles({ limit: FILES_ORG_FETCH_CAP });
+  const loaded = await getCampaignFilesForOrganization(organization?.id ?? null, {
+    limit: FILES_ORG_FETCH_CAP,
+    eventId,
+  });
   const files = loaded.files;
 
   const eventTitles = new Map(
     eventList.map((event) => [event.id, { title: event.title, date: event.date }]),
   );
 
-  const eventIds = eventId
-    ? [eventId]
+  // Never surface foreign-org event ids (defense in depth).
+  const orgEventIdSet = new Set(eventList.map((event) => event.id));
+  const scopedEventId =
+    eventId && orgEventIdSet.has(eventId) ? eventId : undefined;
+
+  const eventIds = scopedEventId
+    ? [scopedEventId]
     : Array.from(new Set(files.map((file) => file.eventId)));
 
   const artworkMap = await getEventArtworkMap(eventIds);
 
-  const events = eventId
+  const events = scopedEventId
     ? eventList
-        .filter((event) => event.id === eventId)
+        .filter((event) => event.id === scopedEventId)
         .map((event) => ({
           eventId: event.id,
           title: event.title,

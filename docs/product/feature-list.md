@@ -39,6 +39,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Multi-org & tenancy
 - Active organization (membership-scoped workspace) — **shipped** (living: [access-and-onboarding.md](../security/access-and-onboarding.md))
 - Organization switcher (when >1 active memberships) — **shipped** (MVP)
+- Files library respects active org (no cross-org file list/download for multi-membership) — **shipped**
 - Stripe / paid plan gates — **deferred** (Phase E)
 
 ## Access control & team
@@ -194,6 +195,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 
 ## Files
 - Global + event-scoped library (upload, search, categorize, metadata) — **shipped**
+- Active-org isolation on `/files` + file download — **shipped** (switched org only; multi-membership no longer lists other orgs’ files)
 - Org Files SSR soft-capped at 400 newest files (event detail 200; notice when truncated) — **shipped** (perf)
 - Event detail Files tab uses the same `FilesDocumentsShell` as `/files` (DnD upload, search, sort, lean toolbar; event locked / no event carousel) — **shipped**
 - Files & Documents toolbar: type/category/status/date filters + upload + search on one row; search by file or event name (global); event/platform/uploader dropdowns removed — **shipped**
