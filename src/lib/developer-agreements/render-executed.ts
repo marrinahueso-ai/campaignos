@@ -1,5 +1,7 @@
 import "server-only";
 
+import { sanitizeAgreementHtml } from "@/lib/developer-agreements/sanitize-html";
+
 export type ExecutedParty = {
   roleLabel: string;
   legalName: string;
@@ -102,7 +104,7 @@ export function renderExecutedAgreementHtml(
     Version ${escapeHtml(input.versionLabel)} · Hey Ralli, LLC
   </div>
   <div class="agreement-body">
-    ${input.bodyHtml}
+    ${sanitizeAgreementHtml(input.bodyHtml)}
   </div>
   <section style="margin-top:40px;">
     <h2 style="font-family:Georgia,serif;">Executed signature page</h2>

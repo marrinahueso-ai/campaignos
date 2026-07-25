@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getActiveCampaignRolesForUser,
 } from "@/lib/developer-agreements/gate";
+import { sanitizeAgreementHtml } from "@/lib/developer-agreements/sanitize-html";
 import type {
   DeveloperAgreementDocument,
   DeveloperAgreementForSigning,
@@ -60,7 +61,9 @@ function mapVersion(row: VersionRow): DeveloperAgreementVersion {
     id: row.id,
     documentId: row.document_id,
     versionLabel: row.version_label,
-    bodyHtml: row.body_html,
+    // Defense in depth: sanitize on every read too, in case a row was
+    // written before sanitization was added at the write path.
+    bodyHtml: sanitizeAgreementHtml(row.body_html),
     sourceFilename: row.source_filename,
     storagePath: row.storage_path,
     effectiveAt: row.effective_at,
@@ -406,7 +409,7 @@ export async function getCountersignDetail(signatureId: string) {
     version: {
       id: version.id as string,
       versionLabel: version.version_label as string,
-      bodyHtml: version.body_html as string,
+      bodyHtml: sanitizeAgreementHtml(version.body_html as string),
       effectiveAt: version.effective_at as string,
     },
     companyDefaults: {

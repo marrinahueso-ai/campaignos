@@ -67,16 +67,19 @@ export async function GET(request: NextRequest) {
     .replace(/^-|-$/g, "")
     .slice(0, 60);
   const filename = `${safeTitle}-${version?.version_label ?? "signed"}.html`;
-  // Force download when explicitly requested; default inline so Safari/Chrome
-  // render the HTML packet instead of showing source / octet-stream.
-  const forceAttachment =
-    request.nextUrl.searchParams.get("disposition") === "attachment";
+  // Default to attachment: this serves stored HTML at the app's own origin,
+  // so rendering it inline would run any script/onerror payload that ever
+  // made it into a stored agreement in the context of this origin. Only
+  // honor an explicit inline request (e.g. an in-app "preview" link).
+  const forceInline =
+    request.nextUrl.searchParams.get("disposition") === "inline";
 
   return new NextResponse(new Uint8Array(file.bytes), {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `${forceAttachment ? "attachment" : "inline"}; filename="${filename}"`,
+      "Content-Disposition": `${forceInline ? "inline" : "attachment"}; filename="${filename}"`,
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",
     },
   });

@@ -15,6 +15,7 @@ import {
   getDeveloperAgreementSigningProgress,
 } from "@/lib/developer-agreements/queries";
 import { DEVELOPER_AGREEMENTS_COUNTERSIGN_PATH } from "@/lib/developer-agreements/gate";
+import { sanitizeAgreementHtml } from "@/lib/developer-agreements/sanitize-html";
 
 export type AgreementActionState = {
   error: string | null;
@@ -263,6 +264,11 @@ export async function publishDeveloperAgreementVersionAction(
       success: false,
     };
   }
+
+  // Owner-authored HTML (paste / .html upload) is rendered with
+  // dangerouslySetInnerHTML to every signer and re-served as text/html —
+  // strip scripts/event handlers before it ever reaches storage.
+  bodyHtml = sanitizeAgreementHtml(bodyHtml);
 
   const admin = createAdminClient();
   const user = await getAuthUser();
