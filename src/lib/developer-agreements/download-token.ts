@@ -11,10 +11,24 @@ interface ExecutedDownloadPayload {
 }
 
 function getDownloadSigningSecret(): string {
-  return (
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
-    "campaignos-dev-agreement-download-secret"
+  const dedicated = process.env.DEVELOPER_AGREEMENT_DOWNLOAD_SECRET?.trim();
+  if (dedicated) return dedicated;
+
+  // Never fall back to a public key (NEXT_PUBLIC_* is shipped to the client)
+  // or a hardcoded literal — either would let anyone forge admin-bypassing
+  // download tokens. The service-role key is at least a private secret; if
+  // even that is missing, refuse to sign rather than mint a forgeable token.
+  const serviceRoleFallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (serviceRoleFallback) {
+    console.error(
+      "[developer-agreements] DEVELOPER_AGREEMENT_DOWNLOAD_SECRET is not set; " +
+        "falling back to SUPABASE_SERVICE_ROLE_KEY. Set a dedicated secret.",
+    );
+    return serviceRoleFallback;
+  }
+
+  throw new Error(
+    "DEVELOPER_AGREEMENT_DOWNLOAD_SECRET is not configured. Add it to the environment before issuing or verifying agreement download tokens.",
   );
 }
 

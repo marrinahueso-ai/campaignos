@@ -41,18 +41,29 @@ export async function askRalliAssistantAction(
   }
 
   const membership = await getActiveMembership();
-  if (membership?.organizationId) {
-    const gate = await assertOrgFeature(membership.organizationId, "ask_ralli");
-    if (!gate.ok) {
-      return {
-        success: false,
-        answer: null,
-        links: [],
-        eventOptions: [],
-        source: null,
-        error: `${gate.message} ${gate.upgradeHint}`,
-      };
-    }
+  if (!membership?.organizationId) {
+    // Fail closed: no active org membership means no billing plan to check,
+    // so this must not fall through to unmetered AI calls.
+    return {
+      success: false,
+      answer: null,
+      links: [],
+      eventOptions: [],
+      source: null,
+      error: "Join or set up an organization to use Ask Ralli.",
+    };
+  }
+
+  const gate = await assertOrgFeature(membership.organizationId, "ask_ralli");
+  if (!gate.ok) {
+    return {
+      success: false,
+      answer: null,
+      links: [],
+      eventOptions: [],
+      source: null,
+      error: `${gate.message} ${gate.upgradeHint}`,
+    };
   }
 
   return askRalliProductHelp({ question, pathname, eventId });

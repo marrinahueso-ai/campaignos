@@ -57,7 +57,14 @@ export type AiCreditSnapshot = {
 
 export type AssertAiCreditsResult =
   | { ok: true; snapshot: AiCreditSnapshot | null }
-  | { ok: false; error: string; errorCode: "credits_exhausted" };
+  | {
+      ok: false;
+      error: string;
+      errorCode: "credits_exhausted" | "org_unresolved";
+    };
+
+export const AI_CREDITS_ORG_UNRESOLVED_MESSAGE =
+  "Could not verify AI credits for this request. Please sign in with an active organization and try again.";
 
 function softWarnForTier(
   tier: AiPlanTier,
@@ -361,13 +368,32 @@ export async function assertAiCreditsAvailable(input: {
   const cost = creditCostForAction(input.actionType, true) * units;
   if (cost <= 0) return { ok: true, snapshot: null };
 
-  const orgId = await resolveOrganizationIdForCredits(input);
-  if (!orgId || !isSupabaseAdminConfigured()) {
+  if (!isSupabaseAdminConfigured()) {
+    // Local/dev without a service role key — credits can't be tracked at all
+    // in this environment; don't block local development.
     return { ok: true, snapshot: null };
   }
 
+  const orgId = await resolveOrganizationIdForCredits(input);
+  if (!orgId) {
+    // Fail closed: an authenticated caller with no resolvable organization
+    // must not get unmetered AI calls just because we couldn't attribute
+    // the spend to a billing account.
+    return {
+      ok: false,
+      error: AI_CREDITS_ORG_UNRESOLVED_MESSAGE,
+      errorCode: "org_unresolved",
+    };
+  }
+
   const row = await ensurePeriodAllowance(orgId);
-  if (!row) return { ok: true, snapshot: null };
+  if (!row) {
+    return {
+      ok: false,
+      error: AI_CREDITS_ORG_UNRESOLVED_MESSAGE,
+      errorCode: "org_unresolved",
+    };
+  }
   const snapshot = snapshotFromRow(row, orgId);
 
   if (

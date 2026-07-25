@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SIMULATED_ROLE_COOKIE } from "@/lib/auth/get-current-role";
+import { getSupabaseCookieOptions } from "@/lib/supabase/cookie-options";
 
 /** Sign-out must be POST-only — GET prefetch previously logged users out accidentally. */
 export async function POST(request: NextRequest) {
@@ -10,6 +11,7 @@ export async function POST(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: getSupabaseCookieOptions(),
       cookies: {
         getAll() {
           return request.cookies.getAll();

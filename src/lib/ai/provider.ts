@@ -294,7 +294,7 @@ export async function generateText(
         failureResult(
           configuredModel,
           credits.error,
-          "credits_exhausted",
+          credits.errorCode,
           configuredModel,
           false,
         ),

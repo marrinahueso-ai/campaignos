@@ -10,6 +10,7 @@ import {
 import { resolvePendingFoundingAccessForCallback } from "@/lib/auth/founding-access-callback";
 import { resolvePostAuthPathForUser } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { getSupabaseCookieOptions } from "@/lib/supabase/cookie-options";
 
 type EmailOtpType =
   | "signup"
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: getSupabaseCookieOptions(),
       cookies: {
         getAll() {
           return request.cookies.getAll();

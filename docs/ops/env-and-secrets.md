@@ -32,6 +32,8 @@ Git Production branch: **`main`**. Deploy from `main` (or promote a deployment o
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✓ | ✓ | ✓ |
 | `SUPABASE_SERVICE_ROLE_KEY` | recommended | ✓ | ✓ |
 | `NEXT_PUBLIC_SITE_URL` | omit | Preview URL or unset | `https://heyralli.com` (or canonical) |
+| `DEVELOPER_AGREEMENT_DOWNLOAD_SECRET` | recommended | ✓ | ✓ |
+| `FOUNDING_ACCESS_LINK_SECRET` | recommended | ✓ | ✓ |
 
 ### AI
 
@@ -65,6 +67,15 @@ See [integrations/google-calendar.md](../integrations/google-calendar.md). If Go
 | `RESEND_API_KEY` | Welcome email, team invites, story / manual-upload reminders |
 | `RESEND_FROM_EMAIL` | Default From |
 | `RESEND_*_TEMPLATE_ID` | Optional template overrides |
+
+### HMAC signing secrets
+
+| Variable | Notes |
+|----------|-------|
+| `DEVELOPER_AGREEMENT_DOWNLOAD_SECRET` | Signs the emailed executed-agreement download link (`download-token.ts`). Dedicated secret — never falls back to a public key. Generate with `openssl rand -hex 32`. |
+| `FOUNDING_ACCESS_LINK_SECRET` | Signs the pending founding-access-code magic-link param (`founding-access-link-token.ts`). Dedicated secret. Generate with `openssl rand -hex 32`. |
+
+Both fall back to `SUPABASE_SERVICE_ROLE_KEY` with a logged warning if unset (never to `NEXT_PUBLIC_*` or a hardcoded literal), and throw if neither is configured — set the dedicated secret in every environment that issues or verifies these tokens.
 
 ### Cron
 

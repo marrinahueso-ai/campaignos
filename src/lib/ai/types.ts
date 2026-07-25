@@ -69,6 +69,7 @@ export interface AiGenerateTextResult {
     | "api_error"
     | "empty_response"
     | "credits_exhausted"
+    | "org_unresolved"
     | null;
   configuredModel: string;
   usedFallbackModel: boolean;

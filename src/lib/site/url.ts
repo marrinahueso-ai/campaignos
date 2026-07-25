@@ -52,8 +52,47 @@ function isVercelAppHost(hostname: string): boolean {
 }
 
 /**
+ * Security: never blindly reflect an incoming Origin/Host header back into a
+ * URL — a spoofed `Host`/`X-Forwarded-Host` on a request that triggers an
+ * emailed link (invite, magic link, founding-access) would otherwise let an
+ * attacker redirect a real user's auth token to an attacker-controlled
+ * domain. Only recognized hostnames (local dev, this Vercel project's
+ * preview domains, the legacy production host, and the configured public
+ * site URL) are ever echoed back; anything else falls through to the
+ * configured/default site URL.
+ */
+function isAllowedRequestHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase().split(":")[0];
+  if (isLocalHostname(host)) return true;
+  if (isLegacyVercelHost(host)) return true;
+  if (isVercelAppHost(host)) return true;
+
+  const configured = getConfiguredSiteUrl();
+  if (configured) {
+    try {
+      if (new URL(configured).hostname.toLowerCase() === host) {
+        return true;
+      }
+    } catch {
+      // configured value isn't a full URL — ignore
+    }
+  }
+
+  try {
+    if (new URL(DEFAULT_SITE_URL).hostname.toLowerCase() === host) {
+      return true;
+    }
+  } catch {
+    // unreachable — DEFAULT_SITE_URL is a constant valid URL
+  }
+
+  return false;
+}
+
+/**
  * Prefer the incoming request origin/host, then configured public site URL.
- * Legacy Vercel hostnames always resolve to heyralli.com.
+ * Legacy Vercel hostnames always resolve to heyralli.com. Unrecognized
+ * hostnames (potential Host-header spoofing) never get reflected back.
  */
 export function resolveSiteOrigin(requestOrigin?: string | null): string {
   const origin = requestOrigin?.trim();
@@ -66,7 +105,10 @@ export function resolveSiteOrigin(requestOrigin?: string | null): string {
       if (isLegacyVercelHost(url.hostname) || isVercelAppHost(url.hostname)) {
         return DEFAULT_SITE_URL;
       }
-      return stripTrailingSlash(origin);
+      if (isAllowedRequestHostname(url.hostname)) {
+        return stripTrailingSlash(origin);
+      }
+      // Unrecognized host — fall through to configured/default below.
     } catch {
       // fall through to configured/default
     }
@@ -94,8 +136,11 @@ export function resolveSiteUrlFromHeaders(
     if (isLegacyVercelHost(hostname) || isVercelAppHost(hostname)) {
       return DEFAULT_SITE_URL;
     }
-    const scheme = proto?.trim() || "https";
-    return stripTrailingSlash(`${scheme}://${host}`);
+    if (isAllowedRequestHostname(hostname)) {
+      const scheme = proto?.trim() || "https";
+      return stripTrailingSlash(`${scheme}://${host}`);
+    }
+    // Unrecognized host — fall through to configured/default below.
   }
 
   const configured = getConfiguredSiteUrl();

@@ -12,10 +12,24 @@ interface PendingFoundingAccessLinkPayload {
 }
 
 function getFacSigningSecret(): string {
-  return (
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
-    "campaignos-dev-fac-secret"
+  const dedicated = process.env.FOUNDING_ACCESS_LINK_SECRET?.trim();
+  if (dedicated) return dedicated;
+
+  // Never fall back to a public key (NEXT_PUBLIC_* ships to the client) or a
+  // hardcoded literal — either would let anyone forge a founding-access
+  // bypass link. The service-role key is at least a private secret; if even
+  // that is missing, refuse to sign rather than mint a forgeable token.
+  const serviceRoleFallback = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (serviceRoleFallback) {
+    console.error(
+      "[founding-access] FOUNDING_ACCESS_LINK_SECRET is not set; falling back " +
+        "to SUPABASE_SERVICE_ROLE_KEY. Set a dedicated secret.",
+    );
+    return serviceRoleFallback;
+  }
+
+  throw new Error(
+    "FOUNDING_ACCESS_LINK_SECRET is not configured. Add it to the environment before issuing or verifying founding-access links.",
   );
 }
 
