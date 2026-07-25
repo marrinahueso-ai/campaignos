@@ -155,6 +155,22 @@ describe("aggregateUsageByCategory", () => {
     assert.equal(artwork?.count, 1);
     assert.equal(artwork?.credits, 0);
   });
+
+  it("sorts highest usage first (by credits, then count), unused categories stay in a stable order at the bottom", () => {
+    const entries = aggregateUsageByCategory([
+      row({ actionType: "ask_ralli" }),
+      row({ actionType: "ask_ralli" }),
+      row({ actionType: "generate_artwork" }),
+    ]);
+    assert.equal(entries[0]?.key, "artwork_generation");
+    assert.equal(entries[0]?.credits, 8);
+    assert.equal(entries[1]?.key, "ask_ralli");
+    assert.equal(entries[1]?.credits, 2);
+    const remaining = entries.slice(2);
+    assert.ok(remaining.every((entry) => entry.credits === 0 && entry.count === 0));
+    // Stable order among zero-usage categories mirrors AI_USAGE_CATEGORY_ORDER.
+    assert.equal(remaining[0]?.key, "artwork_regeneration");
+  });
 });
 
 describe("rankUsageByMember", () => {

@@ -159,7 +159,9 @@ export type CategoryUsageEntry = {
 /**
  * Every category always appears (count 0 if unused this period) so the
  * breakdown reads as a complete list of "everywhere Hey Ralli uses OpenAI",
- * not just whichever categories happened to fire.
+ * not just whichever categories happened to fire. Sorted highest-usage-first
+ * (by credits, then count) so the UI can render it as a ranked bar chart;
+ * ties fall back to the documented category order for a stable list.
  */
 export function aggregateUsageByCategory(
   rows: AiUsageAggregationRow[],
@@ -182,7 +184,11 @@ export function aggregateUsageByCategory(
     label: AI_USAGE_CATEGORY_LABELS[key],
     count: byKey.get(key)?.count ?? 0,
     credits: byKey.get(key)?.credits ?? 0,
-  }));
+  })).sort((a, b) => {
+    if (b.credits !== a.credits) return b.credits - a.credits;
+    if (b.count !== a.count) return b.count - a.count;
+    return AI_USAGE_CATEGORY_ORDER.indexOf(a.key) - AI_USAGE_CATEGORY_ORDER.indexOf(b.key);
+  });
 }
 
 export type MemberUsageEntry = {

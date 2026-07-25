@@ -280,6 +280,8 @@ export function BillingUsagePanel({
   const byMember = usageBreakdown?.byMember ?? [];
   const byCategory = usageBreakdown?.byCategory ?? [];
   const topMember = byMember.find((entry) => entry.userId != null) ?? null;
+  const maxMemberCredits = Math.max(1, ...byMember.map((entry) => entry.credits));
+  const maxCategoryCredits = Math.max(1, ...byCategory.map((entry) => entry.credits));
 
   return (
     <div className="space-y-6">
@@ -447,38 +449,51 @@ export function BillingUsagePanel({
               No AI usage from members yet this period.
             </p>
           ) : (
-            <ul className="divide-y divide-cos-border">
+            <ul className="space-y-4">
               {byMember.map((entry, index) => {
                 const isTop = topMember != null && entry.userId === topMember.userId;
+                const memberPercent = Math.round((entry.credits / maxMemberCredits) * 100);
                 return (
-                  <li
-                    key={entry.userId ?? "unknown"}
-                    className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
-                  >
-                    <span className="w-5 shrink-0 text-sm tabular-nums text-cos-muted">
-                      {index + 1}
-                    </span>
-                    {isTop ? (
-                      <Crown
-                        className="h-4 w-4 shrink-0 text-cos-warning-text"
-                        strokeWidth={1.75}
-                        aria-label="Top member"
+                  <li key={entry.userId ?? "unknown"}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-medium text-cos-text">
+                        <span className="shrink-0 tabular-nums text-cos-muted">
+                          {index + 1}.
+                        </span>
+                        {isTop ? (
+                          <Crown
+                            className="h-4 w-4 shrink-0 text-cos-warning-text"
+                            strokeWidth={1.75}
+                            aria-label="Top member"
+                          />
+                        ) : null}
+                        <span className="truncate">{entry.label}</span>
+                        {isTop ? (
+                          <Badge variant="info" className="shrink-0 align-middle">
+                            Top
+                          </Badge>
+                        ) : null}
+                      </p>
+                      <p className="shrink-0 text-sm tabular-nums text-cos-muted">
+                        {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"} ·{" "}
+                        <span className="font-medium text-cos-text">
+                          {entry.credits.toLocaleString()} cr
+                        </span>
+                      </p>
+                    </div>
+                    <div
+                      className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+                      role="progressbar"
+                      aria-valuenow={entry.credits}
+                      aria-valuemin={0}
+                      aria-valuemax={maxMemberCredits}
+                      aria-label={`${entry.label}: ${entry.credits} credits used`}
+                    >
+                      <div
+                        className="h-full bg-cos-dark transition-[width]"
+                        style={{ width: `${memberPercent}%` }}
                       />
-                    ) : null}
-                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
-                      {entry.label}
-                      {isTop ? (
-                        <Badge variant="info" className="ml-2 align-middle">
-                          Top
-                        </Badge>
-                      ) : null}
-                    </p>
-                    <p className="shrink-0 text-xs text-cos-muted">
-                      {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
-                    </p>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
-                      {entry.credits.toLocaleString()} cr
-                    </p>
+                    </div>
                   </li>
                 );
               })}
@@ -494,28 +509,43 @@ export function BillingUsagePanel({
 
         <SettingsV2Card
           title="Usage by category"
-          description="Full breakdown of what this organization is using AI for."
+          description="Full breakdown of what this organization is using AI for, highest first."
         >
           {byCategory.length === 0 ? (
             <p className="text-sm text-cos-muted">No AI usage yet this period.</p>
           ) : (
-            <ul className="divide-y divide-cos-border">
-              {byCategory.map((entry) => (
-                <li
-                  key={entry.key}
-                  className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
-                >
-                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
-                    {entry.label}
-                  </p>
-                  <p className="shrink-0 text-xs text-cos-muted">
-                    {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
-                  </p>
-                  <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
-                    {entry.credits.toLocaleString()} cr
-                  </p>
-                </li>
-              ))}
+            <ul className="space-y-4">
+              {byCategory.map((entry) => {
+                const categoryPercent = Math.round((entry.credits / maxCategoryCredits) * 100);
+                return (
+                  <li key={entry.key}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
+                        {entry.label}
+                      </p>
+                      <p className="shrink-0 text-sm tabular-nums text-cos-muted">
+                        {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"} ·{" "}
+                        <span className="font-medium text-cos-text">
+                          {entry.credits.toLocaleString()} cr
+                        </span>
+                      </p>
+                    </div>
+                    <div
+                      className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+                      role="progressbar"
+                      aria-valuenow={entry.credits}
+                      aria-valuemin={0}
+                      aria-valuemax={maxCategoryCredits}
+                      aria-label={`${entry.label}: ${entry.credits} credits used`}
+                    >
+                      <div
+                        className="h-full bg-cos-dark transition-[width]"
+                        style={{ width: `${categoryPercent}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </SettingsV2Card>
