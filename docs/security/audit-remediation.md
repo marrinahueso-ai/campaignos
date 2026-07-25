@@ -1,0 +1,61 @@
+# Security audit remediation log
+
+**Status:** Living
+**Owner:** Engineering
+**Last updated:** July 25, 2026
+**Related:** [Security](./README.md) · [Access & onboarding](./access-and-onboarding.md) · [Multi-tenant isolation](./multi-tenant-isolation.md) · [Access control](../engineering/access-control.md) · [Feature list](../product/feature-list.md)
+
+Tracks findings from the July 2026 full-app security audit (Authentication, Authorization/RBAC/RLS, injection/XSS/CSRF, API security & architecture) and their remediation status. Read this before re-auditing so prior findings aren't rediscovered as new.
+
+---
+
+## Critical
+
+| # | Finding | Fix | Status |
+|---|---------|-----|--------|
+| 1 | Cross-tenant account takeover: `provisionTeamMemberAccount` and `createInvitedMemberAccount` reset the password of any **pre-existing** Supabase auth account when the target email already had one — any org admin (or invite-token holder) could take over any account by knowing its email. | Removed the password-reset-on-existing-account branch from both [`provision-team-account.ts`](../../src/lib/auth/provision-team-account.ts) and [`invite-credentials.ts`](../../src/lib/auth/invite-credentials.ts). Existing accounts now must sign in with their own credentials (password or OAuth) to accept an invite — `acceptPendingInvitesForUser` already auto-claims the invite once authenticated. [`InviteAcceptForm.tsx`](../../src/components/auth/InviteAcceptForm.tsx) updated to show a "Sign in to accept" CTA instead of a password form when the account already exists. | ✅ Fixed |
+| 2 | `organization_canva_connections` (Canva OAuth tokens), `organization_ai_profile`, and `organization_training_documents` had `using (true)` RLS policies granted to **`anon` and `authenticated`** — missed by the 064–067 membership-scoped RLS hardening sweep. | Added `private.is_active_org_member(organization_id)`-scoped policies to all three tables, dropped `anon` grants. Migration: [`20260725080000_secure_canva_ai_training_rls.sql`](../../supabase/migrations/20260725080000_secure_canva_ai_training_rls.sql). Applied directly to production for `organization_canva_connections` (the only one of the three that exists in prod today — `organization_ai_profile`/`organization_training_documents` are defined in migration 007 but not yet applied to prod). Table had 0 rows in production at time of fix, so no Canva token rotation was needed (nothing to rotate). | ✅ Fixed |
+
+## High
+
+| # | Finding | Fix | Status |
+|---|---------|-----|--------|
+| 3 | No rate limiting anywhere: login, OTP/magic-link send, invite accept, password change, founding-access code entry, Ask Ralli/AI generation all unthrottled. | Pending | ⏳ Not started |
+| 4 | AI credit + `ask_ralli` feature gate fail **open** when org can't be resolved / caller has no active membership → unlimited unmetered OpenAI calls. | Pending | ⏳ Not started |
+| 5 | Forgeable HMAC secrets: `download-token.ts` / `founding-access-link-token.ts` fall back from service-role key to the public anon key, then a hardcoded literal. | Pending | ⏳ Not started |
+| 6 | Host-header injection into emailed auth links (`invite-url.ts` / `url.ts` trust `origin`/`x-forwarded-host`). | Pending | ⏳ Not started |
+| 7 | Weak session cookie flags — no explicit `secure`/`maxAge` on any Supabase client. | Pending | ⏳ Not started |
+
+## Medium
+
+| # | Finding | Status |
+|---|---------|--------|
+| 8 | OAuth callback CSRF (Meta + Monday accept state without strict cookie match) | ⏳ Not started |
+| 9 | OAuth start routes have no `manage_integrations` permission check | ⏳ Not started |
+| 10 | Active-org data leaks: communications-calendar, creative-assets, vendor metadata queries | ⏳ Not started |
+| 11 | Unsanitized HTML in developer agreements (no DOMPurify; inline `text/html` re-serve) | ⏳ Not started |
+| 12 | Client-controlled Content-Type on public bucket uploads | ⏳ Not started |
+| 13 | CSRF-able `POST /api/insights/sync` | ⏳ Not started |
+| 14 | No security headers (`next.config.ts` missing CSP/HSTS/etc.) | ⏳ Not started |
+| 15 | Deactivating a member doesn't revoke their session/refresh token | ⏳ Not started |
+| 16 | Unsanitized filename in calendar-import upload storage path | ⏳ Not started |
+
+## Low / Info (cleanup, not launch-blocking)
+
+- Founding access codes: static shared secret, non-constant-time compare, disableable via env flag.
+- CSV formula injection in insights export.
+- `escapeHtml` doesn't validate URL schemes before use in email `href`s.
+- OAuth provider tokens stored in plaintext rather than encrypted at rest.
+- Account enumeration via verbose Supabase error passthrough on OTP/password-reset paths.
+- Password change has no re-authentication (current-password) step.
+- Verbose OAuth token-exchange error logging may leak partial request/response details.
+- Duplicate dead file `src/lib/events/export-events-list-pdf 2.ts`.
+
+## Already solid — no action needed
+
+- RLS enabled on all `public` tables; membership-scoped policies (064–067) use `security definer` + `search_path=''` correctly.
+- No raw/dynamic SQL across migrations; the one `.rpc()` call is fully parameterized.
+- Stripe and Meta webhook signature verification are correct, raw-body based, fail closed.
+- No secrets reach the client bundle; `server-only` guards used correctly throughout.
+- No permissive CORS; middleware fails closed on protected paths.
+- Ask Ralli AI context packs are correctly org-scoped.

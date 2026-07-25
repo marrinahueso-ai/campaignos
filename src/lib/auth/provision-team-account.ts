@@ -1,11 +1,9 @@
 import "server-only";
 
-import { markMustChangePassword } from "@/lib/auth/invite-credentials";
 import { createOrganizationMembership } from "@/lib/auth/membership-mutations";
 import type { CampaignRole } from "@/lib/auth/campaign-roles";
 import {
   createAdminClient,
-  findAuthUserByEmail,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -107,25 +105,18 @@ export async function provisionTeamMemberAccount(input: {
       return { error: created.error.message };
     }
 
-    const existingUser = await findAuthUserByEmail(email);
-    if (!existingUser) {
-      return { error: created.error.message };
-    }
-
-    const updated = await admin.auth.admin.updateUserById(existingUser.id, {
-      password: input.password,
-      email_confirm: true,
-    });
-
-    if (updated.error) {
-      return { error: updated.error.message };
-    }
-
-    userId = existingUser.id;
-    await markMustChangePassword(userId);
-  } else {
-    userId = created.data.user.id;
+    // Never reset the password of a pre-existing account here — this admin
+    // is unilaterally choosing an email + password with no proof they own
+    // that mailbox, so overwriting an existing account's credentials would
+    // let any org admin take over any other account (including another
+    // organization's owner) just by knowing their email address.
+    return {
+      error:
+        "An account already exists for this email. Use Invite instead so they can join with their own credentials, or ask them to sign in directly.",
+    };
   }
+
+  userId = created.data.user.id;
 
   if (!userId) {
     return { error: "Could not create the sign-in account." };

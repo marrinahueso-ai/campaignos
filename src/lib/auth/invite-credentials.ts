@@ -56,34 +56,16 @@ export async function createInvitedMemberAccount(input: {
     };
   }
 
-  // Invite links are secret + expiring — allow setting/resetting password on an
-  // existing auth user (e.g. Google-only accounts needing local email login).
-  const existing = await findAuthUserByEmail(email);
-  if (!existing) {
-    return {
-      error:
-        "An account already exists for this email, but it could not be updated. Sign in instead or ask your admin to resend the invite.",
-    };
-  }
-
-  const updated = await admin.auth.admin.updateUserById(existing.id, {
-    password: input.password,
-    email_confirm: true,
-    app_metadata: {
-      ...existing.app_metadata,
-      [MUST_CHANGE_PASSWORD_KEY]: false,
-    },
-  });
-
-  if (updated.error || !updated.data.user) {
-    return {
-      error:
-        updated.error?.message ??
-        "Could not update your password. Try signing in instead.",
-    };
-  }
-
-  return { userId: updated.data.user.id };
+  // Never reset the password of a pre-existing auth account here: the invite
+  // token is often held/shared by the inviting admin, not verified as
+  // belonging to the target mailbox, so this path must not double as an
+  // account-takeover primitive. Existing accounts must sign in with their
+  // own credentials (password or OAuth) — the invite is then auto-accepted
+  // via acceptPendingInvitesForUser once they're authenticated.
+  return {
+    error:
+      "An account already exists for this email. Sign in with your existing password (or Google account) to accept this invite.",
+  };
 }
 
 /** Mark manually provisioned accounts so first login requires a password change. */

@@ -9,6 +9,7 @@
 | [multi-tenant-isolation.md](./multi-tenant-isolation.md) | **Living** — isolation guarantees (short) |
 | [overview.md](./overview.md) | Planned stub |
 | [privacy-and-data.md](./privacy-and-data.md) | Planned stub |
+| [audit-remediation.md](./audit-remediation.md) | **Living** — July 2026 security audit findings + fix status |
 
 Living related: [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md)
 

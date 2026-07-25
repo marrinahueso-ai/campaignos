@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
@@ -70,7 +70,9 @@ Source: `src/lib/auth/founding-access.ts`.
 2. Invite email includes `/invite/[token]` (password **not** in email). Link can be copied if email send fails.
 3. Invitee:
    - **New account:** set password on invite page → Auth user created → invite claimed → `active`
-   - **Existing account:** sign in (password / OAuth / magic link) with the **invite email** → claim
+   - **Existing account:** sign in (password / OAuth / magic link) with the **invite email** → claim.
+     The invite-accept page **never** resets the password of a pre-existing account (closed
+     a cross-tenant account-takeover finding — see [audit-remediation.md](./audit-remediation.md#critical)).
 4. Email must match the invite. Mismatch → login error / invite blocked (`invite_email`).
 5. Founding setup intent **does not** auto-claim invites (`/auth/callback` skips `acceptPendingInvitesForUser` when `setup=1`).
 
