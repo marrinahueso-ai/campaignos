@@ -95,9 +95,16 @@ describe("shouldRouteToOpsAsk", () => {
     },
   ];
 
-  it("routes ops intents and event pathnames", () => {
+  it("routes ops intents only with event scope; bare ops go to org", () => {
     assert.equal(
       shouldRouteToOpsAsk("What should I do next?", null),
+      false,
+    );
+    assert.equal(
+      shouldRouteToOpsAsk(
+        "What should I do next?",
+        "/events/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      ),
       true,
     );
     assert.equal(
@@ -126,26 +133,41 @@ describe("shouldRouteToOpsAsk", () => {
 
 /** Eval-style fixtures: Phase 1 acceptance questions → ops path. */
 describe("Phase 1 ops routing fixtures", () => {
-  const fixtures = [
-    "What should I do next for Back to School Fair?",
-    "Am I on schedule?",
-    "What's publishing today?",
-    "What's publishing this week?",
-    "Is this event ready?",
-    "What tasks are still incomplete?",
+  const events = [
+    {
+      id: "evt-1",
+      title: "Back to School Fair",
+      date: "2026-08-20",
+      status: "scheduled",
+    },
   ];
 
-  for (const question of fixtures) {
+  const eventScoped = [
+    "What should I do next for Back to School Fair?",
+    "Am I on schedule for Back to School Fair?",
+    "What's publishing today for Back to School Fair?",
+    "Is this event ready for Back to School Fair?",
+    "What tasks are still incomplete for Back to School Fair?",
+  ];
+
+  for (const question of eventScoped) {
     it(`maps to ops path: ${question}`, () => {
       assert.equal(isOpsIntent(question), true);
-      assert.equal(shouldRouteToOpsAsk(question, null), true);
+      assert.equal(shouldRouteToOpsAsk(question, null, events), true);
       assert.equal(shouldPreferProductHelpFaq(question), false);
     });
   }
 
-  it("routes overdue / waiting-for-approval to org when no event is named", () => {
-    for (const question of ["What's overdue?", "What's waiting for approval?"]) {
-      assert.equal(shouldRouteToOpsAsk(question, null), false, question);
+  it("routes bare status asks to org when no event is named", () => {
+    for (const question of [
+      "What's overdue?",
+      "What's waiting for approval?",
+      "What should I do next?",
+      "Am I on schedule?",
+      "What's publishing today?",
+      "what do I have to do next week?",
+    ]) {
+      assert.equal(shouldRouteToOpsAsk(question, null, events), false, question);
       assert.equal(shouldPreferProductHelpFaq(question), false, question);
     }
   });

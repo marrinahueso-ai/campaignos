@@ -173,6 +173,13 @@ describe("heyralli reproduction: org briefing vs Calendar/AI", () => {
     assert.equal(shouldPreferProductHelpFaq(question), false);
   });
 
+  it('routes "what do I have to do next week?" to org (not name-an-event)', () => {
+    const question = "what do I have to do next week?";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question, []), true);
+    assert.equal(shouldRouteToOpsAsk(question, null, []), false);
+  });
+
   it('routes "give me todays summary?" (missing apostrophe) to org', () => {
     const question = "give me todays summary?";
     assert.equal(isOrgBriefingIntent(question), true);

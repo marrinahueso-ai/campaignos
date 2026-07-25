@@ -105,6 +105,21 @@ export async function askRalliOpsCoach(input: {
   }
 
   if (resolution.kind === "none") {
+    // No event named — answer at org level instead of “name an event”.
+    if (!input.eventId?.trim()) {
+      const { askRalliOrgBriefing } = await import(
+        "@/lib/ralli-assistant/org-ask"
+      );
+      const org = await askRalliOrgBriefing({ question });
+      return {
+        success: org.success,
+        answer: org.answer,
+        links: org.links,
+        eventOptions: [],
+        source: "ops",
+        error: org.error,
+      };
+    }
     return {
       success: true,
       answer: formatNoEventAnswer(resolution.reason),

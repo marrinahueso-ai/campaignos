@@ -172,10 +172,9 @@ export async function askRalliProductHelp(input: {
     return withDisplayPolish(await askRalliOrgBriefing({ question }));
   }
 
-  if (
-    isOpsIntent(question) ||
-    Boolean(extractEventIdFromPathname(input.pathname))
-  ) {
+  // Bare ops without event scope already routed to org above; only hit ops
+  // here when we still have a pathname event id (list load may have failed).
+  if (Boolean(extractEventIdFromPathname(input.pathname)) || eventId) {
     return withDisplayPolish(
       await askRalliOpsCoach({
         question,
@@ -183,6 +182,11 @@ export async function askRalliProductHelp(input: {
         eventId,
       }),
     );
+  }
+
+  // Last-chance: ops-shaped but no event → org briefing (never “name an event”).
+  if (isOpsIntent(question)) {
+    return withDisplayPolish(await askRalliOrgBriefing({ question }));
   }
 
   // PTO playbook advice (experienced-president tips) before product FAQ / AI.

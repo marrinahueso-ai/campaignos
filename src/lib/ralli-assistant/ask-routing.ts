@@ -117,6 +117,15 @@ export function shouldRouteToOrgBriefing(
     return true;
   }
 
+  // Bare ops status asks (“what’s next?”, “what do I have to do next week?”)
+  // without a named event / event page → org briefing, not “name an event”.
+  if (isOpsIntent(question) && !hasEventScope(question, pathname, events)) {
+    if (isHowToNavigationQuestion(question)) {
+      return false;
+    }
+    return true;
+  }
+
   return false;
 }
 
@@ -139,10 +148,12 @@ export function shouldRouteToOpsAsk(
     return false;
   }
   if (isVolunteersOrCommsOpsIntent(question)) {
-    return true;
+    // Event-scoped volunteers/comms only (org path already handled bare ones).
+    return hasEventScope(question, pathname, events);
   }
   if (isOpsIntent(question)) {
-    return true;
+    // Require a concrete event handle — otherwise org briefing owns it.
+    return hasEventScope(question, pathname, events);
   }
   if (extractEventIdFromPathname(pathname)) {
     return true;
