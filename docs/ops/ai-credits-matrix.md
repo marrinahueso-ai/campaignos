@@ -6,7 +6,7 @@
 **Related:** [Billing and access](./billing-and-access.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md)
 
 Commercial source of truth for Hey Ralli plans, AI credits, AI Reserve, trial, and artwork regen caps.  
-**Engine status:** Phases 1–5 shipped (metering, widget, Owner Credits/grants, billing surfaces, Stripe Checkout/Portal/webhooks + trial + core gates). Hard-block at 0 = Phase 6. Configure `STRIPE_*` env to enable Checkout.
+**Engine status:** Phases 1–6 shipped (metering, widget, Owner Credits/grants, billing surfaces, Stripe Checkout/Portal/webhooks + trial + core gates, hard-block AI at 0). Configure `STRIPE_*` env to enable Checkout.
 
 ---
 
@@ -167,7 +167,7 @@ Platform share ~$2.30/school (shared stack ~$226/mo). Other ≈ email + storage 
 | **4** | Owner Reserve / bonus grant UI — **shipped** |
 | **4.5** | Billing surfaces sync (catalog) — **shipped** |
 | **5** | Stripe + feature/capacity gates + 14-day trial — **shipped** (env required for Checkout) |
-| **6** | Hard-block AI at 0 |
+| **6** | Hard-block AI at 0 — **shipped** (`assertAiCreditsAvailable` before text + artwork generation) |
 
 Founding / `billing_exempt_at` → **unlimited** credits (log usage, no burn).
 

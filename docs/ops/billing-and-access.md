@@ -29,7 +29,7 @@ Access today: founding codes, invites, `billing_exempt_at`, **14-day trial** for
 1. **Founding / invite** — Valid founding code → waived billing + unlimited AI credits.
 2. **Trial** — New non-exempt org starts `plan_tier=trial`, `trial_ends_at` +14d, 600-credit pool, Professional entitlements. First Stripe Checkout attaches a matching `trial_period_days` so Stripe stays in `trialing` (card on file, no charge until trial ends). After expiry without Checkout → Starter entitlements until they subscribe (no second free trial).
 3. **Paid** — Stripe Checkout (plans + Reserve) → webhook updates `organizations.plan_tier` / `subscription_status` / `trial_ends_at` / subscription ids; Customer Portal for card / invoices / cancel.
-4. **Soft warn → hard block (Phase 6)** — Soft warn today; hard-block AI at 0 later.
+4. **Soft warn → hard block** — Soft warn when low; AI generation refuses when period + Reserve cannot cover the action cost (founding / exempt unlimited).
 
 ## Stripe setup (ops)
 
@@ -73,7 +73,7 @@ Without `STRIPE_SECRET_KEY`, UI stays honest (“coming soon”) but trial + fea
 | 4 Owner grants | **Shipped** |
 | 4.5 Billing surfaces sync | **Shipped** |
 | 5 Stripe + gates + trial | **Shipped** (needs Stripe env for Checkout) |
-| 6 Hard-block at 0 | Pending |
+| 6 Hard-block at 0 | **Shipped** |
 
 ## Gates enforced in Phase 5
 
@@ -96,5 +96,5 @@ Other matrix rows are defined in `entitlements.ts` for follow-on wiring.
 - [x] Core feature/capacity gates
 - [x] Stripe products + prices + webhook created (live account)
 - [x] `STRIPE_SECRET_KEY` + publishable key on local + Vercel + Production redeploy
+- [x] Hard-block AI at 0 (Phase 6)
 - [ ] Wire remaining capacity gates (Meta posts/mo, social accounts, storage)
-- [ ] Hard-block AI at 0 (Phase 6)

@@ -282,6 +282,26 @@ export async function generateText(
     return result;
   };
 
+  if (input.usage?.actionType) {
+    const { assertAiCreditsAvailable } = await import("@/lib/ai/credits");
+    const credits = await assertAiCreditsAvailable({
+      organizationId: input.usage.organizationId,
+      eventId: input.usage.eventId,
+      actionType: input.usage.actionType,
+    });
+    if (!credits.ok) {
+      return finish(
+        failureResult(
+          configuredModel,
+          credits.error,
+          "credits_exhausted",
+          configuredModel,
+          false,
+        ),
+      );
+    }
+  }
+
   if (!apiKey) {
     console.error("OpenAI API key is not configured server-side.");
     return finish(

@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — AI credits Phase 5 (Stripe + trial + gates)
+**Last updated:** July 24, 2026 — AI credits Phase 6 (hard-block at 0)
 
 ---
 
@@ -249,8 +249,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
 - Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week”; product-help FAQ retained for how-to; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
-- AI credits engine — **partial** (Phases 1–5: metering, widget, Owner monitor/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + 600 credits, core feature/capacity gates; hard-block at 0 = Phase 6 — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
-- AI credits widget — **shipped** (Phase 2: real sidebar balance + soft warn + Billing & Plan blurb; hard stop later)
+- AI credits engine — **shipped** (Phases 1–6: metering, widget, Owner monitor/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + 600 credits, core feature/capacity gates, hard-block AI when period + Reserve cannot cover the action — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
+- AI credits widget — **shipped** (sidebar balance + soft warn + exhausted hard-stop CTA to Billing)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
 - Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
 - Stripe billing + trial + plan gates — **partial** (Phase 5 eng: Checkout/Portal/webhooks + app trial + Stripe `trial_period_days` / `trialing` sync + Ask Ralli / Inbox AI / events / seats gates; requires Stripe env for live Checkout)

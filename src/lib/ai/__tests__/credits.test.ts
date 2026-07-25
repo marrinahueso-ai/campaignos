@@ -10,7 +10,11 @@ import {
   monthlyAllowanceForTier,
   periodYmUtc,
 } from "../credit-constants.ts";
-import { splitBurnAcrossBuckets } from "../credits-pure.ts";
+import {
+  canAffordAiCredits,
+  isAiCreditsExhausted,
+  splitBurnAcrossBuckets,
+} from "../credits-pure.ts";
 import {
   resetLabelForPeriodYm,
   toAiCreditsWidgetData,
@@ -70,6 +74,71 @@ describe("ai credits widget data", () => {
     });
     assert.equal(data.resetLabel, "Resets Aug 1");
     assert.equal(data.reserveBalance, 500);
+    assert.equal(data.exhausted, false);
+  });
+
+  it("marks widget exhausted when period and reserve are zero", () => {
+    const data = toAiCreditsWidgetData({
+      unlimited: false,
+      used: 1200,
+      allowance: 1200,
+      reserveBalance: 0,
+      softWarn: true,
+      periodYm: "2026-07",
+    });
+    assert.equal(data.exhausted, true);
+    assert.equal(data.softWarn, false);
+  });
+});
+
+describe("Phase 6 hard-block helpers", () => {
+  it("treats zero period+reserve as exhausted", () => {
+    assert.equal(
+      isAiCreditsExhausted({
+        unlimited: false,
+        periodRemaining: 0,
+        reserveBalance: 0,
+      }),
+      true,
+    );
+    assert.equal(
+      isAiCreditsExhausted({
+        unlimited: true,
+        periodRemaining: 0,
+        reserveBalance: 0,
+      }),
+      false,
+    );
+  });
+
+  it("blocks when remaining is below action cost", () => {
+    assert.equal(
+      canAffordAiCredits({
+        unlimited: false,
+        periodRemaining: 3,
+        reserveBalance: 0,
+        cost: 8,
+      }),
+      false,
+    );
+    assert.equal(
+      canAffordAiCredits({
+        unlimited: false,
+        periodRemaining: 3,
+        reserveBalance: 5,
+        cost: 8,
+      }),
+      true,
+    );
+    assert.equal(
+      canAffordAiCredits({
+        unlimited: true,
+        periodRemaining: 0,
+        reserveBalance: 0,
+        cost: 8,
+      }),
+      true,
+    );
   });
 });
 

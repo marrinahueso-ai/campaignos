@@ -284,6 +284,16 @@ export async function generateArtworkConceptsAction(
     return { success: false, error: "AI artwork generation is not configured." };
   }
 
+  const { assertAiCreditsAvailable } = await import("@/lib/ai/credits");
+  const credits = await assertAiCreditsAvailable({
+    eventId,
+    actionType: "generate_artwork",
+    units: CONCEPT_COUNT,
+  });
+  if (!credits.ok) {
+    return { success: false, error: credits.error };
+  }
+
   const ctx = await resolveAssetContext(eventId, assetId);
   if (!ctx) return { success: false, error: "Asset not found." };
 

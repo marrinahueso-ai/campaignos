@@ -215,6 +215,22 @@ export async function generateArtworkV2ImageNative(
     };
   }
 
+  const { assertAiCreditsAvailable } = await import("@/lib/ai/credits");
+  const credits = await assertAiCreditsAvailable({
+    eventId,
+    actionType: "generate_artwork",
+  });
+  if (!credits.ok) {
+    return {
+      success: false,
+      imageBase64: null,
+      revisedPrompt: null,
+      model,
+      ...emptyUsage,
+      error: credits.error,
+    };
+  }
+
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return {

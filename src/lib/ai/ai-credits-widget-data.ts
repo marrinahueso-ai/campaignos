@@ -8,6 +8,8 @@ export type AiCreditsWidgetData = {
   allowance: number;
   reserveBalance: number;
   softWarn: boolean;
+  /** Period + Reserve are both 0 — AI is hard-blocked. */
+  exhausted: boolean;
   resetLabel: string;
   periodYm: string;
 };
@@ -33,14 +35,22 @@ export function toAiCreditsWidgetData(input: {
   allowance: number;
   reserveBalance: number;
   softWarn: boolean;
+  exhausted?: boolean;
   periodYm: string;
 }): AiCreditsWidgetData {
+  const exhausted =
+    input.exhausted ??
+    (!input.unlimited &&
+      Math.max(0, input.allowance - input.used) +
+        Math.max(0, input.reserveBalance) <=
+        0);
   return {
     unlimited: input.unlimited,
     used: input.used,
     allowance: input.allowance,
     reserveBalance: input.reserveBalance,
-    softWarn: input.softWarn,
+    softWarn: exhausted ? false : input.softWarn,
+    exhausted,
     periodYm: input.periodYm,
     resetLabel: input.unlimited
       ? "Unlimited"

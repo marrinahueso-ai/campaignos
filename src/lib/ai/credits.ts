@@ -16,7 +16,11 @@ import {
   periodYmUtc,
   SOFT_WARN_REMAINING_CREDITS,
 } from "@/lib/ai/credit-constants";
-import { splitBurnAcrossBuckets } from "@/lib/ai/credits-pure";
+import {
+  canAffordAiCredits,
+  isAiCreditsExhausted,
+  splitBurnAcrossBuckets,
+} from "@/lib/ai/credits-pure";
 import { toAiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 
@@ -27,8 +31,15 @@ export {
   AI_RESERVE_SKUS,
   DEFAULT_PAID_PLAN_TIER,
 } from "@/lib/ai/credit-constants";
-export { splitBurnAcrossBuckets } from "@/lib/ai/credits-pure";
+export {
+  canAffordAiCredits,
+  isAiCreditsExhausted,
+  splitBurnAcrossBuckets,
+} from "@/lib/ai/credits-pure";
 export type { BurnBucketSplit } from "@/lib/ai/credits-pure";
+
+export const AI_CREDITS_EXHAUSTED_MESSAGE =
+  "You're out of AI credits. Upgrade your plan or buy AI Reserve in Billing & Plan.";
 
 export type AiCreditSnapshot = {
   organizationId: string;
@@ -41,7 +52,12 @@ export type AiCreditSnapshot = {
   reserveBalance: number;
   totalRemaining: number;
   softWarn: boolean;
+  exhausted: boolean;
 };
+
+export type AssertAiCreditsResult =
+  | { ok: true; snapshot: AiCreditSnapshot | null }
+  | { ok: false; error: string; errorCode: "credits_exhausted" };
 
 function softWarnForTier(
   tier: AiPlanTier,
@@ -250,6 +266,11 @@ function snapshotFromRow(
   const totalRemaining = unlimited
     ? Number.POSITIVE_INFINITY
     : periodRemaining + reserveBalance;
+  const exhausted = isAiCreditsExhausted({
+    unlimited,
+    periodRemaining,
+    reserveBalance,
+  });
 
   return {
     organizationId,
@@ -261,9 +282,11 @@ function snapshotFromRow(
     periodRemaining: unlimited ? Number.POSITIVE_INFINITY : periodRemaining,
     reserveBalance,
     totalRemaining,
-    softWarn: unlimited
-      ? false
-      : softWarnForTier(planTier, periodRemaining, allowance),
+    exhausted,
+    softWarn:
+      unlimited || exhausted
+        ? false
+        : softWarnForTier(planTier, periodRemaining, allowance),
   };
 }
 
@@ -292,14 +315,82 @@ export const getOrgAiCreditsWidgetData = cache(
       allowance: snap.allowance,
       reserveBalance: snap.reserveBalance,
       softWarn: snap.softWarn,
+      exhausted: snap.exhausted,
       periodYm: snap.periodYm,
     });
   },
 );
 
+async function resolveOrganizationIdForCredits(input: {
+  organizationId?: string | null;
+  eventId?: string | null;
+}): Promise<string | null> {
+  if (input.organizationId?.trim()) return input.organizationId.trim();
+  if (!input.eventId?.trim() || !isSupabaseAdminConfigured()) return null;
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("events")
+      .select("organization_id")
+      .eq("id", input.eventId)
+      .maybeSingle();
+    if (error) {
+      console.error("[ai-credits] org lookup failed:", error.message);
+      return null;
+    }
+    return (data?.organization_id as string | undefined) ?? null;
+  } catch (error) {
+    console.error("[ai-credits] org lookup failed:", error);
+    return null;
+  }
+}
+
+/**
+ * Phase 6 pre-flight: refuse AI when period + Reserve cannot cover the cost.
+ * Founding / unlimited always allowed. Fail-open if balance cannot be loaded.
+ * Reads fresh balance (not React cache) so multi-call batches cannot overspend.
+ */
+export async function assertAiCreditsAvailable(input: {
+  organizationId?: string | null;
+  eventId?: string | null;
+  actionType: AiActionType;
+  /** Number of billable successes expected (e.g. concept batch). Default 1. */
+  units?: number;
+}): Promise<AssertAiCreditsResult> {
+  const units = Math.max(1, Math.floor(input.units ?? 1));
+  const cost = creditCostForAction(input.actionType, true) * units;
+  if (cost <= 0) return { ok: true, snapshot: null };
+
+  const orgId = await resolveOrganizationIdForCredits(input);
+  if (!orgId || !isSupabaseAdminConfigured()) {
+    return { ok: true, snapshot: null };
+  }
+
+  const row = await ensurePeriodAllowance(orgId);
+  if (!row) return { ok: true, snapshot: null };
+  const snapshot = snapshotFromRow(row, orgId);
+
+  if (
+    canAffordAiCredits({
+      unlimited: snapshot.unlimited,
+      periodRemaining: snapshot.periodRemaining,
+      reserveBalance: snapshot.reserveBalance,
+      cost,
+    })
+  ) {
+    return { ok: true, snapshot };
+  }
+
+  return {
+    ok: false,
+    error: AI_CREDITS_EXHAUSTED_MESSAGE,
+    errorCode: "credits_exhausted",
+  };
+}
+
 /**
  * Idempotent burn keyed by ai_usage_log_id. Period first, then reserve.
- * Soft Phase 1: does not block when balance is insufficient (still records partial).
+ * Phase 6 blocks new AI before the call; burn still records partial if a race slips through.
  */
 export async function recordAiCreditBurn(input: {
   organizationId: string | null | undefined;

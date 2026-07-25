@@ -60,28 +60,40 @@ export function AiCreditsWidget({
     );
   }
 
-  const { used, allowance, reserveBalance, softWarn, resetLabel } = data;
+  const { used, allowance, reserveBalance, softWarn, exhausted, resetLabel } =
+    data;
   const percent =
     allowance > 0 ? Math.min(100, Math.round((used / allowance) * 100)) : 0;
   const remaining = Math.max(0, allowance - used);
+  const alert = exhausted || softWarn;
 
   if (compact) {
     return (
       <div
         className={cn(
           "flex h-10 w-10 items-center justify-center border bg-cos-bg/60",
-          softWarn
+          alert
             ? "border-cos-error text-cos-error-text"
             : "border-cos-border text-cos-text",
         )}
-        title={`AI credits: ${remaining} left of ${allowance}${
-          reserveBalance > 0 ? ` · ${reserveBalance} reserve` : ""
-        }`}
-        aria-label={`AI credits: ${used} of ${allowance} used this month. ${resetLabel}.${
-          softWarn ? " Low balance." : ""
-        }`}
+        title={
+          exhausted
+            ? "AI credits exhausted — upgrade or buy Reserve"
+            : `AI credits: ${remaining} left of ${allowance}${
+                reserveBalance > 0 ? ` · ${reserveBalance} reserve` : ""
+              }`
+        }
+        aria-label={
+          exhausted
+            ? "AI credits exhausted. Upgrade or buy AI Reserve."
+            : `AI credits: ${used} of ${allowance} used this month. ${resetLabel}.${
+                softWarn ? " Low balance." : ""
+              }`
+        }
       >
-        <span className="text-[10px] font-semibold tabular-nums">{remaining}</span>
+        <span className="text-[10px] font-semibold tabular-nums">
+          {exhausted ? "0" : remaining}
+        </span>
       </div>
     );
   }
@@ -90,7 +102,7 @@ export function AiCreditsWidget({
     <div
       className={cn(
         "border bg-cos-bg/40 p-4",
-        softWarn ? "border-cos-error" : "border-cos-border",
+        alert ? "border-cos-error" : "border-cos-border",
       )}
     >
       <p className="cos-section-title">AI credits</p>
@@ -108,7 +120,7 @@ export function AiCreditsWidget({
         <div
           className={cn(
             "h-full transition-[width]",
-            softWarn ? "bg-cos-error" : "bg-cos-dark",
+            alert ? "bg-cos-error" : "bg-cos-dark",
           )}
           style={{ width: `${percent}%` }}
         />
@@ -118,7 +130,11 @@ export function AiCreditsWidget({
           + {reserveBalance.toLocaleString()} reserve
         </p>
       ) : null}
-      {softWarn ? (
+      {exhausted ? (
+        <p className="mt-2 text-xs font-medium text-cos-error-text">
+          Out of credits — AI is paused until you upgrade or buy Reserve
+        </p>
+      ) : softWarn ? (
         <p className="mt-2 text-xs font-medium text-cos-error-text">
           Running low — {remaining} left this month
         </p>
@@ -126,10 +142,10 @@ export function AiCreditsWidget({
         <p className="mt-2 text-xs text-cos-muted">{resetLabel}</p>
       )}
       <Link
-        href="/settings/billing-plan"
+        href="/settings/billing-plan/upgrade-downgrade"
         className="mt-2 inline-block text-xs font-medium text-cos-text underline-offset-2 hover:underline"
       >
-        Billing & plan
+        {exhausted ? "Get more credits" : "Billing & plan"}
       </Link>
     </div>
   );

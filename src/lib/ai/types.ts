@@ -64,7 +64,12 @@ export interface AiGenerateTextResult {
   completionTokens: number | null;
   totalTokens: number | null;
   error: string | null;
-  errorCode: "missing_key" | "api_error" | "empty_response" | null;
+  errorCode:
+    | "missing_key"
+    | "api_error"
+    | "empty_response"
+    | "credits_exhausted"
+    | null;
   configuredModel: string;
   usedFallbackModel: boolean;
 }

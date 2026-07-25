@@ -204,9 +204,15 @@ export function BillingPlanContent({
               {billing?.trialActive
                 ? "Trial credits are a single 600-credit pool for the 14-day window (not a full Pro month)."
                 : "Monthly plan credits reset on the 1st (UTC) and do not roll over. AI Reserve rolls over until used."}{" "}
-              Soft warnings only — hard stop at 0 ships later.
+              AI pauses when period + Reserve hit 0.
             </p>
-            {aiCredits.softWarn ? (
+            {aiCredits.exhausted ? (
+              <p className="mt-2 text-sm text-cos-error-text">
+                Out of AI credits — upgrade or buy AI Reserve to resume
+                generation
+                {stripeConfigured ? "" : " when Stripe is configured"}.
+              </p>
+            ) : aiCredits.softWarn ? (
               <p className="mt-2 text-sm text-cos-warning-text">
                 Running low — upgrade or buy AI Reserve from Upgrade / Downgrade
                 {stripeConfigured ? "" : " when Stripe is configured"}.
@@ -216,8 +222,8 @@ export function BillingPlanContent({
           </>
         ) : (
           <p className="text-sm leading-relaxed text-cos-muted">
-            AI credits reset monthly. Balances are metered with soft warnings
-            only.
+            AI credits reset monthly. Soft warnings appear when low; AI pauses at
+            0 until you upgrade or buy Reserve.
           </p>
         )}
       </SettingsV2Card>
