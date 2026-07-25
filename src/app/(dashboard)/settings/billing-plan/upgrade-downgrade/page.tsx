@@ -1,18 +1,18 @@
 import { BillingUpgradeDowngradeContent } from "@/components/settings-v2/BillingSubPages";
-import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
 
 export const metadata = {
   title: "Upgrade / Downgrade",
 };
 
 export default async function BillingUpgradeDowngradePage() {
-  const organization = await getLatestOrganization();
-  const isFoundingPartner = organization
-    ? isOrganizationBillingExempt(organization)
-    : false;
+  const ctx = await getSettingsBillingContext();
 
   return (
-    <BillingUpgradeDowngradeContent isFoundingPartner={isFoundingPartner} />
+    <BillingUpgradeDowngradeContent
+      isFoundingPartner={ctx.isFoundingPartner}
+      currentPlanId={ctx.currentPlanId}
+      stripeConfigured={ctx.stripeConfigured}
+    />
   );
 }

@@ -18,6 +18,7 @@ import {
   toOrganizationInsert,
 } from "@/lib/organizations/mappers";
 import type { FoundingAccessResolution } from "@/lib/auth/founding-access";
+import { trialEndsAtFromNow } from "@/lib/billing/org-billing";
 import { defaultSchoolYearLabel } from "@/lib/onboarding/state";
 import type {
   BrandAssetsRow,
@@ -117,6 +118,11 @@ export async function createSchoolProfile(
       billing_exempt_at: foundingAccess.billingExempt
         ? new Date().toISOString()
         : null,
+      plan_tier: foundingAccess.billingExempt ? "founding" : "trial",
+      subscription_status: foundingAccess.billingExempt ? "none" : "trialing",
+      trial_ends_at: foundingAccess.billingExempt
+        ? null
+        : trialEndsAtFromNow(),
     })
     .select("*")
     .single();

@@ -247,6 +247,15 @@ export async function generateInboxAiDraftAction(input: {
     return { success: false, error: "This message cannot be used as a reply target." };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(access.organizationId, "inbox_ai");
+  if (!featureGate.ok) {
+    return {
+      success: false,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+    };
+  }
+
   const result = await generateInboxAiDraft({
     organizationId: access.organizationId,
     thread,

@@ -29,6 +29,12 @@ export function mapOrganizationRow(row: OrganizationRow): Organization {
     preferredPostingHours: row.preferred_posting_hours ?? null,
     foundingAccessCode: row.founding_access_code ?? null,
     billingExemptAt: row.billing_exempt_at ?? null,
+    planTier: row.plan_tier ?? null,
+    subscriptionStatus: row.subscription_status ?? null,
+    trialEndsAt: row.trial_ends_at ?? null,
+    stripeCustomerId: row.stripe_customer_id ?? null,
+    stripeSubscriptionId: row.stripe_subscription_id ?? null,
+    stripePriceId: row.stripe_price_id ?? null,
     onboardingState: row.onboarding_state ?? null,
     createdAt: row.created_at,
   };

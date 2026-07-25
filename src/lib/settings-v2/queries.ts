@@ -183,6 +183,34 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
     ? isOrganizationBillingExempt(organization)
     : false;
 
+  let planLabel = isFoundingPartner ? "Founding Partner" : "Professional";
+  let planRenewalLabel: string | null = null;
+  if (organization && !isFoundingPartner) {
+    try {
+      const { getOrgBillingSnapshot, formatTrialRemaining } = await import(
+        "@/lib/billing/org-billing"
+      );
+      const billing = await getOrgBillingSnapshot(organization.id);
+      if (billing?.trialActive) {
+        planLabel = "Professional (trial)";
+        planRenewalLabel = formatTrialRemaining(billing.trialEndsAt);
+      } else if (billing?.trialExpired) {
+        planLabel = "Starter (trial ended)";
+        planRenewalLabel = "Choose a plan in Billing";
+      } else if (billing?.subscriptionStatus === "active") {
+        planLabel =
+          billing.planTier === "starter"
+            ? "Starter"
+            : billing.planTier === "premium"
+              ? "Premium ⭐"
+              : "Professional";
+        planRenewalLabel = "Active subscription";
+      }
+    } catch {
+      // Billing columns may be missing before migration.
+    }
+  }
+
   return {
     organizationName: organization?.name ?? null,
     organizationLocation: organization?.district ?? null,
@@ -190,9 +218,8 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
     teamCount,
     activeIntegrationsCount: activeIntegrations.length,
     totalIntegrationsCount: integrations.filter((item) => item.available).length,
-    planLabel: isFoundingPartner ? "Founding Partner" : "Professional",
-    // No fake renewal dates — paid checkout is not connected yet.
-    planRenewalLabel: null,
+    planLabel,
+    planRenewalLabel,
     isFoundingPartner,
     integrations,
     aiVoiceSnippet: intelligence?.profile?.organizationVoice

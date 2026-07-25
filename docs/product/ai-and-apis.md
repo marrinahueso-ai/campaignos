@@ -9,7 +9,7 @@ Platform Owner page for monitoring **AI usage**, **connected API usage**, **oper
 
 **Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse collects live app logs from 2026-07-23. Optional **one-time** OpenAI Usage API history import (Admin key) attributes pre–collecting-since account usage to Edmondson Elementary; School B is pinned at $0 until it has live logs. Not a recurring sync.
 
-**Org AI credits:** Phases 1–4 ship: metering, sidebar widget, Owner Credits tab monitoring, and **Owner Reserve / bonus / adjustment grants** on the selected org (ledger `reserve_grant` / `bonus_grant` / `adjustment`). Stripe + hard-block = later.
+**Org AI credits:** Phases 1–5 ship: metering, sidebar widget, Owner Credits monitoring/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + core plan gates. Hard-block at 0 = Phase 6.
 
 ---
 

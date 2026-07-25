@@ -1,21 +1,20 @@
 import { BillingManagePlanContent } from "@/components/settings-v2/BillingSubPages";
-import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
 
 export const metadata = {
   title: "Manage Plan",
 };
 
 export default async function BillingManagePlanPage() {
-  const organization = await getLatestOrganization();
-  const isFoundingPartner = organization
-    ? isOrganizationBillingExempt(organization)
-    : false;
+  const ctx = await getSettingsBillingContext();
 
   return (
     <BillingManagePlanContent
-      isFoundingPartner={isFoundingPartner}
-      planLabel={isFoundingPartner ? "Founding Partner" : "Professional"}
+      isFoundingPartner={ctx.isFoundingPartner}
+      planLabel={ctx.planLabel}
+      currentPlanId={ctx.currentPlanId}
+      stripeConfigured={ctx.stripeConfigured}
+      hasStripeCustomer={ctx.hasStripeCustomer}
     />
   );
 }

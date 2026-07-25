@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
+import { assertOrgFeature } from "@/lib/billing/gates";
 import {
   askRalliProductHelp,
   type AskRalliEventOption,
@@ -36,6 +38,21 @@ export async function askRalliAssistantAction(
       source: null,
       error: "Please sign in to ask Ralli AI.",
     };
+  }
+
+  const membership = await getActiveMembership();
+  if (membership?.organizationId) {
+    const gate = await assertOrgFeature(membership.organizationId, "ask_ralli");
+    if (!gate.ok) {
+      return {
+        success: false,
+        answer: null,
+        links: [],
+        eventOptions: [],
+        source: null,
+        error: `${gate.message} ${gate.upgradeHint}`,
+      };
+    }
   }
 
   return askRalliProductHelp({ question, pathname, eventId });

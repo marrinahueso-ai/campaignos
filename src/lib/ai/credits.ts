@@ -62,6 +62,21 @@ async function resolvePlanTier(organizationId: string): Promise<{
   tier: AiPlanTier;
   unlimited: boolean;
 }> {
+  try {
+    const { getOrgBillingSnapshot, creditTierFromSnapshot } = await import(
+      "@/lib/billing/org-billing"
+    );
+    const snapshot = await getOrgBillingSnapshot(organizationId);
+    if (snapshot) {
+      return {
+        tier: creditTierFromSnapshot(snapshot),
+        unlimited: snapshot.unlimitedCredits,
+      };
+    }
+  } catch (error) {
+    console.error("[ai-credits] billing snapshot failed:", error);
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("organizations")
@@ -183,13 +198,16 @@ export async function ensurePeriodAllowance(
     return row;
   }
 
-  // New period: reset used; keep reserve; grant new allowance.
+  // Trial pool is 600 for the whole 14-day window — do not reset used on month roll.
+  const trialCarry = tier === "trial" && row.plan_tier === "trial";
+
+  // New period: reset used (unless active trial); keep reserve; grant new allowance.
   const { data: rolled, error: rollError } = await admin
     .from("organization_ai_credit_balances")
     .update({
       period_ym: periodYm,
       allowance: unlimited ? 0 : allowance,
-      used: 0,
+      used: trialCarry ? row.used : 0,
       unlimited,
       plan_tier: tier,
       updated_at: new Date().toISOString(),
@@ -203,7 +221,7 @@ export async function ensurePeriodAllowance(
     return row;
   }
 
-  if (!unlimited && allowance > 0) {
+  if (!unlimited && allowance > 0 && !trialCarry) {
     await admin.from("organization_ai_credit_ledger").insert({
       organization_id: orgId,
       entry_type: "period_grant",

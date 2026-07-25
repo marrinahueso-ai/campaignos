@@ -1,16 +1,18 @@
 import { BillingCancelPlanContent } from "@/components/settings-v2/BillingSubPages";
-import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
-import { getLatestOrganization } from "@/lib/organizations/queries";
+import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
 
 export const metadata = {
   title: "Cancel Plan",
 };
 
 export default async function BillingCancelPlanPage() {
-  const organization = await getLatestOrganization();
-  const isFoundingPartner = organization
-    ? isOrganizationBillingExempt(organization)
-    : false;
+  const ctx = await getSettingsBillingContext();
 
-  return <BillingCancelPlanContent isFoundingPartner={isFoundingPartner} />;
+  return (
+    <BillingCancelPlanContent
+      isFoundingPartner={ctx.isFoundingPartner}
+      stripeConfigured={ctx.stripeConfigured}
+      hasStripeCustomer={ctx.hasStripeCustomer}
+    />
+  );
 }

@@ -4,14 +4,14 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — Billing surfaces sync (pre–Phase 5)
+**Last updated:** July 24, 2026 — AI credits Phase 5 (Stripe + trial + gates)
 
 ---
 
 ## Marketing & public
 - Landing / home — **shipped**
 - Features (`/features`) — **shipped** (“See Hey Ralli in Action”: live Motion demos for Create with AI, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
-- Pricing page ($49 / $79 / $129 · Starter / Professional / Premium) — **shipped** (catalog-synced); checkout **deferred** (Phase 5)
+- Pricing page ($49 / $79 / $129 · Starter / Professional / Premium + AI Reserve) — **shipped** (catalog features; Stripe Checkout / sign-in → billing CTAs)
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**
 
@@ -249,10 +249,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
 - Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week”; product-help FAQ retained for how-to; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
-- AI credits engine — **partial** (Phases 1–4: org balances + weighted burn; monthly allowance + Reserve; founding/exempt unlimited; sidebar widget; Owner Credits monitoring + Reserve/bonus/adjustment grants; Stripe / hard-block later — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
-- AI credits widget — **shipped** (Phase 2: real sidebar balance + soft warn + Billing & Plan blurb; hard stop / Stripe later)
+- AI credits engine — **partial** (Phases 1–5: metering, widget, Owner monitor/grants, billing catalog, Stripe Checkout/Portal/webhooks, 14-day trial + 600 credits, core feature/capacity gates; hard-block at 0 = Phase 6 — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
+- AI credits widget — **shipped** (Phase 2: real sidebar balance + soft warn + Billing & Plan blurb; hard stop later)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
 - Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
+- Stripe billing + trial + plan gates — **partial** (Phase 5 eng: Checkout/Portal/webhooks + trial on new orgs + Ask Ralli / Inbox AI / events / seats gates; requires Stripe env for live Checkout)
 
 ## Settings
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**
@@ -261,7 +262,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
-- Billing & Plan UI — **partial** (Phase 4.5: plan catalog + honest stubs aligned to locked matrix; Stripe checkout / real upgrades — Phase 5)
+- Billing & Plan UI — **partial** (Phase 4.5–5: catalog + trial/plan status + Checkout/Portal CTAs when Stripe configured)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
 ## Support & shell

@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import {
+  BillingPortalButton,
+  PlanCheckoutButton,
+  ReserveCheckoutButton,
+} from "@/components/settings-v2/BillingCheckoutButtons";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
+import type { PaidPlanId } from "@/lib/billing/plan-catalog";
 import {
   CHECKOUT_COMING_SOON,
   formatPlanPrice,
@@ -10,7 +16,6 @@ import {
   planById,
   PRE_STRIPE_DEFAULT_PLAN_ID,
   RESERVE_CATALOG,
-  type PaidPlanId,
 } from "@/lib/billing/plan-catalog";
 
 interface BillingSubPageShellProps {
@@ -44,12 +49,15 @@ export function BillingSubPageShell({
 interface BillingSubPageProps {
   isFoundingPartner?: boolean;
   planLabel?: string;
-  /** Effective paid plan when not founding (pre-Stripe default = Professional). */
   currentPlanId?: PaidPlanId;
+  stripeConfigured?: boolean;
+  hasStripeCustomer?: boolean;
 }
 
 export function BillingPaymentMethodContent({
   isFoundingPartner = false,
+  stripeConfigured = false,
+  hasStripeCustomer = false,
 }: BillingSubPageProps) {
   return (
     <BillingSubPageShell
@@ -67,9 +75,22 @@ export function BillingPaymentMethodContent({
         ) : (
           <>
             <p className="text-sm font-medium text-cos-text">
-              No payment method on file
+              {hasStripeCustomer
+                ? "Managed in Stripe"
+                : "No payment method on file"}
             </p>
-            <p className="mt-1 text-sm text-cos-muted">{CHECKOUT_COMING_SOON}</p>
+            <p className="mt-1 text-sm text-cos-muted">
+              {stripeConfigured
+                ? hasStripeCustomer
+                  ? "Update your card in the Stripe Customer Portal."
+                  : "Subscribe to a plan to add a payment method."
+                : CHECKOUT_COMING_SOON}
+            </p>
+            {stripeConfigured && hasStripeCustomer ? (
+              <div className="mt-4">
+                <BillingPortalButton label="Open Stripe portal" />
+              </div>
+            ) : null}
           </>
         )}
       </SettingsV2Card>
@@ -79,6 +100,8 @@ export function BillingPaymentMethodContent({
 
 export function BillingHistoryContent({
   isFoundingPartner = false,
+  stripeConfigured = false,
+  hasStripeCustomer = false,
 }: BillingSubPageProps) {
   return (
     <BillingSubPageShell
@@ -89,13 +112,21 @@ export function BillingHistoryContent({
         {isFoundingPartner ? (
           <p className="text-sm leading-relaxed text-cos-muted">
             No invoices yet. Founding partner billing is waived during early
-            access, so there is nothing to download.
+            access.
           </p>
         ) : (
-          <p className="text-sm leading-relaxed text-cos-muted">
-            No invoices yet. Receipts will appear here when Stripe billing is
-            enabled for your organization.
-          </p>
+          <>
+            <p className="text-sm leading-relaxed text-cos-muted">
+              {stripeConfigured
+                ? "Download invoices from the Stripe Customer Portal."
+                : "Receipts will appear here when Stripe billing is enabled."}
+            </p>
+            {stripeConfigured && hasStripeCustomer ? (
+              <div className="mt-4">
+                <BillingPortalButton label="View invoices in Stripe" />
+              </div>
+            ) : null}
+          </>
         )}
       </SettingsV2Card>
     </BillingSubPageShell>
@@ -106,13 +137,15 @@ export function BillingManagePlanContent({
   isFoundingPartner = false,
   planLabel = "Professional",
   currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
+  stripeConfigured = false,
+  hasStripeCustomer = false,
 }: BillingSubPageProps) {
   const plan = planById(currentPlanId);
 
   return (
     <BillingSubPageShell
       title="Manage Plan"
-      description="Review your current plan and what checkout will unlock."
+      description="Review your current plan and subscription."
     >
       <SettingsV2Card title={planLabel}>
         {isFoundingPartner ? (
@@ -134,18 +167,19 @@ export function BillingManagePlanContent({
               </span>
             </p>
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-              {plan.description} Currently metered at{" "}
-              {plan.monthlyCredits.toLocaleString()} AI credits / month until
-              paid billing connects.
+              {plan.description}
             </p>
-            <p className="mt-2 text-sm text-cos-muted">{CHECKOUT_COMING_SOON}</p>
-            <Button
-              className="mt-4"
-              variant="secondary"
-              href="/settings/billing-plan/upgrade-downgrade"
-            >
-              View plan options
-            </Button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                href="/settings/billing-plan/upgrade-downgrade"
+              >
+                View plan options
+              </Button>
+              {stripeConfigured && hasStripeCustomer ? (
+                <BillingPortalButton />
+              ) : null}
+            </div>
           </>
         )}
       </SettingsV2Card>
@@ -165,20 +199,27 @@ export function BillingManagePlanContent({
 export function BillingUpgradeDowngradeContent({
   isFoundingPartner = false,
   currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
+  stripeConfigured = false,
 }: BillingSubPageProps) {
   return (
     <BillingSubPageShell
       title="Upgrade / Downgrade"
-      description="Compare locked plan options. Switches unlock when Stripe Checkout is connected."
+      description="Compare plans and AI Reserve. Checkout opens Stripe when configured."
     >
       {isFoundingPartner ? (
         <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
           You are on Founding Partner access. Plan changes are not required while
           billing is waived.
         </p>
+      ) : !stripeConfigured ? (
+        <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
+          {CHECKOUT_COMING_SOON} Stripe is not fully configured on this
+          environment yet (missing secret key or plan price IDs).
+        </p>
       ) : (
         <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
-          {CHECKOUT_COMING_SOON} Buttons stay disabled until then.
+          Choose a plan to open Stripe Checkout. Premium is recommended for most
+          schools. AI Reserve is a one-time add-on that rolls over.
         </p>
       )}
 
@@ -208,13 +249,23 @@ export function BillingUpgradeDowngradeContent({
                   <li key={feature}>· {feature}</li>
                 ))}
               </ul>
-              <Button
-                className="mt-4"
-                variant={isCurrent ? "secondary" : "primary"}
-                disabled
-              >
-                {isCurrent ? "Current plan" : "Coming soon"}
-              </Button>
+              <div className="mt-4">
+                {isFoundingPartner || isCurrent ? (
+                  <Button className="w-full" variant="secondary" disabled>
+                    {isCurrent ? "Current plan" : "Not required"}
+                  </Button>
+                ) : stripeConfigured ? (
+                  <PlanCheckoutButton
+                    planId={plan.id}
+                    label={`Choose ${plan.name}`}
+                    variant={plan.highlighted ? "primary" : "secondary"}
+                  />
+                ) : (
+                  <Button className="w-full" disabled>
+                    Coming soon
+                  </Button>
+                )}
+              </div>
             </SettingsV2Card>
           );
         })}
@@ -222,19 +273,35 @@ export function BillingUpgradeDowngradeContent({
 
       <SettingsV2Card title="AI Reserve add-ons">
         <p className="text-sm text-cos-muted">
-          Reserve stacks on top of monthly credits and rolls over. Purchase
-          unlocks with checkout; Owners can also grant Reserve from ops today.
+          Reserve stacks on top of monthly credits and rolls over. Owners can
+          also grant Reserve from ops.
         </p>
-        <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+        <ul className="mt-3 grid gap-3 sm:grid-cols-3">
           {RESERVE_CATALOG.map((sku) => (
             <li
               key={sku.id}
-              className="rounded-lg border border-cos-border bg-cos-bg px-3 py-2 text-sm"
+              className="rounded-lg border border-cos-border bg-cos-bg px-3 py-3 text-sm"
             >
               <p className="font-medium text-cos-text">{sku.label}</p>
               <p className="text-cos-muted">
                 ${sku.priceUsd} · {sku.credits.toLocaleString()} credits
               </p>
+              <div className="mt-3">
+                {isFoundingPartner ? (
+                  <Button className="w-full" variant="secondary" disabled>
+                    Unlimited
+                  </Button>
+                ) : stripeConfigured ? (
+                  <ReserveCheckoutButton
+                    sku={sku.id}
+                    label={`Buy ${sku.label}`}
+                  />
+                ) : (
+                  <Button className="w-full" disabled>
+                    Coming soon
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -245,6 +312,8 @@ export function BillingUpgradeDowngradeContent({
 
 export function BillingCancelPlanContent({
   isFoundingPartner = false,
+  stripeConfigured = false,
+  hasStripeCustomer = false,
 }: BillingSubPageProps) {
   return (
     <BillingSubPageShell
@@ -259,11 +328,18 @@ export function BillingCancelPlanContent({
             workspace.
           </p>
         ) : (
-          <p className="text-sm leading-relaxed text-cos-muted">
-            Paid cancellation is not available yet. When billing is connected,
-            your workspace will stay active through the end of the billing period
-            if you cancel.
-          </p>
+          <>
+            <p className="text-sm leading-relaxed text-cos-muted">
+              {stripeConfigured
+                ? "Cancel or change your subscription in the Stripe Customer Portal. Access continues through the end of the paid period."
+                : "Paid cancellation is not available until Stripe is connected."}
+            </p>
+            {stripeConfigured && hasStripeCustomer ? (
+              <div className="mt-4">
+                <BillingPortalButton label="Manage subscription in Stripe" />
+              </div>
+            ) : null}
+          </>
         )}
       </SettingsV2Card>
     </BillingSubPageShell>

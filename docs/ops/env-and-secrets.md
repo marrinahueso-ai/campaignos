@@ -74,6 +74,18 @@ See [integrations/google-calendar.md](../integrations/google-calendar.md). If Go
 
 See [cron-jobs.md](./cron-jobs.md).
 
+### Stripe (billing Phase 5)
+
+| Variable | Notes |
+|----------|-------|
+| `STRIPE_SECRET_KEY` | Server Checkout / Portal / webhooks |
+| `STRIPE_WEBHOOK_SECRET` | Verify `POST /api/stripe/webhook` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional client use |
+| `STRIPE_PRICE_STARTER` / `_PROFESSIONAL` / `_PREMIUM` | Monthly plan Price ids |
+| `STRIPE_PRICE_RESERVE` / `_RESERVE_STAR` / `_RESERVE_MAX` | One-time AI Reserve Price ids |
+
+Checkout UI stays disabled until plan price IDs + secret key are set. Living: [billing-and-access.md](./billing-and-access.md).
+
 ### Optional integrations
 
 | Area | Variables |

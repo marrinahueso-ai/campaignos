@@ -751,9 +751,27 @@ export async function inviteTeamMemberAction(
     return { error: "Email is required.", success: false };
   }
 
+  const supabase = await createClient();
+  const { count: seatCount } = await supabase
+    .from("organization_users")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organization.id)
+    .eq("status", "active");
+  const { assertOrgCapacity } = await import("@/lib/billing/gates");
+  const seatGate = await assertOrgCapacity(
+    organization.id,
+    "teamMembers",
+    seatCount ?? 0,
+  );
+  if (!seatGate.ok) {
+    return {
+      error: `${seatGate.message} ${seatGate.upgradeHint}`,
+      success: false,
+    };
+  }
+
   let roleKind = null as import("@/types/organization-workspace").OrganizationRoleKind | null;
   if (organizationRoleId) {
-    const supabase = await createClient();
     const { data } = await supabase
       .from("organization_roles")
       .select("role_kind")

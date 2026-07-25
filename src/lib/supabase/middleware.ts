@@ -36,6 +36,7 @@ const PUBLIC_PATHS = [
   "/api/meta/oauth/callback",
   "/api/google/oauth/callback",
   "/api/meta/webhook",
+  "/api/stripe/webhook",
   "/go/instagram-post",
   "/go/email-primary",
 ];

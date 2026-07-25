@@ -127,6 +127,12 @@ export interface Organization {
   preferredPostingHours: PreferredPostingWindow[] | null;
   foundingAccessCode: string | null;
   billingExemptAt: string | null;
+  planTier?: string | null;
+  subscriptionStatus?: string | null;
+  trialEndsAt?: string | null;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
   onboardingState?: unknown;
   createdAt: string;
 }
@@ -151,6 +157,12 @@ export interface OrganizationRow {
   preferred_posting_hours?: PreferredPostingWindow[] | null;
   founding_access_code?: string | null;
   billing_exempt_at?: string | null;
+  plan_tier?: string | null;
+  subscription_status?: string | null;
+  trial_ends_at?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  stripe_price_id?: string | null;
   onboarding_state?: unknown;
   created_at: string;
 }
