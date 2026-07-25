@@ -2,6 +2,7 @@
 
 import { requirePermission } from "@/lib/access-templates/effective-access";
 import type { AiReserveSkuId } from "@/lib/ai/credit-constants";
+import { getActiveMembership } from "@/lib/auth/membership-queries";
 import type { PaidPlanId } from "@/lib/billing/plan-catalog";
 import { getOrgBillingSnapshot } from "@/lib/billing/org-billing";
 import {
@@ -11,6 +12,7 @@ import {
   stripePriceIdForPlan,
   stripePriceIdForReserve,
 } from "@/lib/billing/stripe";
+import { isSnapshotCanceledLockout } from "@/lib/billing/subscription-lockout";
 import {
   shouldAttachStripeTrial,
   stripeTrialPeriodDays,
@@ -31,16 +33,33 @@ async function requireBillingOrg(): Promise<
     }
   | { ok: false; error: string }
 > {
-  const access = await requirePermission("manage_billing");
-  if ("error" in access) {
-    return { ok: false, error: access.error };
-  }
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, error: "Not signed in." };
+  }
+
+  // Any active member of a canceled org may resubscribe from /billing/canceled —
+  // manage_billing permission gating would otherwise trap non-admin members
+  // in a locked-out org with no way to restore access for the team.
+  const membership = await getActiveMembership();
+  if (membership) {
+    const snapshot = await getOrgBillingSnapshot(membership.organizationId);
+    if (snapshot && isSnapshotCanceledLockout(snapshot)) {
+      return {
+        ok: true,
+        organizationId: membership.organizationId,
+        userId: user.id,
+        email: user.email ?? null,
+      };
+    }
+  }
+
+  const access = await requirePermission("manage_billing");
+  if ("error" in access) {
+    return { ok: false, error: access.error };
   }
   return {
     ok: true,

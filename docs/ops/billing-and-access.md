@@ -10,7 +10,8 @@
 Single source of truth for how orgs get access to Hey Ralli and how AI credits/billing work commercially: founding codes, invites, `billing_exempt_at`, the 14-day trial, Stripe Checkout/Portal/webhooks, the plan/credits/Reserve matrix, and which plan gates are actually enforced in code today.
 
 **UI plan copy:** [`src/lib/billing/plan-catalog.ts`](../../src/lib/billing/plan-catalog.ts).  
-**Entitlements / capacity:** [`src/lib/billing/entitlements.ts`](../../src/lib/billing/entitlements.ts) + [`gates.ts`](../../src/lib/billing/gates.ts).
+**Entitlements / capacity:** [`src/lib/billing/entitlements.ts`](../../src/lib/billing/entitlements.ts) + [`gates.ts`](../../src/lib/billing/gates.ts).  
+**Settings UI:** `/settings/billing-plan` — tabbed (Overview default · Plan & Pricing `?tab=plan` · Payment Method `?tab=payment` · Billing History `?tab=history`); old per-page routes (`manage-plan`, `upgrade-downgrade`, `payment-method`, `billing-history`, `cancel-plan`) now redirect to the matching tab. [`BillingPlanContent.tsx`](../../src/components/settings-v2/BillingPlanContent.tsx) / [`BillingPlanPanels.tsx`](../../src/components/settings-v2/BillingPlanPanels.tsx).
 
 All commercial amounts below are **config-driven** and can change later without schema rewrites.
 
@@ -62,9 +63,10 @@ Founding / `billing_exempt_at` → **unlimited** credits (usage still logged, no
 ## 4) Member billing journeys
 
 1. **Founding / invite** — Valid founding code → waived billing + unlimited AI credits.
-2. **Trial** — New non-exempt org starts `plan_tier=trial`, `trial_ends_at` +14d, 600-credit pool, Professional entitlements. After expiry without Checkout → Starter entitlements until they subscribe (no second free trial).
+2. **Trial** — New non-exempt org starts `plan_tier=trial`, `trial_ends_at` +14d, 600-credit pool, Professional entitlements. After expiry without Checkout → Starter entitlements until they subscribe (no second free trial). This "never subscribed" org keeps normal app access forever on Starter — it is **not** locked out (see #5).
 3. **Paid** — Stripe Checkout (plans + Reserve) → webhook updates `organizations.plan_tier` / `subscription_status` / `trial_ends_at` / subscription ids; Customer Portal for card / invoices / cancel.
 4. **Soft warn → hard block** — Soft warn when low; AI generation refuses when period + Reserve cannot cover the action cost (founding / exempt unlimited).
+5. **Actually canceled → full lockout** — When Stripe fires `customer.subscription.deleted` for an org that had a real subscription, the webhook sets `subscription_status="canceled"` (see #3). Unlike the old "graceful downgrade to Starter," every member of that org is now redirected to `/billing/canceled` for **every** app route/dashboard page until the org resubscribes — regardless of role (this is org-level, not permission-level: any member may resubscribe). That page offers Checkout (any paid plan), the Stripe Customer Portal, and sign-out; it is the only non-public route a canceled org can still reach. A user's *other* org memberships are unaffected — only the canceled org itself is gated (resolved via the active-organization cookie + membership, same as the org switcher). Founding/`billing_exempt_at` orgs and orgs that never had a Stripe subscription (trial, expired-trial Starter fallback — #2) are never affected, because `subscription_status="canceled"` is only ever written by this one webhook code path (`handleStripeSubscriptionDeleted` / `applyStripeSubscription` in `src/lib/billing/stripe-sync.ts`) — see `src/lib/billing/subscription-lockout.ts` for the full safety proof. Gate lives in `src/lib/auth/org-gate.ts` (called from `src/lib/supabase/middleware.ts`).
 
 ---
 
@@ -236,8 +238,11 @@ Pre-Stripe default paid tier for metering: **Professional (1,200)**.
 
 All follow the same pattern: resolve org → `assertOrgFeature`/`assertOrgCapacity` (`src/lib/billing/gates.ts`) → on denial, surface `${message} ${upgradeHint}` as the action's error.
 
+One additional gate is **access-level**, not feature/capacity — it blocks the whole org rather than one action; it is listed first, then the 13 feature/capacity gates:
+
 | Gate | Type | Where |
 |------|------|-------|
+| Canceled-subscription lockout | Access (org-wide) | `resolveOrgGateRedirect` (`src/lib/auth/org-gate.ts`) via middleware → redirects to `/billing/canceled`; billing actions in `src/lib/billing/actions.ts` bypass `manage_billing` permission for a canceled org so any member can resubscribe |
 | `ask_ralli` | Feature | Ask Ralli action |
 | `inbox_ai` | Feature | Inbox AI draft action |
 | `volunteer_center` | Feature | `connectVolunteerSourceAction` (event-volunteers) |
@@ -256,6 +261,7 @@ All follow the same pattern: resolve org → `assertOrgFeature`/`assertOrgCapaci
 
 ## 12) Known gaps / remaining work
 
+- **Canceled-org lockout is a middleware/page gate, not a per-action gate** — `resolveOrgGateRedirect` blocks every dashboard *page* route once an org's subscription is actually canceled, and the resubscribe/portal actions check the same signal. Individual server actions/API routes elsewhere do **not** independently re-check "is my org canceled?" before mutating data — they rely on the page-level redirect meaning a canceled org's members never load a page that could call them. This is the same enforcement shape as the pre-existing deactivated-member and developer-agreements gates. If a deeper defense-in-depth pass is wanted (e.g. a shared server-action wrapper that re-checks org billing status), it is not scheduled.
 - **Storage limits not modeled** — "File Storage" / "File History" rows exist only in the plan matrix table above; there's no `PlanCapacityKey` or enforcement code for them. File sizes are tracked per-row across at least 3 separate tables (`campaign_files`, vendor directory uploads, `organization_stickers`) with no per-org rollup today, so this is a bigger lift (new capacity key + usage accounting across sources) — explicitly deferred, not scheduled.
 - **`priority_support`** — defined in `PlanFeatureKey` but is a support-process/SLA distinction, not an app feature toggle. No code gate applies; Premium orgs get priority support operationally, not via a UI lock.
 - **Unused optional key** — `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is listed as optional in [env-and-secrets.md](./env-and-secrets.md), but Checkout is a server-side redirect and never reads it client-side. Harmless, just unused — no action needed.

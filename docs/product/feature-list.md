@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 25, 2026 — corrected stale "Stripe deferred" line (shipped)
+**Last updated:** July 25, 2026 — tabbed Billing & Plan UI + canceled-subscription lockout shipped; removed remaining stale "partial"/"deferred" Stripe billing lines
 
 ---
 
@@ -41,6 +41,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Organization switcher (when >1 active memberships) — **shipped** (MVP)
 - Files library respects active org (no cross-org file list/download for multi-membership) — **shipped**
 - Stripe Checkout/Portal + plan/capacity gates — **shipped** (live in Production; see [billing-and-access.md](../ops/billing-and-access.md))
+- Canceled-subscription lockout — **shipped** (an org that HAD an active/trialing Stripe subscription which was then canceled is fully gated to `/billing/canceled` for every member — resubscribe/portal/sign-out only — until resubscribed; orgs that never subscribed (app trial, expired-trial Starter fallback) or are founding/billing-exempt are unaffected; see [billing-and-access.md](../ops/billing-and-access.md#4-member-billing-journeys))
 
 ## Access control & team
 - Access templates (permission toggles) — **shipped**
@@ -255,7 +256,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - AI credits widget — **shipped** (sidebar balance + soft warn + exhausted hard-stop CTA to Billing)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
 - Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
-- Stripe billing + trial + plan gates — **partial** (Phase 5 eng: Checkout/Portal/webhooks + app trial + Stripe `trial_period_days` / `trialing` sync + Ask Ralli / Inbox AI / events / seats gates; requires Stripe env for live Checkout)
+- Stripe billing + trial + plan gates — **shipped** (Phase 5: Checkout/Portal/webhooks live in Production + app trial + Stripe `trial_period_days` / `trialing` sync + 13 feature/capacity gates + canceled-subscription full lockout; see [billing-and-access.md](../ops/billing-and-access.md#11-gates-enforced-today))
 
 ## Settings
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**
@@ -265,7 +266,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
-- Billing & Plan UI — **partial** (Phase 4.5–5: catalog + trial/plan status + Checkout/Portal CTAs when Stripe configured)
+- Billing & Plan UI — **shipped** (tabbed: Overview · Plan & Pricing · Payment Method · Billing History at `/settings/billing-plan?tab=…`; catalog + trial/plan status + Checkout/Portal CTAs; canceled orgs land on a dedicated `/billing/canceled` resubscribe page instead)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
 ## Support & shell
