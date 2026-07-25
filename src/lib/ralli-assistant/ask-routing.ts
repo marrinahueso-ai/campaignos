@@ -8,7 +8,10 @@ import {
   isOpsIntent,
 } from "./ops-intent.ts";
 import { shouldPreferOrgBriefing } from "./org-intent.ts";
-import { shouldPreferVolunteersOps } from "./volunteers-intent.ts";
+import {
+  isOrgWideVolunteersScope,
+  shouldPreferVolunteersOps,
+} from "./volunteers-intent.ts";
 
 export type ResolvableEventLite = {
   id: string;
@@ -35,6 +38,11 @@ function hasEventScope(
   pathname: string | null | undefined,
   events?: ResolvableEventLite[],
 ): boolean {
+  // “for all our events” / org-wide volunteers must not pick a single campaign
+  // just because titles contain the word “Volunteer”.
+  if (isOrgWideVolunteersScope(question)) {
+    return false;
+  }
   if (extractEventIdFromPathname(pathname)) {
     return true;
   }
@@ -87,7 +95,11 @@ export function shouldRouteToOrgBriefing(
   }
 
   if (shouldPreferOrgBriefing(question)) {
-    if (events && questionNamesSpecificEvent(question, events)) {
+    if (
+      events &&
+      questionNamesSpecificEvent(question, events) &&
+      !isOrgWideVolunteersScope(question)
+    ) {
       return false;
     }
     return true;
@@ -134,6 +146,9 @@ export function shouldRouteToOpsAsk(
   }
   if (extractEventIdFromPathname(pathname)) {
     return true;
+  }
+  if (isOrgWideVolunteersScope(question)) {
+    return false;
   }
   if (events && events.length > 0) {
     const resolution = resolveEventFromQuestion(question, events, pathname);

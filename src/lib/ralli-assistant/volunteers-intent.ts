@@ -12,8 +12,14 @@ const VOLUNTEERS_PATTERNS: RegExp[] = [
   /\bneed( more)? volunteers?\b/i,
   /\bmore volunteers?\b/i,
   /\bdo i need (more )?volunteers?\b/i,
-  /\bvolunteer (coverage|gaps?|status|needs?|shortage)\b/i,
+  /\bvolunteer (coverage|gaps?|status|needs?|shortage|progress|fill)\b/i,
   /\b(enough|short on) volunteers?\b/i,
+  /\bhow (is|are) (our |my |the )?volunteers?\b/i,
+  /\bhow (is|are) (our |my |the )?volunteer(ing|s)? going\b/i,
+  /\bvolunteer(s|ing)? going\b/i,
+  /\bvolunteers? for all (our |the )?events?\b/i,
+  /\bwhich events? need( more)? volunteers?\b/i,
+  /\bevents? need( more)? volunteers?\b/i,
   /\bwhich shifts?\b/i,
   /\bshifts? (still )?(need|needing|open|unfilled|empty)\b/i,
   /\b(open|unfilled) (spots?|shifts?)\b/i,
@@ -29,6 +35,19 @@ const VOLUNTEERS_PATTERNS: RegExp[] = [
   /\bcommittee(s)? (behind|short|understaffed)\b/i,
   /\bvolunteer signup\b/i,
 ];
+
+/** True when the user clearly wants an org-wide answer, not one event. */
+export function isOrgWideVolunteersScope(question: string): boolean {
+  const normalized = normalizeAskText(question);
+  if (!normalized) return false;
+  return (
+    /\bfor all (our |the )?events?\b/i.test(normalized) ||
+    /\bacross (all )?(our |the )?events?\b/i.test(normalized) ||
+    /\ball (our |the )?events?\b/i.test(normalized) ||
+    /\bevery event\b/i.test(normalized) ||
+    /\borg[- ]?wide\b/i.test(normalized)
+  );
+}
 
 /** Operational volunteer / shift / committee staffing question. */
 export function isVolunteersIntent(question: string): boolean {

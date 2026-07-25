@@ -110,6 +110,36 @@ describe("resolveEventFromQuestion", () => {
     }
   });
 
+  it("does not match events on the domain word volunteer alone", () => {
+    const volunteerEvents: ResolvableEvent[] = [
+      {
+        id: "evt-v1",
+        title: "Volunteer Badge Making Session",
+        date: "2026-09-09",
+        status: "scheduled",
+      },
+      {
+        id: "evt-v2",
+        title: "Volunteer Badge Making Session",
+        date: "2026-09-17",
+        status: "scheduled",
+      },
+    ];
+    const loose = resolveEventFromQuestion(
+      "how is our volunteer going for all our events",
+      volunteerEvents,
+      null,
+    );
+    assert.equal(loose.kind, "none");
+
+    const named = resolveEventFromQuestion(
+      "What's next for Volunteer Badge Making Session?",
+      volunteerEvents,
+      null,
+    );
+    assert.equal(named.kind, "ambiguous");
+  });
+
   it("formats clarifying answers without inventing facts", () => {
     const ambiguous = formatAmbiguousEventAnswer([
       EVENTS[0]!,

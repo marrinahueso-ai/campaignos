@@ -78,4 +78,33 @@ describe("Phase 3 volunteers routing", () => {
       true,
     );
   });
+
+  it("does not treat “Volunteer …” event titles as the named event", () => {
+    const volunteerTitledEvents = [
+      {
+        id: "evt-v1",
+        title: "Volunteer Badge Making Session",
+        date: "2026-09-09",
+        status: "scheduled",
+      },
+      {
+        id: "evt-v2",
+        title: "Volunteer Badge Making Session",
+        date: "2026-09-17",
+        status: "scheduled",
+      },
+    ];
+    const question =
+      "how is our volunteer going for all our events";
+
+    assert.equal(isVolunteersIntent(question), true);
+    assert.equal(
+      shouldRouteToOrgBriefing(question, volunteerTitledEvents, null),
+      true,
+    );
+    assert.equal(
+      shouldRouteToOpsAsk(question, null, volunteerTitledEvents),
+      false,
+    );
+  });
 });
