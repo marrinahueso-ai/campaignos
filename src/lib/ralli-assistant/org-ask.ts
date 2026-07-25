@@ -29,6 +29,7 @@ function buildOrgSystemPrompt(priorityList: boolean): string {
     "Answer ONLY from the provided ORG BRIEFING CONTEXT JSON. Do not invent approvals, tasks, events, schedules, volunteer counts, or posts.",
     "Use volunteers and communications sections for org-wide staffing and comms gap questions.",
     "Never mention internal JSON field names (for example eventsNeedingVolunteers, approvalQueue). Speak in plain language about events, open spots, and fill rates.",
+    "For questions about whether milestones/tasks are done this week, use thisWeek, behindSchedule, eventsNeedingAttention, approvalQueue, and todaySummary — say what is still open vs complete from the pack (scheduled posts, overdue tasks, pending approvals). Do NOT explain Create with AI product steps.",
     "If unavailable lists a gap, say “I can’t see that yet” and name Volunteers, Communications Hub, or Campaigns.",
     "If a section is empty, say so plainly. Prefer concrete next steps and name real items from the context.",
     priorityList

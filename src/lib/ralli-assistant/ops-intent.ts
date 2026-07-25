@@ -63,6 +63,10 @@ const OPS_PATTERNS: RegExp[] = [
   /\bwhy can('?t| not) i publish\b/i,
   /\benough volunteers\b/i,
   /\bdo i have enough volunteers\b/i,
+  // Milestone progress for a campaign (not Create with AI how-to)
+  /\bmilestones? (done|complete|finished|ready|left|remaining|open|status|progress)\b/i,
+  /\b(are |is )?(all )?(my |our |the )?milestones? (done|complete|finished|ready|left|remaining)\b/i,
+  /\b(done|complete|finished) .{0,40}\bmilestones?\b/i,
 ];
 
 const STOP_WORDS = new Set([

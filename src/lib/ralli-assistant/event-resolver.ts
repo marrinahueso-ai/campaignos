@@ -182,9 +182,52 @@ export function formatAmbiguousEventAnswer(
   ].join("\n");
 }
 
+/**
+ * Upcoming campaigns for picker chips when the question didn’t name an event.
+ * Prefers dates on/after `asOf`, then soonest first; past dates last.
+ */
+export function pickUpcomingEvents(
+  events: ResolvableEvent[],
+  limit = 5,
+  asOf: Date = new Date(),
+): ResolvableEvent[] {
+  if (events.length === 0) return [];
+  const today = asOf.toISOString().slice(0, 10);
+  return [...events]
+    .sort((a, b) => {
+      const aPast = a.date < today ? 1 : 0;
+      const bPast = b.date < today ? 1 : 0;
+      if (aPast !== bPast) return aPast - bPast;
+      return a.date.localeCompare(b.date) || a.title.localeCompare(b.title);
+    })
+    .slice(0, limit);
+}
+
 export function formatNoEventAnswer(
   reason: "no_event_context" | "no_match",
+  upcoming?: ResolvableEvent[],
 ): string {
+  const choices = upcoming && upcoming.length > 0 ? upcoming : null;
+  if (choices) {
+    const lines = choices.map(
+      (event) => `• ${formatEventChipLabel(event.title, event.date)}`,
+    );
+    if (reason === "no_match") {
+      return [
+        "I couldn’t match that to a specific event.",
+        "Pick one of your upcoming campaigns below, or name the event in your question.",
+        "",
+        ...lines,
+      ].join("\n");
+    }
+    return [
+      "Which event should I use?",
+      "Pick one below, open its page, or name it in your question.",
+      "",
+      ...lines,
+    ].join("\n");
+  }
+
   if (reason === "no_match") {
     return [
       "I couldn’t match that to an event in your organization.",

@@ -32,6 +32,7 @@ import type {
 import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
+  pickUpcomingEvents,
   resolveEventFromQuestion,
   toEventOptions,
   type AskRalliEventOption,
@@ -517,13 +518,23 @@ export async function askRalliContentCoach(input: {
       kind === "write_reminder" ||
       kind === "write_volunteer_reminder"
     ) {
+      const upcoming = pickUpcomingEvents(events);
+      const eventOptions = toEventOptions(upcoming);
       return {
         success: true,
-        answer: [
-          formatNoEventAnswer(resolution.reason),
-          "Name the event (or open its page), then ask again — for example, “Write tomorrow’s reminder for Back to School Fair.”",
-        ].join(" "),
-        links: contentLinks(null),
+        answer:
+          eventOptions.length > 0
+            ? [
+                formatNoEventAnswer(resolution.reason, upcoming),
+                "",
+                "I’ll draft the reminder for the event you pick.",
+              ].join("\n")
+            : [
+                formatNoEventAnswer(resolution.reason),
+                "Name the event (or open its page), then ask again — for example, “Write tomorrow’s reminder for Back to School Fair.”",
+              ].join(" "),
+        links: eventOptions.length > 0 ? [] : contentLinks(null),
+        eventOptions,
         source: "content",
         error: null,
       };

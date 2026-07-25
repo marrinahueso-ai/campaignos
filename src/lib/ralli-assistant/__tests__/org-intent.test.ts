@@ -164,6 +164,21 @@ describe("Phase 2 org routing fixtures", () => {
 });
 
 describe("heyralli reproduction: org briefing vs Calendar/AI", () => {
+  const events = [
+    {
+      id: "evt-1",
+      title: "Back to School Fair",
+      date: "2026-08-20",
+      status: "scheduled",
+    },
+    {
+      id: "evt-2",
+      title: "Spring Carnival",
+      date: "2026-04-10",
+      status: "draft",
+    },
+  ];
+
   it('routes "what do I have this week?" to org', () => {
     const question = "what do I have this week?";
     assert.equal(isOrgBriefingIntent(question), true);
@@ -201,5 +216,16 @@ describe("heyralli reproduction: org briefing vs Calendar/AI", () => {
     assert.equal(shouldPreferOrgBriefing(question), true);
     assert.equal(shouldRouteToOrgBriefing(question), true);
     assert.equal(shouldPreferProductHelpFaq(question), false);
+  });
+
+  it('routes "are all my milestones done for this week" to org, not Create with AI FAQ', () => {
+    const question = "are all my milestones done for this week";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldPreferOrgBriefing(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question, events), true);
+    assert.equal(shouldRouteToOpsAsk(question, null, events), false);
+    assert.equal(shouldPreferProductHelpFaq(question), false);
+    // Bare "milestones" must not map to Create with AI how-to.
+    assert.notEqual(matchProductHelpTopic(question)?.id, "create-with-ai");
   });
 });

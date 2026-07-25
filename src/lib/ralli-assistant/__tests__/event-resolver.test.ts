@@ -5,6 +5,7 @@ import {
   formatAmbiguousEventAnswer,
   formatEventOptionChipLabel,
   formatNoEventAnswer,
+  pickUpcomingEvents,
   resolveEventFromQuestion,
   toEventOptions,
   type ResolvableEvent,
@@ -152,6 +153,21 @@ describe("resolveEventFromQuestion", () => {
 
     const none = formatNoEventAnswer("no_match");
     assert.match(none, /couldn’t match/i);
+  });
+
+  it("lists upcoming events when no event was matched", () => {
+    const upcoming = pickUpcomingEvents(EVENTS, 3, new Date("2026-07-23T12:00:00Z"));
+    assert.equal(upcoming.length, 3);
+    // Prefer soonest on/after asOf; Spring Carnival (Apr) is past.
+    assert.equal(upcoming[0]!.id, "evt-bts-dup");
+    assert.equal(upcoming[1]!.id, "evt-bts");
+    assert.equal(upcoming[2]!.id, "evt-bts-2");
+
+    const answer = formatNoEventAnswer("no_event_context", upcoming);
+    assert.match(answer, /Which event should I use/i);
+    assert.match(answer, /Back to School Fair/);
+    assert.match(answer, /Pick one below/i);
+    assert.equal(toEventOptions(upcoming).length, 3);
   });
 
   it("returns dated event options for multi-match UI chips", () => {

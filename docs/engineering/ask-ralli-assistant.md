@@ -28,7 +28,7 @@ Entry: `askRalliAssistantAction` → `askRalliProductHelp` in `src/lib/ralli-ass
 | 7 | OpenAI product help | `ai` | Unmatched how-to when AI is configured |
 | — | Deterministic fallbacks | `org` / `ops` / `pto` / `faq` | Missing AI key or model failure → pack/FAQ/playbook text, never silent invent |
 
-Classic ops/org status asks (**“what’s next”**, **“today’s summary”**, **“what do I have this week”**, **“what needs my approval”**) must **not** fall through to Calendar/Tasks FAQ keyword collisions. Routing helpers live in `ask-routing.ts` + `*-intent.ts`.
+Classic ops/org status asks (**“what’s next”**, **“today’s summary”**, **“what do I have this week”**, **“what needs my approval”**, **“are all my milestones done for this week”**) must **not** fall through to Calendar/Tasks/Create with AI FAQ keyword collisions. Routing helpers live in `ask-routing.ts` + `*-intent.ts`. When ops/content need an event and none is named, answers include **upcoming campaign chips** (`pickUpcomingEvents`) so users can pick instead of only seeing Campaigns/Tasks links.
 
 ### Sources (what each does)
 

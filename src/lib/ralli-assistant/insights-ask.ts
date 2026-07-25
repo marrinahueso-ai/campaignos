@@ -5,6 +5,7 @@ import { getActiveEvents } from "@/lib/events/queries";
 import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
+  pickUpcomingEvents,
   resolveEventFromQuestion,
   toEventOptions,
   type AskRalliEventOption,
@@ -206,33 +207,50 @@ export async function askRalliInsightsCoach(input: {
 
     // Event-shaped question without a resolvable event.
     if (isEventScopedInsightsQuestion(question) && !input.eventId) {
+      const upcoming = pickUpcomingEvents(events);
+      const eventOptions = toEventOptions(upcoming);
       return {
         success: true,
-        answer: [
-          "I can check campaign health once I know which event you mean.",
-          "Open an event page, or name the campaign (for example: “Is Back to School Fair healthy?”).",
-        ].join(" "),
-        links: [
-          { label: "Campaigns", href: "/events" },
-          { label: "Insights", href: "/insights" },
-          { label: "Today", href: "/dashboard" },
-        ],
-        eventOptions: [],
+        answer:
+          eventOptions.length > 0
+            ? [
+                formatNoEventAnswer("no_event_context", upcoming),
+                "",
+                "I’ll check health for the event you pick.",
+              ].join("\n")
+            : [
+                "I can check campaign health once I know which event you mean.",
+                "Open an event page, or name the campaign (for example: “Is Back to School Fair healthy?”).",
+              ].join(" "),
+        links:
+          eventOptions.length > 0
+            ? []
+            : [
+                { label: "Campaigns", href: "/events" },
+                { label: "Insights", href: "/insights" },
+                { label: "Today", href: "/dashboard" },
+              ],
+        eventOptions,
         source: "insights",
         error: null,
       };
     }
 
     if (resolution.kind === "none" && resolution.reason === "no_match") {
+      const upcoming = pickUpcomingEvents(events);
+      const eventOptions = toEventOptions(upcoming);
       return {
         success: true,
-        answer: formatNoEventAnswer(resolution.reason),
-        links: [
-          { label: "Campaigns", href: "/events" },
-          { label: "Insights", href: "/insights" },
-          { label: "Approvals", href: "/approvals" },
-        ],
-        eventOptions: [],
+        answer: formatNoEventAnswer(resolution.reason, upcoming),
+        links:
+          eventOptions.length > 0
+            ? []
+            : [
+                { label: "Campaigns", href: "/events" },
+                { label: "Insights", href: "/insights" },
+                { label: "Approvals", href: "/approvals" },
+              ],
+        eventOptions,
         source: "insights",
         error: null,
       };

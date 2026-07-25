@@ -9,6 +9,7 @@ import {
 import {
   formatAmbiguousEventAnswer,
   formatNoEventAnswer,
+  pickUpcomingEvents,
   resolveEventFromQuestion,
   toEventOptions,
   type AskRalliEventOption,
@@ -35,6 +36,7 @@ function buildOpsSystemPrompt(): string {
     "You are Ask Ralli — like an experienced PTO president sitting beside the user: calm, specific, practical, encouraging.",
     "Answer ONLY from the provided EVENT CONTEXT JSON. Do not invent tasks, approvals, schedules, volunteer counts, posts, or readiness facts.",
     "Use volunteers and communications sections when the question is about shifts, SignUpGenius, email, Facebook, flyers, or drafts.",
+    "For milestone done/progress questions, use readiness, tasks, approvals, and schedule from the pack — not Create with AI product how-tos.",
     "If unavailable lists a gap (e.g. who hasn’t responded, family view counts, Meta performance), say “I can’t see that yet” and name the right area (Tasks, Approvals, Volunteers).",
     "If a section is empty, say so plainly. Prefer concrete next steps and name real items from the context.",
     "Keep answers to 3–6 short sentences or a tight bullet list. Use short paragraphs or bullets — easy to scan.",
@@ -120,15 +122,20 @@ export async function askRalliOpsCoach(input: {
         error: org.error,
       };
     }
+    const upcoming = pickUpcomingEvents(events);
+    const eventOptions = toEventOptions(upcoming);
     return {
       success: true,
-      answer: formatNoEventAnswer(resolution.reason),
-      links: [
-        { label: "Campaigns", href: "/events" },
-        { label: "Tasks", href: "/tasks" },
-        { label: "Approvals", href: "/approvals" },
-      ],
-      eventOptions: [],
+      answer: formatNoEventAnswer(resolution.reason, upcoming),
+      links:
+        eventOptions.length > 0
+          ? []
+          : [
+              { label: "Campaigns", href: "/events" },
+              { label: "Tasks", href: "/tasks" },
+              { label: "Approvals", href: "/approvals" },
+            ],
+      eventOptions,
       source: "ops",
       error: null,
     };

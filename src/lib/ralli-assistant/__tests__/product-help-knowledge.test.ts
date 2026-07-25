@@ -30,4 +30,15 @@ describe("matchProductHelpTopic", () => {
   it("returns null for unrelated questions", () => {
     assert.equal(matchProductHelpTopic("write me a facebook caption"), null);
   });
+
+  it("does not match Create with AI on bare milestone status asks", () => {
+    assert.equal(
+      matchProductHelpTopic("are all my milestones done for this week"),
+      null,
+    );
+    assert.equal(
+      matchProductHelpTopic("what is create with ai?")?.id,
+      "create-with-ai",
+    );
+  });
 });
