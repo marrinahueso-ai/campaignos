@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { emptyOrgCommunicationsSection } from "../communications-format.ts";
 import {
   formatDeterministicOrgBriefingAnswer,
+  formatPrioritizedOrgActions,
   serializeOrgBriefingForPrompt,
   type OrgBriefingContextPack,
 } from "../org-briefing-format.ts";
@@ -209,6 +210,53 @@ describe("formatDeterministicOrgBriefingAnswer", () => {
     assert.match(answer, /no overdue playbook tasks/i);
     assert.doesNotMatch(answer, /Save-the-date graphic/);
     assert.doesNotMatch(answer, /Confirm volunteer leads/);
+  });
+});
+
+describe("formatPrioritizedOrgActions", () => {
+  it("returns a numbered action list from live context", () => {
+    const answer = formatPrioritizedOrgActions(samplePack());
+    assert.match(answer, /Here’s what I’d tackle first today/i);
+    assert.match(answer, /^1\. /m);
+    assert.match(answer, /Approve “Save-the-date graphic”/);
+    assert.match(answer, /volunteer reminder for Back to School Fair/);
+    assert.match(answer, /Confirm today’s publish: Two-week reminder/);
+    assert.match(answer, /Catch up overdue task/);
+  });
+
+  it("stays calm when nothing is urgent", () => {
+    const answer = formatPrioritizedOrgActions(
+      samplePack({
+        approvalQueue: {
+          assignedToMeCount: 0,
+          allPendingCount: 0,
+          changesRequestedCount: 0,
+          assignedToMe: [],
+          changesRequested: [],
+        },
+        eventsNeedingAttention: [],
+        behindSchedule: {
+          overdueTaskCount: 0,
+          overdueTasks: [],
+          eventsBehind: [],
+        },
+        todaySummary: {
+          attentionCount: 0,
+          waitingOnMeCount: 0,
+          publishingTodayCount: 0,
+          publishingToday: [],
+          eventsThisWeek: [],
+        },
+        thisWeek: {
+          scheduledCount: 0,
+          scheduled: [],
+          events: [],
+        },
+        volunteers: emptyOrgVolunteersSection([]),
+      }),
+    );
+    assert.match(answer, /Nothing urgent is flagged/i);
+    assert.doesNotMatch(answer, /^1\. /m);
   });
 });
 

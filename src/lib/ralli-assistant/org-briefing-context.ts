@@ -29,6 +29,7 @@ import {
 export type { OrgBriefingContextPack } from "@/lib/ralli-assistant/org-briefing-format";
 export {
   formatDeterministicOrgBriefingAnswer,
+  formatPrioritizedOrgActions,
   serializeOrgBriefingForPrompt,
 } from "@/lib/ralli-assistant/org-briefing-format";
 

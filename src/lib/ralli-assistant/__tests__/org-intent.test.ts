@@ -11,6 +11,7 @@ import {
 } from "../ops-intent.ts";
 import {
   isOrgBriefingIntent,
+  isOrgPriorityListIntent,
   shouldPreferOrgBriefing,
 } from "../org-intent.ts";
 import { matchProductHelpTopic } from "../product-help-knowledge.ts";
@@ -28,6 +29,10 @@ describe("org briefing intent detection", () => {
       "Give me a board briefing",
       "What's on my plate?",
       "What should I focus on today?",
+      "What should I work on today?",
+      "What's my biggest priority?",
+      "Am I behind?",
+      "What's overdue?",
       "What's the busiest week?",
     ];
 
@@ -36,6 +41,13 @@ describe("org briefing intent detection", () => {
       assert.equal(shouldPreferOrgBriefing(question), true, question);
       assert.equal(shouldPreferProductHelpFaq(question), false, question);
     }
+  });
+
+  it("detects priority-list phrasing for today", () => {
+    assert.equal(isOrgPriorityListIntent("What should I work on today?"), true);
+    assert.equal(isOrgPriorityListIntent("What should I focus on today?"), true);
+    assert.equal(isOrgPriorityListIntent("What's my biggest priority?"), true);
+    assert.equal(isOrgPriorityListIntent("Give me today's summary"), false);
   });
 
   it("keeps clear how-to on FAQ path", () => {

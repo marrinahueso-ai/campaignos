@@ -306,7 +306,7 @@ async function generateReminderDraft(input: {
 
   const isVolunteer = input.kind === "write_volunteer_reminder";
   const systemPrompt = [
-    "You write short draft messages for school PTO campaigns.",
+    "You write short draft messages for school PTO campaigns — warm, clear, and practical, like an experienced PTO president would send.",
     ...GROUNDING_SYSTEM_RULES,
     "Return draft message body only — no preamble, labels, or markdown fences.",
     "Never claim the message was sent, published, or emailed.",

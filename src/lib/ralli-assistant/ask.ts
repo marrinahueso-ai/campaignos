@@ -26,6 +26,11 @@ import {
   matchProductHelpTopic,
   type ProductHelpLink,
 } from "@/lib/ralli-assistant/product-help-knowledge";
+import {
+  formatPtoAdvisorAnswer,
+  matchPtoAdvisorTopic,
+  shouldPreferPtoAdvisor,
+} from "@/lib/ralli-assistant/pto-advisor-knowledge";
 
 export type AskRalliSource =
   | "faq"
@@ -33,7 +38,8 @@ export type AskRalliSource =
   | "ops"
   | "org"
   | "content"
-  | "insights";
+  | "insights"
+  | "pto";
 
 export type { AskRalliEventOption };
 
@@ -177,6 +183,21 @@ export async function askRalliProductHelp(input: {
         eventId,
       }),
     );
+  }
+
+  // PTO playbook advice (experienced-president tips) before product FAQ / AI.
+  if (shouldPreferPtoAdvisor(question)) {
+    const topic = matchPtoAdvisorTopic(question);
+    if (topic) {
+      return withDisplayPolish({
+        success: true,
+        answer: formatPtoAdvisorAnswer(topic),
+        links: topic.links,
+        eventOptions: emptyEventOptions(),
+        source: "pto",
+        error: null,
+      });
+    }
   }
 
   const matched = matchProductHelpTopic(question);

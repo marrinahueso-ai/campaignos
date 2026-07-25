@@ -34,17 +34,18 @@ function assistantEyebrow(source: AskRalliSource | null): string {
   if (source === "insights") return "Insights";
   if (source === "content") return "Draft helper";
   if (source === "ops" || source === "org") return "Your next steps";
+  if (source === "pto") return "PTO tips";
   if (source === "faq" || source === "ai") return "Product how-tos";
   return "Next steps & how-tos";
 }
 
 /** Curated chips across ops/org, volunteers/comms, drafts, insights, how-to. */
 const ASK_RALLI_SUGGESTIONS = [
+  "What should I work on today?",
   "What needs my approval?",
   "Give me today's summary",
+  "How do I get more volunteers?",
   "What's my biggest risk?",
-  "Is my event healthy?",
-  "Do I need more volunteers?",
   "Write tomorrow's reminder",
   "What should I do next for this event?",
   "How do I create a campaign?",

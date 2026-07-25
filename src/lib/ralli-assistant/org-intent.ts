@@ -39,7 +39,31 @@ const ORG_BRIEFING_PATTERNS: RegExp[] = [
   /\bgive me (a |my )?(briefing|overview|status|summary)\b/i,
   /\bwhat('?s|s| is) on my plate\b/i,
   /\bwhat should i focus on today\b/i,
+  /\bwhat should i work on today\b/i,
+  /\bwhat should i (finish|do) before i leave\b/i,
+  /\bwhat('?s|s| is) my biggest priority\b/i,
+  /\bbiggest priority\b/i,
+  /\bwhat('?s|s| is) overdue\b/i,
+  /\bam i behind\b/i,
+  /\bwhat changed since yesterday\b/i,
+  /\bcan you summarize everything\b/i,
+  /\bsummarize everything\b/i,
+  /\bwhat should i send this week\b/i,
 ];
+
+/** True when the user wants a prioritized action list for today / now. */
+export function isOrgPriorityListIntent(question: string): boolean {
+  const normalized = normalizeAskText(question);
+  if (!normalized) return false;
+  return (
+    /\bwhat should i (work on|focus on|do) today\b/i.test(normalized) ||
+    /\bwhat should i (finish|do) before i leave\b/i.test(normalized) ||
+    /\bwhat('?s|s| is) my biggest priority\b/i.test(normalized) ||
+    /\bbiggest priority\b/i.test(normalized) ||
+    /\bwhat('?s|s| is) (the )?next best thing\b/i.test(normalized) ||
+    /\bpriorit(y|ies) (for )?today\b/i.test(normalized)
+  );
+}
 
 /** Org / role briefing without requiring a named event. */
 export function isOrgBriefingIntent(question: string): boolean {

@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 21, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [Architecture](./architecture.md) · [Feature list](../product/feature-list.md) · [QA overview](../qa/architecture-overview.md) · [Testing guide](../qa/testing-guide.md)
 
 In-app coach + product guide for Hey Ralli. Users open **Hey Ralli Assistant** from the sidebar (pinned under Insights) and ask operational, briefing, draft, insights, or how-to questions.
@@ -21,11 +21,12 @@ Entry: `askRalliAssistantAction` → `askRalliProductHelp` in `src/lib/ralli-ass
 |------:|------|----------|------|
 | 1 | Content draft helper | `content` | Phase 4 write/rewrite intents (`shouldRouteToContentAsk`) |
 | 2 | Insights / health / risk | `insights` | Phase 5 (`shouldRouteToInsightsAsk`); yields to content |
-| 3 | Org / role briefing | `org` | Phase 2 (+ Phase 3 org-level volunteers/comms) |
+| 3 | Org / role briefing | `org` | Phase 2 (+ Phase 3 org-level volunteers/comms); priority asks (“what should I work on today?”) return a numbered action list |
 | 4 | Event ops coach | `ops` | Phase 1 (+ Phase 3 event-scoped volunteers/comms); also when `eventId` forced |
-| 5 | Product-help FAQ | `faq` | Curated topics in `product-help-knowledge.ts` |
-| 6 | OpenAI product help | `ai` | Unmatched how-to when AI is configured |
-| — | Deterministic fallbacks | `org` / `ops` / `faq` | Missing AI key or model failure → pack/FAQ text, never silent invent |
+| 5 | PTO playbook tips | `pto` | Experienced-president advice in `pto-advisor-knowledge.ts` (before product FAQ) |
+| 6 | Product-help FAQ | `faq` | Curated topics in `product-help-knowledge.ts` |
+| 7 | OpenAI product help | `ai` | Unmatched how-to when AI is configured |
+| — | Deterministic fallbacks | `org` / `ops` / `pto` / `faq` | Missing AI key or model failure → pack/FAQ/playbook text, never silent invent |
 
 Classic ops/org status asks (**“what’s next”**, **“today’s summary”**, **“what do I have this week”**, **“what needs my approval”**) must **not** fall through to Calendar/Tasks FAQ keyword collisions. Routing helpers live in `ask-routing.ts` + `*-intent.ts`.
 
@@ -34,8 +35,9 @@ Classic ops/org status asks (**“what’s next”**, **“today’s summary”*
 | Source | Role | Context |
 |--------|------|---------|
 | `faq` | Curated how-to (“Where do I find approvals?”) | Static topics + link chips |
-| `org` | Org/role briefing across the board | `org-briefing-context` pack |
+| `org` | Org/role briefing across the board | `org-briefing-context` pack; priority intents use `formatPrioritizedOrgActions` |
 | `ops` | Event-scoped next steps / health of one campaign | `ops-context` pack (+ volunteers/comms sections) |
+| `pto` | PTO playbook tips (recruitment timelines, checklists, fundraising norms) | Curated `pto-advisor-knowledge.ts` — not live org facts |
 | `content` | Reminder / caption draft helper | Event resolve + session/Meta captions when available |
 | `insights` | Health / risk / performance recommendations | Campaign-director + Meta Insights when metrics exist; honest empty state otherwise |
 | `ai` | Free-form product navigation help | System prompt from `buildProductHelpSystemPrompt` — still no org facts |
@@ -60,7 +62,7 @@ Widget: `src/components/layout/RalliAiAssistantWidget.tsx` (`pickEventOption` �
 
 Sidebar (`Sidebar.tsx`): scrollable nav ends at Insights; **Hey Ralli Assistant** is pinned below so it stays on screen. Expanded: card + “Ask Ralli →”. Collapsed: sparkles icon (`aria-label="Hey Ralli Assistant"`).
 
-Dialog eyebrows by source: ops/org → **Your next steps**; insights → **Insights**; content → **Draft helper**; faq/ai → **Product how-tos**.
+Dialog eyebrows by source: ops/org → **Your next steps**; pto → **PTO tips**; insights → **Insights**; content → **Draft helper**; faq/ai → **Product how-tos**. Persona: calm, practical “experienced PTO president” voice across coaches.
 
 ---
 
@@ -80,6 +82,7 @@ Dialog eyebrows by source: ops/org → **Your next steps**; insights → **Insig
 | `src/lib/ralli-assistant/content-*.ts` | Phase 4 drafts |
 | `src/lib/ralli-assistant/insights-*.ts` | Phase 5 |
 | `src/lib/ralli-assistant/product-help-knowledge.ts` | FAQ topics + links |
+| `src/lib/ralli-assistant/pto-advisor-knowledge.ts` | PTO playbook tips (`source: pto`) |
 | `src/lib/ralli-assistant/answer-display.ts` | Chip-aware body cleanup |
 | `src/components/layout/RalliAiAssistantWidget.tsx` | Dialog UI |
 | `src/components/layout/Sidebar.tsx` | Pin under Insights |
@@ -122,7 +125,8 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 | Phase | Example questions | Expect |
 |-------|-------------------|--------|
 | **1 Event ops** | “What should I do next for {Event}?” / ask from `/events/{id}` | Event-scoped next steps; Approvals/event chips; not generic Calendar FAQ |
-| **2 Org briefing** | “Give me today’s summary”, “What needs my approval?”, “What do I have this week?” | Org pack facts; **Your next steps**; Approvals / Today chips |
+| **2 Org briefing** | “Give me today’s summary”, “What needs my approval?”, “What should I work on today?” | Org pack facts; priority asks → numbered list; **Your next steps**; Approvals / Today chips |
+| **PTO tips** | “How do I get more volunteers?”, “When should I start promoting?” | **PTO tips** eyebrow; playbook advice (not live counts) |
 | **3 Volunteers / comms** | “Do I need more volunteers?”, “What’s missing in communications?” | Volunteers/comms sections when data exists; honest gaps otherwise |
 | **4 Content** | “Write tomorrow’s reminder”, “Rewrite this caption” | Draft helper path; event resolve / chips if needed |
 | **5 Insights** | “What’s my biggest risk?”, “Is my event healthy?” | Insights eyebrow or health/risk language; Metrics empty → honest “no performance data” + ops fallback |

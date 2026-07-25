@@ -111,6 +111,83 @@ export function emptyOrgPhase3Sections(): {
   };
 }
 
+/**
+ * Prioritized “what should I do today?” list from live org context only.
+ * Numbered actions a PTO president would tackle first.
+ */
+export function formatPrioritizedOrgActions(
+  pack: OrgBriefingContextPack,
+): string {
+  const actions: string[] = [];
+
+  for (const item of pack.approvalQueue.assignedToMe.slice(0, 3)) {
+    actions.push(
+      `Approve “${item.label}” for ${item.eventTitle} (waiting on you).`,
+    );
+  }
+
+  for (const event of pack.volunteers.eventsNeedingVolunteers.slice(0, 3)) {
+    const fillHint =
+      event.openSpots != null && event.openSpots > 0
+        ? `${event.openSpots} open spot${event.openSpots === 1 ? "" : "s"}`
+        : "volunteers still needed";
+    actions.push(
+      `Send a volunteer reminder for ${event.eventTitle} (${fillHint}).`,
+    );
+  }
+
+  for (const item of pack.todaySummary.publishingToday.slice(0, 2)) {
+    const event = item.eventTitle ? ` for ${item.eventTitle}` : "";
+    actions.push(
+      `Confirm today’s publish: ${item.milestoneName}${event}.`,
+    );
+  }
+
+  for (const task of pack.behindSchedule.overdueTasks.slice(0, 3)) {
+    actions.push(
+      `Catch up overdue task “${task.title}” (${task.eventTitle}).`,
+    );
+  }
+
+  for (const event of pack.eventsNeedingAttention.slice(0, 3)) {
+    if (actions.some((line) => line.includes(event.title))) continue;
+    const reason = event.reasons[0] || "needs attention";
+    actions.push(`Check ${event.title} — ${reason}.`);
+  }
+
+  for (const item of pack.thisWeek.scheduled.slice(0, 2)) {
+    if (
+      pack.todaySummary.publishingToday.some((today) => today.id === item.id)
+    ) {
+      continue;
+    }
+    const event = item.eventTitle ? ` (${item.eventTitle})` : "";
+    actions.push(
+      `Prep this week’s scheduled post: ${item.milestoneName}${event}.`,
+    );
+  }
+
+  if (actions.length === 0) {
+    return [
+      "Here’s a calm read of your plate right now:",
+      "Nothing urgent is flagged in approvals, overdue tasks, volunteer gaps, or today’s publish queue.",
+      "A good next move: skim Campaigns for the nearest event date, or ask “What do I have this week?”",
+    ].join("\n");
+  }
+
+  const numbered = actions
+    .slice(0, 6)
+    .map((line, index) => `${index + 1}. ${line}`);
+
+  return [
+    "Here’s what I’d tackle first today:",
+    "",
+    ...numbered,
+    "",
+    "Work top to bottom — clear approvals and volunteer gaps before new creative work.",
+  ].join("\n");
+}
+
 /** Deterministic answer when AI is unavailable — grounded in the pack only. */
 export function formatDeterministicOrgBriefingAnswer(
   pack: OrgBriefingContextPack,
