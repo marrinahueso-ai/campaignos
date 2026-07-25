@@ -6,7 +6,7 @@
 **Related:** [Billing and access](./billing-and-access.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md)
 
 Commercial source of truth for Hey Ralli plans, AI credits, AI Reserve, trial, and artwork regen caps.  
-**Engine status:** Phases 1–4 shipped (metering, sidebar widget, Owner Credits tab, Owner Reserve/bonus grants). Stripe / hard gates = later.
+**Engine status:** Phases 1–4 + **4.5 billing surfaces sync** shipped (metering, widget, Owner Credits/grants, marketing+Settings plan catalog at $49/$79/$129). Stripe / hard gates = later.
 
 ---
 

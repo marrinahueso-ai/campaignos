@@ -4,7 +4,8 @@ import { StudioPricingPage } from "@/components/marketing/StudioPricingPage";
 
 export const metadata = {
   title: "Pricing",
-  description: "Simple monthly plans for PTO and school volunteer teams — $29, $59, and $99.",
+  description:
+    "Hey Ralli plans for PTO teams — Starter $49, Professional $79, Premium $129 — with AI credits included.",
 };
 
 export default async function PricingPage() {

@@ -191,7 +191,8 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
     activeIntegrationsCount: activeIntegrations.length,
     totalIntegrationsCount: integrations.filter((item) => item.available).length,
     planLabel: isFoundingPartner ? "Founding Partner" : "Professional",
-    planRenewalLabel: isFoundingPartner ? null : "Renews Aug 12, 2026",
+    // No fake renewal dates — paid checkout is not connected yet.
+    planRenewalLabel: null,
     isFoundingPartner,
     integrations,
     aiVoiceSnippet: intelligence?.profile?.organizationVoice

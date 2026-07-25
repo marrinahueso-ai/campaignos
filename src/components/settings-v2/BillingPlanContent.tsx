@@ -3,8 +3,12 @@ import { ArrowRight, CreditCard, Crown } from "lucide-react";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Badge } from "@/components/ui/Badge";
-
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+import {
+  CHECKOUT_COMING_SOON,
+  planById,
+  PRE_STRIPE_DEFAULT_PLAN_ID,
+} from "@/lib/billing/plan-catalog";
 
 interface BillingPlanContentProps {
   planLabel: string;
@@ -27,11 +31,13 @@ export function BillingPlanContent({
   renewalLabel,
   aiCredits = null,
 }: BillingPlanContentProps) {
+  const defaultPlan = planById(PRE_STRIPE_DEFAULT_PLAN_ID);
+
   return (
     <div className="space-y-6">
       <SettingsV2PageHeader
         title="Billing & Plan"
-        description="Subscription and payment for this organization."
+        description="Subscription, AI credits, and payment for this organization."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -44,16 +50,23 @@ export function BillingPlanContent({
               <p className="font-display text-2xl text-cos-text">{planLabel}</p>
               {isFoundingPartner ? (
                 <p className="mt-1 text-sm text-cos-muted">
-                  Founding partner benefits — billing waived during early access.
+                  Founding partner benefits — billing waived and AI credits
+                  unlimited during early access.
                 </p>
               ) : renewalLabel ? (
                 <p className="mt-1 text-sm text-cos-muted">{renewalLabel}</p>
               ) : (
                 <p className="mt-1 text-sm text-cos-muted">
-                  Paid billing is not connected yet for this organization.
+                  Metered as {defaultPlan.displayName} ($
+                  {defaultPlan.priceUsd}/mo ·{" "}
+                  {defaultPlan.monthlyCredits.toLocaleString()} AI credits) until
+                  checkout is connected. {CHECKOUT_COMING_SOON}
                 </p>
               )}
-              <Badge className="mt-3" variant={isFoundingPartner ? "info" : "success"}>
+              <Badge
+                className="mt-3"
+                variant={isFoundingPartner ? "info" : "success"}
+              >
                 Active
               </Badge>
             </div>
@@ -72,7 +85,7 @@ export function BillingPlanContent({
               <p className="mt-1 text-sm text-cos-muted">
                 {isFoundingPartner
                   ? "No card is stored for founding partner access."
-                  : "A card will appear here when billing goes live."}
+                  : "A card will appear here when Stripe Checkout goes live."}
               </p>
             </div>
           </div>
@@ -97,14 +110,21 @@ export function BillingPlanContent({
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
               AI credits reset on the 1st of each month (UTC). Unused monthly
               credits do not roll over. AI Reserve balances roll over until used.
-              Stripe Checkout is not connected yet — soft warnings only; hard
-              limits come later.
+              Soft warnings only today — plan upgrades and Reserve purchase ship
+              with checkout; hard limits come later.
             </p>
+            {aiCredits.softWarn ? (
+              <p className="mt-2 text-sm text-cos-warning-text">
+                You&apos;re running low. Upgrade or AI Reserve purchase will be
+                available here when checkout connects; contact support for an
+                Owner-granted Reserve in the meantime.
+              </p>
+            ) : null}
             <p className="mt-2 text-xs text-cos-muted">{aiCredits.resetLabel}</p>
           </>
         ) : (
           <p className="text-sm leading-relaxed text-cos-muted">
-            AI credits reset monthly. Stripe is not connected yet — balances are
+            AI credits reset monthly. Checkout is not connected yet — balances are
             metered with soft warnings only.
           </p>
         )}

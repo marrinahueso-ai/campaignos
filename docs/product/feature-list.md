@@ -4,14 +4,14 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — AI credits Phase 4 (Owner grant UI)
+**Last updated:** July 24, 2026 — Billing surfaces sync (pre–Phase 5)
 
 ---
 
 ## Marketing & public
 - Landing / home — **shipped**
 - Features (`/features`) — **shipped** (“See Hey Ralli in Action”: live Motion demos for Create with AI, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
-- Pricing page ($29 / $59 / $99 marketing) — **shipped**; checkout **deferred**
+- Pricing page ($49 / $79 / $129 · Starter / Professional / Premium) — **shipped** (catalog-synced); checkout **deferred** (Phase 5)
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**
 
@@ -261,7 +261,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
-- Billing & Plan UI — **partial**; Stripe checkout / real upgrades — **deferred**
+- Billing & Plan UI — **partial** (Phase 4.5: plan catalog + honest stubs aligned to locked matrix; Stripe checkout / real upgrades — Phase 5)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
 ## Support & shell

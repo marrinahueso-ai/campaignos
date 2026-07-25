@@ -110,7 +110,11 @@ export function SettingsOverviewContent({ data }: SettingsOverviewContentProps) 
           icon={Crown}
           title="Plan"
           value={data.planLabel}
-          subvalue={data.planRenewalLabel ?? (data.isFoundingPartner ? "Billing waived" : undefined)}
+          subvalue={
+            data.isFoundingPartner
+              ? "Billing waived"
+              : data.planRenewalLabel ?? "Checkout coming soon"
+          }
           href="/settings/billing-plan"
           linkLabel="Manage billing"
         />

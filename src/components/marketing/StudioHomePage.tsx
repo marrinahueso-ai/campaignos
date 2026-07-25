@@ -106,7 +106,7 @@ export function StudioHomePage({
               href="/pricing"
               className="text-sm tracking-wide text-cos-text/70 transition-colors hover:text-cos-text"
             >
-              Pricing from $29
+              Pricing from $49
             </Link>
           </div>
 

@@ -5,6 +5,13 @@ import {
   StudioMarketingShell,
 } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
+import {
+  BILLING_TRIAL,
+  CHECKOUT_COMING_SOON,
+  PAID_PLANS,
+  RESERVE_CATALOG,
+} from "@/lib/billing/plan-catalog";
+import { ONBOARDING_PATH } from "@/lib/auth/post-auth-path";
 import { cn } from "@/lib/utils/cn";
 
 interface StudioPricingPageProps {
@@ -12,59 +19,14 @@ interface StudioPricingPageProps {
   workspaceHref?: string;
 }
 
-const plans = [
-  {
-    name: "Starter",
-    price: 29,
-    description: "For small PTOs getting organized without the overwhelm.",
-    features: [
-      "Up to 3 active campaigns",
-      "School calendar & event planning",
-      "Artwork studio (feed + story)",
-      "Facebook publishing",
-      "Email sign-in for your team",
-    ],
-    cta: "Start with Starter",
-    highlighted: false,
-  },
-  {
-    name: "Studio",
-    price: 59,
-    description: "Our most popular plan for busy volunteer teams all year long.",
-    features: [
-      "Unlimited campaigns",
-      "Full artwork & caption workflow",
-      "Facebook + Instagram publishing",
-      "Approval routing for your board",
-      "Publishing queue & schedule",
-      "Priority email support",
-    ],
-    cta: "Choose Studio",
-    highlighted: true,
-  },
-  {
-    name: "Pro",
-    price: 99,
-    description: "For active schools managing multiple events and committees.",
-    features: [
-      "Everything in Studio",
-      "Multiple admin seats",
-      "School roster & role matrix",
-      "Calendar import & review tools",
-      "Insights & campaign history",
-      "Dedicated onboarding call",
-    ],
-    cta: "Go Pro",
-    highlighted: false,
-  },
-];
-
 export function StudioPricingPage({
   userEmail = null,
   workspaceHref = "/dashboard",
 }: StudioPricingPageProps) {
   const isSignedIn = Boolean(userEmail);
-  const ctaHref = isSignedIn ? workspaceHref : "/login";
+  const ctaHref = isSignedIn
+    ? workspaceHref
+    : `/login?intent=setup&next=${encodeURIComponent(ONBOARDING_PATH)}`;
 
   return (
     <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
@@ -72,7 +34,7 @@ export function StudioPricingPage({
         <StudioMarketingPageHeader
           eyebrow="Pricing"
           title="Simple plans for busy school teams."
-          description="No corporate contracts. Pick the level that fits your PTO — upgrade anytime as your calendar fills up."
+          description={`No corporate contracts. Start with a ${BILLING_TRIAL.days}-day trial (${BILLING_TRIAL.credits.toLocaleString()} AI credits) when checkout ships — or join early with a founding code.`}
         />
 
         <section className="mt-16 grid overflow-hidden border border-cos-border lg:grid-cols-[1.05fr_0.95fr]">
@@ -98,16 +60,17 @@ export function StudioPricingPage({
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-cos-muted sm:text-base">
               You&apos;re not buying enterprise software — you&apos;re buying back
-              evenings. Every tier gives your team one calm studio for artwork,
-              captions, approvals, and publishing.
+              evenings. Every tier includes Create with AI; Professional and
+              Premium add the assistants and capacity active PTOs need. Premium is
+              the destination for most schools.
             </p>
           </div>
         </section>
 
         <div className="mt-16 grid gap-6 lg:grid-cols-3">
-          {plans.map((plan) => (
+          {PAID_PLANS.map((plan) => (
             <article
-              key={plan.name}
+              key={plan.id}
               className={cn(
                 "flex flex-col border p-8",
                 plan.highlighted
@@ -115,16 +78,23 @@ export function StudioPricingPage({
                   : "border-cos-border bg-cos-card",
               )}
             >
-              {plan.highlighted && (
-                <p className="studio-eyebrow mb-4 text-cos-dark-muted">Most popular</p>
-              )}
+              {plan.badge ? (
+                <p
+                  className={cn(
+                    "studio-eyebrow mb-4",
+                    plan.highlighted ? "text-cos-dark-muted" : "text-cos-muted",
+                  )}
+                >
+                  {plan.badge}
+                </p>
+              ) : null}
               <h2
                 className={cn(
                   "font-display text-3xl",
                   plan.highlighted ? "text-[#f6f2eb]" : "text-cos-text",
                 )}
               >
-                {plan.name}
+                {plan.displayName}
               </h2>
               <div className="mt-4 flex items-baseline gap-1">
                 <span
@@ -133,7 +103,7 @@ export function StudioPricingPage({
                     plan.highlighted ? "text-[#f6f2eb]" : "text-cos-text",
                   )}
                 >
-                  ${plan.price}
+                  ${plan.priceUsd}
                 </span>
                 <span
                   className={cn(
@@ -163,7 +133,11 @@ export function StudioPricingPage({
                       )}
                       strokeWidth={1.5}
                     />
-                    <span className={plan.highlighted ? "text-[#f6f2eb]/90" : "text-cos-text"}>
+                    <span
+                      className={
+                        plan.highlighted ? "text-[#f6f2eb]/90" : "text-cos-text"
+                      }
+                    >
                       {feature}
                     </span>
                   </li>
@@ -180,17 +154,45 @@ export function StudioPricingPage({
                     "border-cos-dark-muted/30 bg-[#f6f2eb] text-cos-text hover:bg-white",
                 )}
               >
-                {plan.cta}
+                {isSignedIn ? "Open workspace" : plan.marketingCta}
               </Button>
             </article>
           ))}
         </div>
 
+        <section className="mt-16 rounded-none border border-cos-border bg-cos-card px-8 py-10">
+          <p className="studio-eyebrow">AI Reserve</p>
+          <h3 className="font-display mt-3 text-2xl text-cos-text">
+            Need more AI headroom mid-year?
+          </h3>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
+            Monthly plan credits reset each month and do not roll over. AI Reserve
+            stacks and rolls over until used. Purchase options will ship with
+            checkout; Premium includes a ${RESERVE_CATALOG[0]!.priceUsd} Reserve
+            each year.
+          </p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+            {RESERVE_CATALOG.map((sku) => (
+              <li
+                key={sku.id}
+                className="border border-cos-border bg-cos-bg px-4 py-3 text-sm"
+              >
+                <p className="font-medium text-cos-text">{sku.label}</p>
+                <p className="mt-1 text-cos-muted">
+                  ${sku.priceUsd} · {sku.credits.toLocaleString()} credits
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <p className="mx-auto mt-12 max-w-2xl text-center text-sm leading-relaxed text-cos-muted">
-          All plans include secure sign-in, your school&apos;s campaign workspace, and
-          updates as we ship new features. Pricing shown is per organization, billed
-          monthly. Questions?{" "}
-          <a href="mailto:hello@heyralli.com" className="text-cos-text underline-offset-2 hover:underline">
+          {CHECKOUT_COMING_SOON} Pricing is per organization, billed monthly.
+          Questions?{" "}
+          <a
+            href="mailto:hello@heyralli.com"
+            className="text-cos-text underline-offset-2 hover:underline"
+          >
             Reach out anytime
           </a>
           .

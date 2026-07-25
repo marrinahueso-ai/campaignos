@@ -3,6 +3,15 @@ import { ArrowLeft } from "lucide-react";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { Button } from "@/components/ui/Button";
+import {
+  CHECKOUT_COMING_SOON,
+  formatPlanPrice,
+  PAID_PLANS,
+  planById,
+  PRE_STRIPE_DEFAULT_PLAN_ID,
+  RESERVE_CATALOG,
+  type PaidPlanId,
+} from "@/lib/billing/plan-catalog";
 
 interface BillingSubPageShellProps {
   title: string;
@@ -35,6 +44,8 @@ export function BillingSubPageShell({
 interface BillingSubPageProps {
   isFoundingPartner?: boolean;
   planLabel?: string;
+  /** Effective paid plan when not founding (pre-Stripe default = Professional). */
+  currentPlanId?: PaidPlanId;
 }
 
 export function BillingPaymentMethodContent({
@@ -55,11 +66,10 @@ export function BillingPaymentMethodContent({
           </>
         ) : (
           <>
-            <p className="text-sm font-medium text-cos-text">No payment method on file</p>
-            <p className="mt-1 text-sm text-cos-muted">
-              Card checkout is not connected yet. You will add a payment method
-              here when billing goes live for your organization.
+            <p className="text-sm font-medium text-cos-text">
+              No payment method on file
             </p>
+            <p className="mt-1 text-sm text-cos-muted">{CHECKOUT_COMING_SOON}</p>
           </>
         )}
       </SettingsV2Card>
@@ -83,8 +93,8 @@ export function BillingHistoryContent({
           </p>
         ) : (
           <p className="text-sm leading-relaxed text-cos-muted">
-            No invoices yet. When paid billing is enabled for your organization,
-            receipts will appear here.
+            No invoices yet. Receipts will appear here when Stripe billing is
+            enabled for your organization.
           </p>
         )}
       </SettingsV2Card>
@@ -95,27 +105,40 @@ export function BillingHistoryContent({
 export function BillingManagePlanContent({
   isFoundingPartner = false,
   planLabel = "Professional",
+  currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
 }: BillingSubPageProps) {
+  const plan = planById(currentPlanId);
+
   return (
     <BillingSubPageShell
       title="Manage Plan"
-      description="Review your current plan and renewal details."
+      description="Review your current plan and what checkout will unlock."
     >
       <SettingsV2Card title={planLabel}>
         {isFoundingPartner ? (
           <>
             <p className="text-sm leading-relaxed text-cos-muted">
               Founding partner benefits — full workspace access with billing
-              waived during early access.
+              waived and unlimited AI credits during early access.
             </p>
-            <p className="mt-2 text-sm text-cos-text">No renewal date while waived</p>
+            <p className="mt-2 text-sm text-cos-text">
+              No renewal date while waived
+            </p>
           </>
         ) : (
           <>
-            <p className="text-sm leading-relaxed text-cos-muted">
-              Your organization plan details will appear here once paid billing
-              is connected.
+            <p className="font-display text-3xl text-cos-text">
+              {formatPlanPrice(plan.priceUsd)}
+              <span className="ml-1 text-base font-sans text-cos-muted">
+                / month
+              </span>
             </p>
+            <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+              {plan.description} Currently metered at{" "}
+              {plan.monthlyCredits.toLocaleString()} AI credits / month until
+              paid billing connects.
+            </p>
+            <p className="mt-2 text-sm text-cos-muted">{CHECKOUT_COMING_SOON}</p>
             <Button
               className="mt-4"
               variant="secondary"
@@ -141,53 +164,81 @@ export function BillingManagePlanContent({
 
 export function BillingUpgradeDowngradeContent({
   isFoundingPartner = false,
+  currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
 }: BillingSubPageProps) {
-  const plans = [
-    {
-      name: "Starter",
-      price: "$0",
-      description: "Core tools to get your first campaigns organized.",
-    },
-    {
-      name: "Professional",
-      price: "$29",
-      description: "Full campaign studio + AI for growing teams.",
-      active: !isFoundingPartner,
-    },
-    {
-      name: "Premium",
-      price: "$59",
-      description: "Advanced analytics + priority support.",
-    },
-  ];
-
   return (
     <BillingSubPageShell
       title="Upgrade / Downgrade"
-      description="Compare plan options. Paid switches unlock when billing is connected."
+      description="Compare locked plan options. Switches unlock when Stripe Checkout is connected."
     >
       {isFoundingPartner ? (
         <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
           You are on Founding Partner access. Plan changes are not required while
           billing is waived.
         </p>
-      ) : null}
+      ) : (
+        <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
+          {CHECKOUT_COMING_SOON} Buttons stay disabled until then.
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        {plans.map((plan) => (
-          <SettingsV2Card key={plan.name} title={plan.name}>
-            <p className="font-display text-3xl text-cos-text">{plan.price}</p>
-            <p className="mt-2 text-sm text-cos-muted">{plan.description}</p>
-            <Button
-              className="mt-4"
-              variant={plan.active ? "secondary" : "primary"}
-              disabled
-            >
-              {plan.active ? "Current plan" : "Coming soon"}
-            </Button>
-          </SettingsV2Card>
-        ))}
+        {PAID_PLANS.map((plan) => {
+          const isCurrent =
+            !isFoundingPartner && plan.id === currentPlanId;
+          return (
+            <SettingsV2Card key={plan.id} title={plan.displayName}>
+              {plan.badge ? (
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-cos-muted">
+                  {plan.badge}
+                </p>
+              ) : null}
+              <p className="font-display text-3xl text-cos-text">
+                {formatPlanPrice(plan.priceUsd)}
+                <span className="ml-1 text-base font-sans text-cos-muted">
+                  / mo
+                </span>
+              </p>
+              <p className="mt-1 text-sm font-medium tabular-nums text-cos-text">
+                {plan.monthlyCredits.toLocaleString()} AI credits / month
+              </p>
+              <p className="mt-2 text-sm text-cos-muted">{plan.description}</p>
+              <ul className="mt-3 space-y-1.5 text-xs text-cos-muted">
+                {plan.features.slice(0, 4).map((feature) => (
+                  <li key={feature}>· {feature}</li>
+                ))}
+              </ul>
+              <Button
+                className="mt-4"
+                variant={isCurrent ? "secondary" : "primary"}
+                disabled
+              >
+                {isCurrent ? "Current plan" : "Coming soon"}
+              </Button>
+            </SettingsV2Card>
+          );
+        })}
       </div>
+
+      <SettingsV2Card title="AI Reserve add-ons">
+        <p className="text-sm text-cos-muted">
+          Reserve stacks on top of monthly credits and rolls over. Purchase
+          unlocks with checkout; Owners can also grant Reserve from ops today.
+        </p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+          {RESERVE_CATALOG.map((sku) => (
+            <li
+              key={sku.id}
+              className="rounded-lg border border-cos-border bg-cos-bg px-3 py-2 text-sm"
+            >
+              <p className="font-medium text-cos-text">{sku.label}</p>
+              <p className="text-cos-muted">
+                ${sku.priceUsd} · {sku.credits.toLocaleString()} credits
+              </p>
+            </li>
+          ))}
+        </ul>
+      </SettingsV2Card>
     </BillingSubPageShell>
   );
 }
