@@ -1,5 +1,6 @@
 import type { Event } from "@/types";
 import { mergePlanningQuickLinks } from "@/lib/event-playbooks/planning-constants";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 const SHARE_LINK_KEYS = ["volunteer_signup", "marketing_materials"] as const;
 
@@ -18,5 +19,5 @@ export function resolveEventShareLink(event: Event): string | null {
 }
 
 export async function copyTextToClipboard(text: string): Promise<void> {
-  await navigator.clipboard.writeText(text);
+  await copyToClipboard(text);
 }

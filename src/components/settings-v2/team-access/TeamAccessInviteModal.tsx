@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { TeamAccessModal } from "@/components/settings-v2/team-access/TeamAccessModal";
 import { inviteTeamMemberAction } from "@/lib/auth/actions";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import {
   CAMPAIGN_ROLES,
   campaignRoleLabel,
@@ -90,7 +91,7 @@ export function TeamAccessInviteModal({
   async function copyInviteLink() {
     if (!inviteUrl) return;
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await copyToClipboard(inviteUrl);
     } catch {
       setError("Could not copy invite link.");
     }

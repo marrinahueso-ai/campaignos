@@ -27,6 +27,7 @@ import {
 } from "@/lib/auth/campaign-roles";
 import type { OrganizationUser } from "@/types/auth";
 import type { OrganizationRole } from "@/types/organization-workspace";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 interface TeamSettingsPanelProps {
   members: OrganizationUser[];
@@ -127,7 +128,7 @@ export function TeamSettingsPanel({
     }
 
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await copyToClipboard(inviteUrl);
       setMessage("Invite link copied.");
       setError(null);
     } catch {
@@ -147,7 +148,7 @@ export function TeamSettingsPanel({
     ].join("\n");
 
     try {
-      await navigator.clipboard.writeText(text);
+      await copyToClipboard(text);
       setMessage("Sign-in details copied.");
       setError(null);
     } catch {

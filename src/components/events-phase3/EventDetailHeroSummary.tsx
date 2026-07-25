@@ -230,6 +230,7 @@ export function EventDetailHeroSummary({ event }: EventDetailHeroSummaryProps) {
     };
 
     measure();
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();

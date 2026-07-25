@@ -103,6 +103,13 @@ export async function signOutViaUi(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible({
     timeout: 20_000,
   });
+  // The post-sign-out redirect can still be settling client-side (e.g. a
+  // trailing `?next=` bounce) even once the login heading is visible.
+  // WebKit surfaces an immediate follow-up page.goto() as a hard
+  // "navigation interrupted" error in that window far more readily than
+  // Chromium/Firefox do, so give in-flight navigations a beat to finish
+  // before handing control back to the caller.
+  await page.waitForLoadState("load").catch(() => {});
 }
 
 export async function expectNoBlankScreen(page: Page): Promise<void> {

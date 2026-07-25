@@ -23,10 +23,22 @@ export default defineConfig({
     actionTimeout: 15_000,
   },
   outputDir: "test-results/hey-ralli",
+  // All three are registered, but `npm run test:hey-ralli` (and :perf) pin
+  // to --project=chromium so the default/CI-ish run doesn't triple in
+  // runtime. Use test:hey-ralli:firefox / :webkit / :cross-browser for
+  // targeted rendering checks in other engines (see package.json).
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
   ],
   // Reuse a running local app when present so we do not fight an existing

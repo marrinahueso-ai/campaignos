@@ -58,6 +58,7 @@ import type {
 } from "@/lib/event-volunteers/types";
 import { truncateUrl, validateSignUpGeniusUrl } from "@/lib/event-volunteers/url";
 import { cn } from "@/lib/utils/cn";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import type { Event } from "@/types";
 
 const FILL_RATE_BAND_STYLES: Record<
@@ -302,7 +303,7 @@ export function EventVolunteersTab({ event }: EventVolunteersTabProps) {
 
   async function copyText(value: string, note: string) {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyToClipboard(value);
       setCopyNote(note);
       setTimeout(() => setCopyNote(null), 2000);
     } catch {
@@ -678,12 +679,27 @@ function VolunteerConnectionReview({
 
       <div className="max-h-72 overflow-y-auto rounded-xl border border-cos-border">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-cos-bg text-xs uppercase tracking-wide text-cos-muted">
+          {/*
+            Sticky positioning goes on each <th>, not <thead>: Safari/WebKit
+            doesn't reliably support `position: sticky` on <thead> itself
+            (only on row/cell elements), even though Chrome/Firefox tolerate
+            it. Each <th> needs its own opaque background since it's now the
+            positioned element sliding over the scrolling rows below.
+          */}
+          <thead className="text-xs uppercase tracking-wide text-cos-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Assignment</th>
-              <th className="px-3 py-2 font-medium">Date</th>
-              <th className="px-3 py-2 font-medium">Filled</th>
-              <th className="px-3 py-2 font-medium">Open</th>
+              <th className="sticky top-0 z-10 bg-cos-bg px-3 py-2 font-medium">
+                Assignment
+              </th>
+              <th className="sticky top-0 z-10 bg-cos-bg px-3 py-2 font-medium">
+                Date
+              </th>
+              <th className="sticky top-0 z-10 bg-cos-bg px-3 py-2 font-medium">
+                Filled
+              </th>
+              <th className="sticky top-0 z-10 bg-cos-bg px-3 py-2 font-medium">
+                Open
+              </th>
             </tr>
           </thead>
           <tbody>

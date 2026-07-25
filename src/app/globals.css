@@ -301,12 +301,17 @@ body {
     background: var(--cos-card);
     padding: 1.75rem;
     box-shadow: 0 1px 2px rgba(42, 38, 34, 0.04);
+    /* Plain-color fallback for browsers without color-mix() support
+       (Safari < 16.2, Firefox < 113); the line below overrides it where
+       color-mix() is understood. */
+    outline: 1px solid var(--cos-border);
     outline: 1px solid color-mix(in srgb, var(--cos-border) 90%, transparent);
     transition: box-shadow 0.25s ease, outline-color 0.25s ease;
   }
 
   .cos-card-interactive:hover {
     box-shadow: 0 8px 24px rgba(42, 38, 34, 0.06);
+    outline-color: var(--cos-border);
     outline-color: color-mix(in srgb, var(--cos-border) 100%, transparent);
   }
 
@@ -320,6 +325,7 @@ body {
 
   .cos-divider {
     border: 0;
+    border-top: 1px solid var(--cos-border);
     border-top: 1px solid color-mix(in srgb, var(--cos-border) 80%, transparent);
   }
 
@@ -487,11 +493,13 @@ body {
   }
 
   .task-hub-table tbody tr {
+    border-bottom: 1px solid var(--cos-border);
     border-bottom: 1px solid color-mix(in srgb, var(--cos-border) 70%, transparent);
     transition: background-color 0.12s ease;
   }
 
   .task-hub-table tbody tr:hover {
+    background: var(--cos-bg);
     background: color-mix(in srgb, var(--cos-bg) 70%, transparent);
   }
 
@@ -509,6 +517,7 @@ body {
   }
 
   .task-hub-board-card:hover {
+    border-color: var(--cos-accent);
     border-color: color-mix(in srgb, var(--cos-accent) 40%, var(--cos-border));
     box-shadow: 0 4px 12px rgba(42, 38, 34, 0.06);
   }

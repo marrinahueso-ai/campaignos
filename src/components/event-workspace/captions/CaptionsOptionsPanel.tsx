@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import type { MetaCaptionGenerationOptions } from "@/lib/meta-captions/types";
 import { cn } from "@/lib/utils/cn";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 
 export interface CaptionOption {
   id: string;
@@ -85,7 +86,7 @@ export function CaptionsOptionsPanel({
 
   async function copyOptionText(option: CaptionOption) {
     try {
-      await navigator.clipboard.writeText(option.text);
+      await copyToClipboard(option.text);
       setCopyFeedbackId(option.id);
       window.setTimeout(() => setCopyFeedbackId(null), 2000);
     } catch {

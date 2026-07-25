@@ -106,6 +106,9 @@ export function TopPerformingPosts({
     }
     const onScroll = () => updateScrollState();
     el.addEventListener("scroll", onScroll, { passive: true });
+    if (typeof ResizeObserver === "undefined") {
+      return () => el.removeEventListener("scroll", onScroll);
+    }
     const observer = new ResizeObserver(() => updateScrollState());
     observer.observe(el);
     return () => {

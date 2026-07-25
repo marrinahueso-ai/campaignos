@@ -52,6 +52,25 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 
 **Performance budget:** `npm run test:hey-ralli:perf` — page loads / light saves ≤ 2s (+ concurrent dashboard). See [performance-budget.md](./performance-budget.md).
 
+**Cross-browser coverage:** `npm run test:hey-ralli` (default) runs Chromium only, for speed. Firefox and WebKit (Safari's engine) are also registered as Playwright projects and can be targeted directly:
+
+```bash
+npm run test:hey-ralli:firefox        # -- optionally a spec path, same as test:hey-ralli
+npm run test:hey-ralli:webkit
+npm run test:hey-ralli:cross-browser   # runs the whole pack on all three engines
+```
+
+First run on a machine needs the extra browser binaries once: `npx playwright install firefox webkit`.
+
+A pass across all three engines (2026-07) found and fixed:
+- A sticky `<thead>` in the Volunteers assignments table ([EventVolunteersTab.tsx](../../src/components/events-phase3/EventVolunteersTab.tsx)) — WebKit doesn't reliably support `position: sticky` on `<thead>` itself, only on row/cell elements; moved the sticky styling to each `<th>`.
+- Clipboard "copy invite link" / "copy caption" / "copy sign-in details" actions had no fallback when `navigator.clipboard` is blocked or unavailable (Safari is stricter about this than Chrome outside a direct user gesture) — added a shared `copyToClipboard()` helper ([clipboard.ts](../../src/lib/utils/clipboard.ts)) with a hidden-textarea + `execCommand("copy")` fallback.
+- Two unguarded `ResizeObserver` call sites (event hero summary, Insights top-posts carousel) — guarded consistently with the existing marketing-site pattern.
+- `color-mix()` (used throughout `globals.css` design-system classes) has been universally supported for 3+ years, but core reusable classes (`.cos-card`, `.cos-divider`, `.task-hub-table`, `.task-hub-board-card`) now carry a plain-color fallback declaration ahead of the `color-mix()` one as cheap defense-in-depth.
+- A test-helper flake: `signOutViaUi()` could hand back control to a test before an in-flight post-logout redirect had settled, which WebKit surfaces as a hard "navigation interrupted" error far more readily than Chromium/Firefox. Fixed in [auth.ts](../../tests/hey-ralli/helpers/auth.ts).
+
+Remaining known risk areas (not yet remediated — lower priority since they're either cosmetic or already gracefully degraded): native `<input type="date">`/`<select>` styling differs across Safari/Chrome/Firefox by design; `100vh`/`min-h-screen` on iOS Safari can clip under the address bar; `backdrop-blur` overlays combined with `position: sticky` (dashboard header, mobile nav) are a known Safari paint/jank source; `Intl.Segmenter` (jumbo emoji in Communications Hub) can throw on older Firefox/Safari.
+
 It never intentionally deletes production data. Authenticated tests are designed to use **test/staging credentials** only.
 
 ---

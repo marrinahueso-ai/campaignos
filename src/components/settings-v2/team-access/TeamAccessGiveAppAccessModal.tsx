@@ -13,6 +13,7 @@ import {
   campaignRoleLabel,
   type CampaignRole,
 } from "@/lib/auth/campaign-roles";
+import { copyToClipboard } from "@/lib/utils/clipboard";
 import type { AccessTemplate } from "@/lib/access-templates/types";
 
 const GIVE_APP_ACCESS_ROLES: CampaignRole[] = [
@@ -69,7 +70,7 @@ export function TeamAccessGiveAppAccessModal({
   async function copyInviteLink() {
     if (!inviteUrl) return;
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await copyToClipboard(inviteUrl);
     } catch {
       setError("Could not copy invite link.");
     }
