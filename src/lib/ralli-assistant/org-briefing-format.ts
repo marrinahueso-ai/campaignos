@@ -89,6 +89,7 @@ export function buildOrgBriefingLinks(): ProductHelpLink[] {
     { label: "Approvals", href: "/approvals" },
     { label: "Today", href: "/dashboard" },
     { label: "Tasks", href: "/tasks" },
+    { label: "Volunteers", href: "/volunteers" },
     { label: "Campaigns", href: "/events" },
     { label: "Communications Hub", href: "/communications" },
     { label: "Calendar", href: "/calendar" },
@@ -128,9 +129,11 @@ export function formatPrioritizedOrgActions(
 
   for (const event of pack.volunteers.eventsNeedingVolunteers.slice(0, 3)) {
     const fillHint =
-      event.openSpots != null && event.openSpots > 0
-        ? `${event.openSpots} open spot${event.openSpots === 1 ? "" : "s"}`
-        : "volunteers still needed";
+      event.filledPercent != null
+        ? `${event.filledPercent}% filled`
+        : event.openSpots != null && event.openSpots > 0
+          ? `${event.openSpots} open spot${event.openSpots === 1 ? "" : "s"}`
+          : "volunteers still needed";
     actions.push(
       `Send a volunteer reminder for ${event.eventTitle} (${fillHint}).`,
     );

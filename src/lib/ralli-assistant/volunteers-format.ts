@@ -41,8 +41,12 @@ export type VolunteersContextSection = {
 export type OrgVolunteersEventSummary = {
   eventId: string;
   eventTitle: string;
+  /** Event date (YYYY-MM-DD) when known — helps rank and cite. */
+  eventDate?: string | null;
   connected: boolean;
   openSpots: number | null;
+  /** 0–100 overall fill rate from SignUpGenius snapshot (same as Volunteers page). */
+  filledPercent: number | null;
   needsHelpCount: number;
   signupReminderSuggested: boolean;
 };
@@ -182,9 +186,12 @@ export function formatOrgVolunteersSectionLines(
     const samples = section.eventsNeedingVolunteers
       .slice(0, 4)
       .map((event) => {
+        const fill =
+          event.filledPercent == null ? null : `${event.filledPercent}% filled`;
         const open =
-          event.openSpots == null ? "needs help" : `${event.openSpots} open`;
-        return `${event.eventTitle} (${open})`;
+          event.openSpots == null ? null : `${event.openSpots} open`;
+        const detail = [fill, open].filter(Boolean).join(", ") || "needs help";
+        return `${event.eventTitle} (${detail})`;
       })
       .join("; ");
     lines.push(
@@ -235,10 +242,58 @@ export function serializeOrgVolunteersForPrompt(
 ): unknown {
   return {
     eventsWithVolunteerData: section.eventsWithVolunteerData,
-    eventsNeedingVolunteers: section.eventsNeedingVolunteers,
+    eventsNeedingVolunteers: section.eventsNeedingVolunteers.map((event) => ({
+      title: event.eventTitle,
+      date: event.eventDate ?? null,
+      filledPercent: event.filledPercent,
+      openSpots: event.openSpots,
+      underfilledRoleCount: event.needsHelpCount,
+    })),
     committeesMissingChairs: section.committeesMissingChairs,
     unavailable: section.unavailable,
   };
+}
+
+/**
+ * Ranked answer for “Which events need more volunteers?” — grounded in
+ * Volunteers Master fill rates (same numbers as the Volunteers page).
+ */
+export function formatOrgVolunteersNeedAnswer(
+  section: OrgVolunteersContextSection,
+): string {
+  if (section.eventsNeedingVolunteers.length === 0) {
+    if (section.eventsWithVolunteerData > 0) {
+      return [
+        "From your SignUpGenius sync, no upcoming events are flagged as underfilled right now.",
+        "Open Volunteers to double-check fill rates, or sync an event if numbers look stale.",
+      ].join(" ");
+    }
+    return [
+      "I don’t see connected SignUpGenius snapshots for your campaigns yet.",
+      "Connect or sync SignUpGenius on each event’s Volunteers tab, then ask again.",
+    ].join(" ");
+  }
+
+  const lines = section.eventsNeedingVolunteers.slice(0, 6).map((event, index) => {
+    const fill =
+      event.filledPercent == null
+        ? "fill rate unknown"
+        : `${event.filledPercent}% filled`;
+    const open =
+      event.openSpots == null
+        ? null
+        : `${event.openSpots} open spot${event.openSpots === 1 ? "" : "s"}`;
+    const detail = [fill, open].filter(Boolean).join(" · ");
+    return `${index + 1}. ${event.eventTitle} — ${detail}`;
+  });
+
+  return [
+    "Here’s where I’d focus volunteer recruiting first (lowest fill → highest need):",
+    "",
+    ...lines,
+    "",
+    "Short shifts and personal asks fill fastest. Open Volunteers for role-level detail.",
+  ].join("\n");
 }
 
 export function volunteersEventLinks(eventId: string): ProductHelpLink[] {

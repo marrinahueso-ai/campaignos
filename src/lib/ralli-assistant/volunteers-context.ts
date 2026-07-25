@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isMissingSchemaError } from "@/lib/creative-assets/schema-errors";
+import { getVolunteersMasterPageData } from "@/lib/event-volunteers/org-master";
 import {
   getActiveVolunteerSourceForEvent,
   getLatestConfirmedVolunteerSnapshot,
@@ -28,6 +29,7 @@ export type {
 export {
   emptyOrgVolunteersSection,
   emptyVolunteersSection,
+  formatOrgVolunteersNeedAnswer,
   formatOrgVolunteersSectionLines,
   formatVolunteersSectionLines,
   serializeOrgVolunteersForPrompt,
@@ -264,7 +266,8 @@ export async function loadVolunteersContextForEvent(input: {
 }
 
 /**
- * Org-level volunteer aggregate across active events (capped). Fail soft.
+ * Org-level volunteer aggregate — same SignUpGenius feed/fill rates as the
+ * Volunteers page (Volunteer Master). Fail soft.
  */
 export async function loadVolunteersContextForOrg(input: {
   organizationId: string;
@@ -276,69 +279,79 @@ export async function loadVolunteersContextForOrg(input: {
     "Family / parent view counts for volunteer pages",
   ];
   const limit = input.limit ?? 8;
-  const eventsNeedingVolunteers: OrgVolunteersEventSummary[] = [];
-  let eventsWithVolunteerData = 0;
 
-  const slice = input.events.slice(0, limit);
-  const packs = await Promise.all(
-    slice.map(async (event) => {
-      const pack = await loadVolunteersContextForEvent({
-        eventId: event.id,
-        organizationId: input.organizationId,
-      });
-      return { event, pack };
-    }),
-  );
+  try {
+    const master = await getVolunteersMasterPageData(input.organizationId);
+    const eventsWithVolunteerData = master.events.filter(
+      (event) => event.hasSnapshot,
+    ).length;
 
-  for (const { event, pack } of packs) {
-    if (pack.connected && pack.summary) {
-      eventsWithVolunteerData += 1;
-    }
-    const open = pack.summary?.openSpots ?? null;
-    const needsHelp = pack.summary?.needsHelpCount ?? 0;
-    if (
-      pack.signupReminderSuggested ||
-      needsHelp > 0 ||
-      (typeof open === "number" && open > 0)
-    ) {
-      eventsNeedingVolunteers.push({
+    const eventsNeedingVolunteers: OrgVolunteersEventSummary[] = master.events
+      .filter((event) => {
+        if (event.needsPeople) return true;
+        if (typeof event.openSpots === "number" && event.openSpots > 0) {
+          return true;
+        }
+        if (
+          typeof event.fillRatePercent === "number" &&
+          event.fillRatePercent < 100
+        ) {
+          return true;
+        }
+        return false;
+      })
+      .sort((a, b) => {
+        const fillA = a.fillRatePercent ?? -1;
+        const fillB = b.fillRatePercent ?? -1;
+        if (fillA !== fillB) return fillA - fillB;
+        return (b.openSpots ?? 0) - (a.openSpots ?? 0);
+      })
+      .slice(0, limit)
+      .map((event) => ({
         eventId: event.id,
         eventTitle: event.title,
-        connected: pack.connected,
-        openSpots: open,
-        needsHelpCount: needsHelp,
-        signupReminderSuggested: pack.signupReminderSuggested,
-      });
+        eventDate: event.date,
+        connected: event.hasSnapshot || Boolean(event.signupUrl),
+        openSpots: event.openSpots,
+        filledPercent: event.fillRatePercent,
+        needsHelpCount: event.underfilledRoleCount,
+        signupReminderSuggested:
+          event.needsPeople ||
+          (typeof event.openSpots === "number" && event.openSpots > 0) ||
+          (typeof event.fillRatePercent === "number" &&
+            event.fillRatePercent < 75),
+      }));
+
+    // Chair gaps: sample committees on the highest-need events only.
+    const committeesMissingChairs: Array<{
+      committeeName: string;
+      eventTitle: string | null;
+    }> = [];
+    for (const event of eventsNeedingVolunteers.slice(0, 4)) {
+      const committeeInfo = await loadEventTiedCommittees(
+        input.organizationId,
+        event.eventId,
+      ).catch(() => null);
+      if (!committeeInfo) continue;
+      for (const name of committeeInfo.missingChairNames) {
+        committeesMissingChairs.push({
+          committeeName: name,
+          eventTitle: event.eventTitle,
+        });
+      }
     }
+
+    return {
+      eventsWithVolunteerData,
+      eventsNeedingVolunteers,
+      committeesMissingChairs: committeesMissingChairs.slice(0, 8),
+      unavailable,
+    };
+  } catch (error) {
+    console.error("Ask Ralli volunteers: org master context failed", error);
+    return emptyOrgVolunteersSection([
+      ...unavailable,
+      "Volunteer data could not be loaded just now",
+    ]);
   }
-
-  eventsNeedingVolunteers.sort((a, b) => {
-    const score = (row: OrgVolunteersEventSummary) =>
-      (row.openSpots ?? 0) + row.needsHelpCount * 2;
-    return score(b) - score(a);
-  });
-
-  const committeesMissingChairs: Array<{
-    committeeName: string;
-    eventTitle: string | null;
-  }> = [];
-  for (const { event, pack } of packs) {
-    for (const name of pack.committees.missingChairNames) {
-      committeesMissingChairs.push({
-        committeeName: name,
-        eventTitle: event.title,
-      });
-    }
-  }
-
-  if (slice.length === 0) {
-    return emptyOrgVolunteersSection(unavailable);
-  }
-
-  return {
-    eventsWithVolunteerData,
-    eventsNeedingVolunteers: eventsNeedingVolunteers.slice(0, 8),
-    committeesMissingChairs: committeesMissingChairs.slice(0, 8),
-    unavailable,
-  };
 }

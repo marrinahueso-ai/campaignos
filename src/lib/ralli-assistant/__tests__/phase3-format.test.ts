@@ -9,6 +9,7 @@ import {
 import {
   emptyOrgVolunteersSection,
   emptyVolunteersSection,
+  formatOrgVolunteersNeedAnswer,
   formatOrgVolunteersSectionLines,
   formatVolunteersSectionLines,
 } from "../volunteers-format.ts";
@@ -120,12 +121,42 @@ describe("org Phase 3 formatters", () => {
           eventTitle: "Carnival",
           connected: true,
           openSpots: 5,
+          filledPercent: 40,
           needsHelpCount: 2,
           signupReminderSuggested: true,
         },
       ],
     });
-    assert.match(volunteerLines.join("\n"), /Carnival \(5 open\)/);
+    assert.match(volunteerLines.join("\n"), /Carnival \(40% filled, 5 open\)/);
+
+    const ranked = formatOrgVolunteersNeedAnswer({
+      ...emptyOrgVolunteersSection([]),
+      eventsWithVolunteerData: 2,
+      eventsNeedingVolunteers: [
+        {
+          eventId: "e0",
+          eventTitle: "Badge Making",
+          connected: true,
+          openSpots: 12,
+          filledPercent: 0,
+          needsHelpCount: 3,
+          signupReminderSuggested: true,
+        },
+        {
+          eventId: "e1",
+          eventTitle: "Carnival",
+          connected: true,
+          openSpots: 5,
+          filledPercent: 40,
+          needsHelpCount: 2,
+          signupReminderSuggested: true,
+        },
+      ],
+    });
+    assert.match(ranked, /focus volunteer recruiting/i);
+    assert.match(ranked, /1\. Badge Making — 0% filled/);
+    assert.match(ranked, /2\. Carnival — 40% filled/);
+    assert.doesNotMatch(ranked, /eventsNeedingVolunteers/);
 
     const commsLines = formatOrgCommunicationsSectionLines({
       eventsWithPlaybooks: 1,

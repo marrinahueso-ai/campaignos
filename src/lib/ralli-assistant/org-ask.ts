@@ -12,6 +12,8 @@ import {
 } from "@/lib/ralli-assistant/org-briefing-format";
 import { isOrgPriorityListIntent } from "@/lib/ralli-assistant/org-intent";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
+import { shouldPreferVolunteersOps } from "@/lib/ralli-assistant/volunteers-intent";
+import { formatOrgVolunteersNeedAnswer } from "@/lib/ralli-assistant/volunteers-format";
 
 export interface AskRalliOrgResult {
   success: boolean;
@@ -26,6 +28,7 @@ function buildOrgSystemPrompt(priorityList: boolean): string {
     "You are Ask Ralli — like an experienced PTO president sitting beside the user: calm, specific, practical, encouraging.",
     "Answer ONLY from the provided ORG BRIEFING CONTEXT JSON. Do not invent approvals, tasks, events, schedules, volunteer counts, or posts.",
     "Use volunteers and communications sections for org-wide staffing and comms gap questions.",
+    "Never mention internal JSON field names (for example eventsNeedingVolunteers, approvalQueue). Speak in plain language about events, open spots, and fill rates.",
     "If unavailable lists a gap, say “I can’t see that yet” and name Volunteers, Communications Hub, or Campaigns.",
     "If a section is empty, say so plainly. Prefer concrete next steps and name real items from the context.",
     priorityList
@@ -34,6 +37,15 @@ function buildOrgSystemPrompt(priorityList: boolean): string {
     "Do NOT write markdown links like [Approvals](/approvals). Destinations appear as separate buttons — refer to areas by name only.",
     "You are briefing a board / chair / ops lead across the organization — not drafting posts or artwork.",
   ].join("\n");
+}
+
+function orgAnswerLinks(preferVolunteers: boolean): ProductHelpLink[] {
+  const links = buildOrgBriefingLinks();
+  if (!preferVolunteers) return links;
+  return [
+    { label: "Volunteers", href: "/volunteers" },
+    ...links.filter((link) => link.href !== "/volunteers"),
+  ];
 }
 
 export async function askRalliOrgBriefing(input: {
@@ -79,6 +91,21 @@ export async function askRalliOrgBriefing(input: {
   }
 
   const priorityList = isOrgPriorityListIntent(question);
+  const volunteersFocus = shouldPreferVolunteersOps(question);
+  const links = orgAnswerLinks(volunteersFocus);
+
+  // Volunteer ranking questions use the Volunteers Master numbers deterministically
+  // so we never invent empty gaps or leak JSON keys when the model misreads context.
+  if (volunteersFocus) {
+    return {
+      success: true,
+      answer: formatOrgVolunteersNeedAnswer(pack.volunteers),
+      links,
+      source: "org",
+      error: null,
+    };
+  }
+
   const fallback = priorityList
     ? formatPrioritizedOrgActions(pack)
     : formatDeterministicOrgBriefingAnswer(pack);
@@ -87,7 +114,7 @@ export async function askRalliOrgBriefing(input: {
     return {
       success: true,
       answer: fallback,
-      links: pack.links,
+      links,
       source: "org",
       error: null,
     };
@@ -118,7 +145,7 @@ export async function askRalliOrgBriefing(input: {
     return {
       success: true,
       answer: fallback,
-      links: pack.links,
+      links,
       source: "org",
       error: null,
     };
@@ -127,7 +154,7 @@ export async function askRalliOrgBriefing(input: {
   return {
     success: true,
     answer: result.text.trim(),
-    links: pack.links,
+    links,
     source: "org",
     error: null,
   };

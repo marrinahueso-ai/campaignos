@@ -122,6 +122,7 @@ function samplePack(
           eventTitle: "Back to School Fair",
           connected: true,
           openSpots: 6,
+          filledPercent: 57,
           needsHelpCount: 2,
           signupReminderSuggested: true,
         },
