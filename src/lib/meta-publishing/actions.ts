@@ -72,6 +72,61 @@ async function updateSlotsForMilestones(input: {
   return data?.length ?? 0;
 }
 
+async function assertMetaPostCapacityForEvent(
+  eventId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { getOrganizationIdForEvent } = await import("@/lib/meta-publishing/connection");
+  const organizationId = await getOrganizationIdForEvent(eventId);
+  if (!organizationId) {
+    return { ok: true };
+  }
+
+  const supabase = await createClient();
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const { data: schoolYears } = await supabase
+    .from("school_years")
+    .select("id")
+    .eq("organization_id", organizationId);
+  const schoolYearIds = (schoolYears ?? []).map((row) => row.id);
+  if (schoolYearIds.length === 0) {
+    return { ok: true };
+  }
+
+  const { data: orgEvents } = await supabase
+    .from("events")
+    .select("id")
+    .in("school_year_id", schoolYearIds);
+  const orgEventIds = (orgEvents ?? []).map((row) => row.id);
+  if (orgEventIds.length === 0) {
+    return { ok: true };
+  }
+
+  const { data: slots } = await supabase
+    .from("meta_publication_slots")
+    .select("event_id, relative_day")
+    .in("event_id", orgEventIds)
+    .in("status", ["scheduled", "approved", "posting", "published"])
+    .gte("scheduled_for", monthStart.toISOString());
+
+  const distinctMilestones = new Set(
+    (slots ?? []).map((row) => `${row.event_id}:${row.relative_day}`),
+  );
+
+  const { assertOrgCapacity } = await import("@/lib/billing/gates");
+  const capacity = await assertOrgCapacity(
+    organizationId,
+    "metaPostsPerMonth",
+    distinctMilestones.size,
+  );
+  if (!capacity.ok) {
+    return { ok: false, error: `${capacity.message} ${capacity.upgradeHint}` };
+  }
+  return { ok: true };
+}
+
 async function sendManualStoryPostKitIfNeeded(
   eventId: string,
   relativeDay: number,
@@ -205,6 +260,11 @@ export async function publishMetaBundleNowAction(
     return publishManualStoryOnlyBundle(eventId, relativeDay);
   }
 
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
+  }
+
   const result = await publishMetaMilestoneBundle({
     eventId,
     relativeDay,
@@ -308,6 +368,11 @@ export async function scheduleAllReadyMetaBundlesAction(
     };
   }
 
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
+  }
+
   const supabase = await createClient();
   const now = new Date().toISOString();
   let updatedCount = 0;
@@ -384,6 +449,11 @@ export async function scheduleMetaBundlesAtAction(
       success: false,
       error: "No milestones are ready yet. Approve required artwork and captions first.",
     };
+  }
+
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
   }
 
   let updatedCount = 0;
@@ -653,6 +723,11 @@ export async function scheduleMetaBundleAction(
 
   if (bundleIsManualStoryOnly(bundle)) {
     return scheduleManualStoryOnlyBundle(eventId, relativeDay);
+  }
+
+  const capacityGate = await assertMetaPostCapacityForEvent(eventId);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
   }
 
   const updatedCount = await updateSlotsForMilestones({

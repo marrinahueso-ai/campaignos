@@ -42,6 +42,7 @@ const META_OAUTH_ERROR_MESSAGES: Record<string, string> = {
   verify_failed: "Connected to Meta but Page verification failed.",
   save_failed: "Could not save the Meta connection.",
   migration_required: "Meta connection storage is not set up. Run database migration 021.",
+  capacity_exceeded: "Your plan's social account limit is reached. Upgrade in Billing & Plan to connect another account.",
 };
 
 export function getMetaOAuthErrorMessage(errorCode: string | undefined): string | null {

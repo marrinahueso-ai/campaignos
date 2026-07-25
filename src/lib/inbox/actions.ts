@@ -76,6 +76,12 @@ export async function syncInboxNowAction(): Promise<InboxActionResult> {
     return { success: false, error: "Set up your organization first." };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(organization.id, "communication_hub");
+  if (!featureGate.ok) {
+    return { success: false, error: `${featureGate.message} ${featureGate.upgradeHint}` };
+  }
+
   const connection = await getMetaConnectionForCurrentOrg();
   if (!connection?.pageAccessToken) {
     return { success: false, error: "Connect your Facebook Page before syncing inbox." };
@@ -202,6 +208,12 @@ async function requireInboxPermission(): Promise<
   const organization = await getLatestOrganization();
   if (!organization?.id) {
     return { ok: false, error: "Set up your organization first." };
+  }
+
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(organization.id, "communication_hub");
+  if (!featureGate.ok) {
+    return { ok: false, error: `${featureGate.message} ${featureGate.upgradeHint}` };
   }
 
   return { ok: true, organizationId: organization.id };

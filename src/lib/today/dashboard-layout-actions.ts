@@ -16,6 +16,15 @@ export async function saveDashboardLayoutAction(
     return { success: false, error: "Not signed in." };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(membership.organizationId, "custom_dashboard");
+  if (!featureGate.ok) {
+    return {
+      success: false,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+    };
+  }
+
   const normalized = normalizeDashboardLayout(layout);
   const supabase = await createClient();
   const { error } = await supabase

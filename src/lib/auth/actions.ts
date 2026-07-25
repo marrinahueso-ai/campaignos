@@ -902,6 +902,26 @@ export async function inviteTeamMemberAction(
   const accessTemplateId =
     templateSelection?.templateId ?? resolvedCampaignRole;
 
+  if (resolvedCampaignRole === "committee_chair") {
+    const { count: chairCount } = await supabase
+      .from("organization_users")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("campaign_role", "committee_chair")
+      .eq("status", "active");
+    const chairGate = await assertOrgCapacity(
+      organization.id,
+      "committeeChairs",
+      chairCount ?? 0,
+    );
+    if (!chairGate.ok) {
+      return {
+        error: `${chairGate.message} ${chairGate.upgradeHint}`,
+        success: false,
+      };
+    }
+  }
+
   const result = await inviteOrganizationUser({
     organizationId: organization.id,
     email,

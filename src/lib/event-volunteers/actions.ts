@@ -300,6 +300,15 @@ export async function connectVolunteerSourceAction(input: {
     };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(ctx.organization.id, "volunteer_center");
+  if (!featureGate.ok) {
+    return {
+      success: false as const,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+    };
+  }
+
   const validated = validateSignUpGeniusUrl(input.sourceUrl);
   if ("error" in validated) {
     return { success: false as const, error: validated.error };

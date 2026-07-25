@@ -22,6 +22,28 @@ export type MetaConnectionActionResult = {
   pageName?: string | null;
 };
 
+async function assertSocialAccountCapacityForNewConnection(
+  organizationId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("organization_meta_connections")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId);
+
+  if ((count ?? 0) > 0) {
+    // Reconnect / token refresh of the existing (unique-per-org) row — not a new account.
+    return { ok: true };
+  }
+
+  const { assertOrgCapacity } = await import("@/lib/billing/gates");
+  const capacity = await assertOrgCapacity(organizationId, "socialAccounts", count ?? 0);
+  if (!capacity.ok) {
+    return { ok: false, error: `${capacity.message} ${capacity.upgradeHint}` };
+  }
+  return { ok: true };
+}
+
 export async function saveMetaConnectionAction(input: {
   facebookPageId: string;
   instagramAccountId: string;
@@ -34,6 +56,11 @@ export async function saveMetaConnectionAction(input: {
   const organization = await getLatestOrganization();
   if (!organization) {
     return { success: false, error: "Set up your organization first." };
+  }
+
+  const capacityGate = await assertSocialAccountCapacityForNewConnection(organization.id);
+  if (!capacityGate.ok) {
+    return { success: false, error: capacityGate.error };
   }
 
   const pageId = input.facebookPageId.trim();
@@ -124,6 +151,11 @@ export async function saveMetaConnectionFromOAuth(input: {
     return { success: false, errorCode: "no_pages" };
   }
 
+  const capacityGate = await assertSocialAccountCapacityForNewConnection(input.organizationId);
+  if (!capacityGate.ok) {
+    return { success: false, errorCode: "capacity_exceeded" };
+  }
+
   const verified = await verifyMetaConnection({
     pageId: page.id,
     instagramAccountId: page.instagramAccountId ?? undefined,
@@ -181,6 +213,11 @@ export async function connectMetaWithUserTokenAction(input: {
     const organization = await getLatestOrganization();
     if (!organization) {
       return { success: false, error: "Set up your organization first." };
+    }
+
+    const capacityGate = await assertSocialAccountCapacityForNewConnection(organization.id);
+    if (!capacityGate.ok) {
+      return { success: false, error: capacityGate.error };
     }
 
     const token = input.userAccessToken.trim();

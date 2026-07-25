@@ -136,6 +136,18 @@ export async function createOrganizationAccessTemplateAction(input: {
     return { error: gate.error ?? "Unable to create.", success: false };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(
+    gate.membership.organizationId,
+    "custom_roles",
+  );
+  if (!featureGate.ok) {
+    return {
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+      success: false,
+    };
+  }
+
   const displayName = input.displayName.trim();
   if (!displayName) {
     return { error: "Display name is required.", success: false };

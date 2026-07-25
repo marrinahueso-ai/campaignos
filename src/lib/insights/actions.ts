@@ -25,6 +25,18 @@ export async function syncInsightsAction(input?: {
     };
   }
 
+  const { assertOrgFeature } = await import("@/lib/billing/gates");
+  const featureGate = await assertOrgFeature(organization.id, "social_analytics");
+  if (!featureGate.ok) {
+    return {
+      ok: false,
+      postsSynced: 0,
+      daysSynced: 0,
+      error: `${featureGate.message} ${featureGate.upgradeHint}`,
+      warnings: [],
+    };
+  }
+
   const result = await syncOrganizationInsights({
     organizationId: organization.id,
     since: input?.since,

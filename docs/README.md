@@ -46,7 +46,7 @@ This is the documentation hub. Start here.
 | Ask Ralli Assistant | [engineering/ask-ralli-assistant.md](./engineering/ask-ralli-assistant.md) |
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
 | Owner AI & APIs | [product/ai-and-apis.md](./product/ai-and-apis.md) · [qa/owner-ai-apis.md](./qa/owner-ai-apis.md) |
-| AI credits matrix (usage / COGS / net) | [ops/ai-credits-matrix.md](./ops/ai-credits-matrix.md) |
+| Billing, access & AI credits (plans / COGS / net) | [ops/billing-and-access.md](./ops/billing-and-access.md) |
 | Volunteer Master | [product/volunteer-master.md](./product/volunteer-master.md) |
 | Event Insights | [product/event-insights.md](./product/event-insights.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |

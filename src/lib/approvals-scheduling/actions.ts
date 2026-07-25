@@ -444,6 +444,19 @@ export async function requestUnifiedChangesAction(input: {
     return { success: false, error: "A comment is required when requesting changes." };
   }
 
+  const { getCurrentOrganization } = await import("@/lib/auth/organization-context");
+  const organization = await getCurrentOrganization();
+  if (organization) {
+    const { assertOrgFeature } = await import("@/lib/billing/gates");
+    const featureGate = await assertOrgFeature(organization.id, "change_requests");
+    if (!featureGate.ok) {
+      return {
+        success: false,
+        error: `${featureGate.message} ${featureGate.upgradeHint}`,
+      };
+    }
+  }
+
   if (input.communicationItemId) {
     const result = await requestCommunicationChangesAction(
       input.eventId,

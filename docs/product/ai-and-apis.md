@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Product / Engineering  
 **Last updated:** July 24, 2026  
-**Related:** [Feature list](./feature-list.md) · [AI credits matrix](../ops/ai-credits-matrix.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
+**Related:** [Feature list](./feature-list.md) · [Billing, access & AI credits](../ops/billing-and-access.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
 
 Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, **org AI credits**, and **customer consumption**. Internal ops only — not org-member Insights.
 

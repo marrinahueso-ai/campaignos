@@ -103,7 +103,7 @@ See [cron-jobs.md](./cron-jobs.md).
 | `STRIPE_PRICE_STARTER` / `_PROFESSIONAL` / `_PREMIUM` | Monthly plan Price ids |
 | `STRIPE_PRICE_RESERVE` / `_RESERVE_STAR` / `_RESERVE_MAX` | One-time AI Reserve Price ids |
 
-Checkout UI stays disabled until plan price IDs + secret key are set. Living: [billing-and-access.md](./billing-and-access.md).
+Checkout UI stays disabled until plan price IDs + secret key are set — as of July 2026 these are set in Production and Checkout is live. Living: [billing-and-access.md](./billing-and-access.md).
 
 ### Optional integrations
 
