@@ -33,11 +33,13 @@ export default async function PricingPage({
   let ctaMode: PricingCtaMode = "signin";
   let currentPlanId: Awaited<
     ReturnType<typeof getSettingsBillingContext>
-  >["currentPlanId"] | null = null;
+  >["currentPlanId"] = null;
+  let trialEligible = true;
 
   if (user) {
     const billing = await getSettingsBillingContext();
     currentPlanId = billing.currentPlanId;
+    trialEligible = billing.trialEligible;
     if (billing.isFoundingPartner) {
       ctaMode = "founding";
     } else if (stripeConfigured && (await hasPermission("manage_billing"))) {
@@ -67,6 +69,7 @@ export default async function PricingPage({
       stripeConfigured={stripeConfigured}
       ctaMode={ctaMode}
       currentPlanId={currentPlanId}
+      trialEligible={trialEligible}
       flash={flash}
     />
   );

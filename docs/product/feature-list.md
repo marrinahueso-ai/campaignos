@@ -253,7 +253,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - AI credits widget — **shipped** (Phase 2: real sidebar balance + soft warn + Billing & Plan blurb; hard stop later)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
 - Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
-- Stripe billing + trial + plan gates — **partial** (Phase 5 eng: Checkout/Portal/webhooks + trial on new orgs + Ask Ralli / Inbox AI / events / seats gates; requires Stripe env for live Checkout)
+- Stripe billing + trial + plan gates — **partial** (Phase 5 eng: Checkout/Portal/webhooks + app trial + Stripe `trial_period_days` / `trialing` sync + Ask Ralli / Inbox AI / events / seats gates; requires Stripe env for live Checkout)
 
 ## Settings
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**

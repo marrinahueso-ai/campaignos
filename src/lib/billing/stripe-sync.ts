@@ -7,6 +7,7 @@ import {
   planIdFromStripePriceId,
   reserveSkuFromStripePriceId,
 } from "@/lib/billing/stripe";
+import { trialEndIsoFromStripeUnix } from "@/lib/billing/trial";
 import {
   createAdminClient,
   isSupabaseAdminConfigured,
@@ -38,6 +39,8 @@ export async function applyPlanSubscriptionToOrg(input: {
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   stripePriceId: string | null;
+  /** ISO timestamp from Stripe trial_end; null clears when paid/active. */
+  trialEndsAt?: string | null;
   clearTrial?: boolean;
 }): Promise<void> {
   if (!isSupabaseAdminConfigured()) return;
@@ -51,6 +54,8 @@ export async function applyPlanSubscriptionToOrg(input: {
   };
   if (input.clearTrial) {
     patch.trial_ends_at = null;
+  } else if (input.trialEndsAt !== undefined) {
+    patch.trial_ends_at = input.trialEndsAt;
   }
   const { error } = await admin
     .from("organizations")
@@ -59,6 +64,67 @@ export async function applyPlanSubscriptionToOrg(input: {
   if (error) {
     console.error("[stripe-sync] org update failed:", error.message);
   }
+}
+
+function mapStripeSubscriptionStatus(status: Stripe.Subscription.Status): string {
+  const statusMap: Record<string, string> = {
+    active: "active",
+    trialing: "trialing",
+    past_due: "past_due",
+    canceled: "canceled",
+    unpaid: "past_due",
+    incomplete: "incomplete",
+    incomplete_expired: "canceled",
+    paused: "canceled",
+  };
+  return statusMap[status] ?? "active";
+}
+
+function planTierFromSubscription(
+  subscription: Stripe.Subscription,
+  priceId: string | null,
+  fallbackMeta?: string | null,
+): AiPlanTier {
+  return (
+    planIdFromStripePriceId(priceId) ??
+    (fallbackMeta === "starter" ||
+    fallbackMeta === "professional" ||
+    fallbackMeta === "premium"
+      ? fallbackMeta
+      : subscription.metadata?.planId === "starter" ||
+          subscription.metadata?.planId === "professional" ||
+          subscription.metadata?.planId === "premium"
+        ? subscription.metadata.planId
+        : "professional")
+  );
+}
+
+async function applyStripeSubscription(
+  organizationId: string,
+  subscription: Stripe.Subscription,
+  customerId: string | null,
+): Promise<void> {
+  const priceId = subscription.items.data[0]?.price?.id ?? null;
+  const planTier = planTierFromSubscription(subscription, priceId);
+  const subscriptionStatus = mapStripeSubscriptionStatus(subscription.status);
+  const trialEndsAt = trialEndIsoFromStripeUnix(subscription.trial_end);
+
+  await applyPlanSubscriptionToOrg({
+    organizationId,
+    planTier,
+    subscriptionStatus,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscription.id,
+    stripePriceId: priceId,
+    // Keep / sync trial window while Stripe is trialing; clear once paid.
+    ...(subscriptionStatus === "trialing"
+      ? { trialEndsAt, clearTrial: false }
+      : subscriptionStatus === "active"
+        ? { clearTrial: true }
+        : trialEndsAt
+          ? { trialEndsAt }
+          : {}),
+  });
 }
 
 export async function handleStripeCheckoutCompleted(
@@ -88,14 +154,39 @@ export async function handleStripeCheckoutCompleted(
         ? planFromMeta
         : "professional";
 
+    // Prefer full subscription object so trial_end / trialing status are correct.
+    if (subscriptionId) {
+      try {
+        const { getStripe } = await import("@/lib/billing/stripe");
+        const subscription =
+          await getStripe().subscriptions.retrieve(subscriptionId);
+        await applyStripeSubscription(orgId, subscription, customerId);
+        return;
+      } catch (err) {
+        console.error(
+          "[stripe-sync] failed to retrieve subscription after checkout:",
+          err,
+        );
+      }
+    }
+
+    const trialDays = Number(session.metadata?.stripe_trial_days ?? "0");
+    const isTrialing = Number.isFinite(trialDays) && trialDays > 0;
     await applyPlanSubscriptionToOrg({
       organizationId: orgId,
       planTier,
-      subscriptionStatus: "active",
+      subscriptionStatus: isTrialing ? "trialing" : "active",
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       stripePriceId: session.metadata?.priceId ?? null,
-      clearTrial: true,
+      clearTrial: !isTrialing,
+      ...(isTrialing
+        ? {
+            trialEndsAt: new Date(
+              Date.now() + trialDays * 24 * 60 * 60 * 1000,
+            ).toISOString(),
+          }
+        : {}),
     });
     return;
   }
@@ -141,36 +232,7 @@ export async function handleStripeSubscriptionUpdated(
     return;
   }
 
-  const priceId = subscription.items.data[0]?.price?.id ?? null;
-  const planTier =
-    planIdFromStripePriceId(priceId) ??
-    (subscription.metadata?.planId === "starter" ||
-    subscription.metadata?.planId === "professional" ||
-    subscription.metadata?.planId === "premium"
-      ? subscription.metadata.planId
-      : "professional");
-
-  const statusMap: Record<string, string> = {
-    active: "active",
-    trialing: "trialing",
-    past_due: "past_due",
-    canceled: "canceled",
-    unpaid: "past_due",
-    incomplete: "incomplete",
-    incomplete_expired: "canceled",
-    paused: "canceled",
-  };
-  const subscriptionStatus = statusMap[subscription.status] ?? "active";
-
-  await applyPlanSubscriptionToOrg({
-    organizationId: orgId,
-    planTier,
-    subscriptionStatus,
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: priceId,
-    clearTrial: subscriptionStatus === "active",
-  });
+  await applyStripeSubscription(orgId, subscription, customerId);
 }
 
 export async function handleStripeSubscriptionDeleted(

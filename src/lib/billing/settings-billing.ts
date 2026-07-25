@@ -1,17 +1,16 @@
 import "server-only";
 
 import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
-import { paidPlanIdFromTier } from "@/lib/billing/entitlements";
 import {
   getOrgBillingSnapshot,
   type OrgBillingSnapshot,
 } from "@/lib/billing/org-billing";
 import {
   planLabelForTier,
-  PRE_STRIPE_DEFAULT_PLAN_ID,
   type PaidPlanId,
 } from "@/lib/billing/plan-catalog";
 import { isStripeBillingConfigured } from "@/lib/billing/stripe";
+import { shouldAttachStripeTrial } from "@/lib/billing/trial";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import type { Organization } from "@/types";
 
@@ -22,7 +21,10 @@ export type SettingsBillingContext = {
   stripeConfigured: boolean;
   hasStripeCustomer: boolean;
   planLabel: string;
-  currentPlanId: PaidPlanId;
+  /** Paid plan only once Stripe has a subscription; null during app-only trial. */
+  currentPlanId: PaidPlanId | null;
+  /** Eligible for Stripe trial_period_days on next Checkout. */
+  trialEligible: boolean;
 };
 
 export async function getSettingsBillingContext(): Promise<SettingsBillingContext> {
@@ -34,21 +36,20 @@ export async function getSettingsBillingContext(): Promise<SettingsBillingContex
     ? await getOrgBillingSnapshot(organization.id)
     : null;
 
-  const currentPlanId: PaidPlanId =
-    paidPlanIdFromTier(
-      billing?.trialActive
-        ? "trial"
-        : billing?.planTier === "starter" ||
-            billing?.planTier === "professional" ||
-            billing?.planTier === "premium"
-          ? billing.planTier
-          : PRE_STRIPE_DEFAULT_PLAN_ID,
-    ) ?? PRE_STRIPE_DEFAULT_PLAN_ID;
+  const currentPlanId: PaidPlanId | null =
+    billing?.stripeSubscriptionId &&
+    (billing.planTier === "starter" ||
+      billing.planTier === "professional" ||
+      billing.planTier === "premium")
+      ? billing.planTier
+      : null;
 
   const planLabel = isFoundingPartner
     ? "Founding Partner"
     : billing?.trialActive
-      ? "Professional (trial)"
+      ? billing.subscriptionStatus === "trialing" && currentPlanId
+        ? `${planLabelForTier(currentPlanId)} (trial)`
+        : "Professional (trial)"
       : billing?.trialExpired
         ? "Starter (trial ended)"
         : planLabelForTier(
@@ -67,5 +68,6 @@ export async function getSettingsBillingContext(): Promise<SettingsBillingContex
     hasStripeCustomer: Boolean(billing?.stripeCustomerId),
     planLabel,
     currentPlanId,
+    trialEligible: billing != null && shouldAttachStripeTrial(billing),
   };
 }

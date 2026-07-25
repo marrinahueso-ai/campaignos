@@ -107,20 +107,41 @@ export function buildOrgBillingSnapshot(
   const subscriptionStatus = asStatus(row.subscription_status);
   const trialEndsAt = row.trial_ends_at ?? null;
   const trialEndMs = trialEndsAt ? Date.parse(trialEndsAt) : NaN;
-  const trialActive =
-    planTier === "trial" &&
-    Number.isFinite(trialEndMs) &&
-    trialEndMs > now.getTime();
-  const trialExpired =
-    planTier === "trial" &&
-    Number.isFinite(trialEndMs) &&
-    trialEndMs <= now.getTime();
+  const trialEndInFuture =
+    Number.isFinite(trialEndMs) && trialEndMs > now.getTime();
+  const trialEndInPast =
+    Number.isFinite(trialEndMs) && trialEndMs <= now.getTime();
 
-  const effectiveTier: AiPlanTier | "expired_trial" = trialExpired
-    ? "expired_trial"
-    : planTier === "trial" && !trialActive
-      ? "expired_trial"
-      : planTier;
+  // App trial (plan_tier=trial) or Stripe status=trialing.
+  // If trial_ends_at is in the past, treat as expired even if status lags.
+  const trialActive =
+    !trialEndInPast &&
+    (subscriptionStatus === "trialing" ||
+      (planTier === "trial" && trialEndInFuture));
+
+  const trialExpired =
+    !trialActive &&
+    (trialEndInPast || (planTier === "trial" && !trialEndInFuture));
+
+  // Features: bare app trial → Professional; Stripe trial → selected plan;
+  // expired (no active sub) → Starter; otherwise plan_tier.
+  let effectiveTier: AiPlanTier | "expired_trial";
+  if (trialExpired && subscriptionStatus !== "active") {
+    effectiveTier = "expired_trial";
+  } else if (trialActive && planTier === "trial") {
+    effectiveTier = "professional";
+  } else if (
+    trialActive &&
+    (planTier === "starter" ||
+      planTier === "professional" ||
+      planTier === "premium")
+  ) {
+    effectiveTier = planTier;
+  } else if (planTier === "trial") {
+    effectiveTier = "expired_trial";
+  } else {
+    effectiveTier = planTier;
+  }
 
   return {
     organizationId: row.id,

@@ -47,9 +47,10 @@ export function BillingSubPageShell({
 }
 
 interface BillingSubPageProps {
+  trialEligible?: boolean;
   isFoundingPartner?: boolean;
   planLabel?: string;
-  currentPlanId?: PaidPlanId;
+  currentPlanId?: PaidPlanId | null;
   stripeConfigured?: boolean;
   hasStripeCustomer?: boolean;
 }
@@ -136,11 +137,11 @@ export function BillingHistoryContent({
 export function BillingManagePlanContent({
   isFoundingPartner = false,
   planLabel = "Professional",
-  currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
+  currentPlanId = null,
   stripeConfigured = false,
   hasStripeCustomer = false,
 }: BillingSubPageProps) {
-  const plan = planById(currentPlanId);
+  const plan = planById(currentPlanId ?? PRE_STRIPE_DEFAULT_PLAN_ID);
 
   return (
     <BillingSubPageShell
@@ -198,8 +199,9 @@ export function BillingManagePlanContent({
 
 export function BillingUpgradeDowngradeContent({
   isFoundingPartner = false,
-  currentPlanId = PRE_STRIPE_DEFAULT_PLAN_ID,
+  currentPlanId = null,
   stripeConfigured = false,
+  trialEligible = false,
 }: BillingSubPageProps) {
   return (
     <BillingSubPageShell
@@ -218,15 +220,19 @@ export function BillingUpgradeDowngradeContent({
         </p>
       ) : (
         <p className="rounded-xl border border-cos-border bg-cos-bg px-4 py-3 text-sm text-cos-muted">
-          Choose a plan to open Stripe Checkout. Premium is recommended for most
-          schools. AI Reserve is a one-time add-on that rolls over.
+          {trialEligible
+            ? "Choose a plan to start your 14-day free trial (card required; billed after the trial). Premium is recommended for most schools."
+            : "Choose a plan to open Stripe Checkout. Premium is recommended for most schools."}{" "}
+          AI Reserve is a one-time add-on that rolls over.
         </p>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {PAID_PLANS.map((plan) => {
           const isCurrent =
-            !isFoundingPartner && plan.id === currentPlanId;
+            !isFoundingPartner &&
+            currentPlanId != null &&
+            plan.id === currentPlanId;
           return (
             <SettingsV2Card key={plan.id} title={plan.displayName}>
               {plan.badge ? (
@@ -257,7 +263,11 @@ export function BillingUpgradeDowngradeContent({
                 ) : stripeConfigured ? (
                   <PlanCheckoutButton
                     planId={plan.id}
-                    label={`Choose ${plan.name}`}
+                    label={
+                      trialEligible
+                        ? `Start free trial · ${plan.name}`
+                        : `Choose ${plan.name}`
+                    }
                     variant={plan.highlighted ? "primary" : "secondary"}
                   />
                 ) : (

@@ -136,7 +136,11 @@ export function BillingPlanContent({
                   {billing?.trialExpired || billing?.trialActive ? (
                     <PlanCheckoutButton
                       planId="professional"
-                      label="Subscribe to Professional"
+                      label={
+                        billing.trialExpired
+                          ? "Subscribe to Professional"
+                          : "Continue with 14-day free trial"
+                      }
                     />
                   ) : null}
                   {billing?.stripeCustomerId ? (

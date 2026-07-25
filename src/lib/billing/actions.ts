@@ -11,6 +11,10 @@ import {
   stripePriceIdForPlan,
   stripePriceIdForReserve,
 } from "@/lib/billing/stripe";
+import {
+  shouldAttachStripeTrial,
+  stripeTrialPeriodDays,
+} from "@/lib/billing/trial";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -108,6 +112,9 @@ export async function createPlanCheckoutSession(
       options?.returnPath,
       "/settings/billing-plan",
     );
+    const attachTrial =
+      snapshot != null && shouldAttachStripeTrial(snapshot);
+    const trialDays = snapshot ? stripeTrialPeriodDays(snapshot) : 14;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -119,13 +126,17 @@ export async function createPlanCheckoutSession(
         organizationId: ctx.organizationId,
         planId,
         priceId,
+        stripe_trial_days: attachTrial ? String(trialDays) : "0",
       },
       subscription_data: {
         metadata: {
           organizationId: ctx.organizationId,
           planId,
         },
+        ...(attachTrial ? { trial_period_days: trialDays } : {}),
       },
+      // Card on file so Stripe can charge when the trial ends.
+      payment_method_collection: "always",
       allow_promotion_codes: true,
     });
     if (!session.url) {

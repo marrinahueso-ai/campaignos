@@ -27,8 +27,8 @@ Access today: founding codes, invites, `billing_exempt_at`, **14-day trial** for
 ## Member billing journeys
 
 1. **Founding / invite** — Valid founding code → waived billing + unlimited AI credits.
-2. **Trial** — New non-exempt org starts `plan_tier=trial`, `trial_ends_at` +14d, 600-credit pool, Professional entitlements. After expiry → Starter entitlements until Checkout.
-3. **Paid** — Stripe Checkout (plans + Reserve) → webhook updates `organizations.plan_tier` / subscription ids; Customer Portal for card / invoices / cancel.
+2. **Trial** — New non-exempt org starts `plan_tier=trial`, `trial_ends_at` +14d, 600-credit pool, Professional entitlements. First Stripe Checkout attaches a matching `trial_period_days` so Stripe stays in `trialing` (card on file, no charge until trial ends). After expiry without Checkout → Starter entitlements until they subscribe (no second free trial).
+3. **Paid** — Stripe Checkout (plans + Reserve) → webhook updates `organizations.plan_tier` / `subscription_status` / `trial_ends_at` / subscription ids; Customer Portal for card / invoices / cancel.
 4. **Soft warn → hard block (Phase 6)** — Soft warn today; hard-block AI at 0 later.
 
 ## Stripe setup (ops)
@@ -92,6 +92,7 @@ Other matrix rows are defined in `entitlements.ts` for follow-on wiring.
 - [x] Marketing + Settings billing copy sync (Phase 4.5)
 - [x] Org billing columns + Stripe Checkout/Portal/webhooks
 - [x] Trial on new non-exempt orgs
+- [x] Stripe Checkout `trial_period_days` + webhook `trialing` / `trial_ends_at` sync
 - [x] Core feature/capacity gates
 - [x] Stripe products + prices + webhook created (live account)
 - [x] `STRIPE_SECRET_KEY` + publishable key on local + Vercel + Production redeploy

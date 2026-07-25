@@ -47,7 +47,7 @@ Burn order: **period allowance → Reserve**.
 | Artwork caps | Same as Starter |
 | After day 14 | Choose Starter / Professional / Premium |
 
-(Stripe trial wiring = Phase 5.)
+**Stripe:** First Checkout on an eligible org sends `subscription_data.trial_period_days` (remaining app-trial days, or 14). Webhooks sync `subscription_status=trialing` and `trial_ends_at` from Stripe `trial_end`. Card is collected up front; billing starts when the trial ends. Expired app trials and orgs that already had a Stripe subscription skip the free trial.
 
 ---
 

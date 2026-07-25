@@ -58,7 +58,7 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
     ],
     highlighted: false,
     badge: null,
-    marketingCta: "Start with Starter",
+    marketingCta: "Start 14-day free trial",
   },
   {
     id: "professional",
@@ -77,7 +77,7 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
     ],
     highlighted: false,
     badge: null,
-    marketingCta: "Start with Professional",
+    marketingCta: "Start 14-day free trial",
   },
   {
     id: "premium",
@@ -96,7 +96,7 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
     ],
     highlighted: true,
     badge: "Best for most schools",
-    marketingCta: "Start with Premium",
+    marketingCta: "Start 14-day free trial",
   },
 ] as const;
 

@@ -30,6 +30,8 @@ interface StudioPricingPageProps {
   stripeConfigured?: boolean;
   ctaMode?: PricingCtaMode;
   currentPlanId?: PaidPlanId | null;
+  /** When true, Checkout CTAs advertise the 14-day Stripe trial. */
+  trialEligible?: boolean;
   flash?: string | null;
 }
 
@@ -46,8 +48,13 @@ function planCtaLabel(
   mode: PricingCtaMode,
   planName: string,
   marketingCta: string,
+  trialEligible: boolean,
 ): string {
-  if (mode === "checkout") return `Subscribe to ${planName}`;
+  if (mode === "checkout") {
+    return trialEligible
+      ? `Start 14-day free trial · ${planName}`
+      : `Subscribe to ${planName}`;
+  }
   if (mode === "billing") return "Go to Billing";
   if (mode === "founding") return "Open workspace";
   if (mode === "current") return "Current plan";
@@ -72,6 +79,7 @@ export function StudioPricingPage({
   stripeConfigured = false,
   ctaMode = "signin",
   currentPlanId = null,
+  trialEligible = true,
   flash = null,
 }: StudioPricingPageProps) {
   const isSignedIn = Boolean(userEmail);
@@ -208,7 +216,12 @@ export function StudioPricingPage({
 
                 <MarketingPlanCta
                   planId={plan.id}
-                  label={planCtaLabel(mode, plan.name, plan.marketingCta)}
+                  label={planCtaLabel(
+                    mode,
+                    plan.name,
+                    plan.marketingCta,
+                    trialEligible,
+                  )}
                   highlighted={plan.highlighted}
                   mode={mode}
                   href={planCtaHref(mode, workspaceHref)}

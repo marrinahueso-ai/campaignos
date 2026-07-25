@@ -13,6 +13,7 @@ export default async function BillingUpgradeDowngradePage() {
       isFoundingPartner={ctx.isFoundingPartner}
       currentPlanId={ctx.currentPlanId}
       stripeConfigured={ctx.stripeConfigured}
+      trialEligible={ctx.trialEligible}
     />
   );
 }
