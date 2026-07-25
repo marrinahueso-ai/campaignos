@@ -43,6 +43,7 @@ import {
   userMustChangePassword,
 } from "@/lib/auth/invite-credentials";
 import { provisionTeamMemberAccount } from "@/lib/auth/provision-team-account";
+import { revokeUserSessionsIfNoActiveMembership } from "@/lib/auth/revoke-sessions";
 import { buildTeamInviteEmail } from "@/lib/email/team-invite-email";
 import { sendOrganizationWelcomeEmail } from "@/lib/email/send-organization-welcome";
 import {
@@ -950,6 +951,7 @@ export async function updateTeamMemberAction(
     return { error: orgMembership.error, success: false };
   }
 
+  let deactivatedMemberUserId: string | null | undefined;
   if (input.status === "deactivated") {
     const user = await getAuthUser();
     if (!user) {
@@ -962,6 +964,7 @@ export async function updateTeamMemberAction(
       .select("user_id")
       .eq("id", membershipId)
       .maybeSingle();
+    deactivatedMemberUserId = target?.user_id;
 
     const selfError = selfMembershipChangeError({
       actorUserId: user.id,
@@ -1011,6 +1014,10 @@ export async function updateTeamMemberAction(
   const result = await updateOrganizationMembership(membershipId, resolvedInput);
   if ("error" in result) {
     return { error: result.error, success: false };
+  }
+
+  if (input.status === "deactivated") {
+    await revokeUserSessionsIfNoActiveMembership(deactivatedMemberUserId);
   }
 
   revalidatePath("/settings/team-access");
@@ -1192,6 +1199,8 @@ export async function removeTeamMemberAction(
   if ("error" in result) {
     return { error: result.error, success: false };
   }
+
+  await revokeUserSessionsIfNoActiveMembership(target?.user_id);
 
   revalidatePath("/settings/team-access");
   return { error: null, success: true };
