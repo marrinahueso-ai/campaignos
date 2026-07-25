@@ -112,6 +112,7 @@ async function persistAiUsageLog(input: AiUsageLogInput): Promise<void> {
     error_code: input.errorCode?.trim() || null,
     error_message: truncateUsageErrorMessage(input.errorMessage),
     channel: input.channel,
+    metadata: input.metadata ?? {},
   };
 
   try {

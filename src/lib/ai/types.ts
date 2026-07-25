@@ -152,6 +152,19 @@ export interface AiUsageLogInput {
   errorCode?: string | null;
   requestId?: string | null;
   environment?: "production" | "development" | null;
+  /**
+   * Free-form per-action context (e.g. artwork generate vs regenerate,
+   * milestone attribution). Mirrors api_usage_log's metadata column.
+   * Defaults to {} when omitted — safe for every existing call site.
+   */
+  metadata?: Record<string, unknown> | null;
+}
+
+/** Shape written into ai_usage_log.metadata for artwork generation/regeneration. */
+export interface ArtworkUsageMetadata {
+  isRegeneration?: boolean;
+  milestoneLabel?: string | null;
+  relativeDay?: number | null;
 }
 
 export interface EventBriefInput {

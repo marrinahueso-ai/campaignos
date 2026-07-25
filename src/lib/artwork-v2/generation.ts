@@ -24,6 +24,7 @@ import {
 import {
   generateArtworkV2ImageNative,
   type ArtworkV2OrchestrationRequest,
+  type ArtworkV2UsageAttribution,
 } from "@/lib/artwork-v2/orchestrator";
 import type { ArtworkV2ReviewVersion } from "@/lib/artwork-v2/types";
 import type { ImageSizePreset } from "@/lib/ai-artwork/types";
@@ -38,6 +39,7 @@ export async function runArtworkV2Generation(input: {
   orchestration: ArtworkV2OrchestrationRequest;
   inspirationAssetId: string | null;
   generationProfile?: ArtworkGenerationProfile;
+  usageAttribution?: ArtworkV2UsageAttribution;
 }): Promise<{
   success: boolean;
   error: string | null;
@@ -73,6 +75,7 @@ export async function runArtworkV2Generation(input: {
         quality: profile.quality,
         reasoningEffort: profile.reasoning,
       },
+      input.usageAttribution,
     );
 
     if (!result.success || !result.imageBase64) {

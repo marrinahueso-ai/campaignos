@@ -35,6 +35,7 @@ import {
   syncHeroFromMilestoneArtwork,
 } from "@/lib/campaign-builder-v2/hero-sync";
 import { hasPermission } from "@/lib/access-templates/effective-access";
+import { getAuthUser } from "@/lib/auth/queries";
 import { applyGenerationResultsToSession } from "@/lib/campaign-builder-v2/generation-session";
 import { ARTWORK_V2_MAX_INSPIRATION_IMAGES } from "@/lib/artwork-v2/constants";
 import {
@@ -218,6 +219,8 @@ async function generateArtworkForMilestone(input: {
   forceRegenerate?: boolean;
   extraInstructions?: string | null;
   styleStrength?: number;
+  userId?: string | null;
+  isRegeneration?: boolean;
 }): Promise<{
   success: boolean;
   artwork: MilestoneArtwork;
@@ -262,6 +265,8 @@ async function generateArtworkForMilestone(input: {
       previousImageUrl: isAdjust ? existingUrl : storyFromFeed ? feedUrl : null,
       storyFromFeed,
       versionCount: 1,
+      userId: input.userId,
+      isRegeneration: input.isRegeneration ?? false,
     });
 
     if (!artworkResult.success || artworkResult.variationUrls.length === 0) {
@@ -316,6 +321,7 @@ export async function generateMilestoneArtworkAction(
     };
   }
 
+  const authUser = await getAuthUser();
   const generation = await generateArtworkForMilestone({
     eventId: input.eventId,
     milestone: input.milestone,
@@ -326,6 +332,8 @@ export async function generateMilestoneArtworkAction(
     useBrandKit: input.useBrandKit,
     existingArtwork: input.previewContent.artwork,
     forceRegenerate: true,
+    userId: authUser?.id ?? null,
+    isRegeneration: false,
   });
 
   return {
@@ -362,6 +370,7 @@ export async function regenerateArtworkAction(
       !isPlaceholderArtworkUrl(input.currentImageUrl) &&
       input.instructions.trim(),
   );
+  const authUser = await getAuthUser();
   const result = await generateCampaignBuilderArtwork({
     eventId: input.eventId,
     milestone: input.milestone,
@@ -376,6 +385,8 @@ export async function regenerateArtworkAction(
     previousImageUrl: isAdjust ? input.currentImageUrl : null,
     storyFromFeed: false,
     versionCount: 1,
+    userId: authUser?.id ?? null,
+    isRegeneration: true,
   });
 
   return {
@@ -416,6 +427,7 @@ export async function regenerateMilestoneArtworkAction(
     };
   }
 
+  const authUser = await getAuthUser();
   const generation = await generateArtworkForMilestone({
     eventId: input.eventId,
     milestone: input.milestone,
@@ -428,6 +440,8 @@ export async function regenerateMilestoneArtworkAction(
     forceRegenerate: true,
     extraInstructions: input.instructions.trim() || null,
     styleStrength: input.styleStrength,
+    userId: authUser?.id ?? null,
+    isRegeneration: true,
   });
 
   return {
@@ -503,6 +517,7 @@ export async function generateAllContentAction(
   // milestones. Kept as an array only because the shared helpers below
   // (hero sync, debug logging) are written against a results list.
   const targetMilestones = [target.milestone];
+  const generateAllContentUserId = (await getAuthUser())?.id ?? null;
 
   try {
     const resolved = await resolveInspirationForGeneration(
@@ -562,6 +577,8 @@ export async function generateAllContentAction(
         useBrandKit: input.useBrandKit,
         existingArtwork: preview?.artwork,
         forceRegenerate: false,
+        userId: generateAllContentUserId,
+        isRegeneration: false,
       });
 
       if (!artworkGeneration.success) {

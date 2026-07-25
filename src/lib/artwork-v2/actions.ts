@@ -25,6 +25,7 @@ import { getCampaignAssetsForEvent } from "@/lib/creative-assets/queries";
 import { hasPermission } from "@/lib/access-templates/effective-access";
 import { campaignRoleLabel } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { getAuthUser } from "@/lib/auth/queries";
 import { getArtworkWorkflowItems } from "@/lib/creative-studio/artwork-defaults";
 import {
   resolveWorkflowAsset,
@@ -493,6 +494,7 @@ export async function generateArtworkV2Action(
 
   const generationMode = parseArtworkGenerationModeFromForm(formData);
   const generationProfile = resolveArtworkGenerationProfile(generationMode);
+  const authUser = await getAuthUser();
 
   const generation = await runArtworkV2Generation({
     eventId,
@@ -507,6 +509,11 @@ export async function generateArtworkV2Action(
     },
     inspirationAssetId: reference.inspirationAssetIds[0] ?? null,
     generationProfile,
+    usageAttribution: {
+      userId: authUser?.id ?? null,
+      milestoneLabel: item.label,
+      relativeDay: item.relativeDay ?? null,
+    },
   });
 
   if (!generation.success) {
@@ -614,6 +621,7 @@ export async function generateStoryFromFeedAction(
   await setAssetPlanStatusInProgress(eventId, assetId);
   await saveGenerationSettings(eventId, assetId, settingsToSave, userPrompt);
 
+  const storyAuthUser = await getAuthUser();
   const generation = await runArtworkV2Generation({
     eventId,
     assetId,
@@ -627,6 +635,11 @@ export async function generateStoryFromFeedAction(
     },
     inspirationAssetId: feedAsset.id,
     generationProfile: resolveArtworkGenerationProfile("quick"),
+    usageAttribution: {
+      userId: storyAuthUser?.id ?? null,
+      milestoneLabel: item.label,
+      relativeDay: item.relativeDay ?? relativeDay,
+    },
   });
 
   if (!generation.success) {
@@ -963,6 +976,7 @@ export async function adjustArtworkV2Action(
 
   const generationMode = parseArtworkGenerationModeFromForm(formData);
   const generationProfile = resolveArtworkGenerationProfile(generationMode);
+  const adjustAuthUser = await getAuthUser();
 
   const generation = await runArtworkV2Generation({
     eventId,
@@ -979,6 +993,12 @@ export async function adjustArtworkV2Action(
     },
     inspirationAssetId: reference.inspirationAssetIds[0] ?? null,
     generationProfile,
+    usageAttribution: {
+      userId: adjustAuthUser?.id ?? null,
+      isRegeneration: true,
+      milestoneLabel: item.label,
+      relativeDay: item.relativeDay ?? null,
+    },
   });
 
   if (!generation.success) {
@@ -1251,6 +1271,8 @@ async function generateFeedWithInspirationAsset(input: {
   inspirationAsset: EventAsset;
   event: Awaited<ReturnType<typeof getEventById>>;
   organizationName: string | null;
+  userId?: string | null;
+  milestoneTitle?: string | null;
 }): Promise<ArtworkV2GenerationResult> {
   const inspirationUrl = resolveAssetImageUrl(input.inspirationAsset.storagePath);
   if (!inspirationUrl) {
@@ -1302,6 +1324,11 @@ async function generateFeedWithInspirationAsset(input: {
     },
     inspirationAssetId: input.inspirationAsset.id,
     generationProfile: resolveArtworkGenerationProfile("quick"),
+    usageAttribution: {
+      userId: input.userId ?? null,
+      milestoneLabel: input.milestoneTitle ?? item.label,
+      relativeDay: item.relativeDay ?? null,
+    },
   });
 
   if (!generation.success) {
@@ -1332,6 +1359,8 @@ async function generateStoryFromFeedImage(input: {
   event: Awaited<ReturnType<typeof getEventById>>;
   organizationName: string | null;
   phaseItems: ReturnType<typeof getArtworkPhaseItems>;
+  userId?: string | null;
+  milestoneTitle?: string | null;
 }): Promise<ArtworkV2GenerationResult> {
   const storyItem = findMilestoneStoryItem(input.phaseItems, input.relativeDay);
   if (!storyItem) {
@@ -1395,6 +1424,11 @@ async function generateStoryFromFeedImage(input: {
     },
     inspirationAssetId: input.feedAssetId,
     generationProfile: resolveArtworkGenerationProfile("quick"),
+    usageAttribution: {
+      userId: input.userId ?? null,
+      milestoneLabel: input.milestoneTitle ?? item.label,
+      relativeDay: item.relativeDay ?? input.relativeDay,
+    },
   });
 
   if (!generation.success) {
@@ -1425,6 +1459,7 @@ async function generateRemainingMilestoneArtwork(input: {
   organizationName: string | null;
   phaseItems: ReturnType<typeof getArtworkPhaseItems>;
   phase?: "feed" | "story" | "all";
+  userId?: string | null;
 }): Promise<ArtworkV2BatchMilestoneResult> {
   const feedItem = findMilestoneFeedItem(input.phaseItems, input.relativeDay);
   const title =
@@ -1466,6 +1501,8 @@ async function generateRemainingMilestoneArtwork(input: {
       inspirationAsset: input.inspirationAsset,
       event: input.event,
       organizationName: input.organizationName,
+      userId: input.userId,
+      milestoneTitle: title,
     });
 
     if (!feedResult.success || !feedResult.versions?.length) {
@@ -1561,6 +1598,8 @@ async function generateRemainingMilestoneArtwork(input: {
       event: input.event,
       organizationName: input.organizationName,
       phaseItems: input.phaseItems,
+      userId: input.userId,
+      milestoneTitle: title,
     });
 
     if (!storyResult.success) {

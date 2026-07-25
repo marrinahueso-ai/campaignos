@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { revalidateEventPaths } from "@/lib/event-workspace/revalidate-event-paths";
 import { campaignRoleLabel } from "@/lib/auth/campaign-roles";
 import { getCurrentCampaignRole } from "@/lib/auth/get-current-role";
+import { getAuthUser } from "@/lib/auth/queries";
 import { logAiUsage } from "@/lib/ai/usage";
 import {
   CONCEPT_COUNT,
@@ -271,6 +272,7 @@ export async function saveArtworkPromptAction(
 export async function generateArtworkConceptsAction(
   eventId: string,
   assetId: string,
+  options?: { isRegeneration?: boolean },
 ): Promise<ArtworkActionState> {
   if (isArtworkSectionDisabled()) {
     return { success: false, error: ARTWORK_GENERATION_DISABLED_MESSAGE };
@@ -348,6 +350,11 @@ export async function generateArtworkConceptsAction(
   const batchId = createConceptBatchId();
   const size = resolveOpenAiImageSize(ctx.settings.imageSizePreset);
   const provider = getArtworkProvider("openai");
+  const authUser = await getAuthUser();
+  const usageMetadata = {
+    isRegeneration: options?.isRegeneration ?? false,
+    milestoneLabel: ctx.planLabel ?? null,
+  };
   const conceptIds: string[] = [];
   let uploadFailureCount = 0;
   let insertFailureCount = 0;
@@ -410,6 +417,8 @@ export async function generateArtworkConceptsAction(
       totalTokens: null,
       success: result.success,
       errorMessage: result.error,
+      userId: authUser?.id ?? null,
+      metadata: usageMetadata,
     });
 
     if (!result.success || !result.imageBase64) {
@@ -585,7 +594,7 @@ export async function regenerateArtworkConceptAction(
   conceptId: string,
 ): Promise<ArtworkActionState> {
   await discardArtworkConceptAction(eventId, conceptId);
-  return generateArtworkConceptsAction(eventId, assetId);
+  return generateArtworkConceptsAction(eventId, assetId, { isRegeneration: true });
 }
 
 export async function getArtworkWorkspaceDataAction(eventId: string, assetId: string) {

@@ -2,6 +2,7 @@ import "server-only";
 
 import { isAiConfigured } from "@/lib/ai/provider";
 import { logAiUsage } from "@/lib/ai/usage";
+import type { ArtworkUsageMetadata } from "@/lib/ai/types";
 import {
   resolveArtworkImageQuality,
   resolveArtworkOrchestratorModel,
@@ -49,6 +50,14 @@ export type ArtworkV2OrchestrationRequest =
       previousImageUrl: string;
       inspirationImageUrls: string[];
     };
+
+/** Optional member/milestone attribution forwarded to ai_usage_log. Safe to omit. */
+export type ArtworkV2UsageAttribution = {
+  userId?: string | null;
+  isRegeneration?: boolean;
+  milestoneLabel?: string | null;
+  relativeDay?: number | null;
+};
 
 export type ArtworkV2NativeImageResult = {
   success: boolean;
@@ -194,8 +203,15 @@ export async function generateArtworkV2ImageNative(
     quality?: ArtworkImageQuality;
     reasoningEffort?: ArtworkReasoningEffort;
   },
+  attribution?: ArtworkV2UsageAttribution,
 ): Promise<ArtworkV2NativeImageResult> {
   const model = resolveArtworkOrchestratorModel();
+  const usageMetadata: ArtworkUsageMetadata = {
+    isRegeneration: attribution?.isRegeneration ?? request.kind === "adjust",
+    milestoneLabel: attribution?.milestoneLabel ?? null,
+    relativeDay: attribution?.relativeDay ?? null,
+  };
+  const usageUserId = attribution?.userId ?? null;
   const quality = options?.quality ?? resolveArtworkImageQuality();
   const reasoningEffort = options?.reasoningEffort ?? resolveArtworkReasoningEffort();
   const emptyUsage = {
@@ -293,6 +309,8 @@ export async function generateArtworkV2ImageNative(
       ...tokenUsage,
       success: false,
       errorMessage: error,
+      userId: usageUserId,
+      metadata: usageMetadata,
     });
 
     return {
@@ -316,6 +334,8 @@ export async function generateArtworkV2ImageNative(
       ...tokenUsage,
       success: false,
       errorMessage: error,
+      userId: usageUserId,
+      metadata: usageMetadata,
     });
 
     return {
@@ -337,6 +357,8 @@ export async function generateArtworkV2ImageNative(
     model: resolvedModel,
     ...tokenUsage,
     success: true,
+    userId: usageUserId,
+    metadata: usageMetadata,
   });
 
   return {

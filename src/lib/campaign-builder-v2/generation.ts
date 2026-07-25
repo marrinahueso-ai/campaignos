@@ -12,7 +12,10 @@ import {
 } from "@/lib/campaign-builder-v2/brand-context";
 import { resolveMilestoneInspiration } from "@/lib/campaign-builder-v2/creative-config";
 import { mergeInspirationImageUrls } from "@/lib/campaign-builder-v2/inspiration-utils";
-import { generateArtworkV2ImageNative } from "@/lib/artwork-v2/orchestrator";
+import {
+  generateArtworkV2ImageNative,
+  type ArtworkV2UsageAttribution,
+} from "@/lib/artwork-v2/orchestrator";
 import { resolveArtworkGenerationProfile } from "@/lib/artwork-v2/generation-mode";
 import { resolveMetaCaptionModel } from "@/lib/meta-captions/constants";
 import { getEventById } from "@/lib/events/queries";
@@ -61,6 +64,7 @@ async function generateArtworkVariations(input: {
   previousImageUrl?: string | null;
   adjustmentComments?: string | null;
   versionCount: number;
+  usageAttribution?: ArtworkV2UsageAttribution;
 }): Promise<{ success: boolean; urls: string[]; error?: string; batchId: string }> {
   const batchId = createConceptBatchId();
 
@@ -102,6 +106,7 @@ async function generateArtworkVariations(input: {
         quality: profile.quality,
         reasoningEffort: profile.reasoning,
       },
+      input.usageAttribution,
     );
 
     if (!result.success || !result.imageBase64) {
@@ -158,6 +163,8 @@ export async function generateCampaignBuilderArtwork(input: {
   previousImageUrl?: string | null;
   storyFromFeed?: boolean;
   versionCount?: number;
+  userId?: string | null;
+  isRegeneration?: boolean;
 }): Promise<{ success: boolean; variationUrls: string[]; message: string }> {
   if (!(await hasPermission("upload_artwork"))) {
     return {
@@ -231,6 +238,11 @@ export async function generateCampaignBuilderArtwork(input: {
     previousImageUrl: input.previousImageUrl,
     adjustmentComments: input.adjustmentComments,
     versionCount: input.versionCount ?? 1,
+    usageAttribution: {
+      userId: input.userId ?? null,
+      isRegeneration: input.isRegeneration,
+      milestoneLabel: input.milestone.name,
+    },
   });
 
   logArtworkGenerationDebug({
