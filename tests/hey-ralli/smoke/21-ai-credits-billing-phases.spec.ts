@@ -112,14 +112,16 @@ test.describe("AI credits & billing — Phases 1–6", () => {
       ),
     ).toBeTruthy();
 
-    await expect(main.getByRole("link", { name: /upgrade|downgrade/i })).toBeVisible();
+    await expect(
+      main.getByRole("link", { name: /plan\s*&\s*pricing|compare plans/i }),
+    ).toBeVisible();
     await expectNoSecretLeaksInPage(page);
   });
 
-  test("Phase 4.5–5: Upgrade / Downgrade catalog matches locked prices", async ({
+  test("Phase 4.5–5: Plan & Pricing tab catalog matches locked prices", async ({
     page,
   }) => {
-    await page.goto("/settings/billing-plan/upgrade-downgrade", {
+    await page.goto("/settings/billing-plan?tab=plan", {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
@@ -127,8 +129,11 @@ test.describe("AI credits & billing — Phases 1–6", () => {
     const main = contentMain(page);
 
     await expect(
-      main.getByRole("heading", { name: /upgrade|downgrade|plans/i }),
+      main.getByRole("heading", { name: /^billing\s*&\s*plan$/i }),
     ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      main.getByRole("link", { name: /plan\s*&\s*pricing/i, exact: false }),
+    ).toBeVisible();
 
     const text = await main.innerText();
     expect(text).toMatch(/\$49/);
@@ -171,7 +176,7 @@ test.describe("AI credits & billing — Phases 1–6", () => {
   test("Phase 5: Stripe Checkout opens for a plan when configured", async ({
     page,
   }) => {
-    await page.goto("/settings/billing-plan/upgrade-downgrade", {
+    await page.goto("/settings/billing-plan?tab=plan", {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
@@ -225,7 +230,7 @@ test.describe("AI credits & billing — Phases 1–6", () => {
       const stripeText = await page.locator("body").innerText();
       expect(stripeText).toMatch(/month|trial|subscribe|hey ralli/i);
       // Same-tab Stripe redirect — return to app without closing the browser.
-      await page.goto("/settings/billing-plan/upgrade-downgrade", {
+      await page.goto("/settings/billing-plan?tab=plan", {
         waitUntil: "domcontentloaded",
         timeout: 60_000,
       });
@@ -378,12 +383,12 @@ test.describe("AI credits & billing — Phases 1–6", () => {
         },
       },
       {
-        label: "Upgrade / Downgrade",
-        url: "/settings/billing-plan/upgrade-downgrade",
+        label: "Plan & Pricing tab",
+        url: "/settings/billing-plan?tab=plan",
         ready: async (p) => {
           await expect(
             contentMain(p).getByRole("heading", {
-              name: /^upgrade\s*\/\s*downgrade$/i,
+              name: /^billing\s*&\s*plan$/i,
             }),
           ).toBeVisible({ timeout: 45_000 });
         },

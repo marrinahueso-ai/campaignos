@@ -66,9 +66,9 @@ function planCtaHref(
   workspaceHref: string,
 ): string | undefined {
   if (mode === "signin") {
-    return `/login?next=${encodeURIComponent("/settings/billing-plan/upgrade-downgrade")}`;
+    return `/login?next=${encodeURIComponent("/settings/billing-plan?tab=plan")}`;
   }
-  if (mode === "billing") return "/settings/billing-plan/upgrade-downgrade";
+  if (mode === "billing") return "/settings/billing-plan?tab=plan";
   if (mode === "founding") return workspaceHref;
   return undefined;
 }
@@ -277,8 +277,8 @@ export function StudioPricingPage({
                     }
                     href={
                       ctaMode === "signin"
-                        ? `/login?next=${encodeURIComponent("/settings/billing-plan/upgrade-downgrade")}`
-                        : "/settings/billing-plan/upgrade-downgrade"
+                        ? `/login?next=${encodeURIComponent("/settings/billing-plan?tab=plan")}`
+                        : "/settings/billing-plan?tab=plan"
                     }
                   />
                 </div>

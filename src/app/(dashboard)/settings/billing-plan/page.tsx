@@ -1,4 +1,5 @@
 import { BillingPlanContent } from "@/components/settings-v2/BillingPlanContent";
+import { billingPlanTabFromParam } from "@/components/settings-v2/BillingPlanTabs";
 import { getOrgAiCreditsWidgetData } from "@/lib/ai/credits";
 import { paidPlanIdFromTier } from "@/lib/billing/entitlements";
 import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
@@ -26,6 +27,7 @@ export default async function BillingPlanSettingsPage({
     : null;
 
   const params = await searchParams;
+  const tab = billingPlanTabFromParam(first(params.tab));
   const checkout = first(params.checkout);
   const reserve = first(params.reserve);
   let checkoutFlash: string | null = null;
@@ -44,6 +46,7 @@ export default async function BillingPlanSettingsPage({
 
   return (
     <BillingPlanContent
+      tab={tab}
       planLabel={ctx.planLabel}
       isFoundingPartner={ctx.isFoundingPartner}
       renewalLabel={
@@ -54,6 +57,9 @@ export default async function BillingPlanSettingsPage({
       aiCredits={aiCredits}
       billing={ctx.billing}
       stripeConfigured={ctx.stripeConfigured}
+      hasStripeCustomer={ctx.hasStripeCustomer}
+      currentPlanId={ctx.currentPlanId}
+      trialEligible={ctx.trialEligible}
       checkoutFlash={checkoutFlash}
     />
   );

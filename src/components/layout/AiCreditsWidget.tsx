@@ -142,7 +142,7 @@ export function AiCreditsWidget({
         <p className="mt-2 text-xs text-cos-muted">{resetLabel}</p>
       )}
       <Link
-        href="/settings/billing-plan/upgrade-downgrade"
+        href="/settings/billing-plan?tab=plan"
         className="mt-2 inline-block text-xs font-medium text-cos-text underline-offset-2 hover:underline"
       >
         {exhausted ? "Get more credits" : "Billing & plan"}
