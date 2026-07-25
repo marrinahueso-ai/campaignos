@@ -139,7 +139,7 @@ test.describe("AI credits & billing — Phases 1–6", () => {
     ).toBeVisible({ timeout: 30_000 });
 
     await expect(
-      main.getByRole("heading", { name: /^ai credits$/i }),
+      main.getByRole("heading", { name: /^ai credits$|^period usage$/i }),
     ).toBeVisible({ timeout: 20_000 });
     await expect(
       main.getByRole("heading", { name: /^capacity usage$/i }),

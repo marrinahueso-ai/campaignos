@@ -3,13 +3,13 @@ import {
   PlanCheckoutButton,
   ReserveCheckoutButton,
 } from "@/components/settings-v2/BillingCheckoutButtons";
+import { RecentActivityList } from "@/components/settings-v2/RecentActivityList";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Crown } from "lucide-react";
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 import type { AiCreditLedgerEntry } from "@/lib/ai/credit-ledger";
-import { ledgerActivityDescription } from "@/lib/ai/usage-breakdown-pure";
 import type { OrgAiUsageBreakdown } from "@/lib/ai/usage-breakdown";
 import type { CapacityUsageEntry } from "@/lib/billing/capacity-usage";
 import type { OrgBillingSnapshot } from "@/lib/billing/org-billing";
@@ -252,35 +252,6 @@ export function BillingPaymentMethodPanel({
   );
 }
 
-const LEDGER_ENTRY_LABELS: Record<string, string> = {
-  period_grant: "Period grant",
-  burn: "Usage",
-  reserve_grant: "Reserve added",
-  bonus_grant: "Bonus",
-  adjustment: "Adjustment",
-};
-
-function ledgerEntryLabel(entryType: string): string {
-  return LEDGER_ENTRY_LABELS[entryType] ?? entryType;
-}
-
-function ledgerBadgeVariant(entryType: string): "success" | "default" | "info" {
-  if (
-    entryType === "period_grant" ||
-    entryType === "reserve_grant" ||
-    entryType === "bonus_grant"
-  ) {
-    return "success";
-  }
-  if (entryType === "adjustment") return "info";
-  return "default";
-}
-
-function formatSignedAmount(amount: number): string {
-  if (amount > 0) return `+${amount.toLocaleString()}`;
-  return amount.toLocaleString();
-}
-
 interface BillingUsagePanelProps {
   aiCredits?: AiCreditsWidgetData | null;
   billing?: OrgBillingSnapshot | null;
@@ -320,7 +291,7 @@ export function BillingUsagePanel({
           </p>
         </SettingsV2Card>
       ) : (
-        <>
+        <div className="grid gap-6 lg:grid-cols-2">
           <SettingsV2Card title="Period usage">
             {aiCredits ? (
               <>
@@ -414,92 +385,128 @@ export function BillingUsagePanel({
               ))}
             </ul>
           </SettingsV2Card>
-        </>
+        </div>
       )}
 
-      <SettingsV2Card
-        title="Capacity usage"
-        description="Where this organization stands against plan limits."
-      >
-        {capacityUsage.length === 0 ? (
-          <p className="text-sm text-cos-muted">Capacity usage is unavailable right now.</p>
-        ) : (
-          <ul className="space-y-4">
-            {capacityUsage.map((entry) => {
-              const capacityPercent =
-                entry.limit == null || entry.limit <= 0
-                  ? 0
-                  : Math.min(100, Math.round((entry.used / entry.limit) * 100));
-              const atOrOverLimit = entry.limit != null && entry.used >= entry.limit;
-              return (
-                <li key={entry.key}>
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-medium text-cos-text">{entry.label}</p>
-                    <p className="text-sm tabular-nums text-cos-muted">
-                      {entry.limit == null
-                        ? `${entry.used.toLocaleString()} · Unlimited`
-                        : `${entry.used.toLocaleString()} / ${entry.limit.toLocaleString()}`}
-                    </p>
-                  </div>
-                  {entry.limit != null ? (
-                    <div
-                      className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
-                      role="progressbar"
-                      aria-valuenow={Math.min(entry.used, entry.limit)}
-                      aria-valuemin={0}
-                      aria-valuemax={entry.limit}
-                      aria-label={`${entry.label}: ${entry.used} of ${entry.limit} used`}
-                    >
-                      <div
-                        className={cn(
-                          "h-full transition-[width]",
-                          atOrOverLimit ? "bg-cos-error" : "bg-cos-dark",
-                        )}
-                        style={{ width: `${capacityPercent}%` }}
-                      />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <SettingsV2Card
+          title="Capacity usage"
+          description="Where this organization stands against plan limits."
+        >
+          {capacityUsage.length === 0 ? (
+            <p className="text-sm text-cos-muted">Capacity usage is unavailable right now.</p>
+          ) : (
+            <ul className="space-y-4">
+              {capacityUsage.map((entry) => {
+                const capacityPercent =
+                  entry.limit == null || entry.limit <= 0
+                    ? 0
+                    : Math.min(100, Math.round((entry.used / entry.limit) * 100));
+                const atOrOverLimit = entry.limit != null && entry.used >= entry.limit;
+                return (
+                  <li key={entry.key}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="text-sm font-medium text-cos-text">{entry.label}</p>
+                      <p className="text-sm tabular-nums text-cos-muted">
+                        {entry.limit == null
+                          ? `${entry.used.toLocaleString()} · Unlimited`
+                          : `${entry.used.toLocaleString()} / ${entry.limit.toLocaleString()}`}
+                      </p>
                     </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </SettingsV2Card>
+                    {entry.limit != null ? (
+                      <div
+                        className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+                        role="progressbar"
+                        aria-valuenow={Math.min(entry.used, entry.limit)}
+                        aria-valuemin={0}
+                        aria-valuemax={entry.limit}
+                        aria-label={`${entry.label}: ${entry.used} of ${entry.limit} used`}
+                      >
+                        <div
+                          className={cn(
+                            "h-full transition-[width]",
+                            atOrOverLimit ? "bg-cos-error" : "bg-cos-dark",
+                          )}
+                          style={{ width: `${capacityPercent}%` }}
+                        />
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </SettingsV2Card>
 
-      <SettingsV2Card
-        title="Usage by member"
-        description="Who's using the most AI this period, ranked by credits."
-      >
-        {byMember.length === 0 ? (
-          <p className="text-sm text-cos-muted">
-            No AI usage from members yet this period.
-          </p>
-        ) : (
-          <ul className="divide-y divide-cos-border">
-            {byMember.map((entry, index) => {
-              const isTop = topMember != null && entry.userId === topMember.userId;
-              return (
+        <SettingsV2Card
+          title="Usage by member"
+          description="Who's using the most AI this period, ranked by credits."
+        >
+          {byMember.length === 0 ? (
+            <p className="text-sm text-cos-muted">
+              No AI usage from members yet this period.
+            </p>
+          ) : (
+            <ul className="divide-y divide-cos-border">
+              {byMember.map((entry, index) => {
+                const isTop = topMember != null && entry.userId === topMember.userId;
+                return (
+                  <li
+                    key={entry.userId ?? "unknown"}
+                    className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
+                  >
+                    <span className="w-5 shrink-0 text-sm tabular-nums text-cos-muted">
+                      {index + 1}
+                    </span>
+                    {isTop ? (
+                      <Crown
+                        className="h-4 w-4 shrink-0 text-cos-warning-text"
+                        strokeWidth={1.75}
+                        aria-label="Top member"
+                      />
+                    ) : null}
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
+                      {entry.label}
+                      {isTop ? (
+                        <Badge variant="info" className="ml-2 align-middle">
+                          Top
+                        </Badge>
+                      ) : null}
+                    </p>
+                    <p className="shrink-0 text-xs text-cos-muted">
+                      {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
+                    </p>
+                    <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
+                      {entry.credits.toLocaleString()} cr
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {byMember.some((entry) => entry.userId == null) ? (
+            <p className="mt-3 text-xs text-cos-muted">
+              &ldquo;Unknown member&rdquo; is usage logged before member
+              attribution was added for this action type — not a bug.
+            </p>
+          ) : null}
+        </SettingsV2Card>
+
+        <SettingsV2Card
+          title="Usage by category"
+          description="Full breakdown of what this organization is using AI for."
+        >
+          {byCategory.length === 0 ? (
+            <p className="text-sm text-cos-muted">No AI usage yet this period.</p>
+          ) : (
+            <ul className="divide-y divide-cos-border">
+              {byCategory.map((entry) => (
                 <li
-                  key={entry.userId ?? "unknown"}
+                  key={entry.key}
                   className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
                 >
-                  <span className="w-5 shrink-0 text-sm tabular-nums text-cos-muted">
-                    {index + 1}
-                  </span>
-                  {isTop ? (
-                    <Crown
-                      className="h-4 w-4 shrink-0 text-cos-warning-text"
-                      strokeWidth={1.75}
-                      aria-label="Top member"
-                    />
-                  ) : null}
                   <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
                     {entry.label}
-                    {isTop ? (
-                      <Badge variant="info" className="ml-2 align-middle">
-                        Top
-                      </Badge>
-                    ) : null}
                   </p>
                   <p className="shrink-0 text-xs text-cos-muted">
                     {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
@@ -508,84 +515,17 @@ export function BillingUsagePanel({
                     {entry.credits.toLocaleString()} cr
                   </p>
                 </li>
-              );
-            })}
-          </ul>
-        )}
-        {byMember.some((entry) => entry.userId == null) ? (
-          <p className="mt-3 text-xs text-cos-muted">
-            &ldquo;Unknown member&rdquo; is usage logged before member
-            attribution was added for this action type — not a bug.
-          </p>
-        ) : null}
-      </SettingsV2Card>
-
-      <SettingsV2Card
-        title="Usage by category"
-        description="Full breakdown of what this organization is using AI for."
-      >
-        {byCategory.length === 0 ? (
-          <p className="text-sm text-cos-muted">No AI usage yet this period.</p>
-        ) : (
-          <ul className="divide-y divide-cos-border">
-            {byCategory.map((entry) => (
-              <li
-                key={entry.key}
-                className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
-              >
-                <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
-                  {entry.label}
-                </p>
-                <p className="shrink-0 text-xs text-cos-muted">
-                  {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
-                </p>
-                <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
-                  {entry.credits.toLocaleString()} cr
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SettingsV2Card>
+              ))}
+            </ul>
+          )}
+        </SettingsV2Card>
+      </div>
 
       <SettingsV2Card
         title="Recent activity"
         description="Latest AI credit grants and usage for this organization."
       >
-        {ledger.length === 0 ? (
-          <p className="text-sm text-cos-muted">No activity yet.</p>
-        ) : (
-          <ul className="divide-y divide-cos-border">
-            {ledger.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-center gap-x-3 gap-y-0 py-3 text-sm first:pt-0 last:pb-0"
-              >
-                <Badge variant={ledgerBadgeVariant(entry.entryType)} className="shrink-0">
-                  {ledgerEntryLabel(entry.entryType)}
-                </Badge>
-                <p className="shrink-0 text-xs text-cos-muted">
-                  {formatDateTime(entry.createdAt)}
-                </p>
-                <p className="min-w-0 flex-1 truncate text-cos-muted">
-                  {ledgerActivityDescription(entry)}
-                </p>
-                <p
-                  className={cn(
-                    "shrink-0 text-sm font-medium tabular-nums",
-                    entry.amount < 0
-                      ? "text-cos-error-text"
-                      : entry.amount > 0
-                        ? "text-cos-success-text"
-                        : "text-cos-muted",
-                  )}
-                >
-                  {formatSignedAmount(entry.amount)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <RecentActivityList ledger={ledger} />
       </SettingsV2Card>
     </div>
   );
