@@ -13,7 +13,7 @@ import {
   absoluteCampaignBuilderPreviewMilestoneHref,
 } from "@/lib/campaign-builder-v2/navigation";
 import { resolveSiteOrigin } from "@/lib/site/url";
-import { escapeHtml } from "@/lib/utils/html";
+import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 import { createClient } from "@/lib/supabase/server";
 
 export interface CampaignApprovalNotificationInput extends ApprovalEmailContentPreview {
@@ -127,7 +127,7 @@ function buildApprovalEmailHtml(input: {
   const contentPreview = buildApprovalContentPreviewHtml(input.content ?? {});
   const secondaryCta =
     input.secondaryCtaLabel && input.secondaryCtaHref
-      ? `<a href="${escapeHtml(input.secondaryCtaHref)}" style="display: inline-block; color: #2a2622; padding: 10px 0 0 4px; text-decoration: underline; font-size: 13px; margin-top: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+      ? `<a href="${escapeHtml(sanitizeHrefUrl(input.secondaryCtaHref))}" style="display: inline-block; color: #2a2622; padding: 10px 0 0 4px; text-decoration: underline; font-size: 13px; margin-top: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
         ${escapeHtml(input.secondaryCtaLabel)}
       </a>`
       : "";
@@ -137,12 +137,12 @@ function buildApprovalEmailHtml(input: {
       <h1 style="font-size: 24px; font-weight: 500; margin: 0 0 12px;">${escapeHtml(input.heading)}</h1>
       <p style="font-size: 15px; line-height: 1.6; margin: 0 0 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${input.body}</p>
       ${contentPreview}
-      <a href="${escapeHtml(input.ctaHref)}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px; margin-top: 8px;">
+      <a href="${escapeHtml(sanitizeHrefUrl(input.ctaHref))}" style="display: inline-block; background: #2a2622; color: #f6f2eb; padding: 10px 18px; text-decoration: none; font-size: 14px; margin-top: 8px;">
         ${escapeHtml(input.ctaLabel)}
       </a>
       ${secondaryCta}
       <p style="margin: 28px 0 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; line-height: 1.5; color: #5c554c;">
-        <a href="${escapeHtml(emailPrimaryUrl)}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
+        <a href="${escapeHtml(sanitizeHrefUrl(emailPrimaryUrl))}" style="color: #2a2622; font-weight: 600;">Keep Hey Ralli in Primary</a>
         — one-time Gmail setup so approvals, reminders, and post kits aren’t filed under Promotions.
       </p>
     </div>

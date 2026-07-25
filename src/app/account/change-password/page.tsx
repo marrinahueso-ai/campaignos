@@ -38,6 +38,14 @@ export default function ChangePasswordPage() {
 
         <form action={action} className="space-y-4">
           <Input
+            name="currentPassword"
+            label="Current (temporary) password"
+            type="password"
+            placeholder="Enter the password your admin gave you"
+            required
+            autoComplete="current-password"
+          />
+          <Input
             name="password"
             label="New password"
             type="password"

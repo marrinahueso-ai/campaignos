@@ -1,6 +1,6 @@
 import "server-only";
 
-import { escapeHtml } from "@/lib/utils/html";
+import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 import type { EmailAttachment } from "@/lib/email/send";
 import { resolveStoryKitCaption } from "@/lib/campaign-builder-v2/manual-email-scheduling";
 import { resolveSiteOrigin } from "@/lib/site/url";
@@ -85,7 +85,7 @@ export async function buildSocialsManualUploadEmail(
   const previewImg = input.storyArtworkUrl
     ? `<tr>
         <td style="padding:0 32px 24px;">
-          <a href="${escapeHtml(input.storyArtworkUrl)}" style="display:block;text-decoration:none;">
+          <a href="${escapeHtml(sanitizeHrefUrl(input.storyArtworkUrl))}" style="display:block;text-decoration:none;">
             <img
               src="${escapeHtml(input.storyArtworkUrl)}"
               alt="Instagram story artwork"
@@ -94,7 +94,7 @@ export async function buildSocialsManualUploadEmail(
             />
           </a>
           <p style="margin:12px 0 0;text-align:center;font-size:13px;color:#5c554c;">
-            <a href="${escapeHtml(input.storyArtworkUrl)}" style="color:#b8956f;font-weight:600;text-decoration:underline;">Download 9:16 story image</a>
+            <a href="${escapeHtml(sanitizeHrefUrl(input.storyArtworkUrl))}" style="color:#b8956f;font-weight:600;text-decoration:underline;">Download 9:16 story image</a>
           </p>
         </td>
       </tr>`
@@ -116,7 +116,7 @@ export async function buildSocialsManualUploadEmail(
     ? `<tr>
         <td style="padding:0 32px 24px;">
           <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">Link for Instagram sticker</p>
-          <a href="${escapeHtml(input.eventLink.trim())}" style="color:#2a2622;font-size:15px;font-weight:600;word-break:break-all;">${escapeHtml(input.eventLink.trim())}</a>
+          <a href="${escapeHtml(sanitizeHrefUrl(input.eventLink.trim()))}" style="color:#2a2622;font-size:15px;font-weight:600;word-break:break-all;">${escapeHtml(input.eventLink.trim())}</a>
         </td>
       </tr>`
     : "";
@@ -162,10 +162,10 @@ export async function buildSocialsManualUploadEmail(
           ${eventLinkBlock}
           <tr>
             <td style="padding:0 32px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-              <a href="${escapeHtml(instagramUrl)}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;margin:0 10px 10px 0;">
+              <a href="${escapeHtml(sanitizeHrefUrl(instagramUrl))}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;margin:0 10px 10px 0;">
                 Post to Instagram
               </a>
-              <a href="${escapeHtml(input.postKitUrl)}" style="display:inline-block;background:transparent;color:#2a2622;text-decoration:none;padding:13px 20px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid #2a2622;margin:0 0 10px 0;">
+              <a href="${escapeHtml(sanitizeHrefUrl(input.postKitUrl))}" style="display:inline-block;background:transparent;color:#2a2622;text-decoration:none;padding:13px 20px;border-radius:999px;font-size:14px;font-weight:600;border:1px solid #2a2622;margin:0 0 10px 0;">
                 Open in Hey Ralli
               </a>
               <p style="margin:8px 0 0;font-size:12px;line-height:1.45;color:#5c554c;">
@@ -175,7 +175,7 @@ export async function buildSocialsManualUploadEmail(
           </tr>
           <tr>
             <td style="padding:8px 32px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-              <a href="${escapeHtml(emailPrimaryUrl)}" style="display:inline-block;background:#e8dfd2;color:#2a2622;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600;">
+              <a href="${escapeHtml(sanitizeHrefUrl(emailPrimaryUrl))}" style="display:inline-block;background:#e8dfd2;color:#2a2622;text-decoration:none;padding:12px 18px;border-radius:999px;font-size:13px;font-weight:600;">
                 Keep Hey Ralli in Primary
               </a>
               <p style="margin:10px 0 0;font-size:12px;line-height:1.45;color:#5c554c;">

@@ -8,13 +8,14 @@ import {
   getCanvaClientId,
 } from "@/lib/canva/config";
 import type { CanvaConnection, CanvaConnectionRow, CanvaTokenResponse } from "@/lib/canva/types";
+import { decryptOAuthToken, encryptOAuthToken } from "@/lib/security/token-encryption";
 
 function mapCanvaConnectionRow(row: CanvaConnectionRow): CanvaConnection {
   return {
     id: row.id,
     organizationId: row.organization_id,
-    accessToken: row.access_token,
-    refreshToken: row.refresh_token,
+    accessToken: decryptOAuthToken(row.access_token),
+    refreshToken: decryptOAuthToken(row.refresh_token),
     tokenExpiresAt: row.token_expires_at,
     scopes: row.scopes,
     createdAt: row.created_at,
@@ -67,7 +68,7 @@ async function exchangeCanvaToken(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("Canva token exchange failed:", response.status, text);
+    console.error("Canva token exchange failed:", response.status, text.slice(0, 300));
     return null;
   }
 
@@ -85,8 +86,8 @@ export async function saveCanvaConnectionFromTokenResponse(
   const { error } = await supabase.from("organization_canva_connections").upsert(
     {
       organization_id: organizationId,
-      access_token: token.access_token,
-      refresh_token: token.refresh_token,
+      access_token: encryptOAuthToken(token.access_token),
+      refresh_token: encryptOAuthToken(token.refresh_token),
       token_expires_at: expiresAt,
       scopes: token.scope ?? null,
       updated_at: now,

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { escapeHtml } from "@/lib/utils/html";
+import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 import type { EmailAttachment } from "@/lib/email/send";
 
 export interface StoryReminderEmailContent {
@@ -74,11 +74,11 @@ export async function buildStoryReminderEmail(
     : "";
 
   const eventLinkBlock = input.eventLink?.trim()
-    ? `<p><strong>Event link for stickers</strong><br /><a href="${escapeHtml(input.eventLink.trim())}">${escapeHtml(input.eventLink.trim())}</a></p>`
+    ? `<p><strong>Event link for stickers</strong><br /><a href="${escapeHtml(sanitizeHrefUrl(input.eventLink.trim()))}">${escapeHtml(input.eventLink.trim())}</a></p>`
     : "";
 
   const storyDownloadBlock = input.storyArtworkUrl
-    ? `<p><a href="${escapeHtml(input.storyArtworkUrl)}">Download story image</a> (also attached when possible)</p>`
+    ? `<p><a href="${escapeHtml(sanitizeHrefUrl(input.storyArtworkUrl))}">Download story image</a> (also attached when possible)</p>`
     : "";
 
   const html = `
@@ -93,7 +93,7 @@ export async function buildStoryReminderEmail(
         Open the post kit to download assets, copy captions, and post your story manually — add music, link stickers, and tags in the Instagram app.
       </p>
       <p style="margin:0 0 20px;">
-        <a href="${escapeHtml(input.postKitUrl)}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600;">Open post kit</a>
+        <a href="${escapeHtml(sanitizeHrefUrl(input.postKitUrl))}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600;">Open post kit</a>
       </p>
       ${storyDownloadBlock}
       ${storyCaptionBlock}

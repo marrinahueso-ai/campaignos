@@ -2,6 +2,8 @@
  * Resend template aliases + local HTML fallbacks for developer agreement emails.
  */
 
+import { sanitizeHrefUrl } from "@/lib/utils/html";
+
 export const DEVELOPER_AGREEMENT_COUNTERSIGN_TEMPLATE_ALIAS =
   "developer-agreement-countersign";
 
@@ -88,7 +90,7 @@ export function buildDeveloperAgreementCountersignEmail(input: {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td bgcolor="#2a2622" style="background-color:#2a2622;border-radius:999px;">
-                    <a href="${escapeHtml(input.countersignUrl)}" style="display:inline-block;padding-top:14px;padding-bottom:14px;padding-left:22px;padding-right:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1.2;color:#f6f2eb;text-decoration:none;">
+                    <a href="${escapeHtml(sanitizeHrefUrl(input.countersignUrl))}" style="display:inline-block;padding-top:14px;padding-bottom:14px;padding-left:22px;padding-right:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1.2;color:#f6f2eb;text-decoration:none;">
                       Open counter-sign page
                     </a>
                   </td>
@@ -158,7 +160,7 @@ export function buildDeveloperAgreementExecutedEmail(input: {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td bgcolor="#2a2622" style="background-color:#2a2622;border-radius:999px;">
-                    <a href="${escapeHtml(input.downloadUrl)}" style="display:inline-block;padding-top:14px;padding-bottom:14px;padding-left:22px;padding-right:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1.2;color:#f6f2eb;text-decoration:none;">
+                    <a href="${escapeHtml(sanitizeHrefUrl(input.downloadUrl))}" style="display:inline-block;padding-top:14px;padding-bottom:14px;padding-left:22px;padding-right:22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:600;line-height:1.2;color:#f6f2eb;text-decoration:none;">
                       Download executed copy
                     </a>
                   </td>

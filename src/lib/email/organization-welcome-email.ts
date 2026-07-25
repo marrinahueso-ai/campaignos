@@ -6,6 +6,8 @@
  * Avoid "school" / "PTO" — Hey Ralli serves multiple organization types.
  */
 
+import { sanitizeHrefUrl } from "@/lib/utils/html";
+
 export interface OrganizationWelcomeEmailContent {
   subject: string;
   html: string;
@@ -78,7 +80,7 @@ export function buildOrganizationWelcomeEmail(
           </tr>
           <tr>
             <td style="padding:0 32px 28px;font-family:Arial,Helvetica,sans-serif;">
-              <a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;">
+              <a href="${escapeHtml(sanitizeHrefUrl(actionUrl))}" style="display:inline-block;background:#2a2622;color:#f6f2eb;text-decoration:none;padding:14px 22px;border-radius:999px;font-size:14px;font-weight:600;">
                 Let's get started
               </a>
               <p style="margin:14px 0 0;font-size:13px;line-height:1.5;color:#5c554c;">
@@ -90,7 +92,7 @@ export function buildOrganizationWelcomeEmail(
             <td style="padding:18px 32px 22px;border-top:1px solid #ddd4c8;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#5c554c;">
               Sent by Hey Ralli
               &nbsp;·&nbsp;
-              <a href="${escapeHtml(emailPrimaryUrl)}" style="color:#5c554c;">Keep mail in Primary</a>
+              <a href="${escapeHtml(sanitizeHrefUrl(emailPrimaryUrl))}" style="color:#5c554c;">Keep mail in Primary</a>
             </td>
           </tr>
         </table>

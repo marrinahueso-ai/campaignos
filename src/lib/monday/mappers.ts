@@ -9,6 +9,7 @@ import type {
   MondayConnection,
   MondayItemLink,
 } from "@/lib/monday/types";
+import { decryptOAuthToken } from "@/lib/security/token-encryption";
 
 function normalizeCommitteeGroups(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -32,7 +33,8 @@ export function mapMondayConnectionRow(row: MondayConnectionRow): MondayConnecti
   return {
     id: String(row.id ?? ""),
     organizationId: String(row.organization_id ?? ""),
-    accessToken: typeof row.access_token === "string" ? row.access_token : "",
+    accessToken:
+      typeof row.access_token === "string" ? decryptOAuthToken(row.access_token) : "",
     accountId: row.account_id ? String(row.account_id) : null,
     accountSlug: row.account_slug ? String(row.account_slug) : null,
     scopes: row.scopes ? String(row.scopes) : null,

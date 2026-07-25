@@ -487,9 +487,13 @@ export async function changePasswordAction(
     };
   }
 
+  const currentPassword = formData.get("currentPassword")?.toString() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
 
+  if (!currentPassword) {
+    return { error: "Enter your current password.", success: false };
+  }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters.", success: false };
   }
@@ -498,6 +502,20 @@ export async function changePasswordAction(
   }
 
   const supabase = await createClient();
+
+  // Re-authenticate before allowing the change: `updateUser` only needs a
+  // live session, so anyone who rides an already-authenticated session
+  // (stolen cookie, XSS, shared/unlocked device) could otherwise silently
+  // reset the password and lock the real owner out permanently. Requiring
+  // the current password closes that takeover path.
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (reauthError) {
+    return { error: "Current password is incorrect.", success: false };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     return { error: error.message, success: false };
@@ -505,6 +523,14 @@ export async function changePasswordAction(
 
   await clearMustChangePassword(user.id);
   redirect(await getAuthenticatedAppPath());
+}
+
+/** Lightweight format check only — real validation happens at Supabase. Used
+ *  so obvious typos get instant feedback without needing to trust (or
+ *  surface) Supabase's own error message, which we intentionally suppress
+ *  below to avoid leaking account existence. */
+function isPlausibleEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export async function signInWithEmailAction(
@@ -519,6 +545,10 @@ export async function signInWithEmailAction(
 
   if (!email) {
     return { error: "Enter your email address.", success: false };
+  }
+
+  if (!isPlausibleEmail(email)) {
+    return { error: "Enter a valid email address.", success: false };
   }
 
   const otpIp = await getRequestIp();
@@ -650,22 +680,32 @@ export async function signInWithEmailAction(
     },
   });
 
+  const successMessage = isNewSchoolSignup
+    ? "Check your email for a link to create your account and set up your organization."
+    : inviteToken
+      ? "Check your email for a sign-in link. Open it to join the team — use the same invited address."
+      : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.";
+
   if (error) {
-    const message = error.message.includes("redirect")
-      ? `${error.message} Add ${redirectTo.origin}/auth/callback to Supabase Auth redirect URLs.`
-      : error.message;
-    return { error: message, success: false };
+    // Misconfigured redirect URLs are an admin/environment setup problem
+    // (identical for every email address), safe to surface verbatim.
+    if (error.message.includes("redirect")) {
+      return {
+        error: `${error.message} Add ${redirectTo.origin}/auth/callback to Supabase Auth redirect URLs.`,
+        success: false,
+      };
+    }
+
+    // Everything else — most notably "Signups not allowed for otp", which
+    // Supabase only returns when shouldCreateUser is false and the account
+    // doesn't exist — must not be shown to the caller: that message is an
+    // account-enumeration oracle (return value reveals whether the email
+    // has an account). Log server-side and respond exactly like success.
+    console.error("[auth] signInWithOtp failed:", error.message);
+    return { error: null, success: true, message: successMessage };
   }
 
-  return {
-    error: null,
-    success: true,
-    message: isNewSchoolSignup
-      ? "Check your email for a link to create your account and set up your organization."
-      : inviteToken
-        ? "Check your email for a sign-in link. Open it to join the team — use the same invited address."
-        : "Check your email for a sign-in link. If nothing arrives in a few minutes, check spam or ask your admin to configure Supabase email delivery.",
-  };
+  return { error: null, success: true, message: successMessage };
 }
 
 export async function signOutAction(): Promise<void> {

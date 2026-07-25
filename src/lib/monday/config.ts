@@ -40,11 +40,15 @@ function sanitizeMondayEnvCredential(raw: string | undefined): string | undefine
 
 export type MondayClientSecretDiagnostics = {
   length: number;
-  firstCharCode: number;
-  lastCharCode: number;
   hasSurroundingQuotes: boolean;
 };
 
+/**
+ * Deliberately never returns character codes or any substring of the
+ * secret — only shape metadata (length, whether it was pasted with
+ * surrounding quotes) needed to diagnose the common "secret pasted with
+ * quotes" misconfiguration without exposing any part of the secret itself.
+ */
 export function describeMondayClientSecretForLogging(
   secret: string,
   raw?: string,
@@ -57,8 +61,6 @@ export function describeMondayClientSecretForLogging(
 
   return {
     length: secret.length,
-    firstCharCode: secret.charCodeAt(0),
-    lastCharCode: secret.charCodeAt(secret.length - 1),
     hasSurroundingQuotes,
   };
 }
@@ -75,8 +77,6 @@ export type MondayOAuthConfigDiagnostics = {
   clientIdPrefix: string | null;
   hasClientSecret: boolean;
   secretLength: number;
-  secretFirstCharCode: number | null;
-  secretLastCharCode: number | null;
   secretHadSurroundingQuotes: boolean;
   redirectUri: string;
   vercelEnv: string | null;
@@ -91,16 +91,12 @@ export function getMondayOAuthConfigDiagnostics(
   const rawClientId = process.env[MONDAY_CLIENT_ID_ENV];
 
   let secretLength = 0;
-  let secretFirstCharCode: number | null = null;
-  let secretLastCharCode: number | null = null;
   let secretHadSurroundingQuotes = false;
 
   try {
     const secret = getMondayClientSecret();
     const diagnostics = describeMondayClientSecretForLogging(secret, rawSecret);
     secretLength = diagnostics.length;
-    secretFirstCharCode = diagnostics.firstCharCode;
-    secretLastCharCode = diagnostics.lastCharCode;
     secretHadSurroundingQuotes = diagnostics.hasSurroundingQuotes;
   } catch {
     // Leave secret fields at defaults when misconfigured.
@@ -118,8 +114,6 @@ export function getMondayOAuthConfigDiagnostics(
     clientIdPrefix,
     hasClientSecret: Boolean(sanitizeMondayEnvCredential(rawSecret)),
     secretLength,
-    secretFirstCharCode,
-    secretLastCharCode,
     secretHadSurroundingQuotes,
     redirectUri: getMondayRedirectUri(requestOrigin),
     vercelEnv: process.env.VERCEL_ENV ?? null,

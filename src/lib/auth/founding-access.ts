@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import type { NextResponse } from "next/server";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 /**
  * Founding / beta access codes are configured via Vercel env vars (not in-app UI):
@@ -71,6 +72,28 @@ export function isFoundingAccessCodeRequired(): boolean {
   return TRUTHY.has(value);
 }
 
+/** Fixed-length digest so timingSafeEqual never throws on a length mismatch and length itself leaks no timing signal. */
+function digest(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
+/**
+ * Constant-time membership check: hashes both sides to a fixed length and
+ * checks every configured code (no early exit on match) so neither the
+ * candidate's length nor which character differs is observable via timing —
+ * a plain `Set.has()`/`===` compare on the raw string leaks both.
+ */
+function constantTimeCodeMatch(codes: Set<string>, candidate: string): boolean {
+  const candidateDigest = digest(candidate);
+  let matched = false;
+  for (const code of codes) {
+    if (timingSafeEqual(candidateDigest, digest(code))) {
+      matched = true;
+    }
+  }
+  return matched;
+}
+
 export function validateFoundingAccessCode(code: string | null | undefined): boolean {
   const normalized = code?.trim().toUpperCase();
   if (!normalized) {
@@ -78,7 +101,7 @@ export function validateFoundingAccessCode(code: string | null | undefined): boo
   }
 
   const configuredCodes = parseFoundingAccessCodes();
-  return configuredCodes.size > 0 && configuredCodes.has(normalized);
+  return configuredCodes.size > 0 && constantTimeCodeMatch(configuredCodes, normalized);
 }
 
 export interface FoundingAccessResolution {

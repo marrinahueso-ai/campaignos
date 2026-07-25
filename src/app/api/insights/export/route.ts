@@ -3,12 +3,25 @@ import { buildInsightsExportRows, getInsightsPageData } from "@/lib/insights/que
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Neutralizes CSV formula injection: a cell starting with `=`, `+`, `-`,
+ * `@`, tab, or CR is interpreted as a formula by Excel/Sheets/LibreOffice
+ * when the file is opened, which can exfiltrate data or run commands via
+ * legacy DDE. Post titles and other org-authored text flow into this
+ * export, so any of them could start with a formula trigger character —
+ * prefixing with a single quote forces spreadsheet apps to treat the cell
+ * as literal text while keeping it human-readable.
+ */
+function sanitizeCsvCell(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 function toCsv(rows: string[][]): string {
   return rows
     .map((row) =>
       row
         .map((cell) => {
-          const value = cell.replace(/"/g, '""');
+          const value = sanitizeCsvCell(cell).replace(/"/g, '""');
           return /[",\n]/.test(value) ? `"${value}"` : value;
         })
         .join(","),

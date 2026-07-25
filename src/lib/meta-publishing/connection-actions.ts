@@ -14,6 +14,7 @@ import {
   type ResolvedMetaPage,
 } from "@/lib/meta-publishing/graph-api";
 import { createClient } from "@/lib/supabase/server";
+import { encryptOAuthToken } from "@/lib/security/token-encryption";
 
 export type MetaConnectionActionResult = {
   success: boolean;
@@ -61,7 +62,7 @@ export async function saveMetaConnectionAction(input: {
       organization_id: organization.id,
       facebook_page_id: pageId,
       instagram_account_id: igId || "",
-      page_access_token: token,
+      page_access_token: encryptOAuthToken(token),
       page_name: verified.pageName,
       token_expires_at: null,
       updated_at: now,
@@ -142,7 +143,7 @@ export async function saveMetaConnectionFromOAuth(input: {
       organization_id: input.organizationId,
       facebook_page_id: page.id,
       instagram_account_id: page.instagramAccountId ?? "",
-      page_access_token: page.accessToken,
+      page_access_token: encryptOAuthToken(page.accessToken),
       page_name: verified.pageName ?? page.name,
       token_expires_at: tokenExpiresAt,
       updated_at: now,
@@ -224,7 +225,7 @@ export async function connectMetaWithUserTokenAction(input: {
         organization_id: organization.id,
         facebook_page_id: page.id,
         instagram_account_id: page.instagramAccountId ?? "",
-        page_access_token: page.accessToken,
+        page_access_token: encryptOAuthToken(page.accessToken),
         page_name: verified.pageName ?? page.name,
         token_expires_at: tokenExpiresAt,
         updated_at: now,

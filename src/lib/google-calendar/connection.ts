@@ -15,6 +15,7 @@ import type {
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { decryptOAuthToken, encryptOAuthToken } from "@/lib/security/token-encryption";
 
 export function mapGoogleCalendarConnectionRow(
   row: GoogleCalendarConnectionRow,
@@ -22,8 +23,8 @@ export function mapGoogleCalendarConnectionRow(
   return {
     id: row.id,
     organizationId: row.organization_id,
-    accessToken: row.access_token,
-    refreshToken: row.refresh_token,
+    accessToken: decryptOAuthToken(row.access_token),
+    refreshToken: decryptOAuthToken(row.refresh_token),
     tokenExpiresAt: row.token_expires_at,
     scopes: row.scopes,
     googleAccountEmail: row.google_account_email,
@@ -82,7 +83,7 @@ async function exchangeGoogleToken(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error("Google token exchange failed:", response.status, text);
+    console.error("Google token exchange failed:", response.status, text.slice(0, 300));
     return null;
   }
 
@@ -145,8 +146,8 @@ export async function saveGoogleCalendarConnectionFromTokenResponse(
     .upsert(
       {
         organization_id: organizationId,
-        access_token: token.access_token,
-        refresh_token: refreshToken,
+        access_token: encryptOAuthToken(token.access_token),
+        refresh_token: encryptOAuthToken(refreshToken),
         token_expires_at: expiresAt,
         scopes: token.scope ?? null,
         google_account_email: options?.googleAccountEmail ?? null,

@@ -16,6 +16,7 @@ import {
   safeMapMondayBoardMappingRow,
   safeMapMondayConnectionRow,
 } from "@/lib/monday/mappers";
+import { encryptOAuthToken } from "@/lib/security/token-encryption";
 import type {
   MondayBoardMappingRow,
   MondayConnectionRow,
@@ -186,6 +187,13 @@ function shouldRetryMondayTokenWithBasicAuth(result: MondayTokenExchangeResult):
   );
 }
 
+/**
+ * Deliberately omits the client-secret character-code fingerprint that
+ * `describeMondayClientSecretForLogging` can produce — logging even a
+ * couple of characters' char codes on every token exchange is needless
+ * exposure for anyone with log access, and offers no diagnostic value
+ * beyond what `hasSurroundingQuotes`/`length` already cover.
+ */
 function logMondayTokenExchangeDiagnostics(
   redirectUri: string | null,
   clientId: string,
@@ -202,8 +210,6 @@ function logMondayTokenExchangeDiagnostics(
     clientIdPrefix: clientId.slice(0, 8),
     clientSecretDefined: Boolean(process.env.MONDAY_CLIENT_SECRET),
     clientSecretLength: secretDiagnostics.length,
-    clientSecretFirstCharCode: secretDiagnostics.firstCharCode,
-    clientSecretLastCharCode: secretDiagnostics.lastCharCode,
     clientSecretHadSurroundingQuotes: secretDiagnostics.hasSurroundingQuotes,
     redirectUri,
   });
@@ -233,7 +239,10 @@ async function postMondayToken(
       errorDescription: parsed.errorDescription,
       redirectUri,
       authMode: extraHeaders?.Authorization ? "basic" : "body",
-      body: text,
+      // Truncated: this is Monday's raw error response, not something we
+      // need to log in full — the parsed error/description above already
+      // covers the actionable detail.
+      bodyPreview: text.slice(0, 300),
     });
     return {
       ok: false,
@@ -305,7 +314,7 @@ export async function saveMondayConnectionFromTokenResponse(
   const { error } = await supabase.from("organization_monday_connections").upsert(
     {
       organization_id: organizationId,
-      access_token: token.access_token,
+      access_token: encryptOAuthToken(token.access_token),
       account_id: account?.id ?? null,
       account_slug: account?.slug ?? null,
       scopes: token.scope ?? null,

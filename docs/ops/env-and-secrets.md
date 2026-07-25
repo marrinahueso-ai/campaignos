@@ -77,6 +77,14 @@ See [integrations/google-calendar.md](../integrations/google-calendar.md). If Go
 
 Both fall back to `SUPABASE_SERVICE_ROLE_KEY` with a logged warning if unset (never to `NEXT_PUBLIC_*` or a hardcoded literal), and throw if neither is configured — set the dedicated secret in every environment that issues or verifies these tokens.
 
+### OAuth token encryption at rest
+
+| Variable | Notes |
+|----------|-------|
+| `OAUTH_TOKEN_ENCRYPTION_KEY` | AES-256-GCM key (32 raw bytes, base64-encoded) that encrypts Meta/Canva/Monday/Google Calendar OAuth tokens before they're stored (`lib/security/token-encryption.ts`). Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. |
+
+Optional but recommended in every environment that connects an integration. If unset, tokens are stored in plaintext (previous behavior) and a warning is logged. Backward compatible: rows written before the key existed are read as legacy plaintext and get re-encrypted automatically the next time that connection is refreshed or reconnected — no manual data migration needed. Rotating this key makes previously-encrypted rows undecryptable, so treat it like any other long-lived secret (back it up, don't rotate casually).
+
 ### Cron
 
 | Variable | Notes |
@@ -107,6 +115,7 @@ Checkout UI stays disabled until plan price IDs + secret key are set. Living: [b
 | Sentry | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_*`, Report-a-Problem allowlists |
 | Access codes | `CAMPAIGNOS_FOUNDING_ACCESS_CODES`, `CAMPAIGNOS_REQUIRE_ACCESS_CODE` |
 | Role simulator | `ALLOW_ROLE_SIMULATOR` (never enable loosely in Production) |
+| OAuth token encryption | `OAUTH_TOKEN_ENCRYPTION_KEY` — see [OAuth token encryption at rest](#oauth-token-encryption-at-rest) above |
 | Playwright | `HEY_RALLI_TEST_*` — **staging accounts only** |
 
 ## Rotation checklist

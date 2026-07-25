@@ -1,4 +1,4 @@
-import { escapeHtml } from "@/lib/utils/html";
+import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 
 export interface ApprovalEmailContentPreview {
   feedArtworkUrl?: string | null;
@@ -21,7 +21,7 @@ function artworkBlock(
   return `
     <div style="display:inline-block;vertical-align:top;margin:0 10px 14px 0;max-width:100%;">
       <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c554c;font-weight:600;">${escapeHtml(label)}</p>
-      <a href="${escapeHtml(trimmed)}" style="display:block;text-decoration:none;">
+      <a href="${escapeHtml(sanitizeHrefUrl(trimmed))}" style="display:block;text-decoration:none;">
         <img
           src="${escapeHtml(trimmed)}"
           alt="${escapeHtml(alt)}"

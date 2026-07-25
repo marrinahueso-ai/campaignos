@@ -12,9 +12,17 @@ import {
 import { AI_APIS_CSV_EXPORT_CAP } from "@/lib/ops/ai-apis-constants";
 import { importOpenAiUsageHistory } from "@/lib/ops/openai-usage-import";
 
+/**
+ * Prevents CSV formula injection (org names / user labels are
+ * user-controllable and could start with `=`, `+`, `-`, `@` to trigger
+ * formula execution when the export is opened in Excel/Sheets).
+ */
 function csvEscape(value: string | number | boolean | null | undefined): string {
   if (value == null) return "";
-  const text = String(value);
+  let text = String(value);
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`;
+  }
   if (/[",\n]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }

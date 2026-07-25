@@ -33,7 +33,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
 - Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; boarding Continue → invite; Organization → Edit branding uses `?standalone=1` — **shipped**
 - Legacy 6-step SchoolSetupWizard — **retired for members** (legacy query redirects: `?view=wizard`/`?step=school` → org settings; `?step=meta` → integrations; `?step=calendar` → `/calendar/import`; `?step=brand` → brand standalone)
-- Change password — **shipped**
+- Change password (requires re-entering the current/temporary password before setting a new one) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking))
 - Deactivated-account handling — **shipped**
 
 ## Multi-org & tenancy
@@ -264,6 +264,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
+- OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
 - Billing & Plan UI — **partial** (Phase 4.5–5: catalog + trial/plan status + Checkout/Portal CTAs when Stripe configured)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 

@@ -9,6 +9,7 @@ import {
 import { debugToken } from "@/lib/meta-publishing/graph-api";
 import type { MetaConnection, MetaConnectionRow } from "@/lib/meta-publishing/types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { decryptOAuthToken } from "@/lib/security/token-encryption";
 
 export type MetaTokenHealthStatus = {
   tokenValid: boolean;
@@ -30,7 +31,7 @@ function mapMetaConnectionRow(row: MetaConnectionRow): MetaConnection {
     organizationId: row.organization_id,
     facebookPageId: row.facebook_page_id,
     instagramAccountId: row.instagram_account_id,
-    pageAccessToken: row.page_access_token,
+    pageAccessToken: decryptOAuthToken(row.page_access_token),
     pageName: row.page_name,
     tokenExpiresAt: row.token_expires_at,
     createdAt: row.created_at,
