@@ -47,7 +47,20 @@ Pass/fail criteria for the Platform Owner **AI & APIs** page (`/ops/ai-apis`). P
 
 ---
 
-## C — AI APIs tab (after Phase 3 + data)
+## C — Credits tab (org AI credits Phase 3)
+
+| ID | Case | Pass |
+|----|------|------|
+| C0a | `?tab=credits` | Credits tab loads; shows current UTC month period |
+| C0b | Org table | Plan, used/allowance, remaining, Reserve, OpenAI $, health match balances + `ai_usage_log` cost rollup (± rounding) |
+| C0c | Soft warn / exhausted | Health reflects soft-warn floor and zero period+reserve |
+| C0d | Ledger | Selecting an org shows recent `organization_ai_credit_ledger` rows |
+| C0e | Filters | Org / search / health narrow the table |
+| C0f | Unlimited | Founding / `billing_exempt_at` orgs show Unlimited (no burn) |
+
+---
+
+## D — AI APIs tab (after usage data)
 
 | ID | Case | Pass |
 |----|------|------|
@@ -61,7 +74,7 @@ Pass/fail criteria for the Platform Owner **AI & APIs** page (`/ops/ai-apis`). P
 
 ---
 
-## D — Connected APIs tab (after Phase 4 + data)
+## E — Connected APIs tab (after Phase 4 + data)
 
 | ID | Case | Pass |
 |----|------|------|
@@ -73,7 +86,7 @@ Pass/fail criteria for the Platform Owner **AI & APIs** page (`/ops/ai-apis`). P
 
 ---
 
-## E — Instrumentation trigger matrix (Phase 2)
+## Instrumentation trigger matrix (Phase 2)
 
 Verify rows in Supabase (`ai_usage_log` / `api_usage_log`) within ~1 minute of the trigger. Prefer service-role SQL or Owner page once Phase 3 ships.
 

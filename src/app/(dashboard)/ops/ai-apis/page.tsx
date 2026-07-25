@@ -13,6 +13,7 @@ import {
   type AiApisSummary,
 } from "@/lib/ops/ai-apis-queries";
 import { getConnectedApisDashboard } from "@/lib/ops/connected-apis-queries";
+import { getOwnerAiCreditsDashboard } from "@/lib/ops/ai-credits-queries";
 import { isOpenAiAdminUsageConfigured } from "@/lib/ops/openai-usage-import";
 
 export const metadata = {
@@ -73,7 +74,12 @@ export default async function OwnerAiApisPage({
 
   const params = await searchParams;
   const tabRaw = first(params.tab);
-  const tab = tabRaw === "connected" ? "connected" : "ai";
+  const tab =
+    tabRaw === "connected"
+      ? "connected"
+      : tabRaw === "credits"
+        ? "credits"
+        : "ai";
 
   const defaults = defaultAiApisRange();
   const fromDate = first(params.from) || ymd(defaults.fromIso);
@@ -82,7 +88,7 @@ export default async function OwnerAiApisPage({
   const fromIso = new Date(`${fromDate}T00:00:00.000Z`).toISOString();
   const toIso = new Date(`${toDate}T23:59:59.999Z`).toISOString();
 
-  const sortRaw = first(params.sort) ?? "created_at";
+  const sortRaw = first(params.sort) ?? (tab === "credits" ? "used" : "created_at");
   const aiSortKeys: AiApisSortKey[] = [
     "created_at",
     "estimated_cost_usd",
@@ -92,9 +98,12 @@ export default async function OwnerAiApisPage({
     "model",
     "success",
   ];
-  const sortKey = aiSortKeys.includes(sortRaw as AiApisSortKey)
-    ? (sortRaw as AiApisSortKey)
-    : "created_at";
+  const sortKey =
+    tab === "credits"
+      ? sortRaw
+      : aiSortKeys.includes(sortRaw as AiApisSortKey)
+        ? (sortRaw as AiApisSortKey)
+        : "created_at";
   const connectedSortKey =
     sortRaw === "latency_ms" ||
     sortRaw === "estimated_cost_usd" ||
@@ -107,11 +116,22 @@ export default async function OwnerAiApisPage({
   const status =
     statusRaw === "success" || statusRaw === "failed" ? statusRaw : null;
 
+  const healthRaw = first(params.health) ?? "";
+  const health =
+    healthRaw === "soft_warn" ||
+    healthRaw === "exhausted" ||
+    healthRaw === "unlimited" ||
+    healthRaw === "ok" ||
+    healthRaw === "no_balance"
+      ? healthRaw
+      : "";
+
   const page = Math.max(1, Number(first(params.page) ?? "1") || 1);
   const sortDir = first(params.dir) === "asc" ? "asc" : "desc";
   const search = first(params.q) ?? null;
   const organizationId = first(params.organizationId) ?? null;
   const provider = first(params.provider) ?? null;
+  const selectedOrgId = first(params.org) ?? null;
 
   // Load only the active tab (avoids double warehouse scans on Owner page).
   const dashboard =
@@ -126,7 +146,7 @@ export default async function OwnerAiApisPage({
           provider,
           status,
           page,
-          sortKey,
+          sortKey: sortKey as AiApisSortKey,
           sortDir,
         })
       : null;
@@ -144,6 +164,18 @@ export default async function OwnerAiApisPage({
           sortDir,
         })
       : null;
+  const credits =
+    tab === "credits"
+      ? await getOwnerAiCreditsDashboard({
+          search,
+          organizationId,
+          health: health || null,
+          page,
+          sortKey,
+          sortDir,
+          selectedOrgId,
+        })
+      : null;
 
   return (
     <AiApisOwnerShell
@@ -156,7 +188,10 @@ export default async function OwnerAiApisPage({
       model={first(params.model) ?? ""}
       provider={first(params.provider) ?? ""}
       status={status ?? ""}
-      page={connected?.page ?? dashboard?.page ?? page}
+      health={health}
+      page={
+        credits?.page ?? connected?.page ?? dashboard?.page ?? page
+      }
       sortKey={sortKey}
       sortDir={sortDir}
       summary={dashboard?.summary ?? EMPTY_AI_SUMMARY}
@@ -168,6 +203,7 @@ export default async function OwnerAiApisPage({
       pageSize={dashboard?.pageSize ?? AI_APIS_TABLE_PAGE_SIZE}
       filterOptions={dashboard?.filterOptions ?? EMPTY_AI_FILTERS}
       openAiImportConfigured={isOpenAiAdminUsageConfigured()}
+      selectedOrgId={credits?.selectedOrgId ?? selectedOrgId ?? ""}
       connected={
         connected
           ? {
@@ -181,6 +217,7 @@ export default async function OwnerAiApisPage({
             }
           : null
       }
+      credits={credits}
     />
   );
 }

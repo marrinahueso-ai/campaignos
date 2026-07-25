@@ -38,9 +38,11 @@ import type {
   ConnectedProviderRollup,
 } from "@/lib/ops/connected-apis-queries";
 import { ConnectedApisPanel } from "@/components/ops/ai-apis/ConnectedApisPanel";
+import { CreditsPanel } from "@/components/ops/ai-apis/CreditsPanel";
+import type { OwnerAiCreditsDashboard } from "@/lib/ops/ai-credits-queries";
 import { cn } from "@/lib/utils/cn";
 
-export type AiApisTab = "ai" | "connected";
+export type AiApisTab = "ai" | "connected" | "credits";
 
 type ShellProps = {
   tab: AiApisTab;
@@ -52,6 +54,7 @@ type ShellProps = {
   model: string;
   provider: string;
   status: string;
+  health: string;
   page: number;
   sortKey: string;
   sortDir: "asc" | "desc";
@@ -64,6 +67,7 @@ type ShellProps = {
   pageSize: number;
   filterOptions: AiApisFilterOptions;
   openAiImportConfigured: boolean;
+  selectedOrgId: string;
   connected: {
     summary: ConnectedApisSummary;
     providers: ConnectedProviderRollup[];
@@ -73,6 +77,7 @@ type ShellProps = {
     pageSize: number;
     filterOptions: ConnectedApisFilterOptions;
   } | null;
+  credits: OwnerAiCreditsDashboard | null;
 };
 
 function formatMoney(value: number | null | undefined): string {
@@ -140,6 +145,8 @@ export function AiApisOwnerShell(props: ShellProps) {
       model: props.model,
       provider: props.provider,
       status: props.status,
+      health: props.health,
+      org: props.selectedOrgId,
       page: props.page,
       sort: props.sortKey,
       dir: props.sortDir,
@@ -229,54 +236,68 @@ export function AiApisOwnerShell(props: ShellProps) {
             customer consumption.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs text-cos-muted">
-            From
-            <input
-              type="date"
-              defaultValue={props.fromDate}
-              className="mt-1 block rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-              onChange={(event) =>
-                navigate({ from: event.target.value, page: 1 })
-              }
-            />
-          </label>
-          <label className="text-xs text-cos-muted">
-            To
-            <input
-              type="date"
-              defaultValue={props.toDate}
-              className="mt-1 block rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
-              onChange={(event) => navigate({ to: event.target.value, page: 1 })}
-            />
-          </label>
-          {props.tab === "ai" ? (
+        {props.tab === "credits" ? (
+          <p className="text-sm text-cos-muted">
+            Credits use the current UTC month (
+            <span className="font-medium text-cos-text">
+              {props.credits?.periodYm ?? "—"}
+            </span>
+            ).
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-xs text-cos-muted">
+              From
+              <input
+                type="date"
+                defaultValue={props.fromDate}
+                className="mt-1 block rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                onChange={(event) =>
+                  navigate({ from: event.target.value, page: 1 })
+                }
+              />
+            </label>
+            <label className="text-xs text-cos-muted">
+              To
+              <input
+                type="date"
+                defaultValue={props.toDate}
+                className="mt-1 block rounded-lg border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text"
+                onChange={(event) =>
+                  navigate({ to: event.target.value, page: 1 })
+                }
+              />
+            </label>
+            {props.tab === "ai" ? (
+              <button
+                type="button"
+                onClick={onImportOpenAiHistory}
+                disabled={!props.openAiImportConfigured || pending}
+                title={
+                  props.openAiImportConfigured
+                    ? "One-time pull of OpenAI Usage API history before collecting-since (Edmondson)"
+                    : "Set OPENAI_ADMIN_KEY (Admin key with api.usage.read) on the server"
+                }
+                className="inline-flex items-center gap-2 rounded-lg border border-cos-border bg-cos-card px-4 py-2 text-sm font-medium text-cos-text disabled:opacity-40"
+              >
+                Import OpenAI history
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={onImportOpenAiHistory}
-              disabled={!props.openAiImportConfigured || pending}
-              title={
-                props.openAiImportConfigured
-                  ? "One-time pull of OpenAI Usage API history before collecting-since (Edmondson)"
-                  : "Set OPENAI_ADMIN_KEY (Admin key with api.usage.read) on the server"
+              onClick={onExport}
+              disabled={
+                props.tab === "ai"
+                  ? empty
+                  : connectedEmpty || !props.connected
               }
-              className="inline-flex items-center gap-2 rounded-lg border border-cos-border bg-cos-card px-4 py-2 text-sm font-medium text-cos-text disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-lg bg-cos-dark px-4 py-2 text-sm font-medium text-[#f6f2eb] disabled:opacity-40"
             >
-              Import OpenAI history
+              <Download className="h-4 w-4" strokeWidth={1.5} />
+              Export
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onExport}
-            disabled={
-              props.tab === "ai" ? empty : connectedEmpty || !props.connected
-            }
-            className="inline-flex items-center gap-2 rounded-lg bg-cos-dark px-4 py-2 text-sm font-medium text-[#f6f2eb] disabled:opacity-40"
-          >
-            <Download className="h-4 w-4" strokeWidth={1.5} />
-            Export
-          </button>
-        </div>
+          </div>
+        )}
       </header>
 
       {exportMessage ? (
@@ -309,9 +330,34 @@ export function AiApisOwnerShell(props: ShellProps) {
           })}`}
           label="Connected APIs"
         />
+        <TabLink
+          active={props.tab === "credits"}
+          href={`/ops/ai-apis${buildQuery({
+            tab: "credits",
+          })}`}
+          label="Credits"
+        />
       </div>
 
-      {props.tab === "connected" ? (
+      {props.tab === "credits" ? (
+        props.credits ? (
+          <CreditsPanel
+            search={props.search}
+            organizationId={props.organizationId}
+            health={props.health}
+            page={props.credits.page}
+            sortKey={props.sortKey}
+            sortDir={props.sortDir}
+            selectedOrgId={props.selectedOrgId}
+            credits={props.credits}
+            onNavigate={navigate}
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-cos-border bg-cos-card px-6 py-12 text-center text-sm text-cos-muted">
+            Could not load AI credits data.
+          </div>
+        )
+      ) : props.tab === "connected" ? (
         props.connected ? (
           <ConnectedApisPanel
             fromDate={props.fromDate}

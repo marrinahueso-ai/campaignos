@@ -2,14 +2,14 @@
 
 **Status:** Living  
 **Owner:** Product / Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 24, 2026  
 **Related:** [Feature list](./feature-list.md) · [AI credits matrix](../ops/ai-credits-matrix.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
 
-Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, and **customer consumption**. Internal ops only — not org-member Insights.
+Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, **org AI credits**, and **customer consumption**. Internal ops only — not org-member Insights.
 
 **Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse collects live app logs from 2026-07-23. Optional **one-time** OpenAI Usage API history import (Admin key) attributes pre–collecting-since account usage to Edmondson Elementary; School B is pinned at $0 until it has live logs. Not a recurring sync.
 
-**Org AI credits:** metering Phase 1 ships with `organization_ai_credit_balances` / ledger + burn from `logAiUsage` (see [ai-credits-matrix.md](../ops/ai-credits-matrix.md)). Owner **per-org credits monitoring** on this page = credits Phase 3 (not yet).
+**Org AI credits:** Phase 1 metering + Phase 2 sidebar widget ship. **Phase 3 Owner monitoring** ships on `/ops/ai-apis?tab=credits` (per-org plan / used / reserve / OpenAI $ / health + ledger). Grant UI = Phase 4.
 
 ---
 
@@ -44,8 +44,9 @@ Do not redesign global layout or primary member navigation.
 |-----|--------|
 | **AI APIs** | AI requests, models, tokens, costs, latency, failures, usage by organization and user |
 | **Connected APIs** | Integrations (Meta, Resend, Google, Microsoft, SignupGenius, Stripe, Supabase): request counts, health, failures, latency, estimated operating costs |
+| **Credits** | Per-org monthly AI credit balances (plan, used/left, Reserve, soft-warn/exhausted/unlimited), OpenAI $ for current UTC month, recent ledger for selected org |
 
-Tab state: URL query preferred (e.g. `?tab=ai` / `?tab=connected`) so links and QA deep-links are stable.
+Tab state: URL query preferred (e.g. `?tab=ai` / `?tab=connected` / `?tab=credits`) so links and QA deep-links are stable. Credits uses the current UTC month (not the AI APIs date range).
 
 ---
 
