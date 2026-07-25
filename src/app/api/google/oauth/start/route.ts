@@ -12,6 +12,7 @@ import {
 import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { resolveSiteOrigin } from "@/lib/site/url";
 import { randomBytes } from "crypto";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 
 export async function GET(request: NextRequest) {
   const siteOrigin = resolveSiteOrigin(request.nextUrl.origin);
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest) {
   if (!isGoogleCalendarIntegrationConfigured()) {
     const settingsUrl = new URL("/settings/integrations/calendar", siteOrigin);
     settingsUrl.searchParams.set("error", "not_configured");
+    return NextResponse.redirect(settingsUrl);
+  }
+
+  if (!(await hasPermission("manage_integrations"))) {
+    const settingsUrl = new URL("/settings/integrations/calendar", siteOrigin);
+    settingsUrl.searchParams.set("error", "forbidden");
     return NextResponse.redirect(settingsUrl);
   }
 

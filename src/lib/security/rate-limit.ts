@@ -6,6 +6,8 @@ import {
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
 
+export { rateLimitMessage } from "@/lib/security/rate-limit-message";
+
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
@@ -56,15 +58,6 @@ export async function checkRateLimit(input: {
     console.error("[rate-limit] check threw, allowing request:", err);
     return ALLOW_RESULT;
   }
-}
-
-export function rateLimitMessage(
-  retryAfterSeconds: number,
-  subject = "attempts",
-): string {
-  const minutes = Math.ceil(retryAfterSeconds / 60);
-  const wait = minutes <= 1 ? "a minute" : `${minutes} minutes`;
-  return `Too many ${subject}. Please wait ${wait} and try again.`;
 }
 
 /** Best-effort caller IP from proxy headers (Vercel sets x-forwarded-for / x-real-ip). */

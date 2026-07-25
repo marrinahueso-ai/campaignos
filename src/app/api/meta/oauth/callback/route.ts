@@ -59,10 +59,15 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }
 
+  // Require BOTH an exact cookie match (binds this callback to the browser
+  // that started the flow — the actual CSRF defense) AND a valid signature
+  // (rejects tampered/expired state). Accepting either alone lets an
+  // attacker mint their own validly-signed state via /oauth/start and replay
+  // it in a victim's browser, linking the attacker's Meta account instead.
   const cookieState = request.cookies.get(META_OAUTH_STATE_COOKIE)?.value;
   const stateMatchesCookie = Boolean(cookieState && state === cookieState);
   const parsedState = parseMetaOAuthState(state);
-  if (!stateMatchesCookie && !parsedState.valid) {
+  if (!stateMatchesCookie || !parsedState.valid) {
     redirectTarget.searchParams.set("error", "invalid_state");
     return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
   }

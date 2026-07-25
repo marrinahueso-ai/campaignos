@@ -15,6 +15,7 @@ import {
 import { safeOAuthReturnTo } from "@/lib/integrations/oauth";
 import { createMondayOAuthState } from "@/lib/monday/connection";
 import { isMondayIntegrationEnabled } from "@/lib/monday/feature-flag";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest) {
   if (!isMondayIntegrationEnabled()) {
     const settingsUrl = new URL("/settings/monday", origin);
     settingsUrl.searchParams.set("error", "not_configured");
+    return NextResponse.redirect(settingsUrl);
+  }
+
+  if (!(await hasPermission("manage_integrations"))) {
+    const settingsUrl = new URL("/settings/monday", origin);
+    settingsUrl.searchParams.set("error", "forbidden");
     return NextResponse.redirect(settingsUrl);
   }
 

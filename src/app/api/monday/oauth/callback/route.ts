@@ -68,16 +68,21 @@ export async function GET(request: NextRequest) {
       return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
     }
 
-    if (!parsedState.valid) {
-      const expectedState = request.cookies.get(MONDAY_OAUTH_STATE_COOKIE)?.value;
-      if (!expectedState || state !== expectedState) {
-        console.error("Monday OAuth state mismatch:", {
-          hasCookie: Boolean(expectedState),
-          stateLength: state.length,
-        });
-        redirectTarget.searchParams.set("error", "invalid_state");
-        return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
-      }
+    // Require BOTH a valid signature AND an exact cookie match. The cookie
+    // match binds this callback to the browser that started the flow — the
+    // actual CSRF defense. Skipping it whenever the signature parses (as
+    // before) let an attacker mint their own validly-signed state via
+    // /oauth/start and replay it in a victim's browser, linking the
+    // attacker's Monday account into the victim's organization instead.
+    const expectedState = request.cookies.get(MONDAY_OAUTH_STATE_COOKIE)?.value;
+    if (!parsedState.valid || !expectedState || state !== expectedState) {
+      console.error("Monday OAuth state mismatch:", {
+        hasCookie: Boolean(expectedState),
+        stateValid: parsedState.valid,
+        stateLength: state.length,
+      });
+      redirectTarget.searchParams.set("error", "invalid_state");
+      return clearOAuthCookies(NextResponse.redirect(redirectTarget), origin);
     }
 
     const organization = await getLatestOrganization();

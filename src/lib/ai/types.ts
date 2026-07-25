@@ -70,6 +70,7 @@ export interface AiGenerateTextResult {
     | "empty_response"
     | "credits_exhausted"
     | "org_unresolved"
+    | "rate_limited"
     | null;
   configuredModel: string;
   usedFallbackModel: boolean;

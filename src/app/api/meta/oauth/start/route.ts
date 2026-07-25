@@ -17,6 +17,7 @@ import {
   isMetaIntegrationConfigured,
 } from "@/lib/meta-publishing/config.server";
 import { resolveSiteOrigin } from "@/lib/site/url";
+import { hasPermission } from "@/lib/access-templates/effective-access";
 
 export async function GET(request: NextRequest) {
   const siteOrigin = resolveSiteOrigin(request.nextUrl.origin);
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest) {
   if (!isMetaIntegrationConfigured()) {
     const settingsUrl = new URL("/settings/meta", siteOrigin);
     settingsUrl.searchParams.set("error", "not_configured");
+    return NextResponse.redirect(settingsUrl);
+  }
+
+  if (!(await hasPermission("manage_integrations"))) {
+    const settingsUrl = new URL("/settings/meta", siteOrigin);
+    settingsUrl.searchParams.set("error", "forbidden");
     return NextResponse.redirect(settingsUrl);
   }
 

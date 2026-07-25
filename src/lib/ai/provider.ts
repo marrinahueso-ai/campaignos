@@ -282,6 +282,31 @@ export async function generateText(
     return result;
   };
 
+  if (input.usage?.organizationId || input.usage?.userId) {
+    const { checkRateLimit, rateLimitMessage } = await import(
+      "@/lib/security/rate-limit"
+    );
+    const key = input.usage.organizationId
+      ? `ai_generate:org:${input.usage.organizationId}`
+      : `ai_generate:user:${input.usage.userId}`;
+    const rateLimit = await checkRateLimit({
+      key,
+      windowSeconds: 300,
+      max: 60,
+    });
+    if (!rateLimit.allowed) {
+      return finish(
+        failureResult(
+          configuredModel,
+          rateLimitMessage(rateLimit.retryAfterSeconds, "AI requests"),
+          "rate_limited",
+          configuredModel,
+          false,
+        ),
+      );
+    }
+  }
+
   if (input.usage?.actionType) {
     const { assertAiCreditsAvailable } = await import("@/lib/ai/credits");
     const credits = await assertAiCreditsAvailable({

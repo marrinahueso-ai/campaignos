@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { rateLimitMessage } from "@/lib/security/rate-limit";
+import { rateLimitMessage } from "@/lib/security/rate-limit-message";
 
 describe("rateLimitMessage", () => {
   it("rounds up to a minute for short waits", () => {
