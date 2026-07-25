@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 import type { NextResponse } from "next/server";
-import { createHash, timingSafeEqual } from "node:crypto";
 
 /**
  * Founding / beta access codes are configured via Vercel env vars (not in-app UI):
@@ -72,22 +71,35 @@ export function isFoundingAccessCodeRequired(): boolean {
   return TRUTHY.has(value);
 }
 
-/** Fixed-length digest so timingSafeEqual never throws on a length mismatch and length itself leaks no timing signal. */
-function digest(value: string): Buffer {
-  return createHash("sha256").update(value, "utf8").digest();
+/**
+ * Fixed-width window for the constant-time compare below. This runs in
+ * Next.js Edge Middleware (no `node:crypto`/Buffer available there), so we
+ * can't hash with `createHash`/`timingSafeEqual`; comparing raw char codes
+ * over a fixed window gets the same property without a Node-only API.
+ */
+const COMPARE_WINDOW = 256;
+
+/** Constant-time string compare: always walks the full window, never exits early. */
+function constantTimeStringEqual(a: string, b: string): boolean {
+  let mismatch = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < COMPARE_WINDOW; i++) {
+    const codeA = i < a.length ? a.charCodeAt(i) : 0;
+    const codeB = i < b.length ? b.charCodeAt(i) : 0;
+    mismatch |= codeA ^ codeB;
+  }
+  return mismatch === 0;
 }
 
 /**
- * Constant-time membership check: hashes both sides to a fixed length and
- * checks every configured code (no early exit on match) so neither the
- * candidate's length nor which character differs is observable via timing —
- * a plain `Set.has()`/`===` compare on the raw string leaks both.
+ * Constant-time membership check: compares the candidate against every
+ * configured code (no early exit on match) so neither the candidate's
+ * length nor which character differs is observable via timing — a plain
+ * `Set.has()`/`===` compare on the raw string leaks both.
  */
 function constantTimeCodeMatch(codes: Set<string>, candidate: string): boolean {
-  const candidateDigest = digest(candidate);
   let matched = false;
   for (const code of codes) {
-    if (timingSafeEqual(candidateDigest, digest(code))) {
+    if (constantTimeStringEqual(candidate, code)) {
       matched = true;
     }
   }
