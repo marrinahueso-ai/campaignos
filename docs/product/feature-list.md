@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — AI credits Phase 3 (Owner Credits tab)
+**Last updated:** July 24, 2026 — AI credits Phase 4 (Owner grant UI)
 
 ---
 
@@ -249,9 +249,10 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Org voice / style / audience prefs — **shipped**
 - Inbox AI sources — **shipped**
 - Hey Ralli Assistant (Ask Ralli) — **shipped** (Phases 1–5 ops coach complete: Phase 1 event ops + Phase 2 org/role briefings + Phase 3 volunteers/communications depth + Phase 4 content draft helper + Phase 5 insights/health/risk recommendations via campaign-director health/risks/next-action and Meta Insights when metrics exist — otherwise honest “no performance data yet” + highest-impact ops fallback; deep links to Insights / event / Approvals / Create with AI; ops/org still win for “what’s next” / “today’s summary” / “what do I have this week”; product-help FAQ retained for how-to; ambiguous event matches return dated chips that re-ask with a forced eventId; answer body strips markdown links when chips are shown; pinned in the sidebar directly under Insights so it stays on screen; dialog chunk lazy-loads on open — **shipped** perf). Living eng/QA doc: [ask-ralli-assistant.md](../engineering/ask-ralli-assistant.md); Playwright: `tests/hey-ralli/smoke/12-ask-ralli-assistant.spec.ts`
-- AI credits engine — **partial** (Phases 1–3: org balances + weighted burn on `ai_usage_log`; monthly allowance + Reserve; founding/exempt unlimited; sidebar widget; Owner `/ops/ai-apis?tab=credits` monitoring; grant UI / Stripe / hard-block later — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
+- AI credits engine — **partial** (Phases 1–4: org balances + weighted burn; monthly allowance + Reserve; founding/exempt unlimited; sidebar widget; Owner Credits monitoring + Reserve/bonus/adjustment grants; Stripe / hard-block later — living: [ai-credits-matrix.md](../ops/ai-credits-matrix.md) · [billing-and-access.md](../ops/billing-and-access.md) · [ai-and-apis.md](./ai-and-apis.md))
 - AI credits widget — **shipped** (Phase 2: real sidebar balance + soft warn + Billing & Plan blurb; hard stop / Stripe later)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
+- Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
 
 ## Settings
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**

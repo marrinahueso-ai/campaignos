@@ -32,7 +32,7 @@ Access today: founding codes, invites, `billing_exempt_at`. Paid plan gates and 
 | 1 Metering (burn on `ai_usage_log`) | **Shipped** |
 | 2 Sidebar widget + billing blurb | **Shipped** |
 | 3 Owner per-org monitoring | **Shipped** (`/ops/ai-apis?tab=credits`) |
-| 4 Owner grant UI | Pending |
+| 4 Owner grant UI | **Shipped** (Credits tab → Reserve SKU / bonus / adjust) |
 | 5 Stripe + gates + trial | Pending |
 | 6 Hard-block at 0 | Pending |
 

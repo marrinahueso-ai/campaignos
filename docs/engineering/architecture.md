@@ -246,7 +246,7 @@ Do not treat these as regressions unless a ticket says otherwise. Full list: [fe
 - Tasks Calendar / Timeline / Workload — deferred (hidden)  
 - Shared connection-health framework — partial  
 - Vendor payments/contracts depth — partial shells  
-- AI credits — Phase 1–3 (metering, sidebar widget, Owner Credits tab); grant/Stripe/hard-block later  
+- AI credits — Phase 1–4 (metering, sidebar widget, Owner Credits tab + grants); Stripe/hard-block later  
 
 Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEASE_0_5.md) and [archive/SPRINTS.md](../archive/SPRINTS.md); they describe earlier Engine milestones and should not be read as current architecture.
 

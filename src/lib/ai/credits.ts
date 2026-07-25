@@ -376,9 +376,15 @@ export async function recordAiCreditBurn(input: {
   }
 }
 
-export async function grantAiReserve(input: {
+/** Max absolute credits for a single Owner custom bonus / adjustment. */
+export const OWNER_CREDIT_GRANT_MAX = 100_000;
+
+type ReserveLedgerEntryType = "reserve_grant" | "bonus_grant" | "adjustment";
+
+async function applyReserveDelta(input: {
   organizationId: string;
-  sku: AiReserveSkuId;
+  delta: number;
+  entryType: ReserveLedgerEntryType;
   actorUserId?: string | null;
   note?: string | null;
 }): Promise<{ ok: boolean; creditsGranted: number; error?: string }> {
@@ -386,10 +392,11 @@ export async function grantAiReserve(input: {
   if (!orgId || !isSupabaseAdminConfigured()) {
     return { ok: false, creditsGranted: 0, error: "not_configured" };
   }
-
-  const sku = AI_RESERVE_SKUS[input.sku];
-  if (!sku) {
-    return { ok: false, creditsGranted: 0, error: "unknown_sku" };
+  if (!Number.isFinite(input.delta) || input.delta === 0) {
+    return { ok: false, creditsGranted: 0, error: "invalid_amount" };
+  }
+  if (Math.abs(input.delta) > OWNER_CREDIT_GRANT_MAX) {
+    return { ok: false, creditsGranted: 0, error: "amount_too_large" };
   }
 
   const row = await ensurePeriodAllowance(orgId);
@@ -397,8 +404,12 @@ export async function grantAiReserve(input: {
     return { ok: false, creditsGranted: 0, error: "balance_missing" };
   }
 
+  const nextReserve = row.reserve_balance + input.delta;
+  if (nextReserve < 0) {
+    return { ok: false, creditsGranted: 0, error: "insufficient_reserve" };
+  }
+
   const admin = createAdminClient();
-  const nextReserve = row.reserve_balance + sku.credits;
   const { error: updateError } = await admin
     .from("organization_ai_credit_balances")
     .update({
@@ -415,11 +426,11 @@ export async function grantAiReserve(input: {
     .from("organization_ai_credit_ledger")
     .insert({
       organization_id: orgId,
-      entry_type: "reserve_grant",
-      amount: sku.credits,
+      entry_type: input.entryType,
+      amount: input.delta,
       bucket: "reserve",
       period_ym: row.period_ym,
-      note: input.note?.trim() || `${sku.label} (+${sku.credits})`,
+      note: input.note?.trim() || null,
       actor_user_id: input.actorUserId?.trim() || null,
     });
 
@@ -427,5 +438,76 @@ export async function grantAiReserve(input: {
     console.error("[ai-credits] reserve ledger failed:", ledgerError.message);
   }
 
-  return { ok: true, creditsGranted: sku.credits };
+  return { ok: true, creditsGranted: input.delta };
+}
+
+/** Grant a priced AI Reserve SKU (stacks into reserve_balance). */
+export async function grantAiReserve(input: {
+  organizationId: string;
+  sku: AiReserveSkuId;
+  actorUserId?: string | null;
+  note?: string | null;
+}): Promise<{ ok: boolean; creditsGranted: number; error?: string }> {
+  const sku = AI_RESERVE_SKUS[input.sku];
+  if (!sku) {
+    return { ok: false, creditsGranted: 0, error: "unknown_sku" };
+  }
+
+  return applyReserveDelta({
+    organizationId: input.organizationId,
+    delta: sku.credits,
+    entryType: "reserve_grant",
+    actorUserId: input.actorUserId,
+    note: input.note?.trim() || `${sku.label} (+${sku.credits.toLocaleString()})`,
+  });
+}
+
+/** Owner custom positive bonus into Reserve (comp / support). */
+export async function grantAiBonusCredits(input: {
+  organizationId: string;
+  credits: number;
+  actorUserId?: string | null;
+  note?: string | null;
+}): Promise<{ ok: boolean; creditsGranted: number; error?: string }> {
+  const credits = Math.trunc(input.credits);
+  if (credits <= 0) {
+    return { ok: false, creditsGranted: 0, error: "invalid_amount" };
+  }
+
+  return applyReserveDelta({
+    organizationId: input.organizationId,
+    delta: credits,
+    entryType: "bonus_grant",
+    actorUserId: input.actorUserId,
+    note:
+      input.note?.trim() ||
+      `Owner bonus (+${credits.toLocaleString()} credits)`,
+  });
+}
+
+/**
+ * Owner signed Reserve adjustment (positive or negative).
+ * Cannot drive reserve_balance below 0.
+ */
+export async function adjustAiReserveCredits(input: {
+  organizationId: string;
+  delta: number;
+  actorUserId?: string | null;
+  note?: string | null;
+}): Promise<{ ok: boolean; creditsGranted: number; error?: string }> {
+  const delta = Math.trunc(input.delta);
+  if (delta === 0) {
+    return { ok: false, creditsGranted: 0, error: "invalid_amount" };
+  }
+  if (!input.note?.trim()) {
+    return { ok: false, creditsGranted: 0, error: "note_required" };
+  }
+
+  return applyReserveDelta({
+    organizationId: input.organizationId,
+    delta,
+    entryType: "adjustment",
+    actorUserId: input.actorUserId,
+    note: input.note.trim(),
+  });
 }

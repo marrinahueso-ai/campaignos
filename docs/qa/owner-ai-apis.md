@@ -57,6 +57,10 @@ Pass/fail criteria for the Platform Owner **AI & APIs** page (`/ops/ai-apis`). P
 | C0d | Ledger | Selecting an org shows recent `organization_ai_credit_ledger` rows |
 | C0e | Filters | Org / search / health narrow the table |
 | C0f | Unlimited | Founding / `billing_exempt_at` orgs show Unlimited (no burn) |
+| C0g | Reserve SKU grant | Owner applies a Reserve package → Reserve up, ledger `reserve_grant` |
+| C0h | Bonus grant | Custom positive credits → Reserve up, ledger `bonus_grant` |
+| C0i | Adjustment | Signed delta with required note; cannot drive Reserve below 0 |
+| C0j | Non-owner | Grant actions return Not authorized (no balance change) |
 
 ---
 

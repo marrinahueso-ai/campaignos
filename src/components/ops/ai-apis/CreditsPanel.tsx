@@ -1,11 +1,12 @@
 "use client";
 
-import { cn } from "@/lib/utils/cn";
+import { GrantCreditsForm } from "@/components/ops/ai-apis/GrantCreditsForm";
 import type {
   OwnerAiCreditsDashboard,
   OwnerAiCreditsHealth,
   OwnerAiCreditsOrgRow,
 } from "@/lib/ops/ai-credits-queries";
+import { cn } from "@/lib/utils/cn";
 
 type Props = {
   search: string;
@@ -338,6 +339,11 @@ export function CreditsPanel(props: Props) {
                   </dd>
                 </div>
               </dl>
+              <GrantCreditsForm
+                organizationId={selected.organizationId}
+                organizationName={selected.organizationName}
+                unlimited={selected.unlimited}
+              />
               <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-cos-muted">
                 Recent ledger
               </p>

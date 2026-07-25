@@ -6,7 +6,7 @@
 **Related:** [Billing and access](./billing-and-access.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md)
 
 Commercial source of truth for Hey Ralli plans, AI credits, AI Reserve, trial, and artwork regen caps.  
-**Engine status:** Phase 1 metering + Phase 2 sidebar widget + Phase 3 Owner Credits tab shipped. Grant UI / Stripe / hard gates = later phases.
+**Engine status:** Phases 1–4 shipped (metering, sidebar widget, Owner Credits tab, Owner Reserve/bonus grants). Stripe / hard gates = later.
 
 ---
 
@@ -164,7 +164,7 @@ Platform share ~$2.30/school (shared stack ~$226/mo). Other ≈ email + storage 
 | **1** | Metering engine (schema, weighted burn, docs) — **shipped** |
 | **2** | Sidebar credits widget + soft warn — **shipped** |
 | **3** | Owner `/ops/ai-apis?tab=credits` per-org monitoring — **shipped** |
-| **4** | Owner Reserve / bonus grant UI |
+| **4** | Owner Reserve / bonus grant UI — **shipped** |
 | **5** | Stripe + feature/capacity gates + 14-day trial |
 | **6** | Hard-block AI at 0 |
 

@@ -9,7 +9,7 @@ Platform Owner page for monitoring **AI usage**, **connected API usage**, **oper
 
 **Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse collects live app logs from 2026-07-23. Optional **one-time** OpenAI Usage API history import (Admin key) attributes pre–collecting-since account usage to Edmondson Elementary; School B is pinned at $0 until it has live logs. Not a recurring sync.
 
-**Org AI credits:** Phase 1 metering + Phase 2 sidebar widget ship. **Phase 3 Owner monitoring** ships on `/ops/ai-apis?tab=credits` (per-org plan / used / reserve / OpenAI $ / health + ledger). Grant UI = Phase 4.
+**Org AI credits:** Phases 1–4 ship: metering, sidebar widget, Owner Credits tab monitoring, and **Owner Reserve / bonus / adjustment grants** on the selected org (ledger `reserve_grant` / `bonus_grant` / `adjustment`). Stripe + hard-block = later.
 
 ---
 
@@ -44,7 +44,7 @@ Do not redesign global layout or primary member navigation.
 |-----|--------|
 | **AI APIs** | AI requests, models, tokens, costs, latency, failures, usage by organization and user |
 | **Connected APIs** | Integrations (Meta, Resend, Google, Microsoft, SignupGenius, Stripe, Supabase): request counts, health, failures, latency, estimated operating costs |
-| **Credits** | Per-org monthly AI credit balances (plan, used/left, Reserve, soft-warn/exhausted/unlimited), OpenAI $ for current UTC month, recent ledger for selected org |
+| **Credits** | Per-org monthly AI credit balances (plan, used/left, Reserve, soft-warn/exhausted/unlimited), OpenAI $ for current UTC month, recent ledger, and Owner grant UI (Reserve SKU / bonus / Reserve adjustment) for the selected org |
 
 Tab state: URL query preferred (e.g. `?tab=ai` / `?tab=connected` / `?tab=credits`) so links and QA deep-links are stable. Credits uses the current UTC month (not the AI APIs date range).
 

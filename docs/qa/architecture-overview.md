@@ -208,7 +208,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 | Insights-weighted posting heatmap | **Deferred** | Heatmap uses preferred windows + local publish times when Meta is connected |
 | Tasks Calendar / Timeline / Workload tabs | **Deferred** | Hidden in UI |
 | Vendor payments / contracts depth | **Partial** | Directory + profile shipped; deep tabs are shells |
-| AI credits | **Partial** | Metering + sidebar widget + Owner Credits tab; grant/Stripe/hard-block later |
+| AI credits | **Partial** | Metering + sidebar widget + Owner Credits tab + grants; Stripe/hard-block later |
 | 2FA | **Deferred** | |
 | Shared connection-health framework polish | **Partial** | Per-provider Connect works; unified health contract still evolving |
 
