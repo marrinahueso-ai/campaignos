@@ -59,7 +59,7 @@ const OPS_PATTERNS: RegExp[] = [
   /\bwrong with this event\b/i,
   /\bdid i miss something\b/i,
   /\bwho('?s|s| is) working on this\b/i,
-  /\bwho needs to approve\b/i,
+  /\bwho (still )?needs to approve\b/i,
   /\bwhy can('?t| not) i publish\b/i,
   /\benough volunteers\b/i,
   /\bdo i have enough volunteers\b/i,

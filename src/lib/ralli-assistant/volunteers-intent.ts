@@ -25,6 +25,8 @@ const VOLUNTEERS_PATTERNS: RegExp[] = [
   /\b(open|unfilled) (spots?|shifts?)\b/i,
   /\bvolunteers? (haven'?t|have not) responded\b/i,
   /\bwhich volunteers? (haven'?t|have not)\b/i,
+  /\bwho (hasn'?t|has not) volunteered\b/i,
+  /\bhasn'?t volunteered yet\b/i,
   /\bnon[- ]?responders?\b/i,
   /\b(signup|sign[- ]up) reminder\b/i,
   /\bvolunteer (signup |sign[- ]up )?reminder\b/i,

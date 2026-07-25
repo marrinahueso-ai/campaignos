@@ -40,6 +40,8 @@ const INSIGHTS_PATTERNS: RegExp[] = [
   /\bwhich events? (are|were) most successful\b/i,
   /\bmost successful events?\b/i,
   /\bwhat worries you\b/i,
+  /\bshould i be worried\b/i,
+  /\bhow('?s|s| is) (this|the) event doing\b/i,
 ];
 
 /**
@@ -53,6 +55,7 @@ const EVENT_SCOPED_INSIGHTS_PATTERNS: RegExp[] = [
   /\bwhat('?s|s| is) missing from (this |the )?(campaign|event)\b/i,
   /\bcampaign health\b/i,
   /\bfor (this |the )?(campaign|event)\b/i,
+  /\bhow('?s|s| is) (this|the) event doing\b/i,
 ];
 
 export function isInsightsIntent(question: string): boolean {

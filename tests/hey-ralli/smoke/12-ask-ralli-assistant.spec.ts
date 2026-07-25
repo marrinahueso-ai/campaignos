@@ -35,7 +35,9 @@ test.describe("Ask Ralli Assistant", () => {
     const dialog = await openAskRalliDialog(page);
     await expect(dialog.getByRole("heading", { name: /hey ralli assistant/i })).toBeVisible();
     await expect(dialog.getByText(/try a question to get started/i)).toBeVisible();
-    await expect(dialog.getByRole("button", { name: /give me today's summary/i })).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: /what should i work on today\?/i }),
+    ).toBeVisible();
   });
 
   test("Org/ops question routes away from pure how-to FAQ", async ({ page }) => {
