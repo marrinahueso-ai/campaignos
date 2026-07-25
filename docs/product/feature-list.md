@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 25, 2026 — added Usage tab to Billing & Plan (AI credits detail, capacity usage vs. plan limits, recent AI-credit-ledger activity)
+**Last updated:** July 25, 2026 — extended Billing & Plan's Usage tab with usage-by-member and usage-by-category AI breakdowns and single-line, event/milestone-enriched recent activity
 
 ---
 
@@ -266,7 +266,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
-- Billing & Plan UI — **shipped** (tabbed: Overview · Plan & Pricing · Usage · Payment Method · Billing History at `/settings/billing-plan?tab=…`; catalog + trial/plan status + Checkout/Portal CTAs; Usage tab shows AI credits detail, capacity usage vs. plan limits, and recent AI-credit-ledger activity; canceled orgs land on a dedicated `/billing/canceled` resubscribe page instead)
+- Billing & Plan UI — **shipped** (tabbed: Overview · Plan & Pricing · Usage · Payment Method · Billing History at `/settings/billing-plan?tab=…`; catalog + trial/plan status + Checkout/Portal CTAs; Usage tab splits AI credits into a "Period usage" card and an "AI Reserve" card (balance + "Buy more Reserve" CTA), plus capacity usage vs. plan limits, a "usage by member" ranking (who used the most AI credits this period), a "usage by category" breakdown (Artwork Generation vs. Regeneration, Caption Count, Ask Ralli, Task Assistant, Etc.), and a single-line-per-entry recent-activity list that shows the event + milestone for artwork actions; Billing History lists real Stripe invoices with "View invoice" / "Download PDF" links plus the Stripe Portal as a fallback; canceled orgs land on a dedicated `/billing/canceled` resubscribe page instead)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
 ## Support & shell

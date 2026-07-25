@@ -11,7 +11,15 @@ Single source of truth for how orgs get access to Hey Ralli and how AI credits/b
 
 **UI plan copy:** [`src/lib/billing/plan-catalog.ts`](../../src/lib/billing/plan-catalog.ts).  
 **Entitlements / capacity:** [`src/lib/billing/entitlements.ts`](../../src/lib/billing/entitlements.ts) + [`gates.ts`](../../src/lib/billing/gates.ts).  
-**Settings UI:** `/settings/billing-plan` — tabbed (Overview default · Plan & Pricing `?tab=plan` · Usage `?tab=usage` · Payment Method `?tab=payment` · Billing History `?tab=history`); old per-page routes (`manage-plan`, `upgrade-downgrade`, `payment-method`, `billing-history`, `cancel-plan`) now redirect to the matching tab. [`BillingPlanContent.tsx`](../../src/components/settings-v2/BillingPlanContent.tsx) / [`BillingPlanPanels.tsx`](../../src/components/settings-v2/BillingPlanPanels.tsx). The Usage tab shows AI credits detail, capacity usage vs. plan limits (member-scoped counters in [`capacity-usage.ts`](../../src/lib/billing/capacity-usage.ts)), and recent `organization_ai_credit_ledger` activity (member-readable via RLS, queried in [`credit-ledger.ts`](../../src/lib/ai/credit-ledger.ts)).
+**Settings UI:** `/settings/billing-plan` — tabbed (Overview default · Plan & Pricing `?tab=plan` · Usage `?tab=usage` · Payment Method `?tab=payment` · Billing History `?tab=history`); old per-page routes (`manage-plan`, `upgrade-downgrade`, `payment-method`, `billing-history`, `cancel-plan`) now redirect to the matching tab. [`BillingPlanContent.tsx`](../../src/components/settings-v2/BillingPlanContent.tsx) / [`BillingPlanPanels.tsx`](../../src/components/settings-v2/BillingPlanPanels.tsx). The Usage tab's AI credits detail is split into two cards — **Period usage** (used/allowance progress bar, reset label, soft-warn/exhausted messaging) and **AI Reserve** (rollover balance + a "Buy more Reserve" SKU grid using the same `ReserveCheckoutButton` pattern as Plan & Pricing) — plus capacity usage vs. plan limits (member-scoped counters in [`capacity-usage.ts`](../../src/lib/billing/capacity-usage.ts)), and:
+
+- **Usage by member** — ranks org members by AI credits burned this period (credit-weighted, not raw action count, so one 8-credit artwork generation outranks eight 1-credit text actions), clearly flagging the top user. Rows with no attributed `user_id` (historical data — see caveat below) roll up under "Unknown member." Admin-client-backed, org-scoped, and only runs after `assertActiveMembershipInOrganization` confirms the caller belongs to the org — see [`usage-breakdown.ts`](../../src/lib/ai/usage-breakdown.ts) (pure aggregation math in [`usage-breakdown-pure.ts`](../../src/lib/ai/usage-breakdown-pure.ts), unit-tested independent of the DB).
+- **Usage by category** — every `action_type` this period, bucketed into the friendly categories in the credit weight map below (`generate_artwork`/`orchestrate_artwork` further split into "Artwork Generation" vs. "Artwork Regeneration" via `ai_usage_log.metadata.isRegeneration`), each with a count and credits-burned total. All categories always render (0 if unused) so the list reads as the complete map of "everywhere Hey Ralli calls OpenAI," not just whatever fired this period.
+- **Recent activity** — `organization_ai_credit_ledger` rows (member-readable via RLS), one line per entry: badge, date, acting member, category, and (for artwork rows) the event + milestone it was generated for, plus the signed credit amount — enriched via an admin-client join to `ai_usage_log` (by `ai_usage_log_id`) and `events`, gated the same way as the breakdowns above. Queried/enriched in [`credit-ledger.ts`](../../src/lib/ai/credit-ledger.ts).
+
+**Data-completeness caveat:** `user_id` attribution and `metadata` (regeneration flag, milestone label) on artwork actions (`generate_artwork` / `orchestrate_artwork`) only exist for rows logged *after* this attribution work shipped. Historical rows have `user_id = null` and `metadata = {}`, so they show as "Unknown member," always classify as "Artwork Generation" (never "Regeneration"), and carry no milestone — expected, not a bug.
+
+**Billing History tab** lists the org's real Stripe invoices (date, amount, status, "View invoice" / "Download PDF" links to Stripe-hosted URLs), server-fetched via `stripe.invoices.list` in [`stripe-invoices.ts`](../../src/lib/billing/stripe-invoices.ts) (pure mapping in [`stripe-invoices-pure.ts`](../../src/lib/billing/stripe-invoices-pure.ts), unit-tested independent of Stripe) and only queried once the org has a `stripe_customer_id`; the Stripe Customer Portal button remains below the list as the "manage everything in Stripe" fallback. Stripe API failures return `[]` (logged server-side) rather than breaking the page.
 
 All commercial amounts below are **config-driven** and can change later without schema rewrites.
 
@@ -180,20 +188,26 @@ Pre-Stripe default paid tier for metering: **Professional (1,200)**.
 
 ### Credit weight map (`action_type`)
 
-| `action_type` | Credits |
-|---------------|--------:|
-| `generate_artwork` | 8 |
-| `orchestrate_artwork` | 8 |
-| `meta_social_caption` | 1 |
-| `ask_ralli` | 1 |
-| `inbox_ai` | 1 |
-| `tasks_generate` | 1 |
-| `calendar_import_parse` | 1 |
-| `playbook_insights` | 1 |
-| `draft_communication` | 1 |
-| `generate_event_brief` | 1 |
-| `generate_creative_brief` | 1 |
-| Failed / non-AI | 0 |
+| `action_type` | Credits | Usage-tab category |
+|---------------|--------:|---------------------|
+| `generate_artwork` (first-time) | 8 | Artwork Generation |
+| `generate_artwork` (`metadata.isRegeneration = true`) | 8 | Artwork Regeneration |
+| `orchestrate_artwork` | 8 | Artwork Generation (prompt-orchestration sub-step of the same pipeline; grouped with generation regardless of regen flag) |
+| `meta_social_caption` | 1 | Caption Count |
+| `ask_ralli` | 1 | Ask Ralli |
+| `tasks_generate` | 1 | Task Assistant |
+| `inbox_ai` | 1 | Inbox AI |
+| `calendar_import_parse` | 1 | Calendar Import |
+| `playbook_insights` | 1 | Playbook Insights |
+| `draft_communication` | 1 | Communication Draft |
+| `generate_event_brief` | 1 | Event Brief |
+| `generate_creative_brief` | 1 | Creative Brief |
+| anything else / unmapped | — | Etc |
+| Failed / non-AI | 0 | — |
+
+Category mapping lives in [`usage-breakdown-pure.ts`](../../src/lib/ai/usage-breakdown-pure.ts) (`AI_USAGE_CATEGORY_LABELS` / `categoryKeyForRow`) — update it there if a new `action_type` is added.
+
+`ai_usage_log` also has a `metadata jsonb not null default '{}'` column (added in `20260725150000_ai_usage_log_metadata.sql`, mirrors `api_usage_log`'s existing column). For artwork actions it carries `{ isRegeneration, milestoneLabel, relativeDay }`, populated at the regenerate/generate entry points (`regenerateArtworkAction`, `regenerateMilestoneArtworkAction`, `regenerateArtworkConceptAction`, `generateMilestoneArtworkAction`, etc.) and threaded down through `runArtworkV2Generation` / `generateArtworkV2ImageNative` as an optional `usageAttribution` param — every param is optional with safe defaults, so any call site that doesn't pass it just logs with no milestone/regen info instead of failing.
 
 ---
 

@@ -6,8 +6,11 @@ import {
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Crown } from "lucide-react";
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 import type { AiCreditLedgerEntry } from "@/lib/ai/credit-ledger";
+import { ledgerActivityDescription } from "@/lib/ai/usage-breakdown-pure";
+import type { OrgAiUsageBreakdown } from "@/lib/ai/usage-breakdown";
 import type { CapacityUsageEntry } from "@/lib/billing/capacity-usage";
 import type { OrgBillingSnapshot } from "@/lib/billing/org-billing";
 import type { PaidPlanId } from "@/lib/billing/plan-catalog";
@@ -19,6 +22,12 @@ import {
   PRE_STRIPE_DEFAULT_PLAN_ID,
   RESERVE_CATALOG,
 } from "@/lib/billing/plan-catalog";
+import {
+  formatInvoiceAmount,
+  invoiceStatusBadgeVariant,
+  invoiceStatusLabel,
+  type DisplayInvoice,
+} from "@/lib/billing/stripe-invoices-pure";
 import { cn } from "@/lib/utils/cn";
 import { formatDateTime } from "@/lib/utils/dates";
 
@@ -277,7 +286,9 @@ interface BillingUsagePanelProps {
   billing?: OrgBillingSnapshot | null;
   capacityUsage?: CapacityUsageEntry[];
   ledger?: AiCreditLedgerEntry[];
+  usageBreakdown?: OrgAiUsageBreakdown | null;
   stripeConfigured?: boolean;
+  isFoundingPartner?: boolean;
 }
 
 export function BillingUsagePanel({
@@ -285,7 +296,9 @@ export function BillingUsagePanel({
   billing = null,
   capacityUsage = [],
   ledger = [],
+  usageBreakdown = null,
   stripeConfigured = false,
+  isFoundingPartner = false,
 }: BillingUsagePanelProps) {
   const percent =
     aiCredits && !aiCredits.unlimited && aiCredits.allowance > 0
@@ -293,67 +306,116 @@ export function BillingUsagePanel({
       : 0;
   const alert = Boolean(aiCredits?.exhausted || aiCredits?.softWarn);
 
+  const byMember = usageBreakdown?.byMember ?? [];
+  const byCategory = usageBreakdown?.byCategory ?? [];
+  const topMember = byMember.find((entry) => entry.userId != null) ?? null;
+
   return (
     <div className="space-y-6">
-      <SettingsV2Card title="AI credits">
-        {aiCredits?.unlimited ? (
+      {aiCredits?.unlimited ? (
+        <SettingsV2Card title="AI credits">
           <p className="text-sm leading-relaxed text-cos-muted">
             This organization has unlimited AI credits (founding / billing
             exempt). Usage is still logged for ops.
           </p>
-        ) : aiCredits ? (
-          <>
+        </SettingsV2Card>
+      ) : (
+        <>
+          <SettingsV2Card title="Period usage">
+            {aiCredits ? (
+              <>
+                <p className="text-sm font-medium text-cos-text tabular-nums">
+                  {aiCredits.used} / {aiCredits.allowance} used
+                  {billing?.trialActive ? " (trial pool)" : " this month"}
+                </p>
+                <div
+                  className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+                  role="progressbar"
+                  aria-valuenow={aiCredits.used}
+                  aria-valuemin={0}
+                  aria-valuemax={aiCredits.allowance}
+                  aria-label={`${aiCredits.used} of ${aiCredits.allowance} AI credits used`}
+                >
+                  <div
+                    className={cn(
+                      "h-full transition-[width]",
+                      alert ? "bg-cos-error" : "bg-cos-dark",
+                    )}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+                  {billing?.trialActive
+                    ? "Trial credits are a single 600-credit pool for the 14-day window (not a full Pro month)."
+                    : "Monthly credits reset every 1st and any unused ones expire. Reserve credits never expire — they kick in automatically once your monthly credits run out. AI pauses only if you're out of both."}
+                </p>
+                {aiCredits.exhausted ? (
+                  <p className="mt-2 text-sm text-cos-error-text">
+                    Out of AI credits — upgrade or buy AI Reserve to resume
+                    generation
+                    {stripeConfigured ? "" : " when Stripe is configured"}.
+                  </p>
+                ) : aiCredits.softWarn ? (
+                  <p className="mt-2 text-sm text-cos-warning-text">
+                    Running low — upgrade or buy AI Reserve from Plan &amp;
+                    Pricing
+                    {stripeConfigured ? "" : " when Stripe is configured"}.
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-cos-muted">{aiCredits.resetLabel}</p>
+              </>
+            ) : (
+              <p className="text-sm leading-relaxed text-cos-muted">
+                AI credits reset monthly. Soft warnings appear when low; AI pauses at
+                0 until you upgrade or buy Reserve.
+              </p>
+            )}
+          </SettingsV2Card>
+
+          <SettingsV2Card title="AI Reserve">
             <p className="text-sm font-medium text-cos-text tabular-nums">
-              {aiCredits.used} / {aiCredits.allowance} used
-              {billing?.trialActive ? " (trial pool)" : " this month"}
-              {aiCredits.reserveBalance > 0
-                ? ` · ${aiCredits.reserveBalance.toLocaleString()} reserve`
-                : ""}
+              {(aiCredits?.reserveBalance ?? 0).toLocaleString()} reserve credits
             </p>
-            <div
-              className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
-              role="progressbar"
-              aria-valuenow={aiCredits.used}
-              aria-valuemin={0}
-              aria-valuemax={aiCredits.allowance}
-              aria-label={`${aiCredits.used} of ${aiCredits.allowance} AI credits used`}
-            >
-              <div
-                className={cn(
-                  "h-full transition-[width]",
-                  alert ? "bg-cos-error" : "bg-cos-dark",
-                )}
-                style={{ width: `${percent}%` }}
-              />
-            </div>
             <p className="mt-2 text-sm leading-relaxed text-cos-muted">
-              {billing?.trialActive
-                ? "Trial credits are a single 600-credit pool for the 14-day window (not a full Pro month)."
-                : "Monthly plan credits reset on the 1st (UTC) and do not roll over. AI Reserve rolls over until used."}{" "}
-              AI pauses when period + Reserve hit 0.
+              Reserve credits never expire — they roll over and kick in
+              automatically once your monthly credits run out.
             </p>
-            {aiCredits.exhausted ? (
-              <p className="mt-2 text-sm text-cos-error-text">
-                Out of AI credits — upgrade or buy AI Reserve to resume
-                generation
-                {stripeConfigured ? "" : " when Stripe is configured"}.
-              </p>
-            ) : aiCredits.softWarn ? (
-              <p className="mt-2 text-sm text-cos-warning-text">
-                Running low — upgrade or buy AI Reserve from Plan &amp;
-                Pricing
-                {stripeConfigured ? "" : " when Stripe is configured"}.
-              </p>
-            ) : null}
-            <p className="mt-2 text-xs text-cos-muted">{aiCredits.resetLabel}</p>
-          </>
-        ) : (
-          <p className="text-sm leading-relaxed text-cos-muted">
-            AI credits reset monthly. Soft warnings appear when low; AI pauses at
-            0 until you upgrade or buy Reserve.
-          </p>
-        )}
-      </SettingsV2Card>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-cos-muted">
+              Buy more Reserve
+            </p>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+              {RESERVE_CATALOG.map((sku) => (
+                <li
+                  key={sku.id}
+                  className="rounded-lg border border-cos-border bg-cos-bg px-3 py-3 text-sm"
+                >
+                  <p className="font-medium text-cos-text">{sku.label}</p>
+                  <p className="text-cos-muted">
+                    ${sku.priceUsd} · {sku.credits.toLocaleString()} credits
+                  </p>
+                  <div className="mt-3">
+                    {isFoundingPartner ? (
+                      <Button className="w-full" variant="secondary" disabled>
+                        Unlimited
+                      </Button>
+                    ) : stripeConfigured ? (
+                      <ReserveCheckoutButton
+                        sku={sku.id}
+                        label={`Buy ${sku.label}`}
+                        returnPath={PLAN_CHECKOUT_RETURN_PATH}
+                      />
+                    ) : (
+                      <Button className="w-full" disabled>
+                        Coming soon
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </SettingsV2Card>
+        </>
+      )}
 
       <SettingsV2Card
         title="Capacity usage"
@@ -405,6 +467,88 @@ export function BillingUsagePanel({
       </SettingsV2Card>
 
       <SettingsV2Card
+        title="Usage by member"
+        description="Who's using the most AI this period, ranked by credits."
+      >
+        {byMember.length === 0 ? (
+          <p className="text-sm text-cos-muted">
+            No AI usage from members yet this period.
+          </p>
+        ) : (
+          <ul className="divide-y divide-cos-border">
+            {byMember.map((entry, index) => {
+              const isTop = topMember != null && entry.userId === topMember.userId;
+              return (
+                <li
+                  key={entry.userId ?? "unknown"}
+                  className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
+                >
+                  <span className="w-5 shrink-0 text-sm tabular-nums text-cos-muted">
+                    {index + 1}
+                  </span>
+                  {isTop ? (
+                    <Crown
+                      className="h-4 w-4 shrink-0 text-cos-warning-text"
+                      strokeWidth={1.75}
+                      aria-label="Top member"
+                    />
+                  ) : null}
+                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
+                    {entry.label}
+                    {isTop ? (
+                      <Badge variant="info" className="ml-2 align-middle">
+                        Top
+                      </Badge>
+                    ) : null}
+                  </p>
+                  <p className="shrink-0 text-xs text-cos-muted">
+                    {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
+                  </p>
+                  <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
+                    {entry.credits.toLocaleString()} cr
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {byMember.some((entry) => entry.userId == null) ? (
+          <p className="mt-3 text-xs text-cos-muted">
+            &ldquo;Unknown member&rdquo; is usage logged before member
+            attribution was added for this action type — not a bug.
+          </p>
+        ) : null}
+      </SettingsV2Card>
+
+      <SettingsV2Card
+        title="Usage by category"
+        description="Full breakdown of what this organization is using AI for."
+      >
+        {byCategory.length === 0 ? (
+          <p className="text-sm text-cos-muted">No AI usage yet this period.</p>
+        ) : (
+          <ul className="divide-y divide-cos-border">
+            {byCategory.map((entry) => (
+              <li
+                key={entry.key}
+                className="flex items-center gap-x-3 gap-y-0 py-3 first:pt-0 last:pb-0"
+              >
+                <p className="min-w-0 flex-1 truncate text-sm font-medium text-cos-text">
+                  {entry.label}
+                </p>
+                <p className="shrink-0 text-xs text-cos-muted">
+                  {entry.count.toLocaleString()} action{entry.count === 1 ? "" : "s"}
+                </p>
+                <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
+                  {entry.credits.toLocaleString()} cr
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SettingsV2Card>
+
+      <SettingsV2Card
         title="Recent activity"
         description="Latest AI credit grants and usage for this organization."
       >
@@ -413,18 +557,19 @@ export function BillingUsagePanel({
         ) : (
           <ul className="divide-y divide-cos-border">
             {ledger.map((entry) => (
-              <li key={entry.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={ledgerBadgeVariant(entry.entryType)}>
-                      {ledgerEntryLabel(entry.entryType)}
-                    </Badge>
-                    <p className="text-xs text-cos-muted">{formatDateTime(entry.createdAt)}</p>
-                  </div>
-                  {entry.note ? (
-                    <p className="mt-1 text-sm text-cos-muted">{entry.note}</p>
-                  ) : null}
-                </div>
+              <li
+                key={entry.id}
+                className="flex items-center gap-x-3 gap-y-0 py-3 text-sm first:pt-0 last:pb-0"
+              >
+                <Badge variant={ledgerBadgeVariant(entry.entryType)} className="shrink-0">
+                  {ledgerEntryLabel(entry.entryType)}
+                </Badge>
+                <p className="shrink-0 text-xs text-cos-muted">
+                  {formatDateTime(entry.createdAt)}
+                </p>
+                <p className="min-w-0 flex-1 truncate text-cos-muted">
+                  {ledgerActivityDescription(entry)}
+                </p>
                 <p
                   className={cn(
                     "shrink-0 text-sm font-medium tabular-nums",
@@ -446,11 +591,16 @@ export function BillingUsagePanel({
   );
 }
 
+interface BillingHistoryPanelProps extends PanelProps {
+  invoices?: DisplayInvoice[];
+}
+
 export function BillingHistoryPanel({
   isFoundingPartner = false,
   stripeConfigured = false,
   hasStripeCustomer = false,
-}: PanelProps) {
+  invoices = [],
+}: BillingHistoryPanelProps) {
   return (
     <SettingsV2Card title="Invoices">
       {isFoundingPartner ? (
@@ -458,18 +608,71 @@ export function BillingHistoryPanel({
           No invoices yet. Founding partner billing is waived during early
           access.
         </p>
+      ) : !stripeConfigured ? (
+        <p className="text-sm leading-relaxed text-cos-muted">
+          Receipts will appear here when Stripe billing is enabled.
+        </p>
+      ) : !hasStripeCustomer ? (
+        <p className="text-sm leading-relaxed text-cos-muted">
+          No billing history yet — subscribe to a plan to get started.
+        </p>
       ) : (
         <>
-          <p className="text-sm leading-relaxed text-cos-muted">
-            {stripeConfigured
-              ? "Download invoices from the Stripe Customer Portal."
-              : "Receipts will appear here when Stripe billing is enabled."}
-          </p>
-          {stripeConfigured && hasStripeCustomer ? (
-            <div className="mt-4">
-              <BillingPortalButton label="View invoices in Stripe" />
-            </div>
-          ) : null}
+          {invoices.length === 0 ? (
+            <p className="text-sm leading-relaxed text-cos-muted">
+              No invoices yet.
+            </p>
+          ) : (
+            <ul className="divide-y divide-cos-border">
+              {invoices.map((invoice) => (
+                <li
+                  key={invoice.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3 text-sm first:pt-0 last:pb-0"
+                >
+                  <Badge
+                    variant={invoiceStatusBadgeVariant(invoice.status)}
+                    className="shrink-0"
+                  >
+                    {invoiceStatusLabel(invoice.status)}
+                  </Badge>
+                  <p className="shrink-0 text-xs text-cos-muted">
+                    {formatDateTime(invoice.createdAt)}
+                  </p>
+                  <p className="min-w-0 flex-1 truncate text-cos-muted">
+                    {invoice.description ?? invoice.number ?? "Invoice"}
+                  </p>
+                  <p className="shrink-0 text-sm font-medium tabular-nums text-cos-text">
+                    {formatInvoiceAmount(invoice.amountCents, invoice.currency)}
+                  </p>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {invoice.hostedInvoiceUrl ? (
+                      <a
+                        href={invoice.hostedInvoiceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium text-cos-accent underline-offset-2 hover:underline"
+                      >
+                        View invoice
+                      </a>
+                    ) : null}
+                    {invoice.invoicePdfUrl ? (
+                      <a
+                        href={invoice.invoicePdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium text-cos-accent underline-offset-2 hover:underline"
+                      >
+                        Download PDF
+                      </a>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4">
+            <BillingPortalButton label="Manage billing in Stripe" />
+          </div>
         </>
       )}
     </SettingsV2Card>

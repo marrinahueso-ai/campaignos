@@ -1702,6 +1702,7 @@ export async function generateRemainingArtworkV2Action(
   }
 
   const milestones: ArtworkV2BatchMilestoneResult[] = [];
+  const remainingAuthUser = await getAuthUser();
 
   for (const milestone of remaining) {
     milestones.push(
@@ -1713,6 +1714,7 @@ export async function generateRemainingArtworkV2Action(
         organizationName,
         phaseItems,
         phase: options?.phase,
+        userId: remainingAuthUser?.id ?? null,
       }),
     );
   }

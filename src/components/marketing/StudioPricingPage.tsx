@@ -237,8 +237,9 @@ export function StudioPricingPage({
             Need more AI headroom mid-year?
           </h3>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cos-muted">
-            Monthly plan credits reset each month and do not roll over. AI Reserve
-            stacks and rolls over until used. Premium includes a $
+            Monthly credits reset every month and any unused ones expire. AI
+            Reserve never expires — it kicks in automatically once your
+            monthly credits run out. Premium includes a $
             {RESERVE_CATALOG[0]!.priceUsd} Reserve each year; buy more anytime.
           </p>
           <ul className="mt-6 grid gap-4 sm:grid-cols-3">

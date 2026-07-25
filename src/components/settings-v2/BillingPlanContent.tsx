@@ -19,9 +19,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
 import type { AiCreditLedgerEntry } from "@/lib/ai/credit-ledger";
+import type { OrgAiUsageBreakdown } from "@/lib/ai/usage-breakdown";
 import type { CapacityUsageEntry } from "@/lib/billing/capacity-usage";
 import type { OrgBillingSnapshot } from "@/lib/billing/org-billing";
 import { formatTrialRemaining } from "@/lib/billing/org-billing";
+import type { DisplayInvoice } from "@/lib/billing/stripe-invoices-pure";
 import type { PaidPlanId } from "@/lib/billing/plan-catalog";
 import {
   CHECKOUT_COMING_SOON,
@@ -44,6 +46,8 @@ interface BillingPlanContentProps {
   checkoutFlash?: string | null;
   capacityUsage?: CapacityUsageEntry[];
   aiCreditLedger?: AiCreditLedgerEntry[];
+  aiUsageBreakdown?: OrgAiUsageBreakdown | null;
+  stripeInvoices?: DisplayInvoice[];
 }
 
 export function BillingPlanContent({
@@ -60,6 +64,8 @@ export function BillingPlanContent({
   checkoutFlash = null,
   capacityUsage = [],
   aiCreditLedger = [],
+  aiUsageBreakdown = null,
+  stripeInvoices = [],
 }: BillingPlanContentProps) {
   const defaultPlan = planById(PRE_STRIPE_DEFAULT_PLAN_ID);
   const trialLabel = formatTrialRemaining(billing?.trialEndsAt ?? null);
@@ -108,7 +114,9 @@ export function BillingPlanContent({
           billing={billing}
           capacityUsage={capacityUsage}
           ledger={aiCreditLedger}
+          usageBreakdown={aiUsageBreakdown}
           stripeConfigured={stripeConfigured}
+          isFoundingPartner={isFoundingPartner}
         />
       ) : tab === "payment" ? (
         <BillingPaymentMethodPanel
@@ -121,6 +129,7 @@ export function BillingPlanContent({
           isFoundingPartner={isFoundingPartner}
           stripeConfigured={stripeConfigured}
           hasStripeCustomer={hasStripeCustomer}
+          invoices={stripeInvoices}
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -222,8 +231,7 @@ export function BillingPlanContent({
                 <p className="mt-2 text-sm leading-relaxed text-cos-muted">
                   {billing?.trialActive
                     ? "Trial credits are a single 600-credit pool for the 14-day window (not a full Pro month)."
-                    : "Monthly plan credits reset on the 1st (UTC) and do not roll over. AI Reserve rolls over until used."}{" "}
-                  AI pauses when period + Reserve hit 0.
+                    : "Monthly credits reset every 1st and any unused ones expire. Reserve credits never expire — they kick in automatically once your monthly credits run out. AI pauses only if you're out of both."}
                 </p>
                 {aiCredits.exhausted ? (
                   <p className="mt-2 text-sm text-cos-error-text">
