@@ -158,4 +158,12 @@ describe("heyralli reproduction: org briefing vs Calendar/AI", () => {
     assert.equal(isOrgBriefingIntent(question), true);
     assert.equal(shouldRouteToOrgBriefing(question), true);
   });
+
+  it('routes "give me a summary of today ?" to org (natural phrasing)', () => {
+    const question = "give me a summary of today ?";
+    assert.equal(isOrgBriefingIntent(question), true);
+    assert.equal(shouldPreferOrgBriefing(question), true);
+    assert.equal(shouldRouteToOrgBriefing(question), true);
+    assert.equal(shouldPreferProductHelpFaq(question), false);
+  });
 });

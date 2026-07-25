@@ -21,10 +21,12 @@ const ORG_BRIEFING_PATTERNS: RegExp[] = [
   /\bneed(ing)? attention\b/i,
   /\bwhat('?s|s| is) behind schedule\b/i,
   /\bbehind schedule\b/i,
-  // today's / todays / today summary (typos + missing apostrophe)
+  // today's / todays / today summary (natural word order + typos)
   /\b(give me |what('?s|s| is) )?today'?s? summary\b/i,
-  /\bsummary for today\b/i,
+  /\b(give me |show me |what('?s|s| is) )?(a |my )?summary (of |for )?today\b/i,
+  /\bsummary (of |for )?today\b/i,
   /\btoday'?s? briefing\b/i,
+  /\bbrief(ing)? (for |of )?today\b/i,
   /\bwhat happened this week\b/i,
   /\bwhat do i have (this|next) week\b/i,
   /\bwhat('?s|s| is) (on )?(my )?(calendar |schedule )?this week\b/i,
@@ -34,7 +36,7 @@ const ORG_BRIEFING_PATTERNS: RegExp[] = [
   /\bwhich committees? need\b/i,
   /\bcommittees? need(ing)? help\b/i,
   /\b(board|president|chair|communications chair) (briefing|summary)\b/i,
-  /\bgive me (a |my )?(briefing|overview|status)\b/i,
+  /\bgive me (a |my )?(briefing|overview|status|summary)\b/i,
   /\bwhat('?s|s| is) on my plate\b/i,
   /\bwhat should i focus on today\b/i,
 ];
