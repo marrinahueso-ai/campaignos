@@ -42,13 +42,13 @@ function assistantEyebrow(source: AskRalliSource | null): string {
 /** Curated chips across ops/org, volunteers/comms, drafts, insights, how-to. */
 const ASK_RALLI_SUGGESTIONS = [
   "What should I work on today?",
+  "Catch me up",
+  "I'm new. Where do I start?",
   "What needs my approval?",
-  "Give me today's summary",
   "How do I get more volunteers?",
   "What's my biggest risk?",
+  "What should I send this week?",
   "Write tomorrow's reminder",
-  "What should I do next for this event?",
-  "How do I create a campaign?",
 ] as const;
 
 function newId(): string {

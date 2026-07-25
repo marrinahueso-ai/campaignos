@@ -129,8 +129,6 @@ describe("Phase 1 ops routing fixtures", () => {
   const fixtures = [
     "What should I do next for Back to School Fair?",
     "Am I on schedule?",
-    "What's overdue?",
-    "What's waiting for approval?",
     "What's publishing today?",
     "What's publishing this week?",
     "Is this event ready?",
@@ -144,6 +142,13 @@ describe("Phase 1 ops routing fixtures", () => {
       assert.equal(shouldPreferProductHelpFaq(question), false);
     });
   }
+
+  it("routes overdue / waiting-for-approval to org when no event is named", () => {
+    for (const question of ["What's overdue?", "What's waiting for approval?"]) {
+      assert.equal(shouldRouteToOpsAsk(question, null), false, question);
+      assert.equal(shouldPreferProductHelpFaq(question), false, question);
+    }
+  });
 
   it("keeps how-to on FAQ path", () => {
     const question = "Where do I find my approvals?";

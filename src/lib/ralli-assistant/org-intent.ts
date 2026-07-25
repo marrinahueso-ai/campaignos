@@ -49,6 +49,36 @@ const ORG_BRIEFING_PATTERNS: RegExp[] = [
   /\bcan you summarize everything\b/i,
   /\bsummarize everything\b/i,
   /\bwhat should i send this week\b/i,
+  /\bwhat should i post today\b/i,
+  /\bhow is (our |my )?organization doing\b/i,
+  /\borganization (health|doing)\b/i,
+  /\bwhat needs my attention today\b/i,
+  /\bneeds my attention\b/i,
+  /\bwhat('?s|s| is) falling behind\b/i,
+  /\bfalling behind\b/i,
+  /\bare we on track\b/i,
+  /\bcatch me up\b/i,
+  /\bgive me (my |a )?daily briefing\b/i,
+  /\bdaily briefing\b/i,
+  /\bwhat did i miss\b/i,
+  /\bwhat('?s|s| is) happening (this week|tomorrow)\b/i,
+  /\bhappening tomorrow\b/i,
+  /\bbefore i log off\b/i,
+  /\bbefore i leave\b/i,
+  /\bwhat should i finish\b/i,
+  /\bdo we have any conflicts\b/i,
+  /\bschedule conflicts?\b/i,
+  /\bwhat('?s|s| is) waiting for approval\b/i,
+  /\bwaiting for approval\b/i,
+  /\bwhat would you do\b/i,
+  /\bwhat('?s|s| is) your recommendation\b/i,
+  /\bwhat('?s|s| is) the smartest next step\b/i,
+  /\bsmartest next step\b/i,
+  /\bwhere should i focus first\b/i,
+  /\bif you were me\b/i,
+  /\bwhat would make (the )?biggest difference\b/i,
+  /\bone thing i can do today\b/i,
+  /\bhow would you handle this\b/i,
 ];
 
 /** True when the user wants a prioritized action list for today / now. */
@@ -57,11 +87,22 @@ export function isOrgPriorityListIntent(question: string): boolean {
   if (!normalized) return false;
   return (
     /\bwhat should i (work on|focus on|do) today\b/i.test(normalized) ||
-    /\bwhat should i (finish|do) before i leave\b/i.test(normalized) ||
+    /\bwhat should i (finish|do) before i (leave|log off)\b/i.test(normalized) ||
+    /\bbefore i log off\b/i.test(normalized) ||
+    /\bwhat needs my attention today\b/i.test(normalized) ||
     /\bwhat('?s|s| is) my biggest priority\b/i.test(normalized) ||
     /\bbiggest priority\b/i.test(normalized) ||
     /\bwhat('?s|s| is) (the )?next best thing\b/i.test(normalized) ||
-    /\bpriorit(y|ies) (for )?today\b/i.test(normalized)
+    /\bpriorit(y|ies) (for )?today\b/i.test(normalized) ||
+    /\bwhat would you do\b/i.test(normalized) ||
+    /\bwhat('?s|s| is) your recommendation\b/i.test(normalized) ||
+    /\bwhat('?s|s| is) the smartest next step\b/i.test(normalized) ||
+    /\bsmartest next step\b/i.test(normalized) ||
+    /\bwhere should i focus first\b/i.test(normalized) ||
+    /\bif you were me\b/i.test(normalized) ||
+    /\bwhat would make (the )?biggest difference\b/i.test(normalized) ||
+    /\bone thing i can do today\b/i.test(normalized) ||
+    /\bhow would you handle this\b/i.test(normalized)
   );
 }
 

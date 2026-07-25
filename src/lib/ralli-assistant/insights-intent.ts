@@ -18,6 +18,7 @@ const INSIGHTS_PATTERNS: RegExp[] = [
   /\bwhat post usually performs? best\b/i,
   /\b(which|what) post(s)? (usually )?(perform|work)s? best\b/i,
   /\bbest[- ]performing post\b/i,
+  /\bwhich post did the best\b/i,
   /\bis (my |this |the )?event healthy\b/i,
   /\bevent healthy\b/i,
   /\bcampaign health\b/i,
@@ -30,7 +31,15 @@ const INSIGHTS_PATTERNS: RegExp[] = [
   /\bis there anything i('?m| am) overlooking\b/i,
   /\banything i('?m| am) overlooking\b/i,
   /\bwhat am i (missing|overlooking)\b/i,
+  /\bam i missing anything\b/i,
   /\brecommendations? for (this |the )?(campaign|event)\b/i,
+  /\bhow are (our |my )?emails? performing\b/i,
+  /\bemails? performing\b/i,
+  /\bwhat('?s|s| is) our busiest month\b/i,
+  /\bbusiest month\b/i,
+  /\bwhich events? (are|were) most successful\b/i,
+  /\bmost successful events?\b/i,
+  /\bwhat worries you\b/i,
 ];
 
 /**

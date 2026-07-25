@@ -3,6 +3,7 @@
  * Not product navigation (that stays in product-help-knowledge).
  */
 
+import { PTO_ADVISOR_EXTRA_TOPICS } from "@/lib/ralli-assistant/pto-advisor-extra-topics";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
 
 export interface PtoAdvisorTopic {
@@ -294,6 +295,7 @@ export const PTO_ADVISOR_TOPICS: PtoAdvisorTopic[] = [
     ].join(" "),
     links: [CAMPAIGNS_LINK, COMMS_LINK],
   },
+  ...PTO_ADVISOR_EXTRA_TOPICS,
 ];
 
 function normalizeQuestion(question: string): string {

@@ -89,8 +89,24 @@ function revisionInstructionsFromQuestion(
   }
   if (tone === "professional") parts.push("Tone: more professional.");
   if (tone === "exciting") parts.push("Tone: more exciting and enthusiastic.");
+  if (
+    /\b(welcoming|friendly|warmer|too formal)\b/i.test(question)
+  ) {
+    parts.push(
+      "Tone: warmer and more welcoming for school families — invited, not instructed.",
+    );
+  }
   if (tone === "concise" || length === "short") parts.push("Make it shorter.");
   if (length === "long") parts.push("Allow a bit more detail.");
+  if (/\bsubject line\b/i.test(question)) {
+    parts.push("Suggest 3 short subject-line options, then a revised body if draft text is provided.");
+  }
+  if (/\bnewsletter\b/i.test(question)) {
+    parts.push("Organize into a clear family newsletter structure.");
+  }
+  if (/\bsocial posts?\b/i.test(question) || /\binstagram\b/i.test(question)) {
+    parts.push("Write platform-appropriate social caption(s), family-friendly.");
+  }
   const trimmed = question.trim();
   if (trimmed) parts.push(`User request: ${trimmed}`);
   return parts.join(" ");

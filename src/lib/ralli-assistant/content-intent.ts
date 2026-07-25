@@ -25,18 +25,27 @@ export type ContentLengthHint = "short" | "long" | null;
 
 /** Imperative content-creation / revision verbs + targets. */
 const CONTENT_PATTERNS: RegExp[] = [
-  /\b(write|draft|create|generate)\b.{0,60}\b(reminder|caption|post|flyer|email|message)\b/i,
+  /\b(write|draft|create|generate)\b.{0,60}\b(reminder|caption|post|flyer|email|message|newsletter)\b/i,
   /\b(write|draft|create)\b.{0,40}\btomorrow'?s reminder\b/i,
   /\btomorrow'?s reminder\b/i,
   /\bvolunteer reminder\b/i,
   /\brewrite\b/i,
-  /\bmake (this|it)\b.{0,40}\b(shorter|longer|exciting|professional|concise|punchy)\b/i,
-  /\bmake (this|it) more (exciting|professional|concise|punchy)\b/i,
-  /\b(shorter|more exciting|more professional)\b/i,
-  /\bimprove (this |the )?(flyer|caption|post|draft|copy)\b/i,
+  /\bmake (this|it)\b.{0,40}\b(shorter|longer|exciting|professional|concise|punchy|welcoming|friendly|warmer)\b/i,
+  /\bmake (this|it) more (exciting|professional|concise|punchy|welcoming|friendly|warm)\b/i,
+  /\b(shorter|more exciting|more professional|more welcoming)\b/i,
+  /\bimprove (this |the )?(flyer|caption|post|draft|copy|email)\b/i,
   /\bgenerate another version\b/i,
   /\banother version\b/i,
   /\b(new|fresh) (version|draft|caption)\b/i,
+  /\btoo formal\b/i,
+  /\bsound more welcoming\b/i,
+  /\bmake this into social\b/i,
+  /\binto social posts\b/i,
+  /\bturn this into a newsletter\b/i,
+  /\binstagram caption\b/i,
+  /\bsubject line\b/i,
+  /\bis this ready to send\b/i,
+  /\bcan you rewrite this\b/i,
 ];
 
 /** Status-shaped reminder questions stay on volunteers/comms ops. */
@@ -117,7 +126,9 @@ export function detectContentActionKind(question: string): ContentActionKind {
 export function detectContentToneHint(question: string): ContentToneHint {
   const normalized = normalizeAskText(question);
   if (/\b(more )?professional\b/i.test(normalized)) return "professional";
-  if (/\b(more )?(exciting|enthusiastic|punchy|energetic)\b/i.test(normalized)) {
+  if (
+    /\b(more )?(exciting|enthusiastic|punchy|energetic)\b/i.test(normalized)
+  ) {
     return "exciting";
   }
   if (/\b(shorter|concise|tighter)\b/i.test(normalized)) return "concise";

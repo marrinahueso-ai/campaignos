@@ -46,4 +46,23 @@ describe("PTO advisor playbook matching", () => {
       true,
     );
   });
+
+  it("matches getting-started and volunteer playbook corpus", () => {
+    assert.equal(
+      matchPtoAdvisorTopic("I'm new. Where do I start?")?.id,
+      "im-new-where-start",
+    );
+    assert.equal(
+      matchPtoAdvisorTopic("Which volunteer jobs usually fill first?")?.id,
+      "jobs-fill-first",
+    );
+    assert.equal(
+      matchPtoAdvisorTopic("Is it too early to ask for volunteers?")?.id,
+      "too-early-volunteers",
+    );
+    assert.equal(
+      matchPtoAdvisorTopic("Would parents understand this?")?.id,
+      "parents-understand",
+    );
+  });
 });

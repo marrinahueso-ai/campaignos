@@ -126,7 +126,8 @@ Unit tests: `src/lib/ralli-assistant/__tests__/*.test.ts`.
 |-------|-------------------|--------|
 | **1 Event ops** | “What should I do next for {Event}?” / ask from `/events/{id}` | Event-scoped next steps; Approvals/event chips; not generic Calendar FAQ |
 | **2 Org briefing** | “Give me today’s summary”, “What needs my approval?”, “What should I work on today?” | Org pack facts; priority asks → numbered list; **Your next steps**; Approvals / Today chips |
-| **PTO tips** | “How do I get more volunteers?”, “When should I start promoting?” | **PTO tips** eyebrow; playbook advice (not live counts) |
+| **PTO tips** | “How do I get more volunteers?”, “I’m new. Where do I start?”, “Would parents understand this?” | **PTO tips** eyebrow; playbook advice in `pto-advisor-knowledge` + `pto-advisor-extra-topics` (not live counts) |
+| **Daily / conversational** | “Catch me up”, “What would you do?”, “What’s the smartest next step?” | Org briefing / numbered priority list from live context |
 | **3 Volunteers / comms** | “Do I need more volunteers?”, “What’s missing in communications?” | Volunteers/comms sections when data exists; honest gaps otherwise |
 | **4 Content** | “Write tomorrow’s reminder”, “Rewrite this caption” | Draft helper path; event resolve / chips if needed |
 | **5 Insights** | “What’s my biggest risk?”, “Is my event healthy?” | Insights eyebrow or health/risk language; Metrics empty → honest “no performance data” + ops fallback |

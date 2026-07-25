@@ -47,7 +47,24 @@ describe("org briefing intent detection", () => {
     assert.equal(isOrgPriorityListIntent("What should I work on today?"), true);
     assert.equal(isOrgPriorityListIntent("What should I focus on today?"), true);
     assert.equal(isOrgPriorityListIntent("What's my biggest priority?"), true);
+    assert.equal(isOrgPriorityListIntent("What would you do?"), true);
+    assert.equal(isOrgPriorityListIntent("Catch me up"), false);
     assert.equal(isOrgPriorityListIntent("Give me today's summary"), false);
+  });
+
+  it("detects daily assistant / org health phrasing", () => {
+    for (const question of [
+      "Catch me up",
+      "Give me my daily briefing",
+      "What needs my attention today?",
+      "How is our organization doing?",
+      "What's falling behind?",
+      "What's happening tomorrow?",
+      "Before I log off, what should I finish?",
+    ]) {
+      assert.equal(isOrgBriefingIntent(question), true, question);
+      assert.equal(shouldPreferOrgBriefing(question), true, question);
+    }
   });
 
   it("keeps clear how-to on FAQ path", () => {

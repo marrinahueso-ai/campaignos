@@ -17,6 +17,30 @@ export interface ProductHelpTopic {
  */
 export const PRODUCT_HELP_TOPICS: ProductHelpTopic[] = [
   {
+    id: "getting-started",
+    title: "I'm new. Where do I start?",
+    keywords: [
+      "getting started",
+      "where do i start",
+      "i'm new",
+      "im new",
+      "new to hey ralli",
+      "first time setup",
+      "onboarding",
+    ],
+    answer: [
+      "Start in Onboarding: organization profile → branding → invite your team → connect calendar → create your first campaign.",
+      "Then use Create with AI for artwork/captions, Volunteers for signups, and Approvals before anything publishes.",
+      "Ask Ralli “What should I work on today?” anytime for live priorities.",
+    ].join(" "),
+    links: [
+      { label: "Onboarding", href: "/onboarding" },
+      { label: "Create Campaign", href: "/events/create" },
+      { label: "Team access", href: "/settings/team-access" },
+      { label: "Calendar", href: "/calendar" },
+    ],
+  },
+  {
     id: "create-campaign",
     title: "How do I create a campaign?",
     keywords: [
