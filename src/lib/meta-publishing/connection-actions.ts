@@ -25,19 +25,16 @@ export type MetaConnectionActionResult = {
 async function assertSocialAccountCapacityForNewConnection(
   organizationId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from("organization_meta_connections")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organizationId);
+  const { countSocialAccounts } = await import("@/lib/billing/capacity-usage");
+  const count = await countSocialAccounts(organizationId);
 
-  if ((count ?? 0) > 0) {
+  if (count > 0) {
     // Reconnect / token refresh of the existing (unique-per-org) row — not a new account.
     return { ok: true };
   }
 
   const { assertOrgCapacity } = await import("@/lib/billing/gates");
-  const capacity = await assertOrgCapacity(organizationId, "socialAccounts", count ?? 0);
+  const capacity = await assertOrgCapacity(organizationId, "socialAccounts", count);
   if (!capacity.ok) {
     return { ok: false, error: `${capacity.message} ${capacity.upgradeHint}` };
   }

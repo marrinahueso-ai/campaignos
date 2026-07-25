@@ -156,3 +156,12 @@ export const CAPACITY_LABELS: Record<PlanCapacityKey, string> = {
   metaPostsPerMonth: "Meta posts this month",
   socialAccounts: "social accounts",
 };
+
+/** Title-case labels for display in the Billing & Plan Usage tab (vs. the sentence-style CAPACITY_LABELS above). */
+export const CAPACITY_DISPLAY_LABELS: Record<PlanCapacityKey, string> = {
+  teamMembers: "Team Members",
+  committeeChairs: "Committee Chairs",
+  eventsPerSchoolYear: "Events / School Year",
+  metaPostsPerMonth: "Meta Posts / Month",
+  socialAccounts: "Social Accounts",
+};

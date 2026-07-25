@@ -81,45 +81,14 @@ async function assertMetaPostCapacityForEvent(
     return { ok: true };
   }
 
-  const supabase = await createClient();
-  const monthStart = new Date();
-  monthStart.setUTCDate(1);
-  monthStart.setUTCHours(0, 0, 0, 0);
-
-  const { data: schoolYears } = await supabase
-    .from("school_years")
-    .select("id")
-    .eq("organization_id", organizationId);
-  const schoolYearIds = (schoolYears ?? []).map((row) => row.id);
-  if (schoolYearIds.length === 0) {
-    return { ok: true };
-  }
-
-  const { data: orgEvents } = await supabase
-    .from("events")
-    .select("id")
-    .in("school_year_id", schoolYearIds);
-  const orgEventIds = (orgEvents ?? []).map((row) => row.id);
-  if (orgEventIds.length === 0) {
-    return { ok: true };
-  }
-
-  const { data: slots } = await supabase
-    .from("meta_publication_slots")
-    .select("event_id, relative_day")
-    .in("event_id", orgEventIds)
-    .in("status", ["scheduled", "approved", "posting", "published"])
-    .gte("scheduled_for", monthStart.toISOString());
-
-  const distinctMilestones = new Set(
-    (slots ?? []).map((row) => `${row.event_id}:${row.relative_day}`),
-  );
+  const { countMetaPostsThisMonth } = await import("@/lib/billing/capacity-usage");
+  const metaPostCount = await countMetaPostsThisMonth(organizationId);
 
   const { assertOrgCapacity } = await import("@/lib/billing/gates");
   const capacity = await assertOrgCapacity(
     organizationId,
     "metaPostsPerMonth",
-    distinctMilestones.size,
+    metaPostCount,
   );
   if (!capacity.ok) {
     return { ok: false, error: `${capacity.message} ${capacity.upgradeHint}` };

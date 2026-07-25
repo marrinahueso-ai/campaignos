@@ -1,17 +1,28 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
-export type BillingPlanTab = "overview" | "plan" | "payment" | "history";
+export type BillingPlanTab =
+  | "overview"
+  | "plan"
+  | "usage"
+  | "payment"
+  | "history";
 
 const TABS: { id: BillingPlanTab; label: string; href: string }[] = [
   { id: "overview", label: "Overview", href: "/settings/billing-plan" },
   { id: "plan", label: "Plan & Pricing", href: "/settings/billing-plan?tab=plan" },
+  { id: "usage", label: "Usage", href: "/settings/billing-plan?tab=usage" },
   { id: "payment", label: "Payment Method", href: "/settings/billing-plan?tab=payment" },
   { id: "history", label: "Billing History", href: "/settings/billing-plan?tab=history" },
 ];
 
 export function billingPlanTabFromParam(value: string | undefined): BillingPlanTab {
-  if (value === "plan" || value === "payment" || value === "history") {
+  if (
+    value === "plan" ||
+    value === "usage" ||
+    value === "payment" ||
+    value === "history"
+  ) {
     return value;
   }
   return "overview";

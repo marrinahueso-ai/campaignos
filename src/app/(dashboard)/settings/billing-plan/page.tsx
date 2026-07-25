@@ -1,6 +1,8 @@
 import { BillingPlanContent } from "@/components/settings-v2/BillingPlanContent";
 import { billingPlanTabFromParam } from "@/components/settings-v2/BillingPlanTabs";
 import { getOrgAiCreditsWidgetData } from "@/lib/ai/credits";
+import { getOrgAiCreditLedgerRecent } from "@/lib/ai/credit-ledger";
+import { getOrgCapacityUsage } from "@/lib/billing/capacity-usage";
 import { paidPlanIdFromTier } from "@/lib/billing/entitlements";
 import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
 import { planById } from "@/lib/billing/plan-catalog";
@@ -22,9 +24,17 @@ export default async function BillingPlanSettingsPage({
   searchParams: SearchParams;
 }) {
   const ctx = await getSettingsBillingContext();
-  const aiCredits = ctx.organization
-    ? await getOrgAiCreditsWidgetData(ctx.organization.id)
-    : null;
+  const [aiCredits, capacityUsage, aiCreditLedger] = await Promise.all([
+    ctx.organization
+      ? getOrgAiCreditsWidgetData(ctx.organization.id)
+      : Promise.resolve(null),
+    ctx.organization && ctx.billing
+      ? getOrgCapacityUsage(ctx.organization.id, ctx.billing)
+      : Promise.resolve([]),
+    ctx.organization
+      ? getOrgAiCreditLedgerRecent(ctx.organization.id)
+      : Promise.resolve([]),
+  ]);
 
   const params = await searchParams;
   const tab = billingPlanTabFromParam(first(params.tab));
@@ -61,6 +71,8 @@ export default async function BillingPlanSettingsPage({
       currentPlanId={ctx.currentPlanId}
       trialEligible={ctx.trialEligible}
       checkoutFlash={checkoutFlash}
+      capacityUsage={capacityUsage}
+      aiCreditLedger={aiCreditLedger}
     />
   );
 }

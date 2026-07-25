@@ -118,6 +118,39 @@ test.describe("AI credits & billing — Phases 1–6", () => {
     await expectNoSecretLeaksInPage(page);
   });
 
+  test("Usage tab: shows AI credits, capacity usage, and recent activity sections", async ({
+    page,
+  }) => {
+    await gotoBilling(page);
+    const main = contentMain(page);
+
+    await expect(
+      main.getByRole("link", { name: /^usage$/i }),
+    ).toBeVisible({ timeout: 20_000 });
+
+    await page.goto("/settings/billing-plan?tab=usage", {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await expectNoBlankScreen(page);
+
+    await expect(
+      main.getByRole("heading", { name: /^billing\s*&\s*plan$/i }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+      main.getByRole("heading", { name: /^ai credits$/i }),
+    ).toBeVisible({ timeout: 20_000 });
+    await expect(
+      main.getByRole("heading", { name: /^capacity usage$/i }),
+    ).toBeVisible();
+    await expect(
+      main.getByRole("heading", { name: /^recent activity$/i }),
+    ).toBeVisible();
+
+    await expectNoSecretLeaksInPage(page);
+  });
+
   test("Phase 4.5–5: Plan & Pricing tab catalog matches locked prices", async ({
     page,
   }) => {

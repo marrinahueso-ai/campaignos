@@ -4,7 +4,12 @@ import {
   ReserveCheckoutButton,
 } from "@/components/settings-v2/BillingCheckoutButtons";
 import { SettingsV2Card } from "@/components/settings-v2/SettingsV2Card";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+import type { AiCreditLedgerEntry } from "@/lib/ai/credit-ledger";
+import type { CapacityUsageEntry } from "@/lib/billing/capacity-usage";
+import type { OrgBillingSnapshot } from "@/lib/billing/org-billing";
 import type { PaidPlanId } from "@/lib/billing/plan-catalog";
 import {
   CHECKOUT_COMING_SOON,
@@ -14,6 +19,8 @@ import {
   PRE_STRIPE_DEFAULT_PLAN_ID,
   RESERVE_CATALOG,
 } from "@/lib/billing/plan-catalog";
+import { cn } from "@/lib/utils/cn";
+import { formatDateTime } from "@/lib/utils/dates";
 
 interface PanelProps {
   trialEligible?: boolean;
@@ -233,6 +240,209 @@ export function BillingPaymentMethodPanel({
         </>
       )}
     </SettingsV2Card>
+  );
+}
+
+const LEDGER_ENTRY_LABELS: Record<string, string> = {
+  period_grant: "Period grant",
+  burn: "Usage",
+  reserve_grant: "Reserve added",
+  bonus_grant: "Bonus",
+  adjustment: "Adjustment",
+};
+
+function ledgerEntryLabel(entryType: string): string {
+  return LEDGER_ENTRY_LABELS[entryType] ?? entryType;
+}
+
+function ledgerBadgeVariant(entryType: string): "success" | "default" | "info" {
+  if (
+    entryType === "period_grant" ||
+    entryType === "reserve_grant" ||
+    entryType === "bonus_grant"
+  ) {
+    return "success";
+  }
+  if (entryType === "adjustment") return "info";
+  return "default";
+}
+
+function formatSignedAmount(amount: number): string {
+  if (amount > 0) return `+${amount.toLocaleString()}`;
+  return amount.toLocaleString();
+}
+
+interface BillingUsagePanelProps {
+  aiCredits?: AiCreditsWidgetData | null;
+  billing?: OrgBillingSnapshot | null;
+  capacityUsage?: CapacityUsageEntry[];
+  ledger?: AiCreditLedgerEntry[];
+  stripeConfigured?: boolean;
+}
+
+export function BillingUsagePanel({
+  aiCredits = null,
+  billing = null,
+  capacityUsage = [],
+  ledger = [],
+  stripeConfigured = false,
+}: BillingUsagePanelProps) {
+  const percent =
+    aiCredits && !aiCredits.unlimited && aiCredits.allowance > 0
+      ? Math.min(100, Math.round((aiCredits.used / aiCredits.allowance) * 100))
+      : 0;
+  const alert = Boolean(aiCredits?.exhausted || aiCredits?.softWarn);
+
+  return (
+    <div className="space-y-6">
+      <SettingsV2Card title="AI credits">
+        {aiCredits?.unlimited ? (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            This organization has unlimited AI credits (founding / billing
+            exempt). Usage is still logged for ops.
+          </p>
+        ) : aiCredits ? (
+          <>
+            <p className="text-sm font-medium text-cos-text tabular-nums">
+              {aiCredits.used} / {aiCredits.allowance} used
+              {billing?.trialActive ? " (trial pool)" : " this month"}
+              {aiCredits.reserveBalance > 0
+                ? ` · ${aiCredits.reserveBalance.toLocaleString()} reserve`
+                : ""}
+            </p>
+            <div
+              className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+              role="progressbar"
+              aria-valuenow={aiCredits.used}
+              aria-valuemin={0}
+              aria-valuemax={aiCredits.allowance}
+              aria-label={`${aiCredits.used} of ${aiCredits.allowance} AI credits used`}
+            >
+              <div
+                className={cn(
+                  "h-full transition-[width]",
+                  alert ? "bg-cos-error" : "bg-cos-dark",
+                )}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+              {billing?.trialActive
+                ? "Trial credits are a single 600-credit pool for the 14-day window (not a full Pro month)."
+                : "Monthly plan credits reset on the 1st (UTC) and do not roll over. AI Reserve rolls over until used."}{" "}
+              AI pauses when period + Reserve hit 0.
+            </p>
+            {aiCredits.exhausted ? (
+              <p className="mt-2 text-sm text-cos-error-text">
+                Out of AI credits — upgrade or buy AI Reserve to resume
+                generation
+                {stripeConfigured ? "" : " when Stripe is configured"}.
+              </p>
+            ) : aiCredits.softWarn ? (
+              <p className="mt-2 text-sm text-cos-warning-text">
+                Running low — upgrade or buy AI Reserve from Plan &amp;
+                Pricing
+                {stripeConfigured ? "" : " when Stripe is configured"}.
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-cos-muted">{aiCredits.resetLabel}</p>
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-cos-muted">
+            AI credits reset monthly. Soft warnings appear when low; AI pauses at
+            0 until you upgrade or buy Reserve.
+          </p>
+        )}
+      </SettingsV2Card>
+
+      <SettingsV2Card
+        title="Capacity usage"
+        description="Where this organization stands against plan limits."
+      >
+        {capacityUsage.length === 0 ? (
+          <p className="text-sm text-cos-muted">Capacity usage is unavailable right now.</p>
+        ) : (
+          <ul className="space-y-4">
+            {capacityUsage.map((entry) => {
+              const capacityPercent =
+                entry.limit == null || entry.limit <= 0
+                  ? 0
+                  : Math.min(100, Math.round((entry.used / entry.limit) * 100));
+              const atOrOverLimit = entry.limit != null && entry.used >= entry.limit;
+              return (
+                <li key={entry.key}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-sm font-medium text-cos-text">{entry.label}</p>
+                    <p className="text-sm tabular-nums text-cos-muted">
+                      {entry.limit == null
+                        ? `${entry.used.toLocaleString()} · Unlimited`
+                        : `${entry.used.toLocaleString()} / ${entry.limit.toLocaleString()}`}
+                    </p>
+                  </div>
+                  {entry.limit != null ? (
+                    <div
+                      className="mt-2 h-1.5 w-full overflow-hidden bg-cos-border/60"
+                      role="progressbar"
+                      aria-valuenow={Math.min(entry.used, entry.limit)}
+                      aria-valuemin={0}
+                      aria-valuemax={entry.limit}
+                      aria-label={`${entry.label}: ${entry.used} of ${entry.limit} used`}
+                    >
+                      <div
+                        className={cn(
+                          "h-full transition-[width]",
+                          atOrOverLimit ? "bg-cos-error" : "bg-cos-dark",
+                        )}
+                        style={{ width: `${capacityPercent}%` }}
+                      />
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </SettingsV2Card>
+
+      <SettingsV2Card
+        title="Recent activity"
+        description="Latest AI credit grants and usage for this organization."
+      >
+        {ledger.length === 0 ? (
+          <p className="text-sm text-cos-muted">No activity yet.</p>
+        ) : (
+          <ul className="divide-y divide-cos-border">
+            {ledger.map((entry) => (
+              <li key={entry.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={ledgerBadgeVariant(entry.entryType)}>
+                      {ledgerEntryLabel(entry.entryType)}
+                    </Badge>
+                    <p className="text-xs text-cos-muted">{formatDateTime(entry.createdAt)}</p>
+                  </div>
+                  {entry.note ? (
+                    <p className="mt-1 text-sm text-cos-muted">{entry.note}</p>
+                  ) : null}
+                </div>
+                <p
+                  className={cn(
+                    "shrink-0 text-sm font-medium tabular-nums",
+                    entry.amount < 0
+                      ? "text-cos-error-text"
+                      : entry.amount > 0
+                        ? "text-cos-success-text"
+                        : "text-cos-muted",
+                  )}
+                >
+                  {formatSignedAmount(entry.amount)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SettingsV2Card>
+    </div>
   );
 }
 

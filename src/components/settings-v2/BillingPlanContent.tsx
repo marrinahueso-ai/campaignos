@@ -7,6 +7,7 @@ import {
   BillingHistoryPanel,
   BillingPaymentMethodPanel,
   BillingPlanPricingPanel,
+  BillingUsagePanel,
 } from "@/components/settings-v2/BillingPlanPanels";
 import {
   BillingPlanTabs,
@@ -17,6 +18,8 @@ import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHea
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { AiCreditsWidgetData } from "@/lib/ai/ai-credits-widget-data";
+import type { AiCreditLedgerEntry } from "@/lib/ai/credit-ledger";
+import type { CapacityUsageEntry } from "@/lib/billing/capacity-usage";
 import type { OrgBillingSnapshot } from "@/lib/billing/org-billing";
 import { formatTrialRemaining } from "@/lib/billing/org-billing";
 import type { PaidPlanId } from "@/lib/billing/plan-catalog";
@@ -39,6 +42,8 @@ interface BillingPlanContentProps {
   currentPlanId?: PaidPlanId | null;
   trialEligible?: boolean;
   checkoutFlash?: string | null;
+  capacityUsage?: CapacityUsageEntry[];
+  aiCreditLedger?: AiCreditLedgerEntry[];
 }
 
 export function BillingPlanContent({
@@ -53,6 +58,8 @@ export function BillingPlanContent({
   currentPlanId = null,
   trialEligible = false,
   checkoutFlash = null,
+  capacityUsage = [],
+  aiCreditLedger = [],
 }: BillingPlanContentProps) {
   const defaultPlan = planById(PRE_STRIPE_DEFAULT_PLAN_ID);
   const trialLabel = formatTrialRemaining(billing?.trialEndsAt ?? null);
@@ -94,6 +101,14 @@ export function BillingPlanContent({
           stripeConfigured={stripeConfigured}
           hasStripeCustomer={hasStripeCustomer}
           trialEligible={trialEligible}
+        />
+      ) : tab === "usage" ? (
+        <BillingUsagePanel
+          aiCredits={aiCredits}
+          billing={billing}
+          capacityUsage={capacityUsage}
+          ledger={aiCreditLedger}
+          stripeConfigured={stripeConfigured}
         />
       ) : tab === "payment" ? (
         <BillingPaymentMethodPanel

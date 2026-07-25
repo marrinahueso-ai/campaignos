@@ -863,16 +863,13 @@ export async function inviteTeamMemberAction(
   }
 
   const supabase = await createClient();
-  const { count: seatCount } = await supabase
-    .from("organization_users")
-    .select("id", { count: "exact", head: true })
-    .eq("organization_id", organization.id)
-    .eq("status", "active");
+  const { countActiveTeamMembers } = await import("@/lib/billing/capacity-usage");
+  const seatCount = await countActiveTeamMembers(organization.id);
   const { assertOrgCapacity } = await import("@/lib/billing/gates");
   const seatGate = await assertOrgCapacity(
     organization.id,
     "teamMembers",
-    seatCount ?? 0,
+    seatCount,
   );
   if (!seatGate.ok) {
     return {
@@ -903,16 +900,12 @@ export async function inviteTeamMemberAction(
     templateSelection?.templateId ?? resolvedCampaignRole;
 
   if (resolvedCampaignRole === "committee_chair") {
-    const { count: chairCount } = await supabase
-      .from("organization_users")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organization.id)
-      .eq("campaign_role", "committee_chair")
-      .eq("status", "active");
+    const { countCommitteeChairs } = await import("@/lib/billing/capacity-usage");
+    const chairCount = await countCommitteeChairs(organization.id);
     const chairGate = await assertOrgCapacity(
       organization.id,
       "committeeChairs",
-      chairCount ?? 0,
+      chairCount,
     );
     if (!chairGate.ok) {
       return {

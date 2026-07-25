@@ -50,17 +50,13 @@ export async function createEvent(
 
   const organization = await getLatestOrganization();
   if (organization?.id) {
-    const { createClient } = await import("@/lib/supabase/server");
     const { assertOrgCapacity } = await import("@/lib/billing/gates");
-    const supabase = await createClient();
-    const { count } = await supabase
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .neq("status", "archived");
+    const { countEventsForCapacity } = await import("@/lib/billing/capacity-usage");
+    const count = await countEventsForCapacity(organization.id);
     const capacity = await assertOrgCapacity(
       organization.id,
       "eventsPerSchoolYear",
-      count ?? 0,
+      count,
     );
     if (!capacity.ok) {
       return createEventErrorState(

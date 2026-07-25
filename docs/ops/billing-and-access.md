@@ -11,7 +11,7 @@ Single source of truth for how orgs get access to Hey Ralli and how AI credits/b
 
 **UI plan copy:** [`src/lib/billing/plan-catalog.ts`](../../src/lib/billing/plan-catalog.ts).  
 **Entitlements / capacity:** [`src/lib/billing/entitlements.ts`](../../src/lib/billing/entitlements.ts) + [`gates.ts`](../../src/lib/billing/gates.ts).  
-**Settings UI:** `/settings/billing-plan` — tabbed (Overview default · Plan & Pricing `?tab=plan` · Payment Method `?tab=payment` · Billing History `?tab=history`); old per-page routes (`manage-plan`, `upgrade-downgrade`, `payment-method`, `billing-history`, `cancel-plan`) now redirect to the matching tab. [`BillingPlanContent.tsx`](../../src/components/settings-v2/BillingPlanContent.tsx) / [`BillingPlanPanels.tsx`](../../src/components/settings-v2/BillingPlanPanels.tsx).
+**Settings UI:** `/settings/billing-plan` — tabbed (Overview default · Plan & Pricing `?tab=plan` · Usage `?tab=usage` · Payment Method `?tab=payment` · Billing History `?tab=history`); old per-page routes (`manage-plan`, `upgrade-downgrade`, `payment-method`, `billing-history`, `cancel-plan`) now redirect to the matching tab. [`BillingPlanContent.tsx`](../../src/components/settings-v2/BillingPlanContent.tsx) / [`BillingPlanPanels.tsx`](../../src/components/settings-v2/BillingPlanPanels.tsx). The Usage tab shows AI credits detail, capacity usage vs. plan limits (member-scoped counters in [`capacity-usage.ts`](../../src/lib/billing/capacity-usage.ts)), and recent `organization_ai_credit_ledger` activity (member-readable via RLS, queried in [`credit-ledger.ts`](../../src/lib/ai/credit-ledger.ts)).
 
 All commercial amounts below are **config-driven** and can change later without schema rewrites.
 
