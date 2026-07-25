@@ -165,6 +165,8 @@ export interface ArtworkUsageMetadata {
   isRegeneration?: boolean;
   milestoneLabel?: string | null;
   relativeDay?: number | null;
+  /** Index signature so this is assignable to AiUsageLogInput.metadata (Record<string, unknown>). */
+  [key: string]: unknown;
 }
 
 export interface EventBriefInput {
