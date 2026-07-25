@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering / QA  
-**Last updated:** July 23, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [Product contract](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Developer agreements / Owner ops](./developer-agreements.md) · [Pre-handoff readiness](./pre-handoff-readiness.md)
 
 Pass/fail criteria for the Platform Owner **AI & APIs** page (`/ops/ai-apis`). Phase 0 locks access, honesty, and launch gates. Phase 2 fills the instrumentation trigger matrix below.
@@ -117,7 +117,7 @@ Verify rows in Supabase (`ai_usage_log` / `api_usage_log`) within ~1 minute of t
 | E12 | Google | Sync Google Calendar | `calendar.events.list` | ☐ |
 | E13 | SignupGenius | Connect/refresh public signup | `signup.read` | ☐ |
 | E14 | Microsoft | — | Not instrumented (no live client) | n/a |
-| E15 | Stripe | — | Not instrumented (billing deferred) | n/a |
+| E15 | Stripe | — | Not instrumented — Stripe Checkout/Portal/webhook calls aren't logged to `api_usage_log` (billing itself is live; see [billing-and-access.md](../../ops/billing-and-access.md)) | n/a |
 
 **Writer entry points (eng):**
 

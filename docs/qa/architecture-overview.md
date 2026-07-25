@@ -3,7 +3,7 @@
 **Audience:** QA engineers reviewing the application  
 **Product brand:** Hey Ralli (codebase / deploy project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
-**Last updated:** July 22, 2026  
+**Last updated:** July 25, 2026  
 
 This document is a short orientation guide: what the product does, how it is built, how the main AI → publish path works, how systems connect, and what is still incomplete.
 
@@ -202,7 +202,7 @@ Use this as a **do-not-file-as-regression** / expected-gap list unless the ticke
 | Area | Status | QA note |
 |------|--------|---------|
 | Create with AI → full Meta slot sync after approval | **Stub / incomplete** | Send → Approvals → schedule/publish works; deep Meta “published state” sync polish may be incomplete |
-| Stripe / real billing checkout | **Deferred** | Pricing page is marketing; paid plan gates not enforced |
+| Stripe billing checkout + plan/capacity gates | **Shipped** | Live in Production; see [billing-and-access.md](../ops/billing-and-access.md) |
 | Gmail inbox + Gmail OAuth | **Deferred** | Meta inbox only for now |
 | Insights demographics / LLM narrative | **Deferred** | KPIs + rule-based recommendations shipped |
 | Insights-weighted posting heatmap | **Deferred** | Heatmap uses preferred windows + local publish times when Meta is connected |

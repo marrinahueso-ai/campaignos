@@ -1,8 +1,7 @@
 # Access control — Phases A–C
 
-**Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete  
-**Last updated:** July 22, 2026  
-**Deferred:** Phase E (Stripe / org billing) — document when finished  
+**Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete; Phase E (Stripe / org billing) shipped — see [billing-and-access.md](../ops/billing-and-access.md)  
+**Last updated:** July 25, 2026  
 **Related:** [Access & multi-tenant onboarding](../security/access-and-onboarding.md) (user-facing join / switch / gates)
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
@@ -192,7 +191,7 @@ Do **not** commit `.env.local`.
 | **C2** | Broader RLS — vendors/inbox/comms/playbooks/approvals/assets/social/etc. | Done |
 | **C3** | Storage RLS — path-aware membership on all buckets | Done |
 | **D** | Org switcher / multi-membership UX | Done (MVP) |
-| **E** | Stripe / org billing + `manage_billing` product gates | Deferred |
+| **E** | Stripe / org billing + `manage_billing` product gates | Shipped — see [billing-and-access.md](../ops/billing-and-access.md) |
 
 ---
 

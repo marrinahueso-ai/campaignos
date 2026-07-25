@@ -5,7 +5,7 @@
 **Product brand:** Hey Ralli (repo / Vercel project may still say CampaignOS)  
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel  
-**Last updated:** July 23, 2026  
+**Last updated:** July 25, 2026  
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
@@ -239,14 +239,13 @@ For deeper schema notes see archived [DATABASE_BLUEPRINT.md](../archive/DATABASE
 
 Do not treat these as regressions unless a ticket says otherwise. Full list: [feature-list.md](../product/feature-list.md) appendix.
 
-- Stripe / paid plan enforcement — deferred  
 - Gmail Connect / Gmail inbox — deferred  
 - Create-with-AI → Meta published-state sync step — stub / incomplete  
 - Insights-weighted heatmap — deferred (current heatmap = prefs + publish history when Meta connected)  
 - Tasks Calendar / Timeline / Workload — deferred (hidden)  
 - Shared connection-health framework — partial  
 - Vendor payments/contracts depth — partial shells  
-- AI credits / billing — Phase 1–6 (metering, widget, Owner Credits, catalog, Stripe Checkout/Portal/webhooks, trial, core gates, hard-block at 0)
+- AI credits / billing — **shipped**, Phase 1–6 (metering, widget, Owner Credits, catalog, Stripe Checkout/Portal/webhooks, trial, core gates, hard-block at 0); storage capacity gate still deferred (see [billing-and-access.md](../ops/billing-and-access.md#12-known-gaps--remaining-work))
 
 Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEASE_0_5.md) and [archive/SPRINTS.md](../archive/SPRINTS.md); they describe earlier Engine milestones and should not be read as current architecture.
 

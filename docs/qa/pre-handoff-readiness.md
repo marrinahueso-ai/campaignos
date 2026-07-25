@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product  
-**Last updated:** July 22, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [QA hub](./README.md) · [launch-checklist.md](./launch-checklist.md) · [developer-agreements.md](./developer-agreements.md) · [deploy-and-rollback.md](../ops/deploy-and-rollback.md) · [env-and-secrets.md](../ops/env-and-secrets.md)
 
 ## Slice A vs full-site handoff
@@ -152,7 +152,7 @@ Before you invite them, have these ready (links + one short note is enough):
 | Owner vs Admin rename / copy polish | Product naming follow-up; access is allowlist + `admin` seat today |
 | Playwright coverage for agreements | Gate-only smoke exists (`17-developer-agreements-gate` with `HEY_RALLI_QA_UNSIGNED_*`). Countersign / Resend / Safari download remain manual ([developer-agreements.md](./developer-agreements.md)) |
 | Full launch-checklist A–Z | Soft-launch suite is Phase B after slice A readiness — not a gate to invite them for agreements |
-| Stripe / paid plan gates | Deferred (Phase E) |
+| Storage capacity gate (file GB / history limits) | Deferred — see [billing-and-access.md](../ops/billing-and-access.md#12-known-gaps--remaining-work) |
 | Exhaustive Safari + Chrome matrix on every disposition flag | Your smoke = Safari once; QA can expand A10–A14 |
 
 ---

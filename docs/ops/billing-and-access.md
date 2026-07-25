@@ -197,7 +197,7 @@ Pre-Stripe default paid tier for metering: **Professional (1,200)**.
 
 ## 9) Stripe setup (ops)
 
-**Account:** Hey Ralli (`acct_1TtXrAP91P40Btyw`) — **live** mode. `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set in Production — Checkout is live.
+**Account:** Hey Ralli (`acct_1TtXrAP91P40Btyw`) — **live** mode. `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and the plan/Reserve price IDs are set in Production — Checkout is live. (`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is optional and currently unused — see §12.)
 
 ### Products created (July 24, 2026)
 
@@ -258,8 +258,8 @@ All follow the same pattern: resolve org → `assertOrgFeature`/`assertOrgCapaci
 
 - **Storage limits not modeled** — "File Storage" / "File History" rows exist only in the plan matrix table above; there's no `PlanCapacityKey` or enforcement code for them. File sizes are tracked per-row across at least 3 separate tables (`campaign_files`, vendor directory uploads, `organization_stickers`) with no per-org rollup today, so this is a bigger lift (new capacity key + usage accounting across sources) — explicitly deferred, not scheduled.
 - **`priority_support`** — defined in `PlanFeatureKey` but is a support-process/SLA distinction, not an app feature toggle. No code gate applies; Premium orgs get priority support operationally, not via a UI lock.
-- **Dead doc line** — `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is documented as required in [env-and-secrets.md](./env-and-secrets.md), but Checkout is a server-side redirect and never reads it client-side. Harmless, just unused.
-- **Cross-doc staleness (flagged, not fixed here)** — `feature-list.md` and some QA docs still describe Stripe/plan gates as "deferred (Phase E)," which conflicts with Phase 5 above being shipped. Needs a cleanup pass through `feature-list.md`.
+- **Unused optional key** — `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is listed as optional in [env-and-secrets.md](./env-and-secrets.md), but Checkout is a server-side redirect and never reads it client-side. Harmless, just unused — no action needed.
+- **Cross-doc staleness — fixed (July 25, 2026)** — `feature-list.md`, `access-control.md`, `architecture.md`, `access-and-onboarding.md`, and the QA docs (`pre-handoff-readiness.md`, `architecture-overview.md`, `launch-checklist.md`, `owner-ai-apis.md`) no longer describe Stripe/plan gates as "deferred (Phase E)"; they now point here. `docs/archive/**` intentionally left as-is (frozen historical record).
 
 ## TODO
 
@@ -273,4 +273,4 @@ All follow the same pattern: resolve org → `assertOrgFeature`/`assertOrgCapaci
 - [x] `STRIPE_SECRET_KEY` + publishable key on local + Vercel + Production redeploy
 - [x] Hard-block AI at 0 (Phase 6)
 - [ ] Storage capacity gate (deferred — see Known gaps)
-- [ ] Clean up stale "Phase E deferred" language in `feature-list.md` / QA docs
+- [x] Clean up stale "Phase E deferred" language in `feature-list.md` / QA docs

@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 24, 2026 — AI credits Phase 6 (hard-block at 0)
+**Last updated:** July 25, 2026 — corrected stale "Stripe deferred" line (shipped)
 
 ---
 
@@ -40,7 +40,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Active organization (membership-scoped workspace) — **shipped** (living: [access-and-onboarding.md](../security/access-and-onboarding.md))
 - Organization switcher (when >1 active memberships) — **shipped** (MVP)
 - Files library respects active org (no cross-org file list/download for multi-membership) — **shipped**
-- Stripe / paid plan gates — **deferred** (Phase E)
+- Stripe Checkout/Portal + plan/capacity gates — **shipped** (live in Production; see [billing-and-access.md](../ops/billing-and-access.md))
 
 ## Access control & team
 - Access templates (permission toggles) — **shipped**

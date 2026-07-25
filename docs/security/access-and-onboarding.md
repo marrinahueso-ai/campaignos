@@ -32,7 +32,7 @@ There is **no open self-serve “create org without a code”** path when foundi
 | **Team invite** | Seat provisioned by an org admin | Email / link → `/invite/[token]` → set password (or sign in if account exists) → membership becomes `active` |
 | **Returning sign-in** | Existing auth user with ≥1 active membership | Password, magic link, or OAuth (Google / Facebook) → post-auth routing → app |
 
-Stripe / paid plan gates: **deferred** (Phase E). Valid founding codes set `billing_exempt_at` on the org when used.
+Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-access.md](../ops/billing-and-access.md)). Valid founding codes set `billing_exempt_at` on the org when used.
 
 ---
 

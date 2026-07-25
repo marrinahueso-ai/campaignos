@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 22, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
 
 ## Purpose
@@ -151,13 +151,14 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 | 10.2 | Ops question returns grounded answer | **Pass (Playwright)** | `12` |
 | 10.3 | Ambiguous event disambiguation chips | **Pass (Playwright)** opportunistic | `12` documents skip if staging has no clash |
 
-## 11. Billing (pre-Stripe)
+## 11. Billing (Stripe live)
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
 | 11.1 | `/settings/billing-plan` loads | **Pass (Playwright)** | `18` |
 | 11.2 | Founding Partner / plan copy accurate | **Pass (Playwright)** load | Spot-check copy optional |
 | 11.3 | No false payment failed / broken Stripe CTAs | **Pass (Playwright)** | `18` |
+| 11.4 | Checkout / Portal / webhook plan sync | **Needs you** | See [billing-and-access.md](../ops/billing-and-access.md) |
 
 ## 12. Deploy smoke (Production)
 
@@ -212,7 +213,7 @@ npm run test:hey-ralli -- \
 
 ## Known deferred (do not fail launch for these)
 
-- Stripe Checkout / paid plan gates (Phase E)
+- Storage capacity gate (file GB / history limits) — see [billing-and-access.md](../ops/billing-and-access.md#12-known-gaps--remaining-work)
 - Responsibility **person** picker from matrix UI
 - Insights demographics / LLM narrative / year-end board report
 - Insights-weighted posting heatmap
