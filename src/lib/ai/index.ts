@@ -55,6 +55,18 @@ export type { BrandVoiceContext, BrandVoiceScore } from "@/lib/brand-voice";
 
 export { buildCommunicationDraftContext } from "@/lib/ai/context";
 export { logAiUsage } from "@/lib/ai/usage";
+/** Credit engine: import from `@/lib/ai/credits` (server-only) or `@/lib/ai/credit-constants`. */
+export {
+  creditCostForAction,
+  PLAN_MONTHLY_CREDITS,
+  AI_RESERVE_SKUS,
+  DEFAULT_PAID_PLAN_TIER,
+  ARTWORK_CREDIT_WEIGHT,
+  TEXT_AI_CREDIT_WEIGHT,
+  periodYmUtc,
+} from "@/lib/ai/credit-constants";
+export type { AiPlanTier, AiReserveSkuId } from "@/lib/ai/credit-constants";
+export { splitBurnAcrossBuckets } from "@/lib/ai/credits-pure";
 export { displayDraftContent, isLegacyPlaceholderContent } from "@/lib/ai/content";
 export { draftCommunicationWithAi } from "@/lib/ai/draft";
 export { draftCommunicationWithAiAction } from "@/lib/ai/actions";

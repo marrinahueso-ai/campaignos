@@ -116,7 +116,11 @@ async function persistAiUsageLog(input: AiUsageLogInput): Promise<void> {
 
   try {
     const admin = createAdminClient();
-    const { error } = await admin.from("ai_usage_log").insert(row);
+    const { data: inserted, error } = await admin
+      .from("ai_usage_log")
+      .insert(row)
+      .select("id")
+      .maybeSingle();
     if (error?.code === "42P01") {
       // Table not migrated yet — safe no-op until Phase 1 SQL is applied.
       console.warn("[ai-usage] ai_usage_log missing; apply migration");
@@ -124,6 +128,21 @@ async function persistAiUsageLog(input: AiUsageLogInput): Promise<void> {
     }
     if (error) {
       console.error("Failed to persist ai_usage_log:", error.message);
+      return;
+    }
+    if (inserted?.id && organizationId) {
+      try {
+        const { recordAiCreditBurn } = await import("@/lib/ai/credits");
+        await recordAiCreditBurn({
+          organizationId,
+          aiUsageLogId: inserted.id as string,
+          actionType: input.actionType,
+          success: input.success,
+          actorUserId: input.userId,
+        });
+      } catch (burnError) {
+        console.error("[ai-usage] credit burn failed:", burnError);
+      }
     }
   } catch (error) {
     console.error("ai_usage_log persist failed:", error);

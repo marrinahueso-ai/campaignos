@@ -3,11 +3,13 @@
 **Status:** Living  
 **Owner:** Product / Engineering  
 **Last updated:** July 23, 2026  
-**Related:** [Feature list](./feature-list.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
+**Related:** [Feature list](./feature-list.md) · [AI credits matrix](../ops/ai-credits-matrix.md) · [Access & onboarding](../security/access-and-onboarding.md) · [QA: Owner AI & APIs](../qa/owner-ai-apis.md) · [Owner Ops](../engineering/developer-agreements.md)
 
 Platform Owner page for monitoring **AI usage**, **connected API usage**, **operating costs**, and **customer consumption**. Internal ops only — not org-member Insights.
 
 **Implementation status:** Phases 0–5 eng complete. UI + warehouse + reconcile CLI/tests ship. Feature-list stays **partial** until Owner completes QA § F sign-off (soak + OpenAI reconcile). Production warehouse collects live app logs from 2026-07-23. Optional **one-time** OpenAI Usage API history import (Admin key) attributes pre–collecting-since account usage to Edmondson Elementary; School B is pinned at $0 until it has live logs. Not a recurring sync.
+
+**Org AI credits:** metering Phase 1 ships with `organization_ai_credit_balances` / ledger + burn from `logAiUsage` (see [ai-credits-matrix.md](../ops/ai-credits-matrix.md)). Owner **per-org credits monitoring** on this page = credits Phase 3 (not yet).
 
 ---
 

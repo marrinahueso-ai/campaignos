@@ -11,7 +11,8 @@
 | [support-runbook.md](./support-runbook.md) | Planned stub |
 | [sentry.md](./sentry.md) | Planned stub |
 | [incident-response.md](./incident-response.md) | Planned stub |
-| [billing-and-access.md](./billing-and-access.md) | Planned stub |
+| [billing-and-access.md](./billing-and-access.md) | **Living** (partial) |
+| [ai-credits-matrix.md](./ai-credits-matrix.md) | **Living** |
 
 See also: [`vercel.json`](../../vercel.json) · [`.env.local.example`](../../.env.local.example)
 
