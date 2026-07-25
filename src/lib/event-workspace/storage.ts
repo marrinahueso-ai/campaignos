@@ -1,4 +1,4 @@
-import { resolveSafeUploadContentType } from "@/lib/uploads/safe-content-type";
+import { resolveSafeUploadContentType } from "../uploads/safe-content-type";
 
 export const EVENT_ASSETS_BUCKET = "event-assets";
 
