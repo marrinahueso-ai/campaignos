@@ -78,6 +78,11 @@ import {
 } from "@/lib/auth/post-auth-path";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
 import {
+  checkRateLimit,
+  getRequestIp,
+  rateLimitMessage,
+} from "@/lib/security/rate-limit";
+import {
   createAdminClient,
   isSupabaseAdminConfigured,
 } from "@/lib/supabase/admin";
@@ -325,6 +330,20 @@ export async function signInWithPasswordAction(
     return { error: "Enter your email and password.", success: false };
   }
 
+  const ip = await getRequestIp();
+  const [byEmail, byIp] = await Promise.all([
+    checkRateLimit({
+      key: `login:email:${email.toLowerCase()}`,
+      windowSeconds: 15 * 60,
+      max: 10,
+    }),
+    checkRateLimit({ key: `login:ip:${ip}`, windowSeconds: 15 * 60, max: 30 }),
+  ]);
+  if (!byEmail.allowed || !byIp.allowed) {
+    const retryAfter = Math.max(byEmail.retryAfterSeconds, byIp.retryAfterSeconds);
+    return { error: rateLimitMessage(retryAfter, "sign-in attempts"), success: false };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -368,6 +387,19 @@ export async function completeInviteSetupAction(
 
   if (!inviteToken) {
     return { error: "This invite link is invalid.", success: false };
+  }
+
+  const ip = await getRequestIp();
+  const inviteRateLimit = await checkRateLimit({
+    key: `invite-accept:${inviteToken}:${ip}`,
+    windowSeconds: 15 * 60,
+    max: 10,
+  });
+  if (!inviteRateLimit.allowed) {
+    return {
+      error: rateLimitMessage(inviteRateLimit.retryAfterSeconds, "attempts"),
+      success: false,
+    };
   }
 
   const lookup = await lookupInviteByToken(inviteToken);
@@ -442,6 +474,18 @@ export async function changePasswordAction(
     return { error: "Sign in first.", success: false };
   }
 
+  const passwordChangeRateLimit = await checkRateLimit({
+    key: `change-password:${user.id}`,
+    windowSeconds: 60 * 60,
+    max: 10,
+  });
+  if (!passwordChangeRateLimit.allowed) {
+    return {
+      error: rateLimitMessage(passwordChangeRateLimit.retryAfterSeconds, "attempts"),
+      success: false,
+    };
+  }
+
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
 
@@ -474,6 +518,20 @@ export async function signInWithEmailAction(
 
   if (!email) {
     return { error: "Enter your email address.", success: false };
+  }
+
+  const otpIp = await getRequestIp();
+  const [otpByEmail, otpByIp] = await Promise.all([
+    checkRateLimit({
+      key: `otp-send:email:${email.toLowerCase()}`,
+      windowSeconds: 15 * 60,
+      max: 5,
+    }),
+    checkRateLimit({ key: `otp-send:ip:${otpIp}`, windowSeconds: 15 * 60, max: 15 }),
+  ]);
+  if (!otpByEmail.allowed || !otpByIp.allowed) {
+    const retryAfter = Math.max(otpByEmail.retryAfterSeconds, otpByIp.retryAfterSeconds);
+    return { error: rateLimitMessage(retryAfter, "sign-in link requests"), success: false };
   }
 
   const isNewSchoolSignup = setupIntent && !inviteToken;
@@ -627,6 +685,18 @@ export async function submitFoundingAccessCodeAction(
   const user = await getAuthUser();
   if (!user) {
     return { error: "Sign in first, then enter your founding access code.", success: false };
+  }
+
+  const foundingCodeRateLimit = await checkRateLimit({
+    key: `founding-code:${user.id}`,
+    windowSeconds: 15 * 60,
+    max: 10,
+  });
+  if (!foundingCodeRateLimit.allowed) {
+    return {
+      error: rateLimitMessage(foundingCodeRateLimit.retryAfterSeconds, "attempts"),
+      success: false,
+    };
   }
 
   const accessCode = formData.get("accessCode")?.toString()?.trim() || null;

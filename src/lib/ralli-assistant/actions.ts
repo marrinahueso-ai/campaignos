@@ -9,6 +9,7 @@ import {
   type AskRalliSource,
 } from "@/lib/ralli-assistant/ask";
 import type { ProductHelpLink } from "@/lib/ralli-assistant/product-help-knowledge";
+import { checkRateLimit, rateLimitMessage } from "@/lib/security/rate-limit";
 
 export type AskRalliAssistantActionResult = {
   success: boolean;
@@ -63,6 +64,22 @@ export async function askRalliAssistantAction(
       eventOptions: [],
       source: null,
       error: `${gate.message} ${gate.upgradeHint}`,
+    };
+  }
+
+  const rateLimit = await checkRateLimit({
+    key: `ask-ralli:${user.id}`,
+    windowSeconds: 5 * 60,
+    max: 30,
+  });
+  if (!rateLimit.allowed) {
+    return {
+      success: false,
+      answer: null,
+      links: [],
+      eventOptions: [],
+      source: null,
+      error: rateLimitMessage(rateLimit.retryAfterSeconds, "questions"),
     };
   }
 
