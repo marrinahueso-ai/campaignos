@@ -54,6 +54,7 @@ export type ArtworkV2OrchestrationRequest =
 /** Optional member/milestone attribution forwarded to ai_usage_log. Safe to omit. */
 export type ArtworkV2UsageAttribution = {
   userId?: string | null;
+  organizationId?: string | null;
   isRegeneration?: boolean;
   milestoneLabel?: string | null;
   relativeDay?: number | null;
@@ -233,6 +234,7 @@ export async function generateArtworkV2ImageNative(
 
   const { assertAiCreditsAvailable } = await import("@/lib/ai/credits");
   const credits = await assertAiCreditsAvailable({
+    organizationId: attribution?.organizationId,
     eventId,
     actionType: "generate_artwork",
   });

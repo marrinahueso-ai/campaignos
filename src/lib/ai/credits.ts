@@ -66,6 +66,9 @@ export type AssertAiCreditsResult =
 export const AI_CREDITS_ORG_UNRESOLVED_MESSAGE =
   "Could not verify AI credits for this request. Please sign in with an active organization and try again.";
 
+export const AI_CREDITS_BALANCE_UNAVAILABLE_MESSAGE =
+  "AI credits could not be loaded for your organization. Please try again in a moment.";
+
 function softWarnForTier(
   tier: AiPlanTier,
   periodRemaining: number,
@@ -328,33 +331,69 @@ export const getOrgAiCreditsWidgetData = cache(
   },
 );
 
+async function resolveOrganizationIdFromEvent(
+  eventId: string,
+): Promise<string | null> {
+  if (!isSupabaseAdminConfigured()) return null;
+  try {
+    const admin = createAdminClient();
+    // Events are org-scoped via school_years — there is no events.organization_id.
+    const { data: event, error: eventError } = await admin
+      .from("events")
+      .select("school_year_id")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (eventError) {
+      console.error("[ai-credits] event lookup failed:", eventError.message);
+      return null;
+    }
+    const schoolYearId = event?.school_year_id as string | null | undefined;
+    if (!schoolYearId) return null;
+
+    const { data: schoolYear, error: yearError } = await admin
+      .from("school_years")
+      .select("organization_id")
+      .eq("id", schoolYearId)
+      .maybeSingle();
+    if (yearError) {
+      console.error("[ai-credits] school year lookup failed:", yearError.message);
+      return null;
+    }
+    return (schoolYear?.organization_id as string | undefined)?.trim() || null;
+  } catch (error) {
+    console.error("[ai-credits] org lookup from event failed:", error);
+    return null;
+  }
+}
+
 async function resolveOrganizationIdForCredits(input: {
   organizationId?: string | null;
   eventId?: string | null;
 }): Promise<string | null> {
   if (input.organizationId?.trim()) return input.organizationId.trim();
-  if (!input.eventId?.trim() || !isSupabaseAdminConfigured()) return null;
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("events")
-      .select("organization_id")
-      .eq("id", input.eventId)
-      .maybeSingle();
-    if (error) {
-      console.error("[ai-credits] org lookup failed:", error.message);
-      return null;
-    }
-    return (data?.organization_id as string | undefined) ?? null;
-  } catch (error) {
-    console.error("[ai-credits] org lookup failed:", error);
-    return null;
+
+  if (input.eventId?.trim()) {
+    const fromEvent = await resolveOrganizationIdFromEvent(input.eventId.trim());
+    if (fromEvent) return fromEvent;
   }
+
+  // Last resort: bill the caller's active membership org.
+  try {
+    const { getActiveMembership } = await import("@/lib/auth/membership-queries");
+    const membership = await getActiveMembership();
+    const membershipOrgId = membership?.organizationId?.trim();
+    if (membershipOrgId) return membershipOrgId;
+  } catch (error) {
+    console.error("[ai-credits] active membership lookup failed:", error);
+  }
+
+  return null;
 }
 
 /**
  * Phase 6 pre-flight: refuse AI when period + Reserve cannot cover the cost.
- * Founding / unlimited always allowed. Fail-open if balance cannot be loaded.
+ * Founding / unlimited always allowed. Fail-closed if org or balance cannot
+ * be resolved (except local/dev without a service role key).
  * Reads fresh balance (not React cache) so multi-call batches cannot overspend.
  */
 export async function assertAiCreditsAvailable(input: {
@@ -390,7 +429,7 @@ export async function assertAiCreditsAvailable(input: {
   if (!row) {
     return {
       ok: false,
-      error: AI_CREDITS_ORG_UNRESOLVED_MESSAGE,
+      error: AI_CREDITS_BALANCE_UNAVAILABLE_MESSAGE,
       errorCode: "org_unresolved",
     };
   }

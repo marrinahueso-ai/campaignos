@@ -229,6 +229,7 @@ export async function generateCampaignBuilderArtwork(input: {
     hasAttachedLogo: Boolean(selectedLogo.url),
   });
 
+  const organization = await getLatestOrganization();
   const generation = await generateArtworkVariations({
     eventId: input.eventId,
     milestoneId: input.milestone.id,
@@ -240,6 +241,7 @@ export async function generateCampaignBuilderArtwork(input: {
     versionCount: input.versionCount ?? 1,
     usageAttribution: {
       userId: input.userId ?? null,
+      organizationId: organization?.id ?? null,
       isRegeneration: input.isRegeneration,
       milestoneLabel: input.milestone.name,
     },
