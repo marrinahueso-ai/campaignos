@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateEventPlanningFields } from "@/lib/event-playbooks/planning-mutations";
-import type {
-  PlanningQuickLinksMap,
-  PlanningVendorEntry,
+import {
+  mergePlanningQuickLinks,
+  parsePlanningQuickLinks,
+  type PlanningQuickLinksMap,
+  type PlanningVendorEntry,
 } from "@/lib/event-playbooks/planning-constants";
+import { updateEventPlanningFields } from "@/lib/event-playbooks/planning-mutations";
+import { createClient } from "@/lib/supabase/server";
 import type { EventType } from "@/types/playbooks";
 
 function revalidateEvent(eventId: string) {
@@ -56,6 +59,41 @@ export async function saveEventPlanningQuickLinksAction(
 
   revalidateEvent(eventId);
   return { success: true, error: null };
+}
+
+/**
+ * Merge a volunteer page URL into planning quick links without wiping other links.
+ * Used by Homepage Composer when an event card link is edited.
+ */
+export async function saveEventVolunteerSignupUrlAction(
+  eventId: string,
+  url: string,
+): Promise<{ success: boolean; error: string | null }> {
+  const trimmed = url.trim();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("planning_quick_links")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to load planning quick links:", error.message);
+    return { success: false, error: "Unable to update volunteer page link." };
+  }
+
+  const current = mergePlanningQuickLinks(
+    parsePlanningQuickLinks(data?.planning_quick_links),
+  );
+  const next: PlanningQuickLinksMap = {
+    ...current,
+    volunteer_signup: {
+      url: trimmed,
+      status: trimmed ? "filled" : "open",
+    },
+  };
+
+  return saveEventPlanningQuickLinksAction(eventId, next);
 }
 
 export async function saveEventPlanningVendorsAction(
