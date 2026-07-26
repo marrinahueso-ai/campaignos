@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 22, 2026  
+**Last updated:** July 25, 2026  
 **Related:** [Access & multi-tenant onboarding](./access-and-onboarding.md) · [Access control](../engineering/access-control.md) · [Storage RLS](../engineering/storage-rls.md) · [Security](./README.md)
 
 ## Purpose
@@ -22,3 +22,12 @@ Guarantees for organization isolation for QA and security review.
 
 **User-facing join / switch / gates:** [access-and-onboarding.md](./access-and-onboarding.md).  
 **Templates, see-vs-work, Phase A–D history:** [access-control.md](../engineering/access-control.md).
+
+## Same-browser session isolation (shared/kiosk computers)
+
+Distinct from cross-tenant data isolation above: does anything leak between two different people signing in/out on the **same physical browser**?
+
+| Risk | Status |
+|------|--------|
+| Back button after sign-out shows cached authenticated page (bfcache) | ✅ Verified clean on Chromium, Firefox, WebKit — server re-validates and redirects to `/login`, no client-only cache restore |
+| `localStorage` Campaign Builder drafts/artwork backups survive sign-out | ✅ Fixed (2026-07) — sign-out now clears `campaign-builder-v2:*` / `campaign-builder-v2-artwork:*` keys, see [`clear-on-signout.ts`](../../src/lib/campaign-builder-v2/clear-on-signout.ts); regression-tested in `22-shared-device-signout-cleanup` |

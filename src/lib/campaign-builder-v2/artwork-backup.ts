@@ -34,8 +34,10 @@ export interface ArtworkBackupEntry {
 
 export type ArtworkBackupMap = Record<string, ArtworkBackupEntry>;
 
+export const ARTWORK_BACKUP_KEY_PREFIX = "campaign-builder-v2-artwork:";
+
 export function artworkBackupKey(eventId: string): string {
-  return `campaign-builder-v2-artwork:${eventId}`;
+  return `${ARTWORK_BACKUP_KEY_PREFIX}${eventId}`;
 }
 
 export function buildArtworkBackup(

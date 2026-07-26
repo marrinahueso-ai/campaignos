@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { SignOutForm } from "@/components/auth/SignOutForm";
 import { AgreementThemeShell } from "@/components/developer-agreements/AgreementThemeShell";
 import { OrganizationSwitcher } from "@/components/layout/OrganizationSwitcher";
 import {
@@ -110,11 +111,11 @@ export default async function BillingCanceledPage({
         {ctx.hasStripeCustomer ? (
           <BillingPortalButton label="Open Stripe billing portal" />
         ) : null}
-        <form action="/auth/signout" method="POST">
+        <SignOutForm>
           <Button type="submit" variant="tertiary">
             Sign out
           </Button>
-        </form>
+        </SignOutForm>
       </div>
     </AgreementThemeShell>
   );

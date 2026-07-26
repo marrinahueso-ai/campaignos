@@ -8,6 +8,7 @@ import {
   HelpCircle,
   Settings,
 } from "lucide-react";
+import { SignOutForm } from "@/components/auth/SignOutForm";
 
 interface PlanningHubContextBarProps {
   notificationCount: number;
@@ -95,14 +96,14 @@ export function PlanningHubContextBar({
             >
               Account settings
             </Link>
-            <form action="/auth/signout" method="POST">
+            <SignOutForm>
               <button
                 type="submit"
                 className="block w-full px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
               >
                 Sign out
               </button>
-            </form>
+            </SignOutForm>
           </div>
         )}
       </div>

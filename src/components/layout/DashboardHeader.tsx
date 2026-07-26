@@ -3,6 +3,7 @@
 import { Home, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignOutForm } from "@/components/auth/SignOutForm";
 import { OrganizationSwitcher } from "@/components/layout/OrganizationSwitcher";
 import { SettingsMenuDropdown } from "@/components/layout/SettingsMenuDropdown";
 import type { ActiveOrganizationOption } from "@/lib/auth/active-organization";
@@ -88,14 +89,14 @@ export function DashboardHeader({
           {userEmail && (
             <div className="hidden border-l border-cos-border pl-3 text-right sm:block">
               <p className="max-w-[12rem] truncate text-xs text-cos-muted">{userEmail}</p>
-              <form action="/auth/signout" method="POST">
+              <SignOutForm>
                 <button
                   type="submit"
                   className="text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
                 >
                   Sign out
                 </button>
-              </form>
+              </SignOutForm>
             </div>
           )}
         </div>

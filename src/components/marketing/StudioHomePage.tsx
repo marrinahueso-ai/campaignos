@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, CalendarRange, LayoutDashboard, Megaphone, Send, Sparkles, Users } from "lucide-react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { SignOutForm } from "@/components/auth/SignOutForm";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
 import { Button } from "@/components/ui/Button";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
@@ -217,14 +218,14 @@ export function StudioHomePage({
                     <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 )}
-                <form action="/auth/signout" method="POST">
+                <SignOutForm>
                   <button
                     type="submit"
                     className="block w-full text-center text-xs tracking-wide text-cos-muted transition-colors hover:text-cos-text"
                   >
                     Sign out
                   </button>
-                </form>
+                </SignOutForm>
               </div>
             ) : (
               <>
