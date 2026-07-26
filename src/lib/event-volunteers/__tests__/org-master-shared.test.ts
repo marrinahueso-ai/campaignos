@@ -8,6 +8,7 @@ import {
   getVolunteerFillRateBand,
   getVolunteerFillRateLabel,
   listUnderfilledRoles,
+  pickOpenRoles,
   pickTopRoles,
   type VolunteersMasterEventRow,
 } from "@/lib/event-volunteers/org-master-shared";
@@ -43,6 +44,7 @@ function eventRow(
     totalSpots: partial.totalSpots ?? null,
     openSpots: partial.openSpots ?? null,
     underfilledRoleCount: partial.underfilledRoleCount ?? 0,
+    underfilledRoles: partial.underfilledRoles ?? [],
     topRoles: partial.topRoles ?? [],
     roleNames: partial.roleNames ?? [],
     signupUrl: partial.signupUrl ?? null,
@@ -76,6 +78,48 @@ describe("volunteers master shared helpers", () => {
     assert.equal(underfilled.length, 2);
     assert.equal(underfilled[0]?.roleName, "Marshal");
     assert.equal(underfilled[0]?.openSpots, 5);
+  });
+
+  it("merges duplicate role names when listing underfilled", () => {
+    const underfilled = listUnderfilledRoles([
+      assignment({
+        name: "Badge Making",
+        externalKey: "badge-a",
+        quantityOpen: 5,
+        availabilityStatus: "high_need",
+      }),
+      assignment({
+        name: "Badge Making",
+        externalKey: "badge-b",
+        quantityOpen: 5,
+        availabilityStatus: "high_need",
+      }),
+      assignment({
+        name: "School Supply Helper",
+        quantityOpen: 3,
+        availabilityStatus: "needs_help",
+      }),
+    ]);
+    assert.equal(underfilled.length, 2);
+    assert.equal(underfilled[0]?.roleName, "Badge Making");
+    assert.equal(underfilled[0]?.openSpots, 10);
+    assert.equal(underfilled[1]?.roleName, "School Supply Helper");
+  });
+
+  it("picks top open roles for ease focus", () => {
+    const open = pickOpenRoles(
+      [
+        assignment({ name: "A", quantityOpen: 1, availabilityStatus: "needs_help" }),
+        assignment({ name: "B", quantityOpen: 4, availabilityStatus: "high_need" }),
+        assignment({ name: "C", quantityOpen: 2, availabilityStatus: "needs_help" }),
+        assignment({ name: "D", quantityOpen: 3, availabilityStatus: "needs_help" }),
+      ],
+      3,
+    );
+    assert.deepEqual(
+      open.map((row) => row.name),
+      ["B", "D", "C"],
+    );
   });
 
   it("computes fill rate from complete quantities", () => {

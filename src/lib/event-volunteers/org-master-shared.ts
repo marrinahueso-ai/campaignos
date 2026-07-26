@@ -18,6 +18,11 @@ export type VolunteersMasterTopRole = {
   filledCount: number;
 };
 
+export type VolunteersMasterOpenRole = {
+  name: string;
+  openSpots: number;
+};
+
 export type VolunteersMasterUnderfilledRole = {
   eventId: string;
   eventTitle: string;
@@ -39,6 +44,8 @@ export type VolunteersMasterEventRow = {
   totalSpots: number | null;
   openSpots: number | null;
   underfilledRoleCount: number;
+  /** Top open roles (by open spots) for ease focus/queue. */
+  underfilledRoles: VolunteersMasterOpenRole[];
   topRoles: VolunteersMasterTopRole[];
   roleNames: string[];
   signupUrl: string | null;
@@ -107,6 +114,7 @@ export type VolunteersMasterPageData = {
 
 export const VOLUNTEERS_MASTER_UPCOMING_WINDOW_DAYS = 60;
 export const VOLUNTEERS_MASTER_TOP_ROLES_LIMIT = 3;
+export const VOLUNTEERS_MASTER_OPEN_ROLES_LIMIT = 3;
 export const VOLUNTEERS_MASTER_THIS_WEEK_RAIL_LIMIT = 8;
 
 /** Calendar week containing `today` (Sunday start), matching task-hub weeks. */
@@ -138,24 +146,42 @@ export function pickTopRoles(
 export function listUnderfilledRoles(
   assignments: VolunteerAssignmentView[],
 ): Array<{ roleName: string; openSpots: number }> {
-  return assignments
-    .filter((row) => {
-      if (typeof row.quantityOpen === "number" && row.quantityOpen > 0) {
-        return true;
-      }
-      return (
-        row.availabilityStatus === "high_need" ||
-        row.availabilityStatus === "needs_help"
-      );
-    })
+  const merged = new Map<string, { roleName: string; openSpots: number }>();
+
+  for (const row of assignments) {
+    const hasOpen =
+      (typeof row.quantityOpen === "number" && row.quantityOpen > 0) ||
+      row.availabilityStatus === "high_need" ||
+      row.availabilityStatus === "needs_help";
+    if (!hasOpen) continue;
+
+    const roleName = row.name.trim() || "Untitled role";
+    const key = roleName.toLowerCase();
+    const openSpots =
+      typeof row.quantityOpen === "number" && row.quantityOpen > 0
+        ? row.quantityOpen
+        : 1;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.openSpots += openSpots;
+    } else {
+      merged.set(key, { roleName, openSpots });
+    }
+  }
+
+  return [...merged.values()].sort((a, b) => b.openSpots - a.openSpots);
+}
+
+export function pickOpenRoles(
+  assignments: VolunteerAssignmentView[],
+  limit = VOLUNTEERS_MASTER_OPEN_ROLES_LIMIT,
+): VolunteersMasterOpenRole[] {
+  return listUnderfilledRoles(assignments)
+    .slice(0, limit)
     .map((row) => ({
-      roleName: row.name,
-      openSpots:
-        typeof row.quantityOpen === "number" && row.quantityOpen > 0
-          ? row.quantityOpen
-          : 1,
-    }))
-    .sort((a, b) => b.openSpots - a.openSpots);
+      name: row.roleName,
+      openSpots: row.openSpots,
+    }));
 }
 
 export function computeEventFillStats(assignments: VolunteerAssignmentView[]): {

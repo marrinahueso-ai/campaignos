@@ -1,267 +1,264 @@
 "use client";
 
 import Link from "next/link";
+import { RefreshCw, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight,
-  CheckCircle2,
-  ChevronDown,
-  ExternalLink,
-  RefreshCw,
-  Search,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+  VolunteersEmptyEase,
+  VolunteersFocusCard,
+  VolunteersQueueRow,
+} from "@/components/volunteers/VolunteersEaseList";
 import {
-  VolunteersMasterKpiCards,
-  type VolunteersMasterKpiCardModel,
-} from "@/components/volunteers/VolunteersMasterKpiCards";
-import { eventVolunteersHref } from "@/lib/events/event-responsibility";
-import {
+  eventMatchesVolunteersSearch,
   filterVolunteersMasterEvents,
-  getVolunteerFillRateBand,
-  getVolunteerFillRateLabel,
-  type VolunteerFillRateBand,
-  type VolunteersMasterEventRow,
   type VolunteersMasterFilter,
   type VolunteersMasterPageData,
-  type VolunteersMasterUnderfilledRole,
 } from "@/lib/event-volunteers/org-master-shared";
-import type {
-  VolunteersMasterKpiKey,
-  VolunteersMasterLayout,
-} from "@/lib/event-volunteers/volunteers-master-layout";
-import { formatDateTime, formatLocalDate } from "@/lib/utils/dates";
+import type { VolunteersMasterLayout } from "@/lib/event-volunteers/volunteers-master-layout";
+import { formatDateTime } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
 
-const FILL_RATE_BAND_STYLES: Record<
-  VolunteerFillRateBand,
-  { text: string; bar: string }
-> = {
-  critical: {
-    text: "text-cos-error-text",
-    bar: "bg-cos-error",
-  },
-  needs_attention: {
-    text: "text-orange-800",
-    bar: "bg-orange-500",
-  },
-  fair_progress: {
-    text: "text-amber-800",
-    bar: "bg-amber-400",
-  },
-  healthy: {
-    text: "text-cos-success-text",
-    bar: "bg-cos-success",
-  },
-  fully_staffed: {
-    text: "text-cos-success-text",
-    bar: "bg-cos-success",
-  },
-};
+type EaseFilter = "needs_people" | "upcoming" | "covered" | "all";
 
 interface VolunteersMasterShellProps {
   data: VolunteersMasterPageData;
-  initialKpiLayout: VolunteersMasterLayout;
+  /** Kept for page compatibility; KPI card layout is unused in ease UI. */
+  initialKpiLayout?: VolunteersMasterLayout;
 }
 
-const FILTER_CHIPS: Array<{ id: VolunteersMasterFilter; label: string }> = [
-  { id: "upcoming", label: "Upcoming" },
+const PULSE_TABS: Array<{ id: EaseFilter; label: string }> = [
   { id: "needs_people", label: "Needs people" },
+  { id: "upcoming", label: "Upcoming" },
   { id: "covered", label: "Covered" },
   { id: "all", label: "All" },
 ];
 
-function formatEventDateLabel(date: string): string {
-  return formatLocalDate(date, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function eventInitials(title: string): string {
-  const parts = title.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
-}
-
-function toggleFilter(
-  current: VolunteersMasterFilter,
-  next: VolunteersMasterFilter,
-): VolunteersMasterFilter {
-  return current === next ? "all" : next;
-}
-
 export function VolunteersMasterShell({
   data,
-  initialKpiLayout,
 }: VolunteersMasterShellProps) {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<VolunteersMasterFilter>("upcoming");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<EaseFilter>("needs_people");
+  const [focusIndex, setFocusIndex] = useState(0);
+
+  const searchedEvents = useMemo(
+    () =>
+      data.events.filter((event) =>
+        eventMatchesVolunteersSearch(event, search),
+      ),
+    [data.events, search],
+  );
+
+  const pulseCounts = useMemo(() => {
+    return {
+      needs_people: searchedEvents.filter((event) => event.needsPeople).length,
+      upcoming: searchedEvents.filter((event) => event.isUpcoming60).length,
+      covered: searchedEvents.filter((event) => event.isCovered).length,
+      all: searchedEvents.length,
+    };
+  }, [searchedEvents]);
 
   const filteredEvents = useMemo(
-    () => filterVolunteersMasterEvents(data.events, { filter, search }),
+    () =>
+      filterVolunteersMasterEvents(data.events, {
+        filter: filter as VolunteersMasterFilter,
+        search,
+      }),
     [data.events, filter, search],
   );
 
-  const activeKpi: VolunteersMasterKpiKey | null =
-    filter === "upcoming"
-      ? "upcoming"
-      : filter === "needs_people" || filter === "underfilled"
-        ? "underfilled"
-        : filter === "covered"
-          ? "fill_rate"
-          : filter === "all"
-            ? "total_volunteers"
-            : null;
+  useEffect(() => {
+    setFocusIndex(0);
+  }, [filter, search]);
 
-  const kpiCards: VolunteersMasterKpiCardModel[] = [
-    {
-      key: "total_volunteers",
-      label: "Total Volunteers",
-      value: String(data.kpis.totalVolunteers),
-      description: "Across all upcoming events.",
-      active: activeKpi === "total_volunteers",
-      onSelect: () => setFilter("all"),
+  const showFocus = filter === "needs_people";
+  const focusEvent =
+    showFocus && filteredEvents.length > 0
+      ? filteredEvents[
+          Math.min(focusIndex, Math.max(filteredEvents.length - 1, 0))
+        ]!
+      : null;
+  const queueEvents =
+    showFocus && focusEvent
+      ? filteredEvents.filter((event) => event.id !== focusEvent.id)
+      : filteredEvents;
+
+  const emptyCopy: Record<EaseFilter, { title: string; body: string }> = {
+    needs_people: {
+      title: data.events.some((event) => event.needsPeople)
+        ? "No matches in this search"
+        : "Everyone looks covered",
+      body: data.events.some((event) => event.needsPeople)
+        ? "Try a different search, or switch to Upcoming to scan all events."
+        : "When a role still needs people, the soonest shortfall shows up here with a signup link.",
     },
-    {
-      key: "fill_rate",
-      label: "Overall Fill Rate",
-      value:
-        data.kpis.overallFillRatePercent === null
-          ? "—"
-          : `${data.kpis.overallFillRatePercent}%`,
-      description: "All roles.",
-      active: activeKpi === "fill_rate",
-      onSelect: () => setFilter(toggleFilter(filter, "covered")),
+    upcoming: {
+      title: "No upcoming volunteer events",
+      body: "Events in the next 60 days with SignUpGenius or a volunteer signup link appear here.",
     },
-    {
-      key: "underfilled",
-      label: "Underfilled Roles",
-      value: String(data.kpis.underfilledRoleCount),
-      description:
-        data.kpis.underfilledEventCount === 0
-          ? "None right now."
-          : `Across ${data.kpis.underfilledEventCount} event${
-              data.kpis.underfilledEventCount === 1 ? "" : "s"
-            }.`,
-      active: activeKpi === "underfilled",
-      onSelect: () => setFilter(toggleFilter(filter, "needs_people")),
+    covered: {
+      title: "Nothing fully covered yet",
+      body: "Events at 100% fill with no open roles land in Covered.",
     },
-    {
-      key: "upcoming",
-      label: "Upcoming Events",
-      value: String(data.kpis.upcomingEventCount),
-      description: "Next 60 days.",
-      active: activeKpi === "upcoming",
-      onSelect: () => setFilter(toggleFilter(filter, "upcoming")),
+    all: {
+      title: data.events.length > 0 ? "No matches" : "No volunteer events yet",
+      body:
+        data.events.length > 0
+          ? "Try a different search."
+          : "Connect SignUpGenius or add a Volunteer Signup link on an event to see it here.",
     },
-  ];
+  };
+
+  const healthParts: string[] = [];
+  if (data.kpis.overallFillRatePercent !== null) {
+    healthParts.push(`Org fill ${data.kpis.overallFillRatePercent}%`);
+  }
+  if (data.kpis.underfilledRoleCount > 0) {
+    healthParts.push(
+      `${data.kpis.underfilledRoleCount} open role${
+        data.kpis.underfilledRoleCount === 1 ? "" : "s"
+      }`,
+    );
+  } else if (data.kpis.totalVolunteers > 0) {
+    healthParts.push(`${data.kpis.totalVolunteers} volunteers signed up`);
+  }
 
   return (
-    <div className="studio-page space-y-6 pb-12">
-      <div>
-        <h1 className="font-display text-4xl text-cos-text">Volunteer Master</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
-          Org-wide volunteer fill rates and underfilled roles. Aggregate counts
-          only — no volunteer personal data.
-        </p>
-      </div>
-
-      <VolunteersMasterKpiCards
-        cards={kpiCards}
-        initialLayout={initialKpiLayout}
-      />
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cos-muted" />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search events or roles…"
-            className="h-10 w-full rounded-xl border border-cos-border bg-cos-card pl-9 pr-3 text-sm text-cos-text outline-none focus:border-cos-dark"
-            aria-label="Search events or roles"
-          />
+    <div className="studio-page relative space-y-8 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      <header className="relative space-y-6">
+        <div>
+          <h1 className="font-display text-4xl tracking-[-0.02em] text-cos-text sm:text-5xl">
+            Volunteers
+          </h1>
+          <p className="mt-3 max-w-xl text-base leading-relaxed text-cos-muted">
+            See who still needs people — then share the signup. Aggregate
+            counts only; no volunteer personal data.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {FILTER_CHIPS.map((chip) => {
-            const isActive =
-              chip.id === "needs_people"
-                ? filter === "needs_people" || filter === "underfilled"
-                : filter === chip.id;
-            return (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => setFilter(chip.id)}
-                aria-pressed={isActive}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  isActive
-                    ? "bg-cos-dark text-white"
-                    : "bg-cos-bg-alt text-cos-muted ring-1 ring-black/[0.04] hover:text-cos-text",
-                )}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="min-w-0 rounded-2xl bg-cos-card p-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
-          <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-2xl text-cos-text">
-              Upcoming Events
-            </h2>
-            <span className="text-xs text-cos-muted">
-              {filteredEvents.length} shown
-            </span>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="tablist"
+            aria-label="Volunteer filters"
+          >
+            {PULSE_TABS.map((tab) => {
+              const active = filter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilter(tab.id)}
+                  className={cn(
+                    "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                    active
+                      ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
+                      : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
+                    active && tab.id === "needs_people"
+                      ? "shadow-[0_0_0_3px_rgba(47,74,60,0.12)]"
+                      : null,
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
+                      active ? "text-[#2f4a3c]" : "text-cos-muted",
+                    )}
+                  >
+                    {pulseCounts[tab.id]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          {filteredEvents.length === 0 ? (
-            <EmptyEventsState hasAny={data.events.length > 0} />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[40rem] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-cos-border text-[11px] font-semibold uppercase tracking-wide text-cos-muted">
-                    <th className="pb-3 pr-3 font-semibold">Event &amp; Date</th>
-                    <th className="pb-3 pr-3 font-semibold">Fill Rate</th>
-                    <th className="pb-3 pr-3 font-semibold">
-                      Top Roles (by volunteers)
-                    </th>
-                    <th className="w-10 pb-3" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEvents.map((event) => (
-                    <EventTableRow
-                      key={event.id}
-                      event={event}
-                      expanded={expandedId === event.id}
-                      onToggle={() =>
-                        setExpandedId((current) =>
-                          current === event.id ? null : event.id,
-                        )
-                      }
-                    />
-                  ))}
-                </tbody>
-              </table>
+          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+            {healthParts.length > 0 ? (
+              <span className="px-1 text-[13px] font-semibold text-cos-muted">
+                {healthParts.map((part, index) => (
+                  <span key={part}>
+                    {index > 0 ? " · " : null}
+                    <strong className="font-semibold text-cos-muted tabular-nums">
+                      {part}
+                    </strong>
+                  </span>
+                ))}
+              </span>
+            ) : null}
+            <div className="relative">
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search events or roles…"
+                className="h-9 w-full min-w-[180px] rounded-full border border-cos-border bg-cos-card pr-3 pl-9 text-[13px] text-cos-text outline-none focus:border-cos-dark sm:w-[240px]"
+                aria-label="Search events or roles"
+              />
             </div>
-          )}
-        </section>
+          </div>
+        </div>
+      </header>
 
-        <ThisWeekRail
-          roles={data.thisWeekUnderfilled}
-          onViewAll={() => setFilter("underfilled")}
-        />
-      </div>
+      {filteredEvents.length === 0 ? (
+        <section className="rounded-[22px] border border-cos-border bg-[rgba(255,252,247,0.55)]">
+          <VolunteersEmptyEase
+            title={emptyCopy[filter].title}
+            body={emptyCopy[filter].body}
+          />
+          {data.events.length === 0 ? (
+            <div className="pb-8 text-center">
+              <Link
+                href="/events"
+                className="text-sm font-bold text-cos-text hover:underline"
+              >
+                Go to Events →
+              </Link>
+            </div>
+          ) : null}
+        </section>
+      ) : (
+        <div className="space-y-9">
+          {focusEvent ? (
+            <section className="space-y-3">
+              <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                Needs you next
+              </p>
+              <VolunteersFocusCard
+                key={focusEvent.id}
+                event={focusEvent}
+                hasNext={filteredEvents.length > 1}
+                onNext={() =>
+                  setFocusIndex((current) =>
+                    (current + 1) % filteredEvents.length,
+                  )
+                }
+              />
+            </section>
+          ) : null}
+
+          {queueEvents.length > 0 ? (
+            <section className="space-y-3">
+              <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                {showFocus
+                  ? `Also needs people · ${queueEvents.length} more`
+                  : filter === "upcoming"
+                    ? "Upcoming · next 60 days"
+                    : filter === "covered"
+                      ? "Covered"
+                      : "All volunteer events"}
+              </p>
+              <div className="flex flex-col gap-2">
+                {queueEvents.map((event) => (
+                  <VolunteersQueueRow key={event.id} event={event} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      )}
 
       <footer className="flex items-center justify-center gap-2 pt-2 text-center text-xs text-cos-muted">
         <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -273,273 +270,6 @@ export function VolunteersMasterShell({
           Sync and connect live on each event&apos;s Volunteers tab.
         </p>
       </footer>
-    </div>
-  );
-}
-
-function EventArtworkAvatar({
-  title,
-  artworkUrl,
-}: {
-  title: string;
-  artworkUrl: string | null;
-}) {
-  if (artworkUrl) {
-    return (
-      <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-cos-accent-soft ring-1 ring-cos-border/60">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={artworkUrl}
-          alt=""
-          className="h-full w-full object-cover object-center"
-          loading="lazy"
-        />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cos-accent-soft text-xs font-semibold text-cos-dark ring-1 ring-cos-border/40"
-      aria-hidden
-    >
-      {eventInitials(title)}
-    </span>
-  );
-}
-
-function FillRateCell({ percent }: { percent: number | null }) {
-  const fillLabel = percent === null ? "—" : `${percent}%`;
-  const fillWidth =
-    percent === null ? 0 : Math.max(0, Math.min(100, percent));
-  const band = getVolunteerFillRateBand(percent);
-  const statusLabel = getVolunteerFillRateLabel(percent);
-  const styles = band ? FILL_RATE_BAND_STYLES[band] : null;
-  const isFullyStaffed = band === "fully_staffed";
-
-  return (
-    <div
-      className="min-w-[7rem]"
-      title={statusLabel ?? undefined}
-      aria-label={
-        percent === null
-          ? "Fill rate unavailable"
-          : `Fill rate ${fillLabel}${statusLabel ? `, ${statusLabel}` : ""}`
-      }
-    >
-      <p
-        className={cn(
-          "flex items-center gap-1 text-sm font-medium tabular-nums",
-          styles?.text ?? "text-cos-muted",
-        )}
-      >
-        {fillLabel}
-        {isFullyStaffed ? (
-          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        ) : null}
-      </p>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-cos-bg-alt">
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width]",
-            styles?.bar ?? "bg-cos-border",
-          )}
-          style={{ width: `${fillWidth}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function EventTableRow({
-  event,
-  expanded,
-  onToggle,
-}: {
-  event: VolunteersMasterEventRow;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <>
-      <tr className="border-b border-cos-border/70 align-middle">
-        <td className="py-4 pr-3">
-          <div className="flex items-center gap-3">
-            <EventArtworkAvatar
-              title={event.title}
-              artworkUrl={event.artworkUrl}
-            />
-            <div className="min-w-0">
-              <Link
-                href={eventVolunteersHref(event.id)}
-                className="block truncate font-medium text-cos-text hover:underline"
-              >
-                {event.title}
-              </Link>
-              <p className="text-xs text-cos-muted">
-                {formatEventDateLabel(event.date)}
-              </p>
-            </div>
-          </div>
-        </td>
-        <td className="py-4 pr-3">
-          <FillRateCell percent={event.fillRatePercent} />
-        </td>
-        <td className="py-4 pr-3">
-          {event.topRoles.length === 0 ? (
-            <span className="text-sm text-cos-muted">
-              {event.hasSnapshot ? "No filled roles yet" : "No sync data yet"}
-            </span>
-          ) : (
-            <ul className="space-y-0.5 text-sm text-cos-text">
-              {event.topRoles.map((role) => (
-                <li key={role.name} className="flex items-baseline gap-1.5">
-                  <span className="truncate">{role.name}</span>
-                  <span className="tabular-nums text-cos-muted">
-                    ({role.filledCount})
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </td>
-        <td className="py-4 text-right">
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Collapse event" : "Expand event"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-cos-muted transition-colors hover:bg-cos-bg-alt hover:text-cos-text"
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                expanded && "rotate-180",
-              )}
-            />
-          </button>
-        </td>
-      </tr>
-      {expanded ? (
-        <tr className="border-b border-cos-border/70 bg-cos-bg/40">
-          <td colSpan={4} className="px-4 py-3">
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <Link
-                href={eventVolunteersHref(event.id)}
-                className="inline-flex items-center gap-1.5 font-medium text-cos-dark hover:underline"
-              >
-                Open Volunteers tab
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              {event.signupUrl ? (
-                <a
-                  href={event.signupUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-cos-muted hover:text-cos-text hover:underline"
-                >
-                  Open signup
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              ) : null}
-              {event.underfilledRoleCount > 0 ? (
-                <span className="text-cos-muted">
-                  {event.underfilledRoleCount} underfilled role
-                  {event.underfilledRoleCount === 1 ? "" : "s"}
-                  {typeof event.openSpots === "number"
-                    ? ` · ${event.openSpots} open spot${event.openSpots === 1 ? "" : "s"}`
-                    : ""}
-                </span>
-              ) : (
-                <span className="text-cos-muted">
-                  {event.isCovered
-                    ? "All roles covered"
-                    : "Connect or sync SignUpGenius for fill stats"}
-                </span>
-              )}
-            </div>
-          </td>
-        </tr>
-      ) : null}
-    </>
-  );
-}
-
-function ThisWeekRail({
-  roles,
-  onViewAll,
-}: {
-  roles: VolunteersMasterUnderfilledRole[];
-  onViewAll: () => void;
-}) {
-  return (
-    <aside className="rounded-2xl bg-cos-card p-5 shadow-[0_1px_0_rgba(255,252,247,0.9)_inset,0_2px_4px_rgba(42,38,34,0.06),0_10px_22px_rgba(42,38,34,0.08)] ring-1 ring-black/[0.04]">
-      <h2 className="font-display text-2xl text-cos-text">This week</h2>
-      <p className="mt-1 text-xs text-cos-muted">Underfilled roles only.</p>
-
-      {roles.length === 0 ? (
-        <p className="mt-6 text-sm text-cos-muted">
-          No underfilled roles for events this week.
-        </p>
-      ) : (
-        <ul className="mt-4 space-y-2">
-          {roles.map((role) => (
-            <li key={`${role.eventId}:${role.roleName}`}>
-              <Link
-                href={eventVolunteersHref(role.eventId)}
-                className="flex items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-cos-bg-alt"
-              >
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border border-cos-border bg-cos-bg" />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-cos-text">
-                    {role.roleName}
-                    <span className="font-normal text-cos-muted">
-                      {" "}
-                      · {role.eventTitle}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block text-xs text-cos-muted">
-                    {formatEventDateLabel(role.eventDate)}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-md bg-cos-bg-alt px-1.5 py-0.5 text-xs font-medium tabular-nums text-cos-muted">
-                  -{role.openSpots}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <button
-        type="button"
-        onClick={onViewAll}
-        className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-cos-dark hover:underline"
-      >
-        View all underfilled roles
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
-    </aside>
-  );
-}
-
-function EmptyEventsState({ hasAny }: { hasAny: boolean }) {
-  return (
-    <div className="rounded-xl bg-cos-bg/60 px-4 py-10 text-center">
-      <p className="text-sm text-cos-muted">
-        {hasAny
-          ? "No events match this search or filter."
-          : "No volunteer events yet. Connect SignUpGenius or add a Volunteer Signup link on an event to see it here."}
-      </p>
-      {!hasAny ? (
-        <Link
-          href="/events"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-cos-dark hover:underline"
-        >
-          Go to Events
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
-      ) : null}
     </div>
   );
 }

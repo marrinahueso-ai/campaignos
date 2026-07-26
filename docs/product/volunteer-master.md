@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Feature list](./feature-list.md) · [SignUpGenius import](../integrations/signupgenius.md) · [Access control](../engineering/access-control.md)
 
 Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer PII**.
@@ -44,38 +44,40 @@ Other rules:
 
 ## UI
 
-### KPI cards (clickable filters)
+Ease layout (aligned with Approvals): soft status pills, a focus card for the soonest shortfall, and a quiet event queue. No equal-weight KPI card strip.
 
-| Card | Meaning | Click filter |
-|------|---------|----------------|
-| **Total Volunteers** | Sum of filled spots across feed events | `all` |
-| **Overall Fill Rate** | Filled ÷ requested across events with complete quantities | toggles `covered` |
-| **Underfilled Roles** | Count of underfilled roles (+ event count in description) | toggles `needs_people` |
-| **Upcoming Events** | Events in the next **60 days** | toggles `upcoming` |
+### Soft filter pills
 
-Default filter on load: **Upcoming**.
+| Pill | Meaning |
+|------|---------|
+| **Needs people** (default) | Events with underfilled roles — focus card + queue |
+| **Upcoming** | Events in the next **60 days** |
+| **Covered** | Confirmed snapshot, fill rate ≥ 100%, zero underfilled roles |
+| **All** | Full feed |
 
-### Search and filter chips
+Org fill % and open-role count sit as quiet health text beside search.
+
+### Search
 
 - Search: event title or role name
-- Chips: **Upcoming** · **Needs people** · **Covered** · **All**
-- Covered = has confirmed snapshot, fill rate ≥ 100%, and zero underfilled roles
 
-### Events table
+### Focus card (Needs people)
 
-- Circular artwork from approved-square image when status is `filled`; otherwise title initials
-- Columns: Event & Date · Fill Rate · Top Roles (by volunteers, up to 3) · expand
-- Expand row: **Open Volunteers tab**, optional **Open signup** (SignUpGenius or planning URL), underfilled / covered copy
+- Soonest event that still needs people (cycle with **Next event**)
+- Status band, fill %, countdown, top **open** roles (up to 3 by open spots)
+- Actions: **Open signup** (when URL exists) · **Event volunteers**
 
-### This week rail
+### Quiet queue
 
-- Underfilled roles for events whose date falls in the current calendar week (Sunday start)
-- Cap: 8 rows, sorted by open spots
-- **View all underfilled roles** sets the underfilled filter
+- Artwork thumb · title · date · top open need
+- Fill rate bar + open spots / role count (or Covered)
+- Row links to the event Volunteers tab
 
 ### Sync footer
 
 Copy notes that data is synced from SignUpGenius, shows the latest successful sync across feed sources when available, and states that **sync and connect live on each event’s Volunteers tab**.
+
+`thisWeekUnderfilled` remains on the page payload for assistants / widgets; the ease UI does not surface a separate This week rail.
 
 ---
 
@@ -99,7 +101,7 @@ Null / incomplete quantities → no band coloring (em dash).
 
 | Action | Destination |
 |--------|-------------|
-| Event title / Open Volunteers tab / This week row | `/events/[id]?tab=volunteers` (`eventVolunteersHref`) |
+| Focus card / queue row / Event volunteers | `/events/[id]?tab=volunteers` (`eventVolunteersHref`) |
 | Open signup | External SignUpGenius or planning `volunteer_signup` URL |
 
 ---

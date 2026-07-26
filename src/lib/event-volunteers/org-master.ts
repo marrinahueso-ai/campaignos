@@ -15,6 +15,7 @@ import {
   computeEventFillStats,
   emptyVolunteersMasterPageData,
   listUnderfilledRoles,
+  pickOpenRoles,
   pickTopRoles,
   VOLUNTEERS_MASTER_THIS_WEEK_RAIL_LIMIT,
   VOLUNTEERS_MASTER_UPCOMING_WINDOW_DAYS,
@@ -35,6 +36,7 @@ export type {
   VolunteersMasterEventRow,
   VolunteersMasterFilter,
   VolunteersMasterKpis,
+  VolunteersMasterOpenRole,
   VolunteersMasterPageData,
   VolunteersMasterTopRole,
   VolunteersMasterUnderfilledRole,
@@ -49,6 +51,7 @@ export {
   getVolunteerFillRateBand,
   getVolunteerFillRateLabel,
   listUnderfilledRoles,
+  pickOpenRoles,
   pickTopRoles,
   VOLUNTEER_FILL_RATE_LABELS,
 } from "@/lib/event-volunteers/org-master-shared";
@@ -119,6 +122,7 @@ function buildEventRow(input: {
     totalSpots: fill.totalSpots,
     openSpots: fill.openSpots,
     underfilledRoleCount: underfilled.length,
+    underfilledRoles: pickOpenRoles(input.assignments),
     topRoles: pickTopRoles(input.assignments),
     roleNames: [
       ...new Set(input.assignments.map((row) => row.name).filter(Boolean)),
