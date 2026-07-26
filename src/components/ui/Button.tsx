@@ -17,7 +17,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     "bg-cos-primary text-[#f6f2eb] hover:bg-cos-primary-hover focus-visible:ring-cos-primary",
   secondary:
-    "border border-cos-border bg-cos-card text-cos-text hover:bg-cos-bg focus-visible:ring-cos-muted",
+    "border border-cos-border bg-cos-card text-cos-text hover:border-cos-brand-sage hover:bg-cos-bg focus-visible:ring-cos-muted",
   tertiary:
     "text-cos-muted hover:text-cos-text focus-visible:ring-cos-muted",
   ghost:
