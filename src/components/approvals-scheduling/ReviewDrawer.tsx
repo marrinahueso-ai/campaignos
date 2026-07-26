@@ -1,3 +1,6 @@
+"use client";
+
+import Image from "next/image";
 import {
   Calendar,
   CheckCircle2,
@@ -5,9 +8,10 @@ import {
   Mail,
   Send,
   User,
+  X,
 } from "lucide-react";
 import type { UnifiedApprovalHistoryEntry } from "@/lib/approvals-scheduling/types";
-import { MilestoneContentPreview } from "@/components/approvals-scheduling/MilestoneContentPreview";
+import { ArtworkLightboxThumbnail } from "@/components/artwork/ArtworkLightboxThumbnail";
 import { Button } from "@/components/ui/Button";
 import {
   campaignBuilderEditArtworkHref,
@@ -19,6 +23,7 @@ import {
 } from "@/lib/dev-tools/clear-generated-content";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
+import { cn } from "@/lib/utils/cn";
 
 interface ReviewDrawerProps {
   item: UnifiedApprovalItem | null;
@@ -33,6 +38,12 @@ interface ReviewDrawerProps {
 }
 
 function HistoryList({ entries }: { entries: UnifiedApprovalHistoryEntry[] }) {
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-cos-muted">No history yet for this item.</p>
+    );
+  }
+
   return (
     <ul className="space-y-3">
       {entries.map((entry, index) => (
@@ -48,6 +59,56 @@ function HistoryList({ entries }: { entries: UnifiedApprovalHistoryEntry[] }) {
       ))}
     </ul>
   );
+}
+
+function statusChip(item: UnifiedApprovalItem): {
+  label: string;
+  className: string;
+} {
+  switch (item.workflowStatus) {
+    case "assigned_to_me":
+    case "in_queue":
+      return {
+        label: "Needs approval",
+        className: "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]",
+      };
+    case "changes_requested":
+      return {
+        label: "Changes requested",
+        className: "bg-[rgba(166,90,58,0.14)] text-[#a65a3a]",
+      };
+    case "scheduled":
+      return {
+        label: "Scheduled",
+        className: "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
+      };
+    case "posted":
+    case "published":
+      return {
+        label: "Published",
+        className: "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]",
+      };
+    default:
+      return {
+        label: item.statusDetail || "In review",
+        className: "bg-cos-bg-alt text-cos-muted",
+      };
+  }
+}
+
+function platformLabel(item: UnifiedApprovalItem): string {
+  if (item.platforms.length === 0) {
+    return "Social";
+  }
+  return item.platforms
+    .map((platform) =>
+      platform === "facebook"
+        ? "Facebook"
+        : platform === "instagram"
+          ? "Instagram"
+          : "Email",
+    )
+    .join(" · ");
 }
 
 export function ReviewDrawer({
@@ -79,129 +140,267 @@ export function ReviewDrawer({
       ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
       : null;
 
+  const chip = statusChip(item);
+  const caption =
+    item.preview.captionText?.trim() ||
+    item.preview.storyCaptionSnippet?.trim() ||
+    null;
+  const storyCaption =
+    item.preview.storyCaptionSnippet?.trim() &&
+    item.preview.storyCaptionSnippet.trim() !== caption
+      ? item.preview.storyCaptionSnippet.trim()
+      : null;
+  const heroUrl =
+    item.preview.feedArtworkUrl ||
+    item.preview.storyArtworkUrl ||
+    item.thumbnailUrl;
+  const hasFeed = Boolean(item.preview.feedArtworkUrl);
+  const hasStory = Boolean(item.preview.storyArtworkUrl);
+  const scheduleLine = [
+    item.scheduleLabel,
+    platformLabel(item),
+    item.deliveryMethod === "manual-email"
+      ? "Manual email"
+      : item.deliveryMethod === "draft-only"
+        ? "Draft only"
+        : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-cos-text/20 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex justify-end">
       <button
         type="button"
         aria-label="Close review drawer"
-        className="flex-1"
+        className="flex-1 bg-[rgba(42,38,34,0.28)] transition-opacity"
         onClick={onClose}
       />
-      <aside className="flex h-full w-full max-w-xl flex-col border-l border-cos-border bg-cos-card shadow-2xl">
-        <div className="flex items-start justify-between border-b border-cos-border px-6 py-5">
-          <div>
-            <p className="studio-eyebrow">Review</p>
-            <h2 className="font-display mt-1 text-3xl text-cos-text">
-              {item.milestoneName}
+      <aside
+        className="flex h-full w-full max-w-[440px] flex-col border-l border-cos-border bg-[#f6f2eb] shadow-[0_20px_48px_rgba(42,38,34,0.12)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-drawer-title"
+      >
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 sm:px-6">
+          <div className="min-w-0">
+            <h2
+              id="review-drawer-title"
+              className="font-display text-2xl tracking-[-0.02em] text-cos-text"
+            >
+              {item.campaignName}
             </h2>
-            <p className="mt-1 text-sm text-cos-muted">
-              {item.campaignName} · Campaign
-            </p>
-            {hasStaleContentNote(item.notes) ? (
-              <p className="mt-2 inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f]">
-                NEEDS REGENERATION
-              </p>
-            ) : null}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+                  chip.className,
+                )}
+              >
+                {chip.label}
+              </span>
+              <span className="text-xs font-bold text-cos-muted">
+                {item.milestoneName}
+              </span>
+              {hasStaleContentNote(item.notes) ? (
+                <span className="inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f] uppercase">
+                  Needs regeneration
+                </span>
+              ) : null}
+            </div>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Close
-          </Button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-card text-cos-muted transition hover:text-cos-text"
+          >
+            <X className="h-4 w-4" strokeWidth={1.75} />
+          </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
-          <MilestoneContentPreview
-            milestoneName={item.milestoneName}
-            preview={item.preview}
-            scheduleLabel={item.scheduleLabel}
-            platforms={item.platforms}
-            deliveryMethod={item.deliveryMethod}
-          />
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-6 sm:px-6">
+          {heroUrl ? (
+            <div className="overflow-hidden rounded-[18px] shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+              {hasFeed ? (
+                <ArtworkLightboxThumbnail
+                  src={item.preview.feedArtworkUrl!}
+                  alt={`${item.milestoneName} feed artwork`}
+                  label="Feed"
+                  variant="feed"
+                  wrapperClassName="w-full"
+                  frameClassName="aspect-square"
+                  placeholder="Feed"
+                />
+              ) : hasStory ? (
+                <ArtworkLightboxThumbnail
+                  src={item.preview.storyArtworkUrl!}
+                  alt={`${item.milestoneName} story artwork`}
+                  label="Story"
+                  variant="story"
+                  wrapperClassName="w-full"
+                  frameClassName="aspect-[9/16] max-h-[360px]"
+                  placeholder="Story"
+                />
+              ) : (
+                <div className="relative aspect-square bg-gradient-to-br from-[#1e4a3a] via-[#6b8171] to-[#c4922e]">
+                  <Image
+                    src={heroUrl}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="440px"
+                    unoptimized
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex aspect-square items-center justify-center rounded-[18px] border border-dashed border-cos-border bg-cos-card/60 px-4 text-center">
+              <div>
+                <p className="text-sm font-medium text-cos-text">
+                  No artwork attached
+                </p>
+                <p className="mt-1 text-xs text-cos-muted">
+                  Artwork appears here once this milestone has creatives.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {hasFeed && hasStory ? (
+            <div className="grid grid-cols-2 gap-3">
+              <ArtworkLightboxThumbnail
+                src={item.preview.storyArtworkUrl!}
+                alt={`${item.milestoneName} story artwork`}
+                label="Story"
+                variant="story"
+                wrapperClassName="w-full"
+                frameClassName="aspect-[9/16] max-h-40"
+                placeholder="Story"
+              />
+              <div className="flex items-end text-xs leading-relaxed text-cos-muted">
+                Tap either image to enlarge.
+              </div>
+            </div>
+          ) : null}
 
           {showChangeRequestBanner ? (
-            <div className="rounded border border-red-200 bg-red-50 px-4 py-3">
-              <p className="text-xs font-semibold tracking-[0.12em] text-red-800 uppercase">
+            <div className="rounded-2xl border border-[rgba(166,90,58,0.25)] bg-[rgba(166,90,58,0.08)] px-4 py-3">
+              <p className="text-[11px] font-extrabold tracking-[0.06em] text-[#a65a3a] uppercase">
                 Changes requested
               </p>
-              {changeRequestComment ? (
-                <p className="mt-2 text-sm leading-relaxed text-red-900">
-                  {changeRequestComment}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm leading-relaxed text-red-800">
-                  An approver requested changes to this content.
-                </p>
-              )}
+              <p className="mt-2 text-sm leading-relaxed text-cos-text">
+                {changeRequestComment ||
+                  "An approver requested changes to this content."}
+              </p>
               {editPreviewHref || editArtworkHref ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {editArtworkHref ? (
                     <Button href={editArtworkHref} variant="primary" size="sm">
-                      Edit Artwork
+                      Edit artwork
                     </Button>
                   ) : null}
                   {editPreviewHref ? (
                     <Button href={editPreviewHref} variant="secondary" size="sm">
-                      Change Date
+                      Open in Preview
                     </Button>
                   ) : null}
                 </div>
               ) : null}
-              <p className="mt-2 text-xs text-red-800/80">
-                Update artwork or schedule for this milestone, then send for
-                re-approval from Preview or Review.
+            </div>
+          ) : null}
+
+          <div>
+            <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+              Caption
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
+              {caption || "No caption yet."}
+            </p>
+          </div>
+
+          {storyCaption ? (
+            <div>
+              <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                Story caption
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
+                {storyCaption}
               </p>
             </div>
           ) : null}
 
           <div>
-            <p className="cos-section-title">Approval history</p>
-            <div className="mt-3">
-              <HistoryList entries={item.approvalHistory} />
-            </div>
+            <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+              Schedule
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
+              {scheduleLine || "Schedule not set"}
+            </p>
           </div>
+
+          {item.approvalHistory.length > 0 ? (
+            <div>
+              <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                History
+              </p>
+              <div className="mt-2">
+                <HistoryList entries={item.approvalHistory} />
+              </div>
+            </div>
+          ) : null}
 
           {canAct ? (
             <div>
-              <label className="cos-section-title" htmlFor="review-comment">
-                Comment
+              <label
+                className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase"
+                htmlFor="review-comment"
+              >
+                Note to creator (optional)
               </label>
               <textarea
                 id="review-comment"
                 value={comment}
                 onChange={(event) => onCommentChange(event.target.value)}
                 rows={3}
-                placeholder="Add a note for the creator or approver…"
-                className="mt-2 w-full resize-y border border-cos-border bg-cos-bg px-3 py-2 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
+                placeholder="If you’re requesting changes, say what to fix…"
+                className="mt-2 w-full resize-y rounded-[14px] border border-cos-border bg-cos-card px-3 py-3 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
               />
             </div>
           ) : null}
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t border-cos-border px-6 py-4">
+        <div className="flex flex-wrap gap-2 border-t border-cos-border bg-[rgba(255,252,247,0.7)] px-5 py-4 sm:px-6">
           {canAct ? (
             <>
-              <Button
+              <button
                 type="button"
-                variant="primary"
                 disabled={isSubmitting}
                 onClick={onApprove}
+                className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
               >
-                Approve
-              </Button>
-              <Button
+                {isSubmitting ? "Saving…" : "Approve & schedule"}
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 disabled={isSubmitting}
                 onClick={onRequestChanges}
+                className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
               >
                 Request changes
-              </Button>
+              </button>
             </>
           ) : item.workflowStatus === "scheduled" ||
             item.workflowStatus === "posted" ||
             item.workflowStatus === "published" ? (
-            <Button type="button" variant="secondary" disabled>
-              Approved
-            </Button>
+            <button
+              type="button"
+              disabled
+              className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-muted"
+            >
+              Already approved
+            </button>
           ) : null}
         </div>
       </aside>
@@ -306,7 +505,7 @@ export function ApprovalFlowGuide() {
   ];
 
   return (
-    <section className="border border-cos-border bg-cos-card px-6 py-6">
+    <section className="rounded-[22px] border border-cos-border bg-cos-card/80 px-6 py-6">
       <h2 className="font-display text-2xl text-cos-text">
         How the approval flow works
       </h2>
@@ -315,7 +514,7 @@ export function ApprovalFlowGuide() {
           const Icon = step.icon;
           return (
             <div key={step.title} className="relative flex gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-cos-border bg-cos-bg">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cos-border bg-[#f6f2eb]">
                 <Icon className="h-4 w-4 text-cos-accent" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
