@@ -365,9 +365,6 @@ export function PerformanceChart({
             </div>
           ) : null}
 
-          <p className="text-[11px] leading-relaxed text-cos-muted">
-            Organic vs ads split is not available with current Meta Page insights.
-          </p>
         </div>
       </aside>
     </div>

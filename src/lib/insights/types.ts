@@ -197,6 +197,8 @@ export type EventInsightsPost = {
 
 export type EventInsightsPageData = {
   eventId: string;
+  /** Display title for mockup copy (“Published slots linked to {title}”). */
+  eventTitle: string;
   connection: InsightsConnectionHealth;
   kpis: EventInsightsKpis;
   comparison: EventInsightsComparison | null;

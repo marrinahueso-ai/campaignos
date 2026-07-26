@@ -60,7 +60,7 @@ export function MetricSparkline({
         d={path}
         fill="none"
         stroke={stroke}
-        strokeWidth="1.75"
+        strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

@@ -113,6 +113,30 @@ body {
     letter-spacing: -0.02em;
   }
 
+  /* Insights Ease — mockup `.kpi .value` / `.stat-mini .v` (Fraunces, chunky) */
+  .insights-ease-kpi-val {
+    margin-top: 0.375rem;
+    font-family: var(--font-fraunces), Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .insights-ease-kpi-val--selected {
+    color: #ffffff;
+  }
+
+  .insights-ease-stat-val {
+    margin-top: 0.25rem;
+    font-family: var(--font-fraunces), Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--cos-text);
+  }
+
   /* 404 wandering speech-bubble — walks off the page */
   .hr-wander {
     overflow: visible;

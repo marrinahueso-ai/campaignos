@@ -551,6 +551,9 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
     };
   });
 
+  // Cap for Top content carousel — enough to scroll; still sorted by views.
+  const TOP_CONTENT_LIMIT = 36;
+
   return enriched
     .sort((a, b) => {
       if (b._sortViews !== a._sortViews) {
@@ -558,7 +561,7 @@ async function enrichTopPosts(posts: PostInsightRow[]): Promise<InsightsTopPost[
       }
       return b._sortEngagement - a._sortEngagement;
     })
-    .slice(0, 8)
+    .slice(0, TOP_CONTENT_LIMIT)
     .map(({ _sortViews: _v, _sortEngagement: _e, ...post }) => post);
 }
 
@@ -918,10 +921,7 @@ export async function getInsightsPageData(input?: {
   );
   const hasAnyMetrics = hasAccountData || hasPostData;
 
-  const unavailableMetricNotes = [
-    "Organic vs ads view breakdown is not available with current Page insights metrics.",
-    "Page visits, follows, and messaging conversations require additional Meta product metrics not synced yet.",
-  ];
+  const unavailableMetricNotes: string[] = [];
 
   return {
     organizationId: organization.id,

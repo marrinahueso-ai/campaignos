@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Feature list](./feature-list.md) · [Meta connection](../integrations/meta.md) · [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md)
 
 Event-scoped Meta performance on the event detail workspace. UI-focused product surface; OAuth and Graph sync details live in [meta.md](../integrations/meta.md).
@@ -14,8 +14,10 @@ Event-scoped Meta performance on the event detail workspace. UI-focused product 
 | Surface | Detail |
 |---------|--------|
 | Route | `/events/[id]?tab=insights` |
-| Host shell | `EventDetailShell` (tab id `insights`, label **Insights**) |
-| Tab UI | `src/components/events-phase3/EventInsightsTab.tsx` |
+| Hub route | `/insights?view=event` (optional `?event=`) — same Ease panel; quiet event picker defaults to soonest upcoming / most recent past |
+| Host shell | `EventDetailShell` (tab id `insights`, label **Insights**); hub host `InsightsEaseShell` |
+| Tab UI | `src/components/events-phase3/EventDetailInsightsEasePanel.tsx` |
+| Mockup | [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html) (Event Insights panel) |
 
 Same Meta org connection as publishing and the org Insights hub (`/insights`).
 
@@ -23,14 +25,14 @@ Same Meta org connection as publishing and the org Insights hub (`/insights`).
 
 ## Layout (populated state)
 
-Matches the event Insights mockup layout:
+Matches the Insights Ease mockup (event panel) — not the retired dense chart wall:
 
-1. **KPI strip** — Views · Reach · Interactions · Link clicks · Likes (each with short info tooltip)
-2. **Comparison banner** — when ≥2 posts have views: event total vs typical (median per-post views × post count); “more” / “fewer” messaging; omitted when totals match or fewer than 2 posts
-3. **Views** — Total (cumulative “This event” vs “Typical” series on real publish days only) or **By post** bar breakdown
-4. **Interactions** — total plus Likes / Comments / Shares breakdown
-5. **Posts for this event** — thumbnail or placeholder, caption snippet, platform icon, views, likes; links out when an external post URL exists
-6. **Sync footer** — “Synced from Meta · Last sync: …”, **Refresh**, link to **Org Insights**
+1. **Eyebrow** — Event Insights · organic Meta metrics
+2. **KPI strip** — Views · Reach · Interactions · Link clicks · Likes
+3. **Posts for this event** — thumbnail or initials placeholder, caption, platform · date, views + likes; subtitle “Published slots linked to {event title}”; links out when an external post URL exists
+4. **Sync footer** — “Synced from Meta · Last sync: Jul 26, 11:40 AM” style timestamp, **Refresh**, ghost **Open Org Insights**
+
+No comparison / “vs typical” banner on this surface (product override).
 
 ---
 
@@ -40,7 +42,7 @@ Matches the event Insights mockup layout:
 |-------|------|-----|
 | `connect` | Meta not connected | Connect with Facebook + Meta settings link (`returnTo` back to this tab) |
 | `no_posts` | Connected, zero published `meta_publication_slots` for the event | Text only: “No published posts yet” — **no** Open Approvals / Create with AI CTAs |
-| `sync` | Published slots exist but no `social_post_insights` rows yet | Sync now + Open org Insights; warns if insights scopes are missing |
+| `sync` | Published slots exist but no `social_post_insights` rows yet | Sync now + Open Org Insights; warns if insights scopes are missing |
 
 ---
 
@@ -52,7 +54,7 @@ Matches the event Insights mockup layout:
 2. Published slots for the event (`meta_publication_slots`)
 3. Matching rows from `social_post_insights` (by slot id and/or external post id)
 4. Enrich posts with artwork / caption when available
-5. Aggregate KPIs; build comparison + views series via `event-comparison.ts`
+5. Aggregate KPIs; build views series via `event-comparison.ts` (comparison helpers remain unused by UI)
 
 **No demographics** are loaded or rendered (no Age & gender, Top countries, etc.).
 
@@ -78,29 +80,10 @@ Not shown and not populated here:
 - Follows
 - Saves
 - Follower split / organic-vs-ads style breakdowns
-
-These remain deferred at the org Insights hub as well where noted in the [feature list](./feature-list.md).
-
----
-
-## Relationship to org `/insights`
-
-| Event Insights | Org Insights hub |
-|----------------|------------------|
-| Scoped to one event’s published slots | Page / account + recent content across the org |
-| Reuses synced `social_post_insights` | Same sync pipeline; richer charts, date range, export, recommendations |
-| Footer link → `/insights` | Unchanged by event tab |
-| Connect CTA returns to event tab | Connect CTA returns to `/insights` |
+- Dense Views Total / By-post charts and Interactions breakdown cards (retired with Ease redesign; `EventInsightsTab.tsx` unused)
 
 ---
 
-## Key files
+## Related org hub
 
-| Area | Path |
-|------|------|
-| Tab UI | `src/components/events-phase3/EventInsightsTab.tsx` |
-| Page data | `src/lib/insights/event-queries.ts` (`getEventInsightsPageData`) |
-| Comparison / series | `src/lib/insights/event-comparison.ts` |
-| Sync action | `src/lib/insights/actions.ts` (`syncInsightsAction`) |
-| Shell / tab wiring | `src/components/events-phase3/EventDetailShell.tsx` |
-| Meta OAuth / scopes | [meta.md](../integrations/meta.md) |
+Org-wide Insights live at `/insights` via `InsightsEaseShell` (same Meta connection, date range + platform filters, top content across the Page / Instagram account).

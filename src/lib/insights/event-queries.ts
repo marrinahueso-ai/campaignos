@@ -1,8 +1,10 @@
 import "server-only";
 
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
+import { getOrganizationSchoolYearIds } from "@/lib/events/org-scope";
 import { resolveAssetImageUrl } from "@/lib/event-workspace/storage";
 import { buildEventViewsComparison, buildEventViewsSeries } from "@/lib/insights/event-comparison";
+import { formatInsightsNumber } from "@/lib/insights/format";
 import { getInsightsConnectionHealth } from "@/lib/insights/queries";
 import type {
   EventInsightsComparison,
@@ -94,13 +96,18 @@ function resolveExternalPostUrl(
 
 function buildComparisonMessage(
   direction: "more" | "fewer",
+  actualTotal: number,
+  typicalTotal: number,
+  postCount: number,
 ): EventInsightsComparison {
+  const actualLabel = formatInsightsNumber(actualTotal);
+  const typicalLabel = formatInsightsNumber(Math.round(typicalTotal));
   return {
     metric: "views",
     direction,
     highlight: `${direction} views`,
-    messageBefore: "This event's posts received ",
-    messageAfter: " than your typical event posts.",
+    messageBefore: "This event’s posts earned ",
+    messageAfter: ` than typical for a ${postCount}-post run (${actualLabel} vs ~${typicalLabel} typical). Comparison uses median per-post views × post count — not an AI score.`,
   };
 }
 
@@ -314,6 +321,40 @@ async function enrichEventPosts(input: {
   });
 }
 
+/**
+ * Active-org pin: events RLS only requires *some* membership on the event's
+ * org (via school_years), so multi-org members must be further pinned to the
+ * current org here — same pattern as getVendorById.
+ */
+async function loadActiveOrgEventTitle(
+  eventId: string,
+  organizationId: string,
+): Promise<string | null> {
+  const schoolYearIds = await getOrganizationSchoolYearIds(organizationId);
+  if (!schoolYearIds.length) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("title, school_year_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const schoolYearId = (data.school_year_id as string | null | undefined) ?? null;
+  if (!schoolYearId || !schoolYearIds.includes(schoolYearId)) {
+    return null;
+  }
+
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  return title || "This event";
+}
+
 export async function getEventInsightsPageData(
   eventId: string,
 ): Promise<EventInsightsPageData | null> {
@@ -322,8 +363,17 @@ export async function getEventInsightsPageData(
     return null;
   }
 
-  const connection = await getInsightsConnectionHealth(organization.id);
-  const slots = await fetchPublishedSlotsForEvent(eventId);
+  // Pin before loading slots/insights so a foreign event id cannot leak
+  // another org's publication metrics through the active-org session.
+  const eventTitle = await loadActiveOrgEventTitle(eventId, organization.id);
+  if (!eventTitle) {
+    return null;
+  }
+
+  const [connection, slots] = await Promise.all([
+    getInsightsConnectionHealth(organization.id),
+    fetchPublishedSlotsForEvent(eventId),
+  ]);
   const insights = await fetchPostInsightsForSlots(
     organization.id,
     slots.map((slot) => slot.id),
@@ -352,7 +402,12 @@ export async function getEventInsightsPageData(
 
   const comparisonResult = buildEventViewsComparison(posts.map((post) => post.views));
   const comparison = comparisonResult
-    ? buildComparisonMessage(comparisonResult.direction)
+    ? buildComparisonMessage(
+        comparisonResult.direction,
+        comparisonResult.actualTotal,
+        comparisonResult.typicalTotal,
+        posts.length,
+      )
     : null;
 
   const viewsSeries = buildEventViewsSeries(
@@ -369,6 +424,7 @@ export async function getEventInsightsPageData(
 
   return {
     eventId,
+    eventTitle,
     connection,
     kpis,
     comparison,

@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   Eye,
   Heart,
   Info,
@@ -12,12 +10,12 @@ import {
   RefreshCw,
   Users,
 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { PlatformIcon } from "@/components/insights/PlatformIcon";
 import { Button } from "@/components/ui/Button";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { syncInsightsAction } from "@/lib/insights/actions";
-import { formatEventInsightsSyncLabel, formatInsightsNumber } from "@/lib/insights/format";
+import { formatLastSyncTitle, formatInsightsNumber } from "@/lib/insights/format";
 import {
   buildIntegrationSettingsPath,
   buildMetaOAuthStartPath,
@@ -273,10 +271,6 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
   const refreshInsightsTab = useEventTabMutationRefresh("insights");
 
   const returnTo = `/events/${encodeURIComponent(data.eventId)}?tab=insights`;
-  const syncLabel = useMemo(
-    () => formatEventInsightsSyncLabel(data.lastSyncAt),
-    [data.lastSyncAt],
-  );
 
   function handleSync() {
     setSyncMessage(null);
@@ -390,9 +384,6 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
   const likes = data.kpis.likes;
   const comments = data.posts.reduce((sum, post) => sum + post.comments, 0);
   const shares = data.posts.reduce((sum, post) => sum + post.shares, 0);
-  const ComparisonIcon =
-    data.comparison?.direction === "more" ? ArrowUpRight : ArrowDownRight;
-
   return (
     <div className="space-y-5" data-testid="event-insights-panel">
       <div
@@ -425,43 +416,6 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
           );
         })}
       </div>
-
-      {data.comparison ? (
-        <div
-          className={cn(
-            "flex items-start gap-3 rounded-xl border px-4 py-3",
-            data.comparison.direction === "more"
-              ? "border-cos-success/25 bg-cos-success-bg/70"
-              : "border-cos-border bg-cos-bg/60",
-          )}
-          data-testid="event-insights-comparison"
-          role="status"
-        >
-          <ComparisonIcon
-            className={cn(
-              "mt-0.5 h-5 w-5 shrink-0",
-              data.comparison.direction === "more"
-                ? "text-cos-success"
-                : "text-cos-muted",
-            )}
-            aria-hidden
-          />
-          <p className="text-sm text-cos-text">
-            {data.comparison.messageBefore}
-            <span
-              className={cn(
-                "font-semibold",
-                data.comparison.direction === "more"
-                  ? "text-cos-success-text"
-                  : "text-cos-text",
-              )}
-            >
-              {data.comparison.highlight}
-            </span>
-            {data.comparison.messageAfter}
-          </p>
-        </div>
-      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <section className="rounded-xl border border-cos-border bg-cos-card p-5 shadow-sm sm:p-6">
@@ -573,13 +527,11 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-cos-muted">
-        <p data-testid="event-insights-sync-footer">
-          Synced from Meta · Last sync: {syncLabel}
-        </p>
         <button
           type="button"
           onClick={handleSync}
           disabled={isPending || data.syncInProgress}
+          title={formatLastSyncTitle(data.lastSyncAt)}
           className="inline-flex items-center gap-1 font-medium text-cos-accent hover:text-cos-text disabled:opacity-50"
         >
           <RefreshCw

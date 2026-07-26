@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { InsightsRecommendation } from "@/lib/insights/types";
 
@@ -8,16 +8,12 @@ interface InsightsRecommendationsDrawerProps {
   open: boolean;
   onClose: () => void;
   recommendation: InsightsRecommendation;
-  dataNote?: string | null;
-  pageName?: string | null;
 }
 
 export function InsightsRecommendationsDrawer({
   open,
   onClose,
   recommendation,
-  dataNote = null,
-  pageName = null,
 }: InsightsRecommendationsDrawerProps) {
   if (!open) {
     return null;
@@ -73,20 +69,6 @@ export function InsightsRecommendationsDrawer({
               </li>
             ))}
           </ul>
-
-          {dataNote ? (
-            <div className="mt-6 flex items-start gap-2 rounded-lg border border-cos-border bg-cos-bg/60 px-3 py-3 text-xs leading-relaxed text-cos-muted">
-              <Info
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cos-accent"
-                strokeWidth={1.75}
-              />
-              <p>
-                <span className="font-medium text-cos-text">Data note. </span>
-                {dataNote}
-                {pageName ? ` Connected page: ${pageName}.` : ""}
-              </p>
-            </div>
-          ) : null}
         </div>
       </aside>
     </div>

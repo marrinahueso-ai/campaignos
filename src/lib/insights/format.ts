@@ -4,11 +4,12 @@ export function formatInsightsNumber(value: number | null | undefined): string {
   }
 
   if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}m`;
   }
 
   if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+    // Mockup KPI strip uses lowercase compact units (e.g. 12.4k).
+    return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
   }
 
   return String(Math.round(value));
@@ -48,19 +49,39 @@ export function formatRelativeTime(iso: string, now = Date.now()): string {
   return `${days}d ago`;
 }
 
-/** Absolute + relative sync label for event Insights footer. */
+function formatInsightsSyncTimestamp(lastSyncAt: string): string {
+  const date = new Date(lastSyncAt);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/** Native title / tooltip for Refresh — e.g. “Last Sync: Jul 26, 11:40 AM”. */
+export function formatLastSyncTitle(lastSyncAt: string | null): string {
+  if (!lastSyncAt) {
+    return "Last Sync: Never";
+  }
+  const date = new Date(lastSyncAt);
+  if (Number.isNaN(date.getTime())) {
+    return "Last Sync: —";
+  }
+  return `Last Sync: ${formatInsightsSyncTimestamp(lastSyncAt)}`;
+}
+
+/** Sync timestamp for event Insights footer — mockup: “Jul 26, 11:40 AM”. */
 export function formatEventInsightsSyncLabel(
   lastSyncAt: string | null,
-  now = Date.now(),
 ): string {
   if (!lastSyncAt) {
     return "Not synced yet";
   }
-  const absolute = new Date(lastSyncAt).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const relative = formatRelativeTime(lastSyncAt, now);
-  return relative ? `${absolute} (${relative})` : absolute;
+  const date = new Date(lastSyncAt);
+  if (Number.isNaN(date.getTime())) {
+    return "Not synced yet";
+  }
+  return formatInsightsSyncTimestamp(lastSyncAt);
 }

@@ -13,7 +13,6 @@ import { PerformanceChart } from "@/components/insights/PerformanceChart";
 import { TopPerformingPosts } from "@/components/insights/TopPerformingPosts";
 import { Button } from "@/components/ui/Button";
 import { syncInsightsAction } from "@/lib/insights/actions";
-import { getInsightsDataNote } from "@/lib/insights/connection-messages";
 import {
   defaultInsightsLayout,
   type InsightsLayout,
@@ -97,7 +96,6 @@ export function InsightsHub({
     data.connection.metaConnected &&
     !data.hasAnyMetrics &&
     !data.syncInProgress;
-  const dataNote = getInsightsDataNote(data.connection);
 
   const filteredKpis = useMemo(
     () => filterKpisForPlatform(data, platformFilter),
@@ -232,8 +230,6 @@ export function InsightsHub({
 
           <InsightsRecommendationsFooter
             recommendation={data.recommendation}
-            dataNote={dataNote}
-            pageName={data.connection.pageName}
           />
 
           <InsightsSectionCard title="Content overview">
@@ -260,11 +256,6 @@ export function InsightsHub({
             platformFilter={platformFilter}
           />
 
-          {data.unavailableMetricNotes.length > 0 ? (
-            <p className="text-xs leading-relaxed text-cos-muted">
-              {data.unavailableMetricNotes.join(" ")}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </div>

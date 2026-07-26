@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Geist, Geist_Mono } from "next/font/google";
+import {
+  Cormorant_Garamond,
+  Fraunces,
+  Geist,
+  Geist_Mono,
+} from "next/font/google";
 import { DEFAULT_SITE_URL, getSiteMetadataBase } from "@/lib/site/url";
 import "./globals.css";
 
@@ -17,6 +22,12 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  weight: ["600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -59,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${fraunces.variable} h-full antialiased`}
     >
       {supabaseOrigin ? (
         <>
