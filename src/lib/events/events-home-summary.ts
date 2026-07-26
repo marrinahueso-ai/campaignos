@@ -49,8 +49,12 @@ function isDone(event: Event): boolean {
   return event.status === "published";
 }
 
-function monthKeyFromDate(date: string): string {
+export function monthKeyFromDate(date: string): string {
   return normalizeDateOnly(date).slice(0, 7);
+}
+
+export function formatEventsHomeMonthLabel(monthKey: string): string {
+  return formatMonthLabel(monthKey);
 }
 
 function shiftMonthKey(today: string, deltaMonths: number): string {

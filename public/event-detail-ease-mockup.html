@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Event Detail Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --navy: #0b2f5b;
+      --teal: #2f9fb3;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, select, textarea, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 74rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px; font-weight: 700;
+    }
+    .crumb {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-decoration: none; margin-bottom: 14px;
+    }
+    .crumb:hover { color: var(--ink); }
+    .crumb span { color: var(--ink); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* Hero — one composition, not three competing cards */
+    .hero {
+      position: relative;
+      min-height: 280px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      color: var(--white);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      isolation: isolate;
+      animation: rise .4s ease both;
+    }
+    .hero-art {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        linear-gradient(100deg, rgba(20,28,24,0.88) 0%, rgba(20,28,24,0.55) 48%, rgba(20,28,24,0.35) 100%),
+        linear-gradient(145deg, #1e4a3a, #4a6b58 45%, #c4922e);
+    }
+    .hero-body {
+      position: relative; z-index: 1;
+      padding: 28px 28px 24px;
+      display: flex; flex-direction: column; gap: 12px;
+      max-width: 40rem;
+    }
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      font-size: 12px; font-weight: 700; color: rgba(255,252,247,0.78);
+    }
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(255,252,247,0.92); color: var(--ink);
+    }
+    .chip-draft { background: rgba(166,90,58,0.95); color: #fff; }
+    .hero h1 {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(30px, 4vw, 42px);
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .hero .lede {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,252,247,0.8);
+      max-width: 34ch;
+    }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+    }
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-solid { background: var(--white); color: var(--ink); }
+    .btn-ghost-light {
+      background: rgba(255,252,247,0.12);
+      color: var(--white);
+      border: 1px solid rgba(255,252,247,0.28);
+      backdrop-filter: blur(8px);
+    }
+    .hero-pulse {
+      position: relative; z-index: 1;
+      align-self: end;
+      padding: 20px 22px 22px 0;
+      display: flex; flex-direction: column; gap: 8px;
+      min-width: 180px;
+    }
+    .hero-pulse button {
+      border: 1px solid rgba(255,252,247,0.22);
+      background: rgba(255,252,247,0.12);
+      color: var(--white);
+      border-radius: 14px;
+      padding: 10px 14px;
+      text-align: left;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background .15s;
+    }
+    .hero-pulse button:hover { background: rgba(255,252,247,0.2); }
+    .hero-pulse strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .hero-pulse span { font-size: 11px; font-weight: 700; opacity: 0.8; }
+
+    /* Soft tab pills — not a dense underline strip */
+    .tabs {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .tab {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+    }
+    .tab:hover { background: rgba(255,252,247,0.7); color: var(--ink); }
+    .tab.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .tab.ai {
+      color: var(--forest);
+    }
+    .tab.ai.active {
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.12);
+    }
+    .tab .count {
+      margin-left: 5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .tab.active .count { color: var(--forest); }
+
+    .panel { margin-top: 28px; animation: rise .35s ease both; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .section-label span {
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+      gap: 14px;
+    }
+
+    .focus {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+    }
+    .focus-art {
+      min-height: 180px;
+      background: linear-gradient(145deg, #1e4a3a, #6b8171 50%, #c4922e);
+    }
+    .focus-art.task { background: linear-gradient(145deg, #0b2f5b, #2f9fb3); }
+    .focus-art.vol { background: linear-gradient(145deg, #3d2f24, #8b6b4a); }
+    .focus-body { padding: 22px 22px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .focus-body h2 {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+    .focus-body p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+    .soft-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+
+    .queue { display: flex; flex-direction: column; gap: 8px; }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      background: rgba(255,252,247,0.55);
+      text-align: left;
+      color: inherit;
+      width: 100%;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, box-shadow .15s;
+    }
+    .row:hover {
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .row strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .row p { margin: 0; font-size: 12px; color: var(--muted); }
+    .status {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+    }
+    .status.needs { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .status.open { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .status.done { background: rgba(42,122,134,0.12); color: #2a7a86; }
+    .status.sched { background: rgba(196,146,46,0.16); color: #7a5a12; }
+
+    .box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+    .box h3 {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .box .desc { margin: 0 0 14px; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+
+    .pulse-mini {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    }
+    .pulse-mini button {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .pulse-mini button.active {
+      background: var(--white);
+      border-color: var(--line);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .bar {
+      height: 6px; border-radius: 999px; background: rgba(42,38,34,0.08); overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar > i { display: block; height: 100%; border-radius: inherit; background: var(--mustard); }
+
+    .suite-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .suite-tile {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--cream);
+      text-decoration: none;
+      color: inherit;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .suite-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .suite-tile .art { height: 88px; }
+    .suite-tile .art.social { background: linear-gradient(155deg, #c4922e, #e0b65a 42%, #f5e6c2); }
+    .suite-tile .art.home { background: linear-gradient(145deg, #2f4a3c, #6b8171 48%, #b8c9bc); }
+    .suite-tile .art.news { background: linear-gradient(155deg, #0b2f5b, #2f9fb3 48%, #7fd0df); }
+    .suite-tile .copy { padding: 12px 14px 14px; }
+    .suite-tile strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .suite-tile span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      background: rgba(255,252,247,0.65);
+      border: 1px solid transparent;
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .kpi strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .kpi span { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+    .people {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .person {
+      background: rgba(255,252,247,0.65);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .person .role {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+    }
+    .person strong { font-size: 14px; }
+
+    .note-compose {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .note-compose textarea {
+      width: 100%;
+      min-height: 90px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: var(--white);
+      resize: vertical;
+      color: var(--ink);
+    }
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .file {
+      border-radius: 16px;
+      border: 1px dashed rgba(42,38,34,0.18);
+      background: rgba(255,252,247,0.65);
+      padding: 16px;
+      min-height: 110px;
+    }
+    .file strong { display: block; font-size: 13px; margin: 8px 0 4px; }
+    .file span { font-size: 12px; color: var(--muted); }
+    .dropzone {
+      border: 1.5px dashed rgba(42,38,34,0.2);
+      border-radius: 18px;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,252,247,0.45);
+      margin-bottom: 14px;
+    }
+
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .tl-item {
+      display: grid;
+      grid-template-columns: 16px 1fr;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--sage); margin-top: 5px;
+    }
+    .tl-item strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .tl-item p { margin: 0; font-size: 12px; color: var(--muted); }
+
+    .note {
+      margin-top: 40px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 44rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-pulse { padding: 0 22px 22px; flex-direction: row; flex-wrap: wrap; min-width: 0; }
+      .hero-pulse button { flex: 1; min-width: 120px; }
+      .split, .suite-grid, .kpi-row, .people, .file-grid { grid-template-columns: 1fr; }
+      .focus { grid-template-columns: 1fr; }
+      .focus-art { min-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" class="active" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" aria-label="Create with AI"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button type="button" aria-label="Volunteers"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 19c1.5-3 4-4.5 6-4.5s4.5 1.5 6 4.5"/></svg></button>
+      <button type="button" aria-label="Approvals"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">marrina@huesoinvestments.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Event detail ease · every tab · not live yet</div>
+        <a class="crumb" href="/events-ease-mockup.html">← Events <span>School Supply Sorting</span></a>
+
+        <!-- One hero composition -->
+        <section class="hero" aria-label="Event hero">
+          <div class="hero-art" aria-hidden="true"></div>
+          <div class="hero-body">
+            <div class="hero-meta">
+              <span class="chip chip-draft">Needs setup</span>
+              <span>9 days away</span>
+              <span>·</span>
+              <span>Tue, Aug 4, 2026</span>
+              <span>·</span>
+              <span>Fundraiser</span>
+            </div>
+            <h1>School Supply Sorting</h1>
+            <p class="lede">
+              One place for this event — tasks, approvals, volunteers, and Create with AI —
+              without three hero cards fighting for attention.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-solid" href="#">Create with AI</a>
+              <button type="button" class="btn btn-ghost-light">Edit details</button>
+              <button type="button" class="btn btn-ghost-light">Manage</button>
+            </div>
+          </div>
+          <div class="hero-pulse" aria-label="Jump to">
+            <button type="button" data-jump="approvals"><strong>2</strong><span>Needs approval</span></button>
+            <button type="button" data-jump="tasks"><strong>5</strong><span>Open tasks</span></button>
+            <button type="button" data-jump="volunteers"><strong>25%</strong><span>Volunteer fill</span></button>
+            <button type="button" data-jump="create-with-ai"><strong>1</strong><span>Milestone</span></button>
+          </div>
+        </section>
+
+        <nav class="tabs" role="tablist" aria-label="Event sections">
+          <button type="button" class="tab" data-tab="approvals" aria-selected="false">Approvals <span class="count">2</span></button>
+          <button type="button" class="tab active" data-tab="tasks" aria-selected="true">Tasks <span class="count">5</span></button>
+          <button type="button" class="tab ai" data-tab="create-with-ai" aria-selected="false">Create with AI</button>
+          <button type="button" class="tab" data-tab="volunteers" aria-selected="false">Volunteers <span class="count">6</span></button>
+          <button type="button" class="tab" data-tab="insights" aria-selected="false">Insights</button>
+          <button type="button" class="tab" data-tab="responsibilities" aria-selected="false">Team</button>
+          <button type="button" class="tab" data-tab="notes" aria-selected="false">Notes</button>
+          <button type="button" class="tab" data-tab="files" aria-selected="false">Files</button>
+          <button type="button" class="tab" data-tab="vendors" aria-selected="false">Vendors</button>
+          <button type="button" class="tab" data-tab="activity" aria-selected="false">Activity</button>
+        </nav>
+
+        <!-- TASKS (default — matches your link) -->
+        <section class="panel" data-panel="tasks">
+          <p class="section-label">Needs you next <span>Event tasks only — no org board chrome</span></p>
+          <div class="split">
+            <article class="focus">
+              <div class="focus-art task" aria-hidden="true"></div>
+              <div class="focus-body">
+                <div class="hero-meta" style="color:var(--muted)">
+                  <span class="chip" style="background:rgba(166,90,58,0.12);color:var(--warn)">Due soon</span>
+                  <span>Aug 2</span>
+                </div>
+                <h2>Confirm supply drop-off map</h2>
+                <p>Pin where families unload. Attach a photo of the gym entrance if you have one.</p>
+                <div class="soft-actions">
+                  <button type="button" class="btn btn-primary">Mark done</button>
+                  <button type="button" class="btn btn-secondary">Open task</button>
+                </div>
+              </div>
+            </article>
+            <div class="box">
+              <h3>This week</h3>
+              <p class="desc">Quiet queue — same ease language as Approvals.</p>
+              <div class="queue">
+                <button type="button" class="row"><span><strong>Print volunteer badges</strong><p>Marrina · Aug 3</p></span><span class="status open">Open</span></button>
+                <button type="button" class="row"><span><strong>Post reminder Story</strong><p>Create with AI · Aug 3</p></span><span class="status needs">Ready</span></button>
+                <button type="button" class="row"><span><strong>Text room parents</strong><p>Rebecca · Aug 4</p></span><span class="status open">Open</span></button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:22px">
+            <p class="section-label">Also open · 2 more</p>
+            <div class="queue">
+              <button type="button" class="row"><span><strong>Order packing tape</strong><p>Later · Unassigned</p></span><span class="status open">Open</span></button>
+              <button type="button" class="row"><span><strong>Thank-you caption draft</strong><p>After event</p></span><span class="status sched">Scheduled</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- APPROVALS -->
+        <section class="panel" data-panel="approvals" hidden>
+          <div class="pulse-mini">
+            <button type="button" class="active">Needs you 2</button>
+            <button type="button">Scheduled 1</button>
+            <button type="button">Published 0</button>
+            <button type="button">Changes 0</button>
+          </div>
+          <p class="section-label">Needs you next</p>
+          <div class="split">
+            <article class="focus">
+              <div class="focus-art" aria-hidden="true"></div>
+              <div class="focus-body">
+                <div class="hero-meta" style="color:var(--muted)">
+                  <span class="chip" style="background:rgba(47,74,60,0.12);color:var(--forest)">Needs approval</span>
+                  <span>Feed · Story</span>
+                </div>
+                <h2>Save-the-date post</h2>
+                <p>Families, mark your calendars — School Supply Sorting is Aug 4. We need a few more helpers!</p>
+                <div class="soft-actions">
+                  <button type="button" class="btn btn-primary">Review</button>
+                  <button type="button" class="btn btn-secondary">Open Approvals</button>
+                </div>
+              </div>
+            </article>
+            <div class="queue" style="align-content:start">
+              <button type="button" class="row"><span><strong>Volunteer ask Story</strong><p>Instagram · Tomorrow 8am</p></span><span class="status needs">Needs you</span></button>
+              <button type="button" class="row"><span><strong>Day-of reminder</strong><p>Scheduled · Aug 3</p></span><span class="status sched">Scheduled</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CREATE WITH AI -->
+        <section class="panel" data-panel="create-with-ai" hidden>
+          <div class="box" style="background:
+            radial-gradient(ellipse 50% 80% at 0% 50%, rgba(47,74,60,0.1), transparent 60%),
+            radial-gradient(ellipse 40% 70% at 100% 30%, rgba(196,146,46,0.12), transparent 55%),
+            var(--white)">
+            <h3>Create with AI for this event</h3>
+            <p class="desc">
+              Same studio suite you love — Social, Homepage, Newsletter — already pointed at
+              School Supply Sorting. This isn’t a stub tab; it’s the doorway.
+            </p>
+            <div class="suite-grid">
+              <a class="suite-tile" href="#">
+                <div class="art social"></div>
+                <div class="copy">
+                  <strong>Social</strong>
+                  <span>Milestones, artwork, captions, approval for this event.</span>
+                </div>
+              </a>
+              <a class="suite-tile" href="#">
+                <div class="art home"></div>
+                <div class="copy">
+                  <strong>Homepage</strong>
+                  <span>Add this event to the school Homepage composer.</span>
+                </div>
+              </a>
+              <a class="suite-tile" href="#">
+                <div class="art news"></div>
+                <div class="copy">
+                  <strong>Newsletter</strong>
+                  <span>Feature it in the Scoop-style family email.</span>
+                </div>
+              </a>
+            </div>
+            <div class="soft-actions" style="margin-top:16px">
+              <a class="btn btn-primary" href="#">Open Social composer →</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- VOLUNTEERS -->
+        <section class="panel" data-panel="volunteers" hidden>
+          <p class="section-label">Staffing health <span>Aggregate only — no volunteer PII</span></p>
+          <div class="split">
+            <div class="box">
+              <div class="hero-meta" style="color:var(--muted);margin-bottom:8px">
+                <span class="chip" style="background:rgba(166,90,58,0.12);color:var(--warn)">Needs attention</span>
+                <span>25% filled</span>
+              </div>
+              <h3>3 roles still open</h3>
+              <p class="desc">Share the signup before the week fills up.</p>
+              <div class="bar"><i style="width:25%;background:var(--warn)"></i></div>
+              <div class="queue" style="margin-top:14px">
+                <div class="row" style="cursor:default"><span><strong>School Supply Helper</strong><p>Role</p></span><span class="status open">3 open</span></div>
+                <div class="row" style="cursor:default"><span><strong>Sorter lead</strong><p>Role</p></span><span class="status open">2 open</span></div>
+                <div class="row" style="cursor:default"><span><strong>Greeter</strong><p>Role</p></span><span class="status open">1 open</span></div>
+              </div>
+              <div class="soft-actions">
+                <button type="button" class="btn btn-primary">Open signup</button>
+                <button type="button" class="btn btn-secondary">Sync SignUpGenius</button>
+              </div>
+            </div>
+            <div class="box">
+              <h3>Connected source</h3>
+              <p class="desc">Last sync looks fresh. Connect &amp; refresh stay here — not on Volunteer Master.</p>
+              <div class="queue">
+                <div class="row" style="cursor:default"><span><strong>SignUpGenius</strong><p>Connected · synced 2h ago</p></span><span class="status done">Live</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- INSIGHTS -->
+        <section class="panel" data-panel="insights" hidden>
+          <p class="section-label">This event’s reach <span>Meta posts tied to this campaign</span></p>
+          <div class="kpi-row">
+            <div class="kpi"><strong>1.2k</strong><span>Views</span></div>
+            <div class="kpi"><strong>840</strong><span>Reach</span></div>
+            <div class="kpi"><strong>96</strong><span>Interactions</span></div>
+            <div class="kpi"><strong>18</strong><span>Link clicks</span></div>
+          </div>
+          <div class="box">
+            <h3>Recent posts</h3>
+            <p class="desc">Quiet list — open Approvals if something still needs a yes.</p>
+            <div class="queue">
+              <button type="button" class="row"><span><strong>Save-the-date</strong><p>Feed · 640 views</p></span><span class="status done">Published</span></button>
+              <button type="button" class="row"><span><strong>Volunteer ask</strong><p>Story · waiting</p></span><span class="status needs">In review</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEAM / RESPONSIBILITIES -->
+        <section class="panel" data-panel="responsibilities" hidden>
+          <p class="section-label">Who owns what <span>From Team Access + event assignments</span></p>
+          <div class="people">
+            <div class="person"><div class="role">Event lead</div><strong>Marrina</strong></div>
+            <div class="person"><div class="role">Supervisor</div><strong>Rebecca Kidd</strong></div>
+            <div class="person"><div class="role">Final approval</div><strong>Rebecca Kidd</strong></div>
+            <div class="person"><div class="role">Publisher</div><strong>Marrina</strong></div>
+          </div>
+          <div class="soft-actions" style="margin-top:16px">
+            <button type="button" class="btn btn-secondary">Manage assignments</button>
+          </div>
+        </section>
+
+        <!-- NOTES -->
+        <section class="panel" data-panel="notes" hidden>
+          <p class="section-label">Notes &amp; lessons</p>
+          <div class="box">
+            <div class="note-compose">
+              <textarea placeholder="Capture a note or lesson for next year…"></textarea>
+              <div class="soft-actions">
+                <button type="button" class="btn btn-primary">Save note</button>
+                <button type="button" class="btn btn-secondary">Mark as lesson</button>
+              </div>
+            </div>
+            <div class="queue">
+              <div class="row" style="cursor:default"><span><strong>Gym doors open at 8:15</strong><p>Note · Marrina · Jul 20</p></span></div>
+              <div class="row" style="cursor:default"><span><strong>Lesson: ask for tape early</strong><p>Lesson · last year</p></span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FILES -->
+        <section class="panel" data-panel="files" hidden>
+          <p class="section-label">Event files <span>Scoped to this event only</span></p>
+          <div class="dropzone">Drag files here or click to upload</div>
+          <div class="file-grid">
+            <div class="file"><span style="font-size:22px">📄</span><strong>Drop-off map.pdf</strong><span>PDF · Jul 18</span></div>
+            <div class="file"><span style="font-size:22px">🖼️</span><strong>Gym photo.jpg</strong><span>Image · Jul 19</span></div>
+            <div class="file"><span style="font-size:22px">📋</span><strong>Volunteer brief.docx</strong><span>Doc · Jul 21</span></div>
+          </div>
+        </section>
+
+        <!-- VENDORS -->
+        <section class="panel" data-panel="vendors" hidden>
+          <p class="section-label">Vendors for this event</p>
+          <div class="queue">
+            <button type="button" class="row"><span><strong>Office Depot</strong><p>Supplies · linked</p></span><span class="status done">Linked</span></button>
+            <button type="button" class="row"><span><strong>Local Print Co.</strong><p>Badges · quote pending</p></span><span class="status sched">Pending</span></button>
+          </div>
+          <div class="soft-actions" style="margin-top:14px">
+            <button type="button" class="btn btn-secondary">Link vendor</button>
+            <button type="button" class="btn btn-ghost-light" style="color:var(--ink-soft);border:1.5px solid var(--line);background:var(--white)">Browse directory</button>
+          </div>
+        </section>
+
+        <!-- ACTIVITY -->
+        <section class="panel" data-panel="activity" hidden>
+          <p class="section-label">What’s happened</p>
+          <div class="box">
+            <div class="timeline">
+              <div class="tl-item"><span class="tl-dot"></span><div><strong>Artwork generated</strong><p>Marrina · Yesterday 4:12pm</p></div></div>
+              <div class="tl-item"><span class="tl-dot"></span><div><strong>Sent for approval</strong><p>Save-the-date · Yesterday 4:20pm</p></div></div>
+              <div class="tl-item"><span class="tl-dot"></span><div><strong>SignUpGenius synced</strong><p>25% fill · Today 7:02am</p></div></div>
+              <div class="tl-item"><span class="tl-dot"></span><div><strong>Task created</strong><p>Confirm supply drop-off map</p></div></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="note">
+          <h3>Why this event detail feels clearer</h3>
+          <p>Today stacks breadcrumb + H1 + meta + Edit, then a 3-column hero, then a 10-tab underline strip, then each tab’s own chrome.</p>
+          <ul>
+            <li><strong>One hero composition</strong> — art, title, status, Create with AI, and quiet jump stats.</li>
+            <li><strong>Soft tab pills</strong> — same ease language as Events / Approvals / Volunteers.</li>
+            <li><strong>Each tab mocked for one job</strong> — focus card + quiet queue (Tasks, Approvals, Volunteers), suite doorway (Create with AI), calm lists elsewhere.</li>
+            <li><strong>Team</strong> renamed from “Responsibilities” in the mock (clearer for chairs) — keep or discuss.</li>
+            <li><strong>Create with AI</strong> stays the studio handoff, not an empty panel.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = [...document.querySelectorAll(".tab")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+
+    function setTab(id) {
+      tabs.forEach((tab) => {
+        const on = tab.dataset.tab === id;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", id);
+      history.replaceState(null, "", url);
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => setTab(tab.dataset.tab));
+    });
+
+    document.querySelectorAll("[data-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => setTab(btn.dataset.jump));
+    });
+
+    const initial = new URLSearchParams(window.location.search).get("tab");
+    if (initial && panels.some((p) => p.dataset.panel === initial)) {
+      setTab(initial);
+    }
+  </script>
+</body>
+</html>

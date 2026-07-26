@@ -14,25 +14,19 @@ import {
 } from "react";
 import {
   ArrowLeft,
-  CalendarDays,
-  Clock,
-  Users,
 } from "lucide-react";
-import { EventDetailHero } from "@/components/events-phase3/EventDetailHero";
+import {
+  EventDetailEaseHero,
+  type EaseJumpTab,
+} from "@/components/events-phase3/EventDetailEaseHero";
+import { EventDetailCreateWithAiPanel } from "@/components/events-phase3/EventDetailCreateWithAiPanel";
 import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetailHero";
-import type { EventDetailHeroStatTab } from "@/components/events-phase3/EventDetailHeroStatsStrip";
 import {
   EventDetailTabInvalidationProvider,
 } from "@/components/events-phase3/EventDetailTabInvalidation";
-import { EventStatusBadge } from "@/components/events/EventStatusBadge";
-import { EditEventDetailsButton } from "@/components/event-workspace/EditEventDetailsButton";
-import { EventManageMenu } from "@/components/event-workspace/EventManageMenu";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import {
-  appAccessBadgeLabel,
-  createWithAiHref,
   eventVendorsHref,
   type EventResponsibilityPerson,
 } from "@/lib/events/event-responsibility";
@@ -54,7 +48,6 @@ import type { EventInsightsPageData } from "@/lib/insights/types";
 import type { EventVendorsData, VendorCategory } from "@/types/vendors";
 import type { TasksV2PageData } from "@/types/tasks-v2";
 import { EVENT_TYPE_LABELS } from "@/lib/playbooks/constants";
-import { formatEventDate, formatEventTime } from "@/lib/utils/dates";
 import type { FilesPageData } from "@/types/campaign-files";
 import type {
   EventPlaybookActivity,
@@ -64,10 +57,10 @@ import type { ActivityLogEntry } from "@/types/event-workspace";
 import type { Event } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
-const ApprovalsSchedulingHub = dynamic(
+const EventDetailApprovalsEasePanel = dynamic(
   () =>
-    import("@/components/approvals-scheduling/ApprovalsSchedulingHub").then(
-      (mod) => mod.ApprovalsSchedulingHub,
+    import("@/components/events-phase3/EventDetailApprovalsEasePanel").then(
+      (mod) => mod.EventDetailApprovalsEasePanel,
     ),
   {
     loading: () => (
@@ -76,9 +69,11 @@ const ApprovalsSchedulingHub = dynamic(
   },
 );
 
-const TasksV2Shell = dynamic(
+const EventDetailTasksEasePanel = dynamic(
   () =>
-    import("@/components/tasks-v2/TasksV2Shell").then((mod) => mod.TasksV2Shell),
+    import("@/components/events-phase3/EventDetailTasksEasePanel").then(
+      (mod) => mod.EventDetailTasksEasePanel,
+    ),
   {
     loading: () => (
       <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
@@ -86,30 +81,10 @@ const TasksV2Shell = dynamic(
   },
 );
 
-const FilesTab = dynamic(
+const EventDetailFilesEasePanel = dynamic(
   () =>
-    import("@/components/event-playbooks/FilesTab").then((mod) => mod.FilesTab),
-  {
-    loading: () => (
-      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
-    ),
-  },
-);
-
-const NotesTab = dynamic(
-  () =>
-    import("@/components/event-playbooks/NotesTab").then((mod) => mod.NotesTab),
-  {
-    loading: () => (
-      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
-    ),
-  },
-);
-
-const EventVendorsSection = dynamic(
-  () =>
-    import("@/components/vendors/EventVendorsSection").then(
-      (mod) => mod.EventVendorsSection,
+    import("@/components/events-phase3/EventDetailFilesEasePanel").then(
+      (mod) => mod.EventDetailFilesEasePanel,
     ),
   {
     loading: () => (
@@ -118,10 +93,34 @@ const EventVendorsSection = dynamic(
   },
 );
 
-const EventInsightsTab = dynamic(
+const EventDetailNotesEasePanel = dynamic(
   () =>
-    import("@/components/events-phase3/EventInsightsTab").then(
-      (mod) => mod.EventInsightsTab,
+    import("@/components/events-phase3/EventDetailNotesEasePanel").then(
+      (mod) => mod.EventDetailNotesEasePanel,
+    ),
+  {
+    loading: () => (
+      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
+    ),
+  },
+);
+
+const EventDetailVendorsEasePanel = dynamic(
+  () =>
+    import("@/components/events-phase3/EventDetailVendorsEasePanel").then(
+      (mod) => mod.EventDetailVendorsEasePanel,
+    ),
+  {
+    loading: () => (
+      <div className="min-h-[12rem] animate-pulse rounded-xl bg-cos-bg/60" />
+    ),
+  },
+);
+
+const EventDetailInsightsEasePanel = dynamic(
+  () =>
+    import("@/components/events-phase3/EventDetailInsightsEasePanel").then(
+      (mod) => mod.EventDetailInsightsEasePanel,
     ),
   {
     loading: () => (
@@ -130,16 +129,30 @@ const EventInsightsTab = dynamic(
   },
 );
 
-const EventVolunteersTab = dynamic(
+const EventDetailVolunteersEasePanel = dynamic(
   () =>
-    import("@/components/events-phase3/EventVolunteersTab").then(
-      (mod) => mod.EventVolunteersTab,
+    import("@/components/events-phase3/EventDetailVolunteersEasePanel").then(
+      (mod) => mod.EventDetailVolunteersEasePanel,
     ),
   {
     loading: () => (
       <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
     ),
   },
+);
+
+const EventDetailTeamEasePanel = dynamic(
+  () =>
+    import("@/components/events-phase3/EventDetailTeamEasePanel").then(
+      (mod) => mod.EventDetailTeamEasePanel,
+    ),
+);
+
+const EventDetailActivityEasePanel = dynamic(
+  () =>
+    import("@/components/events-phase3/EventDetailActivityEasePanel").then(
+      (mod) => mod.EventDetailActivityEasePanel,
+    ),
 );
 
 export type EventDetailTab =
@@ -160,12 +173,20 @@ const TABS: { id: EventDetailTab; label: string }[] = [
   { id: "create-with-ai", label: "Create with AI" },
   { id: "volunteers", label: "Volunteers" },
   { id: "insights", label: "Insights" },
-  { id: "responsibilities", label: "Responsibilities" },
+  { id: "responsibilities", label: "Team" },
   { id: "notes", label: "Notes" },
   { id: "files", label: "Files" },
   { id: "vendors", label: "Vendors" },
   { id: "activity", label: "Activity" },
 ];
+
+const TAB_COUNTS: Partial<
+  Record<EventDetailTab, (stats: EventDetailHeroStats) => number>
+> = {
+  approvals: (stats) => stats.pendingApprovals,
+  tasks: (stats) => stats.tasks,
+  volunteers: (stats) => stats.filledSpots,
+};
 
 const VALID_TABS = new Set<EventDetailTab>(TABS.map((tab) => tab.id));
 
@@ -383,9 +404,9 @@ function seedTabCache(
 export function EventDetailShell({
   event,
   artwork,
-  playbookName,
+  playbookName: _playbookName,
   responsibilities,
-  approvalFlow,
+  approvalFlow: _approvalFlow,
   heroStats,
   canManageAssignments,
   onManageAssignments,
@@ -394,12 +415,7 @@ export function EventDetailShell({
 }: EventDetailShellProps) {
   const router = useRouter();
   const [tab, setTab] = useState<EventDetailTab>(() => {
-    // create-with-ai is a route handoff, not an in-page panel.
-    if (
-      initialTab &&
-      initialTab !== "create-with-ai" &&
-      VALID_TABS.has(initialTab as EventDetailTab)
-    ) {
+    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
       return initialTab as EventDetailTab;
     }
     return "approvals";
@@ -418,7 +434,6 @@ export function EventDetailShell({
   const tabCacheRef = useRef<Map<string, EventDetailTabData>>(new Map());
   const cacheEventIdRef = useRef(event.id);
 
-  const createWithAiUrl = createWithAiHref(event.id);
   const eventTypeLabel = event.eventType
     ? (EVENT_TYPE_LABELS[event.eventType] ?? null)
     : null;
@@ -490,11 +505,7 @@ export function EventDetailShell({
     setTabError(null);
     setRefreshError(null);
     setRefreshingTab(null);
-    if (
-      initialTab &&
-      initialTab !== "create-with-ai" &&
-      VALID_TABS.has(initialTab as EventDetailTab)
-    ) {
+    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
       setTab(initialTab as EventDetailTab);
     } else {
       setTab("approvals");
@@ -504,24 +515,13 @@ export function EventDetailShell({
   // Same-event deep links (?tab=) must update the active panel — cache effect above
   // early-returns when event.id is unchanged, so sync tab separately.
   useEffect(() => {
-    if (
-      initialTab &&
-      initialTab !== "create-with-ai" &&
-      VALID_TABS.has(initialTab as EventDetailTab)
-    ) {
+    if (initialTab && VALID_TABS.has(initialTab as EventDetailTab)) {
       setTab(initialTab as EventDetailTab);
     }
   }, [initialTab]);
 
-  useEffect(() => {
-    if (initialTab === "create-with-ai") {
-      // Hard navigate so we never soft-prefetch the heavy builder onto the event page.
-      window.location.replace(createWithAiUrl);
-    }
-  }, [initialTab, event.id, createWithAiUrl]);
-
-  const selectHeroStatTab = useCallback(
-    (nextTab: EventDetailHeroStatTab) => {
+  const selectHeroJumpTab = useCallback(
+    (nextTab: EaseJumpTab) => {
       setTab(nextTab);
       router.replace(`/events/${encodeURIComponent(event.id)}?tab=${nextTab}`, {
         scroll: false,
@@ -657,8 +657,8 @@ export function EventDetailShell({
       if (cancelled) {
         return;
       }
-      void import("@/components/approvals-scheduling/ApprovalsSchedulingHub");
-      void import("@/components/tasks-v2/TasksV2Shell");
+      void import("@/components/events-phase3/EventDetailApprovalsEasePanel");
+      void import("@/components/events-phase3/EventDetailTasksEasePanel");
     };
     const ric = (
       window as Window & {
@@ -682,22 +682,6 @@ export function EventDetailShell({
       window.clearTimeout(timeoutId);
     };
   }, [event.id]);
-
-  const orderedResponsibilities = useMemo(() => {
-    const order = [
-      "Supervisor",
-      "Event Lead",
-      "Assistant Lead",
-      "Team Member",
-      "Final Approval",
-      "Publisher",
-    ] as const;
-    return [...responsibilities].sort(
-      (left, right) =>
-        order.indexOf(left.responsibility as (typeof order)[number]) -
-        order.indexOf(right.responsibility as (typeof order)[number]),
-    );
-  }, [responsibilities]);
 
   const activityItems = useMemo(() => {
     const fromPlaybook = (panelData.playbookActivity ?? []).map((entry) => ({
@@ -723,115 +707,74 @@ export function EventDetailShell({
 
   return (
     <EventDetailTabInvalidationProvider value={invalidationValue}>
-    <div className="studio-page event-detail-atmosphere space-y-6 pb-12">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <Link
-            href="/events"
-            className="inline-flex items-center gap-1.5 text-sm text-cos-muted hover:text-cos-brand-navy"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Events
-            <span className="text-cos-border">›</span>
-            <span className="truncate text-cos-text">{event.title}</span>
-          </Link>
-          <h1 className="mt-3 font-display text-3xl text-cos-brand-navy sm:text-4xl">
-            {event.title}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-cos-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="h-4 w-4 text-cos-brand-sage" />
-              {formatEventDate(event.date)}
-            </span>
-            {event.time ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-cos-brand-sage" />
-                {formatEventTime(event.time)}
-              </span>
-            ) : null}
-            {eventTypeLabel ? (
-              <Badge
-                variant="default"
-                className="bg-cos-brand-navy-soft text-cos-brand-navy"
-              >
-                {eventTypeLabel}
-              </Badge>
-            ) : null}
-            <EventStatusBadge status={event.status} />
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <EditEventDetailsButton event={event} size="sm" />
-          <EventManageMenu event={event} size="sm" />
-        </div>
-      </div>
+    <div className="studio-page relative space-y-6 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      <Link
+        href="/events"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-cos-muted hover:text-cos-text"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Events
+        <span className="text-cos-border">›</span>
+        <span className="truncate text-cos-text">{event.title}</span>
+      </Link>
 
-      <EventDetailHero
+      <EventDetailEaseHero
         event={event}
         artwork={artwork}
-        playbookName={playbookName}
         eventTypeLabel={eventTypeLabel}
-        eventLeadName={
-          responsibilities.find((row) => row.responsibility === "Event Lead")
-            ?.displayName ?? "Not assigned"
-        }
-        createWithAiHref={createWithAiUrl}
         stats={liveHeroStats}
-        onSelectTab={selectHeroStatTab}
+        onSelectTab={selectHeroJumpTab}
       />
 
-      <div className="border-b border-cos-border">
-        <nav className="-mb-px flex flex-wrap gap-1" aria-label="Event sections">
-          {TABS.map((entry) => {
-            // Create with AI is a separate heavy route — navigate there directly
-            // instead of mounting a stub tab (keeps event page light).
-            if (entry.id === "create-with-ai") {
-              return (
-                <Link
-                  key={entry.id}
-                  href={createWithAiUrl}
-                  prefetch={false}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    window.location.assign(createWithAiUrl);
-                  }}
+      <nav
+        className="flex flex-wrap items-center gap-2"
+        aria-label="Event sections"
+        role="tablist"
+      >
+        {TABS.map((entry) => {
+          const isActive = tab === entry.id;
+          const countFn = TAB_COUNTS[entry.id];
+          const count = countFn ? countFn(liveHeroStats) : null;
+          return (
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              data-testid={`event-detail-tab-${entry.id}`}
+              aria-selected={isActive}
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => {
+                setTab(entry.id);
+                router.replace(
+                  `/events/${encodeURIComponent(event.id)}?tab=${entry.id}`,
+                  { scroll: false },
+                );
+              }}
+              className={cn(
+                "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                isActive
+                  ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
+                  : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
+                isActive && entry.id === "create-with-ai"
+                  ? "shadow-[0_0_0_3px_rgba(47,74,60,0.12)]"
+                  : null,
+              )}
+            >
+              {entry.label}
+              {count !== null ? (
+                <span
                   className={cn(
-                    "rounded-t-md border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-cos-muted transition-colors",
-                    "hover:bg-cos-brand-sage-soft/35 hover:text-cos-brand-navy",
+                    "ml-1.5 inline-block min-w-[1.25em] tabular-nums",
+                    isActive ? "text-[#2f4a3c]" : "text-cos-muted",
                   )}
                 >
-                  {entry.label}
-                </Link>
-              );
-            }
-
-            const isActive = tab === entry.id;
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                data-testid={`event-detail-tab-${entry.id}`}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => {
-                  setTab(entry.id);
-                  router.replace(
-                    `/events/${encodeURIComponent(event.id)}?tab=${entry.id}`,
-                    { scroll: false },
-                  );
-                }}
-                className={cn(
-                  "rounded-t-md border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "border-cos-brand-mustard bg-transparent text-cos-brand-navy"
-                    : "border-transparent text-cos-muted hover:bg-cos-brand-sage-soft/35 hover:text-cos-brand-navy",
-                )}
-              >
-                {entry.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+                  {count}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </nav>
 
       <div>
         {tabError && LAZY_TABS.has(tab) && !loadedTabs.has(tab) ? (
@@ -878,151 +821,28 @@ export function EventDetailShell({
 
         {showTabLoading ? <TabSkeleton tab={tab} /> : null}
 
-          {tab === "responsibilities" ? (
-            <section className="rounded-xl border border-cos-border bg-white p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-display text-xl text-cos-text">
-                    Event Responsibilities
-                  </h2>
-                  <p className="mt-1 text-sm text-cos-muted">
-                    People and teams responsible for this event.
-                  </p>
-                </div>
-                {canManageAssignments ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={onManageAssignments}
-                  >
-                    <Users className="h-4 w-4" />
-                    Manage Assignments
-                  </Button>
-                ) : null}
-              </div>
-
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="text-xs tracking-wide text-cos-muted uppercase">
-                    <tr className="border-b border-cos-border">
-                      <th className="px-2 py-2 font-medium">Responsibility</th>
-                      <th className="px-2 py-2 font-medium">Person / Team</th>
-                      <th className="px-2 py-2 font-medium">Title</th>
-                      <th className="px-2 py-2 font-medium">Committee</th>
-                      <th className="px-2 py-2 font-medium">Access</th>
-                      <th className="px-2 py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(
-                      [
-                        "Supervisor",
-                        "Event Lead",
-                        "Assistant Lead",
-                        "Team Member",
-                        "Final Approval",
-                        "Publisher",
-                      ] as const
-                    ).flatMap((label) => {
-                      const matches = orderedResponsibilities.filter(
-                        (row) => row.responsibility === label,
-                      );
-                      if (matches.length === 0) {
-                        if (
-                          label === "Final Approval" ||
-                          label === "Publisher"
-                        ) {
-                          return [];
-                        }
-                        return [
-                          <tr
-                            key={`${label}-empty`}
-                            className="border-b border-cos-border/70"
-                          >
-                            <td className="px-2 py-3 font-medium text-cos-text">
-                              {label}
-                            </td>
-                            <td
-                              className="px-2 py-3 text-cos-muted"
-                              colSpan={5}
-                            >
-                              Not assigned
-                            </td>
-                          </tr>,
-                        ];
-                      }
-                      return matches.map((row) => (
-                        <tr
-                          key={`${row.responsibility}-${row.memberId}`}
-                          className="border-b border-cos-border/70"
-                        >
-                          <td className="px-2 py-3 font-medium text-cos-text">
-                            {row.responsibility}
-                          </td>
-                          <td className="px-2 py-3 text-cos-text">
-                            {row.displayName}
-                          </td>
-                          <td className="px-2 py-3 text-cos-muted">
-                            {row.organizationTitle ?? "—"}
-                          </td>
-                          <td className="px-2 py-3 text-cos-muted">
-                            {row.committeeName ?? "—"}
-                          </td>
-                          <td className="px-2 py-3">
-                            <Badge variant="default">
-                              {row.source === "routing"
-                                ? row.responsibility === "Final Approval"
-                                  ? "Approval Access"
-                                  : "Publish Access"
-                                : appAccessBadgeLabel(row.campaignRole)}
-                            </Badge>
-                          </td>
-                          <td className="px-2 py-3">
-                            <Badge variant={row.active ? "success" : "default"}>
-                              {row.active ? "Active" : "Inactive"}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ));
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6 rounded-lg border border-cos-border bg-cos-bg/40 p-4">
-                <h3 className="text-sm font-semibold text-cos-text">
-                  Approval flow
-                </h3>
-                <ol className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                  {approvalFlow.map((step, index) => (
-                    <li
-                      key={step.label}
-                      className="inline-flex items-center gap-2 text-sm"
-                    >
-                      {index > 0 ? (
-                        <span className="hidden text-cos-muted sm:inline">
-                          →
-                        </span>
-                      ) : null}
-                      <span className="rounded-lg border border-cos-border bg-white px-3 py-1.5">
-                        <span className="text-cos-muted">{step.label}: </span>
-                        <span className="font-medium text-cos-text">
-                          {step.value}
-                        </span>
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </section>
+          {tab === "create-with-ai" ? (
+            <EventDetailCreateWithAiPanel
+              eventId={event.id}
+              eventTitle={event.title}
+            />
           ) : null}
 
-          {tab === "approvals" && panelData.approvalsData && loadedTabs.has("approvals") ? (
-            <ApprovalsSchedulingHub
-              {...panelData.approvalsData}
+          {tab === "responsibilities" ? (
+            <EventDetailTeamEasePanel
+              responsibilities={responsibilities}
+              canManageAssignments={canManageAssignments}
+              onManageAssignments={onManageAssignments}
+            />
+          ) : null}
+
+          {tab === "approvals" &&
+          panelData.approvalsData &&
+          loadedTabs.has("approvals") ? (
+            <EventDetailApprovalsEasePanel
+              items={panelData.approvalsData.items}
+              canViewAll={panelData.approvalsData.canViewAll}
               lockedEventId={event.id}
-              embedded
             />
           ) : null}
 
@@ -1033,15 +853,13 @@ export function EventDetailShell({
                   <div className="min-h-[16rem] animate-pulse rounded-xl bg-cos-bg/60" />
                 }
               >
-                <TasksV2Shell
-                  data={panelData.tasksV2Data}
-                  lockedEventId={event.id}
-                  embedded
-                />
+                <EventDetailTasksEasePanel data={panelData.tasksV2Data} />
               </Suspense>
             ) : (
               <div className="rounded-xl border border-cos-border bg-cos-card p-6">
-                <h3 className="font-display text-lg text-cos-text">Tasks unavailable</h3>
+                <h3 className="font-display text-lg text-cos-text">
+                  Tasks unavailable
+                </h3>
                 <p className="mt-1 text-sm text-cos-muted">
                   Task workspace data did not load for this event.
                 </p>
@@ -1049,77 +867,47 @@ export function EventDetailShell({
             )
           ) : null}
 
-          {tab === "files" && panelData.filesPageData && loadedTabs.has("files") ? (
-            <FilesTab eventId={event.id} data={panelData.filesPageData} />
+          {tab === "files" &&
+          panelData.filesPageData &&
+          loadedTabs.has("files") ? (
+            <EventDetailFilesEasePanel
+              eventId={event.id}
+              data={panelData.filesPageData}
+            />
           ) : null}
 
           {tab === "notes" && loadedTabs.has("notes") ? (
-            <NotesTab
+            <EventDetailNotesEasePanel
               eventId={event.id}
               notes={panelData.notes ?? []}
               tablesAvailable={panelData.tablesAvailable ?? false}
             />
           ) : null}
 
-          {tab === "volunteers" ? <EventVolunteersTab event={event} /> : null}
+          {tab === "volunteers" ? (
+            <EventDetailVolunteersEasePanel event={event} />
+          ) : null}
 
           {tab === "vendors" && loadedTabs.has("vendors") ? (
-            <EventVendorsSection
-              eventId={event.id}
+            <EventDetailVendorsEasePanel
               data={
                 panelData.eventVendorsData ?? {
                   vendors: [],
                   canWrite: false,
                 }
               }
-              categories={panelData.vendorDirectory?.categories ?? []}
-              events={panelData.vendorDirectory?.events ?? []}
-              availableVendors={
-                panelData.vendorDirectory?.availableVendors ?? []
-              }
               directoryHref={eventVendorsHref(event.id)}
-              deferDirectoryLoad
             />
           ) : null}
 
           {tab === "activity" && loadedTabs.has("activity") ? (
-            <div className="rounded-xl border border-cos-border bg-white p-6">
-              <h3 className="font-display text-xl text-cos-text">Activity</h3>
-              {activityItems.length === 0 ? (
-                <p className="mt-2 text-sm text-cos-muted">
-                  No activity has been recorded for this event yet.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {activityItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className="border-b border-cos-border/70 pb-3 text-sm last:border-0"
-                    >
-                      <p className="font-medium text-cos-text">{item.title}</p>
-                      {item.detail ? (
-                        <p className="mt-0.5 text-cos-muted">{item.detail}</p>
-                      ) : null}
-                      <p className="mt-1 text-xs text-cos-muted">
-                        {new Date(item.at).toLocaleString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <EventDetailActivityEasePanel items={activityItems} />
           ) : null}
 
           {tab === "insights" &&
           panelData.insightsData &&
           loadedTabs.has("insights") ? (
-            <EventInsightsTab data={panelData.insightsData} />
+            <EventDetailInsightsEasePanel data={panelData.insightsData} />
           ) : null}
       </div>
     </div>

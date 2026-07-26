@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Edit Event Details Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 24px 64px rgba(42, 38, 34, 0.18);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+    }
+    button, input, select, textarea { font: inherit; }
+    .backdrop {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px 48px;
+      background: rgba(42, 38, 34, 0.22);
+      backdrop-filter: blur(6px);
+    }
+    .mock-tag {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .sheet {
+      width: min(100%, 40rem);
+      max-height: min(92vh, 880px);
+      display: flex;
+      flex-direction: column;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 70% 40% at 0% 0%, rgba(47, 74, 60, 0.08), transparent 55%),
+        radial-gradient(ellipse 50% 35% at 100% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--white);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: rise .35s ease both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px) scale(0.985); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .sheet-head {
+      padding: 22px 24px 16px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .sheet-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(26px, 4vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .sheet-head p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--ink-soft);
+      max-width: 36ch;
+    }
+    .close {
+      width: 36px; height: 36px;
+      border: 1px solid var(--line);
+      background: rgba(255,252,247,0.7);
+      border-radius: 999px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+    }
+    .close:hover { color: var(--ink); background: var(--white); }
+
+    .peek {
+      margin: 0 24px 14px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      background: rgba(255,252,247,0.55);
+    }
+    .peek-art {
+      min-height: 88px;
+      background:
+        linear-gradient(100deg, rgba(20,28,24,0.55), rgba(20,28,24,0.15)),
+        linear-gradient(145deg, #1e4a3a, #4a6b58 45%, #c4922e);
+    }
+    .peek-body { padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+    .peek-body strong {
+      font-family: var(--serif);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .peek-body span { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+    .tabs {
+      margin: 0 24px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tab {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .tab:hover { background: rgba(255,252,247,0.8); color: var(--ink); }
+    .tab.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .body {
+      padding: 8px 24px 8px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+    .panel[hidden] { display: none !important; }
+    .section-label {
+      margin: 10px 0 10px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .section-label span {
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--muted);
+    }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+    .field .hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .control {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 16px;
+      padding: 12px 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .control:focus {
+      border-color: rgba(47, 74, 60, 0.35);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.1);
+    }
+    textarea.control {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 12px;
+    }
+
+    .focus-desc {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,252,247,0.65);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .focus-desc .top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .focus-desc h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(47,74,60,0.12);
+      color: var(--forest);
+    }
+
+    .soft-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-soft);
+      border: 1.5px solid transparent;
+    }
+    .btn-ghost:hover { border-color: var(--line); color: var(--ink); }
+
+    .sheet-foot {
+      padding: 14px 24px 18px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,252,247,0.55);
+    }
+    .sheet-foot .note {
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 28ch;
+      line-height: 1.4;
+    }
+    .sheet-foot .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .note-card {
+      margin-top: 8px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255,252,247,0.65);
+      border: 1px solid var(--line);
+    }
+    .note-card h4 {
+      margin: 0 0 6px;
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .note-card p, .note-card li {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    .note-card ul { margin: 8px 0 0; padding-left: 1.1rem; }
+
+    @media (max-width: 560px) {
+      .row-2 { grid-template-columns: 1fr; }
+      .peek { grid-template-columns: 1fr; }
+      .peek-art { min-height: 64px; }
+      .sheet-foot { flex-direction: column; align-items: stretch; }
+      .sheet-foot .actions { width: 100%; }
+      .sheet-foot .actions .btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mock-tag">Mockup · Edit event details ease · not live yet</div>
+
+  <div class="backdrop">
+    <div class="sheet" role="dialog" aria-labelledby="edit-title" aria-modal="true">
+      <header class="sheet-head">
+        <div>
+          <h1 id="edit-title">Edit details</h1>
+          <p>Change the facts families and volunteers see — name, when, where, and a short brief.</p>
+        </div>
+        <button type="button" class="close" aria-label="Close">✕</button>
+      </header>
+
+      <!-- Live peek — what you’re editing, not a second form -->
+      <div class="peek" aria-hidden="true">
+        <div class="peek-art"></div>
+        <div class="peek-body">
+          <strong id="peek-title">School Supply Sorting</strong>
+          <span id="peek-meta">Tue, Aug 4 · 1:00 PM · Location TBD</span>
+        </div>
+      </div>
+
+      <nav class="tabs" role="tablist" aria-label="Edit sections">
+        <button type="button" class="tab active" data-tab="essentials" aria-selected="true">Essentials</button>
+        <button type="button" class="tab" data-tab="brief" aria-selected="false">Brief</button>
+        <button type="button" class="tab" data-tab="more" aria-selected="false">More context</button>
+      </nav>
+
+      <div class="body">
+        <!-- ESSENTIALS — one job: name / when / where -->
+        <section class="panel" data-panel="essentials">
+          <p class="section-label">The basics <span>Used on Events, calendar, and Create with AI</span></p>
+
+          <div class="field">
+            <label for="title">Event name</label>
+            <input class="control" id="title" value="School Supply Sorting" />
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="date">Date</label>
+              <input class="control" id="date" type="date" value="2026-08-04" />
+            </div>
+            <div class="field">
+              <label for="time">Start time</label>
+              <input class="control" id="time" value="1:00 PM" placeholder="Optional" />
+              <p class="hint">Optional — leave blank if it’s all-day or TBD.</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="location">Location</label>
+            <input class="control" id="location" placeholder="Gym, cafeteria, or campus spot…" />
+          </div>
+        </section>
+
+        <!-- BRIEF — description focus, not buried mid-scroll -->
+        <section class="panel" data-panel="brief" hidden>
+          <p class="section-label">What this is <span>Rough notes are fine</span></p>
+
+          <div class="focus-desc">
+            <div class="top">
+              <h3>Event brief</h3>
+              <span class="chip">For communicators</span>
+            </div>
+            <textarea class="control" id="description" style="background:var(--white)">We are looking for volunteers to help organize and distribute school supply kits on August 4th from 1-3pm. This is an opportunity for adults only; no children allowed due to the nature of the activity. Thank you!</textarea>
+            <div class="soft-actions">
+              <button type="button" class="btn btn-secondary">Generate brief with AI</button>
+            </div>
+            <p class="hint" style="margin-top:10px">Saving updates the event record. Existing social drafts are not rewritten automatically.</p>
+          </div>
+        </section>
+
+        <!-- MORE — secondary fields, not competing with essentials -->
+        <section class="panel" data-panel="more" hidden>
+          <p class="section-label">Optional context <span>Helps AI drafts — skip if you don’t know yet</span></p>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="audience">Audience</label>
+              <input class="control" id="audience" placeholder="e.g. K–5 families" />
+            </div>
+            <div class="field">
+              <label for="theme">Theme</label>
+              <input class="control" id="theme" placeholder="Optional" />
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="category">Category</label>
+              <input class="control" id="category" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label for="owner">Event owner</label>
+              <input class="control" id="owner" placeholder="Name" />
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="budget">Budget</label>
+              <input class="control" id="budget" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label for="volunteers">Volunteer needs</label>
+              <input class="control" id="volunteers" placeholder="Only if helpers are needed" />
+            </div>
+          </div>
+
+          <div class="note-card">
+            <h4>Why this is quieter</h4>
+            <ul>
+              <li><strong>Essentials first</strong> — name, date, time, location without scrolling past a novel.</li>
+              <li><strong>Brief on its own tab</strong> — description + AI generate get focus, not mid-form squeeze.</li>
+              <li><strong>More context tucked away</strong> — audience / theme / budget don’t fight the basics.</li>
+              <li><strong>Live peek</strong> — see the title &amp; when/where update as you type.</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <footer class="sheet-foot">
+        <p class="note">Drafts already sent for approval stay as-is until you update them.</p>
+        <div class="actions">
+          <button type="button" class="btn btn-ghost">Cancel</button>
+          <button type="button" class="btn btn-primary">Save details</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const tabs = [...document.querySelectorAll(".tab")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+
+    function setTab(id) {
+      tabs.forEach((tab) => {
+        const on = tab.dataset.tab === id;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => setTab(tab.dataset.tab));
+    });
+
+    const titleEl = document.getElementById("title");
+    const dateEl = document.getElementById("date");
+    const timeEl = document.getElementById("time");
+    const locationEl = document.getElementById("location");
+    const peekTitle = document.getElementById("peek-title");
+    const peekMeta = document.getElementById("peek-meta");
+
+    function formatDate(value) {
+      if (!value) return "Date TBD";
+      try {
+        return new Date(value + "T12:00:00").toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+      } catch {
+        return value;
+      }
+    }
+
+    function syncPeek() {
+      peekTitle.textContent = titleEl.value.trim() || "Untitled event";
+      const when = [formatDate(dateEl.value), timeEl.value.trim() || null]
+        .filter(Boolean)
+        .join(" · ");
+      const where = locationEl.value.trim() || "Location TBD";
+      peekMeta.textContent = `${when} · ${where}`;
+    }
+
+    [titleEl, dateEl, timeEl, locationEl].forEach((el) => {
+      el.addEventListener("input", syncPeek);
+    });
+    syncPeek();
+  </script>
+</body>
+</html>

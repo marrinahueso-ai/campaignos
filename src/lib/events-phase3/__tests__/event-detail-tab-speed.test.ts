@@ -21,16 +21,15 @@ describe("targeted event tab speed contracts", () => {
     "../../../components/events-phase3/EventDetailShell.tsx",
   );
 
-  it("tasks event loader skips org workspace and org users", () => {
+  it("tasks event loader stays event-scoped without Monday/committee grouping", () => {
     const start = taskHub.indexOf(
       "export async function getTaskHubPageDataForEvent",
     );
     const body = taskHub.slice(start, start + 4500);
     assert.match(body, /getEventPlaybookTasksForEvents\(\[eventId\]\)/);
-    assert.doesNotMatch(body, /getOrganizationWorkspaceData/);
-    assert.doesNotMatch(body, /getOrganizationUsers/);
     assert.doesNotMatch(body, /groupTasksByCommittee/);
     assert.match(body, /mondayBoard: null/);
+    assert.match(body, /Event tasks/);
   });
 
   it("approvals skips Meta when scheduling rows already have display preview", () => {
@@ -62,7 +61,8 @@ describe("targeted event tab speed contracts", () => {
     assert.match(tasksShell, /!embedded \? \(/);
     assert.match(tasksShell, /w-full lg:max-w-md/);
     assert.match(approvalsHub, /!embedded \? \(/);
-    assert.match(approvalsHub, /SummaryCards/);
+    assert.match(approvalsHub, /ApprovalsFocusCard/);
+    assert.match(approvalsHub, /Needs you/);
     assert.doesNotMatch(approvalsHub, /ApprovalTabs/);
   });
 
@@ -71,26 +71,33 @@ describe("targeted event tab speed contracts", () => {
     assert.match(vendors, /export const areVendorTablesAvailable = cache/);
   });
 
-  it("warms Approvals and Tasks JS chunks without prefetching data", () => {
+  it("warms Approvals and Tasks ease panels without prefetching data", () => {
     assert.match(shell, /requestIdleCallback/);
     assert.match(
       shell,
-      /import\("@\/components\/approvals-scheduling\/ApprovalsSchedulingHub"\)/,
+      /import\("@\/components\/events-phase3\/EventDetailApprovalsEasePanel"\)/,
     );
-    assert.match(shell, /import\("@\/components\/tasks-v2\/TasksV2Shell"\)/);
+    assert.match(
+      shell,
+      /import\("@\/components\/events-phase3\/EventDetailTasksEasePanel"\)/,
+    );
     assert.doesNotMatch(
       shell,
       /requestIdleCallback[\s\S]*loadEventDetailTabAction/,
     );
   });
 
-  it("Create with AI tab navigates to the builder route without embedding it", () => {
-    assert.match(shell, /window\.location\.assign\(createWithAiUrl\)/);
-    assert.match(shell, /prefetch=\{false\}/);
+  it("Create with AI tab uses a doorway panel and hard-navigates into Social", () => {
+    assert.match(shell, /EventDetailCreateWithAiPanel/);
+    assert.match(shell, /EventDetailEaseHero/);
     assert.doesNotMatch(shell, /CampaignBuilderProvider/);
     assert.doesNotMatch(shell, /CampaignBuilderShell/);
     assert.doesNotMatch(shell, /loadCampaignBuilderSession/);
-    assert.doesNotMatch(shell, /Continue to Create with AI/);
+    const createPanel = readSrc(
+      "../../../components/events-phase3/EventDetailCreateWithAiPanel.tsx",
+    );
+    assert.match(createPanel, /window\.location\.assign\(href\)/);
+    assert.match(createPanel, /Open Social composer/);
   });
 
   it("keeps standalone hub loaders on org-wide paths", () => {

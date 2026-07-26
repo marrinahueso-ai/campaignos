@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Events Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --navy: #0b2f5b;
+      --teal: #2f9fb3;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 74rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12;
+      font-size: 12px; font-weight: 700;
+    }
+    .head-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(34px, 4.5vw, 48px);
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0 0 10px;
+    }
+    .lede {
+      margin: 0;
+      max-width: 36rem;
+      color: var(--ink-soft);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .head-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: transform .12s, background .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-primary:hover { background: #1a1714; }
+    .btn-ai {
+      background: var(--forest);
+      color: var(--cream);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.12);
+    }
+    .btn-ai:hover { background: #243c30; }
+    .btn-secondary {
+      background: var(--white);
+      color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-soft);
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    .pulse {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .pulse-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+    }
+    .pulse-btn:hover { background: rgba(255, 252, 247, 0.7); color: var(--ink); }
+    .pulse-btn.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .pulse-btn .count {
+      display: inline-block;
+      margin-left: 6px;
+      min-width: 1.4em;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .pulse-btn.active .count { color: var(--forest); }
+    .pulse-btn.upcoming.active { box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.12); }
+    .pulse-tools {
+      margin-left: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .search {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 8px 14px 8px 36px;
+      font-size: 13px;
+      width: min(220px, 100%);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%237a7166' stroke-width='1.7'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 12px center;
+    }
+    .cal-link {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      text-decoration: none;
+      padding: 8px 10px;
+    }
+    .cal-link:hover { color: var(--ink); }
+
+    .section { margin-top: 36px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 12px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .section-label span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(6px, -4px); }
+    }
+
+    /* Coming up — art-forward see-ahead plane */
+    .horizon {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.85fr);
+      gap: 14px;
+      animation: rise .45s ease both;
+    }
+    .focus {
+      position: relative;
+      min-height: 320px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      background: #1e4a3a;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      isolation: isolate;
+    }
+    .focus-art {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(20, 28, 24, 0.15) 0%, rgba(20, 28, 24, 0.72) 70%, rgba(20, 28, 24, 0.9) 100%),
+        linear-gradient(145deg, #1e4a3a, #4a6b58 45%, #c4922e);
+      z-index: 0;
+    }
+    .focus-art.fridge {
+      background:
+        linear-gradient(180deg, rgba(20, 18, 14, 0.2) 0%, rgba(20, 18, 14, 0.75) 72%, rgba(20, 18, 14, 0.92) 100%),
+        linear-gradient(145deg, #3d2f24, #8b6b4a 50%, #c4a574);
+    }
+    .focus-art.fair {
+      background:
+        linear-gradient(180deg, rgba(12, 24, 36, 0.2) 0%, rgba(12, 24, 36, 0.75) 72%, rgba(12, 24, 36, 0.92) 100%),
+        linear-gradient(145deg, #0b2f5b, #2f9fb3 55%, #7fd0df);
+    }
+    .focus-glow {
+      position: absolute;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(212, 168, 75, 0.28);
+      filter: blur(40px);
+      top: -40px; right: -20px;
+      z-index: 1;
+      animation: drift 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .focus-body {
+      position: relative;
+      z-index: 2;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .focus-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      font-size: 12px; font-weight: 700; color: rgba(255,252,247,0.78);
+    }
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: rgba(255,252,247,0.92);
+      color: var(--ink);
+    }
+    .chip-draft { background: rgba(166, 90, 58, 0.95); color: #fff; }
+    .chip-ready { background: rgba(47, 74, 60, 0.95); color: #fff; }
+    .focus h2 {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: clamp(28px, 3.5vw, 36px);
+      margin: 0;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      max-width: 18ch;
+    }
+    .focus .when {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,252,247,0.85);
+    }
+    .focus .story {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: rgba(255,252,247,0.78);
+      max-width: 36ch;
+    }
+    .suite {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .suite a, .suite button {
+      border: 1px solid rgba(255,252,247,0.28);
+      background: rgba(255,252,247,0.12);
+      color: var(--white);
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+      transition: background .15s, transform .12s;
+    }
+    .suite a:hover, .suite button:hover {
+      background: rgba(255,252,247,0.22);
+      transform: translateY(-1px);
+    }
+    .suite .solid {
+      background: var(--white);
+      color: var(--ink);
+      border-color: transparent;
+    }
+
+    .ahead-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .ahead-card {
+      flex: 1;
+      min-height: 100px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--white);
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      padding: 0;
+      transition: transform .15s, box-shadow .15s;
+      animation: rise .4s ease both;
+    }
+    .ahead-card:nth-child(2) { animation-delay: .06s; }
+    .ahead-card:nth-child(3) { animation-delay: .12s; }
+    .ahead-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .ahead-thumb {
+      background-size: cover;
+      background-position: center;
+    }
+    .ahead-thumb.ss { background: linear-gradient(145deg, #1e4a3a, #6b8171); }
+    .ahead-thumb.fr { background: linear-gradient(145deg, #3d2f24, #8b6b4a); }
+    .ahead-thumb.bf { background: linear-gradient(145deg, #0b2f5b, #2f9fb3); }
+    .ahead-thumb.ta { background: linear-gradient(145deg, #2f4a3c, #d4a84b); }
+    .ahead-body { padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+    .ahead-body strong { font-size: 14px; font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ahead-body p { margin: 0; font-size: 12px; color: var(--muted); }
+    .ahead-body .tag {
+      display: inline-flex;
+      align-self: flex-start;
+      margin-top: 2px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--cream-deep);
+      color: var(--ink-soft);
+    }
+    .ahead-body .tag.draft { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .ahead-body .tag.ready { background: rgba(47,74,60,0.12); color: var(--forest); }
+
+    /* Quiet queue */
+    .queue { display: flex; flex-direction: column; gap: 8px; }
+    .row {
+      display: grid;
+      grid-template-columns: 56px 1fr auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      background: rgba(255, 252, 247, 0.55);
+      cursor: pointer;
+      text-align: left;
+      color: inherit;
+      width: 100%;
+      transition: background .15s, border-color .15s, box-shadow .15s;
+      animation: rise .4s ease both;
+    }
+    .row:hover {
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .row-art {
+      width: 56px; height: 56px; border-radius: 14px;
+      background-size: cover; background-position: center;
+    }
+    .row-title { font-size: 14px; font-weight: 700; margin: 0 0 2px; }
+    .row-sub { margin: 0; font-size: 12px; color: var(--muted); }
+    .row-who {
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      text-align: right; white-space: nowrap;
+    }
+    .row-who span { display: block; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .status {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+    }
+    .status.draft { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .status.scheduled { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .status.follow { background: rgba(196,146,46,0.16); color: #7a5a12; }
+    .status.done { background: rgba(42,122,134,0.12); color: #2a7a86; }
+
+    /* Month / year filter (All) */
+    .all-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .month-select {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 8px 36px 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%237a7166' stroke-width='1.8'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    .all-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* Month at a glance */
+    .month-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .month-nav h2 {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      margin: 0;
+      letter-spacing: -0.02em;
+      min-width: 10ch;
+      text-align: center;
+    }
+    .month-nav button {
+      width: 36px; height: 36px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--ink-soft);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: var(--shadow);
+    }
+    .month-nav button:hover { color: var(--ink); }
+    .month-nav button svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      animation: rise .4s ease both;
+    }
+    .month-dow {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 4px 0 8px;
+    }
+    .month-day {
+      min-height: 92px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: rgba(255, 252, 247, 0.45);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: background .15s, border-color .15s, box-shadow .15s;
+    }
+    .month-day.muted { opacity: 0.38; }
+    .month-day.today {
+      border-color: rgba(47, 74, 60, 0.28);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.08);
+    }
+    .month-day.has-event {
+      background: var(--white);
+      border-color: var(--line);
+      cursor: pointer;
+    }
+    .month-day.has-event:hover {
+      box-shadow: var(--shadow);
+    }
+    .month-day .num {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink-soft);
+      font-variant-numeric: tabular-nums;
+    }
+    .month-day.today .num { color: var(--forest); }
+    .month-pill {
+      display: block;
+      width: 100%;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      padding: 4px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.25;
+      cursor: pointer;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .month-pill.draft { background: rgba(166,90,58,0.14); color: var(--warn); }
+    .month-pill.ready { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .month-pill.done { background: rgba(42,122,134,0.12); color: #2a7a86; }
+    .month-pill.follow { background: rgba(196,146,46,0.16); color: #7a5a12; }
+    .month-legend {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .month-legend i {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .month-legend .d { background: var(--warn); }
+    .month-legend .r { background: var(--forest); }
+    .month-legend .f { background: var(--mustard); }
+    .month-legend .p { background: #2a7a86; }
+
+    /* Create with AI strip — suite as inspiration */
+    .suite-strip {
+      margin-top: 40px;
+      padding: 22px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(ellipse 50% 80% at 0% 50%, rgba(47,74,60,0.1), transparent 60%),
+        radial-gradient(ellipse 40% 70% at 100% 30%, rgba(196,146,46,0.12), transparent 55%),
+        var(--white);
+      box-shadow: var(--shadow);
+      animation: rise .5s ease both;
+    }
+    .suite-strip h3 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+    .suite-strip > p {
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 40rem;
+      line-height: 1.5;
+    }
+    .suite-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .suite-tile {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--cream);
+      text-decoration: none;
+      color: inherit;
+      transition: transform .15s, box-shadow .15s;
+      display: block;
+    }
+    .suite-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .suite-tile .art {
+      height: 88px;
+      position: relative;
+      overflow: hidden;
+    }
+    .suite-tile .art.home {
+      background: linear-gradient(145deg, #2f4a3c, #6b8171 48%, #b8c9bc);
+    }
+    .suite-tile .art.social {
+      background: linear-gradient(155deg, #c4922e, #e0b65a 42%, #f5e6c2);
+    }
+    .suite-tile .art.news {
+      background: linear-gradient(155deg, #0b2f5b, #2f9fb3 48%, #7fd0df);
+    }
+    .suite-tile .art::after {
+      content: "";
+      position: absolute;
+      inset: 18px 22px;
+      border-radius: 12px;
+      background: rgba(255,252,247,0.88);
+      box-shadow: var(--shadow);
+    }
+    .suite-tile .copy { padding: 12px 14px 14px; }
+    .suite-tile strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .suite-tile span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .note {
+      margin-top: 40px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 42rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 900px) {
+      .horizon { grid-template-columns: 1fr; }
+      .suite-grid { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 48px 1fr; }
+      .row-who, .status { display: none; }
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .pulse-tools { margin-left: 0; width: 100%; }
+      .search { width: 100%; }
+      .month-day { min-height: 68px; }
+      .month-pill { font-size: 9px; padding: 3px 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" class="active" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" aria-label="Create with AI"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button type="button" aria-label="Volunteers"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 19c1.5-3 4-4.5 6-4.5s4.5 1.5 6 4.5"/></svg></button>
+      <button type="button" aria-label="Approvals"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">marrina@huesoinvestments.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Events ease · Create with AI as inspiration · not live yet</div>
+
+        <div class="head-row">
+          <div>
+            <h1>Events</h1>
+            <p class="lede">
+              See what’s coming — then open an event or make something with AI.
+              Same calm studio feel as Create with AI.
+            </p>
+          </div>
+          <div class="head-actions">
+            <a class="btn btn-ai" href="/create-with-ai">Create with AI</a>
+            <a class="btn btn-secondary" href="/events/create">New event</a>
+          </div>
+        </div>
+
+        <div class="pulse" role="tablist" aria-label="Event lenses">
+          <button type="button" class="pulse-btn upcoming active" data-filter="upcoming" aria-pressed="true">
+            Upcoming <span class="count">5</span>
+          </button>
+          <button type="button" class="pulse-btn" data-filter="setup" aria-pressed="false">
+            Needs setup <span class="count">2</span>
+          </button>
+          <button type="button" class="pulse-btn" data-filter="ready" aria-pressed="false">
+            Ready <span class="count">2</span>
+          </button>
+          <button type="button" class="pulse-btn" data-filter="follow" aria-pressed="false">
+            Follow-up <span class="count">1</span>
+          </button>
+          <button type="button" class="pulse-btn" data-filter="done" aria-pressed="false">
+            Done <span class="count">3</span>
+          </button>
+          <button type="button" class="pulse-btn" data-filter="month" aria-pressed="false">
+            Month
+          </button>
+          <button type="button" class="pulse-btn" data-filter="all" aria-pressed="false">
+            All <span class="count">8</span>
+          </button>
+          <div class="pulse-tools">
+            <input class="search" type="search" placeholder="Search events…" aria-label="Search" />
+            <a class="cal-link" href="/calendar">Full calendar →</a>
+          </div>
+        </div>
+
+        <!-- UPCOMING: see-ahead hero -->
+        <section class="section" data-panel="upcoming">
+          <p class="section-label">
+            Coming up · next 60 days
+            <span>Scroll the season with your eyes first</span>
+          </p>
+          <div class="horizon">
+            <article class="focus" id="focus-card">
+              <div class="focus-art ss" id="focus-art" aria-hidden="true"></div>
+              <div class="focus-glow" aria-hidden="true"></div>
+              <div class="focus-body">
+                <div class="focus-meta">
+                  <span class="chip chip-draft" id="focus-chip">Needs setup</span>
+                  <span id="focus-countdown">9 days away</span>
+                  <span>·</span>
+                  <span id="focus-type">Fundraiser</span>
+                </div>
+                <h2 id="focus-title">School Supply Sorting</h2>
+                <p class="when" id="focus-when">Tue, Aug 4, 2026 · Marrina</p>
+                <p class="story" id="focus-story">
+                  Artwork and social still open. Jump into Create with AI or finish setup on the event.
+                </p>
+                <div class="suite">
+                  <a class="solid" href="#">Open event</a>
+                  <a href="/create-with-ai">Social</a>
+                  <a href="/homepage-composer">Homepage</a>
+                  <a href="/newsletter-composer">Newsletter</a>
+                </div>
+              </div>
+            </article>
+
+            <div class="ahead-stack" id="ahead-stack">
+              <button type="button" class="ahead-card" data-focus="fridge">
+                <span class="ahead-thumb fr" aria-hidden="true"></span>
+                <span class="ahead-body">
+                  <strong>Stock the Fridge</strong>
+                  <p>Aug 6 · 11 days</p>
+                  <span class="tag ready">Ready</span>
+                </span>
+              </button>
+              <button type="button" class="ahead-card" data-focus="fair">
+                <span class="ahead-thumb bf" aria-hidden="true"></span>
+                <span class="ahead-body">
+                  <strong>Back to School Fair</strong>
+                  <p>Aug 12 · 17 days</p>
+                  <span class="tag draft">Needs setup</span>
+                </span>
+              </button>
+              <button type="button" class="ahead-card" data-focus="teacher">
+                <span class="ahead-thumb ta" aria-hidden="true"></span>
+                <span class="ahead-body">
+                  <strong>Teacher Appreciation</strong>
+                  <p>Aug 20 · 25 days</p>
+                  <span class="tag ready">Ready</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" data-panel="upcoming">
+          <p class="section-label">Also ahead · 1 more</p>
+          <div class="queue">
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#2f4a3c,#8a9e7a)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Fall Festival Planning</p>
+                <p class="row-sub">Sep 3 · Community</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Other lenses: quiet lists -->
+        <section class="section" data-panel="setup" hidden>
+          <p class="section-label">Needs setup</p>
+          <div class="queue">
+            <button type="button" class="row">
+              <span class="row-art ss" style="background:linear-gradient(145deg,#1e4a3a,#6b8171)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">School Supply Sorting</p>
+                <p class="row-sub">Aug 4 · Draft</p>
+              </span>
+              <span class="status draft">Draft</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Back to School Fair</p>
+                <p class="row-sub">Aug 12 · Draft</p>
+              </span>
+              <span class="status draft">Draft</span>
+              <span class="row-who">Unassigned<span>—</span></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="section" data-panel="ready" hidden>
+          <p class="section-label">Ready to run</p>
+          <div class="queue">
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#3d2f24,#8b6b4a)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Stock the Fridge</p>
+                <p class="row-sub">Aug 6 · Scheduled</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Teacher Appreciation</p>
+                <p class="row-sub">Aug 20 · Scheduled</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="section" data-panel="follow" hidden>
+          <p class="section-label">Needs follow-up</p>
+          <div class="queue">
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#6b8171,#b8c9bc)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Spring Picnic Recap</p>
+                <p class="row-sub">May 12 · Past · not published</p>
+              </span>
+              <span class="status follow">Follow-up</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+          </div>
+        </section>
+
+        <section class="section" data-panel="done" hidden>
+          <p class="section-label">Done</p>
+          <div class="queue">
+            <button type="button" class="row">
+              <span class="row-art" style="background:linear-gradient(145deg,#0b2f5b,#7fd0df)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Kindergarten Roundup</p>
+                <p class="row-sub">Apr 8 · Published</p>
+              </span>
+              <span class="status done">Published</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Month at a glance -->
+        <section class="section" data-panel="month" hidden>
+          <div class="month-head">
+            <div class="month-nav">
+              <button type="button" id="month-prev" aria-label="Previous month">
+                <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+              </button>
+              <h2 id="month-title">August 2026</h2>
+              <button type="button" id="month-next" aria-label="Next month">
+                <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+            <button type="button" class="btn btn-secondary" id="month-today" style="padding:8px 14px;font-size:12px">
+              This month
+            </button>
+          </div>
+          <div class="month-grid" id="month-grid" aria-label="Month at a glance"></div>
+          <div class="month-legend">
+            <span><i class="d"></i>Needs setup</span>
+            <span><i class="r"></i>Ready / scheduled</span>
+            <span><i class="f"></i>Follow-up</span>
+            <span><i class="p"></i>Done</span>
+          </div>
+        </section>
+
+        <section class="section" data-panel="all" hidden>
+          <div class="all-toolbar">
+            <p class="section-label" style="margin:0">All events</p>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+              <label class="visually-hidden" for="all-month" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Filter by month</label>
+              <select class="month-select" id="all-month" aria-label="Filter by month and year">
+                <option value="all">All months</option>
+                <option value="2026-08" selected>August 2026</option>
+                <option value="2026-09">September 2026</option>
+                <option value="2026-05">May 2026</option>
+                <option value="2026-04">April 2026</option>
+              </select>
+              <span class="all-count" id="all-count">Showing 4</span>
+            </div>
+          </div>
+          <div class="queue" id="all-queue">
+            <button type="button" class="row" data-month="2026-08">
+              <span class="row-art" style="background:linear-gradient(145deg,#1e4a3a,#6b8171)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">School Supply Sorting</p>
+                <p class="row-sub">Aug 4 · Draft</p>
+              </span>
+              <span class="status draft">Draft</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-08">
+              <span class="row-art" style="background:linear-gradient(145deg,#3d2f24,#8b6b4a)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Stock the Fridge</p>
+                <p class="row-sub">Aug 6 · Scheduled</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-08">
+              <span class="row-art" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Back to School Fair</p>
+                <p class="row-sub">Aug 12 · Draft</p>
+              </span>
+              <span class="status draft">Draft</span>
+              <span class="row-who">Unassigned<span>—</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-08">
+              <span class="row-art" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Teacher Appreciation</p>
+                <p class="row-sub">Aug 20 · Scheduled</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-09">
+              <span class="row-art" style="background:linear-gradient(145deg,#2f4a3c,#8a9e7a)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Fall Festival Planning</p>
+                <p class="row-sub">Sep 3 · Scheduled</p>
+              </span>
+              <span class="status scheduled">Scheduled</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-05">
+              <span class="row-art" style="background:linear-gradient(145deg,#6b8171,#b8c9bc)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Spring Picnic Recap</p>
+                <p class="row-sub">May 12 · Follow-up</p>
+              </span>
+              <span class="status follow">Follow-up</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-04">
+              <span class="row-art" style="background:linear-gradient(145deg,#0b2f5b,#7fd0df)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Kindergarten Roundup</p>
+                <p class="row-sub">Apr 8 · Published</p>
+              </span>
+              <span class="status done">Published</span>
+              <span class="row-who">Rebecca<span>Chair</span></span>
+            </button>
+            <button type="button" class="row" data-month="2026-04">
+              <span class="row-art" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)" aria-hidden="true"></span>
+              <span>
+                <p class="row-title">Book Fair Wrap</p>
+                <p class="row-sub">Apr 22 · Published</p>
+              </span>
+              <span class="status done">Published</span>
+              <span class="row-who">Marrina<span>Chair</span></span>
+            </button>
+          </div>
+        </section>
+
+        <div class="suite-strip">
+          <h3>Create with AI</h3>
+          <p>
+            The suite that already feels like Hey Ralli — pick a surface, make the piece,
+            land it back on the event. Events stays the calendar; Create with AI stays the studio.
+          </p>
+          <div class="suite-grid">
+            <a class="suite-tile" href="/create-with-ai">
+              <div class="art social" aria-hidden="true"></div>
+              <div class="copy">
+                <strong>Social</strong>
+                <span>Milestones, artwork, captions, approval.</span>
+              </div>
+            </a>
+            <a class="suite-tile" href="/homepage-composer">
+              <div class="art home" aria-hidden="true"></div>
+              <div class="copy">
+                <strong>Homepage</strong>
+                <span>Pick events, blurbs, Toolkit HTML.</span>
+              </div>
+            </a>
+            <a class="suite-tile" href="/newsletter-composer">
+              <div class="art news" aria-hidden="true"></div>
+              <div class="copy">
+                <strong>Newsletter</strong>
+                <span>Scoop layout, voice, and send-ready copy.</span>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <div class="note">
+          <h3>Why this layout</h3>
+          <p>Today’s Events page leads with five equal KPI cards, a dense filter bar, then a small upcoming carousel that mostly repeats the list underneath.</p>
+          <ul>
+            <li><strong>Upcoming first</strong> — a big “coming up” plane so you can see the season ahead, not just a thin strip.</li>
+            <li><strong>Soft pills</strong> for Needs setup / Ready / Follow-up / Done — same ease language as Approvals &amp; Volunteers.</li>
+            <li><strong>Create with AI in the header + suite strip</strong> — creative work starts from the studio you already love; Events stays the catalog.</li>
+            <li><strong>Month at a glance</strong> — soft calendar grid on Events (not a trip to Full calendar).</li>
+            <li><strong>All → Month/Year filter</strong> — slice the catalog by school-year month without the old dense toolbar.</li>
+            <li><strong>Full calendar →</strong> still available for the heavyweight month view when you need it.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FOCUS = {
+      supply: {
+        art: "ss",
+        chip: "Needs setup",
+        chipClass: "chip chip-draft",
+        countdown: "9 days away",
+        type: "Fundraiser",
+        title: "School Supply Sorting",
+        when: "Tue, Aug 4, 2026 · Marrina",
+        story: "Artwork and social still open. Jump into Create with AI or finish setup on the event.",
+      },
+      fridge: {
+        art: "fridge",
+        chip: "Ready",
+        chipClass: "chip chip-ready",
+        countdown: "11 days away",
+        type: "Donation drive",
+        title: "Stock the Fridge",
+        when: "Thu, Aug 6, 2026 · Marrina",
+        story: "Signup is connected. Share Social or Homepage blurbs while families are still signing up.",
+      },
+      fair: {
+        art: "fair",
+        chip: "Needs setup",
+        chipClass: "chip chip-draft",
+        countdown: "17 days away",
+        type: "Community",
+        title: "Back to School Fair",
+        when: "Wed, Aug 12, 2026 · Unassigned",
+        story: "Still a draft. Assign a chair, then open Create with AI for the first wave of posts.",
+      },
+      teacher: {
+        art: "ss",
+        chip: "Ready",
+        chipClass: "chip chip-ready",
+        countdown: "25 days away",
+        type: "Appreciation",
+        title: "Teacher Appreciation",
+        when: "Thu, Aug 20, 2026 · Rebecca",
+        story: "Scheduled and staffed. Use Newsletter or Homepage when you’re ready to announce.",
+      },
+    };
+
+    const artEl = document.getElementById("focus-art");
+    const chipEl = document.getElementById("focus-chip");
+    const countdownEl = document.getElementById("focus-countdown");
+    const typeEl = document.getElementById("focus-type");
+    const titleEl = document.getElementById("focus-title");
+    const whenEl = document.getElementById("focus-when");
+    const storyEl = document.getElementById("focus-story");
+
+    function setFocus(key) {
+      const data = FOCUS[key] || FOCUS.supply;
+      artEl.className = "focus-art " + data.art;
+      chipEl.className = data.chipClass;
+      chipEl.textContent = data.chip;
+      countdownEl.textContent = data.countdown;
+      typeEl.textContent = data.type;
+      titleEl.textContent = data.title;
+      whenEl.textContent = data.when;
+      storyEl.textContent = data.story;
+    }
+
+    document.querySelectorAll("[data-focus]").forEach((btn) => {
+      btn.addEventListener("click", () => setFocus(btn.dataset.focus));
+    });
+
+    const buttons = [...document.querySelectorAll(".pulse-btn")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+
+    function setFilter(id) {
+      buttons.forEach((btn) => {
+        const on = btn.dataset.filter === id;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => setFilter(btn.dataset.filter));
+    });
+
+    /* All → Month/Year filter */
+    const allMonth = document.getElementById("all-month");
+    const allCount = document.getElementById("all-count");
+    const allRows = [...document.querySelectorAll("#all-queue .row")];
+
+    function applyAllMonthFilter() {
+      const value = allMonth.value;
+      let shown = 0;
+      allRows.forEach((row) => {
+        const match = value === "all" || row.dataset.month === value;
+        row.hidden = !match;
+        if (match) shown += 1;
+      });
+      allCount.textContent = shown === 1 ? "Showing 1" : `Showing ${shown}`;
+    }
+    allMonth.addEventListener("change", applyAllMonthFilter);
+    applyAllMonthFilter();
+
+    /* Month at a glance */
+    const MONTH_EVENTS = {
+      "2026-07": [
+        { day: 25, title: "Today", kind: "ready", dummy: true },
+      ],
+      "2026-08": [
+        { day: 4, title: "School Supply Sorting", kind: "draft" },
+        { day: 6, title: "Stock the Fridge", kind: "ready" },
+        { day: 12, title: "Back to School Fair", kind: "draft" },
+        { day: 20, title: "Teacher Appreciation", kind: "ready" },
+      ],
+      "2026-09": [
+        { day: 3, title: "Fall Festival Planning", kind: "ready" },
+      ],
+      "2026-05": [
+        { day: 12, title: "Spring Picnic Recap", kind: "follow" },
+      ],
+      "2026-04": [
+        { day: 8, title: "Kindergarten Roundup", kind: "done" },
+        { day: 22, title: "Book Fair Wrap", kind: "done" },
+      ],
+    };
+
+    const monthTitle = document.getElementById("month-title");
+    const monthGrid = document.getElementById("month-grid");
+    let viewYear = 2026;
+    let viewMonth = 7; // August (0-indexed)
+
+    function monthKey(y, m) {
+      return `${y}-${String(m + 1).padStart(2, "0")}`;
+    }
+
+    function renderMonth() {
+      const key = monthKey(viewYear, viewMonth);
+      const label = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+      monthTitle.textContent = label;
+
+      const first = new Date(viewYear, viewMonth, 1);
+      const startPad = first.getDay(); // Sunday = 0
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const prevDays = new Date(viewYear, viewMonth, 0).getDate();
+      const events = (MONTH_EVENTS[key] || []).filter((e) => !e.dummy);
+      const byDay = new Map();
+      for (const event of events) {
+        const list = byDay.get(event.day) || [];
+        list.push(event);
+        byDay.set(event.day, list);
+      }
+
+      const today = { y: 2026, m: 6, d: 25 }; // mock "today" Jul 25, 2026
+      const cells = [];
+      const dows = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      for (const d of dows) {
+        cells.push(`<div class="month-dow">${d}</div>`);
+      }
+
+      for (let i = 0; i < startPad; i++) {
+        const day = prevDays - startPad + i + 1;
+        cells.push(`<div class="month-day muted"><span class="num">${day}</span></div>`);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday = viewYear === today.y && viewMonth === today.m && day === today.d;
+        const dayEvents = byDay.get(day) || [];
+        const classes = ["month-day"];
+        if (isToday) classes.push("today");
+        if (dayEvents.length) classes.push("has-event");
+        const pills = dayEvents
+          .map(
+            (e) =>
+              `<button type="button" class="month-pill ${e.kind}" title="${e.title}">${e.title}</button>`,
+          )
+          .join("");
+        cells.push(
+          `<div class="${classes.join(" ")}"><span class="num">${day}</span>${pills}</div>`,
+        );
+      }
+
+      const totalCells = startPad + daysInMonth;
+      const trailing = (7 - (totalCells % 7)) % 7;
+      for (let i = 1; i <= trailing; i++) {
+        cells.push(`<div class="month-day muted"><span class="num">${i}</span></div>`);
+      }
+
+      monthGrid.innerHTML = cells.join("");
+    }
+
+    document.getElementById("month-prev").addEventListener("click", () => {
+      viewMonth -= 1;
+      if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear -= 1;
+      }
+      renderMonth();
+    });
+    document.getElementById("month-next").addEventListener("click", () => {
+      viewMonth += 1;
+      if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear += 1;
+      }
+      renderMonth();
+    });
+    document.getElementById("month-today").addEventListener("click", () => {
+      viewYear = 2026;
+      viewMonth = 6; // July — "this month" in mock timeline
+      renderMonth();
+    });
+    renderMonth();
+  </script>
+</body>
+</html>

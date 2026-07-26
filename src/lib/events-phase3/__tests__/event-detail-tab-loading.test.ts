@@ -194,10 +194,12 @@ describe("event-scoped tab loaders (source contract)", () => {
     const vendorsSection = readSrc(
       "../../../components/vendors/EventVendorsSection.tsx",
     );
+    const vendorCard = readSrc("../../../components/vendors/VendorCard.tsx");
     assert.match(vendorsSection, /assignVendorToEventAction/);
     assert.match(vendorsSection, /removeVendorFromEventAction/);
-    assert.match(vendorsSection, /uploadVendorLogoAction/);
+    assert.match(vendorsSection, /onLogoUploaded/);
     assert.match(vendorsSection, /VendorAddModal/);
+    assert.match(vendorCard, /VendorLogoMark|uploadVendorLogoAction/);
   });
 });
 

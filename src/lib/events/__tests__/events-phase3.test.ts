@@ -358,17 +358,17 @@ describe("artwork isolation contract", () => {
     );
   });
 
-  it("limits Events Home artwork ids to upcoming plus first page", () => {
+  it("prefers upcoming Events Home artwork ids and caps school-year prefetch", () => {
     const today = "2026-08-01";
-    const events: Event[] = Array.from({ length: 12 }, (_, index) => ({
+    const events: Event[] = Array.from({ length: 120 }, (_, index) => ({
       id: `evt-${index}`,
       title: `Event ${index}`,
       description: "",
       // Mix past + future so upcoming is a subset of the full list.
       date:
-        index < 8
-          ? `2026-07-${String(index + 1).padStart(2, "0")}`
-          : `2026-08-${String(index - 6).padStart(2, "0")}`,
+        index < 100
+          ? `2025-11-${String((index % 28) + 1).padStart(2, "0")}`
+          : `2026-08-${String(index - 99).padStart(2, "0")}`,
       time: null,
       location: null,
       audience: null,
@@ -394,8 +394,8 @@ describe("artwork isolation contract", () => {
     }));
 
     const ids = collectEventsHomeArtworkEventIds(events, today, "sy-1");
-    assert.ok(ids.includes("evt-0")); // first page
-    assert.ok(ids.includes("evt-8")); // upcoming
+    assert.ok(ids.includes("evt-100")); // upcoming
+    assert.ok(ids.length <= 80);
     assert.ok(ids.length < events.length);
     assert.equal(new Set(ids).size, ids.length);
   });
