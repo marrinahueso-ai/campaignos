@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 25, 2026 — extended Billing & Plan's Usage tab with usage-by-member and usage-by-category AI breakdowns and single-line, event/milestone-enriched recent activity
+**Last updated:** July 25, 2026 — Homepage Composer v1 (events → cards → MTK HTML export)
 
 ---
 
@@ -94,7 +94,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Same fill-rate color bands as Volunteer Master on Overall Filled and per-assignment progress
 
 ## Create with AI (Campaign Builder)
-- Nav / `/create-with-ai` lands on Creative Setup (inspiration) for a default event (soonest upcoming, else most recent past); empty/access hub when no events or no permission — **shipped**
+- Nav `/create-with-ai` — chooser landing (Home Page · Social Media · Newsletter); Social opens `/create-with-ai/social` → Creative Setup for a default event; Newsletter opens `/newsletter-composer`; empty/access hub when no events or no permission — **shipped**
 - Inspiration / creative setup, logos, milestones — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); logo / brand colors / voice toggles are explicit opt-in only (org brand kit is not auto-surfaced or auto-applied) — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
@@ -106,6 +106,13 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Review **Send for approval** stays disabled until artwork + captions are complete; shows inline **Missing: …** (not schedule) when blocked — **shipped**
 - Sent for approval confirmation notice (not a stepper step); returns to Review — **shipped**
 - Full Meta slot sync after approval — **stub** / incomplete
+
+## Homepage Composer
+- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork; card on/off dates; full-month + date-slider preview; draft autosave — **partial** (deterministic blurbs; no LLM rewrite yet)
+- Evergreen custom cards + optional link · on date · off date · always-on · artwork upload — **partial**
+
+## Newsletter Composer
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **partial**
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
@@ -175,24 +182,29 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Campaign filter — **deferred**
 - Gmail inbox — **deferred**
 
-## Tasks — soft launch **complete**
-- Main Table (create/edit/status/assignee, AI suggestions) — **shipped**
+## Tasks — Ease redesign **shipped**
+- `TasksEaseShell` replaces the dense Main Table / My Tasks / Board chrome at `/tasks` — soft cream shell, Fraunces heading, quiet pills throughout (`src/components/tasks-v2/TasksEaseShell.tsx`) — **shipped**
+- **Team | Mine** scope toggle (`?scope=`) — Team = all org-accessible event tasks; Mine = assigned to the signed-in user (`assignee_user_id`) — **shipped**
+- **List | Status | Focus | Custom** views (`?view=`) with short labels; List is the default — **shipped**
+- Pulse row as quiet text links with live counts — Needs you / This week / Overdue / Done (`?pulse=`, toggles off on repeat click) — **shipped**
+- Events chip row for soft filtering (`?event=`), each chip with a `DashboardWidgetColorPicker` dot for a personal, localStorage-persisted event color — **shipped**
+- List view: each event in its own box with a left color stripe, inline color picker, and a deep link to that event's Tasks tab; tasks render as quiet rows (checkbox, title, due/priority line, assignee, status pill) — **shipped**
+- Status and Focus boards: Ease-styled columns with a top color-stripe picker (localStorage-persisted per column) and drag-and-drop; cards keep the owning event's color as a left stripe — **shipped**
+- Custom board: user-defined columns (name + color) with a task→column map, persisted client-side; rearranges the same event-linked tasks rather than inventing new ones — **shipped**
+- Ask AI for tasks (`TasksEaseAskAi` modal) + Add task both live in the header — **shipped**
 - Org Tasks hub SSR soft-capped at 1000 tasks (event Tasks tab uncapped; notice when truncated) — **shipped** (perf)
 - Task status/reorder + caption save/generate keep optimistic UI without full `router.refresh` — **shipped** (perf)
-- Main Table access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
-- Main Table toolbar: person/status/sort as Files-style dropdowns (no Person/Filter/Sort labels); search on the same row — **shipped**
+- Access aligned with event access (`canAccessEvent` / EffectiveAccess) — **shipped**
 - No auto-seeded demo/default task rows on event open — **shipped** (empty until user creates)
-- Summary cards (Tasks due / Overdue / Completed) as clickable Main Table filters (`?summary=`; click again clears to all; selected = dark brown + white; local-state filter + history URL sync for instant click feel) — **shipped**
-- My Tasks (assignee = signed-in user via `assignee_user_id`) — **shipped**
-- My Views filters (Assigned / This Week / Overdue / Completed) — **shipped**
-- Kanban board (by status) — **shipped**
-- Focus board (To-do / This week / In progress / Done) — **shipped**
 - Due date picker wired to task update — **shipped**
-- Task detail drawer with notes (add/edit, autosave) — **shipped**
+- Ease task detail drawer (`TasksEaseTaskDrawer`): editable title, status, due date, assignee, derived priority, notes (+ mic), autosave, event deep link — **shipped**
+- Add task: event options from events + groups, optimistic row, Mine auto-assigns to you, clears pulse so new tasks stay visible — **shipped**
+- Chrome feel: Team/Mine, views, pulse, event chips use local state + `history.replaceState` (no `router.replace` refetch); drawer/list saves stay optimistic without full page refresh — **shipped** (perf)
 - Calendar / Timeline / Workload tabs — **deferred** (hidden from Tasks UI)
 - Files tab on Tasks — **removed** (use sidebar Files → `/files`)
 - Monday.com sync — **partial** (optional org integration; not required for Tasks)
-- Smoke: `tests/hey-ralli/smoke/10-tasks.spec.ts` — **shipped**
+- Legacy `TasksV2Shell` (Main Table / My Tasks / Board tabs) kept in the repo for reference but no longer routed — **removed** (superseded by Ease)
+- Smoke: `tests/hey-ralli/smoke/10-tasks.spec.ts` — **shipped**; unit contracts: `src/lib/tasks-v2/__tests__/tasks-ease-ui.test.ts`, `tasks-ease-pulse.test.ts` — **shipped**
 
 ## Files
 - Global + event-scoped library (upload, search, categorize, metadata) — **shipped**
@@ -203,42 +215,48 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Drag-and-drop upload on Files & Documents (page drop opens upload dialog with file preselected) — **shipped**
 - Sortable list columns (name, event, type, category, platform, uploaded, size); default newest uploaded — **shipped**
 - Upload control is a primary button (no faux dropdown chevron) — **shipped**
-- “Files organized by event” carousel cards use Events home summary colors (idle `bg-cos-bg-alt` / selected `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.files_layout` — **shipped**
+- “Files organized by event” carousel cards use Events home summary colors (idle `bg-cos-bg-alt` / selected `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.files_layout` — **shipped** (legacy `FilesDocumentsShell`; still used by the event detail Files tab embeds)
+- **Ease redesign — `/files` uses `FilesEaseShell`, not the dense carousel/table chrome:** soft cream shell, Fraunces heading, quiet pill search (file or event name), quiet text sort (Newest/Name/Size/Type via `?sort=`), event filter dropdown (Coming up = next 5 by date, then More), multi-file drop opens upload dialog for event + label (no header Upload CTA), each event in its own striped box with inline rename (Enter/blur saves) and Rename/Open/Download row actions, deep link to the event Files tab via `eventFilesHref`; chrome uses local state + `history.replaceState` (`?q=`) so filter/sort/search clicks stay instant — mockup at `/files-ease-mockup.html` — **shipped**
+- Unit contracts: `src/lib/campaign-files/__tests__/files-ease-ui.test.ts` — **shipped**
 
 ## Vendors
-- Directory (card grid matching event vendor cards), add/archive/delete, profile, link to events — **shipped**
-- Directory summary KPI cards: **Edit** mode for per-user drag-and-drop order + color picker via `organization_users.vendors_directory_layout`; Total / Favorites cards filter directory tabs — **shipped**
-- Profile header actions: icon buttons with hover tooltips (Edit, Block/Unblock, Archive, Delete) — **shipped**
+- Directory (card grid), add/archive/delete, profile, link to events — **shipped**
+- **Ease redesign — contact-first Vendors (mockup at `/vendors-ease-mockup.html`):** soft cream/Fraunces shell like Tasks/Files; directory cards keep the loved forest/mustard/teal header bands plus a small squircle logo mark (uploaded image `object-cover` fill, or initials) on the band — not a circle — with icon-only X to clear when a logo exists; profile hero uses the same fillable squircle + clear control; one-tap Call / Email / Website (`tel` / `mailto` / website) plus **View profile**; quiet All / Favorites / Past / Blocked tabs + search (`history.replaceState`); event `?tab=vendors` rows show the same contact actions + **Profile** (not name/status only); profile is a contact-first Ease hero (big Call / Email / Website) with quieter secondary tabs (Overview, Events, Notes, Documents, Activity). Directory KPI summary strip removed from the Ease shell so the page matches the mockup — **shipped**
+- Unit contracts: `src/lib/vendors/__tests__/vendors-ease-ui.test.ts` — **shipped**
 - Add Vendor wizard: Basics → Connect event → Review; Vendor Master loads events and supports multi-select link; Event tab pre-selects the current event; assignments default Confirmed — **shipped**
 - Favorite star on card upper-right; directory tabs: All / Favorites / Past / Blocked (Pending removed) — **shipped**
-- Directory peek drawer: single **View Profile** CTA; edit vendor from profile only — **shipped**
-- Profile tabs: Overview, Events, Documents, Notes, Activity — **shipped**
+- Card / row CTAs open `/vendors/{id}`; edit vendor from profile only — **shipped**
+- Profile tabs: Overview, Events, Notes, Documents, Activity — **shipped**
 - Documents = Files from linked events (contracts live there); legacy vendor uploads still listed — **shipped**
 - Notes: event-style compose (type + voice) via `addVendorNoteAction` — **shipped**
 - Block vendor (required reason saved as note) + Unblock — **shipped**
 - Performance: profile detail is single-fetch + batched event files; directory tabs/search stay client-local (no soft-nav flash); favorites/notes update optimistically — **shipped**
 - Payments / Settings / Contracts / Communications profile tab / Pending directory tab — **removed** from product UI
+- Legacy directory KPI layout editor (`vendors_directory_layout`) remains in codebase but is unused by the Ease directory shell — **retired from UI**
 
 ## Insights — soft launch **complete**
-- **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`)
-  - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty; idle/selected colors match Events home summary cards (`bg-cos-bg-alt` / `bg-cos-dark`); **Edit** mode for per-user drag-and-drop order + portaled color picker via `organization_users.insights_layout`
-  - Content overview line chart (selected KPI drives series + hover tooltip + totals sidebar)
+- **Ease redesign — Org + Event Insights (mockup at [`/insights-ease-mockup.html`](../../public/insights-ease-mockup.html)):** soft cream/Fraunces shell like Tasks/Files/Vendors; top view pills **Org Insights | Connect Meta | Event Insights** (`?view=org|connect|event` via local state + `history.replaceState`); curated KPI strip (Views · Reach · Interactions · Likes · Comments) with sparklines and forest selected state; quiet Content overview chart + period/best-day side stats; Top content horizontal carousel of all filtered posts (views-desc, soft arrow + scroll-snap; not a static top-3 grid / dense KPI-wall); honest Meta source note; platform pills All/Facebook/Instagram (`history.replaceState` for `?platform=`); date-range soft pills (7/14/28/30 → URL `from`/`to`); Refresh + Export CSV; rule-based “From your metrics” + Details drawer (no LLM narrative); Connect Meta empty matches mockup purpose/organic-only/Connect CTA (always available via `?view=connect`, even when Meta is already connected); Event `?tab=insights` and hub `?view=event` use the same Ease event shell (KPI strip, posts list, sync footer; no comparison banner) — **shipped**
+- Unit contracts: `src/lib/insights/__tests__/insights-ease-ui.test.ts` — **shipped**
+- Legacy dense hub (`InsightsHub`, drag-and-drop KPI layout editor, `EventInsightsTab` charts/breakdowns) remains in codebase but is unused by the Ease shells — **retired from UI**
+- **Org Insights page** (`/insights`, sidebar **Insights**) — **shipped** (smoke: `tests/hey-ralli/smoke/11-insights.spec.ts`; `social_analytics` entitlement on **all plans** so Connect Meta empty + Ease UI stay reachable for soft launch / Meta App Review — living: [billing-and-access.md](../ops/billing-and-access.md))
+  - View switch: Org Insights (default when Meta connected) · Connect Meta (default when not connected; always openable) · Event Insights (quiet event picker + Ease panel; defaults to soonest upcoming / most recent past; `?event=` + link to full event `?tab=insights`)
+  - Overview KPI cards with sparklines (Views, Reach, Interactions, Likes, Comments) — reads `page_media_view` / post views from Meta; Comments/Likes fall back to post aggregates when Page-level series are empty
+  - Content overview line chart (selected KPI drives series + period totals sidebar)
   - Platform filter (All / Facebook / Instagram) on KPIs, chart, and top content
-  - Top content by views carousel (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse
-  - Bottom Platforms / Recent activity / Content breakdown cards removed (KPIs, chart, top content remain)
+  - Top content by views — horizontal carousel of posts in the active platform + date range (thumbnail, caption snippet, published time, views / reactions / comments / shares); Refresh syncs recent Facebook Page posts + Instagram media in range (not only posts published through Hey Ralli); Facebook post views use `post_media_view` batch; falls back to post engagement when insights are sparse
   - Date range presets (7 / 14 / 28 / 30 days) + URL `from` / `to`
   - Refresh from Meta + CSV export
-  - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline under recommendations
+  - Rule-based recommendations (“From your metrics” + details drawer); soft sync notes inline
   - Connect Meta empty state with `returnTo=/insights`
 - **Event Insights tab** (`/events/[id]?tab=insights`) — **shipped** (living: [event-insights.md](./event-insights.md))
   - Event-scoped Meta performance for that event’s published `meta_publication_slots` + matching `social_post_insights` (org hub unchanged; same Meta connection)
-  - KPI strip: Views · Reach · Interactions · Link clicks · Likes (info tooltips)
-  - Comparison banner when ≥2 posts have views (event total vs typical); Views Total / By post; Interactions breakdown (Likes / Comments / Shares)
+  - KPI strip: Views · Reach · Interactions · Link clicks · Likes
   - Posts for this event list (artwork/caption, platform, views, likes; outbound link when URL exists)
+  - No comparison / “vs typical” banner
   - Sync footer: last sync · Refresh (org-wide Meta sync) · link to Org Insights; opening the tab reads DB only (no automatic Graph pull)
   - Empty states: connect Meta · no published posts yet (copy only, no Approvals/Create CTAs) · need sync (Sync now + Org Insights; scope warning when missing)
-  - Not on this tab: Age & gender, Top countries, Follows, Saves, organic-vs-ads / follower split
-- Organic vs ads breakdown, page visits, follows, conversations — **deferred** (org hub; honest empty copy where shown)
+  - Not on this tab: Age & gender, Top countries, Follows, Saves, organic-vs-ads / follower split, dense Views Total/By-post charts
+- Organic vs ads breakdown, page visits, follows, conversations — **deferred** (org hub)
 - Audience demographics overview (Age & gender, Top countries) — **deferred** (org + event)
 - LLM-generated narrative — **deferred**
 - Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))
@@ -256,7 +274,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - AI credits widget — **shipped** (sidebar balance + soft warn + exhausted hard-stop CTA to Billing)
 - Owner AI credits monitoring — **shipped** (Phase 3: Credits tab on `/ops/ai-apis` — per-org plan/used/reserve/OpenAI $/health + ledger)
 - Owner AI credits grants — **shipped** (Phase 4: Reserve SKU / custom bonus / signed Reserve adjustment on selected org)
-- Stripe billing + trial + plan gates — **shipped** (Phase 5: Checkout/Portal/webhooks live in Production + app trial + Stripe `trial_period_days` / `trialing` sync + 13 feature/capacity gates + canceled-subscription full lockout; see [billing-and-access.md](../ops/billing-and-access.md#11-gates-enforced-today))
+- Stripe billing + trial + plan gates — **shipped** (Phase 5: Checkout/Portal/webhooks live in Production + app trial + Stripe `trial_period_days` / `trialing` sync + 13 feature/capacity gates + canceled-subscription full lockout; Org Insights / `social_analytics` available on Starter–Premium; see [billing-and-access.md](../ops/billing-and-access.md#11-gates-enforced-today))
 
 ## Settings
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**

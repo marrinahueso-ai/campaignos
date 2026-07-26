@@ -71,6 +71,10 @@ A pass across all three engines (2026-07) found and fixed:
 
 Remaining known risk areas (not yet remediated — lower priority since they're either cosmetic or already gracefully degraded): native `<input type="date">`/`<select>` styling differs across Safari/Chrome/Firefox by design; `100vh`/`min-h-screen` on iOS Safari can clip under the address bar; `backdrop-blur` overlays combined with `position: sticky` (dashboard header, mobile nav) are a known Safari paint/jank source; `Intl.Segmenter` (jumbo emoji in Communications Hub) can throw on older Firefox/Safari.
 
+**"Does data cross between sessions on the same browser?"** (checked 2026-07): two separate risks, both verified —
+- **Back button after sign-out (bfcache):** confirmed clean on Chromium, Firefox, and WebKit — pressing Back after signing out re-validates on the server and redirects to `/login`, never restores cached authenticated content from the browser's back/forward cache.
+- **Shared/kiosk computer localStorage:** sign-out previously cleared cookies/session only — it never touched `localStorage`, so Campaign Builder's local draft/artwork-backup cache (keyed by `eventId`) persisted after logout. On a shared front-office computer, a teammate signing in afterward could still read another member's unsaved draft. Fixed: sign-out now clears `campaign-builder-v2:*` / `campaign-builder-v2-artwork:*` keys via [`clearLocalCampaignBuilderStorageOnSignOut`](../../src/lib/campaign-builder-v2/clear-on-signout.ts), wired through a shared [`<SignOutForm>`](../../src/components/auth/SignOutForm.tsx) used by all four sign-out entry points. Unrelated preference keys (sidebar collapsed state, last-viewed-event pointer) are left alone. Covered by `22-shared-device-signout-cleanup` (all three engines).
+
 It never intentionally deletes production data. Authenticated tests are designed to use **test/staging credentials** only.
 
 ---
