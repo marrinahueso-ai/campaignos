@@ -2,24 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FileText, History } from "lucide-react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import {
-  Archive,
-  ArrowLeft,
-  Ban,
-  FileText,
-  History,
-  Pencil,
-  ShieldCheck,
-  Star,
-  Trash2,
-  type LucideIcon,
-} from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { CategoryPill } from "@/components/vendors/VendorDetailDrawer";
+  VendorContactActions,
+  VendorHeroContactActions,
+} from "@/components/vendors/VendorContactActions";
 import { VendorEditModal } from "@/components/vendors/VendorEditModal";
+import { VendorLogoMark } from "@/components/vendors/VendorLogoMark";
 import { VendorNotesPanel } from "@/components/vendors/VendorNotesPanel";
 import {
   archiveVendorAction,
@@ -29,22 +19,25 @@ import {
   toggleVendorFavoriteAction,
   unblockVendorAction,
 } from "@/lib/vendors/actions";
-import { vendorInitials } from "@/lib/vendors/filters";
+import {
+  resolveVendorContact,
+  vendorStatusPill,
+} from "@/lib/vendors/contact";
 import type { VendorDetailData } from "@/types/vendors";
 import { cn } from "@/lib/utils/cn";
 
 type ProfileTab =
   | "overview"
   | "events"
-  | "documents"
   | "notes"
+  | "documents"
   | "activity";
 
 const TABS: Array<{ id: ProfileTab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "events", label: "Events" },
-  { id: "documents", label: "Documents" },
   { id: "notes", label: "Notes" },
+  { id: "documents", label: "Documents" },
   { id: "activity", label: "Activity" },
 ];
 
@@ -63,6 +56,12 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
   const [pending, startTransition] = useTransition();
   const [isFavorite, setIsFavorite] = useState(data.vendor.isFavorite);
 
+  const primaryContact =
+    data.contacts.find((contact) => contact.isPrimary) ?? data.contacts[0] ?? null;
+  const contact = resolveVendorContact(data.vendor, primaryContact);
+  const status = vendorStatusPill(data.vendor.status);
+  const isBlocked = data.vendor.status === "blocked";
+
   useEffect(() => {
     setIsFavorite(data.vendor.isFavorite);
   }, [data.vendor.isFavorite]);
@@ -76,7 +75,6 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
       if (!result.success) {
         setIsFavorite(!next);
       }
-      // No router.refresh — star is optimistic; server action revalidates for next visit.
     });
   }
 
@@ -130,235 +128,295 @@ export function VendorProfileShell({ data, categories }: VendorProfileShellProps
     });
   }
 
-  const isBlocked = data.vendor.status === "blocked";
-
   return (
-    <div className="studio-page space-y-6 pb-12">
-      <Link
-        href="/vendors"
-        className="inline-flex items-center gap-2 text-sm text-cos-muted hover:text-cos-text"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Vendor Directory
-      </Link>
+    <div className="relative overflow-hidden rounded-[22px] pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      <div className="relative space-y-4">
+        <Link
+          href="/vendors"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold text-cos-muted no-underline transition hover:text-cos-text"
+        >
+          ← Back to directory
+        </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-cos-accent-soft text-lg font-semibold text-cos-dark">
-            {vendorInitials(data.vendor.name)}
-          </span>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-4xl text-cos-text">{data.vendor.name}</h1>
-              <div className="group/icon-action relative">
-                <div
-                  role="tooltip"
-                  className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap border border-cos-border bg-cos-card px-2 py-1 text-[11px] text-cos-text opacity-0 shadow-md transition-opacity duration-150 group-hover/icon-action:opacity-100 group-focus-within/icon-action:opacity-100"
+        <section className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+          <div
+            className="h-[110px]"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 80% at 10% 0%, rgba(107,129,113,0.35), transparent 60%), radial-gradient(ellipse 50% 70% at 90% 20%, rgba(196,146,46,0.28), transparent 55%), linear-gradient(180deg, #e8efe9, #fffcf7)",
+            }}
+            aria-hidden
+          />
+          <div className="relative mt-[-36px] px-6 pb-[22px]">
+            <VendorLogoMark
+              vendorId={data.vendor.id}
+              vendorName={data.vendor.name}
+              logoUrl={data.logoUrl}
+              canWrite={data.canWrite}
+              size="hero"
+              disabled={pending}
+              onLogoChange={() => router.refresh()}
+            />
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {data.category ? (
+                <span className="rounded-full bg-[rgba(47,74,60,0.12)] px-2.5 py-0.5 text-[11px] font-extrabold tracking-[0.04em] text-[#2f4a3c] uppercase">
+                  {data.category.name}
+                </span>
+              ) : null}
+              {status ? (
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+                    status.tone === "ok" &&
+                      "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]",
+                    status.tone === "warn" &&
+                      "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
+                    status.tone === "muted" &&
+                      "bg-[rgba(42,38,34,0.08)] text-cos-muted",
+                  )}
                 >
-                  {isFavorite ? "Remove favorite" : "Add favorite"}
-                </div>
+                  {status.label}
+                </span>
+              ) : null}
+            </div>
+
+            <h1 className="mt-3.5 mb-1 font-display text-[clamp(1.75rem,4vw,2.375rem)] font-semibold tracking-[-0.02em] text-cos-text">
+              {data.vendor.name}
+            </h1>
+            <p className="mb-3.5 text-sm text-cos-muted">
+              {contact.leadLabel ?? "Add a contact on Edit to call or email faster."}
+            </p>
+
+            <VendorHeroContactActions contact={contact} />
+
+            <div className="flex flex-wrap gap-2">
+              {data.canWrite ? (
                 <button
                   type="button"
-                  aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
-                  title={isFavorite ? "Remove favorite" : "Add favorite"}
-                  onClick={toggleFavorite}
-                  disabled={!data.canWrite}
-                  className="text-cos-muted hover:text-cos-accent disabled:opacity-50"
+                  onClick={() => setEditOpen(true)}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
                 >
-                  <Star
-                    className={cn(
-                      "h-5 w-5",
-                      isFavorite && "fill-cos-accent text-cos-accent",
-                    )}
-                  />
+                  Edit
+                </button>
+              ) : null}
+              {data.canWrite ? (
+                <button
+                  type="button"
+                  onClick={toggleFavorite}
+                  disabled={pending}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-transparent px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+                >
+                  {isFavorite ? "Favorited" : "Favorite"}
+                </button>
+              ) : null}
+              {data.canWrite && !isBlocked ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBlockError(null);
+                    setBlockOpen(true);
+                  }}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-transparent px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
+                >
+                  Block
+                </button>
+              ) : null}
+              {data.canWrite && isBlocked ? (
+                <button
+                  type="button"
+                  onClick={handleUnblock}
+                  disabled={pending}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-transparent px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+                >
+                  Unblock
+                </button>
+              ) : null}
+              {data.canManage ? (
+                <button
+                  type="button"
+                  onClick={handleArchive}
+                  disabled={pending}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-transparent px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+                >
+                  Archive
+                </button>
+              ) : null}
+              {data.canManage ? (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={pending}
+                  className="inline-flex items-center rounded-full border-[1.5px] border-transparent px-3 py-2 text-[13px] font-bold text-cos-muted transition hover:text-[#a65a3a] disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <nav
+          className="flex flex-wrap gap-0.5"
+          role="tablist"
+          aria-label="Vendor profile sections"
+        >
+          {TABS.map((item) => {
+            const active = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                  active
+                    ? "border border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                    : "border border-transparent bg-transparent text-cos-muted hover:text-cos-text",
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {tab === "overview" && (
+          <OverviewPanel data={data} contact={contact} />
+        )}
+        {tab === "events" && <EventsPanel assignments={data.assignments} />}
+        {tab === "documents" && (
+          <DocumentsPanel
+            eventFiles={data.eventFiles}
+            documents={data.documents}
+            canWrite={data.canWrite}
+          />
+        )}
+        {tab === "notes" && (
+          <ProfileBox>
+            <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+              Notes
+            </h3>
+            <VendorNotesPanel
+              vendorId={data.vendor.id}
+              notes={data.notes}
+              summary={data.vendor.notesSummary}
+              canWrite={data.canWrite}
+            />
+          </ProfileBox>
+        )}
+        {tab === "activity" && <ActivityPanel logs={data.activityLogs} />}
+
+        {blockOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/25 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-[22px] border border-cos-border bg-cos-card p-6 shadow-[0_20px_48px_rgba(42,38,34,0.12)]">
+              <h4 className="font-display text-xl font-semibold text-cos-text">
+                Block vendor
+              </h4>
+              <p className="mt-1 text-sm text-cos-muted">
+                Blocking requires a reason. It will be saved in Notes.
+              </p>
+              <textarea
+                value={blockReason}
+                onChange={(event) => setBlockReason(event.target.value)}
+                rows={4}
+                placeholder="Why is this vendor blocked?"
+                className="mt-4 min-h-[6rem] w-full resize-y rounded-2xl border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-text focus:outline-none"
+              />
+              {blockError ? (
+                <p className="mt-2 text-sm text-[#a65a3a]" role="alert">
+                  {blockError}
+                </p>
+              ) : null}
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBlockOpen(false);
+                    setBlockReason("");
+                    setBlockError(null);
+                  }}
+                  className="rounded-full px-4 py-2 text-[13px] font-bold text-cos-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBlock}
+                  disabled={pending || !blockReason.trim()}
+                  className="rounded-full bg-cos-text px-4 py-2 text-[13px] font-bold text-cos-card disabled:opacity-50"
+                >
+                  Block vendor
                 </button>
               </div>
             </div>
-            {data.category && <CategoryPill category={data.category} />}
-            <Badge
-              variant={isBlocked ? "warning" : "default"}
-              className="mt-2"
-            >
-              {data.vendor.status}
-            </Badge>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {data.canWrite && (
-            <IconActionButton
-              label="Edit vendor"
-              icon={Pencil}
-              variant="primary"
-              onClick={() => setEditOpen(true)}
-            />
-          )}
-          {data.canWrite && !isBlocked && (
-            <IconActionButton
-              label="Block vendor"
-              icon={Ban}
-              onClick={() => {
-                setBlockError(null);
-                setBlockOpen(true);
-              }}
-            />
-          )}
-          {data.canWrite && isBlocked && (
-            <IconActionButton
-              label="Unblock vendor"
-              icon={ShieldCheck}
-              disabled={pending}
-              onClick={handleUnblock}
-            />
-          )}
-          {data.canManage && (
-            <IconActionButton
-              label="Archive vendor"
-              icon={Archive}
-              disabled={pending}
-              onClick={handleArchive}
-            />
-          )}
-          {data.canManage && (
-            <IconActionButton
-              label="Delete vendor"
-              icon={Trash2}
-              variant="danger"
-              disabled={pending}
-              onClick={handleDelete}
-            />
-          )}
-        </div>
-      </div>
+        ) : null}
 
-      <div className="flex flex-wrap gap-1 border-b border-cos-border">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              "px-4 py-2.5 text-sm transition-colors",
-              tab === item.id
-                ? "border-b-2 border-cos-dark font-medium text-cos-dark"
-                : "text-cos-muted hover:text-cos-text",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "overview" && <OverviewPanel data={data} />}
-      {tab === "events" && <EventsPanel assignments={data.assignments} />}
-      {tab === "documents" && (
-        <DocumentsPanel
-          eventFiles={data.eventFiles}
-          documents={data.documents}
-          canWrite={data.canWrite}
+        <VendorEditModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          vendor={data.vendor}
+          categories={categories}
+          onSaved={() => router.refresh()}
         />
-      )}
-      {tab === "notes" && (
-        <VendorNotesPanel
-          vendorId={data.vendor.id}
-          notes={data.notes}
-          summary={data.vendor.notesSummary}
-          canWrite={data.canWrite}
-        />
-      )}
-      {tab === "activity" && <ActivityPanel logs={data.activityLogs} />}
-
-      {blockOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-cos-text/25 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md border border-cos-border bg-cos-card p-6 shadow-2xl">
-            <h4 className="font-display text-xl text-cos-text">Block vendor</h4>
-            <p className="mt-1 text-sm text-cos-muted">
-              Blocking requires a reason. It will be saved in Notes.
-            </p>
-            <textarea
-              value={blockReason}
-              onChange={(event) => setBlockReason(event.target.value)}
-              rows={4}
-              placeholder="Why is this vendor blocked?"
-              className="mt-4 min-h-[6rem] w-full resize-y border border-cos-border bg-cos-card px-3 py-2 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-dark focus:outline-none"
-            />
-            {blockError ? (
-              <p className="mt-2 text-sm text-red-600" role="alert">
-                {blockError}
-              </p>
-            ) : null}
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setBlockOpen(false);
-                  setBlockReason("");
-                  setBlockError(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleBlock}
-                disabled={pending || !blockReason.trim()}
-              >
-                Block vendor
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <VendorEditModal
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        vendor={data.vendor}
-        categories={categories}
-        onSaved={() => router.refresh()}
-      />
+      </div>
     </div>
   );
 }
 
-function OverviewPanel({ data }: { data: VendorDetailData }) {
-  const contact = data.contacts[0];
-  const title = contact?.title?.trim() || null;
-  const name = contact?.name?.trim() || null;
-  const showTitle =
-    Boolean(title) && title!.toLowerCase() !== (name ?? "").toLowerCase();
+function ProfileBox({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-[22px] border border-cos-border bg-cos-card px-[22px] py-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function OverviewPanel({
+  data,
+  contact,
+}: {
+  data: VendorDetailData;
+  contact: ReturnType<typeof resolveVendorContact>;
+}) {
+  const about =
+    data.vendor.notesSummary?.trim() ||
+    data.notes[0]?.content?.trim() ||
+    "No notes yet. Add a summary from Edit, or jot a note under Notes.";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="space-y-3 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
-          Contact
-        </h3>
-        <p className="text-sm text-cos-text">
-          {name ?? "—"}
-          {showTitle ? `, ${title}` : ""}
-        </p>
-        <p className="text-sm text-cos-muted">{contact?.phone ?? data.vendor.phone ?? "—"}</p>
-        <p className="text-sm text-cos-muted">{contact?.email ?? data.vendor.email ?? "—"}</p>
-        <p className="text-sm text-cos-muted">{data.vendor.website ?? "—"}</p>
-      </Card>
-      <Card className="space-y-3 p-5">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
-          Summary
-        </h3>
-        <p className="text-sm leading-relaxed text-cos-text">
-          {data.vendor.notesSummary ?? data.notes[0]?.content ?? "No notes yet."}
-        </p>
-        <p className="text-sm text-cos-muted">
-          {data.assignments.length} event{data.assignments.length === 1 ? "" : "s"} ·{" "}
-          {data.eventFiles.reduce((sum, group) => sum + group.files.length, 0)} file
-          {data.eventFiles.reduce((sum, group) => sum + group.files.length, 0) === 1
-            ? ""
-            : "s"}{" "}
-          across events
-        </p>
-      </Card>
-    </div>
+    <ProfileBox>
+      <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+        About
+      </h3>
+      <p className="m-0 text-sm leading-relaxed text-cos-muted">{about}</p>
+      <VendorContactActions contact={contact} className="mt-3.5" size="md" />
+      <p className="mt-3.5 text-sm text-cos-muted">
+        {data.assignments.length} event
+        {data.assignments.length === 1 ? "" : "s"} ·{" "}
+        {data.eventFiles.reduce((sum, group) => sum + group.files.length, 0)}{" "}
+        file
+        {data.eventFiles.reduce((sum, group) => sum + group.files.length, 0) ===
+        1
+          ? ""
+          : "s"}{" "}
+        across events
+      </p>
+    </ProfileBox>
   );
 }
 
@@ -368,29 +426,39 @@ function EventsPanel({
   assignments: VendorDetailData["assignments"];
 }) {
   if (!assignments.length) {
-    return <ShellEmpty message="No events linked yet." />;
+    return (
+      <ProfileBox>
+        <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+          Linked events
+        </h3>
+        <p className="m-0 text-sm text-cos-muted">No events linked yet.</p>
+      </ProfileBox>
+    );
   }
 
   return (
-    <Card className="divide-y divide-cos-border p-0">
-      {assignments.map((assignment) => (
-        <div
-          key={assignment.assignmentId}
-          className="flex items-center justify-between gap-3 px-5 py-4"
-        >
-          <div>
-            <Link
-              href={`/events/${assignment.eventId}`}
-              className="font-medium text-cos-text hover:underline"
-            >
-              {assignment.eventTitle}
-            </Link>
-            <p className="text-sm text-cos-muted">{assignment.eventDate}</p>
-          </div>
-          <Badge variant="success">{assignment.assignmentStatus}</Badge>
-        </div>
-      ))}
-    </Card>
+    <ProfileBox>
+      <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+        Linked events
+      </h3>
+      <div className="mt-2 flex flex-col gap-2">
+        {assignments.map((assignment) => (
+          <Link
+            key={assignment.assignmentId}
+            href={`/events/${assignment.eventId}?tab=vendors`}
+            className="flex items-center justify-between gap-3 rounded-[14px] bg-[rgba(255,252,247,0.7)] px-3.5 py-3 text-sm font-bold text-cos-text no-underline transition hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+          >
+            <span>{assignment.eventTitle}</span>
+            <small className="font-semibold text-cos-muted capitalize">
+              {assignment.assignmentStatus === "confirmed" ||
+              assignment.assignmentStatus === "completed"
+                ? "Linked"
+                : assignment.assignmentStatus}
+            </small>
+          </Link>
+        ))}
+      </div>
+    </ProfileBox>
   );
 }
 
@@ -409,73 +477,78 @@ function DocumentsPanel({
 
   if (!hasEventFiles && !hasLegacyDocs) {
     return (
-      <ShellEmpty
-        message={
-          canWrite
-            ? "No documents yet. Upload files on an event’s Files tab — they show here for events this vendor is linked to. Contracts live with those event files."
-            : "No documents for this vendor’s events."
-        }
-      />
+      <ProfileBox>
+        <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+          Documents
+        </h3>
+        <p className="m-0 text-sm leading-relaxed text-cos-muted">
+          {canWrite
+            ? "Files for this vendor live on the events they’re linked to — open an event’s Files tab, or the org Files library filtered by that event."
+            : "No documents for this vendor’s events."}
+        </p>
+      </ProfileBox>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-cos-muted">
-        Documents come from Files on linked events (including contracts). Open an event
-        to upload or manage files.
-      </p>
+    <div className="space-y-3.5">
+      <ProfileBox>
+        <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+          Documents
+        </h3>
+        <p className="m-0 text-sm text-cos-muted">
+          Documents come from Files on linked events (including contracts). Open
+          an event to upload or manage files.
+        </p>
+      </ProfileBox>
 
       {eventFiles.map((group) => (
-        <Card key={group.eventId} className="divide-y divide-cos-border p-0">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+        <ProfileBox key={group.eventId} className="!p-0 overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cos-border px-5 py-3">
             <div>
               <Link
                 href={`/events/${group.eventId}?tab=files`}
-                className="font-medium text-cos-text hover:underline"
+                className="font-bold text-cos-text no-underline hover:underline"
               >
                 {group.eventTitle}
               </Link>
               <p className="text-xs text-cos-muted">{group.eventDate}</p>
             </div>
-            <Button
+            <Link
               href={`/files?event=${group.eventId}`}
-              size="sm"
-              variant="secondary"
+              className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-3 py-1.5 text-xs font-bold text-cos-text no-underline"
             >
               Open in Files
-            </Button>
+            </Link>
           </div>
           {group.files.map((file) => (
             <div
               key={file.id}
-              className="flex items-center justify-between gap-3 px-5 py-3"
+              className="flex items-center gap-3 border-b border-cos-border px-5 py-3 last:border-b-0"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <FileText className="h-4 w-4 shrink-0 text-cos-muted" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-cos-text">
-                    {file.name}
-                  </p>
-                  <p className="text-xs text-cos-muted">
-                    {file.category} ·{" "}
-                    {new Date(file.uploadedAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
+              <FileText className="h-4 w-4 shrink-0 text-cos-muted" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-cos-text">
+                  {file.name}
+                </p>
+                <p className="text-xs text-cos-muted">
+                  {file.category} ·{" "}
+                  {new Date(file.uploadedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
               </div>
             </div>
           ))}
-        </Card>
+        </ProfileBox>
       ))}
 
       {hasLegacyDocs ? (
-        <Card className="divide-y divide-cos-border p-0">
-          <div className="px-5 py-3">
-            <p className="text-sm font-medium text-cos-text">Vendor uploads</p>
+        <ProfileBox className="!p-0 overflow-hidden">
+          <div className="border-b border-cos-border px-5 py-3">
+            <p className="text-sm font-bold text-cos-text">Vendor uploads</p>
             <p className="text-xs text-cos-muted">
               Older files stored directly on the vendor record.
             </p>
@@ -483,34 +556,37 @@ function DocumentsPanel({
           {documents.map((document) => (
             <div
               key={document.id}
-              className="flex items-center justify-between gap-3 px-5 py-4"
+              className="flex items-center justify-between gap-3 border-b border-cos-border px-5 py-4 last:border-b-0"
             >
               <div className="flex items-center gap-3">
                 <FileText className="h-4 w-4 text-cos-muted" />
                 <div>
-                  <p className="text-sm font-medium text-cos-text">{document.name}</p>
+                  <p className="text-sm font-medium text-cos-text">
+                    {document.name}
+                  </p>
                   <p className="text-xs text-cos-muted">{document.documentType}</p>
                 </div>
               </div>
-              <Button
+              <button
                 type="button"
-                size="sm"
-                variant="secondary"
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    const result = await downloadVendorDocumentAction(document.id);
+                    const result = await downloadVendorDocumentAction(
+                      document.id,
+                    );
                     if (result.url) {
                       window.open(result.url, "_blank", "noopener,noreferrer");
                     }
                   })
                 }
+                className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-3 py-1.5 text-xs font-bold text-cos-text disabled:opacity-50"
               >
                 Download
-              </Button>
+              </button>
             </div>
           ))}
-        </Card>
+        </ProfileBox>
       ) : null}
     </div>
   );
@@ -518,74 +594,36 @@ function DocumentsPanel({
 
 function ActivityPanel({ logs }: { logs: VendorDetailData["activityLogs"] }) {
   if (!logs.length) {
-    return <ShellEmpty message="No activity logged yet." />;
+    return (
+      <ProfileBox>
+        <h3 className="m-0 mb-2.5 font-display text-xl font-semibold text-cos-text">
+          Activity
+        </h3>
+        <p className="m-0 text-sm text-cos-muted">No activity logged yet.</p>
+      </ProfileBox>
+    );
   }
 
   return (
-    <Card className="divide-y divide-cos-border p-0">
+    <ProfileBox className="!p-0 overflow-hidden">
       {logs.map((log) => (
-        <div key={log.id} className="flex items-start gap-3 px-5 py-4">
+        <div
+          key={log.id}
+          className="flex items-start gap-3 border-b border-cos-border px-5 py-4 last:border-b-0"
+        >
           <History className="mt-0.5 h-4 w-4 shrink-0 text-cos-muted" />
           <div>
             <p className="text-sm text-cos-text">{log.action}</p>
-            {log.details && <p className="text-xs text-cos-muted">{log.details}</p>}
+            {log.details && (
+              <p className="text-xs text-cos-muted">{log.details}</p>
+            )}
             <p className="text-xs text-cos-muted">
-              {log.actorName ?? "System"} · {new Date(log.createdAt).toLocaleString()}
+              {log.actorName ?? "System"} ·{" "}
+              {new Date(log.createdAt).toLocaleString()}
             </p>
           </div>
         </div>
       ))}
-    </Card>
-  );
-}
-
-function IconActionButton({
-  label,
-  icon: Icon,
-  onClick,
-  disabled,
-  variant = "default",
-}: {
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: "default" | "primary" | "danger";
-}) {
-  return (
-    <div className="group/icon-action relative">
-      <div
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 whitespace-nowrap border border-cos-border bg-cos-card px-2 py-1 text-[11px] text-cos-text opacity-0 shadow-md transition-opacity duration-150 group-hover/icon-action:opacity-100 group-focus-within/icon-action:opacity-100"
-      >
-        {label}
-      </div>
-      <button
-        type="button"
-        aria-label={label}
-        title={label}
-        disabled={disabled}
-        onClick={onClick}
-        className={cn(
-          "inline-flex h-9 w-9 items-center justify-center border transition-colors disabled:opacity-50",
-          variant === "primary" &&
-            "border-cos-dark bg-cos-dark text-white hover:bg-cos-dark/90",
-          variant === "default" &&
-            "border-cos-border bg-cos-card text-cos-text hover:border-cos-muted hover:bg-cos-bg",
-          variant === "danger" &&
-            "border-cos-border bg-cos-card text-cos-muted hover:border-red-300 hover:bg-red-50 hover:text-red-700",
-        )}
-      >
-        <Icon className="h-4 w-4" aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-function ShellEmpty({ message }: { message: string }) {
-  return (
-    <Card className="p-8 text-center text-sm text-cos-muted">
-      {message}
-    </Card>
+    </ProfileBox>
   );
 }

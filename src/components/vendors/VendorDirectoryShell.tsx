@@ -3,17 +3,12 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { VendorDetailDrawer } from "@/components/vendors/VendorDetailDrawer";
 import { VendorAddModal } from "@/components/vendors/VendorAddModal";
 import { VendorCard } from "@/components/vendors/VendorCard";
-import { VendorDirectorySummaryCards } from "@/components/vendors/VendorDirectorySummaryCards";
 import {
   VENDORS_MIGRATION,
   VENDOR_DIRECTORY_TABS,
   VENDOR_PAGE_SIZE,
-  VENDOR_STATUSES,
 } from "@/lib/vendors/constants";
 import {
   createDefaultVendorFilters,
@@ -21,46 +16,15 @@ import {
   paginateVendorRows,
   totalVendorPages,
 } from "@/lib/vendors/filters";
-import type { VendorsDirectoryLayout } from "@/lib/vendors/vendors-directory-layout";
 import type {
   VendorDirectoryFilters,
   VendorDirectoryPageData,
-  VendorDirectoryRow,
   VendorDirectoryTab,
 } from "@/types/vendors";
 import { cn } from "@/lib/utils/cn";
 
 interface VendorDirectoryShellProps {
   data: VendorDirectoryPageData;
-  summaryLayout: VendorsDirectoryLayout;
-}
-
-function directoryStatus(row: VendorDirectoryRow): {
-  label: string;
-  variant: "success" | "warning" | "default";
-} | null {
-  if (row.vendor.status === "blocked") {
-    return { label: "blocked", variant: "warning" };
-  }
-  if (row.vendor.status === "archived") {
-    return { label: "archived", variant: "default" };
-  }
-
-  const assignment = row.latestAssignment;
-  if (!assignment) {
-    return null;
-  }
-
-  switch (assignment.assignmentStatus) {
-    case "confirmed":
-      return { label: "confirmed", variant: "success" };
-    case "completed":
-      return { label: "completed", variant: "success" };
-    case "pending":
-    case "cancelled":
-      // Pending is not a directory concept — omit the badge.
-      return null;
-  }
 }
 
 function filtersFromSearchParams(
@@ -98,15 +62,11 @@ function writeFiltersToUrl(filters: VendorDirectoryFilters) {
   window.history.replaceState(window.history.state, "", href);
 }
 
-export function VendorDirectoryShell({
-  data,
-  summaryLayout,
-}: VendorDirectoryShellProps) {
+export function VendorDirectoryShell({ data }: VendorDirectoryShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<VendorDirectoryRow | null>(null);
   const [filters, setFilters] = useState(() =>
     filtersFromSearchParams(searchParams),
   );
@@ -175,17 +135,9 @@ export function VendorDirectoryShell({
     [rows, activeFilters],
   );
 
-  const favoriteCount = useMemo(
-    () => rows.filter((row) => row.vendor.isFavorite).length,
-    [rows],
-  );
-
   const pageCount = totalVendorPages(filteredRows.length, VENDOR_PAGE_SIZE);
   const currentPage = Math.min(page, pageCount);
   const pageRows = paginateVendorRows(filteredRows, currentPage, VENDOR_PAGE_SIZE);
-  const rangeStart =
-    filteredRows.length === 0 ? 0 : (currentPage - 1) * VENDOR_PAGE_SIZE + 1;
-  const rangeEnd = Math.min(currentPage * VENDOR_PAGE_SIZE, filteredRows.length);
 
   function updateFilter<K extends keyof VendorDirectoryFilters>(
     key: K,
@@ -200,153 +152,115 @@ export function VendorDirectoryShell({
   }
 
   const migrationNeeded = data.vendors.length === 0 && data.categories.length === 0;
+  const eventScoped = filters.eventId !== "all";
+  const scopedEventTitle =
+    data.events.find((event) => event.id === filters.eventId)?.title ?? null;
 
   return (
-    <div className="studio-page space-y-6 pb-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl text-cos-text">Vendor Directory</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-cos-muted">
-            All your event vendors in one place. Save, organize, and manage vendor details
-            for past, current, and upcoming events.
-          </p>
-        </div>
-        {data.canWrite && (
-          <Button type="button" onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Vendor
-          </Button>
+    <div className="relative overflow-hidden rounded-[22px] pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
+      <div className="relative space-y-4">
+        <header className="flex flex-wrap items-end justify-between gap-3.5">
+          <div className="min-w-0">
+            <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] font-semibold tracking-[-0.02em] text-cos-text">
+              Vendors
+            </h1>
+            <p className="mt-1.5 max-w-[48ch] text-sm leading-relaxed text-cos-muted">
+              Your school’s vendor directory — tap a card for the profile, or
+              call / email right from the card.
+            </p>
+            {eventScoped && scopedEventTitle ? (
+              <p className="mt-1.5 text-sm font-semibold text-cos-muted">
+                Showing vendors linked to {scopedEventTitle}.{" "}
+                <button
+                  type="button"
+                  onClick={() => updateFilter("eventId", "all")}
+                  className="font-bold text-cos-text underline-offset-2 hover:underline"
+                >
+                  Clear event filter
+                </button>
+              </p>
+            ) : null}
+          </div>
+          {data.canWrite && (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition hover:-translate-y-px hover:bg-[#1a1714]"
+            >
+              <Plus className="h-4 w-4" />
+              Add vendor
+            </button>
+          )}
+        </header>
+
+        {migrationNeeded && (
+          <div className="rounded-[18px] border border-[rgba(196,146,46,0.35)] bg-[rgba(196,146,46,0.12)] px-4 py-3 text-sm text-cos-text">
+            Apply migration <code className="text-xs">{VENDORS_MIGRATION}</code>{" "}
+            to enable the vendor directory database tables.
+          </div>
         )}
-      </div>
 
-      {migrationNeeded && (
-        <Card className="border-cos-warning/40 bg-cos-warning/10 p-4 text-sm text-cos-text">
-          Apply migration <code className="text-xs">{VENDORS_MIGRATION}</code> to enable
-          the vendor directory database tables.
-        </Card>
-      )}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <FilterSelect
-          value={filters.eventId}
-          options={[
-            { value: "all", label: "All Events" },
-            ...data.events.map((event) => ({
-              value: event.id,
-              label: event.title,
-            })),
-          ]}
-          onChange={(value) => updateFilter("eventId", value)}
-          ariaLabel="Filter by event"
-        />
-        <FilterSelect
-          value={filters.categoryId}
-          options={[
-            { value: "all", label: "All Categories" },
-            ...data.categories.map((category) => ({
-              value: category.id,
-              label: category.name,
-            })),
-          ]}
-          onChange={(value) => updateFilter("categoryId", value)}
-          ariaLabel="Filter by category"
-        />
-        <FilterSelect
-          value={filters.status}
-          options={VENDOR_STATUSES.map((status) => ({
-            value: status.value,
-            label: status.label,
-          }))}
-          onChange={(value) => updateFilter("status", value)}
-          ariaLabel="Filter by status"
-        />
-        <div className="relative min-w-[14rem] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cos-muted" />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => {
-              setSearchInput(event.target.value);
-              setPage(1);
-            }}
-            placeholder="Search vendors..."
-            aria-label="Search vendors"
-            className="h-9 w-full border border-cos-border bg-cos-card pl-9 pr-3 text-sm text-cos-text outline-none focus:border-cos-dark"
-          />
-        </div>
-      </div>
-
-      <VendorDirectorySummaryCards
-        initialLayout={summaryLayout}
-        cards={[
-          {
-            key: "total_vendors",
-            label: "Total Vendors",
-            value: String(data.summary.totalVendors),
-            active: filters.tab === "all",
-            onSelect: () => updateFilter("tab", "all"),
-          },
-          {
-            key: "confirmed",
-            label: "Confirmed",
-            value: String(data.summary.confirmedThisYear),
-            detail: "this year",
-          },
-          {
-            key: "upcoming_events",
-            label: "Upcoming Events",
-            value: String(data.summary.upcomingEventsWithVendors),
-            detail: "with vendors",
-          },
-          {
-            key: "favorite_vendors",
-            label: "Favorite Vendors",
-            value: String(favoriteCount),
-            detail: "frequently used",
-            active: filters.tab === "favorites",
-            onSelect: () => updateFilter("tab", "favorites"),
-          },
-        ]}
-      />
-
-      <div className="flex flex-wrap gap-1 border-b border-cos-border">
-        {VENDOR_DIRECTORY_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => updateFilter("tab", tab.id)}
-            className={cn(
-              "px-4 py-2.5 text-sm transition-colors",
-              filters.tab === tab.id
-                ? "border-b-2 border-cos-dark font-medium text-cos-dark"
-                : "text-cos-muted hover:text-cos-text",
-            )}
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
+          <label className="flex min-w-[12.5rem] max-w-[26rem] flex-1 items-center gap-2.5 rounded-full border border-cos-border bg-[#fffcf7] px-4 py-2.5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+            <Search className="h-[18px] w-[18px] shrink-0 text-cos-muted" aria-hidden />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => {
+                setSearchInput(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Search name, phone, email…"
+              aria-label="Search vendors"
+              className="w-full border-none bg-transparent text-sm font-semibold text-cos-text outline-none placeholder:text-cos-muted"
+            />
+          </label>
+          <div
+            className="inline-flex shrink-0 flex-wrap gap-0.5"
+            role="tablist"
+            aria-label="Vendor directory tabs"
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+            {VENDOR_DIRECTORY_TABS.map((tab) => {
+              const active = filters.tab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => updateFilter("tab", tab.id)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-[13px] font-semibold transition",
+                    active
+                      ? "bg-[#fffcf7] text-[#2a2622] shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                      : "bg-transparent text-[#7a7166] hover:text-[#2a2622]",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      {pageRows.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-cos-muted">
-          No vendors match your filters yet.
-        </Card>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(14rem,16rem))] gap-3">
-          {pageRows.map((row) => {
-            const status = directoryStatus(row);
-            return (
+        {pageRows.length === 0 ? (
+          <div className="rounded-[22px] border border-cos-border bg-cos-card px-6 py-10 text-center text-sm text-cos-muted shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+            No vendors match your filters yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3.5">
+            {pageRows.map((row) => (
               <VendorCard
                 key={row.vendor.id}
                 vendor={row.vendor}
                 category={row.category}
                 primaryContact={row.primaryContact}
                 logoUrl={row.logoUrl}
-                statusLabel={status?.label ?? ""}
-                statusVariant={status?.variant ?? "default"}
                 canWrite={data.canWrite}
-                onSelect={() => setSelectedRow(row)}
-                onLogoUploaded={() => router.refresh()}
+                onSelect={() => router.push(`/vendors/${row.vendor.id}`)}
+                onLogoUploaded={() => {
+                  router.refresh();
+                }}
                 onFavoriteChange={(isFavorite) => {
                   setFavoriteOverrides((prev) => ({
                     ...prev,
@@ -354,71 +268,68 @@ export function VendorDirectoryShell({
                   }));
                 }}
               />
-            );
-          })}
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cos-muted">
-        <p>
-          Showing {rangeStart}-{rangeEnd} of {filteredRows.length} vendors
-        </p>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((value) => Math.max(1, value - 1))}
-          >
-            Prev
-          </Button>
-          {Array.from({ length: pageCount }, (_, index) => index + 1)
-            .slice(0, 8)
-            .map((pageNumber) => (
-              <button
-                key={pageNumber}
-                type="button"
-                onClick={() => setPage(pageNumber)}
-                className={cn(
-                  "h-8 min-w-8 px-2 text-sm",
-                  pageNumber === currentPage
-                    ? "bg-cos-dark text-white"
-                    : "text-cos-muted hover:bg-cos-bg",
-                )}
-              >
-                {pageNumber}
-              </button>
             ))}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={currentPage >= pageCount}
-            onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
-          >
-            Next
-          </Button>
-        </div>
+          </div>
+        )}
+
+        {filteredRows.length > VENDOR_PAGE_SIZE ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-cos-muted">
+            <p>
+              Showing {(currentPage - 1) * VENDOR_PAGE_SIZE + 1}–
+              {Math.min(currentPage * VENDOR_PAGE_SIZE, filteredRows.length)} of{" "}
+              {filteredRows.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((value) => Math.max(1, value - 1))}
+                className="rounded-full px-3 py-1.5 text-sm font-bold disabled:opacity-40"
+              >
+                Prev
+              </button>
+              {Array.from({ length: pageCount }, (_, index) => index + 1)
+                .slice(0, 8)
+                .map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    onClick={() => setPage(pageNumber)}
+                    className={cn(
+                      "h-8 min-w-8 rounded-full px-2 text-sm font-bold",
+                      pageNumber === currentPage
+                        ? "bg-cos-text text-cos-card"
+                        : "text-cos-muted hover:bg-[rgba(255,252,247,0.85)]",
+                    )}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+              <button
+                type="button"
+                disabled={currentPage >= pageCount}
+                onClick={() =>
+                  setPage((value) => Math.min(pageCount, value + 1))
+                }
+                className="rounded-full px-3 py-1.5 text-sm font-bold disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <VendorAddModal
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          categories={data.categories}
+          events={data.events}
+          defaultEventId={
+            filters.eventId !== "all" ? filters.eventId : undefined
+          }
+          onCreated={() => router.refresh()}
+        />
       </div>
-
-      <VendorDetailDrawer
-        row={selectedRow}
-        open={Boolean(selectedRow)}
-        onClose={() => setSelectedRow(null)}
-        canWrite={data.canWrite}
-      />
-
-      <VendorAddModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        categories={data.categories}
-        events={data.events}
-        defaultEventId={
-          filters.eventId !== "all" ? filters.eventId : undefined
-        }
-        onCreated={() => router.refresh()}
-      />
     </div>
   );
 }
@@ -429,31 +340,4 @@ function normalizeDirectoryTab(raw: string | null): VendorDirectoryTab {
   }
   // Legacy ?tab=pending → All Vendors
   return "all";
-}
-
-function FilterSelect({
-  value,
-  options,
-  onChange,
-  ariaLabel,
-}: {
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
-  ariaLabel: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      aria-label={ariaLabel}
-      className="h-9 min-w-[10rem] border border-cos-border bg-cos-card px-2.5 text-xs text-cos-text outline-none focus:border-cos-dark"
-    >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
 }

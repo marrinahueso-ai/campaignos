@@ -268,6 +268,8 @@ export interface VendorDetailData {
   /** Campaign files from events this vendor is linked to. */
   eventFiles: VendorEventFileGroup[];
   activityLogs: VendorActivityLog[];
+  /** Signed URL for hero logo; null when no logo or sign failed. */
+  logoUrl: string | null;
   canWrite: boolean;
   canManage: boolean;
 }

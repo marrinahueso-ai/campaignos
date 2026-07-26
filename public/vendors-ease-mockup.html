@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Vendors Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --forest-mark: #4d6b58;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --mustard-mark: #d4a84a;
+      --teal: #2a7a86;
+      --teal-mark: #449099;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a, select { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 78rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .view-switch {
+      display: inline-flex; gap: 2px; padding: 3px;
+      border-radius: 999px; background: rgba(255,252,247,0.55);
+      border: 1px solid var(--line); margin-bottom: 16px;
+    }
+    .view-switch button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 7px 14px; font-size: 13px; font-weight: 700;
+      color: var(--ink-soft); cursor: pointer;
+    }
+    .view-switch button.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+
+    .panel[hidden] { display: none !important; }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 16px; animation: rise .35s ease both;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 44px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      line-height: 1.45;
+    }
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent; padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .search {
+      flex: 1; min-width: 200px; max-width: 26rem;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--white); border: 1px solid var(--line);
+      border-radius: 999px; padding: 10px 16px; box-shadow: var(--shadow);
+    }
+    .search input {
+      border: none; outline: none; background: transparent;
+      width: 100%; font-size: 14px; font-weight: 600;
+    }
+    .tabs {
+      display: inline-flex; gap: 2px;
+    }
+    .tabs button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 7px 12px; font-size: 13px; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+    }
+    .tabs button.active {
+      color: var(--ink); background: rgba(255,252,247,0.85);
+    }
+
+    /* Directory cards — keep the loved card style, Ease polish */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      text-align: left;
+      animation: rise .35s ease both;
+      cursor: pointer;
+      transition: transform .12s, box-shadow .15s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .card-band {
+      position: relative;
+      height: 72px;
+      display: flex; align-items: center;
+      padding: 0 14px;
+      background:
+        linear-gradient(135deg, rgba(47,74,60,0.85), rgba(107,129,113,0.55)),
+        var(--forest);
+    }
+    .card-band.mustard {
+      background:
+        linear-gradient(135deg, rgba(196,146,46,0.9), rgba(232,200,120,0.5)),
+        var(--mustard);
+    }
+    .card-band.teal {
+      background:
+        linear-gradient(135deg, rgba(42,122,134,0.9), rgba(120,180,188,0.45)),
+        var(--teal);
+    }
+    .card-logo {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      background: var(--forest-mark);
+      color: var(--cream);
+      font-family: var(--serif);
+      font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(28,36,48,0.18);
+    }
+    .card-band.mustard .card-logo {
+      background: var(--mustard-mark);
+      color: var(--ink);
+    }
+    .card-band.teal .card-logo {
+      background: var(--teal-mark);
+      color: var(--cream);
+    }
+    .card-logo.has-image {
+      background: transparent;
+      border: 1px solid rgba(255,252,247,0.22);
+    }
+    .card-band.mustard .card-logo.has-image {
+      border-color: rgba(42,38,34,0.14);
+    }
+    .card-logo img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .card-band .star {
+      position: absolute; top: 10px; right: 10px;
+      width: 30px; height: 30px; border-radius: 999px;
+      border: none; background: rgba(255,252,247,0.92);
+      color: var(--mustard); cursor: pointer;
+      display: grid; place-items: center;
+      box-shadow: var(--shadow);
+    }
+    .card-band .star svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+    .card-body {
+      position: relative;
+      padding: 14px 14px 12px;
+      display: flex; flex-direction: column; gap: 8px; flex: 1;
+    }
+    .card-body h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+    }
+    .pill.cat { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .pill.ok { background: rgba(42,122,134,0.12); color: var(--teal); }
+    .pill.warn { background: rgba(196,146,46,0.16); color: #7a5a12; }
+
+    .contact {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-top: 2px;
+    }
+    .contact .who {
+      font-size: 13px; font-weight: 700; color: var(--ink-soft);
+    }
+    .contact-actions {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .contact-actions a {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(47,74,60,0.1);
+      color: var(--forest);
+      font-size: 12px; font-weight: 700;
+      text-decoration: none;
+    }
+    .contact-actions a.phone { background: rgba(42,122,134,0.12); color: var(--teal); }
+    .contact-actions a.web { background: rgba(196,146,46,0.16); color: #7a5a12; }
+    .contact-actions a:hover { filter: brightness(0.96); }
+    .card-foot {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .card-foot .btn { width: 100%; justify-content: center; }
+
+    /* Event tab */
+    .event-shell {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      animation: rise .35s ease both;
+    }
+    .event-shell .eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .event-shell h2 {
+      margin: 0 0 4px;
+      font-family: var(--serif);
+      font-size: 26px; font-weight: 600;
+    }
+    .event-shell .sub {
+      margin: 0 0 18px;
+      font-size: 14px; color: var(--ink-soft);
+    }
+    .vendor-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,252,247,0.7);
+      border: 1px solid transparent;
+      margin-bottom: 8px;
+    }
+    .vendor-row:hover {
+      border-color: var(--line);
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+    .vendor-row h4 {
+      margin: 0 0 4px;
+      font-family: var(--serif);
+      font-size: 17px; font-weight: 600;
+    }
+    .vendor-row .meta {
+      font-size: 12px; color: var(--muted); font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .soft-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+    }
+
+    /* Profile */
+    .profile-hero {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--white);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      animation: rise .35s ease both;
+    }
+    .profile-hero .wash {
+      height: 110px;
+      background:
+        radial-gradient(ellipse 60% 80% at 10% 0%, rgba(107,129,113,0.35), transparent 60%),
+        radial-gradient(ellipse 50% 70% at 90% 20%, rgba(196,146,46,0.28), transparent 55%),
+        linear-gradient(180deg, #e8efe9, var(--white));
+    }
+    .profile-hero .inner {
+      padding: 0 24px 22px;
+      margin-top: -36px;
+      position: relative;
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 20px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-size: 28px; font-weight: 600;
+      border: 3px solid var(--white);
+      box-shadow: var(--shadow);
+    }
+    .profile-hero h1 {
+      margin: 14px 0 4px;
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .profile-hero .lead {
+      margin: 0 0 14px;
+      font-size: 14px; color: var(--ink-soft);
+    }
+    .hero-contact {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .hero-contact a {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 16px; border-radius: 999px;
+      font-size: 14px; font-weight: 700;
+      text-decoration: none;
+      border: 1.5px solid var(--line);
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .hero-contact a.primary {
+      background: var(--ink); color: var(--white); border-color: var(--ink);
+    }
+    .hero-contact a.tel { background: rgba(42,122,134,0.12); color: var(--teal); border-color: transparent; }
+    .hero-contact a.mail { background: rgba(47,74,60,0.12); color: var(--forest); border-color: transparent; }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .profile-tabs {
+      display: flex; flex-wrap: wrap; gap: 2px;
+      margin-bottom: 14px;
+    }
+    .profile-tabs button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 8px 14px; font-size: 13px; font-weight: 700;
+      color: var(--muted); cursor: pointer;
+    }
+    .profile-tabs button.active {
+      background: var(--white); color: var(--ink);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+    }
+    .profile-box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 22px;
+    }
+    .profile-box h3 {
+      margin: 0 0 10px;
+      font-family: var(--serif);
+      font-size: 20px; font-weight: 600;
+    }
+    .profile-box p {
+      margin: 0;
+      font-size: 14px; color: var(--ink-soft); line-height: 1.5;
+    }
+    .event-chip-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .event-chip-list a {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 14px; border-radius: 14px;
+      background: rgba(255,252,247,0.7);
+      text-decoration: none; color: inherit;
+      font-weight: 700; font-size: 14px;
+    }
+    .event-chip-list a:hover { background: var(--white); box-shadow: var(--shadow); }
+    .event-chip-list small { font-weight: 600; color: var(--muted); }
+
+    .note {
+      margin-top: 36px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 48rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .vendor-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" class="active" aria-label="Vendors"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2"/></svg></button>
+      <button type="button" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">marrina@huesoinvestments.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Vendors ease · cards · contact-first · profile · not live yet</div>
+
+        <div class="view-switch" role="tablist" aria-label="Mock surfaces">
+          <button type="button" class="active" data-view="directory">Directory</button>
+          <button type="button" data-view="event">Event tab</button>
+          <button type="button" data-view="profile">Profile</button>
+        </div>
+
+        <!-- DIRECTORY -->
+        <section class="panel" data-panel="directory">
+          <div class="page-head">
+            <div>
+              <h1>Vendors</h1>
+              <p>Your school’s vendor directory — tap a card for the profile, or call / email right from the card.</p>
+            </div>
+            <button type="button" class="btn btn-primary">Add vendor</button>
+          </div>
+
+          <div class="controls">
+            <label class="search">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a7166" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="search" placeholder="Search name, phone, email…" />
+            </label>
+            <div class="tabs" role="tablist">
+              <button type="button" class="active">All</button>
+              <button type="button">Favorites</button>
+              <button type="button">Past</button>
+              <button type="button">Blocked</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <article class="card" data-open-profile>
+              <div class="card-band">
+                <div class="card-logo" aria-hidden="true">JC</div>
+                <button type="button" class="star" aria-label="Favorite"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.8 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg></button>
+              </div>
+              <div class="card-body">
+                <h3>Jumping Castle Co.</h3>
+                <div class="pills">
+                  <span class="pill cat">Rentals</span>
+                  <span class="pill ok">Active</span>
+                </div>
+                <div class="contact">
+                  <div class="who">Maya Chen · Owner</div>
+                  <div class="contact-actions">
+                    <a class="phone" href="tel:+16155550101" onclick="event.stopPropagation()">Call</a>
+                    <a class="mail" href="mailto:maya@jumpcastle.example" onclick="event.stopPropagation()">Email</a>
+                    <a class="web" href="#" onclick="event.stopPropagation()">Website</a>
+                  </div>
+                </div>
+                <div class="card-foot">
+                  <button type="button" class="btn btn-secondary" data-open-profile>View profile</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card" data-open-profile>
+              <div class="card-band mustard">
+                <div class="card-logo" aria-hidden="true">SS</div>
+                <button type="button" class="star" aria-label="Favorite"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.8 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg></button>
+              </div>
+              <div class="card-body">
+                <h3>Sweet Treats Catering</h3>
+                <div class="pills">
+                  <span class="pill cat">Food</span>
+                  <span class="pill ok">Active</span>
+                </div>
+                <div class="contact">
+                  <div class="who">Sam Ortiz</div>
+                  <div class="contact-actions">
+                    <a class="phone" href="tel:+16155550122" onclick="event.stopPropagation()">Call</a>
+                    <a class="mail" href="mailto:hello@sweettreats.example" onclick="event.stopPropagation()">Email</a>
+                  </div>
+                </div>
+                <div class="card-foot">
+                  <button type="button" class="btn btn-secondary" data-open-profile>View profile</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card" data-open-profile>
+              <div class="card-band teal">
+                <div class="card-logo" aria-hidden="true">PP</div>
+                <button type="button" class="star" aria-label="Favorite"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.8 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg></button>
+              </div>
+              <div class="card-body">
+                <h3>Print Perfect</h3>
+                <div class="pills">
+                  <span class="pill cat">Print</span>
+                  <span class="pill warn">Pending</span>
+                </div>
+                <div class="contact">
+                  <div class="who">Jordan Lee</div>
+                  <div class="contact-actions">
+                    <a class="phone" href="tel:+16155550133" onclick="event.stopPropagation()">Call</a>
+                    <a class="mail" href="mailto:jobs@printperfect.example" onclick="event.stopPropagation()">Email</a>
+                    <a class="web" href="#" onclick="event.stopPropagation()">Website</a>
+                  </div>
+                </div>
+                <div class="card-foot">
+                  <button type="button" class="btn btn-secondary" data-open-profile>View profile</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card" data-open-profile>
+              <div class="card-band">
+                <div class="card-logo" aria-hidden="true">AF</div>
+                <button type="button" class="star" aria-label="Favorite"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.8 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg></button>
+              </div>
+              <div class="card-body">
+                <h3>AudioForce AV</h3>
+                <div class="pills">
+                  <span class="pill cat">AV</span>
+                  <span class="pill ok">Active</span>
+                </div>
+                <div class="contact">
+                  <div class="who">Alex Kim · Ops</div>
+                  <div class="contact-actions">
+                    <a class="phone" href="tel:+16155550144" onclick="event.stopPropagation()">Call</a>
+                    <a class="mail" href="mailto:alex@audioforce.example" onclick="event.stopPropagation()">Email</a>
+                  </div>
+                </div>
+                <div class="card-foot">
+                  <button type="button" class="btn btn-secondary" data-open-profile>View profile</button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- EVENT TAB -->
+        <section class="panel" data-panel="event" hidden>
+          <div class="page-head">
+            <div>
+              <h1 style="font-size:clamp(26px,3vw,34px)">School Supply Sorting</h1>
+              <p>Event → Vendors tab — same contacts as the directory, without hunting for a profile first.</p>
+            </div>
+            <button type="button" class="btn btn-ghost" data-view-jump="directory">← Directory</button>
+          </div>
+
+          <div class="event-shell">
+            <div class="eyebrow">Event vendors</div>
+            <h2>Who’s working this event</h2>
+            <p class="sub">Call, email, or open the full profile — contact stays on the row.</p>
+
+            <div class="vendor-row">
+              <div>
+                <h4>Jumping Castle Co.</h4>
+                <div class="meta">Rentals · Linked · Maya Chen</div>
+                <div class="contact-actions">
+                  <a class="phone" href="tel:+16155550101">Call</a>
+                  <a class="mail" href="mailto:maya@jumpcastle.example">Email</a>
+                  <a class="web" href="#">Website</a>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <span class="pill ok">Linked</span>
+                <button type="button" class="btn btn-secondary" data-open-profile>Profile</button>
+              </div>
+            </div>
+
+            <div class="vendor-row">
+              <div>
+                <h4>Sweet Treats Catering</h4>
+                <div class="meta">Food · Linked · Sam Ortiz</div>
+                <div class="contact-actions">
+                  <a class="phone" href="tel:+16155550122">Call</a>
+                  <a class="mail" href="mailto:hello@sweettreats.example">Email</a>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <span class="pill ok">Linked</span>
+                <button type="button" class="btn btn-secondary" data-open-profile>Profile</button>
+              </div>
+            </div>
+
+            <div class="vendor-row">
+              <div>
+                <h4>Print Perfect</h4>
+                <div class="meta">Print · Quote pending · Jordan Lee</div>
+                <div class="contact-actions">
+                  <a class="phone" href="tel:+16155550133">Call</a>
+                  <a class="mail" href="mailto:jobs@printperfect.example">Email</a>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <span class="pill warn">Pending</span>
+                <button type="button" class="btn btn-secondary" data-open-profile>Profile</button>
+              </div>
+            </div>
+
+            <div class="soft-actions">
+              <button type="button" class="btn btn-secondary" data-view-jump="directory">Link vendor</button>
+              <button type="button" class="btn btn-ghost" data-view-jump="directory">Browse directory</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="panel" data-panel="profile" hidden>
+          <button type="button" class="btn btn-ghost" data-view-jump="directory" style="margin-bottom:10px">← Back to directory</button>
+
+          <div class="profile-hero">
+            <div class="wash"></div>
+            <div class="inner">
+              <div class="avatar">JC</div>
+              <div class="pills" style="margin-top:12px">
+                <span class="pill cat">Rentals</span>
+                <span class="pill ok">Active</span>
+              </div>
+              <h1>Jumping Castle Co.</h1>
+              <p class="lead">Maya Chen · Owner · Nashville</p>
+
+              <div class="hero-contact">
+                <a class="primary tel" href="tel:+16155550101">Call Maya</a>
+                <a class="mail" href="mailto:maya@jumpcastle.example">maya@jumpcastle.example</a>
+                <a class="web" href="#">jumpcastle.example</a>
+              </div>
+
+              <div class="hero-actions">
+                <button type="button" class="btn btn-secondary">Edit</button>
+                <button type="button" class="btn btn-ghost">Favorite</button>
+                <button type="button" class="btn btn-ghost">Block</button>
+              </div>
+            </div>
+          </div>
+
+          <nav class="profile-tabs" role="tablist">
+            <button type="button" class="active" data-ptab="overview">Overview</button>
+            <button type="button" data-ptab="events">Events</button>
+            <button type="button" data-ptab="notes">Notes</button>
+            <button type="button" data-ptab="docs">Documents</button>
+          </nav>
+
+          <div class="profile-box" data-ppanel="overview">
+            <h3>About</h3>
+            <p>Preferred bounce-house vendor for Family Night and Fun Runs. Delivers Friday afternoon; needs gym access by 2pm. Contract PDFs live on each event’s Files tab.</p>
+            <div class="contact-actions" style="margin-top:14px">
+              <a class="phone" href="tel:+16155550101">615-555-0101</a>
+              <a class="mail" href="mailto:maya@jumpcastle.example">Email</a>
+              <a class="web" href="#">Website</a>
+            </div>
+          </div>
+
+          <div class="profile-box" data-ppanel="events" hidden>
+            <h3>Linked events</h3>
+            <div class="event-chip-list" style="margin-top:8px">
+              <a href="/events/demo-supply?tab=vendors"><span>School Supply Sorting</span><small>Linked</small></a>
+              <a href="/events/demo-night?tab=vendors"><span>Family Night</span><small>Linked</small></a>
+            </div>
+          </div>
+
+          <div class="profile-box" data-ppanel="notes" hidden>
+            <h3>Notes</h3>
+            <p>Ask for the “school rate” quote — usually 10% off if we book both Fun Run and Family Night.</p>
+          </div>
+
+          <div class="profile-box" data-ppanel="docs" hidden>
+            <h3>Documents</h3>
+            <p>Files for this vendor live on the events they’re linked to — open an event’s Files tab, or the org Files library filtered by that event.</p>
+          </div>
+        </section>
+
+        <div class="note">
+          <h3>What this mockup is solving</h3>
+          <p>Directory cards already feel right — we keep them and make contact one-tap. The event Vendors tab currently hides phone/email; the profile buries contact under Overview.</p>
+          <ul>
+            <li><strong>Directory</strong> — keep the card grid; Call / Email / Website on every card.</li>
+            <li><strong>Event tab</strong> — same contact actions on each linked vendor row + Profile.</li>
+            <li><strong>Profile</strong> — contact-first hero (big Call / Email / Website), quieter secondary tabs.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const switchBtns = [...document.querySelectorAll(".view-switch [data-view]")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+
+    function setView(id) {
+      switchBtns.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === id));
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", id);
+      history.replaceState(null, "", url);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    switchBtns.forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.view));
+    });
+
+    document.querySelectorAll("[data-view-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.viewJump));
+    });
+
+    document.querySelectorAll("[data-open-profile]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        if (e.target.closest("a")) return;
+        setView("profile");
+      });
+    });
+
+    const pTabs = [...document.querySelectorAll("[data-ptab]")];
+    const pPanels = [...document.querySelectorAll("[data-ppanel]")];
+    pTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const id = tab.dataset.ptab;
+        pTabs.forEach((t) => t.classList.toggle("active", t === tab));
+        pPanels.forEach((p) => {
+          p.hidden = p.dataset.ppanel !== id;
+        });
+      });
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    if (["directory", "event", "profile"].includes(params.get("view"))) {
+      setView(params.get("view"));
+    }
+  </script>
+</body>
+</html>

@@ -631,6 +631,51 @@ export async function uploadVendorLogo(input: {
   return { success: true, error: null, logoPath: storagePath };
 }
 
+export async function clearVendorLogo(input: {
+  organizationId: string;
+  vendorId: string;
+}): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("vendors")
+    .select("logo_path")
+    .eq("id", input.vendorId)
+    .eq("organization_id", input.organizationId)
+    .maybeSingle();
+
+  const previousPath =
+    typeof existing?.logo_path === "string" ? existing.logo_path : null;
+
+  if (!previousPath) {
+    return { success: true, error: null };
+  }
+
+  const { error } = await supabase
+    .from("vendors")
+    .update({
+      logo_path: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.vendorId)
+    .eq("organization_id", input.organizationId);
+
+  if (error) {
+    console.error("Failed to clear vendor logo path:", error.message);
+    return { success: false, error: "Unable to remove logo." };
+  }
+
+  await supabase.storage.from(VENDOR_DOCUMENTS_BUCKET).remove([previousPath]);
+
+  await logVendorActivity(
+    input.organizationId,
+    input.vendorId,
+    "logo_updated",
+    "Removed vendor logo",
+  );
+
+  return { success: true, error: null };
+}
+
 export async function getVendorRowById(
   vendorId: string,
 ): Promise<import("@/types/vendors").Vendor | null> {

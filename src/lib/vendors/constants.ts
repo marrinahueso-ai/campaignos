@@ -10,9 +10,9 @@ export const VENDOR_STATUSES = [
 ] as const;
 
 export const VENDOR_DIRECTORY_TABS = [
-  { id: "all" as const, label: "All Vendors" },
+  { id: "all" as const, label: "All" },
   { id: "favorites" as const, label: "Favorites" },
-  { id: "past" as const, label: "Past Vendors" },
+  { id: "past" as const, label: "Past" },
   { id: "blocked" as const, label: "Blocked" },
 ];
 

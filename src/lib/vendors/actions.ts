@@ -16,6 +16,7 @@ import {
   removeVendorFromEvent,
   setVendorFavorite,
   updateVendor,
+  clearVendorLogo,
   uploadVendorDocument,
   uploadVendorLogo,
 } from "@/lib/vendors/mutations";
@@ -452,6 +453,38 @@ export async function uploadVendorLogoAction(
   }
 
   revalidateVendorPaths(vendorId, eventId);
+  return { success: true, error: null };
+}
+
+export async function clearVendorLogoAction(
+  vendorId: string,
+  eventId?: string | null,
+): Promise<{ success: boolean; error: string | null }> {
+  const access = await requireWritableOrg();
+  if ("error" in access) {
+    return { success: false, error: access.error };
+  }
+
+  const id = vendorId.trim();
+  if (!id) {
+    return { success: false, error: "Vendor is required." };
+  }
+
+  const vendor = await getVendorRowById(id);
+  if (!vendor || vendor.organizationId !== access.organizationId) {
+    return { success: false, error: "Vendor not found." };
+  }
+
+  const result = await clearVendorLogo({
+    organizationId: access.organizationId,
+    vendorId: id,
+  });
+
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  revalidateVendorPaths(id, eventId ?? null);
   return { success: true, error: null };
 }
 

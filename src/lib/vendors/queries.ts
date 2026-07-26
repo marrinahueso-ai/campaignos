@@ -465,6 +465,16 @@ export const getVendorDetailData = cache(
       return [group];
     });
 
+    let logoUrl: string | null = null;
+    if (vendor.logoPath) {
+      const { data: signed, error: signError } = await supabase.storage
+        .from(VENDOR_DOCUMENTS_BUCKET)
+        .createSignedUrl(vendor.logoPath, 3600);
+      if (!signError && signed?.signedUrl) {
+        logoUrl = signed.signedUrl;
+      }
+    }
+
     return {
       vendor,
       category: vendor.categoryId
@@ -498,6 +508,7 @@ export const getVendorDetailData = cache(
           },
         ),
       ),
+      logoUrl,
       canWrite,
       canManage,
     };
