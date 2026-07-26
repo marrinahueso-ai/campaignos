@@ -82,7 +82,7 @@ export async function syncGoogleCalendarAction(): Promise<GoogleCalendarActionRe
   }
 
   if (result.importId && result.added > 0) {
-    redirect(`/calendar/review?import=${result.importId}`);
+    redirect(`/calendar?tab=review&import=${result.importId}`);
   }
 
   return {

@@ -105,49 +105,50 @@ export default async function CalendarIntegrationPage({
         </div>
       </Card>
 
-      <details className="rounded-xl border border-cos-border bg-cos-card px-5 py-4">
-        <summary className="cursor-pointer text-sm font-medium text-cos-text">
-          Other ways to import
+      <div className="rounded-[22px] border border-cos-border bg-[rgba(255,252,247,0.55)] px-5 py-4">
+        <p className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+          Same doorway as Calendar
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-cos-muted">
+          Subscribe links and file upload walk through on{" "}
+          <Link
+            href="/calendar?tab=import"
+            className="font-bold text-cos-text underline-offset-2 hover:underline"
+          >
+            Calendar → Import
+          </Link>
+          , then land on{" "}
+          <Link
+            href="/calendar?tab=review"
+            className="font-bold text-cos-text underline-offset-2 hover:underline"
+          >
+            Review
+          </Link>
+          .
           {hasSubscribe ? (
-            <span className="ml-2 inline-flex align-middle">
+            <span className="mt-2 block">
               <Badge variant="success">Subscribe link saved</Badge>
             </span>
           ) : null}
-        </summary>
-        <div className="mt-4 space-y-6 border-t border-cos-border pt-4">
-          <div>
-            <h3 className="text-sm font-medium text-cos-text">Subscribe link</h3>
-            <p className="mt-1 text-sm text-cos-muted">
-              Paste a Google Calendar ICS or webcal URL. We refresh it daily.
-            </p>
-            <div className="mt-3">
-              <Suspense
-                fallback={
-                  <p className="text-sm text-cos-muted">Loading subscribe feed…</p>
-                }
-              >
-                <CalendarSubscribeFeedSection variant="plain" />
-              </Suspense>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-medium text-cos-text">Upload a file</h3>
-            <p className="mt-1 text-sm text-cos-muted">
-              One-time ICS, PDF, or spreadsheet import with dedupe review
-              (New / Duplicate / Update / Conflict) on the Calendar Import page.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button href="/calendar/import" size="sm" variant="secondary">
-                Go to Calendar Import
-              </Button>
-              <Button href="/calendar/review" size="sm" variant="ghost">
-                Review latest import
-              </Button>
-            </div>
-          </div>
+        </p>
+        <div className="mt-3">
+          <Suspense
+            fallback={
+              <p className="text-sm text-cos-muted">Loading subscribe feed…</p>
+            }
+          >
+            <CalendarSubscribeFeedSection variant="plain" />
+          </Suspense>
         </div>
-      </details>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button href="/calendar?tab=import" size="sm" variant="secondary">
+            Open Calendar Import
+          </Button>
+          <Button href="/calendar?tab=review" size="sm" variant="ghost">
+            Review latest
+          </Button>
+        </div>
+      </div>
 
       <p className="text-sm text-cos-muted">
         <Link

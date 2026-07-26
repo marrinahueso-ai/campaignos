@@ -1,9 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
+import { CalendarImportEasePanel } from "@/components/calendar-import/CalendarImportEasePanel";
 import { CalendarImportPlanList } from "@/components/unified-calendar/CalendarImportPlanList";
 import { CalendarLayerColorsProvider } from "@/components/unified-calendar/CalendarLayerColorsContext";
+import { CalendarComingUpEase } from "@/components/unified-calendar/CalendarComingUpEase";
 import { UnifiedCalendarControlPanel } from "@/components/unified-calendar/UnifiedCalendarControlPanel";
 import { PlanningCalendarAgendaView } from "@/components/communications-planning-calendar/PlanningCalendarAgendaView";
 import { PlanningCalendarDetailPanel } from "@/components/communications-planning-calendar/PlanningCalendarDetailPanel";
@@ -50,17 +62,27 @@ import type {
 interface UnifiedCalendarShellProps {
   data: PlanningCalendarData;
   initialLayout?: CalendarLayout;
+  initialView?: PlanningCalendarView;
+  importSections?: {
+    google: ReactNode;
+    subscribe: ReactNode;
+    upload: ReactNode;
+  };
+  reviewPanel?: ReactNode;
 }
 
 export function UnifiedCalendarShell({
   data,
   initialLayout,
+  initialView = "month",
+  importSections,
+  reviewPanel,
 }: UnifiedCalendarShellProps) {
   const router = useRouter();
   const today = getTodayDateString();
   const initialFocus = getInitialCalendarFocus(data.items, today);
 
-  const [view, setView] = useState<PlanningCalendarView>("month");
+  const [view, setView] = useState<PlanningCalendarView>(initialView);
   const [year, setYear] = useState(initialFocus.year);
   const [month, setMonth] = useState(initialFocus.month);
   const [weekAnchor, setWeekAnchor] = useState(initialFocus.weekAnchor);
@@ -72,6 +94,14 @@ export function UnifiedCalendarShell({
   );
   const layoutRef = useRef(layout);
   const [layoutError, setLayoutError] = useState<string | null>(null);
+
+  const handleViewChange = useCallback((next: PlanningCalendarView) => {
+    setView(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState(null, "", url);
+  }, []);
 
   useEffect(() => {
     if (!initialLayout) return;
@@ -102,9 +132,6 @@ export function UnifiedCalendarShell({
       }
     })();
   }
-  const [showPostingHeatmap, setShowPostingHeatmap] = useState(
-    () => data.postingHeatmap != null,
-  );
   const [selectedItem, setSelectedItem] = useState<PlanningCalendarItem | null>(null);
   const [localItems, setLocalItems] = useState(data.items);
   const itemsSnapshotRef = useRef(data.items);
@@ -116,10 +143,13 @@ export function UnifiedCalendarShell({
   }, [data.items]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const param = new URLSearchParams(window.location.search).get("tab");
+    if (param) return;
     if (window.matchMedia("(max-width: 768px)").matches) {
-      setView("agenda");
+      handleViewChange("agenda");
     }
-  }, []);
+  }, [handleViewChange]);
 
   useEffect(() => {
     if (data.items.length === 0 || hasAutoFocused.current) {
@@ -156,7 +186,7 @@ export function UnifiedCalendarShell({
       );
     }
 
-    if (view === "week") {
+    if (view === "week" || view === "best-times") {
       const dateSet = new Set(getWeekDates(weekAnchor));
       return filteredItems.filter((item) =>
         dateSet.has(normalizeDateOnly(item.scheduledDate)),
@@ -167,7 +197,7 @@ export function UnifiedCalendarShell({
   }, [view, monthGridDates, weekAnchor, filteredItems]);
 
   const showEmptyPeriodHint =
-    (view === "month" || view === "week") &&
+    (view === "month" || view === "week" || view === "best-times") &&
     filteredItems.length > 0 &&
     itemsInCurrentPeriod.length === 0;
 
@@ -195,7 +225,9 @@ export function UnifiedCalendarShell({
         : "Imported events";
     }
     if (view === "month") return formatMonthLabel(year, month);
-    if (view === "week") return formatWeekRange(getWeekDates(weekAnchor));
+    if (view === "week" || view === "best-times") {
+      return formatWeekRange(getWeekDates(weekAnchor));
+    }
     return "All events";
   }, [view, year, month, weekAnchor, data.importListFilename]);
 
@@ -213,7 +245,7 @@ export function UnifiedCalendarShell({
       setMonth(next.month);
       return;
     }
-    if (view === "week") {
+    if (view === "week" || view === "best-times") {
       setWeekAnchor(addWeeks(weekAnchor, -1));
     }
   }
@@ -225,7 +257,7 @@ export function UnifiedCalendarShell({
       setMonth(next.month);
       return;
     }
-    if (view === "week") {
+    if (view === "week" || view === "best-times") {
       setWeekAnchor(addWeeks(weekAnchor, 1));
     }
   }
@@ -258,9 +290,11 @@ export function UnifiedCalendarShell({
     selectedItem &&
     enrichedItems.find((entry) => entry.id === selectedItem.id);
 
+  const showHeatmap = view === "best-times";
+
   return (
     <CalendarLayerColorsProvider colors={layerColors}>
-      <div className="mx-auto max-w-[1600px] space-y-3 pb-8">
+      <div className="studio-page relative mx-auto max-w-[1600px] space-y-5 pb-12 before:pointer-events-none before:absolute before:top-0 before:left-[-2rem] before:h-60 before:w-60 before:rounded-full before:bg-[radial-gradient(circle,rgba(107,129,113,0.12),transparent_70%)] before:content-[''] after:pointer-events-none after:absolute after:top-10 after:right-0 after:h-52 after:w-52 after:rounded-full after:bg-[radial-gradient(circle,rgba(196,146,46,0.1),transparent_70%)] after:content-['']">
         {layoutError ? (
           <p className="text-sm text-cos-error" role="alert">
             {layoutError}
@@ -272,32 +306,30 @@ export function UnifiedCalendarShell({
           activeLayers={activeLayers}
           layerColors={layerColors}
           layerColorOverrides={layout.colors ?? {}}
-          upcomingItems={upcomingItems}
-          onViewChange={setView}
+          onViewChange={handleViewChange}
           onPrevious={goPrevious}
           onNext={goNext}
           onToday={goToday}
           onLayersChange={setActiveLayers}
           onLayerColorChange={handleLayerColorChange}
-          onSelectUpcomingItem={setSelectedItem}
           postingHeatmap={data.postingHeatmap}
-          showPostingHeatmap={showPostingHeatmap && data.postingHeatmap != null}
-          onShowPostingHeatmapChange={
-            data.postingHeatmap != null ? setShowPostingHeatmap : undefined
-          }
+          showPostingHeatmap={showHeatmap && data.postingHeatmap != null}
         />
 
         {showEmptyPeriodHint && (
-          <div className="rounded-2xl border border-cos-border bg-cos-accent-soft px-5 py-4 text-sm text-cos-text">
-            <p className="font-medium">No events in {periodLabel}</p>
-            <p className="mt-1 text-cos-text">
-              Your imported dates are in other months. Use the arrows to browse, switch
-              to Agenda to see everything, or jump to the first event month.
+          <div className="rounded-[22px] border border-cos-border bg-[rgba(255,252,247,0.65)] px-5 py-4 text-sm text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+            <p className="font-display text-lg font-semibold">
+              No events in {periodLabel}
+            </p>
+            <p className="mt-1 text-cos-muted">
+              Your imported dates are in other months. Use the arrows to browse,
+              switch to Agenda to see everything, or jump to the first event
+              month.
             </p>
             <button
               type="button"
               onClick={goToFirstEvent}
-              className="mt-3 rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-cos-text ring-1 ring-cos-border hover:bg-cos-accent-soft"
+              className="mt-3 rounded-full bg-cos-text px-4 py-2 text-[13px] font-bold text-cos-card"
             >
               Go to first event
             </button>
@@ -305,17 +337,23 @@ export function UnifiedCalendarShell({
         )}
 
         {view === "month" ? (
-          <PlanningCalendarMonthView
-            items={filteredItems}
-            year={year}
-            month={month}
-            onSelectItem={setSelectedItem}
-            onOptimisticReschedule={handleOptimisticReschedule}
-            onRescheduleFailed={handleRescheduleFailed}
-            onRescheduled={handleRescheduled}
-          />
+          <>
+            <PlanningCalendarMonthView
+              items={filteredItems}
+              year={year}
+              month={month}
+              onSelectItem={setSelectedItem}
+              onOptimisticReschedule={handleOptimisticReschedule}
+              onRescheduleFailed={handleRescheduleFailed}
+              onRescheduled={handleRescheduled}
+            />
+            <CalendarComingUpEase
+              upcomingItems={upcomingItems}
+              onSelectUpcomingItem={setSelectedItem}
+            />
+          </>
         ) : null}
-        {view === "week" ? (
+        {view === "week" || view === "best-times" ? (
           <PlanningCalendarWeekView
             items={filteredItems}
             anchorDate={weekAnchor}
@@ -324,7 +362,7 @@ export function UnifiedCalendarShell({
             onRescheduleFailed={handleRescheduleFailed}
             onRescheduled={handleRescheduled}
             postingHeatmap={data.postingHeatmap}
-            showPostingHeatmap={showPostingHeatmap}
+            showPostingHeatmap={showHeatmap}
           />
         ) : null}
         {view === "agenda" ? (
@@ -338,8 +376,29 @@ export function UnifiedCalendarShell({
           <CalendarImportPlanList
             events={data.importedEvents}
             filename={data.importListFilename}
+            playbookOptions={data.importListPlaybooks}
+            onNavigateView={handleViewChange}
           />
         ) : null}
+
+        {view === "import" && importSections ? (
+          <CalendarImportEasePanel
+            embedded
+            googleSection={importSections.google}
+            subscribeSection={importSections.subscribe}
+            uploadSection={importSections.upload}
+            onContinueToReview={() => handleViewChange("review")}
+          />
+        ) : null}
+
+        {view === "review" && reviewPanel
+          ? isValidElement(reviewPanel)
+            ? cloneElement(
+                reviewPanel as ReactElement<{ onGoToImport?: () => void }>,
+                { onGoToImport: () => handleViewChange("import") },
+              )
+            : reviewPanel
+          : null}
 
         {selectedEnriched ? (
           <>

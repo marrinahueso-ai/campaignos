@@ -149,7 +149,7 @@ export function buildOnboardingChecklist(input: {
       id: "calendar",
       title: "Bring in your school calendar",
       description: "Add your year’s dates so nothing important gets missed.",
-      href: "/calendar/import",
+      href: "/calendar?tab=import",
       cta: calendarDone ? "View calendar" : "Set up now",
       done: calendarDone,
       optional: true,

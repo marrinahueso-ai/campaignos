@@ -34,14 +34,12 @@ export function FeaturePreviewCalendarSlide({
         view="month"
         periodLabel="July 2026"
         activeLayers={activeLayers}
-        upcomingItems={enrichedItems.slice(0, 4)}
         showImportList={false}
         onViewChange={() => {}}
         onPrevious={() => {}}
         onNext={() => {}}
         onToday={() => {}}
         onLayersChange={setActiveLayers}
-        onSelectUpcomingItem={() => {}}
       />
       <div className={interactive ? undefined : "pointer-events-none"}>
         <PlanningCalendarMonthView

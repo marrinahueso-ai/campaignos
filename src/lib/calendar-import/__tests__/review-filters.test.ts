@@ -7,6 +7,7 @@ import {
   filterReviewEventsByDate,
   getPastReviewEventIds,
   isPastReviewEvent,
+  keepCalendarReviewCategory,
   matchesReviewSearch,
 } from "../review-filters.ts";
 import type { CalendarReviewEvent } from "../../../types/calendar-review.ts";
@@ -157,6 +158,53 @@ describe("filterReviewEvents / date / apply", () => {
     assert.deepEqual(
       filtered.map((event) => event.id),
       ["past-dup"],
+    );
+  });
+});
+
+describe("keepCalendarReviewCategory", () => {
+  it("promotes needs_review to ready but leaves conflict blocked", () => {
+    const needsId = "needs-1";
+    const conflictId = "conflict-1";
+    const events = [
+      reviewEvent({
+        id: needsId,
+        name: "Book Fair",
+        date: "2026-10-01",
+        status: "needs_review",
+      }),
+      reviewEvent({
+        id: conflictId,
+        name: "Book Fair copy",
+        date: "2026-10-01",
+        status: "conflict",
+        matchReason: "Duplicate title + date in this import.",
+      }),
+      reviewEvent({
+        id: "ready-1",
+        name: "Spirit Night",
+        date: "2026-11-01",
+        status: "ready",
+      }),
+    ];
+
+    const afterNeeds = keepCalendarReviewCategory(events, needsId);
+    assert.equal(afterNeeds.find((e) => e.id === needsId)?.status, "ready");
+    assert.equal(afterNeeds.find((e) => e.id === needsId)?.planManuallySet, true);
+    assert.equal(afterNeeds.find((e) => e.id === conflictId)?.status, "conflict");
+
+    const afterConflict = keepCalendarReviewCategory(events, conflictId);
+    assert.equal(
+      afterConflict.find((e) => e.id === conflictId)?.status,
+      "conflict",
+    );
+    assert.equal(
+      afterConflict.find((e) => e.id === conflictId)?.planManuallySet,
+      true,
+    );
+    assert.equal(
+      afterConflict.find((e) => e.id === needsId)?.status,
+      "needs_review",
     );
   });
 });

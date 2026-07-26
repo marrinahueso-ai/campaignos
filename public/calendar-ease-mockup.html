@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Calendar Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --navy: #0b2f5b;
+      --teal: #2f9fb3;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+      --heat-1: rgb(248, 236, 220);
+      --heat-2: rgb(236, 214, 182);
+      --heat-3: rgb(214, 178, 132);
+      --heat-4: rgb(184, 149, 111);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, select, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 78rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 18px; animation: rise .35s ease both;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 44px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 42ch;
+      line-height: 1.45;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent;
+    }
+    .btn-ghost:hover { border-color: var(--line); color: var(--ink); }
+
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .period {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .period h2 {
+      margin: 0 8px 0 0;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      min-width: 8rem;
+    }
+    .nav-pill {
+      width: 36px; height: 36px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--white);
+      color: var(--ink); cursor: pointer;
+      display: grid; place-items: center; font-weight: 700;
+    }
+    .nav-pill.today {
+      width: auto; padding: 0 14px;
+      font-size: 12px; font-weight: 700;
+    }
+
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .tab {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 8px 14px;
+      font-size: 13px; font-weight: 700; color: var(--ink-soft);
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+    }
+    .tab:hover { background: rgba(255,252,247,0.7); color: var(--ink); }
+    .tab.active {
+      background: var(--white); color: var(--ink);
+      border-color: var(--line); box-shadow: var(--shadow);
+    }
+    .tab.heat.active {
+      box-shadow: 0 0 0 3px rgba(196, 146, 46, 0.18);
+    }
+
+    .layers {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .layers > span {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-right: 2px;
+    }
+    .layer {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px; font-weight: 700;
+      color: var(--ink-soft);
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .layer.on { color: var(--ink); box-shadow: var(--shadow); }
+    .swatch {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .swatch.events { background: var(--forest); }
+    .swatch.scheduled { background: var(--mustard); }
+    .swatch.published { background: var(--teal); }
+
+    .panel { animation: rise .35s ease both; }
+    .panel[hidden] { display: none !important; }
+
+    .section-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      margin: 0 0 12px;
+      display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    }
+    .section-label span {
+      font-weight: 600; letter-spacing: 0; text-transform: none;
+    }
+
+    .box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* Month grid */
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .dow {
+      padding: 10px 8px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,252,247,0.65);
+    }
+    .day {
+      min-height: 118px;
+      padding: 8px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,252,247,0.35);
+    }
+    .day:nth-child(7n) { border-right: none; }
+    .day.muted { opacity: 0.45; }
+    .day.today {
+      background:
+        radial-gradient(ellipse at top left, rgba(47,74,60,0.08), transparent 60%),
+        var(--white);
+    }
+    .day-num {
+      font-size: 12px; font-weight: 800; color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+    .day.today .day-num {
+      display: inline-grid; place-items: center;
+      width: 24px; height: 24px; border-radius: 999px;
+      background: var(--forest); color: var(--cream);
+    }
+    .chip {
+      display: block; width: 100%;
+      text-align: left;
+      border: none; cursor: pointer;
+      border-radius: 10px;
+      padding: 5px 7px;
+      margin-bottom: 4px;
+      font-size: 11px; font-weight: 700;
+      line-height: 1.25;
+      color: var(--ink);
+      background: rgba(255,252,247,0.9);
+      border-left: 3px solid var(--forest);
+      box-shadow: 0 1px 0 rgba(42,38,34,0.04);
+    }
+    .chip.post { border-left-color: var(--mustard); }
+    .chip.pub { border-left-color: var(--teal); }
+    .chip small {
+      display: block; font-weight: 600; color: var(--muted); font-size: 10px;
+    }
+    .more {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      padding: 2px 4px;
+    }
+
+    /* Week / heatmap */
+    .week-wrap { overflow-x: auto; }
+    .week-grid {
+      display: grid;
+      grid-template-columns: 56px repeat(7, minmax(110px, 1fr));
+      min-width: 900px;
+    }
+    .week-head, .week-cell, .week-hour {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .week-head {
+      padding: 10px 8px;
+      text-align: center;
+      background: rgba(255,252,247,0.65);
+      font-size: 12px; font-weight: 700;
+    }
+    .week-head strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .week-hour {
+      padding: 8px 6px;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-align: right;
+      background: rgba(255,252,247,0.5);
+    }
+    .week-cell {
+      min-height: 44px;
+      padding: 3px;
+      position: relative;
+    }
+    .week-cell.heat-1 { background: var(--heat-1); }
+    .week-cell.heat-2 { background: var(--heat-2); }
+    .week-cell.heat-3 { background: var(--heat-3); }
+    .week-cell.heat-4 { background: var(--heat-4); }
+    .week-chip {
+      display: block; width: 100%;
+      border: none; cursor: pointer; text-align: left;
+      border-radius: 10px;
+      padding: 6px 7px;
+      font-size: 11px; font-weight: 700;
+      background: #fff;
+      border-left: 3px solid var(--mustard);
+      box-shadow: var(--shadow);
+      color: var(--ink);
+    }
+    .week-chip small { display: block; color: var(--muted); font-weight: 600; }
+
+    .heat-legend {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,252,247,0.65);
+      border: 1px solid var(--line);
+      font-size: 12px; color: var(--ink-soft);
+    }
+    .heat-legend strong {
+      font-family: var(--serif);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .heat-bar {
+      display: inline-flex; height: 10px; width: 88px;
+      border-radius: 999px; overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .heat-bar i { flex: 1; }
+    .heat-bar i:nth-child(1) { background: var(--heat-1); }
+    .heat-bar i:nth-child(2) { background: var(--heat-2); }
+    .heat-bar i:nth-child(3) { background: var(--heat-3); }
+    .heat-bar i:nth-child(4) { background: var(--heat-4); }
+
+    /* Agenda */
+    .agenda { display: flex; flex-direction: column; gap: 10px; }
+    .agenda-day {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,252,247,0.55);
+      padding: 14px 16px;
+    }
+    .agenda-day.today {
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+    .agenda-day h3 {
+      margin: 0 0 10px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .badge {
+      font-family: var(--sans);
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 999px;
+      background: rgba(47,74,60,0.12); color: var(--forest);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px; align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: rgba(255,252,247,0.7);
+      text-align: left; color: inherit; width: 100%;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    .row:hover {
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .row strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .row p { margin: 0; font-size: 12px; color: var(--muted); }
+    .status {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status.sched { background: rgba(196,146,46,0.16); color: #7a5a12; }
+    .status.pub { background: rgba(42,122,134,0.12); color: #2a7a86; }
+    .status.event { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .status.open { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .status.done { background: rgba(42,122,134,0.12); color: #2a7a86; }
+
+    /* Import list */
+    .search {
+      width: min(100%, 280px);
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .table th {
+      text-align: left;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,252,247,0.65);
+    }
+    .table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .table tr:last-child td { border-bottom: none; }
+    .plan {
+      display: inline-flex;
+      padding: 3px 9px; border-radius: 999px;
+      font-size: 11px; font-weight: 800;
+      background: rgba(47,74,60,0.1); color: var(--forest);
+    }
+
+    /* Import page */
+    .suite-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .suite-tile {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--cream);
+      text-align: left;
+      cursor: pointer;
+      color: inherit;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .suite-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .suite-tile .art { height: 88px; }
+    .suite-tile .art.google { background: linear-gradient(145deg, #0b2f5b, #2f9fb3 48%, #7fd0df); }
+    .suite-tile .art.ics { background: linear-gradient(145deg, #2f4a3c, #6b8171 48%, #b8c9bc); }
+    .suite-tile .art.file { background: linear-gradient(155deg, #c4922e, #e0b65a 42%, #f5e6c2); }
+    .suite-tile .copy { padding: 12px 14px 14px; }
+    .suite-tile strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .suite-tile span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    /* Review ease */
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(240px, 0.75fr);
+      gap: 14px;
+    }
+    .focus {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+    }
+    .focus-art {
+      min-height: 160px;
+      background: linear-gradient(145deg, #1e4a3a, #6b8171 50%, #c4922e);
+    }
+    .focus-body { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+    .focus-body h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .focus-body p { margin: 0; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+    .soft-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+    .pulse-mini { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .pulse-mini button {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 7px 12px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft); cursor: pointer;
+    }
+    .pulse-mini button.active {
+      background: var(--white); border-color: var(--line);
+      color: var(--ink); box-shadow: var(--shadow);
+    }
+
+    .coming {
+      margin-top: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,252,247,0.55);
+      padding: 14px 16px;
+    }
+    .coming summary {
+      cursor: pointer;
+      font-size: 13px; font-weight: 700;
+      color: var(--ink);
+      list-style: none;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .coming summary::-webkit-details-marker { display: none; }
+    .coming .queue { margin-top: 12px; }
+
+    .note {
+      margin-top: 36px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 48rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .suite-grid, .split { grid-template-columns: 1fr; }
+      .focus { grid-template-columns: 1fr; }
+      .focus-art { min-height: 90px; }
+      .month-grid { font-size: 11px; }
+      .day { min-height: 88px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" class="active" aria-label="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+      <button type="button" aria-label="Create with AI"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">marrina@huesoinvestments.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Calendar ease · every view · not live yet</div>
+
+        <div class="page-head">
+          <div>
+            <h1>Calendar</h1>
+            <p>One quiet place for school events, scheduled posts, and the best times to reach families.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-secondary" data-jump="import">Import</button>
+            <button type="button" class="btn btn-secondary" data-jump="review">Review</button>
+          </div>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Calendar views">
+          <button type="button" class="tab active" data-tab="month" aria-selected="true">Month</button>
+          <button type="button" class="tab" data-tab="week" aria-selected="false">Week</button>
+          <button type="button" class="tab heat" data-tab="best-times" aria-selected="false">Best times</button>
+          <button type="button" class="tab" data-tab="agenda" aria-selected="false">Agenda</button>
+          <button type="button" class="tab" data-tab="import-list" aria-selected="false">Import list</button>
+          <button type="button" class="tab" data-tab="import" aria-selected="false">Import</button>
+          <button type="button" class="tab" data-tab="review" aria-selected="false">Review</button>
+        </nav>
+
+        <div class="layers" data-layers>
+          <span>Show</span>
+          <button type="button" class="layer on"><i class="swatch events"></i> Events</button>
+          <button type="button" class="layer on"><i class="swatch scheduled"></i> Scheduled</button>
+          <button type="button" class="layer on"><i class="swatch published"></i> Published</button>
+        </div>
+
+        <!-- MONTH -->
+        <section class="panel" data-panel="month">
+          <div class="toolbar">
+            <div class="period">
+              <button type="button" class="nav-pill" aria-label="Previous">‹</button>
+              <button type="button" class="nav-pill today">Today</button>
+              <button type="button" class="nav-pill" aria-label="Next">›</button>
+              <h2>August 2026</h2>
+            </div>
+          </div>
+          <p class="section-label">Month glance <span>Events + posts in one grid — no dense filter chrome</span></p>
+          <div class="box month-grid">
+            <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+
+            <div class="day muted"><div class="day-num">26</div></div>
+            <div class="day muted"><div class="day-num">27</div></div>
+            <div class="day muted"><div class="day-num">28</div></div>
+            <div class="day muted"><div class="day-num">29</div></div>
+            <div class="day muted"><div class="day-num">30</div></div>
+            <div class="day muted"><div class="day-num">31</div></div>
+            <div class="day"><div class="day-num">1</div></div>
+
+            <div class="day"><div class="day-num">2</div>
+              <button type="button" class="chip post"><small>6pm · Scheduled</small>Supply Sorting · Reminder</button>
+            </div>
+            <div class="day"><div class="day-num">3</div></div>
+            <div class="day today"><div class="day-num">4</div>
+              <button type="button" class="chip"><small>Event · 1pm</small>School Supply Sorting</button>
+              <button type="button" class="chip post"><small>8am · Scheduled</small>Day-of Story</button>
+            </div>
+            <div class="day"><div class="day-num">5</div></div>
+            <div class="day"><div class="day-num">6</div></div>
+            <div class="day"><div class="day-num">7</div></div>
+            <div class="day"><div class="day-num">8</div></div>
+
+            <div class="day"><div class="day-num">9</div></div>
+            <div class="day"><div class="day-num">10</div></div>
+            <div class="day"><div class="day-num">11</div>
+              <button type="button" class="chip pub"><small>Published</small>Thank-you post</button>
+            </div>
+            <div class="day"><div class="day-num">12</div></div>
+            <div class="day"><div class="day-num">13</div></div>
+            <div class="day"><div class="day-num">14</div>
+              <button type="button" class="chip"><small>Event</small>Fall Book Fair</button>
+              <div class="more">+2 more</div>
+            </div>
+            <div class="day"><div class="day-num">15</div></div>
+
+            <div class="day"><div class="day-num">16</div></div>
+            <div class="day"><div class="day-num">17</div></div>
+            <div class="day"><div class="day-num">18</div></div>
+            <div class="day"><div class="day-num">19</div></div>
+            <div class="day"><div class="day-num">20</div></div>
+            <div class="day"><div class="day-num">21</div></div>
+            <div class="day"><div class="day-num">22</div></div>
+
+            <div class="day"><div class="day-num">23</div></div>
+            <div class="day"><div class="day-num">24</div></div>
+            <div class="day"><div class="day-num">25</div></div>
+            <div class="day"><div class="day-num">26</div></div>
+            <div class="day"><div class="day-num">27</div></div>
+            <div class="day"><div class="day-num">28</div></div>
+            <div class="day"><div class="day-num">29</div></div>
+
+            <div class="day"><div class="day-num">30</div></div>
+            <div class="day"><div class="day-num">31</div></div>
+            <div class="day muted"><div class="day-num">1</div></div>
+            <div class="day muted"><div class="day-num">2</div></div>
+            <div class="day muted"><div class="day-num">3</div></div>
+            <div class="day muted"><div class="day-num">4</div></div>
+            <div class="day muted"><div class="day-num">5</div></div>
+          </div>
+
+          <details class="coming" open>
+            <summary>Coming up <span style="color:var(--muted);font-weight:600">Next 7 days · Events</span></summary>
+            <div class="queue">
+              <button type="button" class="row"><span><strong>School Supply Sorting</strong><p>Tue, Aug 4 · 1:00 PM</p></span><span class="status event">Event</span></button>
+              <button type="button" class="row"><span><strong>Fall Book Fair</strong><p>Fri, Aug 14</p></span><span class="status event">Event</span></button>
+            </div>
+          </details>
+        </section>
+
+        <!-- WEEK -->
+        <section class="panel" data-panel="week" hidden>
+          <div class="toolbar">
+            <div class="period">
+              <button type="button" class="nav-pill">‹</button>
+              <button type="button" class="nav-pill today">Today</button>
+              <button type="button" class="nav-pill">›</button>
+              <h2>Aug 2 – 8</h2>
+            </div>
+            <button type="button" class="btn btn-secondary" data-jump="best-times">Show best times →</button>
+          </div>
+          <p class="section-label">Week grid <span>Hour lanes · drag posts when you’re ready</span></p>
+          <div class="box week-wrap">
+            <div class="week-grid">
+              <div class="week-head"></div>
+              <div class="week-head">Sun<strong>2</strong></div>
+              <div class="week-head">Mon<strong>3</strong></div>
+              <div class="week-head">Tue<strong>4</strong></div>
+              <div class="week-head">Wed<strong>5</strong></div>
+              <div class="week-head">Thu<strong>6</strong></div>
+              <div class="week-head">Fri<strong>7</strong></div>
+              <div class="week-head">Sat<strong>8</strong></div>
+
+              <div class="week-hour">All day</div>
+              <div class="week-cell"></div><div class="week-cell"></div>
+              <div class="week-cell"><button type="button" class="week-chip" style="border-left-color:var(--forest)"><small>Event</small>Supply Sorting</button></div>
+              <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+
+              <div class="week-hour">8 AM</div>
+              <div class="week-cell"></div><div class="week-cell"></div>
+              <div class="week-cell"><button type="button" class="week-chip"><small>Story</small>Day-of</button></div>
+              <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+
+              <div class="week-hour">12 PM</div>
+              <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+              <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+
+              <div class="week-hour">6 PM</div>
+              <div class="week-cell"><button type="button" class="week-chip"><small>Feed</small>Reminder</button></div>
+              <div class="week-cell"></div><div class="week-cell"></div>
+              <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BEST TIMES / HEATMAP -->
+        <section class="panel" data-panel="best-times" hidden>
+          <div class="toolbar">
+            <div class="period">
+              <button type="button" class="nav-pill">‹</button>
+              <button type="button" class="nav-pill today">Today</button>
+              <button type="button" class="nav-pill">›</button>
+              <h2>Aug 2 – 8</h2>
+            </div>
+          </div>
+          <div class="heat-legend">
+            <strong>Best times to post</strong>
+            <span>Darker = families more likely to see posts</span>
+            <span class="heat-bar" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+            <span>Low → High</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--muted)">Based on 12 posts + your preferences</span>
+          </div>
+          <p class="section-label">Heatmap week <span>First-class view — not buried under a Week toggle</span></p>
+          <div class="box week-wrap">
+            <div class="week-grid">
+              <div class="week-head"></div>
+              <div class="week-head">Sun<strong>2</strong></div>
+              <div class="week-head">Mon<strong>3</strong></div>
+              <div class="week-head">Tue<strong>4</strong></div>
+              <div class="week-head">Wed<strong>5</strong></div>
+              <div class="week-head">Thu<strong>6</strong></div>
+              <div class="week-head">Fri<strong>7</strong></div>
+              <div class="week-head">Sat<strong>8</strong></div>
+
+              <div class="week-hour">8 AM</div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-4"><button type="button" class="week-chip"><small>8am · Story</small>Day-of</button></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-1"></div>
+
+              <div class="week-hour">12 PM</div>
+              <div class="week-cell heat-1"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-1"></div>
+              <div class="week-cell heat-1"></div>
+              <div class="week-cell heat-1"></div>
+
+              <div class="week-hour">4 PM</div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-4"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-1"></div>
+
+              <div class="week-hour">6 PM</div>
+              <div class="week-cell heat-4"><button type="button" class="week-chip"><small>6pm · Feed</small>Reminder</button></div>
+              <div class="week-cell heat-4"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-4"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-2"></div>
+
+              <div class="week-hour">8 PM</div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-3"></div>
+              <div class="week-cell heat-2"></div>
+              <div class="week-cell heat-1"></div>
+              <div class="week-cell heat-1"></div>
+            </div>
+          </div>
+          <p style="margin:14px 0 0;font-size:13px;color:var(--ink-soft);max-width:48ch">
+            Drag a scheduled post onto a darker cell to land when families are more likely to see it.
+          </p>
+        </section>
+
+        <!-- AGENDA -->
+        <section class="panel" data-panel="agenda" hidden>
+          <div class="toolbar">
+            <div class="period">
+              <button type="button" class="nav-pill">‹</button>
+              <button type="button" class="nav-pill today">Today</button>
+              <button type="button" class="nav-pill">›</button>
+              <h2>This week</h2>
+            </div>
+          </div>
+          <p class="section-label">Agenda <span>Quiet list — same ease language as Approvals</span></p>
+          <div class="agenda">
+            <div class="agenda-day today">
+              <h3>Tuesday, August 4 <span class="badge">Today</span></h3>
+              <button type="button" class="row"><span><strong>School Supply Sorting</strong><p>Event · 1:00 PM · Gym</p></span><span class="status event">Event</span></button>
+              <button type="button" class="row"><span><strong>Day-of Story</strong><p>Instagram · 8:00 AM</p></span><span class="status sched">Scheduled</span></button>
+            </div>
+            <div class="agenda-day">
+              <h3>Sunday, August 2</h3>
+              <button type="button" class="row"><span><strong>Reminder Feed</strong><p>Facebook · 6:00 PM</p></span><span class="status sched">Scheduled</span></button>
+            </div>
+            <div class="agenda-day">
+              <h3>Friday, August 14</h3>
+              <button type="button" class="row"><span><strong>Fall Book Fair</strong><p>Event · All day</p></span><span class="status event">Event</span></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- IMPORT LIST -->
+        <section class="panel" data-panel="import-list" hidden>
+          <p class="section-label">Imported from school calendar <span>Scoped to this school year</span></p>
+          <input class="search" type="search" placeholder="Search imported events…" />
+          <div class="box" style="padding:0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Plan</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>School Supply Sorting</strong></td>
+                  <td>Aug 4, 2026</td>
+                  <td><span class="plan">PTO Event</span></td>
+                  <td><button type="button" class="btn btn-ghost" style="padding:6px 10px">Open</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Fall Book Fair</strong></td>
+                  <td>Aug 14, 2026</td>
+                  <td><span class="plan">School Event</span></td>
+                  <td><button type="button" class="btn btn-ghost" style="padding:6px 10px">Open</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Labor Day</strong></td>
+                  <td>Sep 7, 2026</td>
+                  <td><span class="plan">Holiday</span></td>
+                  <td><button type="button" class="btn btn-ghost" style="padding:6px 10px">Open</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Early Release</strong></td>
+                  <td>Oct 22, 2026</td>
+                  <td><span class="plan">Early Release</span></td>
+                  <td><button type="button" class="btn btn-ghost" style="padding:6px 10px">Open</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="soft-actions" style="margin-top:14px">
+            <button type="button" class="btn btn-secondary" data-jump="import">Import more</button>
+            <button type="button" class="btn btn-ghost">Delete selected</button>
+          </div>
+        </section>
+
+        <!-- IMPORT -->
+        <section class="panel" data-panel="import" hidden>
+          <p class="section-label">Bring the school year in <span>Same doorway pattern as Create with AI</span></p>
+          <div class="box" style="padding:22px;background:
+            radial-gradient(ellipse 50% 80% at 0% 50%, rgba(47,74,60,0.1), transparent 60%),
+            radial-gradient(ellipse 40% 70% at 100% 30%, rgba(196,146,46,0.12), transparent 55%),
+            var(--white)">
+            <h3 style="margin:0 0 6px;font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:-0.02em">Import school calendar</h3>
+            <p style="margin:0 0 16px;font-size:13px;color:var(--ink-soft);max-width:46ch;line-height:1.45">
+              Pull events from Google, an ICS feed, or a file — then review before they land on the year.
+            </p>
+            <div class="suite-grid">
+              <button type="button" class="suite-tile">
+                <div class="art google"></div>
+                <div class="copy">
+                  <strong>Google Calendar</strong>
+                  <span>Connect the school calendar your district already uses.</span>
+                </div>
+              </button>
+              <button type="button" class="suite-tile">
+                <div class="art ics"></div>
+                <div class="copy">
+                  <strong>Subscribe link</strong>
+                  <span>Paste an ICS URL and keep it synced.</span>
+                </div>
+              </button>
+              <button type="button" class="suite-tile">
+                <div class="art file"></div>
+                <div class="copy">
+                  <strong>Upload file</strong>
+                  <span>Drop a .ics export when you only need a one-time pass.</span>
+                </div>
+              </button>
+            </div>
+            <div class="soft-actions" style="margin-top:16px">
+              <button type="button" class="btn btn-primary" data-jump="review">Continue to Review →</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- REVIEW -->
+        <section class="panel" data-panel="review" hidden>
+          <p class="section-label">Review import <span>Focus what needs a decision — not eight KPI cards</span></p>
+          <div class="pulse-mini">
+            <button type="button" class="active">Needs you 3</button>
+            <button type="button">Ready 18</button>
+            <button type="button">Conflicts 1</button>
+            <button type="button">Duplicates 2</button>
+          </div>
+          <div class="split">
+            <article class="focus">
+              <div class="focus-art" aria-hidden="true"></div>
+              <div class="focus-body">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;font-weight:700;color:var(--muted)">
+                  <span class="badge" style="background:rgba(166,90,58,0.12);color:var(--warn)">Needs review</span>
+                  <span>PTO Event · Aug 4</span>
+                </div>
+                <h3>School Supply Sorting</h3>
+                <p>Looks like a campaign event. Confirm the plan type, then keep or edit before importing.</p>
+                <div class="soft-actions">
+                  <button type="button" class="btn btn-primary">Keep as PTO Event</button>
+                  <button type="button" class="btn btn-secondary">Edit details</button>
+                </div>
+              </div>
+            </article>
+            <div>
+              <button type="button" class="row"><span><strong>Fall Book Fair</strong><p>School Event · Aug 14</p></span><span class="status open">Needs you</span></button>
+              <button type="button" class="row"><span><strong>Early Release</strong><p>Possible duplicate · Oct 22</p></span><span class="status sched">Duplicate</span></button>
+              <button type="button" class="row"><span><strong>Labor Day</strong><p>Holiday · Sep 7</p></span><span class="status done">Ready</span></button>
+            </div>
+          </div>
+          <div class="soft-actions" style="margin-top:16px">
+            <button type="button" class="btn btn-primary">Import ready items</button>
+            <button type="button" class="btn btn-secondary">Ask AI to fix conflicts</button>
+          </div>
+        </section>
+
+        <div class="note">
+          <h3>Why this calendar feels clearer</h3>
+          <p>Today stacks period nav + Import/Review + four views + layer chips + heatmap toggle + Coming up in one dense control card.</p>
+          <ul>
+            <li><strong>Soft view pills</strong> — Month, Week, Best times, Agenda, Import list, Import, Review.</li>
+            <li><strong>Best times is first-class</strong> — heatmap earns its own tab instead of hiding under Week.</li>
+            <li><strong>Quiet Show chips</strong> — Events / Scheduled / Published without color-picker chrome in the mock.</li>
+            <li><strong>Review without KPI tiles</strong> — pulse pills + focus card + quiet queue (Approvals language).</li>
+            <li><strong>Import as a doorway</strong> — Google / ICS / file tiles, same suite pattern as Create with AI.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = [...document.querySelectorAll(".tab")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+    const layersBar = document.querySelector("[data-layers]");
+
+    const HIDE_LAYERS = new Set(["import", "import-list", "review"]);
+
+    function setTab(id) {
+      tabs.forEach((tab) => {
+        const on = tab.dataset.tab === id;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+      if (layersBar) {
+        layersBar.hidden = HIDE_LAYERS.has(id);
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", id);
+      history.replaceState(null, "", url);
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => setTab(tab.dataset.tab));
+    });
+
+    document.querySelectorAll("[data-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => setTab(btn.dataset.jump));
+    });
+
+    document.querySelectorAll(".layer").forEach((btn) => {
+      btn.addEventListener("click", () => btn.classList.toggle("on"));
+    });
+
+    const initial = new URLSearchParams(window.location.search).get("tab");
+    if (initial && panels.some((p) => p.dataset.panel === initial)) {
+      setTab(initial);
+    }
+  </script>
+</body>
+</html>

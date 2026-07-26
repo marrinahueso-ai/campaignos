@@ -143,6 +143,46 @@ export function PlanningCalendarItemChip({
     }
   }
 
+  // Ease compact chips match calendar-ease-mockup.html (left accent, cream fill).
+  if (compact) {
+    const accent = layerColor ?? (isMetaPost ? "#c4922e" : "#2f4a3c");
+    const timeLabel = formatChipTime(item.scheduledAt);
+    const meta = isMetaPost
+      ? [timeLabel, DISPLAY_STATUS_LABELS[displayStatus]].filter(Boolean).join(" · ")
+      : ["Event", timeLabel].filter(Boolean).join(" · ");
+    return (
+      <div
+        draggable={isDraggable}
+        onDragStart={isDraggable ? handleDragStart : undefined}
+        onDragEnd={isDraggable ? handleDragEnd : undefined}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label={displayTitle}
+        data-testid={`calendar-chip-${item.id}`}
+        data-draggable={isDraggable ? "true" : "false"}
+        className={cn(
+          "calendar-drag-chip group mb-1 block w-full rounded-[10px] border-0 border-l-[3px] px-[7px] py-[5px] text-left shadow-[0_1px_0_rgba(42,38,34,0.04)] transition",
+          isDraggable
+            ? "cursor-grab touch-manipulation active:cursor-grabbing"
+            : "cursor-pointer",
+          elevatedOnHeatmap
+            ? "bg-white shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+            : "bg-[rgba(255,252,247,0.9)] hover:bg-cos-card",
+        )}
+        style={{ borderLeftColor: accent }}
+      >
+        <span className="block text-[10px] font-semibold text-cos-muted">
+          {meta}
+        </span>
+        <span className="block truncate text-[11px] font-bold leading-snug text-cos-text">
+          {displayTitle}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       draggable={isDraggable}
@@ -157,7 +197,7 @@ export function PlanningCalendarItemChip({
       data-draggable={isDraggable ? "true" : "false"}
       style={tone?.style}
       className={cn(
-        "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-lg border text-left transition-shadow duration-150",
+        "calendar-drag-chip group flex w-full items-start gap-1.5 rounded-2xl border text-left transition-shadow duration-150",
         isDraggable
           ? "cursor-grab touch-manipulation active:cursor-grabbing"
           : "cursor-pointer",
@@ -170,7 +210,7 @@ export function PlanningCalendarItemChip({
             : cn(statusStyles.bg, statusStyles.border)),
         tone && "border-transparent",
         item.isToday && displayStatus !== "overdue" && !tone && "ring-2 ring-cos-primary/40",
-        compact ? "px-1.5 py-1.5" : "px-2 py-2",
+        "px-2 py-2",
       )}
     >
       {isDraggable ? (
@@ -186,22 +226,16 @@ export function PlanningCalendarItemChip({
                 : "text-cos-border group-hover:text-cos-accent",
           )}
         >
-          <GripVertical className={compact ? "h-4 w-4" : "h-4 w-4"} />
+          <GripVertical className="h-4 w-4" />
         </div>
       ) : null}
       <div className="min-w-0 flex-1 select-none">
-        <p
-          className={cn(
-            "truncate font-medium leading-snug",
-            compact ? "text-[11px]" : "text-xs",
-            tone ? "text-cos-text" : statusStyles.text,
-          )}
-        >
+        <p className={cn("truncate text-xs font-medium leading-snug", tone ? "text-cos-text" : statusStyles.text)}>
           {displayTitle}
         </p>
         <div className="mt-1 flex items-center gap-1.5">
           {isMetaPost ? (
-            <MetaPlatformIcons size={compact ? "xs" : "sm"} />
+            <MetaPlatformIcons size="sm" />
           ) : channelLabel ? (
             <span className="rounded bg-white/80 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-cos-muted ring-1 ring-cos-border/80">
               {channelLabel}
@@ -218,7 +252,7 @@ export function PlanningCalendarItemChip({
             {DISPLAY_STATUS_LABELS[displayStatus]}
           </span>
         </div>
-        {!compact && item.communicationStrategy && item.communicationType === "event" && (
+        {item.communicationStrategy && item.communicationType === "event" && (
           <CommunicationStrategyBadge
             strategy={item.communicationStrategy}
             className="mt-1 !px-1.5 !py-0 !text-[9px]"
@@ -227,6 +261,17 @@ export function PlanningCalendarItemChip({
       </div>
     </div>
   );
+}
+
+function formatChipTime(scheduledAt: string | null | undefined): string | null {
+  if (!scheduledAt) return null;
+  const date = new Date(scheduledAt);
+  if (Number.isNaN(date.getTime())) return null;
+  return date
+    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    .replace(" ", "")
+    .toLowerCase()
+    .replace(":00", "");
 }
 
 export { DRAG_MIME };

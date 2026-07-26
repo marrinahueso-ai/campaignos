@@ -1,20 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  FileSearch,
-  LayoutGrid,
-  List,
-  Rows3,
-  TableProperties,
-  Upload,
-} from "lucide-react";
-import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DashboardWidgetColorPicker } from "@/components/today/DashboardWidgetColorPicker";
-import { Button } from "@/components/ui/Button";
 import type { CalendarLayerColorMap } from "@/components/unified-calendar/CalendarLayerColorsContext";
 import {
   DEFAULT_CALENDAR_LAYER_COLORS,
@@ -24,38 +11,48 @@ import {
   UNIFIED_CALENDAR_LAYERS,
   type CalendarLayerId,
 } from "@/lib/communications-calendar/unified-calendar-layers";
-import { cn } from "@/lib/utils/cn";
-import type {
-  PlanningCalendarItem,
-  PlanningCalendarView,
-} from "@/types/communications-calendar";
-import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
 import { heatmapSourceLabel } from "@/lib/posting-analytics/heatmap-ui";
+import type { PostingHeatmapData } from "@/lib/posting-analytics/types";
+import { cn } from "@/lib/utils/cn";
+import type { PlanningCalendarView } from "@/types/communications-calendar";
 
-const VIEW_OPTIONS: {
-  value: PlanningCalendarView;
-  label: string;
-  icon: typeof LayoutGrid;
-}[] = [
-  { value: "month", label: "Month", icon: LayoutGrid },
-  { value: "week", label: "Week", icon: Rows3 },
-  { value: "agenda", label: "Agenda", icon: List },
-  { value: "import-list", label: "Import list", icon: TableProperties },
-];
+const VIEW_OPTIONS: { value: PlanningCalendarView; label: string; heat?: boolean }[] =
+  [
+    { value: "month", label: "Month" },
+    { value: "week", label: "Week" },
+    { value: "best-times", label: "Best times", heat: true },
+    { value: "agenda", label: "Agenda" },
+    { value: "import-list", label: "Import list" },
+    { value: "import", label: "Import" },
+    { value: "review", label: "Review" },
+  ];
 
-const UPCOMING_PREVIEW_LIMIT = 5;
+const HIDE_LAYERS = new Set<PlanningCalendarView>([
+  "import-list",
+  "import",
+  "review",
+]);
+const SHOW_PERIOD_NAV = new Set<PlanningCalendarView>([
+  "month",
+  "week",
+  "best-times",
+  "agenda",
+]);
+const HIDE_PERIOD_LABEL = new Set<PlanningCalendarView>([
+  "import-list",
+  "import",
+  "review",
+]);
 
 interface UnifiedCalendarControlPanelProps {
   view: PlanningCalendarView;
   periodLabel: string;
   activeLayers: Set<CalendarLayerId>;
-  /** Resolved colors (defaults filled in) for swatches + calendar chips. */
   layerColors?: CalendarLayerColorMap;
-  /** Stored overrides only — null/missing means product default. */
   layerColorOverrides?: CalendarLayerColors;
-  upcomingItems: PlanningCalendarItem[];
   showImportList?: boolean;
   postingHeatmap?: PostingHeatmapData | null;
+  /** Kept for marketing previews; Best times is first-class now. */
   showPostingHeatmap?: boolean;
   onShowPostingHeatmapChange?: (value: boolean) => void;
   onViewChange: (view: PlanningCalendarView) => void;
@@ -64,8 +61,6 @@ interface UnifiedCalendarControlPanelProps {
   onToday: () => void;
   onLayersChange: (layers: Set<CalendarLayerId>) => void;
   onLayerColorChange?: (layerId: CalendarLayerId, color: string | null) => void;
-  onSelectUpcomingItem: (item: PlanningCalendarItem) => void;
-  /** Hides Import/Review actions and the upcoming list — used for marketing screen capture. */
   compact?: boolean;
 }
 
@@ -75,25 +70,24 @@ export function UnifiedCalendarControlPanel({
   activeLayers,
   layerColors = DEFAULT_CALENDAR_LAYER_COLORS,
   layerColorOverrides = {},
-  upcomingItems,
   showImportList = true,
   postingHeatmap = null,
-  showPostingHeatmap = false,
-  onShowPostingHeatmapChange,
   onViewChange,
   onPrevious,
   onNext,
   onToday,
   onLayersChange,
   onLayerColorChange,
-  onSelectUpcomingItem,
   compact = false,
 }: UnifiedCalendarControlPanelProps) {
-  const [upcomingOpen, setUpcomingOpen] = useState(false);
-
-  const visibleViews = showImportList
+  const tabs = showImportList
     ? VIEW_OPTIONS
-    : VIEW_OPTIONS.filter((option) => option.value !== "import-list");
+    : VIEW_OPTIONS.filter(
+        (option) =>
+          option.value !== "import-list" &&
+          option.value !== "import" &&
+          option.value !== "review",
+      );
 
   function toggleLayer(layerId: CalendarLayerId) {
     const next = new Set(activeLayers);
@@ -105,85 +99,88 @@ export function UnifiedCalendarControlPanel({
     onLayersChange(next);
   }
 
-  const previewItems = upcomingItems.slice(0, UPCOMING_PREVIEW_LIMIT);
-  const hiddenUpcoming = upcomingItems.length - previewItems.length;
+  const showLayers = !HIDE_LAYERS.has(view);
+  const showPeriod = SHOW_PERIOD_NAV.has(view);
+  const showPeriodLabel = !HIDE_PERIOD_LABEL.has(view);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
-      {/* Period + nav/actions; view switcher under Today / Import / Review */}
-      <div className="flex flex-col gap-2.5 border-b border-cos-border px-4 py-2.5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-display truncate text-2xl leading-tight text-cos-text sm:text-3xl">
-            {periodLabel}
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] tracking-[-0.02em] text-cos-text">
+            Calendar
           </h1>
+          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-cos-muted">
+            One quiet place for school events, scheduled posts, and the best
+            times to reach families.
+          </p>
         </div>
-
-        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            {view !== "import-list" && (
-              <div className="flex items-center gap-1">
-                <Button variant="secondary" size="sm" onClick={onPrevious} aria-label="Previous period">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" size="sm" onClick={onToday}>
-                  Today
-                </Button>
-                <Button variant="secondary" size="sm" onClick={onNext} aria-label="Next period">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            {!compact && (
-              <>
-                <Button href="/calendar/import" variant="secondary" size="sm">
-                  <Upload className="h-4 w-4" />
-                  Import
-                </Button>
-                <Button href="/calendar/review" variant="secondary" size="sm">
-                  <FileSearch className="h-4 w-4" />
-                  Review
-                </Button>
-              </>
-            )}
+        {!compact ? (
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onViewChange("import")}
+              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+            >
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange("review")}
+              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+            >
+              Review
+            </button>
           </div>
-          <div className="flex items-center self-start border border-cos-border bg-cos-bg p-0.5 sm:self-end">
-            {visibleViews.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onViewChange(value)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium transition-colors",
-                  view === value
-                    ? "bg-cos-card text-cos-text shadow-sm"
-                    : "text-cos-muted hover:text-cos-text",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+        ) : null}
       </div>
 
-      {/* Layer filters — inline */}
-      {view !== "import-list" && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-cos-border px-4 py-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-cos-muted">Show</span>
+      <nav
+        className="flex flex-wrap items-center gap-2"
+        role="tablist"
+        aria-label="Calendar views"
+      >
+        {tabs.map((option) => {
+          const active = view === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onViewChange(option.value)}
+              className={cn(
+                "rounded-full px-3.5 py-2 text-[13px] font-bold transition",
+                active
+                  ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)] ring-1 ring-cos-border"
+                  : "text-cos-muted hover:bg-[rgba(255,252,247,0.7)] hover:text-cos-text",
+                active && option.heat
+                  ? "shadow-[0_0_0_3px_rgba(196,146,46,0.18)]"
+                  : null,
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      {showLayers ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-0.5 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+            Show
+          </span>
           {UNIFIED_CALENDAR_LAYERS.map((layer) => {
             const active = activeLayers.has(layer.id);
             const resolved = layerColors[layer.id];
             return (
-              // Sibling controls — never nest the color picker button inside the
-              // layer toggle (invalid HTML; clicks often never open the picker).
               <div
                 key={layer.id}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full py-0.5 pl-1 pr-1 text-xs font-medium transition-colors",
+                  "inline-flex items-center gap-1 rounded-full border py-0.5 pr-1 pl-1 text-xs font-bold transition",
                   active
-                    ? "bg-cos-text text-cos-card"
-                    : "bg-cos-bg text-cos-muted",
+                    ? "border-cos-border bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                    : "border-transparent bg-transparent text-cos-muted",
                 )}
               >
                 {onLayerColorChange ? (
@@ -196,7 +193,7 @@ export function UnifiedCalendarControlPanel({
                   />
                 ) : (
                   <span
-                    className="m-0.5 h-3.5 w-3.5 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)] ring-1 ring-black/20"
+                    className="m-0.5 h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: resolved }}
                     aria-hidden
                   />
@@ -206,10 +203,10 @@ export function UnifiedCalendarControlPanel({
                   aria-pressed={active}
                   onClick={() => toggleLayer(layer.id)}
                   className={cn(
-                    "rounded-full px-2 py-1 transition-colors",
+                    "rounded-full px-2 py-1 transition",
                     active
-                      ? "text-cos-card hover:bg-white/10"
-                      : "hover:text-cos-text",
+                      ? "text-cos-text"
+                      : "text-cos-muted hover:text-cos-text",
                   )}
                 >
                   {layer.label}
@@ -217,131 +214,83 @@ export function UnifiedCalendarControlPanel({
               </div>
             );
           })}
-
-          {view === "week" &&
-            postingHeatmap != null &&
-            onShowPostingHeatmapChange && (
-            <>
-              <span className="mx-1 hidden h-4 w-px bg-cos-border sm:inline-block" aria-hidden />
-              <button
-                type="button"
-                aria-pressed={showPostingHeatmap}
-                onClick={() => onShowPostingHeatmapChange(!showPostingHeatmap)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                  showPostingHeatmap
-                    ? "bg-cos-accent text-white"
-                    : "bg-cos-bg text-cos-muted hover:text-cos-text",
-                )}
-              >
-                Best times to post
-              </button>
-            </>
-          )}
         </div>
-      )}
+      ) : null}
 
-      {view === "week" && showPostingHeatmap && postingHeatmap != null && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-cos-border bg-cos-bg/30 px-4 py-2 text-xs text-cos-muted">
-          <span>Darker = families more likely to see posts</span>
-          <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />
-          <span className="inline-flex items-center gap-2">
-            <span>Low</span>
-            <span
-              className="inline-flex h-3 w-20 overflow-hidden rounded-full ring-1 ring-cos-border"
-              aria-hidden
+      {showPeriod ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onPrevious}
+              aria-label="Previous period"
+              className="grid h-9 w-9 place-items-center rounded-full border border-cos-border bg-cos-card text-cos-text"
             >
-              <span className="flex-1 bg-cos-accent-soft" />
-              <span className="flex-1 bg-cos-accent/40" />
-              <span className="flex-1 bg-cos-accent/70" />
-              <span className="flex-1 bg-cos-accent" />
-            </span>
-            <span>High</span>
-          </span>
-          <span className="hidden h-3 w-px bg-cos-border sm:inline-block" aria-hidden />
-          <span>Source: {heatmapSourceLabel(postingHeatmap)}</span>
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onToday}
+              className="rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-xs font-bold text-cos-text"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              aria-label="Next period"
+              className="grid h-9 w-9 place-items-center rounded-full border border-cos-border bg-cos-card text-cos-text"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <h2 className="ml-1 font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
+              {periodLabel}
+            </h2>
+          </div>
+          {view === "week" && postingHeatmap != null ? (
+            <button
+              type="button"
+              onClick={() => onViewChange("best-times")}
+              className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+            >
+              Show best times →
+            </button>
+          ) : null}
         </div>
-      )}
+      ) : showPeriodLabel ? (
+        <h2 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
+          {periodLabel}
+        </h2>
+      ) : null}
 
-      {/* Upcoming — collapsible */}
-      {!compact && view !== "import-list" && (
-        <div className="bg-cos-bg/30">
-          <button
-            type="button"
-            onClick={() => setUpcomingOpen((value) => !value)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left"
-            aria-expanded={upcomingOpen}
+      {view === "best-times" && postingHeatmap != null ? (
+        <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-cos-border bg-[rgba(255,252,247,0.65)] px-3.5 py-3 text-xs text-cos-muted">
+          <strong className="font-display text-[15px] font-semibold text-cos-text">
+            Best times to post
+          </strong>
+          <span>Darker = families more likely to see posts</span>
+          <span
+            className="inline-flex h-2.5 w-[88px] overflow-hidden rounded-full border border-cos-border"
+            aria-hidden
           >
-            <span className="flex items-center gap-2">
-              {upcomingOpen ? (
-                <ChevronDown className="h-4 w-4 text-cos-muted" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-cos-muted" />
-              )}
-              <span className="text-sm font-medium text-cos-text">Coming up</span>
-              <span className="text-xs text-cos-muted">
-                {upcomingItems.length === 0
-                  ? "No campaigns in the next 7 days"
-                  : `${upcomingItems.length} ${upcomingItems.length === 1 ? "campaign" : "campaigns"} in the next 7 days`}
-              </span>
-            </span>
-            {upcomingItems.length > UPCOMING_PREVIEW_LIMIT && (
-              <Link
-                href="/events"
-                onClick={(event) => event.stopPropagation()}
-                className="text-xs font-medium text-cos-text underline-offset-2 hover:underline"
-              >
-                All campaigns
-              </Link>
-            )}
-          </button>
-
-          {upcomingOpen && upcomingItems.length > 0 && (
-            <ul className="space-y-1 border-t border-cos-border/60 px-4 py-2.5">
-              {previewItems.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectUpcomingItem(item)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-cos-card"
-                  >
-                    <p className="min-w-0 truncate text-sm font-medium text-cos-text">
-                      {item.title}
-                    </p>
-                    <span className="shrink-0 text-xs text-cos-muted">
-                      {formatShortDate(item.scheduledDate)}
-                    </span>
-                  </button>
-                </li>
-              ))}
-              {hiddenUpcoming > 0 && (
-                <li className="pt-1">
-                  <Link
-                    href="/events"
-                    className="flex w-full items-center justify-center rounded-lg border border-dashed border-cos-border py-2 text-xs font-medium text-cos-muted hover:text-cos-text"
-                  >
-                    View all {upcomingItems.length} campaigns
-                  </Link>
-                </li>
-              )}
-            </ul>
-          )}
-
-          {upcomingOpen && upcomingItems.length === 0 && (
-            <p className="border-t border-cos-border/60 px-4 py-2.5 text-sm text-cos-muted">
-              No campaign events in the next 7 days.
-            </p>
-          )}
+            <span className="flex-1 bg-[rgb(248,236,220)]" />
+            <span className="flex-1 bg-[rgb(236,214,182)]" />
+            <span className="flex-1 bg-[rgb(214,178,132)]" />
+            <span className="flex-1 bg-[rgb(184,149,111)]" />
+          </span>
+          <span>Low → High</span>
+          <span className="ml-auto font-bold text-cos-muted">
+            {heatmapSourceLabel(postingHeatmap)}
+          </span>
         </div>
-      )}
-    </section>
-  );
-}
+      ) : null}
 
-function formatShortDate(date: string): string {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+      {view === "best-times" && postingHeatmap == null ? (
+        <p className="rounded-2xl border border-cos-border bg-[rgba(255,252,247,0.55)] px-4 py-3 text-sm text-cos-muted">
+          Connect Meta publishing to learn the best times for your community.
+          Showing the week grid until then.
+        </p>
+      ) : null}
+    </div>
+  );
 }

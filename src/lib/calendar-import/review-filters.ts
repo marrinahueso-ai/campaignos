@@ -11,6 +11,8 @@ import type {
 
 export type CalendarReviewFilter =
   | "all"
+  | "needs_review"
+  | "ready"
   | "conflicts"
   | "duplicates"
   | "updates"
@@ -65,6 +67,14 @@ export function filterReviewEvents(
 ): CalendarReviewEvent[] {
   if (filter === "all") {
     return events;
+  }
+
+  if (filter === "needs_review") {
+    return events.filter((event) => event.status === "needs_review");
+  }
+
+  if (filter === "ready") {
+    return events.filter((event) => event.status === "ready");
   }
 
   if (filter === "conflicts") {
@@ -140,10 +150,37 @@ export function getPastReviewEventIds(
     .map((event) => event.id);
 }
 
+/**
+ * "Keep as {category}" confirms the inferred category.
+ * Only `needs_review` may become `ready` (importable).
+ * `conflict` stays `conflict` so conflicting dates cannot import/overwrite
+ * live calendar data — resolve via Edit details or Ask AI instead.
+ */
+export function keepCalendarReviewCategory(
+  events: CalendarReviewEvent[],
+  eventId: string,
+): CalendarReviewEvent[] {
+  return events.map((entry) => {
+    if (entry.id !== eventId) {
+      return entry;
+    }
+    return {
+      ...entry,
+      status:
+        entry.status === "needs_review" ? ("ready" as const) : entry.status,
+      planManuallySet: true,
+    };
+  });
+}
+
 export function getReviewFilterLabel(filter: CalendarReviewFilter): string {
   switch (filter) {
     case "all":
       return "All events";
+    case "needs_review":
+      return "Needs you";
+    case "ready":
+      return "Ready";
     case "conflicts":
       return "Conflicts";
     case "duplicates":

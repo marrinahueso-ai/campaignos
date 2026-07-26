@@ -280,25 +280,35 @@ export async function getExistingCalendarEventKeysForWindow(
 export async function getImportedEventsForCalendarList(): Promise<{
   filename: string | null;
   events: CalendarImportedEventListItem[];
+  playbookOptions: ReviewPlaybookOption[];
 }> {
   const organization = await getLatestOrganization();
   if (!organization) {
-    return { filename: null, events: [] };
+    return { filename: null, events: [], playbookOptions: [] };
   }
 
-  const activeSchoolYear = await getActiveSchoolYear(organization.id);
+  const [activeSchoolYear, playbooks] = await Promise.all([
+    getActiveSchoolYear(organization.id),
+    getPlaybooksForOrganization(organization.id),
+  ]);
+  const playbookOptions: ReviewPlaybookOption[] = playbooks.map((playbook) => ({
+    id: playbook.id,
+    name: playbook.name,
+    eventType: playbook.eventType,
+    stepCount: playbook.stepCount,
+  }));
   const schoolYearLabel = resolveCalendarSchoolYearLabel({
     activeSchoolYearLabel: activeSchoolYear?.label,
     organizationSchoolYear: organization.schoolYear,
   });
 
   if (!activeSchoolYear) {
-    return { filename: schoolYearLabel, events: [] };
+    return { filename: schoolYearLabel, events: [], playbookOptions };
   }
 
   const schoolYearIds = await getOrganizationSchoolYearIds(organization.id);
   if (!schoolYearIds.length) {
-    return { filename: schoolYearLabel, events: [] };
+    return { filename: schoolYearLabel, events: [], playbookOptions };
   }
 
   // Import list is cleanup/manage scope: every non-archived event for the org's
@@ -314,7 +324,22 @@ export async function getImportedEventsForCalendarList(): Promise<{
     .order("date", { ascending: true });
 
   if (error || !data) {
-    return { filename: schoolYearLabel, events: [] };
+    return { filename: schoolYearLabel, events: [], playbookOptions };
+  }
+
+  const eventIds = data.map((row) => row.id as string);
+  const playbookByEventId = new Map<string, string>();
+  if (eventIds.length > 0) {
+    const { data: assignments } = await supabase
+      .from("event_playbook_assignments")
+      .select("event_id, playbook_id")
+      .in("event_id", eventIds);
+    for (const row of assignments ?? []) {
+      playbookByEventId.set(
+        row.event_id as string,
+        row.playbook_id as string,
+      );
+    }
   }
 
   const { parseCommunicationStrategy } = await import(
@@ -323,6 +348,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
 
   return {
     filename: schoolYearLabel,
+    playbookOptions,
     events: data.map((row) => ({
       id: row.id as string,
       title: row.title as string,
@@ -331,6 +357,7 @@ export async function getImportedEventsForCalendarList(): Promise<{
       communicationStrategy: parseCommunicationStrategy(
         row.communication_strategy as string,
       ),
+      playbookId: playbookByEventId.get(row.id as string) ?? null,
     })),
   };
 }

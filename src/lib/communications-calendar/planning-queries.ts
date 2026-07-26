@@ -71,6 +71,7 @@ export async function getPlanningCalendarData(): Promise<PlanningCalendarData> {
     importCleanup,
     importedEvents: importedList.events,
     importListFilename: importedList.filename,
+    importListPlaybooks: importedList.playbookOptions,
     activeSchoolYearId: activeSchoolYear?.id ?? null,
     postingHeatmap,
   };

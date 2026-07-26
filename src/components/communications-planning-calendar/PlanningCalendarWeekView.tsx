@@ -168,20 +168,24 @@ export function PlanningCalendarWeekView({
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-cos-border bg-white shadow-sm">
-        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-cos-border bg-cos-bg">
+      <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+        {showPostingHeatmap ? "Heatmap week" : "Week grid"}
+      </p>
+      <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b border-cos-border bg-[rgba(255,252,247,0.65)]">
           <div aria-hidden className="border-r border-cos-border" />
           {weekDates.map((date) => {
             const dateObj = parseLocalDate(date);
             return (
-              <div key={date} className="border-r border-cos-border px-2 py-3 text-center last:border-r-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-cos-muted">
+              <div key={date} className="border-r border-cos-border px-2 py-2.5 text-center last:border-r-0">
+                <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
                   {formatLocalDate(date, { weekday: "short" })}
                 </p>
                 <p
                   className={cn(
-                    "mx-auto mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                    date === today ? "bg-cos-primary text-white" : "text-cos-text",
+                    "mx-auto mt-1 font-display text-lg font-semibold text-cos-text",
+                    date === today &&
+                      "inline-grid h-8 w-8 place-items-center rounded-full bg-[#2f4a3c] text-[15px] text-[#f6f2eb]",
                   )}
                 >
                   {dateObj.getDate()}
@@ -192,18 +196,18 @@ export function PlanningCalendarWeekView({
         </div>
 
         <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
-          <div className="border-r border-cos-border bg-cos-bg/40">
-            <div className="flex h-16 items-center justify-end border-b border-cos-border/70 px-2">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-cos-muted">
+          <div className="border-r border-cos-border bg-[rgba(255,252,247,0.5)]">
+            <div className="flex h-16 items-center justify-end border-b border-cos-border px-1.5">
+              <span className="text-[10px] font-bold text-cos-muted">
                 All day
               </span>
             </div>
             {HOUR_ROWS.map((hour) => (
               <div
                 key={hour}
-                className="flex h-12 items-start justify-end border-b border-cos-border/60 px-2 pt-1"
+                className="flex h-11 items-start justify-end border-b border-cos-border px-1.5 pt-2"
               >
-                <span className="text-[10px] font-medium text-cos-muted">
+                <span className="text-[10px] font-bold text-cos-muted">
                   {formatHourLabel(hour)}
                 </span>
               </div>
@@ -231,10 +235,10 @@ export function PlanningCalendarWeekView({
                   onDragOver={bindDropTarget}
                   onDragLeave={unbindDropTarget}
                   onDrop={(event) => handleDrop(date, "allday", event)}
-                  className="calendar-drop-target relative min-h-16 border-b border-cos-border/70 p-1.5"
+                  className="calendar-drop-target relative min-h-16 border-b border-cos-border p-1"
                 >
                   {placement.allDay.length > 0 ? (
-                    <div className="space-y-1">
+                    <div>
                       {placement.allDay.slice(0, 4).map((item) => (
                         <PlanningCalendarItemChip
                           key={item.id}
@@ -244,15 +248,13 @@ export function PlanningCalendarWeekView({
                           onDragError={handleDragError}
                         />
                       ))}
-                      {placement.allDay.length > 4 && (
-                        <p className="px-1 text-[10px] font-medium text-cos-primary">
+                      {placement.allDay.length > 4 ? (
+                        <p className="px-1 text-[11px] font-bold text-cos-muted">
                           +{placement.allDay.length - 4} more
                         </p>
-                      )}
+                      ) : null}
                     </div>
-                  ) : (
-                    <p className="py-4 text-center text-[10px] text-cos-border">Drop here</p>
-                  )}
+                  ) : null}
                 </div>
 
                 {HOUR_ROWS.map((hour) => {
@@ -269,7 +271,7 @@ export function PlanningCalendarWeekView({
                       onDragOver={bindDropTarget}
                       onDragLeave={unbindDropTarget}
                       onDrop={(event) => handleDrop(date, hour, event)}
-                      className="calendar-drop-target relative h-12 border-b border-cos-border/60"
+                      className="calendar-drop-target relative h-11 border-b border-cos-border"
                       style={
                         heatmapBackground
                           ? { backgroundColor: heatmapBackground }

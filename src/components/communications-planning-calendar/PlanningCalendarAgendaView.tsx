@@ -1,8 +1,13 @@
 "use client";
 
-import { UnifiedCalendarDayContent } from "@/components/unified-calendar/UnifiedCalendarDayContent";
-import { formatLocalDate } from "@/lib/utils/dates";
+import { formatLocalDate, getTodayDateString } from "@/lib/utils/dates";
 import { cn } from "@/lib/utils/cn";
+import {
+  DISPLAY_STATUS_LABELS,
+  getDisplayStatus,
+  isCampaignEventItem,
+  isMetaMilestoneItem,
+} from "@/lib/communications-calendar/unified-calendar-layers";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 interface PlanningCalendarAgendaViewProps {
@@ -14,6 +19,7 @@ export function PlanningCalendarAgendaView({
   items,
   onSelectItem,
 }: PlanningCalendarAgendaViewProps) {
+  const today = getTodayDateString();
   const sorted = [...items].sort((a, b) =>
     a.scheduledDate.localeCompare(b.scheduledDate),
   );
@@ -30,9 +36,9 @@ export function PlanningCalendarAgendaView({
 
   if (dates.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-cos-border bg-cos-card px-6 py-16 text-center">
-        <p className="text-sm font-medium text-cos-text">
-          Nothing needs your attention right now
+      <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-16 text-center">
+        <p className="font-display text-lg font-semibold text-cos-text">
+          Nothing on the agenda
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-cos-muted">
           Turn on more layers or add events when you&apos;re ready.
@@ -42,42 +48,78 @@ export function PlanningCalendarAgendaView({
   }
 
   return (
-    <div className="space-y-4">
-      {dates.map((date) => (
-        <section
-          key={date}
-          className="overflow-hidden rounded-2xl border border-cos-border bg-white shadow-sm"
-        >
-          <header
-            className={cn(
-              "border-b border-cos-border px-5 py-3",
-              grouped[date][0]?.isToday && "bg-cos-accent-soft/60",
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <h3 className="text-sm font-semibold text-cos-text">
-                {formatAgendaDate(date)}
-              </h3>
-              {grouped[date][0]?.isToday && (
-                <span className="rounded-full bg-cos-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                  Today
-                </span>
+    <div>
+      <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+        Agenda
+      </p>
+      <div className="flex flex-col gap-2.5">
+        {dates.map((date) => {
+          const isToday = date === today;
+          return (
+            <section
+              key={date}
+              className={cn(
+                "rounded-[18px] border border-cos-border px-4 py-3.5",
+                isToday
+                  ? "bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                  : "bg-[rgba(255,252,247,0.55)]",
               )}
-              <span className="text-xs text-cos-dark-muted">
-                {grouped[date].length} item{grouped[date].length === 1 ? "" : "s"}
-              </span>
-            </div>
-          </header>
-
-          <div className="px-4 py-4">
-            <UnifiedCalendarDayContent
-              items={grouped[date]}
-              onSelectItem={onSelectItem}
-              itemLimit={50}
-            />
-          </div>
-        </section>
-      ))}
+            >
+              <h3 className="mb-2.5 flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-cos-text">
+                {formatAgendaDate(date)}
+                {isToday ? (
+                  <span className="rounded-full bg-[rgba(47,74,60,0.12)] px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] text-[#2f4a3c] uppercase">
+                    Today
+                  </span>
+                ) : null}
+              </h3>
+              <div className="flex flex-col gap-1.5">
+                {grouped[date].map((item) => {
+                  const status = getDisplayStatus(item);
+                  const isEvent = isCampaignEventItem(item);
+                  const isPost = isMetaMilestoneItem(item);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onSelectItem(item)}
+                      className="grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.7)] px-3.5 py-2.5 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                    >
+                      <span className="min-w-0">
+                        <strong className="mb-0.5 block truncate text-sm font-bold text-cos-text">
+                          {item.title}
+                        </strong>
+                        <span className="text-xs text-cos-muted">
+                          {isEvent
+                            ? "Event"
+                            : isPost
+                              ? "Post"
+                              : "Item"}
+                          {item.scheduledAt
+                            ? ` · ${formatTime(item.scheduledAt)}`
+                            : ""}
+                        </span>
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+                          isEvent
+                            ? "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]"
+                            : status === "published"
+                              ? "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]"
+                              : "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
+                        )}
+                      >
+                        {isEvent ? "Event" : DISPLAY_STATUS_LABELS[status]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -87,6 +129,16 @@ function formatAgendaDate(date: string): string {
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
+}
+
+function formatTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }

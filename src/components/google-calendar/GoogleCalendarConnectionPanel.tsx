@@ -9,6 +9,7 @@ import {
   syncGoogleCalendarAction,
 } from "@/lib/google-calendar/actions";
 import { buildOAuthStartPath } from "@/lib/integrations/oauth";
+import { cn } from "@/lib/utils/cn";
 
 interface GoogleCalendarConnectionPanelProps {
   connected: boolean;
@@ -18,6 +19,7 @@ interface GoogleCalendarConnectionPanelProps {
   returnTo?: string;
   oauthError?: string | null;
   justConnected?: boolean;
+  variant?: "default" | "ease";
 }
 
 export function GoogleCalendarConnectionPanel({
@@ -28,6 +30,7 @@ export function GoogleCalendarConnectionPanel({
   returnTo = "/settings/integrations/calendar",
   oauthError = null,
   justConnected = false,
+  variant = "default",
 }: GoogleCalendarConnectionPanelProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -82,17 +85,42 @@ export function GoogleCalendarConnectionPanel({
     );
   }
 
+  const ease = variant === "ease";
+  const primaryBtn = ease
+    ? "inline-flex items-center justify-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
+    : undefined;
+  const secondaryBtn = ease
+    ? "inline-flex items-center justify-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
+    : undefined;
+  const ghostBtn = ease
+    ? "inline-flex items-center justify-center rounded-full px-[18px] py-[11px] text-[13px] font-bold text-cos-muted transition hover:text-cos-text disabled:opacity-50"
+    : undefined;
+
   if (!connected) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-cos-muted">
+        <p
+          className={cn(
+            "leading-relaxed text-cos-muted",
+            ease ? "max-w-[46ch] text-[13px]" : "text-sm",
+          )}
+        >
           Sign in with Google and approve calendar access. We sync events into
           review right away — confirm them and they appear on Calendar and your
           dashboard.
         </p>
-        <Button href={connectHref} disabled={isPending}>
-          Sign in with Google
-        </Button>
+        {ease ? (
+          <a
+            href={connectHref}
+            className={cn(primaryBtn, isPending && "pointer-events-none opacity-50")}
+          >
+            Sign in with Google
+          </a>
+        ) : (
+          <Button href={connectHref} disabled={isPending}>
+            Sign in with Google
+          </Button>
+        )}
         {oauthError ? (
           <p className="text-sm text-red-600" role="alert">
             {oauthErrorMessage(oauthError)}
@@ -110,26 +138,42 @@ export function GoogleCalendarConnectionPanel({
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <p className="text-sm text-cos-text">
+        <p className={cn("text-cos-text", ease ? "text-[13px] font-bold" : "text-sm")}>
           <span className="font-medium">
             {accountEmail ?? "Google account"}
           </span>
           {" · Primary calendar"}
         </p>
-        <p className="text-sm text-cos-muted">
+        <p
+          className={cn(
+            "leading-relaxed text-cos-muted",
+            ease ? "max-w-[46ch] text-[13px]" : "text-sm",
+          )}
+        >
           Sync pulls upcoming events into review. Confirmed dates show on
           Calendar and Today. We also refresh daily in the background.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          disabled={isSyncing || isPending || !hasActiveSchoolYear}
-          onClick={handleSync}
-        >
-          {isSyncing ? "Syncing…" : "Sync calendar"}
-        </Button>
+        {ease ? (
+          <button
+            type="button"
+            disabled={isSyncing || isPending || !hasActiveSchoolYear}
+            onClick={handleSync}
+            className={primaryBtn}
+          >
+            {isSyncing ? "Syncing…" : "Sync calendar"}
+          </button>
+        ) : (
+          <Button
+            type="button"
+            disabled={isSyncing || isPending || !hasActiveSchoolYear}
+            onClick={handleSync}
+          >
+            {isSyncing ? "Syncing…" : "Sync calendar"}
+          </Button>
+        )}
       </div>
 
       {!hasActiveSchoolYear ? (
@@ -143,18 +187,41 @@ export function GoogleCalendarConnectionPanel({
           Manage connection
         </summary>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button href={connectHref} variant="secondary" size="sm" disabled={isPending}>
-            Reconnect
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={isPending}
-            onClick={handleDisconnect}
-          >
-            Disconnect
-          </Button>
+          {ease ? (
+            <>
+              <a href={connectHref} className={secondaryBtn}>
+                Reconnect
+              </a>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleDisconnect}
+                className={ghostBtn}
+              >
+                Disconnect
+              </button>
+            </>
+          ) : (
+            <>
+              <Button
+                href={connectHref}
+                variant="secondary"
+                size="sm"
+                disabled={isPending}
+              >
+                Reconnect
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isPending}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
+            </>
+          )}
         </div>
       </details>
 

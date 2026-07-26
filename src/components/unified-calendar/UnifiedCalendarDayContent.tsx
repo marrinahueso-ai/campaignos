@@ -5,7 +5,6 @@ import {
   groupItemsByDaySection,
   type CalendarDaySection,
 } from "@/lib/communications-calendar/unified-calendar-layers";
-import { cn } from "@/lib/utils/cn";
 import type { PlanningCalendarItem } from "@/types/communications-calendar";
 
 const SECTION_LABELS: Record<CalendarDaySection, string> = {
@@ -19,6 +18,8 @@ interface UnifiedCalendarDayContentProps {
   onDragError?: (message: string) => void;
   compact?: boolean;
   itemLimit?: number;
+  /** Mockup-faithful flat chip list (no Events/Posts section labels). */
+  ease?: boolean;
 }
 
 export function UnifiedCalendarDayContent({
@@ -27,14 +28,43 @@ export function UnifiedCalendarDayContent({
   onDragError,
   compact = false,
   itemLimit = 6,
+  ease = false,
 }: UnifiedCalendarDayContentProps) {
+  if (ease || compact) {
+    const visible = items.slice(0, itemLimit);
+    const hidden = items.length - visible.length;
+
+    if (visible.length === 0) {
+      return null;
+    }
+
+    return (
+      <div>
+        {visible.map((item) => (
+          <PlanningCalendarItemChip
+            key={item.id}
+            item={item}
+            compact
+            onSelect={onSelectItem}
+            onDragError={onDragError}
+          />
+        ))}
+        {hidden > 0 ? (
+          <p className="px-1 text-[11px] font-bold text-cos-muted">
+            +{hidden} more
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   const groups = groupItemsByDaySection(items);
   const sections = (["events", "communications"] as const).filter(
     (section) => groups[section].length > 0,
   );
 
   if (sections.length === 0) {
-    return compact ? null : (
+    return (
       <p className="py-4 text-center text-xs leading-relaxed text-cos-muted/70">
         Nothing scheduled
       </p>
@@ -44,7 +74,7 @@ export function UnifiedCalendarDayContent({
   let shown = 0;
 
   return (
-    <div className={cn("space-y-2", compact && "space-y-1.5")}>
+    <div className="space-y-2">
       {sections.map((section) => {
         const sectionItems = groups[section];
         const remaining = itemLimit - shown;
@@ -55,12 +85,7 @@ export function UnifiedCalendarDayContent({
 
         return (
           <div key={section}>
-            <p
-              className={cn(
-                "mb-1 font-medium text-cos-muted",
-                compact ? "text-[10px]" : "text-xs",
-              )}
-            >
+            <p className="mb-1 text-xs font-medium text-cos-muted">
               {SECTION_LABELS[section]}
             </p>
             <div className="space-y-1">
@@ -68,7 +93,6 @@ export function UnifiedCalendarDayContent({
                 <PlanningCalendarItemChip
                   key={item.id}
                   item={item}
-                  compact={compact}
                   onSelect={onSelectItem}
                   onDragError={onDragError}
                 />

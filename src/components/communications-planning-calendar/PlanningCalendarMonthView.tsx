@@ -69,7 +69,6 @@ export function PlanningCalendarMonthView({
         return;
       }
 
-      // Move the chip immediately; persist in the background.
       onOptimisticReschedule(payload, date);
 
       void executeRescheduleDrop({
@@ -89,12 +88,15 @@ export function PlanningCalendarMonthView({
 
   return (
     <>
-      <div className="overflow-hidden rounded-2xl border border-cos-border bg-cos-card shadow-sm">
-        <div className="grid grid-cols-7 border-b border-cos-border bg-cos-bg/60">
+      <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+        Month glance
+      </p>
+      <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+        <div className="grid grid-cols-7 border-b border-cos-border bg-[rgba(255,252,247,0.65)]">
           {weekdays.map((day) => (
             <div
               key={day}
-              className="px-3 py-3 text-center text-xs font-medium text-cos-muted"
+              className="px-2 py-2.5 text-center text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase"
             >
               {day}
             </div>
@@ -102,10 +104,12 @@ export function PlanningCalendarMonthView({
         </div>
 
         <div className="grid grid-cols-7">
-          {dates.map((date) => {
+          {dates.map((date, index) => {
             const dateObj = parseLocalDate(date);
             const inMonth = dateObj.getMonth() === month;
             const dayItems = itemsByDate.get(date) ?? [];
+            const isToday = date === today;
+            const isLastCol = (index + 1) % 7 === 0;
 
             return (
               <div
@@ -131,28 +135,24 @@ export function PlanningCalendarMonthView({
                 }}
                 onDrop={(event) => handleDrop(date, event)}
                 className={cn(
-                  "calendar-drop-target relative min-h-48 border-b border-r border-cos-border p-2.5 last:border-r-0",
-                  !inMonth && "bg-cos-bg/40",
+                  "calendar-drop-target relative min-h-[118px] border-b border-cos-border p-2",
+                  !isLastCol && "border-r border-cos-border",
+                  !inMonth && "opacity-45",
+                  isToday
+                    ? "bg-[radial-gradient(ellipse_at_top_left,rgba(47,74,60,0.08),transparent_60%),#fffcf7]"
+                    : "bg-[rgba(255,252,247,0.35)]",
                 )}
               >
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-1.5">
                   <span
                     className={cn(
-                      "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
-                      date === today
-                        ? "bg-cos-primary text-white shadow-sm"
-                        : inMonth
-                          ? "text-cos-text"
-                          : "text-cos-muted/60",
+                      "text-xs font-extrabold text-cos-muted",
+                      isToday &&
+                        "inline-grid h-6 w-6 place-items-center rounded-full bg-[#2f4a3c] text-[12px] text-[#f6f2eb]",
                     )}
                   >
                     {dateObj.getDate()}
                   </span>
-                  {dayItems.length > 0 && (
-                    <span className="text-[10px] font-medium text-cos-muted">
-                      {dayItems.length}
-                    </span>
-                  )}
                 </div>
 
                 <UnifiedCalendarDayContent
@@ -161,6 +161,7 @@ export function PlanningCalendarMonthView({
                   onDragError={handleDragError}
                   compact
                   itemLimit={5}
+                  ease
                 />
               </div>
             );

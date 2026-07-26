@@ -493,7 +493,7 @@ export async function uploadCalendarFileAction(
   }
 
   revalidateCalendarPaths();
-  redirect(`/calendar/review?import=${result.importRecord.id}`);
+  redirect(`/calendar?tab=review&import=${result.importRecord.id}`);
 }
 
 export async function upgradeEventToCampaignAction(

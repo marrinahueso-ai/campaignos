@@ -28,30 +28,35 @@ export function FeaturePreviewHeatmapSlide({
   const [activeLayers, setActiveLayers] = useState<Set<CalendarLayerId>>(
     getDefaultActiveLayers(),
   );
-  const [showPostingHeatmap, setShowPostingHeatmap] = useState(initialHeatmapEnabled);
+  const [view, setView] = useState<"week" | "best-times">(
+    initialHeatmapEnabled ? "best-times" : "week",
+  );
 
   const enrichedItems = useMemo(
     () => enrichPreviewCalendarItems(previewCalendarItems),
     [],
   );
 
+  const showPostingHeatmap = view === "best-times";
+
   return (
     <div className="space-y-3" data-record-step="calendar-heatmap">
       <UnifiedCalendarControlPanel
-        view="week"
+        view={view}
         periodLabel="Jun 29 – Jul 5, 2026"
         activeLayers={activeLayers}
-        upcomingItems={enrichedItems.slice(0, 4)}
         showImportList={false}
         postingHeatmap={previewPostingHeatmap}
         showPostingHeatmap={showPostingHeatmap}
-        onShowPostingHeatmapChange={setShowPostingHeatmap}
-        onViewChange={() => {}}
+        onViewChange={(next) => {
+          if (next === "week" || next === "best-times") {
+            setView(next);
+          }
+        }}
         onPrevious={() => {}}
         onNext={() => {}}
         onToday={() => {}}
         onLayersChange={setActiveLayers}
-        onSelectUpcomingItem={() => {}}
         compact={compact}
       />
       <div className={interactive ? undefined : "pointer-events-none"}>

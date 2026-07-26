@@ -2,45 +2,38 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { ExternalLink, Search, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { CalendarReviewCategoryBadge } from "@/components/calendar-review/CalendarReviewBadges";
-import { CommunicationStrategyBadge } from "@/components/events/CommunicationStrategyBadge";
-import { Button } from "@/components/ui/Button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import { Select } from "@/components/ui/Select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/Table";
 import {
   bulkDeleteEventsAction,
   clearCalendarWindowEventsAction,
 } from "@/lib/calendar-import/actions";
 import { filterImportListEventsBySearch } from "@/lib/calendar-import/import-list-filters";
-import { updateEventPlanTypeAction } from "@/lib/events/actions";
-import { COMMUNICATION_STRATEGY_OPTIONS } from "@/lib/events/communication-strategy";
+import {
+  buildCalendarReviewPlanOptions,
+  getSelectedReviewPlanValue,
+  type ReviewPlaybookOption,
+} from "@/lib/calendar-import/review-plan-options";
+import { updateImportedEventPlanAction } from "@/lib/events/actions";
 import { formatEventDate } from "@/lib/utils/dates";
-import type { CalendarImportedEventListItem } from "@/types/communications-calendar";
+import { cn } from "@/lib/utils/cn";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
+import type {
+  CalendarImportedEventListItem,
+  PlanningCalendarView,
+} from "@/types/communications-calendar";
 
 interface CalendarImportPlanListProps {
   events: CalendarImportedEventListItem[];
   filename: string | null;
+  playbookOptions?: ReviewPlaybookOption[];
+  onNavigateView?: (view: PlanningCalendarView) => void;
 }
 
 export function CalendarImportPlanList({
   events: initialEvents,
   filename,
+  playbookOptions = [],
+  onNavigateView,
 }: CalendarImportPlanListProps) {
   const router = useRouter();
   const [events, setEvents] = useState(initialEvents);
@@ -49,6 +42,11 @@ export function CalendarImportPlanList({
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const planOptions = useMemo(
+    () => buildCalendarReviewPlanOptions(playbookOptions),
+    [playbookOptions],
+  );
 
   useEffect(() => {
     setEvents(initialEvents);
@@ -60,27 +58,7 @@ export function CalendarImportPlanList({
     [events, searchQuery],
   );
 
-  const isSearchFiltered = searchQuery.trim().length > 0;
-
-  const counts = useMemo(() => {
-    const byStrategy = new Map<CommunicationStrategy, number>();
-    for (const event of filteredEvents) {
-      byStrategy.set(
-        event.communicationStrategy,
-        (byStrategy.get(event.communicationStrategy) ?? 0) + 1,
-      );
-    }
-    return byStrategy;
-  }, [filteredEvents]);
-
   const selectedCount = selectedIds.size;
-  const allSelected =
-    filteredEvents.length > 0 && selectedCount === filteredEvents.length;
-
-  function handleSearchChange(value: string) {
-    setSearchQuery(value);
-    setSelectedIds(new Set());
-  }
 
   function toggleSelected(eventId: string) {
     setSelectedIds((current) => {
@@ -94,47 +72,54 @@ export function CalendarImportPlanList({
     });
   }
 
-  function handleSelectAll() {
-    setSelectedIds(new Set(filteredEvents.map((event) => event.id)));
+  function goImport() {
+    if (onNavigateView) {
+      onNavigateView("import");
+      return;
+    }
+    router.push("/calendar?tab=import");
   }
 
-  function handleClearSelection() {
-    setSelectedIds(new Set());
-  }
-
-  function handleStrategyChange(eventId: string, strategy: CommunicationStrategy) {
+  function handlePlanChange(eventId: string, planValue: string) {
     setError(null);
     setPendingId(eventId);
 
-    startTransition(async () => {
-      const result = await updateEventPlanTypeAction(eventId, strategy);
-      setPendingId(null);
+    const resolvedPlaybookId =
+      planValue === "calendar_only" ? null : planValue;
+    const resolvedStrategy: CommunicationStrategy =
+      planValue === "calendar_only" ? "calendar_only" : "full_campaign";
 
+    setEvents((current) =>
+      current.map((event) =>
+        event.id === eventId
+          ? {
+              ...event,
+              playbookId: resolvedPlaybookId,
+              communicationStrategy: resolvedStrategy,
+            }
+          : event,
+      ),
+    );
+
+    startTransition(async () => {
+      const result = await updateImportedEventPlanAction(eventId, planValue);
+      setPendingId(null);
       if (!result.success) {
-        setError(result.error ?? "Unable to update plan type.");
+        setError(result.error ?? "Unable to update plan.");
+        setEvents(initialEvents);
         return;
       }
-
-      setEvents((current) =>
-        current.map((event) =>
-          event.id === eventId ? { ...event, communicationStrategy: strategy } : event,
-        ),
-      );
       router.refresh();
     });
   }
 
   function handleDeleteSelected() {
-    if (selectedCount === 0) {
-      return;
-    }
+    if (selectedCount === 0) return;
 
     const confirmed = window.confirm(
-      `Permanently delete ${selectedCount} selected event${selectedCount === 1 ? "" : "s"}? This removes them from Calendar, Campaigns, Publishing, and Approvals.`,
+      `Permanently delete ${selectedCount} selected event${selectedCount === 1 ? "" : "s"}?`,
     );
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError(null);
     const ids = Array.from(selectedIds);
@@ -156,31 +141,20 @@ export function CalendarImportPlanList({
   }
 
   function handleClearAll() {
-    if (events.length === 0) {
-      return;
-    }
+    if (events.length === 0) return;
 
     const confirmed = window.confirm(
-      `Permanently delete all ${events.length} events from Calendar, Campaigns, Publishing, and Approvals? This cannot be undone.`,
+      `Permanently delete all ${events.length} imported events? This cannot be undone.`,
     );
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError(null);
-
     startTransition(async () => {
       const result = await clearCalendarWindowEventsAction();
       if (!result.success) {
         setError(result.error ?? "Unable to clear calendar events.");
         return;
       }
-
-      if (result.deletedCount === 0 && events.length > 0) {
-        setError("No events were deleted. Refresh the page and try again.");
-        return;
-      }
-
       setEvents([]);
       setSelectedIds(new Set());
       setSearchQuery("");
@@ -190,231 +164,178 @@ export function CalendarImportPlanList({
 
   if (events.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardHeader className="items-center py-12 text-center">
-          <CardTitle>No calendar events yet</CardTitle>
-          <CardDescription className="max-w-md">
-            Sign in with Google, sync a subscribe feed, or upload a school
-            calendar. Review the dates, then they show up here and on your
-            dashboard.
-          </CardDescription>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button href="/settings/integrations/calendar">
-              Sign in with Google
-            </Button>
-            <Button href="/calendar/import" variant="secondary">
-              Import calendar
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+      <div>
+        <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+          Imported from school calendar
+        </p>
+        <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-16 text-center">
+          <p className="font-display text-lg font-semibold text-cos-text">
+            No imported events yet
+          </p>
+          <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-cos-muted">
+            Bring the school year in, then review dates before they land here.
+          </p>
+          <button
+            type="button"
+            onClick={goImport}
+            className="mt-4 inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card"
+          >
+            Import school calendar
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-cos-border bg-cos-card px-5 py-4">
-        <p className="text-sm font-medium text-cos-text">
-          {isSearchFiltered
-            ? `${filteredEvents.length} of ${events.length} events matching “${searchQuery.trim()}”`
-            : `${events.length} events for ${filename ?? "this school year"}`}
-        </p>
-        <p className="mt-1 text-sm text-cos-muted">
-          All school-year events (same set as Events — including misdated imports).
-          Search to find rows, then select them to permanently delete bad imports, or{" "}
-          <button
-            type="button"
-            onClick={handleClearAll}
-            disabled={isPending}
-            className="text-cos-muted underline-offset-2 hover:text-red-600 hover:underline disabled:opacity-50"
-          >
-            {isPending ? "clearing…" : "clear all to start fresh"}
-          </button>
-          .
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {COMMUNICATION_STRATEGY_OPTIONS.map((option) => {
-            const count = counts.get(option.value) ?? 0;
-            if (count === 0) return null;
-            return (
-              <CommunicationStrategyBadge
-                key={option.value}
-                strategy={option.value}
-                className="text-xs"
-              />
-            );
-          })}
-        </div>
-      </div>
+    <div>
+      <p className="mb-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+        Imported from school calendar
+      </p>
 
-      <div className="flex flex-col gap-3 rounded-xl border border-cos-border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative block w-full max-w-md">
-          <span className="sr-only">Search events</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-cos-muted" />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => handleSearchChange(event.target.value)}
-            placeholder="Search by name, category, or date..."
-            disabled={isPending}
-            className="h-10 w-full rounded-lg border border-cos-border bg-white py-2 pr-3 pl-10 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none focus:ring-2 focus:ring-cos-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <div className="text-sm text-cos-muted">
-            {selectedCount > 0 ? (
-              <span>
-                <span className="font-medium text-cos-text">{selectedCount}</span> selected
-              </span>
-            ) : (
-              <span>Select rows to permanently delete events.</span>
-            )}
-          </div>
-          {!allSelected ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleSelectAll}
-              disabled={isPending || filteredEvents.length === 0}
-            >
-              Select all
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleClearSelection}
-              disabled={isPending}
-            >
-              Clear selection
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={handleDeleteSelected}
-            disabled={isPending || selectedCount === 0}
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete selected
-          </Button>
-        </div>
-      </div>
+      <input
+        type="search"
+        value={searchQuery}
+        onChange={(event) => {
+          setSearchQuery(event.target.value);
+          setSelectedIds(new Set());
+        }}
+        placeholder="Search imported events…"
+        disabled={isPending}
+        className="mb-3 w-full max-w-[280px] rounded-full border border-cos-border bg-cos-card px-3.5 py-2.5 text-[13px] text-cos-text placeholder:text-cos-muted focus:border-cos-text focus:outline-none disabled:opacity-50"
+      />
 
-      {error && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {error ? (
+        <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
-      )}
+      ) : null}
 
-      <Card padding="none" className="overflow-hidden">
-        <CardHeader className="border-b border-cos-border px-6 py-5">
-          <CardTitle>School year events</CardTitle>
-          <CardDescription>
-            Change plan type anytime. Upgrading to a campaign creates the communication
-            workspace automatically.
-          </CardDescription>
-        </CardHeader>
-        {filteredEvents.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-sm font-medium text-cos-text">No matching events</p>
-            <p className="mt-1 text-sm text-cos-muted">
-              Try a different name, category, year, or date (e.g. 2025, Jul, 07/30).
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="mt-4"
-              onClick={() => handleSearchChange("")}
-            >
-              Clear search
-            </Button>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-10">
-                  <span className="sr-only">Select</span>
-                </TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Plan type</TableHead>
-                <TableHead className="text-right">Open</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEvents.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(event.id)}
-                      onChange={() => toggleSelected(event.id)}
-                      aria-label={`Select ${event.title}`}
-                      className="h-4 w-4 rounded border-cos-border"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-cos-text">{event.title}</TableCell>
-                  <TableCell>{formatEventDate(event.date)}</TableCell>
-                  <TableCell>
-                    {event.category ? (
-                      <CalendarReviewCategoryBadge
-                        category={
-                          event.category as import("@/types/calendar-review").CalendarEventCategory
-                        }
+      <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr className="border-b border-cos-border bg-[rgba(255,252,247,0.65)]">
+              <th className="w-10 px-3.5 py-3 text-left">
+                <span className="sr-only">Select</span>
+              </th>
+              <th className="px-3.5 py-3 text-left text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                Name
+              </th>
+              <th className="px-3.5 py-3 text-left text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                Date
+              </th>
+              <th className="min-w-[12rem] px-3.5 py-3 text-left text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+                Plan
+              </th>
+              <th className="px-3.5 py-3" />
+            </tr>
+          </thead>
+          <tbody>
+            {filteredEvents.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-3.5 py-12 text-center text-sm text-cos-muted"
+                >
+                  No events match that search.
+                </td>
+              </tr>
+            ) : (
+              filteredEvents.map((event) => {
+                const planValue = getSelectedReviewPlanValue(
+                  {
+                    playbookId: event.playbookId,
+                    communicationStrategy: event.communicationStrategy,
+                    eventType: null,
+                  },
+                  playbookOptions,
+                );
+                return (
+                  <tr
+                    key={event.id}
+                    className="border-b border-cos-border last:border-b-0"
+                  >
+                    <td className="px-3.5 py-3 align-middle">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(event.id)}
+                        onChange={() => toggleSelected(event.id)}
+                        aria-label={`Select ${event.title}`}
+                        className="h-4 w-4 rounded border-cos-border"
                       />
-                    ) : (
-                      <span className="text-sm text-cos-muted">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="min-w-[12rem] space-y-2">
-                      <Select
-                        value={event.communicationStrategy}
+                    </td>
+                    <td className="px-3.5 py-3 align-middle">
+                      <strong className="font-bold text-cos-text">
+                        {event.title}
+                      </strong>
+                    </td>
+                    <td className="px-3.5 py-3 align-middle text-cos-text">
+                      {formatEventDate(event.date)}
+                    </td>
+                    <td className="px-3.5 py-3 align-middle">
+                      <select
+                        value={planValue}
                         onChange={(changeEvent) =>
-                          handleStrategyChange(
-                            event.id,
-                            changeEvent.target.value as CommunicationStrategy,
-                          )
+                          handlePlanChange(event.id, changeEvent.target.value)
                         }
                         disabled={isPending && pendingId === event.id}
-                        aria-label={`Plan type for ${event.title}`}
+                        aria-label={`Plan for ${event.title}`}
+                        className="h-9 min-w-[11rem] max-w-[16rem] rounded-full border border-cos-border bg-[rgba(255,252,247,0.9)] px-3 text-[12px] font-bold text-cos-text focus:border-cos-text focus:outline-none disabled:opacity-50"
                       >
-                        {COMMUNICATION_STRATEGY_OPTIONS.map((option) => (
+                        {planOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
                         ))}
-                      </Select>
-                      <CommunicationStrategyBadge strategy={event.communicationStrategy} />
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button href={`/events/${event.id}`} variant="ghost" size="sm">
-                      <ExternalLink className="h-4 w-4" />
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
+                      </select>
+                    </td>
+                    <td className="px-3.5 py-3 align-middle text-right">
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="inline-flex items-center rounded-full px-2.5 py-1.5 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
+                      >
+                        Open
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <p className="text-sm text-cos-muted">
-        Need to fix names or dates before import?{" "}
-        <Link href="/calendar/review" className="font-medium text-cos-text hover:underline">
-          Review imported calendar
-        </Link>
-      </p>
+      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={goImport}
+          className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+        >
+          Import more
+        </button>
+        <button
+          type="button"
+          onClick={handleDeleteSelected}
+          disabled={isPending || selectedCount === 0}
+          className={cn(
+            "inline-flex items-center rounded-full px-[18px] py-[11px] text-[13px] font-bold transition",
+            selectedCount > 0
+              ? "text-cos-muted hover:text-[#a65a3a]"
+              : "text-cos-muted opacity-40",
+          )}
+        >
+          Delete selected
+          {selectedCount > 0 ? ` (${selectedCount})` : ""}
+        </button>
+        <button
+          type="button"
+          onClick={handleClearAll}
+          disabled={isPending}
+          className="ml-auto rounded-full px-[18px] py-[11px] text-[13px] font-bold text-cos-muted hover:text-[#a65a3a] disabled:opacity-40"
+        >
+          Clear all
+        </button>
+      </div>
     </div>
   );
 }

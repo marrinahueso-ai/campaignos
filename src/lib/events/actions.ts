@@ -259,6 +259,75 @@ export async function removeFromCampaignsAction(
   return { error: null, success: true };
 }
 
+/**
+ * Import list Plan dropdown — playbook id or "calendar_only".
+ */
+export async function updateImportedEventPlanAction(
+  eventId: string,
+  planValue: string,
+): Promise<EventActionState> {
+  const event = await getEventById(eventId);
+  if (!event) {
+    return { error: "Event not found.", success: false };
+  }
+
+  const organization = await getLatestOrganization();
+  const playbooks = organization
+    ? await getPlaybooksForOrganization(organization.id)
+    : [];
+  const playbookOptions = playbooks.map((playbook) => ({
+    id: playbook.id,
+    name: playbook.name,
+    eventType: playbook.eventType,
+    stepCount: playbook.stepCount,
+  }));
+
+  const { resolveReviewPlanSelection } = await import(
+    "@/lib/calendar-import/review-plan-options"
+  );
+  const resolved = resolveReviewPlanSelection(planValue, playbookOptions);
+
+  const strategyChanged =
+    event.communicationStrategy !== resolved.communicationStrategy;
+  const eventTypeChanged =
+    Boolean(resolved.eventType) && event.eventType !== resolved.eventType;
+
+  let updated = event;
+
+  if (strategyChanged || eventTypeChanged) {
+    const next = await updateEventCampaignSettings(eventId, {
+      communicationStrategy: resolved.communicationStrategy,
+      ...(resolved.eventType ? { eventType: resolved.eventType } : {}),
+    });
+    if (!next) {
+      return { error: "Unable to update plan.", success: false };
+    }
+    updated = next;
+  }
+
+  if (resolved.playbookId) {
+    const wasCampaign = shouldAssignPlaybook(event.communicationStrategy);
+    if (wasCampaign) {
+      const ok = await reassignEventPlaybook(updated, resolved.playbookId);
+      if (!ok) {
+        return { error: "Unable to assign playbook.", success: false };
+      }
+    } else {
+      await assignPlaybookToEvent(
+        updated,
+        resolved.playbookId,
+        organization?.id ?? null,
+      );
+      await initializeEventWorkspace(updated);
+    }
+  }
+
+  revalidateEventPaths(eventId);
+  revalidatePath("/calendar");
+  revalidatePath("/events");
+  return { error: null, success: true };
+}
+
 export async function updateEventPlanTypeAction(
   eventId: string,
   strategy: CommunicationStrategy,

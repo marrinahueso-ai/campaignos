@@ -22,6 +22,7 @@ const VIEW_OPTIONS: {
 }[] = [
   { value: "month", label: "Month", icon: LayoutGrid },
   { value: "week", label: "Week", icon: Rows3 },
+  { value: "best-times", label: "Best times", icon: Rows3 },
   { value: "agenda", label: "Agenda", icon: List },
   { value: "import-list", label: "Import list", icon: TableProperties },
 ];

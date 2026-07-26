@@ -1,6 +1,6 @@
 import type { CommunicationChannel } from "@/types/event-workspace";
 import type { CommunicationStrategy } from "@/types/communication-strategy";
-import type { EventCommunicationStepStatus } from "@/types/playbooks";
+import type { EventCommunicationStepStatus, EventType } from "@/types/playbooks";
 
 export type CalendarView = "month" | "week" | "list";
 
@@ -82,7 +82,14 @@ export interface CalendarListItem {
 
 // Engine 6 — Communications Planning Calendar
 
-export type PlanningCalendarView = "month" | "week" | "agenda" | "import-list";
+export type PlanningCalendarView =
+  | "month"
+  | "week"
+  | "best-times"
+  | "agenda"
+  | "import-list"
+  | "import"
+  | "review";
 
 export interface CalendarImportedEventListItem {
   id: string;
@@ -90,6 +97,7 @@ export interface CalendarImportedEventListItem {
   date: string;
   category: string | null;
   communicationStrategy: CommunicationStrategy;
+  playbookId: string | null;
 }
 
 export type PlanningItemType =
@@ -138,6 +146,13 @@ export interface PlanningCalendarData {
   } | null;
   importedEvents: CalendarImportedEventListItem[];
   importListFilename: string | null;
+  /** Playbooks for Import list Plan dropdown. */
+  importListPlaybooks: Array<{
+    id: string;
+    name: string;
+    eventType: EventType;
+    stepCount?: number;
+  }>;
   activeSchoolYearId: string | null;
   postingHeatmap: PostingHeatmapData | null;
 }

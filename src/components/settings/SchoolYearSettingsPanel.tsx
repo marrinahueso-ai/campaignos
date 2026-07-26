@@ -117,7 +117,7 @@ export function SchoolYearSettingsPanel({ initialData }: SchoolYearSettingsPanel
           );
         }
 
-        router.push(`/calendar/review?import=${result.importId}`);
+        router.push(`/calendar?tab=review&import=${result.importId}`);
         return;
       }
 

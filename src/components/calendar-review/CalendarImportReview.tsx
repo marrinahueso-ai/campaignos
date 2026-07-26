@@ -3,50 +3,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { CalendarReviewActions } from "@/components/calendar-review/CalendarReviewActions";
-import { CalendarReviewBulkActions } from "@/components/calendar-review/CalendarReviewBulkActions";
 import { CalendarReviewChatPanel } from "@/components/calendar-review/CalendarReviewChatPanel";
 import { CalendarReviewEditDialog } from "@/components/calendar-review/CalendarReviewEditDialog";
-import { CalendarReviewFilters } from "@/components/calendar-review/CalendarReviewFilters";
-import { CalendarReviewHeader } from "@/components/calendar-review/CalendarReviewHeader";
-import { CalendarReviewStats } from "@/components/calendar-review/CalendarReviewStats";
-import { CalendarReviewTable } from "@/components/calendar-review/CalendarReviewTable";
+import { CalendarReviewPulseFilters } from "@/components/calendar-review/CalendarReviewPulseFilters";
 import { Button } from "@/components/ui/Button";
 import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/Card";
-import {
   deleteImportedCalendarEventsAction,
-  findMissingCalendarEventsAction,
   importCalendarEventsAction,
   parseCalendarImportAction,
   saveCalendarReviewEventsAction,
 } from "@/lib/calendar-import/actions";
-import { buildCalendarReviewStats } from "@/lib/calendar-import/stats";
 import {
   applyReviewEventFilters,
-  getPastReviewEventIds,
-  getReviewDateFilterLabel,
-  getReviewFilterLabel,
-  isPastReviewEvent,
-  statKeyToFilter,
-  type CalendarReviewDateFilter,
+  keepCalendarReviewCategory,
   type CalendarReviewFilter,
-  type CalendarReviewStatKey,
 } from "@/lib/calendar-import/review-filters";
-import {
-  applyRecommendedPlansToEvents,
-} from "@/lib/calendar-import/review-event-normalize";
-import {
-  resolveReviewPlanSelection,
-  type ReviewPlaybookOption,
-} from "@/lib/calendar-import/review-plan-options";
-import { getTodayDateString } from "@/lib/utils/dates";
+import type { ReviewPlaybookOption } from "@/lib/calendar-import/review-plan-options";
+import { cn } from "@/lib/utils/cn";
+import { formatEventDate, getTodayDateString } from "@/lib/utils/dates";
 import type { CalendarParseStatus } from "@/types";
-import type { CalendarReviewData, CalendarReviewEvent } from "@/types/calendar-review";
+import type {
+  CalendarEventReviewStatus,
+  CalendarReviewData,
+  CalendarReviewEvent,
+} from "@/types/calendar-review";
 
 interface CalendarImportReviewProps {
   importId: string;
@@ -55,6 +35,9 @@ interface CalendarImportReviewProps {
   data: CalendarReviewData;
   importedEventCount: number;
   playbookOptions: ReviewPlaybookOption[];
+  /** Hide standalone page chrome when rendered inside Calendar tabs. */
+  embedded?: boolean;
+  onGoToImport?: () => void;
 }
 
 export function CalendarImportReview({
@@ -64,48 +47,59 @@ export function CalendarImportReview({
   data,
   importedEventCount,
   playbookOptions,
+  embedded = false,
+  onGoToImport,
 }: CalendarImportReviewProps) {
   const [events, setEvents] = useState<CalendarReviewEvent[]>(data.events);
   const [parseStatus, setParseStatus] = useState(initialParseStatus);
   const [parseError, setParseError] = useState(initialParseError);
-  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
-  const [editingEvent, setEditingEvent] = useState<CalendarReviewEvent | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [focusEventId, setFocusEventId] = useState<string | null>(
+    () =>
+      data.events.find((event) => event.status === "needs_review")?.id ??
+      data.events[0]?.id ??
+      null,
+  );
+  const [editingEvent, setEditingEvent] = useState<CalendarReviewEvent | null>(
+    null,
+  );
   const [importComplete, setImportComplete] = useState(
     initialParseStatus === "imported" || importedEventCount > 0,
   );
   const [importedCount, setImportedCount] = useState(importedEventCount);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<CalendarReviewFilter>("all");
-  const [dateFilter, setDateFilter] = useState<CalendarReviewDateFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] =
+    useState<CalendarReviewFilter>("needs_review");
+  const [showAiChat, setShowAiChat] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const tableRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const parseStartedRef = useRef(false);
 
   const today = getTodayDateString();
-  const stats = buildCalendarReviewStats(events);
-  const pastCount = useMemo(
-    () => events.filter((event) => isPastReviewEvent(event, today)).length,
-    [events, today],
-  );
-  const upcomingCount = events.length - pastCount;
   const filteredEvents = useMemo(
     () =>
       applyReviewEventFilters(events, {
         filter: activeFilter,
-        dateFilter,
-        search: searchQuery,
+        dateFilter: "all",
+        search: "",
         today,
       }),
-    [events, activeFilter, dateFilter, searchQuery, today],
+    [events, activeFilter, today],
   );
-  const isTypeFiltered = activeFilter !== "all";
-  const isDateFiltered = dateFilter !== "all";
-  const isSearchFiltered = searchQuery.trim().length > 0;
-  const isFiltered = isTypeFiltered || isDateFiltered || isSearchFiltered;
+
+  const focusEvent = useMemo(() => {
+    if (filteredEvents.length === 0) return null;
+    return (
+      filteredEvents.find((event) => event.id === focusEventId) ??
+      filteredEvents[0]
+    );
+  }, [filteredEvents, focusEventId]);
+
+  const queueEvents = useMemo(() => {
+    if (!focusEvent) return filteredEvents;
+    return filteredEvents.filter((event) => event.id !== focusEvent.id);
+  }, [filteredEvents, focusEvent]);
+
   const isImported = parseStatus === "imported" || importComplete;
-  const isParsing = parseStatus === "parsing" || (isPending && parseStatus === "pending");
 
   const persistEvents = useCallback(
     (nextEvents: CalendarReviewEvent[]) => {
@@ -120,12 +114,6 @@ export function CalendarImportReview({
   useEffect(() => {
     setEvents(data.events);
   }, [data.events]);
-
-  useEffect(() => {
-    if (!highlightedEventId) return;
-    const timeout = setTimeout(() => setHighlightedEventId(null), 3000);
-    return () => clearTimeout(timeout);
-  }, [highlightedEventId]);
 
   useEffect(() => {
     if (
@@ -150,40 +138,13 @@ export function CalendarImportReview({
       setEvents(result.events);
       setParseStatus("parsed");
       setParseError(null);
+      setFocusEventId(
+        result.events.find((event) => event.status === "needs_review")?.id ??
+          result.events[0]?.id ??
+          null,
+      );
     });
   }, [importId, parseStatus, initialParseStatus]);
-
-  function handleDelete(eventId: string) {
-    const nextEvents = events.filter((event) => event.id !== eventId);
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      next.delete(eventId);
-      return next;
-    });
-    persistEvents(nextEvents);
-  }
-
-  function handleBulkDelete(ids: string[]) {
-    const idSet = new Set(ids);
-    persistEvents(events.filter((event) => !idSet.has(event.id)));
-    setSelectedIds(new Set());
-  }
-
-  function handleArchivePastEvents() {
-    const pastIds = getPastReviewEventIds(events, today);
-    if (pastIds.length === 0) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `Archive ${pastIds.length} past event${pastIds.length === 1 ? "" : "s"} from this import list? They will be removed from the import queue and will not be added to your calendar.`,
-    );
-    if (!confirmed) {
-      return;
-    }
-
-    handleBulkDelete(pastIds);
-  }
 
   function handleSaveEdit(updatedEvent: CalendarReviewEvent) {
     persistEvents(
@@ -196,88 +157,25 @@ export function CalendarImportReview({
     setEditingEvent(null);
   }
 
-  function handlePlanChange(eventId: string, planValue: string) {
-    const resolved = resolveReviewPlanSelection(planValue, playbookOptions);
-    persistEvents(
-      events.map((event) =>
-        event.id === eventId
-          ? {
-              ...event,
-              playbookId: resolved.playbookId,
-              communicationStrategy: resolved.communicationStrategy,
-              eventType: resolved.eventType ?? event.eventType,
-              planManuallySet: true,
-            }
-          : event,
-      ),
-    );
-  }
-
-  function handleApplyUpdateChange(eventId: string, applyUpdate: boolean) {
-    persistEvents(
-      events.map((event) =>
-        event.id === eventId ? { ...event, applyUpdate } : event,
-      ),
-    );
-  }
-
-  function handleApplyRecommendedPlans() {
-    persistEvents(applyRecommendedPlansToEvents(events, playbookOptions));
-    setSelectedIds(new Set());
-  }
-
-  function handleStatFilterChange(key: CalendarReviewStatKey) {
-    setActiveFilter(statKeyToFilter(key));
-    setSelectedIds(new Set());
-    setHighlightedEventId(null);
+  function handlePulseFilterChange(filter: CalendarReviewFilter) {
+    setActiveFilter(filter);
     requestAnimationFrame(() => {
-      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
-  function handleDateFilterChange(next: CalendarReviewDateFilter) {
-    setDateFilter(next);
-    setSelectedIds(new Set());
+  function handleKeepFocus(event: CalendarReviewEvent) {
+    const nextEvents = keepCalendarReviewCategory(events, event.id);
+    persistEvents(nextEvents);
+    const nextNeeds = nextEvents.find(
+      (entry) =>
+        entry.id !== event.id &&
+        (entry.status === "needs_review" || entry.status === "conflict"),
+    );
+    setFocusEventId(nextNeeds?.id ?? event.id);
   }
 
-  function handleSearchChange(value: string) {
-    setSearchQuery(value);
-    setSelectedIds(new Set());
-  }
-
-  function handleClearFilter() {
-    setActiveFilter("all");
-    setDateFilter("all");
-    setSearchQuery("");
-    setSelectedIds(new Set());
-  }
-
-  function getActiveFilterSummary(): string {
-    const parts: string[] = [];
-    if (isTypeFiltered) {
-      parts.push(getReviewFilterLabel(activeFilter).toLowerCase());
-    }
-    if (isDateFiltered) {
-      parts.push(getReviewDateFilterLabel(dateFilter).toLowerCase());
-    }
-    if (isSearchFiltered) {
-      parts.push(`matching “${searchQuery.trim()}”`);
-    }
-    return parts.join(" · ");
-  }
-
-  function handleReviewIndividually() {
-    const nextEvent =
-      events.find((event) => event.status !== "ready") ?? events[0] ?? null;
-
-    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    if (nextEvent) {
-      setHighlightedEventId(nextEvent.id);
-    }
-  }
-
-  function handleImportAll() {
+  function handleImportReady() {
     setActionError(null);
 
     startTransition(async () => {
@@ -320,21 +218,11 @@ export function CalendarImportReview({
 
       setEvents(result.events);
       setParseStatus("parsed");
-    });
-  }
-
-  function handleFindMissing() {
-    setActionError(null);
-
-    startTransition(async () => {
-      const result = await findMissingCalendarEventsAction(importId, events);
-      if (result.error) {
-        setActionError(result.error);
-        return;
-      }
-
-      setEvents(result.events);
-      setSelectedIds(new Set());
+      setFocusEventId(
+        result.events.find((event) => event.status === "needs_review")?.id ??
+          result.events[0]?.id ??
+          null,
+      );
     });
   }
 
@@ -354,57 +242,63 @@ export function CalendarImportReview({
     });
   }
 
-  return (
-    <div className="space-y-8">
-      <CalendarReviewHeader
-        filename={data.filename}
-        uploadedAt={data.uploadedAt}
-        eventCount={stats.totalEventsFound}
-      />
+  const importHref = onGoToImport ? undefined : "/calendar?tab=import";
 
-      {parseStatus === "parsing" && (
-        <div className="flex items-start gap-3 rounded-xl border border-cos-border bg-cos-accent-soft px-4 py-3">
-          <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-cos-accent" />
+  return (
+    <div ref={panelRef} className="space-y-4">
+      <p className="flex flex-wrap items-baseline justify-between gap-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+        <span>Review import</span>
+        <span className="text-[12px] font-semibold tracking-normal text-cos-muted normal-case">
+          Focus what needs a decision — not eight KPI cards
+          {data.filename ? ` · ${data.filename}` : ""}
+        </span>
+      </p>
+
+      {parseStatus === "parsing" ? (
+        <div className="flex items-start gap-3 rounded-[18px] border border-cos-border bg-[rgba(255,252,247,0.65)] px-4 py-3">
+          <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-cos-muted" />
           <div>
-            <p className="text-sm font-medium text-cos-text">
-              Reading your calendar and finding dates...
+            <p className="text-sm font-bold text-cos-text">
+              Reading your calendar and finding dates…
             </p>
-            <p className="mt-1 text-sm text-cos-text">
-              This usually takes a few seconds. PTO and school events default to a full
-              campaign plan — adjust each row before importing.
+            <p className="mt-1 text-sm text-cos-muted">
+              This usually takes a few seconds.
             </p>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {parseStatus === "failed" && parseError && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+      {parseStatus === "failed" && parseError ? (
+        <div className="flex items-start gap-3 rounded-[18px] border border-red-200 bg-red-50 px-4 py-3">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-900">Could not parse calendar</p>
+            <p className="text-sm font-bold text-red-900">
+              Could not parse calendar
+            </p>
             <p className="mt-1 text-sm text-red-700">{parseError}</p>
             <Button className="mt-3" size="sm" onClick={handleRetryParse}>
               Try again
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {importComplete && (
-        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+      {importComplete ? (
+        <div className="flex items-start gap-3 rounded-[18px] border border-emerald-200 bg-emerald-50 px-4 py-3">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-emerald-900">
+            <p className="text-sm font-bold text-emerald-900">
               {importedCount} events added to your calendar
             </p>
             <p className="mt-1 text-sm text-emerald-700">
-              View-only dates are on the calendar now. Open any one to start a
-              campaign later if you need it.
+              View-only dates are on the calendar now.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button href="/calendar" size="sm">
-                Open calendar
-              </Button>
+              {!embedded ? (
+                <Button href="/calendar" size="sm">
+                  Open calendar
+                </Button>
+              ) : null}
               <Button
                 variant="secondary"
                 size="sm"
@@ -416,187 +310,282 @@ export function CalendarImportReview({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {actionError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {actionError ? (
+        <div className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {actionError}
         </div>
-      )}
+      ) : null}
 
-      {parseStatus === "parsed" && !isImported && (
+      {(parseStatus === "parsed" || isImported) && events.length > 0 ? (
         <>
-          <CalendarReviewChatPanel
-            importId={importId}
+          <CalendarReviewPulseFilters
             events={events}
-            onEventsUpdated={(nextEvents) => {
-              setEvents(nextEvents);
-              setSelectedIds(new Set());
-            }}
-            disabled={isPending}
-          />
-
-          <CalendarReviewActions
-            onImportAll={handleImportAll}
-            onReviewIndividually={handleReviewIndividually}
-            onFindMissing={handleFindMissing}
-            isImporting={isPending}
-            importComplete={importComplete}
-          />
-        </>
-      )}
-
-      {(parseStatus === "parsed" || isImported) && events.length > 0 && (
-        <div ref={tableRef} className="space-y-3">
-          <CalendarReviewStats
-            stats={stats}
             activeFilter={activeFilter}
-            onFilterChange={handleStatFilterChange}
+            onFilterChange={handlePulseFilterChange}
           />
 
-          <CalendarReviewFilters
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            dateFilter={dateFilter}
-            onDateFilterChange={handleDateFilterChange}
-            pastCount={pastCount}
-            upcomingCount={upcomingCount}
-            disabled={isPending || isParsing}
-          />
-
-          {isFiltered && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cos-border bg-cos-accent-soft px-4 py-3">
-              <p className="text-sm text-cos-text">
-                Showing{" "}
-                <span className="font-semibold">{filteredEvents.length}</span> of{" "}
-                {events.length}
-                {getActiveFilterSummary() ? (
-                  <>
-                    {" "}
-                    — {getActiveFilterSummary()}
-                  </>
-                ) : null}
+          {filteredEvents.length === 0 ? (
+            <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-12 text-center">
+              <p className="text-sm font-bold text-cos-text">
+                Nothing in this pulse
               </p>
-              <Button type="button" variant="secondary" size="sm" onClick={handleClearFilter}>
-                Show all {events.length} events
-              </Button>
+              <button
+                type="button"
+                className="mt-3 text-[13px] font-bold text-cos-muted hover:text-cos-text"
+                onClick={() => setActiveFilter("all")}
+              >
+                Show all events
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1.25fr)_minmax(240px,0.75fr)]">
+              {focusEvent ? (
+                <article className="grid overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[120px_1fr]">
+                  <div
+                    className="min-h-[90px] bg-gradient-to-br from-[#1e4a3a] via-[#6b8171] to-[#c4922e] sm:min-h-[160px]"
+                    aria-hidden
+                  />
+                  <div className="flex flex-col gap-2 p-5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+                          statusBadgeClass(focusEvent.status),
+                        )}
+                      >
+                        {statusLabel(focusEvent.status)}
+                      </span>
+                      <span>
+                        {focusEvent.category} · {formatEventDate(focusEvent.date)}
+                      </span>
+                    </div>
+                    <h3 className="font-display text-[22px] font-semibold tracking-[-0.02em] text-cos-text">
+                      {focusEvent.name}
+                    </h3>
+                    <p className="text-[13px] leading-snug text-cos-muted">
+                      {focusCopy(focusEvent)}
+                    </p>
+                    {!isImported ? (
+                      <div className="mt-auto flex flex-wrap gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleKeepFocus(focusEvent)}
+                          disabled={isPending}
+                          className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
+                        >
+                          Keep as {focusEvent.category}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingEvent(focusEvent)}
+                          disabled={isPending}
+                          className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px disabled:opacity-50"
+                        >
+                          Edit details
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              ) : null}
+
+              <div className="flex flex-col gap-1.5">
+                {queueEvents.map((event) => (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => setFocusEventId(event.id)}
+                    className="grid w-full grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.7)] px-3.5 py-2.5 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                  >
+                    <span className="min-w-0">
+                      <strong className="mb-0.5 block truncate text-sm font-bold text-cos-text">
+                        {event.name}
+                      </strong>
+                      <span className="text-xs text-cos-muted">
+                        {queueMeta(event)}
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase",
+                        statusBadgeClass(event.status),
+                      )}
+                    >
+                      {queueStatusLabel(event.status)}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          {!isImported && (
-            <CalendarReviewBulkActions
-              selectedCount={selectedIds.size}
-              totalCount={filteredEvents.length}
-              pastCount={pastCount}
-              onSelectAll={() =>
-                setSelectedIds(new Set(filteredEvents.map((event) => event.id)))
-              }
-              onClearSelection={() => setSelectedIds(new Set())}
-              onDeleteSelected={() => handleBulkDelete(Array.from(selectedIds))}
-              onDeleteAll={() => handleBulkDelete(filteredEvents.map((event) => event.id))}
-              onArchivePastEvents={handleArchivePastEvents}
-              onApplyRecommendedPlans={handleApplyRecommendedPlans}
-              disabled={isPending || isParsing}
+          {!isImported ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleImportReady}
+                disabled={isPending}
+                className="inline-flex items-center rounded-full bg-cos-text px-[18px] py-[11px] text-[13px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
+              >
+                Import ready items
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAiChat((open) => !open)}
+                className="inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
+              >
+                Ask AI to fix conflicts
+              </button>
+            </div>
+          ) : null}
+
+          {showAiChat && !isImported ? (
+            <CalendarReviewChatPanel
+              importId={importId}
+              events={events}
+              onEventsUpdated={(nextEvents) => {
+                setEvents(nextEvents);
+              }}
+              disabled={isPending}
             />
-          )}
+          ) : null}
+        </>
+      ) : null}
 
-          <Card padding="none" className="overflow-hidden">
-            <CardHeader className="border-b border-cos-border px-6 py-5">
-              <CardTitle>
-                {isTypeFiltered
-                  ? getReviewFilterLabel(activeFilter)
-                  : isDateFiltered
-                    ? getReviewDateFilterLabel(dateFilter)
-                    : "Imported events"}
-              </CardTitle>
-              <CardDescription>
-                {isImported
-                  ? "These events are on your calendar. Delete them all above if the import had errors."
-                  : isFiltered
-                    ? `Edit each row below, then import when ready. ${filteredEvents.length} of ${events.length} events shown.`
-                    : "Review each row before importing. Use summary cards, search, or date filters to narrow the list."}
-              </CardDescription>
-            </CardHeader>
-            {filteredEvents.length === 0 ? (
-              <div className="px-6 py-12 text-center text-sm text-cos-muted">
-                No events match these filters.
-                {isFiltered && (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      className="font-medium text-cos-accent hover:underline"
-                      onClick={handleClearFilter}
-                    >
-                      Show all events
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <CalendarReviewTable
-                events={filteredEvents}
-                playbookOptions={playbookOptions}
-                highlightedEventId={highlightedEventId}
-                selectedIds={selectedIds}
-                onToggleSelect={(eventId) =>
-                  setSelectedIds((current) => {
-                    const next = new Set(current);
-                    if (next.has(eventId)) {
-                      next.delete(eventId);
-                    } else {
-                      next.add(eventId);
-                    }
-                    return next;
-                  })
-                }
-                onToggleSelectAll={() => {
-                  if (selectedIds.size === filteredEvents.length) {
-                    setSelectedIds(new Set());
-                  } else {
-                    setSelectedIds(new Set(filteredEvents.map((event) => event.id)));
-                  }
-                }}
-                onEdit={setEditingEvent}
-                onDelete={handleDelete}
-                onPlanChange={handlePlanChange}
-                onApplyUpdateChange={handleApplyUpdateChange}
-                disabled={isPending || isImported || isParsing}
-              />
-            )}
-          </Card>
-        </div>
-      )}
-
-      {parseStatus === "parsed" && events.length === 0 && !isImported && (
-        <div className="rounded-xl border border-dashed border-cos-border bg-cos-bg px-6 py-10 text-center">
-          <p className="text-sm font-medium text-cos-text">No events left to import</p>
-          <p className="mt-1 text-sm text-cos-muted">
-            Upload a different calendar or use chat to add events back.
+      {parseStatus === "parsed" && events.length === 0 && !isImported ? (
+        <div className="rounded-[22px] border border-dashed border-cos-border bg-[rgba(255,252,247,0.55)] px-6 py-10 text-center">
+          <p className="text-sm font-bold text-cos-text">
+            No events left to import
           </p>
-          <Button href="/calendar/import" variant="secondary" className="mt-4">
-            Upload another calendar
-          </Button>
+          <p className="mt-1 text-sm text-cos-muted">
+            Upload a different calendar or bring another source in.
+          </p>
+          {onGoToImport ? (
+            <button
+              type="button"
+              onClick={onGoToImport}
+              className="mt-4 inline-flex items-center rounded-full border-[1.5px] border-cos-border bg-cos-card px-[18px] py-[11px] text-[13px] font-bold text-cos-text"
+            >
+              Back to Import
+            </button>
+          ) : (
+            <Button href={importHref} variant="secondary" className="mt-4">
+              Back to Import
+            </Button>
+          )}
         </div>
-      )}
+      ) : null}
 
-      {!importComplete && parseStatus !== "parsed" && parseStatus !== "parsing" && (
+      {!importComplete &&
+      parseStatus !== "parsed" &&
+      parseStatus !== "parsing" &&
+      parseStatus !== "failed" ? (
         <p className="text-sm text-cos-muted">
           Need a different file?{" "}
-          <Link href="/calendar/import" className="font-medium text-cos-accent hover:underline">
-            Upload another calendar
-          </Link>
+          {onGoToImport ? (
+            <button
+              type="button"
+              onClick={onGoToImport}
+              className="font-medium text-cos-text underline-offset-2 hover:underline"
+            >
+              Go to Import
+            </button>
+          ) : (
+            <Link
+              href="/calendar?tab=import"
+              className="font-medium text-cos-text underline-offset-2 hover:underline"
+            >
+              Go to Import
+            </Link>
+          )}
         </p>
-      )}
+      ) : null}
 
-      {editingEvent && (
+      {editingEvent ? (
         <CalendarReviewEditDialog
           event={editingEvent}
           playbookOptions={playbookOptions}
           onClose={() => setEditingEvent(null)}
           onSave={handleSaveEdit}
         />
-      )}
+      ) : null}
     </div>
   );
+}
+
+function statusLabel(status: CalendarEventReviewStatus): string {
+  switch (status) {
+    case "needs_review":
+      return "Needs review";
+    case "ready":
+      return "Ready";
+    case "conflict":
+      return "Conflict";
+    case "duplicate":
+      return "Duplicate";
+    case "update":
+      return "Update";
+    default:
+      return "Review";
+  }
+}
+
+function queueStatusLabel(status: CalendarEventReviewStatus): string {
+  switch (status) {
+    case "needs_review":
+      return "Needs you";
+    case "ready":
+      return "Ready";
+    case "conflict":
+      return "Conflict";
+    case "duplicate":
+      return "Duplicate";
+    case "update":
+      return "Update";
+    default:
+      return "Review";
+  }
+}
+
+function statusBadgeClass(status: CalendarEventReviewStatus): string {
+  switch (status) {
+    case "needs_review":
+    case "conflict":
+    case "update":
+      return "bg-[rgba(166,90,58,0.12)] text-[#a65a3a]";
+    case "duplicate":
+      return "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]";
+    case "ready":
+      return "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]";
+    default:
+      return "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]";
+  }
+}
+
+function focusCopy(event: CalendarReviewEvent): string {
+  if (event.status === "duplicate") {
+    return (
+      event.matchReason ??
+      "Possible duplicate. Confirm whether to keep this row or skip it."
+    );
+  }
+  if (event.status === "conflict") {
+    return (
+      event.matchReason ??
+      "Something doesn’t line up. Edit details or ask AI to help resolve it."
+    );
+  }
+  if (event.status === "ready") {
+    return "Ready to import with the current plan type.";
+  }
+  return `Looks like a ${event.category.toLowerCase()}. Confirm the plan type, then keep or edit before importing.`;
+}
+
+function queueMeta(event: CalendarReviewEvent): string {
+  if (event.status === "duplicate") {
+    return `Possible duplicate · ${formatEventDate(event.date)}`;
+  }
+  return `${event.category} · ${formatEventDate(event.date)}`;
 }
