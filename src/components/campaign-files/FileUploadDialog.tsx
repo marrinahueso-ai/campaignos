@@ -19,7 +19,20 @@ interface FileUploadDialogProps {
   events: Event[];
   lockedEventId?: string;
   defaultUploaderName?: string | null;
+  /** @deprecated Prefer `initialFiles` for multi-file drops. */
   initialFile?: File | null;
+  initialFiles?: File[] | null;
+  /** Pre-select event (e.g. current filter). */
+  preferredEventId?: string | null;
+}
+
+function collectFiles(
+  initialFiles: File[] | null | undefined,
+  initialFile: File | null | undefined,
+): File[] {
+  if (initialFiles && initialFiles.length > 0) return [...initialFiles];
+  if (initialFile) return [initialFile];
+  return [];
 }
 
 export function FileUploadDialog({
@@ -28,29 +41,38 @@ export function FileUploadDialog({
   events,
   lockedEventId,
   initialFile = null,
+  initialFiles = null,
+  preferredEventId = null,
 }: FileUploadDialogProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
-  const [eventId, setEventId] = useState(lockedEventId ?? "");
+  const [eventId, setEventId] = useState(lockedEventId ?? preferredEventId ?? "");
   const [category, setCategory] = useState<CampaignFileCategory>("other");
   const [platforms, setPlatforms] = useState<CampaignFilePlatform[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) {
-      return;
-    }
-    setSelectedFile(initialFile);
+    if (!open) return;
+    setSelectedFiles(collectFiles(initialFiles, initialFile));
     setError(null);
+    setProgress(null);
     setDragOver(false);
-  }, [open, initialFile]);
+    setEventId(lockedEventId ?? preferredEventId ?? "");
+  }, [open, initialFile, initialFiles, lockedEventId, preferredEventId]);
 
   if (!open) {
     return null;
   }
+
+  const sortedEvents = [...events].sort(
+    (a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+  );
 
   function togglePlatform(platform: CampaignFilePlatform) {
     setPlatforms((current) =>
@@ -58,6 +80,25 @@ export function FileUploadDialog({
         ? current.filter((value) => value !== platform)
         : [...current, platform],
     );
+  }
+
+  function addFiles(list: FileList | File[] | null) {
+    if (!list) return;
+    const next = Array.from(list);
+    if (next.length === 0) return;
+    setSelectedFiles((current) => {
+      const seen = new Set(current.map((f) => `${f.name}:${f.size}:${f.lastModified}`));
+      const merged = [...current];
+      for (const file of next) {
+        const key = `${file.name}:${file.size}:${file.lastModified}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          merged.push(file);
+        }
+      }
+      return merged;
+    });
+    setError(null);
   }
 
   function handleSubmit() {
@@ -69,86 +110,116 @@ export function FileUploadDialog({
       return;
     }
 
-    if (!selectedFile) {
-      setError("Choose a file to upload.");
+    if (selectedFiles.length === 0) {
+      setError("Drop or choose at least one file.");
       return;
     }
 
-    const formData = new FormData();
-    formData.set("eventId", resolvedEventId);
-    formData.set("category", category);
-    formData.set("platforms", platforms.join(","));
-    formData.set("file", selectedFile);
-
     startTransition(async () => {
-      const result = await uploadCampaignFileAction(formData);
-      if (!result.success) {
-        setError(result.error);
-        return;
+      let uploaded = 0;
+      for (const file of selectedFiles) {
+        setProgress(`Uploading ${uploaded + 1} of ${selectedFiles.length}…`);
+        const formData = new FormData();
+        formData.set("eventId", resolvedEventId);
+        formData.set("category", category);
+        formData.set("platforms", platforms.join(","));
+        formData.set("file", file);
+        const result = await uploadCampaignFileAction(formData);
+        if (!result.success) {
+          setProgress(null);
+          setError(
+            result.error ??
+              `Could not upload “${file.name}”. ${uploaded} file${uploaded === 1 ? "" : "s"} uploaded before this.`,
+          );
+          if (uploaded > 0) router.refresh();
+          return;
+        }
+        uploaded += 1;
       }
 
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setPlatforms([]);
       setCategory("other");
+      setProgress(null);
       if (!lockedEventId) {
-        setEventId("");
+        setEventId(preferredEventId ?? "");
       }
       onClose();
       router.refresh();
     });
   }
 
+  const pillSelect =
+    "w-full appearance-none rounded-full border-0 bg-[rgba(47,74,60,0.12)] px-3 py-2.5 text-xs font-bold text-[#2f4a3c] outline-none disabled:opacity-60";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,38,34,0.28)] p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="file-upload-title"
     >
-      <div className="w-full max-w-lg border border-cos-border bg-cos-card shadow-lg">
-        <div className="flex items-center justify-between border-b border-cos-border px-5 py-4">
-          <h2 id="file-upload-title" className="font-display text-xl text-cos-text">
-            Upload file
-          </h2>
+      <div className="w-full max-w-lg overflow-hidden rounded-[22px] border border-[rgba(42,38,34,0.1)] bg-[#fffcf7] shadow-[0_20px_48px_rgba(42,38,34,0.16)]">
+        <div className="flex items-start justify-between gap-3 px-6 pt-6 pb-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold tracking-[0.1em] text-[#7a7166] uppercase">
+              Upload
+            </p>
+            <h2
+              id="file-upload-title"
+              className="mt-1 font-display text-[1.5rem] font-semibold tracking-[-0.02em] text-[#2a2622]"
+            >
+              {selectedFiles.length > 1
+                ? `${selectedFiles.length} files`
+                : selectedFiles.length === 1
+                  ? "1 file"
+                  : "Add files"}
+            </h2>
+            <p className="mt-1 text-sm text-[#5c554c]">
+              Pick the event and label — then we’ll add everything there.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-cos-muted hover:text-cos-text"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(42,38,34,0.1)] bg-white text-[#5c554c] transition hover:text-[#2a2622]"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-5">
-          {!lockedEventId && (
+        <div className="space-y-4 px-6 py-4">
+          {!lockedEventId ? (
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-                Event <span className="text-cos-error">*</span>
+              <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
+                Event
               </span>
               <select
                 value={eventId}
                 onChange={(event) => setEventId(event.target.value)}
-                className="w-full border border-cos-border bg-cos-bg px-3 py-2 text-sm text-cos-text"
+                className={pillSelect}
               >
                 <option value="">Select an event…</option>
-                {events.map((event) => (
+                {sortedEvents.map((event) => (
                   <option key={event.id} value={event.id}>
                     {event.title}
                   </option>
                 ))}
               </select>
             </label>
-          )}
+          ) : null}
 
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium tracking-wide text-cos-muted uppercase">
-              Category
+            <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
+              Label
             </span>
             <select
               value={category}
-              onChange={(event) => setCategory(event.target.value as CampaignFileCategory)}
-              className="w-full border border-cos-border bg-cos-bg px-3 py-2 text-sm text-cos-text"
+              onChange={(event) =>
+                setCategory(event.target.value as CampaignFileCategory)
+              }
+              className="w-full appearance-none rounded-full border-0 bg-[rgba(196,146,46,0.16)] px-3 py-2.5 text-xs font-bold text-[#7a5a12] outline-none"
             >
               {CAMPAIGN_FILE_CATEGORIES.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -159,8 +230,11 @@ export function FileUploadDialog({
           </label>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs font-medium tracking-wide text-cos-muted uppercase">
+            <legend className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
               Platforms
+              <span className="ml-1 font-semibold normal-case tracking-normal text-[#7a7166]">
+                (optional)
+              </span>
             </legend>
             <div className="flex flex-wrap gap-2">
               {CAMPAIGN_FILE_PLATFORMS.map((option) => {
@@ -171,10 +245,10 @@ export function FileUploadDialog({
                     type="button"
                     onClick={() => togglePlatform(option.value)}
                     className={cn(
-                      "border px-2.5 py-1 text-xs font-medium transition-colors",
+                      "rounded-full px-3 py-1.5 text-xs font-bold transition",
                       active
-                        ? "border-cos-dark bg-cos-dark text-[#f6f2eb]"
-                        : "border-cos-border bg-cos-bg text-cos-muted hover:text-cos-text",
+                        ? "bg-[#2a2622] text-[#f6f2eb]"
+                        : "bg-[rgba(122,113,102,0.12)] text-[#5c554c] hover:text-[#2a2622]",
                     )}
                   >
                     {option.label}
@@ -188,11 +262,12 @@ export function FileUploadDialog({
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               className="sr-only"
               accept=".pdf,.docx,.doc,.xlsx,.xls,.png,.jpg,.jpeg"
               onChange={(event) => {
-                setSelectedFile(event.target.files?.[0] ?? null);
-                setError(null);
+                addFiles(event.target.files);
+                event.target.value = "";
               }}
             />
             <button
@@ -218,40 +293,63 @@ export function FileUploadDialog({
                 event.preventDefault();
                 event.stopPropagation();
                 setDragOver(false);
-                const file = event.dataTransfer.files?.[0] ?? null;
-                if (file) {
-                  setSelectedFile(file);
-                  setError(null);
-                }
+                addFiles(event.dataTransfer.files);
               }}
               className={cn(
-                "flex w-full flex-col items-center gap-2 border border-dashed bg-cos-bg/60 px-4 py-8 text-sm transition-colors",
+                "flex w-full flex-col items-center gap-2 rounded-[18px] border-[1.5px] border-dashed px-4 py-6 text-sm transition",
                 dragOver
-                  ? "border-cos-accent bg-cos-bg text-cos-text"
-                  : "border-cos-border text-cos-muted hover:border-cos-accent hover:text-cos-text",
+                  ? "border-[#6b8171] bg-[rgba(107,129,113,0.08)] text-[#2a2622]"
+                  : "border-[rgba(42,38,34,0.12)] bg-white text-[#5c554c] hover:border-[#6b8171]",
               )}
             >
-              <Upload className="h-6 w-6" strokeWidth={1.5} />
-              {selectedFile ? (
-                <span className="font-medium text-cos-text">{selectedFile.name}</span>
+              <Upload className="h-5 w-5" strokeWidth={1.5} />
+              {selectedFiles.length > 0 ? (
+                <div className="w-full space-y-1 text-left">
+                  <p className="text-center text-xs font-bold text-[#2a2622]">
+                    {selectedFiles.length} file{selectedFiles.length === 1 ? "" : "s"} ready
+                  </p>
+                  <ul className="max-h-28 overflow-y-auto px-1 text-xs font-semibold text-[#5c554c]">
+                    {selectedFiles.map((file) => (
+                      <li key={`${file.name}-${file.size}-${file.lastModified}`} className="truncate">
+                        {file.name}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="pt-1 text-center text-[11px] font-semibold text-[#7a7166]">
+                    Drop more or click to add
+                  </p>
+                </div>
               ) : (
                 <>
-                  <span>Drag & drop or click to choose a file</span>
-                  <span className="text-xs">PDF, Word, Excel, PNG, or JPG up to 25 MB</span>
+                  <span className="font-semibold">Drop files here or click to choose</span>
+                  <span className="text-xs">PDF, Word, Excel, PNG, or JPG · up to 25 MB each</span>
                 </>
               )}
             </button>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {progress ? (
+            <p className="text-xs font-semibold text-[#5c554c]" aria-live="polite">
+              {progress}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="text-sm font-semibold text-[#a65a3a]" role="alert">
+              {error}
+            </p>
+          ) : null}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-cos-border px-5 py-4">
+        <div className="flex justify-end gap-2 px-6 py-4">
           <Button type="button" variant="secondary" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={pending}>
-            {pending ? "Uploading…" : "Upload file"}
+            {pending
+              ? "Uploading…"
+              : selectedFiles.length > 1
+                ? `Upload ${selectedFiles.length} files`
+                : "Upload"}
           </Button>
         </div>
       </div>
