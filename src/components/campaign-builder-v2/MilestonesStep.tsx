@@ -21,7 +21,6 @@ import { useCampaignBuilder } from "@/components/campaign-builder-v2/CampaignBui
 import { CampaignBuilderFooter } from "@/components/campaign-builder-v2/CampaignBuilderFooter";
 import { CampaignBuilderMilestoneRow } from "@/components/campaign-builder-v2/CampaignBuilderMilestoneRow";
 import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils/cn";
 
 const MilestoneEditorModal = dynamic(
   () =>
@@ -32,9 +31,6 @@ const MilestoneEditorModal = dynamic(
     ),
   { ssr: false },
 );
-
-const ROW_GRID =
-  "grid items-center gap-x-4 gap-y-2 px-4 py-4 sm:grid-cols-[2rem_2rem_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto_7rem]";
 
 export function MilestonesStep() {
   // Campaign Creative Setup (session.inspiration) is the authoritative default for
@@ -111,15 +107,15 @@ export function MilestonesStep() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-8">
-        <div className="studio-page space-y-6">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-w-0 space-y-5">
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="font-display text-4xl text-cos-text">Milestones</h1>
-              <p className="mt-1 text-sm text-cos-muted">
-                Plan your campaign milestones, then generate content one at a time in
-                Preview.
+              <h2 className="font-display text-3xl text-cos-text sm:text-[1.75rem]">
+                Campaign Milestones
+              </h2>
+              <p className="mt-1.5 text-sm text-cos-muted">
+                Drag to reorder. Edit each milestone, then generate one at a
+                time in Preview.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -139,22 +135,10 @@ export function MilestonesStep() {
             </div>
           </header>
 
-          <div className="cos-card !p-0 overflow-hidden">
-            <div
-              className={cn(
-                ROW_GRID,
-                "hidden border-b border-cos-border py-3 text-xs font-semibold uppercase tracking-wide text-cos-muted sm:grid",
-              )}
-            >
-              <span aria-hidden />
-              <span>#</span>
-              <span>Milestone</span>
-              <span>Purpose</span>
-              <span>Suggested date</span>
-              <span>Platforms</span>
-              <span>Actions</span>
-            </div>
-
+          <div className="rounded-[22px] border border-cos-border bg-cos-card p-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:p-5">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.05em] text-cos-brand-sage">
+              ⠿ Drag cards to reorder · click to expand &amp; edit
+            </p>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -164,70 +148,70 @@ export function MilestonesStep() {
                 items={milestoneIds}
                 strategy={verticalListSortingStrategy}
               >
-                {milestones.map((milestone, index) => (
-                  <CampaignBuilderMilestoneRow
-                    key={milestone.id}
-                    milestone={milestone}
-                    preview={
-                      session.previewContents.find(
-                        (content) => content.milestoneId === milestone.id,
-                      ) ?? null
-                    }
-                    index={index}
-                    menuOpenId={menuOpenId}
-                    isGenerating={generatingMilestoneId === milestone.id}
-                    onEdit={setEditingId}
-                    onGenerate={(id) => void handleGenerateMilestone(id)}
-                    onToggleMenu={(id) =>
-                      setMenuOpenId(menuOpenId === id ? null : id)
-                    }
-                    onDuplicate={(id) => {
-                      duplicateMilestone(id);
-                      setMenuOpenId(null);
-                    }}
-                    onMoveUp={(id) => {
-                      moveMilestone(id, "up");
-                      setMenuOpenId(null);
-                    }}
-                    onMoveDown={(id) => {
-                      moveMilestone(id, "down");
-                      setMenuOpenId(null);
-                    }}
-                    onDelete={(id) => {
-                      removeMilestone(id);
-                      setMenuOpenId(null);
-                    }}
-                  />
-                ))}
+                <div className="space-y-2">
+                  {milestones.map((milestone, index) => (
+                    <CampaignBuilderMilestoneRow
+                      key={milestone.id}
+                      milestone={milestone}
+                      preview={
+                        session.previewContents.find(
+                          (content) => content.milestoneId === milestone.id,
+                        ) ?? null
+                      }
+                      index={index}
+                      menuOpenId={menuOpenId}
+                      isGenerating={generatingMilestoneId === milestone.id}
+                      onEdit={setEditingId}
+                      onGenerate={(id) => void handleGenerateMilestone(id)}
+                      onToggleMenu={(id) =>
+                        setMenuOpenId(menuOpenId === id ? null : id)
+                      }
+                      onDuplicate={(id) => {
+                        duplicateMilestone(id);
+                        setMenuOpenId(null);
+                      }}
+                      onMoveUp={(id) => {
+                        moveMilestone(id, "up");
+                        setMenuOpenId(null);
+                      }}
+                      onMoveDown={(id) => {
+                        moveMilestone(id, "down");
+                        setMenuOpenId(null);
+                      }}
+                      onDelete={(id) => {
+                        removeMilestone(id);
+                        setMenuOpenId(null);
+                      }}
+                    />
+                  ))}
+                </div>
               </SortableContext>
             </DndContext>
+
+            <button
+              type="button"
+              onClick={addMilestone}
+              className="mt-3 flex w-full items-center justify-center rounded-[14px] border border-dashed border-cos-brand-sage/40 bg-[rgba(107,129,113,0.06)] px-4 py-3 text-sm font-semibold text-cos-muted transition-colors hover:border-cos-brand-sage hover:text-cos-text"
+            >
+              + Add milestone
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={addMilestone}
-            className="flex w-full items-center justify-center border border-dashed border-cos-border bg-cos-bg/20 px-4 py-3 text-sm font-medium text-cos-muted transition-colors hover:border-cos-accent hover:text-cos-text"
-          >
-            + Add another milestone
-          </button>
-
-          <section className="cos-card space-y-2">
-            <h2 className="font-display text-lg text-cos-text">
+          <section className="space-y-2 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+            <h3 className="font-display text-xl text-cos-text">
               AI guidance per milestone
-            </h2>
+            </h3>
             <p className="text-sm text-cos-muted">
               Add specific instructions for the AI for each milestone. Use the
               pencil icon to edit artwork and caption notes, or the sparkle icon
               to generate content for one milestone at a time in Preview.
             </p>
           </section>
-        </div>
-      </div>
 
       <CampaignBuilderFooter
         onBack={() => goToStep("inspiration")}
         onContinue={() => goToStep("preview")}
-        continueLabel="Continue to Preview"
+        continueLabel="Save → Preview"
         continueDisabled={milestones.length === 0}
       />
 

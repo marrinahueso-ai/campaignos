@@ -680,7 +680,23 @@ export function CampaignBuilderProvider({
 
       // Keep existing milestones when the playbook has no steps in the DB
       // (e.g. a demo/legacy playbook id that was never a real row).
+      // Still mark the playbook as applied — otherwise inspiration.playbookId
+      // drifts from milestonesPlaybookId and a later navigation rebuilds and
+      // can wipe generated artwork.
       if (stepsResult.steps.length === 0) {
+        if (playbookId !== milestonesPlaybookId) {
+          const aligned: CampaignBuilderSession = {
+            ...current,
+            inspiration: {
+              ...current.inspiration,
+              playbookId,
+            },
+            milestonesPlaybookId: playbookId,
+          };
+          sessionRef.current = aligned;
+          setSession(aligned);
+          return { success: true, changed: true };
+        }
         return { success: true, changed: false };
       }
 
@@ -1021,21 +1037,34 @@ export function CampaignBuilderProvider({
     (step: CampaignBuilderStepId) => {
       void (async () => {
         const leavingInspiration = currentStepRef.current === "inspiration";
-        const playbookId = sessionRef.current.inspiration.playbookId;
-        const playbookNeedsSync = Boolean(
-          playbookId &&
-            playbookId !== (sessionRef.current.milestonesPlaybookId ?? null),
-        );
-        // Only reconcile when leaving Creative Setup or when the selected
-        // playbook has not been applied yet. Re-running on every Preview entry
-        // resurrects milestones the user deleted on the Milestones step.
+        // Only reconcile when leaving Creative Setup. Auto-syncing on every
+        // Preview/Milestones hop when playbook ids drift rebuilt milestones
+        // mid-generation and erased artwork the user just created.
         let syncChanged = false;
-        if (leavingInspiration || playbookNeedsSync) {
+        if (leavingInspiration) {
           const syncResult = await syncMilestonesToSelectedPlaybook();
           if (!syncResult.success) {
             return;
           }
           syncChanged = syncResult.changed;
+        } else {
+          // Heal drift without rebuilding: keep the milestones the user already
+          // generated against, and treat that playbook as the applied one.
+          const current = sessionRef.current;
+          const appliedId = current.milestonesPlaybookId;
+          const selectedId = current.inspiration.playbookId;
+          if (appliedId && selectedId && appliedId !== selectedId) {
+            const healed: CampaignBuilderSession = {
+              ...current,
+              inspiration: {
+                ...current.inspiration,
+                playbookId: appliedId,
+              },
+            };
+            sessionRef.current = healed;
+            setSession(healed);
+            syncChanged = true;
+          }
         }
         if (leavingInspiration) {
           setInspirationUploadError(null);
@@ -1682,8 +1711,21 @@ export function CampaignBuilderProvider({
           return { success: false, message: result.message };
         }
 
+        const alignedPlaybookId =
+          workingBase.milestonesPlaybookId ??
+          workingBase.inspiration.playbookId ??
+          null;
         const updatedBase: CampaignBuilderSession = {
           ...workingBase,
+          // Keep playbook ids aligned so a later step change cannot treat the
+          // session as "needs sync" and rebuild over this artwork.
+          milestonesPlaybookId: alignedPlaybookId,
+          inspiration: {
+            ...workingBase.inspiration,
+            playbookId:
+              alignedPlaybookId ?? workingBase.inspiration.playbookId,
+          },
+          currentStep: "preview",
           previewContents: workingBase.previewContents.map((content) => {
             const generated = result.results.find(
               (entry) => entry.milestoneId === content.milestoneId,
@@ -1721,9 +1763,9 @@ export function CampaignBuilderProvider({
           (generatedArtwork.feedUrl || generatedArtwork.storyUrl)
         ) {
           try {
-            // Generation already synced assets server-side (no revalidate).
-            // This pass refreshes cached dashboard/campaign routes if the
-            // builder is still open; safe if the user already navigated away.
+            // Generation already synced assets server-side. Do not revalidate
+            // while the builder is open — soft remounts strip hash / bounce
+            // step and can race a stale session save over fresh artwork.
             const { syncAppliedMilestoneArtworkAction } = await import(
               "@/lib/campaign-builder-v2/actions"
             );
@@ -1732,11 +1774,11 @@ export function CampaignBuilderProvider({
               milestones: updatedBase.milestones,
               milestoneId,
               artwork: generatedArtwork,
-              revalidate: true,
+              revalidate: false,
             });
           } catch (syncError) {
             console.error(
-              "Failed to revalidate event surfaces after artwork sync:",
+              "Failed to sync artwork after generation:",
               syncError,
             );
           }

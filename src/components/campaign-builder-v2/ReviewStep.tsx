@@ -221,16 +221,17 @@ export function ReviewStep() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-8">
-        <div className="studio-page space-y-6">
+    <div className="min-w-0 space-y-5">
           <header>
-            <h1 className="font-display text-4xl text-cos-text">
-              Review & Approve
-            </h1>
+            <h2 className="font-display text-3xl text-cos-text sm:text-[1.75rem]">
+              Review &amp; Approve
+            </h2>
+            <p className="mt-1.5 text-sm text-cos-muted">
+              Change requests route back to Preview edits, then re-approval.
+            </p>
           </header>
 
-          <div className="cos-card flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-display text-2xl text-cos-text">
                 {session.inspiration.campaignName}
@@ -327,7 +328,7 @@ export function ReviewStep() {
             </aside>
           </div>
 
-          <div className="rounded border border-cos-border bg-cos-bg/40 px-4 py-3 text-sm text-cos-muted">
+          <div className="rounded-[14px] border border-cos-border bg-cos-bg/40 px-4 py-3 text-sm text-cos-muted">
             Content must be approved before publishing. Creator → Committee Chair →
             VP Communications → Scheduled/Delivered. Changes-requested milestones
             can be edited (caption, schedule, artwork) and resent without
@@ -338,8 +339,6 @@ export function ReviewStep() {
               </span>
             )}
           </div>
-        </div>
-      </div>
 
       <CampaignBuilderFooter
         showContinue={false}

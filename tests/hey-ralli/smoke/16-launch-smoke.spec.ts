@@ -128,10 +128,28 @@ test.describe("Launch smoke (nav + Create with AI landing)", () => {
     );
   });
 
-  test("Create with AI lands on Creative Setup without brand-kit banner", async ({
+  test("Create with AI landing shows product chooser", async ({ page }) => {
+    await page.goto("/create-with-ai", {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await expectNoBlankScreen(page);
+    await expect(page).not.toHaveURL(/\/login/);
+    const main = mainContent(page);
+    await expect(
+      main.getByRole("heading", { name: /^create with ai$/i }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(main.getByRole("heading", { name: /^home page$/i })).toBeVisible();
+    await expect(
+      main.getByRole("heading", { name: /^social media$/i }),
+    ).toBeVisible();
+    await expect(main.getByRole("heading", { name: /^newsletter$/i })).toBeVisible();
+  });
+
+  test("Create with AI Social lands on Creative Setup without brand-kit banner", async ({
     page,
   }) => {
-    await page.goto("/create-with-ai", {
+    await page.goto("/create-with-ai/social", {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
@@ -148,13 +166,13 @@ test.describe("Launch smoke (nav + Create with AI landing)", () => {
     }
 
     if (page.url().includes("/create-with-ai")) {
-      // Stay on hub only when there are no usable events — still not a choose-event list.
+      // Stay on social hub only when there are no usable events.
       const main = mainContent(page);
       await expect(main).not.toContainText(/choose an event to continue/i);
       test.info().annotations.push({
         type: "note",
         description:
-          "Stayed on /create-with-ai hub (no default event). Brand-kit banner assert skipped.",
+          "Stayed on /create-with-ai/social hub (no default event). Brand-kit banner assert skipped.",
       });
       return;
     }

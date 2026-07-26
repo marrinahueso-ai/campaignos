@@ -81,12 +81,12 @@ function SectionHeader({
 }) {
   return (
     <div className="flex gap-3">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-cos-border bg-cos-bg text-xs font-medium text-cos-text">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cos-brand-sage/15 text-xs font-bold text-cos-brand-sage">
         {number}
       </span>
       <div>
-        <h2 className="text-sm font-medium text-cos-text">{title}</h2>
-        <p className="mt-0.5 text-xs text-cos-muted">{description}</p>
+        <h2 className="font-display text-xl text-cos-text">{title}</h2>
+        <p className="mt-0.5 text-sm text-cos-muted">{description}</p>
       </div>
     </div>
   );
@@ -125,11 +125,11 @@ function SelectionCard({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 border px-3 py-3 text-left transition-colors",
+        "flex items-center gap-3 rounded-[14px] border px-3 py-3 text-left transition",
         disabled && "cursor-not-allowed opacity-50",
         selected
-          ? "border-cos-dark bg-cos-bg-alt"
-          : "border-cos-border bg-cos-card hover:border-cos-accent/50",
+          ? "border-[#d4a84b] bg-[#fffdf8] shadow-[0_0_0_3px_rgba(212,168,75,0.22)]"
+          : "border-cos-border bg-cos-bg hover:border-cos-brand-sage",
         className,
       )}
     >
@@ -310,21 +310,19 @@ export function InspirationStep() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-8">
-        <div className="studio-page space-y-8">
-          <header>
-            <h1 className="font-display text-4xl text-cos-text">
-              Your Creative Setup
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-cos-muted">
-              Tell AI what to use — or skip. You’re in control.
-            </p>
-            <p className="mt-2 max-w-2xl text-xs text-cos-muted">
-              These choices will guide artwork created for this campaign’s
-              milestones. You can still adjust an individual milestone later.
-            </p>
+    <div className="min-w-0 space-y-5">
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-3xl text-cos-text sm:text-[1.75rem]">
+                Creative Setup
+              </h2>
+              <p className="mt-1.5 max-w-xl text-sm text-cos-muted">
+                Brand logos from Setup, inspiration, and a playbook that maps
+                your milestones. You’re in control.
+              </p>
+            </div>
           </header>
+        <div className="space-y-5">
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Select
@@ -375,9 +373,38 @@ export function InspirationStep() {
             </Select>
           </div>
 
+          {session.milestones.length > 0 ? (
+            <div className="rounded-[14px] border border-[rgba(47,159,179,0.25)] bg-[#f3fbfc] p-3">
+              <p className="mb-2 text-[11px] font-extrabold tracking-[0.05em] text-[#1a6574] uppercase">
+                Playbook maps to {session.milestones.length} milestones
+              </p>
+              <ul className="space-y-1.5">
+                {session.milestones.slice(0, 6).map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center gap-2 border-t border-[rgba(47,159,179,0.15)] pt-1.5 text-xs first:border-t-0 first:pt-0"
+                  >
+                    <span className="rounded-full border border-[#c5e4ea] bg-white px-2 py-0.5 font-bold text-[#1a6574]">
+                      {m.suggestedDate
+                        ? new Date(`${m.suggestedDate}T12:00:00`).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric" },
+                          )
+                        : "—"}
+                    </span>
+                    <span className="font-semibold text-cos-text">{m.name}</span>
+                    <span className="ml-auto text-cos-muted">
+                      {m.category}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {playbookError && (
             <p
-              className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               role="alert"
             >
               {playbookError}
@@ -387,7 +414,7 @@ export function InspirationStep() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
             <div className="space-y-8">
               {/* 1. Inspiration */}
-              <section className="space-y-4 border border-cos-border bg-cos-card p-5">
+              <section className="space-y-4 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <SectionHeader
                   number={1}
                   title="Inspiration"
@@ -589,7 +616,7 @@ export function InspirationStep() {
               </section>
 
               {/* 2. Logo */}
-              <section className="space-y-4 border border-cos-border bg-cos-card p-5">
+              <section className="space-y-4 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <SectionHeader
                   number={2}
                   title="Logo"
@@ -708,7 +735,7 @@ export function InspirationStep() {
               </section>
 
               {/* 3. Colors */}
-              <section className="space-y-4 border border-cos-border bg-cos-card p-5">
+              <section className="space-y-4 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <SectionHeader
                   number={3}
                   title="Colors"
@@ -833,7 +860,7 @@ export function InspirationStep() {
               </section>
 
               {/* 4. Voice & Tone */}
-              <section className="space-y-4 border border-cos-border bg-cos-card p-5">
+              <section className="space-y-4 rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <SectionHeader
                   number={4}
                   title="Voice & Tone"
@@ -869,91 +896,143 @@ export function InspirationStep() {
               </section>
             </div>
 
-            {/* Summary sidebar */}
-            <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-              <div className="border border-cos-border bg-cos-card p-5">
-                <h2 className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-                  Your Selections
-                </h2>
-                <dl className="mt-4 space-y-3 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-cos-muted">Inspiration</dt>
-                    <dd className="text-right font-medium text-cos-text">
-                      {summary.inspiration}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-cos-muted">Logo</dt>
-                    <dd className="text-right font-medium text-cos-text">
-                      {summary.logo}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-cos-muted">Colors</dt>
-                    <dd className="text-right font-medium text-cos-text">
-                      {summary.colors}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-cos-muted">Voice & Tone</dt>
-                    <dd className="text-right font-medium text-cos-text">
-                      {summary.voiceTone}
-                    </dd>
-                  </div>
-                </dl>
-
-                {!showClearConfirm ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowClearConfirm(true)}
-                    className="mt-5 w-full border border-cos-border px-3 py-2 text-xs font-medium text-cos-muted transition-colors hover:border-cos-accent hover:text-cos-text"
-                  >
-                    Clear All Selections
-                  </button>
-                ) : (
-                  <div className="mt-5 space-y-2 border border-cos-border bg-cos-bg/40 p-3">
-                    <p className="text-xs text-cos-muted">
-                      Reset inspiration, logo, colors, and tone to None?
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleClearAll}
-                        className="flex-1 bg-cos-text px-2 py-1.5 text-xs font-medium text-[#f6f2eb]"
+            {/* Live vibe preview — matches Newsletter LivePane / mock phone */}
+            <aside className="lg:sticky lg:top-4 lg:self-start">
+              <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                <div className="border-b border-cos-border bg-[linear-gradient(90deg,rgba(107,129,113,0.08),rgba(212,168,75,0.1))] px-3.5 py-2.5 text-[11px] font-extrabold tracking-[0.06em] text-cos-brand-sage uppercase">
+                  Live vibe preview
+                </div>
+                <div className="flex justify-center bg-[linear-gradient(160deg,#f3f0ea,#efe8d8_55%,#e8f2f4)] px-3.5 py-5">
+                  <div className="w-[220px] rounded-[32px] bg-[#1c2430] p-2.5 shadow-[0_18px_40px_rgba(42,38,34,0.12)]">
+                    <div className="mx-auto mb-2.5 h-2 w-[72px] rounded-full bg-[#2a3340]" />
+                    <div className="overflow-hidden rounded-[22px] bg-[#0f1419]">
+                      <div className="flex items-center justify-between bg-white px-3 py-2.5 text-xs font-bold text-[#111]">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-[22px] w-[22px] rounded-full bg-[linear-gradient(145deg,#c4922e,#f5e6c2)]" />
+                          edmondsonpto
+                        </span>
+                        ···
+                      </div>
+                      <div
+                        className="relative aspect-square"
+                        style={{
+                          background:
+                            inspirationImages[0]?.previewUrl ||
+                            inspirationImages[0]?.url
+                              ? undefined
+                              : "radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), linear-gradient(145deg, #2f4a3c 0%, #6b8171 50%, #d4a84b 100%)",
+                        }}
                       >
-                        Clear all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowClearConfirm(false)}
-                        className="flex-1 border border-cos-border px-2 py-1.5 text-xs font-medium text-cos-text"
-                      >
-                        Cancel
-                      </button>
+                        {inspirationImages[0]?.previewUrl ||
+                        inspirationImages[0]?.url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={
+                              inspirationImages[0].previewUrl ||
+                              inspirationImages[0].url ||
+                              ""
+                            }
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : null}
+                        <span className="absolute top-2.5 left-2.5 rounded-full bg-white/92 px-2 py-1 text-[9px] font-extrabold tracking-wide text-[#2f4a3c] uppercase">
+                          Feed
+                        </span>
+                        {selectedLogo?.url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={selectedLogo.url}
+                            alt=""
+                            className="absolute top-2.5 right-2.5 h-8 w-8 rounded-[10px] border-2 border-white/80 bg-white object-contain p-0.5 shadow"
+                          />
+                        ) : null}
+                        <div className="absolute right-3 bottom-3 left-3 font-display text-[22px] font-bold leading-tight text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.35)]">
+                          {inspiration.campaignName.trim() || "Your campaign"}
+                        </div>
+                      </div>
+                      <div className="bg-white px-3 py-2.5 text-[11px] text-[#444]">
+                        <p className="mb-1 font-bold text-[#222]">♡ Liked by families</p>
+                        <p>
+                          <strong>edmondsonpto</strong>{" "}
+                          {summary.voiceTone !== "None"
+                            ? `${summary.voiceTone} — `
+                            : ""}
+                          Soft CTA, parent-friendly.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+                <div className="space-y-2 border-t border-cos-border px-4 py-3 text-xs text-cos-muted">
+                  <div className="flex justify-between gap-2">
+                    <span>Inspiration</span>
+                    <span className="font-semibold text-cos-text">
+                      {summary.inspiration}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Logo</span>
+                    <span className="font-semibold text-cos-text">
+                      {summary.logo}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>Colors</span>
+                    <span className="font-semibold text-cos-text">
+                      {summary.colors}
+                    </span>
+                  </div>
+                  {!showClearConfirm ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowClearConfirm(true)}
+                      className="mt-1 w-full rounded-[12px] border border-cos-border px-3 py-2 text-xs font-semibold text-cos-muted transition hover:border-cos-brand-sage hover:text-cos-text"
+                    >
+                      Clear all selections
+                    </button>
+                  ) : (
+                    <div className="mt-1 space-y-2 rounded-[12px] border border-cos-border bg-cos-bg/40 p-3">
+                      <p>Reset inspiration, logo, colors, and tone?</p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleClearAll}
+                          className="flex-1 rounded-full bg-cos-text px-2 py-1.5 text-xs font-semibold text-[#f6f2eb]"
+                        >
+                          Clear all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowClearConfirm(false)}
+                          className="flex-1 rounded-full border border-cos-border px-2 py-1.5 text-xs font-semibold text-cos-text"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </aside>
           </div>
 
           {continueError && (
             <p
-              className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              className="rounded-[14px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
               role="alert"
             >
               {continueError}
             </p>
           )}
         </div>
-      </div>
 
       <CampaignBuilderFooter
         showBack={false}
         onContinue={() => {
           void handleSaveAndContinue();
         }}
-        continueLabel="Save & Continue to Milestones"
+        continueLabel="Save → Milestones"
         continueLoading={isContinuing || isSaving}
       />
 

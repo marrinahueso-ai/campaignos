@@ -14,8 +14,8 @@ type CreateWithAiHubProps = {
 };
 
 /**
- * Empty / access states for Create with AI.
- * When events exist, `/create-with-ai` redirects into the builder on Creative Setup.
+ * Empty / access states for Social Media (Campaign Builder).
+ * When events exist, `/create-with-ai/social` redirects into Creative Setup.
  */
 export function CreateWithAiHub({
   canUseCreateWithAi,
@@ -27,7 +27,7 @@ export function CreateWithAiHub({
       <div className="mx-auto max-w-2xl space-y-6 py-6">
         <header className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-cos-muted">
-            Create with AI
+            Social Media
           </p>
           <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
             Access needed
@@ -38,13 +38,16 @@ export function CreateWithAiHub({
             <Lock className="mt-0.5 h-5 w-5 shrink-0 text-cos-muted" strokeWidth={1.5} />
             <div className="space-y-2">
               <p className="text-sm font-medium text-cos-text">
-                Your role can’t open Create with AI yet
+                Your role can’t open Social Media yet
               </p>
               <p className="text-sm leading-relaxed text-cos-muted">
                 Ask an admin to grant artwork / campaign create access for
                 {organizationName ? ` ${organizationName}` : " this organization"}
-                .
+                . Homepage Composer is still available from Create with AI.
               </p>
+              <Button href="/create-with-ai" variant="secondary" size="sm" className="mt-3">
+                ← Create with AI
+              </Button>
             </div>
           </div>
         </div>
@@ -57,13 +60,13 @@ export function CreateWithAiHub({
       <div className="mx-auto max-w-2xl space-y-6 py-6">
         <header className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-[0.14em] text-cos-muted">
-            Create with AI
+            Social Media
           </p>
           <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
             Build your first campaign
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-cos-muted sm:text-base">
-            Create with AI runs on an event — inspiration, artwork, captions, and
+            Social Media runs on an event — inspiration, artwork, captions, and
             approvals all stay tied to that campaign. Add an event to get started
             {organizationName ? ` for ${organizationName}` : ""}.
           </p>
@@ -79,8 +82,8 @@ export function CreateWithAiHub({
               <div>
                 <p className="text-sm font-medium text-cos-text">No events yet</p>
                 <p className="mt-1 text-sm leading-relaxed text-cos-muted">
-                  Once you have an event, Create with AI opens Creative Setup in
-                  the builder — not a choose-event list.
+                  Once you have an event, Social opens Creative Setup in the
+                  builder — not a choose-event list.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -90,6 +93,9 @@ export function CreateWithAiHub({
                 </Button>
                 <Button href="/events" variant="secondary" size="md">
                   View events
+                </Button>
+                <Button href="/create-with-ai" variant="secondary" size="md">
+                  ← Create with AI
                 </Button>
               </div>
             </div>

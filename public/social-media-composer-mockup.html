@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Social Media Composer Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f9f7f2;
+      --cream-deep: #f0ebe3;
+      --tan: #ebe4d8;
+      --ink: #1c2430;
+      --ink-soft: #4a5563;
+      --muted: #7a8478;
+      --forest: #2f4a3c;
+      --mustard: #d4a84b;
+      --sage: #6b8171;
+      --navy: #0b2f5b;
+      --teal: #2f9fb3;
+      --gold: #f7c948;
+      --white: #fffcf7;
+      --line: rgba(28, 36, 48, 0.08);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 18px 40px rgba(42, 38, 34, 0.1);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --danger: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    button, input, select, textarea { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 0;
+      gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--tan); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main-col { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 28px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 8px 28px 56px; position: relative; max-width: 88rem; }
+    .content::before, .content::after {
+      content: ""; position: absolute; pointer-events: none; border-radius: 50%;
+    }
+    .content::before {
+      left: -30px; top: 0; width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(196,146,46,.16), transparent 70%);
+    }
+    .content::after {
+      right: 40px; top: 80px; width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(47,159,179,.12), transparent 70%);
+    }
+    .back {
+      border: none; background: none; color: var(--muted); font: inherit;
+      font-weight: 600; font-size: 14px; padding: 0; margin-bottom: 10px; cursor: pointer;
+    }
+    .back:hover { color: var(--ink); }
+    h1.serif {
+      font-family: var(--serif); font-weight: 600;
+      font-size: clamp(30px, 4vw, 42px); margin: 0 0 8px;
+      letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .lede { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.5; max-width: 560px; }
+    .mock-banner {
+      margin: 18px 0 0;
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(212,168,75,.16); border: 1px solid rgba(212,168,75,.35);
+      color: #7a5a12; border-radius: 999px; padding: 6px 12px;
+      font-size: 12px; font-weight: 700;
+    }
+    .layout {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+    }
+    .steps {
+      position: sticky; top: 20px;
+      background: var(--cream-deep);
+      border-radius: var(--radius);
+      padding: 10px;
+      border: 1px solid var(--line);
+    }
+    .step-btn {
+      width: 100%; text-align: left; border: none; background: transparent;
+      border-radius: 14px; padding: 12px; cursor: pointer; color: var(--ink-soft);
+      transition: background .2s, box-shadow .2s, color .2s;
+    }
+    .step-btn:hover { background: rgba(255,252,247,.6); color: var(--ink); }
+    .step-btn.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+    .step-btn .n { font-size: 12px; font-weight: 700; color: var(--sage); margin-bottom: 2px; display: block; }
+    .step-btn.active .n { color: var(--forest); }
+    .step-btn .label { font-size: 14px; font-weight: 700; display: block; }
+    .step-btn .hint { font-size: 11px; color: var(--muted); margin-top: 2px; display: block; }
+    .panel { min-width: 0; }
+    .panel-head {
+      display: flex; flex-wrap: wrap; justify-content: space-between;
+      align-items: flex-start; gap: 12px; margin-bottom: 16px;
+    }
+    .panel-head h2 {
+      font-family: var(--serif); font-weight: 600;
+      font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em;
+    }
+    .panel-head p { margin: 0; color: var(--ink-soft); font-size: 14px; max-width: 440px; line-height: 1.45; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn {
+      border: none; border-radius: 999px; padding: 10px 16px;
+      font-weight: 700; font-size: 13px; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+    }
+    .btn-gold { background: var(--mustard); color: var(--ink); }
+    .btn-danger {
+      background: #fff5f0; color: var(--danger);
+      border: 1px solid rgba(166,90,58,.3);
+    }
+    .btn-sm { padding: 7px 12px; font-size: 12px; }
+    .box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+    .box h3 {
+      font-family: var(--serif); font-weight: 600;
+      font-size: 20px; margin: 0 0 4px;
+    }
+    .box .desc { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .field-label {
+      display: block; font-size: 11px; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase; color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field {
+      width: 100%;
+      border: 1px solid var(--tan);
+      background: var(--cream);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--ink);
+      outline: none;
+    }
+    .field:focus { border-color: var(--sage); background: var(--white); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      align-items: start;
+    }
+    .live-pane {
+      position: sticky; top: 20px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .live-label {
+      padding: 10px 14px;
+      font-size: 11px; font-weight: 800; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--sage);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, rgba(107,129,113,.08), rgba(212,168,75,.1));
+    }
+    .live-well {
+      padding: 18px 14px 22px;
+      background: linear-gradient(160deg, #f3f0ea, #efe8d8 55%, #e8f2f4);
+      display: flex; justify-content: center;
+    }
+    .phone {
+      width: 220px;
+      background: #1c2430;
+      border-radius: 32px;
+      padding: 10px 10px 14px;
+      box-shadow: var(--shadow-lg);
+    }
+    .phone-notch {
+      width: 72px; height: 8px; border-radius: 999px;
+      background: #2a3340; margin: 4px auto 10px;
+    }
+    .phone-screen {
+      background: #0f1419;
+      border-radius: 22px;
+      overflow: hidden;
+      min-height: 320px;
+    }
+    .ig-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; background: #fff; color: #111;
+      font-size: 12px; font-weight: 700;
+    }
+    .ig-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(145deg, #c4922e, #f5e6c2);
+    }
+    .feed-art {
+      aspect-ratio: 1;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%),
+        linear-gradient(145deg, #2f4a3c 0%, #6b8171 50%, #d4a84b 100%);
+      position: relative;
+    }
+    .feed-art.zoomable {
+      cursor: zoom-in;
+    }
+    .feed-art.zoomable::after {
+      content: "Click to enlarge";
+      position: absolute; left: 50%; bottom: 42%;
+      transform: translate(-50%, 8px);
+      background: rgba(28,36,48,.72);
+      color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 5px 10px; border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      white-space: nowrap;
+      z-index: 3;
+    }
+    .feed-art.zoomable:hover::after {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .feed-art.zoomable:hover {
+      filter: brightness(1.05);
+    }
+    .art-dl {
+      position: absolute; right: 10px; bottom: 10px;
+      width: 30px; height: 30px; border-radius: 10px;
+      border: none;
+      background: rgba(255,252,247,.94);
+      color: var(--ink);
+      box-shadow: 0 4px 12px rgba(0,0,0,.22);
+      display: grid; place-items: center;
+      cursor: pointer;
+      z-index: 4;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .2s, transform .2s, background .15s;
+    }
+    .feed-art.zoomable:hover .art-dl,
+    .story-frame.zoomable:hover .art-dl,
+    .art-dl:focus {
+      opacity: 1;
+      transform: none;
+    }
+    .art-dl:hover { background: #fff; }
+    .art-dl svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .feed-art .badge {
+      position: absolute; left: 10px; top: 10px;
+      background: rgba(255,252,247,.92); color: var(--forest);
+      font-size: 9px; font-weight: 800; letter-spacing: .04em;
+      text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
+      z-index: 2;
+    }
+    .feed-art .logo-chip {
+      position: absolute; right: 10px; top: 10px;
+      width: 34px; height: 34px; border-radius: 10px;
+      background: #fffcf7; border: 2px solid rgba(255,255,255,.8);
+      box-shadow: 0 4px 12px rgba(0,0,0,.2);
+      display: grid; place-items: center;
+      font-size: 9px; font-weight: 800; color: var(--navy);
+      z-index: 2;
+    }
+    .feed-art .title {
+      position: absolute; left: 12px; right: 12px; bottom: 14px;
+      font-family: var(--serif); font-size: 22px; font-weight: 700;
+      color: #fffcf7; line-height: 1.1; text-shadow: 0 2px 12px rgba(0,0,0,.35);
+    }
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 80;
+      background: rgba(28, 36, 48, 0.72);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .lightbox.open { display: flex; animation: fadeUp .2s ease both; }
+    .lightbox-card {
+      width: min(520px, 92vw);
+      background: var(--white);
+      border-radius: 22px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      position: relative;
+    }
+    .lightbox-art {
+      aspect-ratio: 1;
+      width: 100%;
+      position: relative;
+    }
+    .lightbox-art .title {
+      position: absolute; left: 20px; right: 20px; bottom: 22px;
+      font-family: var(--serif); font-size: clamp(28px, 5vw, 40px); font-weight: 700;
+      color: #fffcf7; line-height: 1.1; text-shadow: 0 2px 16px rgba(0,0,0,.4);
+    }
+    .lightbox-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+    }
+    .lightbox-bar p { margin: 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+    .lightbox-x {
+      position: absolute; top: 12px; right: 12px;
+      width: 34px; height: 34px; border-radius: 999px;
+      border: none; background: rgba(28,36,48,.55); color: #fff;
+      font-size: 18px; cursor: pointer; z-index: 2;
+    }
+    .ig-meta { background: #fff; padding: 10px 12px 14px; color: #222; }
+    .ig-meta .likes { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .ig-meta .cap { font-size: 11px; line-height: 1.4; color: #444; }
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .swatch {
+      width: 36px; height: 36px; border-radius: 12px;
+      border: 2px solid rgba(255,255,255,.8);
+      box-shadow: 0 0 0 1px var(--line);
+    }
+
+    /* Logos from Setup */
+    .logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .logo-card {
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      background: var(--cream);
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .logo-card:hover { border-color: var(--sage); }
+    .logo-card.selected {
+      border-color: var(--mustard);
+      background: #fffdf8;
+      box-shadow: 0 0 0 3px rgba(212,168,75,.22);
+    }
+    .logo-card .preview {
+      height: 56px; border-radius: 10px; margin-bottom: 8px;
+      display: grid; place-items: center;
+      background: #fff; border: 1px solid var(--line);
+      font-weight: 800; font-size: 11px; color: var(--navy);
+    }
+    .logo-card .preview.pto {
+      background: linear-gradient(145deg, #0b2f5b, #2f9fb3);
+      color: #fff; border: none;
+    }
+    .logo-card .preview.school {
+      background: linear-gradient(145deg, #2f4a3c, #6b8171);
+      color: #fff; border: none;
+    }
+    .logo-card .preview.none {
+      background: repeating-linear-gradient(-45deg, #f3f0ea, #f3f0ea 6px, #ebe4d8 6px, #ebe4d8 12px);
+      color: var(--muted);
+    }
+    .logo-card .name { font-size: 12px; font-weight: 700; }
+    .logo-card .src { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+    /* DnD inspiration */
+    .dnd-hint {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; color: var(--sage);
+      margin-bottom: 10px;
+    }
+    .insp-pool, .insp-drop {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      min-height: 88px;
+    }
+    .insp-drop {
+      border: 1.5px dashed rgba(107,129,113,.45);
+      border-radius: 16px;
+      padding: 10px;
+      background: rgba(107,129,113,.05);
+      margin-bottom: 12px;
+    }
+    .insp-drop.drag-over {
+      background: rgba(212,168,75,.12);
+      border-color: var(--mustard);
+    }
+    .insp-tile {
+      aspect-ratio: 1;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      cursor: grab;
+      position: relative;
+      user-select: none;
+      box-shadow: var(--shadow);
+    }
+    .insp-tile:active { cursor: grabbing; }
+    .insp-tile.dragging { opacity: .45; }
+    .insp-tile .grip {
+      position: absolute; left: 6px; top: 6px;
+      font-size: 10px; font-weight: 800; color: rgba(255,255,255,.85);
+      text-shadow: 0 1px 2px rgba(0,0,0,.3);
+    }
+    .insp-tile .ord {
+      position: absolute; right: 6px; top: 6px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--mustard); color: var(--ink);
+      font-size: 11px; font-weight: 800;
+      display: grid; place-items: center;
+    }
+
+    /* Playbook mapped */
+    .playbook-map {
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(47,159,179,.25);
+      background: #f3fbfc;
+      padding: 12px;
+    }
+    .playbook-map h4 {
+      margin: 0 0 8px;
+      font-size: 11px; font-weight: 800; letter-spacing: .05em;
+      text-transform: uppercase; color: #1a6574;
+    }
+    .map-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; padding: 6px 0;
+      border-top: 1px solid rgba(47,159,179,.15);
+    }
+    .map-row:first-of-type { border-top: none; }
+    .map-arrow { color: var(--teal); font-weight: 800; }
+    .map-chip {
+      background: #fff; border: 1px solid #c5e4ea; border-radius: 999px;
+      padding: 3px 8px; font-weight: 700; font-size: 11px;
+    }
+
+    /* Milestones expand + DnD */
+    .ms-list { display: flex; flex-direction: column; gap: 8px; }
+    .ms-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--cream);
+      overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .ms-card.open, .ms-card:hover { border-color: var(--sage); background: var(--white); }
+    .ms-card.open { box-shadow: 0 0 0 3px rgba(107,129,113,.12); }
+    .ms-card.dragging { opacity: .5; }
+    .ms-card.drag-over { border-color: var(--mustard); box-shadow: 0 0 0 3px rgba(212,168,75,.2); }
+    .ms-head {
+      display: grid;
+      grid-template-columns: 28px auto 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      cursor: pointer;
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: left;
+      color: inherit;
+    }
+    .ms-grip {
+      color: var(--muted); cursor: grab; font-size: 14px; font-weight: 800;
+      letter-spacing: -1px; user-select: none;
+    }
+    .m-date {
+      width: 52px; text-align: center;
+      background: linear-gradient(155deg, #c4922e, #e0b65a);
+      color: #2a2622; border-radius: 12px; padding: 8px 4px;
+    }
+    .m-date .mo { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .m-date .dy { font-family: var(--serif); font-size: 20px; font-weight: 700; line-height: 1; }
+    .m-title { font-size: 14px; font-weight: 700; margin: 0 0 2px; }
+    .m-meta { font-size: 12px; color: var(--muted); margin: 0; }
+    .chev {
+      color: var(--muted); transition: transform .2s; font-size: 12px;
+    }
+    .ms-card.open .chev { transform: rotate(180deg); }
+    .ms-body {
+      display: none;
+      padding: 0 14px 14px;
+      border-top: 1px solid var(--line);
+      background: rgba(249,247,242,.65);
+    }
+    .ms-card.open .ms-body { display: block; padding-top: 14px; }
+    .pill {
+      font-size: 10px; font-weight: 800; letter-spacing: .04em;
+      text-transform: uppercase; padding: 5px 8px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .pill-ready { background: rgba(107,129,113,.15); color: var(--forest); }
+    .pill-draft { background: rgba(212,168,75,.18); color: #7a5a12; }
+    .pill-gen { background: rgba(47,159,179,.15); color: #1a6574; }
+    .pill-changes { background: rgba(166,90,58,.14); color: var(--danger); }
+
+    .mode-toggle {
+      display: inline-flex; background: var(--cream-deep);
+      border-radius: 999px; padding: 3px; gap: 2px; margin-bottom: 12px;
+    }
+    .mode-toggle button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 7px 12px; font-size: 12px; font-weight: 700;
+      color: var(--muted); cursor: pointer;
+    }
+    .mode-toggle button.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+    .preview-layout {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr) 300px;
+      gap: 14px;
+      align-items: start;
+    }
+    .rail-mini {
+      background: var(--cream-deep);
+      border-radius: var(--radius);
+      padding: 10px;
+      border: 1px solid var(--line);
+    }
+    .rail-mini h4 {
+      margin: 0 0 10px; padding: 0 4px;
+      font-size: 11px; font-weight: 800; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .m-mini {
+      width: 100%; text-align: left; border: none;
+      background: transparent; border-radius: 12px;
+      padding: 10px; cursor: pointer; color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+    .m-mini.active, .m-mini:hover {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+    .m-mini strong { display: block; font-size: 13px; }
+    .m-mini span { font-size: 11px; color: var(--muted); }
+    .caption-box textarea {
+      width: 100%; min-height: 100px; resize: vertical;
+      border: 1px solid var(--tan); border-radius: 12px;
+      background: var(--cream); padding: 12px; line-height: 1.45;
+    }
+    .check-row {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 12px; border-radius: 14px; border: 1px solid var(--line);
+      background: var(--cream); margin-bottom: 8px;
+    }
+    .check {
+      width: 20px; height: 20px; border-radius: 6px; margin-top: 1px;
+      background: var(--sage); color: white;
+      display: grid; place-items: center; font-size: 12px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .check.empty { background: var(--white); border: 1.5px solid var(--tan); color: transparent; }
+
+    /* Formats dropdown */
+    .fmt-drop { position: relative; margin-bottom: 14px; }
+    .fmt-trigger {
+      width: 100%;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1.5px solid var(--tan);
+      background: var(--cream);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .fmt-trigger:hover, .fmt-drop.open .fmt-trigger {
+      border-color: var(--sage);
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+    .fmt-trigger .chev { color: var(--muted); font-size: 11px; transition: transform .2s; }
+    .fmt-drop.open .fmt-trigger .chev { transform: rotate(180deg); }
+    .fmt-summary { font-size: 13px; font-weight: 700; line-height: 1.35; }
+    .fmt-summary span { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+    .fmt-menu {
+      display: none;
+      position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+      z-index: 20;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      padding: 8px;
+      max-height: 280px;
+      overflow: auto;
+    }
+    .fmt-drop.open .fmt-menu { display: block; animation: fadeUp .2s ease both; }
+    .fmt-opt {
+      display: flex; align-items: flex-start; gap: 10px;
+      width: 100%;
+      border: none;
+      background: transparent;
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+    }
+    .fmt-opt:hover { background: var(--cream); }
+    .fmt-opt.on { background: rgba(107,129,113,.1); }
+    .fmt-check {
+      width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+      border: 1.5px solid var(--tan); background: var(--white);
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 800; color: transparent;
+    }
+    .fmt-opt.on .fmt-check {
+      background: var(--ink); border-color: var(--ink); color: #fff;
+    }
+    .fmt-opt .w-title { font-size: 13px; font-weight: 700; }
+    .fmt-opt .w-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+    .fmt-opt.manual-opt.on {
+      background: rgba(212,168,75,.14);
+    }
+    .fmt-opt.manual-opt .w-title { color: #7a5a12; }
+    .manual-email-panel {
+      margin-top: 4px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      display: none;
+    }
+    .manual-email-panel.show { display: block; }
+    .manual-email-panel .wow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(212,168,75,.18);
+      border: 1px solid rgba(212,168,75,.35);
+      color: #7a5a12;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px; font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    /* Change request / reapproval */
+    .alert {
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .alert-changes {
+      background: #fff5f0;
+      border: 1px solid rgba(166,90,58,.3);
+      color: #6b3520;
+    }
+    .alert-changes strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+    .edit-tools {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 12px 0;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--cream-deep);
+      border: 1px solid var(--line);
+    }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--ink); color: var(--white);
+      padding: 12px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+      box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s, transform .25s;
+      z-index: 50;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+    .view { display: none; }
+    .view.active { display: block; animation: fadeUp .35s ease both; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .story-frame {
+      height: 340px;
+      background: linear-gradient(160deg, #0b2f5b, #2f9fb3 55%, #d4a84b);
+      position: relative;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 16px;
+    }
+    .story-frame.zoomable { cursor: zoom-in; }
+    .story-frame.zoomable:hover { filter: brightness(1.05); }
+    .story-frame::before {
+      content: ""; position: absolute; inset: 10px 10px auto;
+      height: 3px; border-radius: 999px; background: rgba(255,255,255,.55);
+    }
+    .story-frame .st {
+      font-family: var(--serif); font-size: 26px; font-weight: 700;
+      color: white; line-height: 1.1; text-shadow: 0 2px 14px rgba(0,0,0,.3);
+    }
+    .story-frame .sub { color: rgba(255,255,255,.9); font-size: 12px; margin-top: 6px; font-weight: 600; }
+    .hidden { display: none !important; }
+    @media (max-width: 1100px) {
+      .preview-layout { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; }
+      .live-pane { position: static; }
+    }
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .layout { grid-template-columns: 1fr; }
+      .steps { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3, .logo-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="App nav">
+      <div class="rail-logo">R</div>
+      <button type="button" title="Home" aria-label="Home">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      </button>
+      <button type="button" class="active" title="Create with AI" aria-label="Create with AI">
+        <svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z"/></svg>
+      </button>
+      <button type="button" title="Calendar" aria-label="Calendar">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+      </button>
+    </aside>
+
+    <div class="main-col">
+      <div class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div class="school-pill" style="font-weight:500;color:var(--muted)">Mockup · not live Social yet</div>
+      </div>
+
+      <div class="content">
+        <button class="back" type="button">← Create with AI</button>
+        <h1 class="serif">Social Media Composer</h1>
+        <p class="lede">
+          Same studio feel as Homepage &amp; Newsletter — logos from Setup, drag-and-drop
+          inspiration, playbooks that map milestones, then edit &amp; re-approve after generate.
+        </p>
+        <div class="mock-banner">Interactive mock · drag tiles · expand milestones · try re-approval</div>
+
+        <div class="layout">
+          <nav class="steps" aria-label="Composer steps">
+            <button type="button" class="step-btn active" data-step="setup">
+              <span class="n">1 · Setup</span>
+              <span class="label">Creative Setup</span>
+              <span class="hint">Logos · DnD · playbook</span>
+            </button>
+            <button type="button" class="step-btn" data-step="milestones">
+              <span class="n">2 · Plan</span>
+              <span class="label">Milestones</span>
+              <span class="hint">DnD · expand edit</span>
+            </button>
+            <button type="button" class="step-btn" data-step="preview">
+              <span class="n">3 · Create</span>
+              <span class="label">Preview</span>
+              <span class="hint">Edit · post ways · reapprove</span>
+            </button>
+            <button type="button" class="step-btn" data-step="review">
+              <span class="n">4 · Ship</span>
+              <span class="label">Review</span>
+              <span class="hint">Approve · send</span>
+            </button>
+          </nav>
+
+          <div class="panel">
+            <!-- SETUP -->
+            <section class="view active" id="view-setup">
+              <div class="panel-head">
+                <div>
+                  <h2>Creative Setup</h2>
+                  <p>Brand logos from Setup, drag inspiration into order, pick a playbook that maps your milestone plan.</p>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-goto="milestones">← Back</button>
+                  <button type="button" class="btn btn-primary" data-goto="milestones">Save → Milestones</button>
+                </div>
+              </div>
+
+              <div class="split">
+                <div>
+                  <div class="box">
+                    <h3>Campaign</h3>
+                    <p class="desc">Tied to your event — same spirit as Newsletter issue header.</p>
+                    <div class="grid-2">
+                      <div>
+                        <label class="field-label">Event</label>
+                        <input class="field" value="Back to School Fair" readonly />
+                      </div>
+                      <div>
+                        <label class="field-label">Campaign date</label>
+                        <input class="field" value="August 9, 2026" readonly />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="box">
+                    <h3>Brand logos</h3>
+                    <p class="desc">Pulled from <strong>Setup → Brand</strong> (PTO + school). Same logos Homepage &amp; Social share.</p>
+                    <div class="logo-grid" id="logoGrid">
+                      <button type="button" class="logo-card selected" data-logo="pto">
+                        <div class="preview pto">PTO</div>
+                        <div class="name">PTO logo</div>
+                        <div class="src">From Setup</div>
+                      </button>
+                      <button type="button" class="logo-card" data-logo="school">
+                        <div class="preview school">EES</div>
+                        <div class="name">School logo</div>
+                        <div class="src">From Setup</div>
+                      </button>
+                      <button type="button" class="logo-card" data-logo="none">
+                        <div class="preview none">None</div>
+                        <div class="name">No logo</div>
+                        <div class="src">Artwork only</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="box">
+                    <h3>Inspiration</h3>
+                    <p class="desc">Drag tiles into the tray to choose &amp; order look direction (primary → supporting).</p>
+                    <div class="dnd-hint">⠿ Drag into tray · reorder anytime</div>
+                    <div class="field-label">Selected look (drop here)</div>
+                    <div class="insp-drop" id="inspSelected" data-drop="selected"></div>
+                    <div class="field-label">Library</div>
+                    <div class="insp-pool" id="inspPool" data-drop="pool">
+                      <div class="insp-tile" draggable="true" data-id="a" style="background:linear-gradient(145deg,#2f4a3c,#d4a84b)"><span class="grip">⠿</span></div>
+                      <div class="insp-tile" draggable="true" data-id="b" style="background:linear-gradient(145deg,#0b2f5b,#2f9fb3)"><span class="grip">⠿</span></div>
+                      <div class="insp-tile" draggable="true" data-id="c" style="background:linear-gradient(145deg,#c4922e,#f5e6c2)"><span class="grip">⠿</span></div>
+                      <div class="insp-tile" draggable="true" data-id="d" style="background:linear-gradient(160deg,#6b8171,#b8c9bc)"><span class="grip">⠿</span></div>
+                      <div class="insp-tile" draggable="true" data-id="e" style="background:linear-gradient(145deg,#8b3a3a,#e8b4a0)"><span class="grip">⠿</span></div>
+                      <div class="insp-tile" draggable="true" data-id="f" style="background:linear-gradient(145deg,#3d2f5b,#b8a0e8)"><span class="grip">⠿</span></div>
+                    </div>
+                  </div>
+
+                  <div class="box">
+                    <h3>Playbook</h3>
+                    <p class="desc">Choosing a playbook <strong>maps real milestone steps</strong> into your campaign plan — not just a label.</p>
+                    <label class="field-label">Playbook</label>
+                    <select class="field" id="playbookSelect">
+                      <option value="elementary">Elementary Event Blast</option>
+                      <option value="volunteer">Volunteer Drive</option>
+                      <option value="fundraiser">Fundraiser Warm-up</option>
+                    </select>
+                    <div class="playbook-map" id="playbookMap"></div>
+                  </div>
+
+                  <div class="box">
+                    <h3>Brand colors &amp; voice</h3>
+                    <p class="desc">School kit + a short voice note for captions.</p>
+                    <div class="color-row" style="margin-bottom:14px">
+                      <div class="swatch" style="background:#0b2f5b"></div>
+                      <div class="swatch" style="background:#2f9fb3"></div>
+                      <div class="swatch" style="background:#d4a84b"></div>
+                      <div class="swatch" style="background:#2f4a3c"></div>
+                    </div>
+                    <label class="field-label">Caption voice</label>
+                    <textarea class="field" rows="3">Warm, parent-friendly, short. Celebrate kids &amp; teachers. Soft CTA — “save the date” not hard sell.</textarea>
+                  </div>
+                </div>
+
+                <aside class="live-pane">
+                  <div class="live-label">Live vibe preview</div>
+                  <div class="live-well">
+                    <div class="phone">
+                      <div class="phone-notch"></div>
+                      <div class="phone-screen">
+                        <div class="ig-bar">
+                          <div style="display:flex;align-items:center;gap:8px">
+                            <div class="ig-avatar"></div>
+                            edmondsonpto
+                          </div>
+                          ···
+                        </div>
+                        <div class="feed-art" id="setupArt">
+                          <span class="badge">Feed</span>
+                          <div class="logo-chip" id="setupLogoChip">PTO</div>
+                          <div class="title">Back to School Fair</div>
+                        </div>
+                        <div class="ig-meta">
+                          <div class="likes">♡ 128 likes</div>
+                          <div class="cap"><strong>edmondsonpto</strong> Save the date — Aug 9. Supplies, teachers, and community fun.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
+            <!-- MILESTONES -->
+            <section class="view" id="view-milestones">
+              <div class="panel-head">
+                <div>
+                  <h2>Campaign Milestones</h2>
+                  <p>Drag to reorder. Click a row to expand &amp; edit — collapse when you’re done.</p>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-goto="setup">← Setup</button>
+                  <button type="button" class="btn btn-primary" data-goto="preview">Save → Preview</button>
+                </div>
+              </div>
+
+              <div class="box">
+                <h3>Milestones</h3>
+                <p class="desc">Mapped from playbook · drag ⠿ to reorder · click to expand edit.</p>
+                <div class="dnd-hint">⠿ Drag cards to reorder</div>
+                <div class="ms-list" id="msList"></div>
+                <button type="button" class="btn btn-secondary" style="margin-top:10px" id="addMs">+ Add milestone</button>
+              </div>
+            </section>
+
+            <!-- PREVIEW -->
+            <section class="view" id="view-preview">
+              <div class="panel-head">
+                <div>
+                  <h2>Preview Campaign</h2>
+                  <p>Generate, then <strong>edit in place</strong> — change requests route here, then send for re-approval.</p>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-goto="milestones">← Milestones</button>
+                  <button type="button" class="btn btn-gold" id="btnGenerate">Generate artwork</button>
+                  <button type="button" class="btn btn-primary" data-goto="review">Save → Review</button>
+                </div>
+              </div>
+
+              <div class="preview-layout">
+                <aside class="rail-mini" id="previewRail"></aside>
+
+                <div class="box" style="margin:0">
+                  <div id="changesAlert" class="alert alert-changes hidden">
+                    <strong>Changes requested</strong>
+                    <span id="changesText">Approver: “Can we soften the CTA and use the school logo?”</span>
+                    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+                      <button type="button" class="btn btn-sm btn-secondary" id="btnEditArt">Edit artwork</button>
+                      <button type="button" class="btn btn-sm btn-secondary" id="btnEditCap">Edit caption</button>
+                      <button type="button" class="btn btn-sm btn-gold" id="btnReapprove">Send for re-approval</button>
+                    </div>
+                  </div>
+
+                  <div class="mode-toggle" id="modeToggle">
+                    <button type="button" class="active" data-mode="feed">Feed</button>
+                    <button type="button" data-mode="story">Story</button>
+                  </div>
+
+                  <div class="live-well" style="border-radius:16px;padding:20px">
+                    <div class="phone">
+                      <div class="phone-notch"></div>
+                      <div class="phone-screen">
+                        <div id="feedView">
+                          <div class="ig-bar">
+                            <div style="display:flex;align-items:center;gap:8px">
+                              <div class="ig-avatar"></div>
+                              edmondsonpto
+                            </div>
+                            ···
+                          </div>
+                          <div class="feed-art zoomable" id="feedArt" role="button" tabindex="0" aria-label="Enlarge artwork">
+                            <span class="badge">Feed</span>
+                            <div class="logo-chip" id="feedLogoChip">PTO</div>
+                            <div class="title" id="feedTitle">Back to School Fair</div>
+                            <button type="button" class="art-dl" id="btnDlFeed" title="Download artwork" aria-label="Download artwork">
+                              <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+                            </button>
+                          </div>
+                          <div class="ig-meta">
+                            <div class="likes">♡ Liked by families</div>
+                            <div class="cap" id="feedCap"><strong>edmondsonpto</strong> Mark your calendars — Aug 9 at Edmondson.</div>
+                          </div>
+                        </div>
+                        <div id="storyView" class="hidden">
+                          <div class="story-frame zoomable" id="storyArt" role="button" tabindex="0" aria-label="Enlarge story artwork">
+                            <div class="st" id="storyTitle">Save the date</div>
+                            <div class="sub" id="storySub">Aug 9 · Back to School Fair</div>
+                            <button type="button" class="art-dl" id="btnDlStory" title="Download artwork" aria-label="Download artwork">
+                              <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="edit-tools" id="editTools">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);width:100%">After generate — edit without regenerating</span>
+                    <button type="button" class="btn btn-sm btn-secondary" id="btnEditArt2">Edit artwork</button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="btnEditCap2">Edit caption</button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="btnChangeDate">Change date</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btnSimChanges">Simulate change request</button>
+                  </div>
+                </div>
+
+                <div class="box" style="margin:0">
+                  <h3>Post settings</h3>
+                  <p class="desc">Formats as a dropdown — click to pick platforms. Instagram Story Manual emails you the kit so you can add music &amp; stickers.</p>
+
+                  <label class="field-label">Platforms &amp; formats</label>
+                  <div class="fmt-drop" id="fmtDrop">
+                    <button type="button" class="fmt-trigger" id="fmtTrigger" aria-expanded="false">
+                      <div class="fmt-summary" id="fmtSummary">
+                        Facebook Feed, Instagram Feed…
+                        <span>4 formats selected · click to change</span>
+                      </div>
+                      <span class="chev">▼</span>
+                    </button>
+                    <div class="fmt-menu" id="fmtMenu" role="listbox">
+                      <button type="button" class="fmt-opt on" data-fmt="facebook-feed">
+                        <span class="fmt-check">✓</span>
+                        <div>
+                          <div class="w-title">Facebook Feed</div>
+                          <div class="w-desc">Auto-post after approval</div>
+                        </div>
+                      </button>
+                      <button type="button" class="fmt-opt on" data-fmt="facebook-story">
+                        <span class="fmt-check">✓</span>
+                        <div>
+                          <div class="w-title">Facebook Story</div>
+                          <div class="w-desc">Vertical · Meta story</div>
+                        </div>
+                      </button>
+                      <button type="button" class="fmt-opt on" data-fmt="instagram-feed">
+                        <span class="fmt-check">✓</span>
+                        <div>
+                          <div class="w-title">Instagram Feed</div>
+                          <div class="w-desc">Square artwork + caption</div>
+                        </div>
+                      </button>
+                      <button type="button" class="fmt-opt on" data-fmt="instagram-story">
+                        <span class="fmt-check">✓</span>
+                        <div>
+                          <div class="w-title">Instagram Story</div>
+                          <div class="w-desc">Auto story via Meta</div>
+                        </div>
+                      </button>
+                      <button type="button" class="fmt-opt manual-opt" data-fmt="instagram-story-manual">
+                        <span class="fmt-check">✓</span>
+                        <div>
+                          <div class="w-title">Instagram Story Manual</div>
+                          <div class="w-desc">Email kit at schedule time — add music, stickers, link stickers yourself (Instagram won’t let apps upload those)</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="manual-email-panel" id="manualEmailPanel">
+                    <div class="wow">★ Story kit email — music &amp; stickers workflow</div>
+                    <label class="field-label">Email send time (manual upload)</label>
+                    <p class="desc" style="margin-bottom:12px">
+                      After approval, Resend queues the story kit (image link, caption, and Instagram link)
+                      to arrive at this send time — so you can manually upload and add music, stickers, etc.
+                      Keep feed delivery as “Schedule to publish” when feed should still auto-post.
+                    </p>
+                    <div class="grid-2">
+                      <div>
+                        <label class="field-label">Email send date</label>
+                        <input class="field" type="date" value="2026-08-04" />
+                      </div>
+                      <div>
+                        <label class="field-label">Email send time</label>
+                        <input class="field" type="time" value="09:00" />
+                      </div>
+                    </div>
+                    <div style="margin-top:10px">
+                      <label class="field-label">Send to</label>
+                      <input class="field" type="email" placeholder="you@schoolpto.org" value="marrina@huesoinvestments.com" />
+                    </div>
+                    <div style="margin-top:10px">
+                      <label class="field-label">Link for Instagram</label>
+                      <input class="field" type="url" placeholder="https://…" />
+                      <p style="margin:6px 0 0;font-size:11px;color:var(--muted)">Optional. Included in the manual-upload email for link stickers.</p>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:14px">
+                    <label class="field-label">Caption</label>
+                    <textarea id="captionText" class="field" style="min-height:100px">Mark your calendars — Aug 9 at Edmondson. Come meet teachers, grab supplies help, and celebrate a new year! 🎒
+
+Details on the PTO site →</textarea>
+                  </div>
+                  <div style="margin-top:12px">
+                    <label class="field-label">Publish schedule (auto formats)</label>
+                    <input class="field" id="schedField" value="Jul 28, 2026 · 10:00 AM" />
+                  </div>
+                  <div class="actions" style="margin-top:14px">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnRegenCap">Regenerate caption</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnKeep">Keep edits</button>
+                  </div>
+                  <div id="reapproveBox" class="alert alert-changes hidden" style="margin-top:14px">
+                    <strong>Ready to resubmit</strong>
+                    Edits saved. Send this milestone back to your approver.
+                    <div style="margin-top:10px">
+                      <button type="button" class="btn btn-sm btn-gold" id="btnReapprove2">Send for re-approval</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- REVIEW -->
+            <section class="view" id="view-review">
+              <div class="panel-head">
+                <div>
+                  <h2>Review &amp; Approve</h2>
+                  <p>One last pass — change requests bounce back to Preview edits, then re-approval.</p>
+                </div>
+                <div class="actions">
+                  <button type="button" class="btn btn-secondary" data-goto="preview">← Preview</button>
+                  <button type="button" class="btn btn-gold">Send for approval</button>
+                </div>
+              </div>
+
+              <div class="split">
+                <div>
+                  <div class="box">
+                    <h3>Checklist</h3>
+                    <p class="desc">Same soft-card language as Newsletter Must-dos.</p>
+                    <div class="check-row">
+                      <div class="check">✓</div>
+                      <div>
+                        <strong style="font-size:14px">Logos from Setup</strong>
+                        <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">PTO / school brand kit applied</p>
+                      </div>
+                    </div>
+                    <div class="check-row">
+                      <div class="check">✓</div>
+                      <div>
+                        <strong style="font-size:14px">Playbook milestones mapped</strong>
+                        <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Elementary Event Blast → 5 steps</p>
+                      </div>
+                    </div>
+                    <div class="check-row">
+                      <div class="check">✓</div>
+                      <div>
+                        <strong style="font-size:14px">Save the Date generated + editable</strong>
+                        <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Edit artwork / caption without full regen</p>
+                      </div>
+                    </div>
+                    <div class="check-row">
+                      <div class="check empty"> </div>
+                      <div>
+                        <strong style="font-size:14px">Change-request loop</strong>
+                        <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Preview → edit → Send for re-approval</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="box">
+                    <h3>Approver</h3>
+                    <p class="desc">From Team Access.</p>
+                    <input class="field" value="PTO Communications Lead" readonly />
+                  </div>
+                </div>
+                <aside class="live-pane">
+                  <div class="live-label">Ready to ship peek</div>
+                  <div class="live-well">
+                    <div class="phone">
+                      <div class="phone-notch"></div>
+                      <div class="phone-screen">
+                        <div class="ig-bar">
+                          <div style="display:flex;align-items:center;gap:8px">
+                            <div class="ig-avatar"></div>
+                            edmondsonpto
+                          </div>
+                          ···
+                        </div>
+                        <div class="feed-art">
+                          <span class="badge">Queue</span>
+                          <div class="logo-chip">PTO</div>
+                          <div class="title">See you Aug 9</div>
+                        </div>
+                        <div class="ig-meta">
+                          <div class="likes">Post ways: Feed · Story</div>
+                          <div class="cap"><strong>edmondsonpto</strong> Edits + re-approval keep the campaign moving.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <div class="lightbox-card">
+      <button type="button" class="lightbox-x" id="lightboxClose" aria-label="Close">×</button>
+      <div class="lightbox-art" id="lightboxArt">
+        <div class="title" id="lightboxTitle">Artwork</div>
+      </div>
+      <div class="lightbox-bar">
+        <p>Generated artwork · larger view</p>
+        <button type="button" class="btn btn-sm btn-primary" id="lightboxDl">Download</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PLAYBOOKS = {
+      elementary: {
+        label: "Elementary Event Blast",
+        steps: [
+          { when: "T-14", name: "Save the Date", formats: "Feed · Story" },
+          { when: "T-7", name: "Volunteer ask", formats: "Feed" },
+          { when: "T-2", name: "This weekend!", formats: "Story" },
+          { when: "Day-of", name: "Day-of energy", formats: "Feed · Story" },
+          { when: "T+1", name: "Thank you", formats: "Feed" },
+        ],
+      },
+      volunteer: {
+        label: "Volunteer Drive",
+        steps: [
+          { when: "T-10", name: "Why we need you", formats: "Feed" },
+          { when: "T-5", name: "Open shifts", formats: "Feed · Story" },
+          { when: "T-1", name: "Last call", formats: "Story" },
+          { when: "Day-of", name: "You’re heroes", formats: "Feed" },
+        ],
+      },
+      fundraiser: {
+        label: "Fundraiser Warm-up",
+        steps: [
+          { when: "T-21", name: "Tease the goal", formats: "Feed · Story" },
+          { when: "T-14", name: "Donor story", formats: "Feed" },
+          { when: "T-7", name: "Halfway there", formats: "Feed · Story" },
+          { when: "T-1", name: "Final push", formats: "Story" },
+          { when: "Close", name: "We did it", formats: "Feed" },
+        ],
+      },
+    };
+
+    let milestones = [
+      { id: "m1", mo: "Jul", dy: "28", title: "Save the Date", meta: "Feed · Story · 2 weeks out", status: "ready", pill: "pill-ready", pillLabel: "Ready", open: false,
+        caption: "Mark your calendars — Aug 9 at Edmondson. Come meet teachers, grab supplies help, and celebrate a new year! 🎒\n\nDetails on the PTO site →",
+        story: "Save the date", sub: "Aug 9 · Back to School Fair",
+        art: "linear-gradient(145deg, #2f4a3c 0%, #6b8171 50%, #d4a84b 100%)",
+        changes: false, edited: false },
+      { id: "m2", mo: "Aug", dy: "4", title: "Volunteer ask", meta: "Feed · SignupGenius link", status: "draft", pill: "pill-draft", pillLabel: "Needs copy", open: false,
+        caption: "Parents — we need a few helpers for Supply Sorting (Aug 4, 1–3pm). Adults only, big impact. Sign up →",
+        story: "Volunteer with us", sub: "Aug 4 · Sign up link in bio",
+        art: "linear-gradient(145deg, #0b2f5b 0%, #2f9fb3 55%, #7fd0df 100%)",
+        changes: false, edited: false },
+      { id: "m3", mo: "Aug", dy: "7", title: "This weekend!", meta: "Story · Reminder", status: "gen", pill: "pill-gen", pillLabel: "To generate", open: false,
+        caption: "One more sleep until the Fair vibes hit. Bring the family Saturday — we can’t wait to see you!",
+        story: "Almost here", sub: "Fair is Saturday",
+        art: "linear-gradient(145deg, #c4922e 0%, #e0b65a 45%, #f5e6c2 100%)",
+        changes: false, edited: false },
+      { id: "m4", mo: "Aug", dy: "9", title: "Day-of energy", meta: "Feed · Story · Event day", status: "gen", pill: "pill-gen", pillLabel: "To generate", open: false,
+        caption: "It’s Fair day at Edmondson! Stop by, say hi to teachers, and soak up the community energy.",
+        story: "See you soon", sub: "Back to School Fair · Today",
+        art: "linear-gradient(145deg, #2f4a3c 0%, #0b2f5b 50%, #d4a84b 100%)",
+        changes: false, edited: false },
+      { id: "m5", mo: "Aug", dy: "10", title: "Thank you", meta: "Feed · Recap", status: "gen", pill: "pill-gen", pillLabel: "To generate", open: false,
+        caption: "Thank you, Edmondson families — what a beautiful kickoff to the year. We’re grateful for you.",
+        story: "Thank you", sub: "What a day",
+        art: "linear-gradient(145deg, #6b8171 0%, #b8c9bc 100%)",
+        changes: false, edited: false },
+    ];
+
+    let activeMs = 0;
+    let selectedLogo = "pto";
+    let dragInsp = null;
+    let dragMsId = null;
+
+    const toastEl = document.getElementById("toast");
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    /* Steps */
+    const steps = document.querySelectorAll(".step-btn");
+    const views = {
+      setup: document.getElementById("view-setup"),
+      milestones: document.getElementById("view-milestones"),
+      preview: document.getElementById("view-preview"),
+      review: document.getElementById("view-review"),
+    };
+    function go(step) {
+      steps.forEach((b) => b.classList.toggle("active", b.dataset.step === step));
+      Object.entries(views).forEach(([key, el]) => el.classList.toggle("active", key === step));
+      if (step === "milestones") renderMilestones();
+      if (step === "preview") { renderPreviewRail(); setMilestone(activeMs); }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    steps.forEach((btn) => btn.addEventListener("click", () => go(btn.dataset.step)));
+    document.querySelectorAll("[data-goto]").forEach((btn) => {
+      btn.addEventListener("click", () => go(btn.dataset.goto));
+    });
+
+    /* Logos */
+    document.querySelectorAll(".logo-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".logo-card").forEach((c) => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedLogo = card.dataset.logo;
+        const label = selectedLogo === "pto" ? "PTO" : selectedLogo === "school" ? "EES" : "—";
+        document.getElementById("setupLogoChip").textContent = label;
+        document.getElementById("setupLogoChip").style.display = selectedLogo === "none" ? "none" : "grid";
+        document.getElementById("feedLogoChip").textContent = label;
+        document.getElementById("feedLogoChip").style.display = selectedLogo === "none" ? "none" : "grid";
+        toast("Logo from Setup applied");
+      });
+    });
+
+    /* Inspiration DnD */
+    function refreshInspOrders() {
+      document.querySelectorAll("#inspSelected .insp-tile").forEach((t, i) => {
+        let ord = t.querySelector(".ord");
+        if (!ord) {
+          ord = document.createElement("span");
+          ord.className = "ord";
+          t.appendChild(ord);
+        }
+        ord.textContent = String(i + 1);
+      });
+      document.querySelectorAll("#inspPool .insp-tile .ord").forEach((o) => o.remove());
+    }
+
+    function bindInspTile(tile) {
+      tile.addEventListener("dragstart", (e) => {
+        dragInsp = tile;
+        tile.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      tile.addEventListener("dragend", () => {
+        tile.classList.remove("dragging");
+        dragInsp = null;
+        document.querySelectorAll(".insp-drop,.insp-pool").forEach((z) => z.classList.remove("drag-over"));
+        refreshInspOrders();
+      });
+    }
+    document.querySelectorAll(".insp-tile").forEach(bindInspTile);
+
+    function setupDropZone(zone) {
+      zone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        zone.classList.add("drag-over");
+      });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        zone.classList.remove("drag-over");
+        if (!dragInsp) return;
+        const after = [...zone.querySelectorAll(".insp-tile")].find((t) => {
+          const r = t.getBoundingClientRect();
+          return e.clientY < r.top + r.height / 2 || e.clientX < r.left + r.width / 2;
+        });
+        if (after) zone.insertBefore(dragInsp, after);
+        else zone.appendChild(dragInsp);
+        refreshInspOrders();
+        if (zone.id === "inspSelected" && dragInsp) {
+          document.getElementById("setupArt").style.background =
+            "radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), " +
+            dragInsp.style.background;
+        }
+        toast(zone.id === "inspSelected" ? "Inspiration ordered" : "Back to library");
+      });
+    }
+    setupDropZone(document.getElementById("inspSelected"));
+    setupDropZone(document.getElementById("inspPool"));
+
+    // Seed one selected inspiration
+    const first = document.querySelector("#inspPool .insp-tile");
+    if (first) {
+      document.getElementById("inspSelected").appendChild(first);
+      refreshInspOrders();
+    }
+
+    /* Playbook map */
+    function renderPlaybookMap() {
+      const key = document.getElementById("playbookSelect").value;
+      const pb = PLAYBOOKS[key];
+      const el = document.getElementById("playbookMap");
+      el.innerHTML =
+        `<h4>Maps to ${pb.steps.length} milestones</h4>` +
+        pb.steps
+          .map(
+            (s) =>
+              `<div class="map-row"><span class="map-chip">${s.when}</span><span class="map-arrow">→</span><strong>${s.name}</strong><span style="margin-left:auto;color:var(--muted)">${s.formats}</span></div>`,
+          )
+          .join("");
+    }
+    document.getElementById("playbookSelect").addEventListener("change", () => {
+      renderPlaybookMap();
+      const key = document.getElementById("playbookSelect").value;
+      const pb = PLAYBOOKS[key];
+      // Remap milestone titles from playbook (mock)
+      const months = ["Jul", "Aug", "Aug", "Aug", "Aug"];
+      const days = ["28", "4", "7", "9", "10"];
+      milestones = pb.steps.map((s, i) => ({
+        id: "m" + (i + 1),
+        mo: months[i] || "Aug",
+        dy: days[i] || String(i + 1),
+        title: s.name,
+        meta: s.formats + " · from playbook",
+        status: i === 0 ? "ready" : "gen",
+        pill: i === 0 ? "pill-ready" : "pill-gen",
+        pillLabel: i === 0 ? "Ready" : "To generate",
+        open: false,
+        caption: s.name + " — Edmondson families, you’re going to love this.",
+        story: s.name,
+        sub: s.when + " · Back to School Fair",
+        art: i % 2 === 0
+          ? "linear-gradient(145deg, #2f4a3c 0%, #6b8171 50%, #d4a84b 100%)"
+          : "linear-gradient(145deg, #0b2f5b 0%, #2f9fb3 55%, #7fd0df 100%)",
+        changes: false,
+        edited: false,
+      }));
+      activeMs = 0;
+      toast("Playbook mapped → " + pb.steps.length + " milestones");
+    });
+    renderPlaybookMap();
+
+    /* Milestones list */
+    function renderMilestones() {
+      const list = document.getElementById("msList");
+      list.innerHTML = "";
+      milestones.forEach((m, idx) => {
+        const card = document.createElement("div");
+        card.className = "ms-card" + (m.open ? " open" : "");
+        card.draggable = true;
+        card.dataset.id = m.id;
+        card.innerHTML = `
+          <button type="button" class="ms-head" data-toggle="${m.id}">
+            <span class="ms-grip" title="Drag to reorder">⠿</span>
+            <div class="m-date"><div class="mo">${m.mo}</div><div class="dy">${m.dy}</div></div>
+            <div>
+              <p class="m-title">${m.title}</p>
+              <p class="m-meta">${m.meta}</p>
+            </div>
+            <span class="pill ${m.pill}">${m.pillLabel}</span>
+            <span class="chev">▼</span>
+          </button>
+          <div class="ms-body">
+            <div class="grid-2">
+              <div>
+                <label class="field-label">Title</label>
+                <input class="field ms-title" data-id="${m.id}" value="${m.title}" />
+              </div>
+              <div>
+                <label class="field-label">Date</label>
+                <input class="field" type="date" value="2026-0${m.mo === "Jul" ? "7" : "8"}-${m.dy.padStart(2, "0")}" />
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <label class="field-label">Formats</label>
+              <input class="field ms-meta" data-id="${m.id}" value="${m.meta}" />
+            </div>
+            <div style="margin-top:10px">
+              <label class="field-label">Notes</label>
+              <textarea class="field" rows="2">Edit this milestone without leaving the list.</textarea>
+            </div>
+            <div class="actions" style="margin-top:12px">
+              <button type="button" class="btn btn-sm btn-primary ms-save" data-id="${m.id}">Save milestone</button>
+              <button type="button" class="btn btn-sm btn-secondary" data-toggle="${m.id}">Collapse</button>
+            </div>
+          </div>`;
+        list.appendChild(card);
+
+        card.addEventListener("dragstart", (e) => {
+          dragMsId = m.id;
+          card.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+        });
+        card.addEventListener("dragend", () => {
+          card.classList.remove("dragging");
+          dragMsId = null;
+          list.querySelectorAll(".ms-card").forEach((c) => c.classList.remove("drag-over"));
+        });
+        card.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          card.classList.add("drag-over");
+        });
+        card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+        card.addEventListener("drop", (e) => {
+          e.preventDefault();
+          card.classList.remove("drag-over");
+          if (!dragMsId || dragMsId === m.id) return;
+          const from = milestones.findIndex((x) => x.id === dragMsId);
+          const to = milestones.findIndex((x) => x.id === m.id);
+          const [item] = milestones.splice(from, 1);
+          milestones.splice(to, 0, item);
+          renderMilestones();
+          toast("Milestones reordered");
+        });
+      });
+
+      list.querySelectorAll("[data-toggle]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-toggle");
+          milestones = milestones.map((m) =>
+            m.id === id ? { ...m, open: !m.open } : { ...m, open: false },
+          );
+          renderMilestones();
+        });
+      });
+      list.querySelectorAll(".ms-save").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const title = list.querySelector(`.ms-title[data-id="${id}"]`)?.value;
+          const meta = list.querySelector(`.ms-meta[data-id="${id}"]`)?.value;
+          milestones = milestones.map((m) =>
+            m.id === id ? { ...m, title: title || m.title, meta: meta || m.meta, open: false } : m,
+          );
+          renderMilestones();
+          toast("Milestone saved");
+        });
+      });
+      // Prevent drag when interacting with inputs
+      list.querySelectorAll("input, textarea, button.ms-save").forEach((el) => {
+        el.addEventListener("mousedown", (e) => e.stopPropagation());
+      });
+    }
+
+    document.getElementById("addMs").addEventListener("click", () => {
+      milestones.push({
+        id: "m" + Date.now(),
+        mo: "Aug",
+        dy: "12",
+        title: "New milestone",
+        meta: "Feed · custom",
+        status: "draft",
+        pill: "pill-draft",
+        pillLabel: "Draft",
+        open: true,
+        caption: "New post for Edmondson families.",
+        story: "New post",
+        sub: "Custom milestone",
+        art: "linear-gradient(145deg, #6b8171, #d4a84b)",
+        changes: false,
+        edited: false,
+      });
+      renderMilestones();
+      toast("Milestone added");
+    });
+
+    /* Preview */
+    function renderPreviewRail() {
+      const rail = document.getElementById("previewRail");
+      rail.innerHTML =
+        "<h4>Milestones</h4>" +
+        milestones
+          .map((m, i) => {
+            const st = m.changes
+              ? "Changes requested"
+              : m.edited
+                ? "Edited · reapprove"
+                : m.pillLabel;
+            return `<button type="button" class="m-mini${i === activeMs ? " active" : ""}" data-ms="${i}">
+              <strong>${m.title}</strong>
+              <span>${m.mo} ${m.dy} · ${st}</span>
+            </button>`;
+          })
+          .join("");
+      rail.querySelectorAll(".m-mini").forEach((btn) => {
+        btn.addEventListener("click", () => setMilestone(Number(btn.dataset.ms)));
+      });
+    }
+
+    function setMilestone(i) {
+      activeMs = i;
+      const m = milestones[i];
+      renderPreviewRail();
+      document.getElementById("feedTitle").textContent = m.title;
+      document.getElementById("feedCap").innerHTML =
+        "<strong>edmondsonpto</strong> " + m.caption.split("\n")[0];
+      document.getElementById("feedArt").style.background =
+        "radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), " + m.art;
+      document.getElementById("storyArt").style.background =
+        "radial-gradient(circle at 30% 20%, rgba(255,252,247,.2), transparent 45%), " + m.art;
+      document.getElementById("storyTitle").textContent = m.story;
+      document.getElementById("storySub").textContent = m.sub;
+      document.getElementById("captionText").value = m.caption;
+      document.getElementById("schedField").value = `${m.mo} ${m.dy}, 2026 · 10:00 AM`;
+
+      const alert = document.getElementById("changesAlert");
+      const reBox = document.getElementById("reapproveBox");
+      if (m.changes) {
+        alert.classList.remove("hidden");
+        reBox.classList.add("hidden");
+      } else if (m.edited) {
+        alert.classList.add("hidden");
+        reBox.classList.remove("hidden");
+      } else {
+        alert.classList.add("hidden");
+        reBox.classList.add("hidden");
+      }
+    }
+
+    document.getElementById("modeToggle").querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.getElementById("modeToggle").querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const story = btn.dataset.mode === "story";
+        document.getElementById("feedView").classList.toggle("hidden", story);
+        document.getElementById("storyView").classList.toggle("hidden", !story);
+      });
+    });
+
+    /* Formats dropdown */
+    const fmtDrop = document.getElementById("fmtDrop");
+    const fmtTrigger = document.getElementById("fmtTrigger");
+    const fmtSummary = document.getElementById("fmtSummary");
+    const manualPanel = document.getElementById("manualEmailPanel");
+    const FMT_LABELS = {
+      "facebook-feed": "Facebook Feed",
+      "facebook-story": "Facebook Story",
+      "instagram-feed": "Instagram Feed",
+      "instagram-story": "Instagram Story",
+      "instagram-story-manual": "IG Story Manual",
+    };
+
+    function selectedFormats() {
+      return [...document.querySelectorAll(".fmt-opt.on")].map((o) => o.dataset.fmt);
+    }
+    function refreshFmtSummary() {
+      const selected = selectedFormats();
+      const labels = selected.map((id) => FMT_LABELS[id] || id);
+      const head =
+        labels.length === 0
+          ? "No formats selected"
+          : labels.length <= 2
+            ? labels.join(", ")
+            : labels.slice(0, 2).join(", ") + " +" + (labels.length - 2);
+      const hasManual = selected.includes("instagram-story-manual");
+      fmtSummary.innerHTML =
+        head +
+        `<span>${labels.length} format${labels.length === 1 ? "" : "s"} selected` +
+        (hasManual ? " · includes Story Manual email kit" : "") +
+        " · click to change</span>";
+      manualPanel.classList.toggle("show", hasManual);
+    }
+    fmtTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = fmtDrop.classList.toggle("open");
+      fmtTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.querySelectorAll(".fmt-opt").forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        opt.classList.toggle("on");
+        refreshFmtSummary();
+        const label = opt.querySelector(".w-title")?.textContent || "Format";
+        toast(
+          opt.classList.contains("on")
+            ? label + " on"
+            : label + " off",
+        );
+      });
+    });
+    document.addEventListener("click", (e) => {
+      if (!fmtDrop.contains(e.target)) {
+        fmtDrop.classList.remove("open");
+        fmtTrigger.setAttribute("aria-expanded", "false");
+      }
+    });
+    refreshFmtSummary();
+
+    function markEdited() {
+      milestones[activeMs] = {
+        ...milestones[activeMs],
+        changes: false,
+        edited: true,
+        pill: "pill-draft",
+        pillLabel: "Edited",
+      };
+      setMilestone(activeMs);
+      toast("Edits saved — ready for re-approval");
+    }
+
+    document.getElementById("btnEditArt").addEventListener("click", () => {
+      milestones[activeMs].art =
+        "linear-gradient(145deg, #0b2f5b 0%, #2f4a3c 40%, #d4a84b 100%)";
+      markEdited();
+    });
+    document.getElementById("btnEditArt2").addEventListener("click", () => {
+      milestones[activeMs].art =
+        "linear-gradient(145deg, #c4922e 0%, #2f4a3c 55%, #0b2f5b 100%)";
+      markEdited();
+    });
+    document.getElementById("btnEditCap").addEventListener("click", () => {
+      document.getElementById("captionText").focus();
+      toast("Edit caption below — change requests land here");
+    });
+    document.getElementById("btnEditCap2").addEventListener("click", () => {
+      document.getElementById("captionText").focus();
+    });
+    document.getElementById("btnChangeDate").addEventListener("click", () => {
+      document.getElementById("schedField").focus();
+      toast("Change date — then re-approve");
+    });
+    document.getElementById("btnKeep").addEventListener("click", () => {
+      milestones[activeMs].caption = document.getElementById("captionText").value;
+      markEdited();
+    });
+    document.getElementById("btnRegenCap").addEventListener("click", () => {
+      document.getElementById("captionText").value =
+        "Updated caption draft for " + milestones[activeMs].title + " — warm, short, soft CTA.";
+      toast("Caption regenerated (optional)");
+    });
+    document.getElementById("btnGenerate").addEventListener("click", () => {
+      milestones[activeMs] = {
+        ...milestones[activeMs],
+        status: "ready",
+        pill: "pill-ready",
+        pillLabel: "Ready",
+        changes: false,
+        edited: false,
+      };
+      setMilestone(activeMs);
+      toast("Artwork generated — edit anytime");
+    });
+    document.getElementById("btnSimChanges").addEventListener("click", () => {
+      milestones[activeMs] = {
+        ...milestones[activeMs],
+        changes: true,
+        edited: false,
+        pill: "pill-changes",
+        pillLabel: "Changes",
+      };
+      setMilestone(activeMs);
+      toast("Change request routed to Preview edits");
+    });
+    function sendReapprove() {
+      milestones[activeMs] = {
+        ...milestones[activeMs],
+        changes: false,
+        edited: false,
+        pill: "pill-ready",
+        pillLabel: "In review",
+      };
+      setMilestone(activeMs);
+      toast("Sent for re-approval");
+    }
+    document.getElementById("btnReapprove").addEventListener("click", sendReapprove);
+    document.getElementById("btnReapprove2").addEventListener("click", sendReapprove);
+
+    /* Artwork enlarge + download */
+    const lightbox = document.getElementById("lightbox");
+    const lightboxArt = document.getElementById("lightboxArt");
+    const lightboxTitle = document.getElementById("lightboxTitle");
+
+    function openLightbox(fromEl, title) {
+      const bg = fromEl.style.background || getComputedStyle(fromEl).backgroundImage;
+      lightboxArt.style.background = fromEl.style.background ||
+        "radial-gradient(circle at 30% 30%, rgba(255,252,247,.25), transparent 40%), " +
+        (milestones[activeMs]?.art || "linear-gradient(145deg,#2f4a3c,#d4a84b)");
+      // Prefer inline background set on feedArt
+      if (fromEl.id === "feedArt" && fromEl.style.background) {
+        lightboxArt.style.background = fromEl.style.background;
+      } else if (fromEl.id === "storyArt") {
+        lightboxArt.style.background = getComputedStyle(fromEl).backgroundImage !== "none"
+          ? getComputedStyle(fromEl).backgroundImage
+          : milestones[activeMs]?.art;
+        // story uses CSS class gradient — use milestone art
+        lightboxArt.style.background =
+          "radial-gradient(circle at 30% 20%, rgba(255,252,247,.2), transparent 45%), " +
+          (milestones[activeMs]?.art || "linear-gradient(160deg,#0b2f5b,#d4a84b)");
+      }
+      void bg;
+      lightboxTitle.textContent = title || milestones[activeMs]?.title || "Artwork";
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+    }
+    function closeLightbox() {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+    }
+    function downloadArt() {
+      toast("Download started · " + (milestones[activeMs]?.title || "artwork") + ".png");
+    }
+
+    document.getElementById("feedArt").addEventListener("click", (e) => {
+      if (e.target.closest(".art-dl")) return;
+      openLightbox(document.getElementById("feedArt"), document.getElementById("feedTitle").textContent);
+    });
+    document.getElementById("feedArt").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openLightbox(document.getElementById("feedArt"), document.getElementById("feedTitle").textContent);
+      }
+    });
+    document.getElementById("storyArt").addEventListener("click", (e) => {
+      if (e.target.closest(".art-dl")) return;
+      openLightbox(document.getElementById("storyArt"), document.getElementById("storyTitle").textContent);
+    });
+    document.getElementById("btnDlFeed").addEventListener("click", (e) => {
+      e.stopPropagation();
+      downloadArt();
+    });
+    document.getElementById("btnDlStory").addEventListener("click", (e) => {
+      e.stopPropagation();
+      downloadArt();
+    });
+    document.getElementById("lightboxDl").addEventListener("click", downloadArt);
+    document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+    lightbox.addEventListener("click", (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+    });
+
+    renderMilestones();
+    renderPreviewRail();
+  </script>
+</body>
+</html>

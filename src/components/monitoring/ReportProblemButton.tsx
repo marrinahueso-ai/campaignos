@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Bug, Loader2, X } from "lucide-react";
 import * as Sentry from "@sentry/nextjs";
 import {
@@ -316,6 +317,9 @@ export function ReportProblemButton({
   }
 
   const isSubmitting = submitState.status === "submitting";
+  const pathname = usePathname();
+  /** Composer forms use the lower-right; keep this control clear of caption/fields. */
+  const onDenseComposer = pathname.includes("/campaign-builder");
 
   return (
     <>
@@ -326,7 +330,11 @@ export function ReportProblemButton({
           setSubmitState({ status: "idle" });
           setOpen(true);
         }}
-        className="fixed bottom-36 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:bottom-24 sm:right-6"
+        className={
+          onDenseComposer
+            ? "fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card/95 px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:right-6"
+            : "fixed bottom-36 right-4 z-40 inline-flex items-center gap-2 rounded-md border border-cos-border bg-cos-card px-3 py-2 text-xs font-medium text-cos-text shadow-sm transition hover:bg-cos-bg-alt focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cos-dark sm:bottom-24 sm:right-6"
+        }
         aria-haspopup="dialog"
       >
         <Bug className="h-3.5 w-3.5 text-cos-muted" strokeWidth={1.5} aria-hidden />

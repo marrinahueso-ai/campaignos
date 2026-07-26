@@ -434,17 +434,20 @@ export function PreviewStep() {
     : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-3 border-b border-cos-border bg-cos-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-        <p className="text-sm text-cos-muted">
-          <span className="font-medium text-cos-text">
-            {progress.complete} of {progress.total}
-          </span>{" "}
-          milestones complete
-        </p>
+    <div className="min-w-0 space-y-4">
+      <div className="flex flex-col gap-3 rounded-[22px] border border-cos-border bg-cos-card px-4 py-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div>
+          <h2 className="font-display text-2xl text-cos-text">Preview Campaign</h2>
+          <p className="mt-0.5 text-sm text-cos-muted">
+            <span className="font-semibold text-cos-text">
+              {progress.complete} of {progress.total}
+            </span>{" "}
+            milestones complete · edit anytime, then re-approve
+          </p>
+        </div>
         {allGenerated ? (
           <Button size="sm" onClick={() => goToStep("review")}>
-            Next: Review & Approve
+            Save → Review
             <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
           </Button>
         ) : (
@@ -455,13 +458,13 @@ export function PreviewStep() {
           >
             {generatingName
               ? `Generating ${generatingName}…`
-              : "Generate Next Milestone"}
+              : "Generate next milestone"}
             <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
           </Button>
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
         <MilestoneRail
           milestones={session.milestones}
           previewContents={session.previewContents}

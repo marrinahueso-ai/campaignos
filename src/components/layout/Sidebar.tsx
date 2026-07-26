@@ -116,18 +116,10 @@ function extractCampaignBuilderEventId(pathname: string): string | null {
 }
 
 function resolveCampaignBuilderHref(
-  pathname: string,
-  lastEventId: string | null,
+  _pathname: string,
+  _lastEventId: string | null,
 ): string {
-  const eventId =
-    extractCampaignBuilderEventId(pathname) ?? extractEventId(pathname);
-  if (eventId) {
-    return `/events/${eventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
-  }
-  if (lastEventId) {
-    return `/events/${lastEventId}/campaign-builder#${CAMPAIGN_BUILDER_HASH}`;
-  }
-  // Hub page — works with zero events and respects access there.
+  // Always land on the Create with AI chooser (Home Page / Social / Newsletter).
   return "/create-with-ai";
 }
 
@@ -153,6 +145,10 @@ function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
   return (
     pathname === "/create-with-ai" ||
     pathname.startsWith("/create-with-ai/") ||
+    pathname === "/homepage-composer" ||
+    pathname.startsWith("/homepage-composer/") ||
+    pathname === "/newsletter-composer" ||
+    pathname.startsWith("/newsletter-composer/") ||
     extractCampaignBuilderEventId(pathname) !== null
   );
 }

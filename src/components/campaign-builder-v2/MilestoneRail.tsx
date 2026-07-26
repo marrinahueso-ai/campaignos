@@ -89,8 +89,11 @@ export function MilestoneRail({
   );
 
   return (
-    <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-cos-border bg-cos-card lg:block">
-      <ul className="divide-y divide-cos-border">
+    <aside className="hidden w-[200px] shrink-0 overflow-y-auto border-r border-cos-border bg-cos-bg-alt p-2.5 lg:block">
+      <p className="mb-2 px-2 text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
+        Milestones
+      </p>
+      <ul className="space-y-1">
         {sortedMilestones(milestones).map((milestone) => {
           const preview = previewById.get(milestone.id);
           const isGenerating =
@@ -112,30 +115,32 @@ export function MilestoneRail({
                 type="button"
                 onClick={() => onSelect(milestone.id)}
                 className={cn(
-                  "flex w-full flex-col gap-1 px-4 py-3 text-left text-sm transition-colors",
+                  "flex w-full flex-col gap-0.5 rounded-[12px] px-2.5 py-2.5 text-left text-sm transition",
                   isSelected
-                    ? "bg-cos-accent-soft/60 text-cos-text"
-                    : "text-cos-muted hover:bg-cos-bg hover:text-cos-text",
+                    ? "bg-cos-card text-cos-text shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
+                    : "text-cos-muted hover:bg-white/50 hover:text-cos-text",
                 )}
               >
-                <div className="flex items-center gap-3">
+                <span className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                       style.className,
                     )}
                   >
                     <StatusIcon
                       className={cn(
-                        "h-3.5 w-3.5",
+                        "h-3 w-3",
                         status === "generating" && "animate-spin",
                       )}
                       strokeWidth={2}
                     />
                   </span>
-                  <span className="truncate font-medium">{milestone.name}</span>
-                </div>
-                <span className="pl-9 text-[11px] text-cos-muted">
+                  <strong className="truncate text-[13px] font-bold">
+                    {milestone.name}
+                  </strong>
+                </span>
+                <span className="pl-7 text-[11px] text-cos-muted">
                   {MILESTONE_STATUS_LABELS[status]}
                 </span>
               </button>

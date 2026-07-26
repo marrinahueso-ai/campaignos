@@ -34,7 +34,7 @@ export function CampaignBuilderFooter({
   return (
     <footer
       className={cn(
-        "flex flex-col-reverse gap-3 border-t border-cos-border bg-cos-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-8",
+        "mt-6 flex flex-col-reverse gap-3 rounded-[22px] border border-cos-border/70 bg-cos-card px-4 py-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:flex-row sm:items-center sm:justify-between sm:px-5",
         className,
       )}
     >
