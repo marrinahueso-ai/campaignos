@@ -36,7 +36,9 @@ const STARTER: PlanEntitlements = {
     volunteer_center: false,
     communication_hub: false,
     inbox_ai: false,
-    social_analytics: false,
+    // Org/Event Insights + Connect Meta empty — shipped "standard analytics"
+    // (advanced demographics still deferred). Must stay unlocked for Meta App Review.
+    social_analytics: true,
     custom_dashboard: false,
     custom_roles: false,
     change_requests: false,
@@ -57,7 +59,7 @@ const PROFESSIONAL: PlanEntitlements = {
     volunteer_center: true,
     communication_hub: true,
     inbox_ai: false,
-    social_analytics: false,
+    social_analytics: true,
     custom_dashboard: false,
     custom_roles: true,
     change_requests: true,

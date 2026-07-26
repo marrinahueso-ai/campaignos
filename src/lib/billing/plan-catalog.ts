@@ -86,11 +86,11 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
     priceUsd: 129,
     monthlyCredits: PLAN_MONTHLY_CREDITS.premium,
     description:
-      "Recommended for most active PTOs — AI headroom, Inbox, Social Analytics, and room to grow.",
+      "Recommended for most active PTOs — AI headroom, Inbox, Custom Dashboard, and room to grow.",
     features: [
       `${PLAN_MONTHLY_CREDITS.premium.toLocaleString()} AI credits / month`,
       `Includes $${AI_RESERVE_SKUS.reserve.priceUsd} AI Reserve (${AI_RESERVE_SKUS.reserve.credits.toLocaleString()} credits) / year`,
-      "AI Inbox replies · Social Analytics · Custom Dashboard",
+      "AI Inbox replies · Custom Dashboard",
       "Unlimited Meta posts, seats, and social accounts",
       "Priority support",
     ],

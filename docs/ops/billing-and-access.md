@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product  
-**Last updated:** July 25, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Ops](./README.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
 
 ## Purpose
@@ -97,12 +97,11 @@ Founding / `billing_exempt_at` → **unlimited** credits (usage still logged, no
 | Notes & Activity | ✅ | ✅ | ✅ |
 | Dashboard Widgets (default) | ✅ | ✅ | ✅ |
 | Custom Dashboard | — | — | ✅ |
-| Standard Analytics | ✅ | ✅ | ✅ |
+| Standard Analytics / Social Analytics (Org + Event Insights) | ✅ | ✅ | ✅ |
 | Basic Approval Workflow | ✅ | ✅ | ✅ |
 | Communication Hub | — | ✅ | ✅ |
 | Meta Publishing | 10 posts/mo | **40 posts/mo** | **Unlimited** |
 | AI Inbox Replies | — | — | ✅ |
-| Social Analytics | — | — | ✅ |
 | Change Requests & Reapproval | — | ✅ | ✅ |
 | Custom Roles & Permissions | — | ✅ | ✅ |
 | Approval Routing | — | ✅ | ✅ |
@@ -261,7 +260,7 @@ One additional gate is **access-level**, not feature/capacity — it blocks the 
 | `inbox_ai` | Feature | Inbox AI draft action |
 | `volunteer_center` | Feature | `connectVolunteerSourceAction` (event-volunteers) |
 | `communication_hub` | Feature | `requireInboxPermission` + `syncInboxNowAction` (inbox) |
-| `social_analytics` | Feature | Insights page + `syncInsightsAction` |
+| `social_analytics` | Feature | Insights page + `syncInsightsAction` (all plans — aligns with Standard Analytics; required for Meta App Review Connect/Insights surfaces) |
 | `custom_dashboard` | Feature | `saveDashboardLayoutAction` (today) |
 | `custom_roles` | Feature | `createOrganizationAccessTemplateAction` (access-templates) |
 | `change_requests` | Feature | `requestUnifiedChangesAction` (approvals-scheduling) |
