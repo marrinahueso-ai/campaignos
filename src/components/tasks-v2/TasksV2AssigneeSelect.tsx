@@ -10,6 +10,8 @@ interface TasksV2AssigneeSelectProps {
   orgMembers: TaskHubOrgMember[];
   canEdit: boolean;
   disabled?: boolean;
+  /** Wider select for detail drawers. */
+  fullWidth?: boolean;
   onChange: (next: {
     assigneeUserId: string | null;
     assigneeName: string | null;
@@ -24,6 +26,7 @@ export function TasksV2AssigneeSelect({
   orgMembers,
   canEdit,
   disabled,
+  fullWidth = false,
   onChange,
 }: TasksV2AssigneeSelectProps) {
   const assignable = orgMembers.filter((member) => member.userId);
@@ -41,7 +44,13 @@ export function TasksV2AssigneeSelect({
       : "";
 
   return (
-    <label className="inline-flex max-w-[9rem] items-center gap-1.5">
+    <label
+      className={
+        fullWidth
+          ? "inline-flex w-full items-center gap-2"
+          : "inline-flex max-w-[9rem] items-center gap-1.5"
+      }
+    >
       <TasksV2OwnerAvatar name={assigneeName} initials={assigneeInitials} />
       <select
         value={selectValue}
@@ -64,7 +73,11 @@ export function TasksV2AssigneeSelect({
             assigneeInitials: member?.initials ?? null,
           });
         }}
-        className="max-w-[6.5rem] cursor-pointer truncate border-0 bg-transparent py-0.5 text-xs text-cos-muted outline-none focus:text-cos-text"
+        className={
+          fullWidth
+            ? "min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent py-0.5 text-sm font-semibold text-cos-text outline-none"
+            : "max-w-[6.5rem] cursor-pointer truncate border-0 bg-transparent py-0.5 text-xs text-cos-muted outline-none focus:text-cos-text"
+        }
       >
         <option value="">Unassigned</option>
         {assignable.map((member) => (

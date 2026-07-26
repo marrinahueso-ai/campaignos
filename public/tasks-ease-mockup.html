@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Tasks Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, select, a { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 78rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 18px; animation: rise .35s ease both;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(32px, 4vw, 44px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      line-height: 1.45;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent;
+    }
+    .btn-ghost:hover { border-color: var(--line); color: var(--ink); }
+
+    /* One quiet control strip: scope + views */
+    .controls {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+      margin-bottom: 10px;
+    }
+    .scope {
+      display: inline-flex; gap: 2px; padding: 3px;
+      border-radius: 999px; background: rgba(255,252,247,0.55);
+      border: 1px solid var(--line);
+    }
+    .scope button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 7px 13px; font-size: 13px; font-weight: 700;
+      color: var(--ink-soft); cursor: pointer;
+    }
+    .scope button.active {
+      background: var(--white); color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .tabs {
+      display: flex; flex-wrap: wrap; gap: 2px; align-items: center;
+    }
+    .tab {
+      border: none; background: transparent;
+      border-radius: 999px; padding: 7px 12px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      cursor: pointer;
+    }
+    .tab:hover { color: var(--ink); }
+    .tab.active {
+      color: var(--ink);
+      background: rgba(255,252,247,0.85);
+    }
+
+    /* Pulse as plain text links — no pill stack */
+    .pulse {
+      display: flex; flex-wrap: wrap; gap: 4px 14px;
+      align-items: baseline;
+      margin: 0 0 12px;
+      padding: 0 2px;
+    }
+    .pulse > span {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .pulse button {
+      border: none; background: transparent; padding: 0;
+      font-size: 13px; font-weight: 600; color: var(--ink-soft);
+      cursor: pointer;
+    }
+    .pulse button:hover { color: var(--ink); }
+    .pulse button.active {
+      color: var(--ink);
+      font-weight: 800;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1.5px;
+    }
+    .pulse button em {
+      font-style: normal; font-weight: 700; color: var(--muted);
+      margin-left: 3px;
+    }
+    .pulse button.active em { color: var(--ink-soft); }
+
+    /* Show-style event chips with color-picker dots */
+    .events-row {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+      margin-bottom: 18px;
+    }
+    .events-row > span {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-right: 2px;
+    }
+    .event-chip {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 4px 8px 4px 5px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .event-chip.on {
+      color: var(--ink);
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .event-chip .chip-label {
+      border: none; background: transparent; padding: 2px 4px;
+      font: inherit; color: inherit; cursor: pointer;
+    }
+
+    /* Dot color picker (calendar Show pattern) */
+    .swatch-wrap { position: relative; display: inline-flex; }
+    .swatch {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 1.5px solid rgba(42,38,34,0.18);
+      background: var(--swatch, var(--forest));
+      cursor: pointer; padding: 0;
+      box-shadow: inset 0 0 0 1px rgba(255,252,247,0.35);
+    }
+    .swatch:hover { transform: scale(1.08); }
+    .picker {
+      position: absolute; z-index: 40; top: calc(100% + 8px); left: 0;
+      width: 200px; padding: 10px;
+      background: var(--white); border: 1px solid var(--line);
+      border-radius: 14px; box-shadow: var(--shadow-lg);
+    }
+    .picker[hidden] { display: none !important; }
+    .picker p {
+      margin: 0 0 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .picker-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+    }
+    .picker-grid button {
+      width: 24px; height: 24px; border-radius: 8px;
+      border: 1px solid rgba(42,38,34,0.12);
+      cursor: pointer; padding: 0;
+    }
+    .picker-grid button.on {
+      outline: 2px solid var(--ink);
+      outline-offset: 1px;
+    }
+
+    .panel { animation: rise .35s ease both; }
+    .panel[hidden],
+    .event-stack[hidden],
+    [hidden] { display: none !important; }
+
+    .box {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* Each event = its own card, calendar-style left stripe */
+    .event-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .event-box {
+      --stripe: var(--forest);
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: visible;
+      padding: 16px;
+      border-left: 4px solid var(--stripe);
+      animation: rise .35s ease both;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .event-box h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .event-box h3 a {
+      color: inherit; text-decoration: none;
+    }
+    .event-box h3 a:hover { text-decoration: underline; }
+    .event-box .title-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      margin: 0;
+    }
+    .event-box .title-row h3 { margin: 0; flex: 1; min-width: 0; }
+    .meta {
+      font-family: var(--sans);
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 999px;
+      background: color-mix(in srgb, var(--stripe) 14%, transparent);
+      color: color-mix(in srgb, var(--stripe) 75%, var(--ink));
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 12px; align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: rgba(255,252,247,0.7);
+      width: 100%;
+      text-align: left; color: inherit;
+      cursor: pointer;
+      margin: 0;
+    }
+    .row:hover {
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .check {
+      width: 18px; height: 18px; border-radius: 6px;
+      border: 1.5px solid var(--line);
+      background: var(--white);
+    }
+    .check.on {
+      background: var(--forest);
+      border-color: var(--forest);
+      box-shadow: inset 0 0 0 3px var(--white);
+    }
+    .row strong { display: block; font-size: 14px; margin-bottom: 2px; }
+    .row p { margin: 0; font-size: 12px; color: var(--muted); }
+    .who {
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      white-space: nowrap;
+    }
+    .status {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status.todo { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .status.progress { background: rgba(196,146,46,0.16); color: #7a5a12; }
+    .status.done { background: rgba(42,122,134,0.12); color: var(--teal); }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(200px, 1fr));
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .col {
+      --col: var(--sage);
+      background: color-mix(in srgb, var(--col) 8%, rgba(255,252,247,0.7));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      min-height: 280px;
+      border-top: 3px solid var(--col);
+    }
+    .col-head {
+      margin: 0 0 12px;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .col-head .left {
+      display: flex; align-items: center; gap: 8px; min-width: 0;
+    }
+    .col-head em {
+      font-style: normal;
+      font-family: var(--serif);
+      font-size: 15px; font-weight: 600;
+      color: var(--ink);
+    }
+    .col-head .count {
+      font-size: 12px; font-weight: 800; color: var(--muted);
+    }
+    .card {
+      display: block; width: 100%;
+      text-align: left; border: none; cursor: pointer;
+      background: var(--white);
+      border-radius: 14px;
+      padding: 12px 12px 12px 11px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      color: inherit;
+      border-left: 3px solid var(--event, var(--forest));
+    }
+    .card strong { display: block; font-size: 13px; margin-bottom: 4px; }
+    .card small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+    .card .footer {
+      margin-top: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px; font-size: 11px; font-weight: 700; color: var(--ink-soft);
+    }
+
+    .custom-setup {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 0.7fr);
+      gap: 14px;
+    }
+    .custom-setup h3 {
+      margin: 0 0 6px;
+      font-family: var(--serif);
+      font-size: 22px; font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .custom-setup p {
+      margin: 0 0 14px;
+      font-size: 13px; color: var(--ink-soft); line-height: 1.45;
+      max-width: 46ch;
+    }
+    .col-editor {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .col-editor label {
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 8px; align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,252,247,0.7);
+      border: 1px solid transparent;
+    }
+    .col-editor input {
+      border: none; background: transparent;
+      font-size: 13px; font-weight: 700; color: var(--ink);
+      outline: none;
+    }
+    .hint {
+      font-size: 12px; color: var(--muted); margin-top: 10px;
+    }
+
+    .empty {
+      border-radius: var(--radius);
+      border: 1px dashed var(--line);
+      background: rgba(255,252,247,0.55);
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .empty h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 20px; font-weight: 600;
+    }
+    .empty p {
+      margin: 8px auto 0;
+      max-width: 36ch;
+      font-size: 13px; color: var(--ink-soft); line-height: 1.45;
+    }
+
+    .note {
+      margin-top: 36px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 48rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .board { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+      .custom-setup { grid-template-columns: 1fr; }
+      .row { grid-template-columns: auto 1fr; }
+      .who, .status { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Nav">
+      <div class="rail-logo">H</div>
+      <button type="button" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+      <button type="button" aria-label="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" aria-label="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+      <button type="button" class="active" aria-label="Tasks"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="school-pill"><span class="dot"></span> Edmondson Elementary</div>
+        <div style="font-size:13px;color:var(--muted)">marrina@huesoinvestments.com</div>
+      </header>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Tasks ease · team + mine · boards · not live yet</div>
+
+        <div class="page-head">
+          <div>
+            <h1>Tasks</h1>
+            <p id="scope-copy">Everything your team owes across events — same tasks that live on each event’s Tasks tab.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-secondary">Add task</button>
+            <button type="button" class="btn btn-primary">Ask AI for tasks</button>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="scope" role="group" aria-label="Who’s tasks">
+            <button type="button" class="active" data-scope="team">Team</button>
+            <button type="button" data-scope="mine">Mine</button>
+          </div>
+          <nav class="tabs" role="tablist" aria-label="Task views">
+            <button type="button" class="tab active" data-view="list" aria-selected="true">List</button>
+            <button type="button" class="tab" data-view="board" aria-selected="false">Status</button>
+            <button type="button" class="tab" data-view="focus" aria-selected="false">Focus</button>
+            <button type="button" class="tab" data-view="custom" aria-selected="false">Custom</button>
+          </nav>
+        </div>
+
+        <div class="pulse" role="tablist" aria-label="Pulse filters">
+          <span>Focus</span>
+          <button type="button" class="active" data-pulse="needs">Needs you<em>4</em></button>
+          <button type="button" data-pulse="week">This week<em>6</em></button>
+          <button type="button" data-pulse="overdue">Overdue<em>2</em></button>
+          <button type="button" data-pulse="done">Done<em>9</em></button>
+        </div>
+
+        <div class="events-row" data-events>
+          <span>Events</span>
+          <div class="event-chip on" data-event="all">
+            <button type="button" class="chip-label">All events</button>
+          </div>
+          <div class="event-chip" data-event="supply" data-color-key="supply">
+            <span class="swatch-wrap">
+              <button type="button" class="swatch" data-pick="event" data-key="supply" aria-label="Supply Sorting color" style="--swatch:#2f4a3c"></button>
+            </span>
+            <button type="button" class="chip-label">Supply Sorting</button>
+          </div>
+          <div class="event-chip" data-event="fair" data-color-key="fair">
+            <span class="swatch-wrap">
+              <button type="button" class="swatch" data-pick="event" data-key="fair" aria-label="Fall Book Fair color" style="--swatch:#c4922e"></button>
+            </span>
+            <button type="button" class="chip-label">Fall Book Fair</button>
+          </div>
+          <div class="event-chip" data-event="night" data-color-key="night">
+            <span class="swatch-wrap">
+              <button type="button" class="swatch" data-pick="event" data-key="night" aria-label="Family Night color" style="--swatch:#2a7a86"></button>
+            </span>
+            <button type="button" class="chip-label">Family Night</button>
+          </div>
+        </div>
+
+        <!-- LIST -->
+        <section class="panel" data-panel="list">
+          <div class="event-stack" data-team-list>
+            <article class="event-box" data-event-box="supply" style="--stripe:#2f4a3c">
+              <div class="title-row">
+                <span class="swatch-wrap">
+                  <button type="button" class="swatch" data-pick="event" data-key="supply" aria-label="Supply Sorting color" style="--swatch:#2f4a3c"></button>
+                </span>
+                <h3>
+                  <a href="/events/demo-supply">School Supply Sorting</a>
+                  <span class="meta">Aug 4 · 3 open</span>
+                </h3>
+              </div>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Confirm gym setup with facilities</strong><p>Due Tue · High</p></span>
+                <span class="who">Jordan Lee</span>
+                <span class="status todo">To do</span>
+              </button>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Post volunteer signup reminder</strong><p>Due Wed · Medium</p></span>
+                <span class="who">Marrina</span>
+                <span class="status progress">In progress</span>
+              </button>
+              <button type="button" class="row">
+                <span class="check on"></span>
+                <span><strong>Print table signs</strong><p>Done yesterday</p></span>
+                <span class="who">Alex Kim</span>
+                <span class="status done">Done</span>
+              </button>
+            </article>
+            <article class="event-box" data-event-box="fair" style="--stripe:#c4922e">
+              <div class="title-row">
+                <span class="swatch-wrap">
+                  <button type="button" class="swatch" data-pick="event" data-key="fair" aria-label="Fall Book Fair color" style="--swatch:#c4922e"></button>
+                </span>
+                <h3>
+                  <a href="/events/demo-fair">Fall Book Fair</a>
+                  <span class="meta">Aug 14 · 2 open</span>
+                </h3>
+              </div>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Book vendor parking passes</strong><p>Due Fri · Medium</p></span>
+                <span class="who">Sam Ortiz</span>
+                <span class="status todo">To do</span>
+              </button>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Draft thank-you post</strong><p>Due next week</p></span>
+                <span class="who">Unassigned</span>
+                <span class="status todo">To do</span>
+              </button>
+            </article>
+            <article class="event-box" data-event-box="night" style="--stripe:#2a7a86">
+              <div class="title-row">
+                <span class="swatch-wrap">
+                  <button type="button" class="swatch" data-pick="event" data-key="night" aria-label="Family Night color" style="--swatch:#2a7a86"></button>
+                </span>
+                <h3>
+                  <a href="/events/demo-night">Family Night</a>
+                  <span class="meta">Sep 12 · 1 open</span>
+                </h3>
+              </div>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Reserve cafeteria tables</strong><p>Overdue · High</p></span>
+                <span class="who">Jordan Lee</span>
+                <span class="status todo">To do</span>
+              </button>
+            </article>
+          </div>
+
+          <div class="event-stack" data-mine-list hidden>
+            <article class="event-box" data-event-box="supply" style="--stripe:#2f4a3c">
+              <div class="title-row">
+                <span class="swatch-wrap">
+                  <button type="button" class="swatch" data-pick="event" data-key="supply" aria-label="Supply Sorting color" style="--swatch:#2f4a3c"></button>
+                </span>
+                <h3>
+                  <a href="/events/demo-supply">School Supply Sorting</a>
+                  <span class="meta">Assigned to you</span>
+                </h3>
+              </div>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Post volunteer signup reminder</strong><p>Due Wed · Medium</p></span>
+                <span class="who">You</span>
+                <span class="status progress">In progress</span>
+              </button>
+            </article>
+            <article class="event-box" data-event-box="night" style="--stripe:#2a7a86">
+              <div class="title-row">
+                <span class="swatch-wrap">
+                  <button type="button" class="swatch" data-pick="event" data-key="night" aria-label="Family Night color" style="--swatch:#2a7a86"></button>
+                </span>
+                <h3>
+                  <a href="/events/demo-night">Family Night</a>
+                  <span class="meta">Assigned to you</span>
+                </h3>
+              </div>
+              <button type="button" class="row">
+                <span class="check"></span>
+                <span><strong>Send flyer to teachers</strong><p>Due Mon</p></span>
+                <span class="who">You</span>
+                <span class="status todo">To do</span>
+              </button>
+            </article>
+          </div>
+        </section>
+
+        <!-- STATUS BOARD -->
+        <section class="panel" data-panel="board" hidden>
+          <div class="board">
+            <div class="col" data-col="status-todo" style="--col:#a65a3a">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="status-todo" aria-label="To do column color" style="--swatch:#a65a3a"></button>
+                  </span>
+                  <em>To do</em>
+                </div>
+                <span class="count">4</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Confirm gym setup</strong><small>Supply Sorting</small><div class="footer"><span>Jordan</span><span>Tue</span></div></button>
+              <button type="button" class="card" data-card-event="fair" style="--event:#c4922e"><strong>Book vendor parking</strong><small>Fall Book Fair</small><div class="footer"><span>Sam</span><span>Fri</span></div></button>
+              <button type="button" class="card" data-card-event="fair" style="--event:#c4922e"><strong>Draft thank-you post</strong><small>Fall Book Fair</small><div class="footer"><span>—</span><span>Next wk</span></div></button>
+              <button type="button" class="card" data-card-event="night" style="--event:#2a7a86"><strong>Reserve cafeteria tables</strong><small>Family Night</small><div class="footer"><span>Jordan</span><span style="color:var(--warn)">Overdue</span></div></button>
+            </div>
+            <div class="col" data-col="status-progress" style="--col:#c4922e">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="status-progress" aria-label="In progress column color" style="--swatch:#c4922e"></button>
+                  </span>
+                  <em>In progress</em>
+                </div>
+                <span class="count">1</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Post volunteer reminder</strong><small>Supply Sorting</small><div class="footer"><span>Marrina</span><span>Wed</span></div></button>
+            </div>
+            <div class="col" data-col="status-deferred" style="--col:#7a7166">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="status-deferred" aria-label="Deferred column color" style="--swatch:#7a7166"></button>
+                  </span>
+                  <em>Deferred</em>
+                </div>
+                <span class="count">0</span>
+              </div>
+              <p class="hint" style="margin:8px 4px">Nothing parked here.</p>
+            </div>
+            <div class="col" data-col="status-done" style="--col:#2a7a86">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="status-done" aria-label="Done column color" style="--swatch:#2a7a86"></button>
+                  </span>
+                  <em>Done</em>
+                </div>
+                <span class="count">1</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Print table signs</strong><small>Supply Sorting</small><div class="footer"><span>Alex</span><span>Done</span></div></button>
+            </div>
+          </div>
+          <p class="hint">Drag cards between columns · same tasks as the event Tasks tab. Dot = column color; card stripe = event color.</p>
+        </section>
+
+        <!-- FOCUS BOARD -->
+        <section class="panel" data-panel="focus" hidden>
+          <div class="board">
+            <div class="col" data-col="focus-todo" style="--col:#a65a3a">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="focus-todo" aria-label="To-do column color" style="--swatch:#a65a3a"></button>
+                  </span>
+                  <em>To-do</em>
+                </div>
+                <span class="count">2</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Confirm gym setup</strong><small>Supply Sorting · Jordan</small></button>
+              <button type="button" class="card" data-card-event="fair" style="--event:#c4922e"><strong>Draft thank-you post</strong><small>Book Fair · Unassigned</small></button>
+            </div>
+            <div class="col" data-col="focus-week" style="--col:#c4922e">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="focus-week" aria-label="This week column color" style="--swatch:#c4922e"></button>
+                  </span>
+                  <em>This week</em>
+                </div>
+                <span class="count">2</span>
+              </div>
+              <button type="button" class="card" data-card-event="fair" style="--event:#c4922e"><strong>Book vendor parking</strong><small>Book Fair · Sam</small></button>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Post volunteer reminder</strong><small>Supply Sorting · You</small></button>
+            </div>
+            <div class="col" data-col="focus-progress" style="--col:#6b8171">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="focus-progress" aria-label="In progress column color" style="--swatch:#6b8171"></button>
+                  </span>
+                  <em>In progress</em>
+                </div>
+                <span class="count">1 / 5</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Post volunteer reminder</strong><small>Soft WIP — keep this lane honest</small></button>
+            </div>
+            <div class="col" data-col="focus-done" style="--col:#2a7a86">
+              <div class="col-head">
+                <div class="left">
+                  <span class="swatch-wrap">
+                    <button type="button" class="swatch" data-pick="col" data-key="focus-done" aria-label="Done column color" style="--swatch:#2a7a86"></button>
+                  </span>
+                  <em>Done</em>
+                </div>
+                <span class="count">1</span>
+              </div>
+              <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Print table signs</strong><small>Supply Sorting</small></button>
+            </div>
+          </div>
+          <p class="hint">Focus board sorts by urgency, not raw status — still event-linked underneath.</p>
+        </section>
+
+        <!-- CUSTOM BOARD -->
+        <section class="panel" data-panel="custom" hidden>
+          <div class="custom-setup">
+            <div class="box" style="padding:22px">
+              <h3>Custom board</h3>
+              <p>Name columns for how your PTO actually works — then drop the same event tasks into them. Boards are per person; Team scope still shows everyone’s cards.</p>
+              <div class="col-editor">
+                <label><input value="Waiting on school" /><button type="button" class="btn btn-ghost" style="padding:6px 10px">Remove</button></label>
+                <label><input value="Needs volunteer" /><button type="button" class="btn btn-ghost" style="padding:6px 10px">Remove</button></label>
+                <label><input value="Ready to post" /><button type="button" class="btn btn-ghost" style="padding:6px 10px">Remove</button></label>
+                <label><input value="Done for now" /><button type="button" class="btn btn-ghost" style="padding:6px 10px">Remove</button></label>
+              </div>
+              <div class="soft-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+                <button type="button" class="btn btn-secondary">+ Add column</button>
+                <button type="button" class="btn btn-primary">Open board</button>
+              </div>
+              <p class="hint">Custom boards don’t invent new tasks — they rearrange the event task list you already have.</p>
+            </div>
+            <div class="box" style="padding:18px;background:
+              radial-gradient(ellipse 50% 80% at 0% 50%, rgba(47,74,60,0.1), transparent 60%),
+              radial-gradient(ellipse 40% 70% at 100% 30%, rgba(196,146,46,0.12), transparent 55%),
+              var(--white)">
+              <p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)">Preview</p>
+              <div class="board" style="grid-template-columns:1fr 1fr;min-width:0">
+                <div class="col" data-col="custom-waiting" style="--col:#a65a3a;min-height:140px">
+                  <div class="col-head">
+                    <div class="left">
+                      <span class="swatch-wrap">
+                        <button type="button" class="swatch" data-pick="col" data-key="custom-waiting" aria-label="Waiting column color" style="--swatch:#a65a3a"></button>
+                      </span>
+                      <em>Waiting on school</em>
+                    </div>
+                    <span class="count">1</span>
+                  </div>
+                  <button type="button" class="card" data-card-event="night" style="--event:#2a7a86"><strong>Reserve cafeteria</strong><small>Family Night</small></button>
+                </div>
+                <div class="col" data-col="custom-ready" style="--col:#2f4a3c;min-height:140px">
+                  <div class="col-head">
+                    <div class="left">
+                      <span class="swatch-wrap">
+                        <button type="button" class="swatch" data-pick="col" data-key="custom-ready" aria-label="Ready column color" style="--swatch:#2f4a3c"></button>
+                      </span>
+                      <em>Ready to post</em>
+                    </div>
+                    <span class="count">1</span>
+                  </div>
+                  <button type="button" class="card" data-card-event="supply" style="--event:#2f4a3c"><strong>Volunteer reminder</strong><small>Supply Sorting</small></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="empty" data-mine-empty hidden>
+          <h3>Nothing assigned to you</h3>
+          <p>When a teammate puts your name on an event task, it shows up here. Team view still shows the full org list.</p>
+        </div>
+
+        <div class="note">
+          <h3>What this mockup is solving</h3>
+          <p>Today’s Tasks page stacks summary KPI tiles, Main Table / My Tasks / Board tabs, and dense toolbar chrome. Ease keeps the same event-linked tasks with quieter structure.</p>
+          <ul>
+            <li><strong>Team vs Mine</strong> — managers see the whole org; individuals only see tasks assigned to them (still grouped by event).</li>
+            <li><strong>List</strong> — each event in its own box with a calendar-style color stripe + color picker; rows deep-link to that event’s Tasks tab.</li>
+            <li><strong>Status / Focus / Custom boards</strong> — column color pickers (top stripe); cards keep the event color stripe.</li>
+            <li><strong>Quieter chrome</strong> — Team/Mine + views on one row; pulse as text links; lighter event Show chips.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scopeBtns = [...document.querySelectorAll("[data-scope]")];
+    const viewTabs = [...document.querySelectorAll("[data-view]")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+    const pulseBtns = [...document.querySelectorAll("[data-pulse]")];
+    const eventChips = [...document.querySelectorAll("[data-event]")];
+    const scopeCopy = document.getElementById("scope-copy");
+    const teamList = document.querySelector("[data-team-list]");
+    const mineList = document.querySelector("[data-mine-list]");
+
+    let scope = "team";
+    let view = "list";
+
+    const PRESETS = [
+      "#2f4a3c", "#6b8171", "#c4922e", "#cc9c48",
+      "#a65a3a", "#d06650", "#2a7a86", "#18243b",
+      "#2a2622", "#ebe4d9", "#e8eee9", "#f5ecd8",
+    ];
+
+    const eventColors = { supply: "#2f4a3c", fair: "#c4922e", night: "#2a7a86" };
+    const colColors = {};
+
+    const copy = {
+      team: "Everything your team owes across events — same tasks that live on each event’s Tasks tab.",
+      mine: "Only tasks assigned to you — still grouped by the event they belong to.",
+    };
+
+    function syncScope() {
+      scopeBtns.forEach((btn) => btn.classList.toggle("active", btn.dataset.scope === scope));
+      scopeCopy.textContent = copy[scope];
+      if (teamList && mineList) {
+        const showMine = scope === "mine" && view === "list";
+        teamList.hidden = showMine;
+        mineList.hidden = !showMine;
+      }
+    }
+
+    function setView(id) {
+      view = id;
+      viewTabs.forEach((tab) => {
+        const on = tab.dataset.view === id;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+      syncScope();
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", id);
+      url.searchParams.set("scope", scope);
+      history.replaceState(null, "", url);
+    }
+
+    function applyEventColor(key, color) {
+      eventColors[key] = color;
+      document.querySelectorAll(`[data-pick="event"][data-key="${key}"]`).forEach((el) => {
+        el.style.setProperty("--swatch", color);
+      });
+      document.querySelectorAll(`[data-event-box="${key}"]`).forEach((el) => {
+        el.style.setProperty("--stripe", color);
+      });
+      document.querySelectorAll(`[data-card-event="${key}"]`).forEach((el) => {
+        el.style.setProperty("--event", color);
+      });
+    }
+
+    function applyColColor(key, color) {
+      colColors[key] = color;
+      document.querySelectorAll(`[data-pick="col"][data-key="${key}"]`).forEach((el) => {
+        el.style.setProperty("--swatch", color);
+      });
+      document.querySelectorAll(`[data-col="${key}"]`).forEach((el) => {
+        el.style.setProperty("--col", color);
+      });
+    }
+
+    let openPicker = null;
+
+    function closePicker() {
+      if (openPicker) {
+        openPicker.remove();
+        openPicker = null;
+      }
+    }
+
+    function openColorPicker(trigger, kind, key) {
+      closePicker();
+      const wrap = trigger.closest(".swatch-wrap");
+      if (!wrap) return;
+      const current = kind === "event" ? eventColors[key] : (colColors[key] || trigger.style.getPropertyValue("--swatch") || "#2f4a3c");
+      const panel = document.createElement("div");
+      panel.className = "picker";
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-label", kind === "event" ? "Event color" : "Column color");
+      panel.innerHTML = `<p>${kind === "event" ? "Event color" : "Column color"}</p><div class="picker-grid"></div>`;
+      const grid = panel.querySelector(".picker-grid");
+      PRESETS.forEach((hex) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.style.background = hex;
+        btn.setAttribute("aria-label", hex);
+        if (hex.toLowerCase() === String(current).toLowerCase()) btn.classList.add("on");
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (kind === "event") applyEventColor(key, hex);
+          else applyColColor(key, hex);
+          closePicker();
+        });
+        grid.appendChild(btn);
+      });
+      wrap.appendChild(panel);
+      openPicker = panel;
+    }
+
+    document.addEventListener("click", (e) => {
+      const pick = e.target.closest("[data-pick]");
+      if (pick) {
+        e.stopPropagation();
+        const kind = pick.dataset.pick;
+        const key = pick.dataset.key;
+        if (openPicker && pick.closest(".swatch-wrap")?.contains(openPicker)) {
+          closePicker();
+        } else {
+          openColorPicker(pick, kind, key);
+        }
+        return;
+      }
+      if (openPicker && !e.target.closest(".picker")) closePicker();
+    });
+
+    scopeBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        scope = btn.dataset.scope;
+        syncScope();
+        const url = new URL(window.location.href);
+        url.searchParams.set("scope", scope);
+        history.replaceState(null, "", url);
+      });
+    });
+
+    viewTabs.forEach((tab) => {
+      tab.addEventListener("click", () => setView(tab.dataset.view));
+    });
+
+    pulseBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pulseBtns.forEach((b) => b.classList.toggle("active", b === btn));
+      });
+    });
+
+    eventChips.forEach((chip) => {
+      const label = chip.querySelector(".chip-label");
+      if (!label) return;
+      label.addEventListener("click", () => {
+        eventChips.forEach((c) => c.classList.toggle("on", c === chip));
+      });
+    });
+
+    document.querySelectorAll("[data-col]").forEach((col) => {
+      const key = col.dataset.col;
+      const color = getComputedStyle(col).getPropertyValue("--col").trim() || "#6b8171";
+      colColors[key] = color;
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("scope") === "mine" || params.get("scope") === "team") {
+      scope = params.get("scope");
+    }
+    const initialView = params.get("view");
+    if (initialView && panels.some((p) => p.dataset.panel === initialView)) {
+      setView(initialView);
+    } else {
+      syncScope();
+    }
+  </script>
+</body>
+</html>

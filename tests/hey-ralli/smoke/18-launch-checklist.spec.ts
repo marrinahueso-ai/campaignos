@@ -251,7 +251,7 @@ test.describe("Launch checklist (settings / team / billing / approvals)", () => 
     ).toBeVisible({ timeout: 20_000 });
   });
 
-  test("Tasks page loads with New Task control", async ({ page }) => {
+  test("Tasks page loads with Add task control", async ({ page }) => {
     await page.goto("/tasks", {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -265,8 +265,8 @@ test.describe("Launch checklist (settings / team / billing / approvals)", () => 
       "Internal Server Error",
     );
     await expect(
-      main.getByRole("button", { name: /new task/i }).first(),
+      main.getByRole("button", { name: /^add task$/i }).first(),
     ).toBeVisible();
-    await expect(main.getByRole("tab", { name: /main table/i })).toBeVisible();
+    await expect(main.getByRole("tab", { name: /^list$/i })).toBeVisible();
   });
 });

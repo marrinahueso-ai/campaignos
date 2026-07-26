@@ -1,10 +1,10 @@
 /** Rotating accent palette for event/campaign group headers (Hey Ralli theme). */
 const EVENT_GROUP_PALETTE = [
-  "#7a5f9e", // purple
-  "#5f735f", // green
-  "#c87d3a", // orange
-  "#4a7fb5", // blue
-  "#b86b55", // terracotta
+  "#2f4a3c", // forest
+  "#c4922e", // mustard
+  "#2a7a86", // teal
+  "#6b8171", // sage
+  "#a65a3a", // warm terracotta
   "#8b6f4d", // warm brown
 ] as const;
 

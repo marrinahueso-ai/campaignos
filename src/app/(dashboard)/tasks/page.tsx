@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { TasksV2Shell } from "@/components/tasks-v2/TasksV2Shell";
+import { TasksEaseShell } from "@/components/tasks-v2/TasksEaseShell";
 import { getTasksV2PageData } from "@/lib/tasks-v2/queries";
 
 export const metadata = {
@@ -17,7 +17,7 @@ export default async function TasksPage({ searchParams }: TasksPageProps) {
   return (
     <div className="studio-page pb-12">
       <Suspense fallback={<div className="min-h-[16rem] animate-pulse bg-cos-bg/60" />}>
-        <TasksV2Shell
+        <TasksEaseShell
           data={data}
           initialEventFilter={params.event ?? null}
         />
