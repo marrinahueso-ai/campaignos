@@ -52,6 +52,12 @@ describe("tasks ease UI contracts", () => {
     assert.match(list, /borderLeft: `4px solid \$\{stripeColor\}`/);
   });
 
+  it("mutes completed tasks with line-through title styling", () => {
+    assert.match(list, /isDone && "text-cos-muted line-through"/);
+    assert.match(board, /isDone && "text-cos-muted line-through"/);
+    assert.match(customBoard, /isDone && "text-cos-muted line-through"/);
+  });
+
   it("keeps board columns event-linked with a card stripe color", () => {
     assert.match(board, /borderLeft: `3px solid \$\{eventColor\}`/);
     assert.match(board, /borderTop: `3px solid \$\{columnColor\}`/);

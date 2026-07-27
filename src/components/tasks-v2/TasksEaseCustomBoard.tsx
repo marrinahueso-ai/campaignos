@@ -140,10 +140,11 @@ export function TasksEaseCustomBoard({
   const today = getTodayDateString();
 
   function renderCard(task: TaskHubTaskItem) {
+    const isDone = task.status === "done";
     const eventColor = eventColorLookup.get(task.eventId) ?? "#2f4a3c";
     const due = task.monday?.mondayDueDate ?? task.dueDate;
     const dueLabel =
-      task.status === "done"
+      isDone
         ? "Done"
         : due
           ? due < today
@@ -164,10 +165,18 @@ export function TasksEaseCustomBoard({
           });
         }}
         onClick={() => onOpenTask(task)}
-        className="mb-2 cursor-pointer rounded-2xl bg-cos-card p-3 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5"
+        className={cn(
+          "mb-2 cursor-pointer rounded-2xl bg-cos-card p-3 text-left shadow-[0_8px_28px_rgba(28,36,48,0.06)] transition hover:-translate-y-0.5",
+          isDone && "opacity-80",
+        )}
         style={{ borderLeft: `3px solid ${eventColor}` }}
       >
-        <strong className="block truncate text-[13px] font-semibold text-cos-text">
+        <strong
+          className={cn(
+            "block truncate text-[13px] font-semibold text-cos-text",
+            isDone && "text-cos-muted line-through",
+          )}
+        >
           {task.title}
         </strong>
         <span className="mt-1 block truncate text-[11px] font-semibold text-cos-muted">

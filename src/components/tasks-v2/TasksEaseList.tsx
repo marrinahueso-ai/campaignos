@@ -211,6 +211,7 @@ export function TasksEaseList({
               {group.tasks.map((rawTask) => {
                 const task = resolveTask(rawTask);
                 const isPending = pendingIds.has(rawTask.id);
+                const isDone = task.status === "done";
 
                 return (
                   <div
@@ -240,7 +241,12 @@ export function TasksEaseList({
                       onClick={() => onOpenTask(rawTask)}
                       className="min-w-0 text-left"
                     >
-                      <strong className="block truncate text-sm font-semibold text-cos-text">
+                      <strong
+                        className={cn(
+                          "block truncate text-sm font-semibold text-cos-text",
+                          isDone && "text-cos-muted line-through",
+                        )}
+                      >
                         {task.title}
                       </strong>
                       <p className="mt-0.5 truncate text-xs text-cos-muted">
