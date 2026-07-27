@@ -1,6 +1,6 @@
 /**
- * Short parent-facing blurb from event fields.
- * v1: deterministic (no API). Later: Create with AI can rewrite these.
+ * Short parent-facing blurb from event fields (deterministic seed).
+ * Card editor can rewrite via `generateHomepageComposerBlurbAction`.
  */
 export function buildEventBlurb(input: {
   title: string;

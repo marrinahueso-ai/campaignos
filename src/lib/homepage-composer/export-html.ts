@@ -43,14 +43,17 @@ function renderCard(card: HomepageCard): string {
   const when = formatEventWhen(card.date, card.time);
   const cardHref = normalizeHref(card.linkUrl);
   const hasLink = Boolean(card.linkUrl.trim()) && cardHref !== "#";
+  const linkLabel = (card.linkLabel ?? "").trim() || "Learn More →";
   const cta = hasLink
-    ? `<a href="${escapeHtml(cardHref)}"${cardHref.startsWith("http") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${escapeHtml(card.linkLabel || "Learn More →")}</a>`
+    ? `<a href="${escapeHtml(cardHref)}"${cardHref.startsWith("http") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${escapeHtml(linkLabel)}</a>`
     : when
       ? `<span class="ees-card-note">${escapeHtml(when)}</span>`
       : "";
 
+  // With a CTA link, show the card display date above the link.
+  // Without a link, the date is the bottom line (ees-card-note above).
   const whenLine =
-    card.linkUrl.trim().length > 0 && when
+    hasLink && when
       ? `<p><span class="ees-when"><strong>${escapeHtml(when)}</strong></span></p>`
       : "";
 

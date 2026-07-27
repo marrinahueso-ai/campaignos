@@ -26,8 +26,9 @@ export type HomepageCard = {
   blurb: string;
   imageUrl: string | null;
   linkUrl: string;
+  /** CTA label on the card (e.g. "Learn More →"). Empty when unused. */
   linkLabel: string;
-  /** YYYY-MM-DD — optional display date on card */
+  /** YYYY-MM-DD — display date on the card face (not visibility scheduling) */
   date: string | null;
   /** Display time string — optional */
   time: string | null;

@@ -16,13 +16,16 @@ import {
   normalizeComposerState,
 } from "@/lib/homepage-composer/defaults";
 import { uploadHomepageComposerArtworkAction } from "@/lib/homepage-composer/artwork-actions";
+import { generateHomepageComposerBlurbAction } from "@/lib/homepage-composer/blurb-actions";
 import { compressImageForUpload } from "@/lib/homepage-composer/compress-image";
 import {
   loadComposerDraftRaw,
+  parseComposerDraftRaw,
   saveComposerDraft,
   type DraftSaveStatus,
 } from "@/lib/homepage-composer/draft-storage";
 import { exportHomepageHtml } from "@/lib/homepage-composer/export-html";
+import { campaignBuilderHref } from "@/lib/campaign-builder-v2/navigation";
 import { saveEventVolunteerSignupUrlAction } from "@/lib/event-playbooks/planning-actions";
 import type {
   HomepageAnnouncement,
@@ -33,7 +36,7 @@ import type {
   HomepageResourceLink,
 } from "@/lib/homepage-composer/types";
 import { cn } from "@/lib/utils/cn";
-import { GripVertical, Plus, Trash2, Upload } from "lucide-react";
+import { GripVertical, Loader2, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -247,6 +250,13 @@ export function HomepageComposer({
   const [compressingCardId, setCompressingCardId] = useState<string | null>(
     null,
   );
+  const [generatingBlurbCardId, setGeneratingBlurbCardId] = useState<
+    string | null
+  >(null);
+  const [blurbGenerateError, setBlurbGenerateError] = useState<{
+    cardId: string;
+    message: string;
+  } | null>(null);
   const [cardSort, setCardSort] = useState<CardSortMode>("custom");
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>({
     kind: "idle",
@@ -254,30 +264,66 @@ export function HomepageComposer({
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const artworkCardIdRef = useRef<string | null>(null);
   const organizationNameRef = useRef(organizationName);
+  const organizationIdRef = useRef(organizationId);
+  const stateRef = useRef(state);
+  const hydratedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSeqRef = useRef(0);
   organizationNameRef.current = organizationName;
+  organizationIdRef.current = organizationId;
+  stateRef.current = state;
 
-  // Load draft once per organization (IndexedDB → localStorage). Do not
-  // re-hydrate when organizationName changes — that was wiping in-progress edits.
+  const flushDraft = useCallback(async (reason: "debounce" | "flush") => {
+    if (!hydratedRef.current) return;
+    const seq = ++saveSeqRef.current;
+    const snapshot = stateRef.current;
+    const orgId = organizationIdRef.current;
+    if (reason === "debounce") {
+      setSaveStatus({ kind: "saving" });
+    }
+    try {
+      await saveComposerDraft(orgId, snapshot);
+      // Ignore stale async completions after a newer save started.
+      if (seq !== saveSeqRef.current) return;
+      setSaveStatus({ kind: "saved", at: Date.now() });
+    } catch (err) {
+      if (seq !== saveSeqRef.current) return;
+      setSaveStatus({
+        kind: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Could not save draft. Use Export to keep your work.",
+      });
+    }
+  }, []);
+
+  // Load draft once per organization (IndexedDB ↔ localStorage, newest wins).
+  // Do not re-hydrate when organizationName changes — that wiped in-progress edits.
   useEffect(() => {
     let cancelled = false;
     setHydrated(false);
+    hydratedRef.current = false;
 
     void (async () => {
       try {
         const raw = await loadComposerDraftRaw(organizationId);
         if (cancelled) return;
         if (raw) {
+          const parsed = parseComposerDraftRaw(raw);
           const normalized = normalizeComposerState(
-            JSON.parse(raw),
+            parsed,
             organizationNameRef.current,
           );
           if (normalized) setState(normalized);
         }
       } catch {
-        // ignore corrupt drafts
+        // ignore corrupt drafts — do not overwrite storage with defaults yet
       } finally {
-        if (!cancelled) setHydrated(true);
+        if (!cancelled) {
+          hydratedRef.current = true;
+          setHydrated(true);
+        }
       }
     })();
 
@@ -286,31 +332,47 @@ export function HomepageComposer({
     };
   }, [organizationId]);
 
-  // Debounced autosave to IndexedDB (handles large artwork better than localStorage).
+  // Debounced autosave — localStorage (sync) + IndexedDB.
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus({ kind: "saving" });
     saveTimerRef.current = setTimeout(() => {
-      void (async () => {
-        try {
-          await saveComposerDraft(organizationId, state);
-          setSaveStatus({ kind: "saved", at: Date.now() });
-        } catch (err) {
-          setSaveStatus({
-            kind: "error",
-            message:
-              err instanceof Error
-                ? err.message
-                : "Could not save draft. Use Export to keep your work.",
-          });
-        }
-      })();
-    }, 400);
+      saveTimerRef.current = null;
+      void flushDraft("debounce");
+    }, 350);
+
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
     };
-  }, [state, organizationId, hydrated]);
+  }, [state, organizationId, hydrated, flushDraft]);
+
+  // Flush pending debounce on unmount / tab hide so navigate-away cannot drop edits.
+  useEffect(() => {
+    const onLeave = () => {
+      if (!hydratedRef.current) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      void flushDraft("flush");
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") onLeave();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onLeave);
+    window.addEventListener("beforeunload", onLeave);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onLeave);
+      window.removeEventListener("beforeunload", onLeave);
+      onLeave();
+    };
+  }, [flushDraft]);
 
   const eventById = useMemo(() => {
     const map = new Map<string, HomepageComposerEvent>();
@@ -372,6 +434,38 @@ export function HomepageComposer({
     [],
   );
 
+  const generateCardBlurb = useCallback(
+    async (card: HomepageCard) => {
+      if (generatingBlurbCardId) return;
+      setBlurbGenerateError(null);
+      setGeneratingBlurbCardId(card.id);
+      try {
+        const result = await generateHomepageComposerBlurbAction({
+          title: card.title,
+          seedNotes: card.blurb,
+          date: card.date,
+          time: card.time,
+          startsOn: card.startsOn,
+          expiresOn: card.expiresOn,
+          alwaysOn: card.alwaysOn,
+          linkUrl: card.linkUrl,
+          eventId: card.eventId,
+        });
+        if (!result.success || !result.blurb) {
+          setBlurbGenerateError({
+            cardId: card.id,
+            message: result.error ?? "Unable to generate text right now.",
+          });
+          return;
+        }
+        updateCard(card.id, { blurb: result.blurb });
+      } finally {
+        setGeneratingBlurbCardId(null);
+      }
+    },
+    [generatingBlurbCardId, updateCard],
+  );
+
   /** Pull volunteer page URLs into empty event-card links (drafts + new events). */
   useEffect(() => {
     if (!hydrated) return;
@@ -419,7 +513,7 @@ export function HomepageComposer({
           blurb: "Short blurb for parents — edit me.",
           imageUrl: null,
           linkUrl: "",
-          linkLabel: "Learn More →",
+          linkLabel: "",
           date: null,
           time: null,
           startsOn: null,
@@ -1555,7 +1649,7 @@ export function HomepageComposer({
                               className="mt-2 h-5 w-5 cursor-grab justify-self-center text-cos-muted"
                               strokeWidth={1.5}
                             />
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               <div className="aspect-square h-[72px] w-[72px] overflow-hidden rounded-[14px] bg-cos-bg-alt">
                                 {card.imageUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
@@ -1570,19 +1664,55 @@ export function HomepageComposer({
                                   </div>
                                 )}
                               </div>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                className="w-full text-xs"
-                                disabled={compressingCardId !== null}
-                                onClick={() => openArtworkPicker(card.id)}
-                              >
-                                <Upload className="h-3.5 w-3.5" />
-                                {compressingCardId === card.id
-                                  ? "Working…"
-                                  : "Upload artwork"}
-                              </Button>
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  title={
+                                    compressingCardId === card.id
+                                      ? "Working…"
+                                      : "Upload artwork"
+                                  }
+                                  aria-label={
+                                    compressingCardId === card.id
+                                      ? "Working on artwork upload"
+                                      : "Upload artwork"
+                                  }
+                                  disabled={compressingCardId !== null}
+                                  onClick={() => openArtworkPicker(card.id)}
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c] disabled:opacity-40"
+                                >
+                                  <Upload
+                                    className="h-3 w-3"
+                                    strokeWidth={1.5}
+                                  />
+                                </button>
+                                <Link
+                                  href={
+                                    card.eventId
+                                      ? campaignBuilderHref(
+                                          card.eventId,
+                                          "preview",
+                                        )
+                                      : "/create-with-ai"
+                                  }
+                                  title={
+                                    card.eventId
+                                      ? "Create artwork with AI"
+                                      : "Create with AI"
+                                  }
+                                  aria-label={
+                                    card.eventId
+                                      ? "Create artwork with AI for this event"
+                                      : "Open Create with AI"
+                                  }
+                                  className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c]"
+                                >
+                                  <Sparkles
+                                    className="h-3 w-3"
+                                    strokeWidth={1.5}
+                                  />
+                                </Link>
+                              </div>
                             </div>
                             <div className="min-w-0 space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
@@ -1601,16 +1731,52 @@ export function HomepageComposer({
                                     : `→ ${formatBadgeDate(card.expiresOn)}`}
                                 </span>
                               </div>
-                              <textarea
-                                className="w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs text-cos-text"
-                                rows={2}
-                                value={card.blurb}
-                                onChange={(e) =>
-                                  updateCard(card.id, {
-                                    blurb: e.target.value,
-                                  })
-                                }
-                              />
+                              <div className="relative">
+                                <textarea
+                                  className="w-full rounded-lg border border-cos-border bg-cos-card py-1.5 pl-2 pr-7 text-xs text-cos-text"
+                                  rows={2}
+                                  value={card.blurb}
+                                  onChange={(e) => {
+                                    setBlurbGenerateError(null);
+                                    updateCard(card.id, {
+                                      blurb: e.target.value,
+                                    });
+                                  }}
+                                  placeholder="Short card description — or notes for AI"
+                                />
+                                <button
+                                  type="button"
+                                  title="Generate text"
+                                  aria-label={
+                                    generatingBlurbCardId === card.id
+                                      ? "Generating text"
+                                      : "Generate text"
+                                  }
+                                  disabled={generatingBlurbCardId !== null}
+                                  onClick={() => void generateCardBlurb(card)}
+                                  className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[rgba(42,38,34,0.05)] text-[#8a8278] transition-colors hover:bg-[rgba(47,74,60,0.08)] hover:text-[#2f4a3c] disabled:opacity-40"
+                                >
+                                  {generatingBlurbCardId === card.id ? (
+                                    <Loader2
+                                      className="h-3 w-3 animate-spin"
+                                      strokeWidth={1.5}
+                                    />
+                                  ) : (
+                                    <Sparkles
+                                      className="h-3 w-3"
+                                      strokeWidth={1.5}
+                                    />
+                                  )}
+                                </button>
+                              </div>
+                              {blurbGenerateError?.cardId === card.id ? (
+                                <p
+                                  className="text-[11px] text-red-600"
+                                  role="alert"
+                                >
+                                  {blurbGenerateError.message}
+                                </p>
+                              ) : null}
                               <input
                                 className="w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs text-cos-text"
                                 value={card.linkUrl}
@@ -1631,6 +1797,38 @@ export function HomepageComposer({
                                     : "Optional link URL"
                                 }
                               />
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+                                  Link name
+                                  <input
+                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text"
+                                    value={card.linkLabel}
+                                    onChange={(e) =>
+                                      updateCard(card.id, {
+                                        linkLabel: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Learn More →"
+                                  />
+                                </label>
+                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+                                  Card date
+                                  <input
+                                    type="date"
+                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text"
+                                    value={card.date ?? ""}
+                                    onChange={(e) =>
+                                      updateCard(card.id, {
+                                        date: e.target.value || null,
+                                      })
+                                    }
+                                  />
+                                </label>
+                              </div>
+                              <p className="text-[10px] leading-snug text-cos-muted">
+                                Card date appears on the card face. On / Off
+                                below only control when the card is visible.
+                              </p>
                               <div className="grid gap-2 rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_1fr_1fr]">
                                 <label className="flex items-center gap-2 text-xs font-semibold text-cos-text">
                                   <input

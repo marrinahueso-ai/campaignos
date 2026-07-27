@@ -4,6 +4,13 @@ const DB_NAME = "heyralli-homepage-composer";
 const DB_VERSION = 1;
 const STORE = "drafts";
 
+/** Envelope so we can pick the newest copy across IDB + localStorage. */
+type DraftEnvelope = {
+  v: 4;
+  at: number;
+  state: HomepageComposerState;
+};
+
 export type DraftSaveStatus =
   | { kind: "idle" }
   | { kind: "saving" }
@@ -11,7 +18,7 @@ export type DraftSaveStatus =
   | { kind: "error"; message: string };
 
 function localStorageKey(organizationId: string | null): string {
-  return `homepage-composer:v3:${organizationId ?? "local"}`;
+  return `homepage-composer:v4:${organizationId ?? "local"}`;
 }
 
 function draftId(organizationId: string | null): string {
@@ -74,10 +81,11 @@ async function idbSet(
   }
 }
 
-function readLocalStorageFallback(organizationId: string | null): string | null {
+function readLocalStorageRaw(organizationId: string | null): string | null {
   try {
     const org = organizationId ?? "local";
     return (
+      localStorage.getItem(`homepage-composer:v4:${org}`) ||
       localStorage.getItem(`homepage-composer:v3:${org}`) ||
       localStorage.getItem(`homepage-composer:v2:${org}`) ||
       localStorage.getItem(`homepage-composer:v1:${org}`)
@@ -87,12 +95,40 @@ function readLocalStorageFallback(organizationId: string | null): string | null 
   }
 }
 
-function writeLocalStorageMirror(
-  organizationId: string | null,
-  state: HomepageComposerState,
-): void {
-  // Mirror a slim copy so older tabs / recovery still find structure if IDB is wiped.
-  const slim: HomepageComposerState = {
+function parseEnvelope(raw: string): {
+  state: HomepageComposerState | null;
+  at: number;
+} {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      (parsed as DraftEnvelope).v === 4 &&
+      (parsed as DraftEnvelope).state &&
+      typeof (parsed as DraftEnvelope).at === "number"
+    ) {
+      const env = parsed as DraftEnvelope;
+      return { state: env.state, at: env.at };
+    }
+    // Legacy: raw HomepageComposerState
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "header" in parsed &&
+      "footer" in parsed &&
+      "cards" in parsed
+    ) {
+      return { state: parsed as HomepageComposerState, at: 0 };
+    }
+  } catch {
+    // ignore
+  }
+  return { state: null, at: 0 };
+}
+
+function slimForQuota(state: HomepageComposerState): HomepageComposerState {
+  return {
     ...state,
     cards: state.cards.map((card) =>
       card.imageUrl?.startsWith("data:")
@@ -100,43 +136,85 @@ function writeLocalStorageMirror(
         : card,
     ),
   };
+}
+
+function writeLocalStorage(
+  organizationId: string | null,
+  envelope: DraftEnvelope,
+): void {
+  const key = localStorageKey(organizationId);
+  const full = JSON.stringify(envelope);
   try {
-    localStorage.setItem(localStorageKey(organizationId), JSON.stringify(slim));
+    localStorage.setItem(key, full);
+    return;
   } catch {
-    // Best-effort only — IndexedDB is the source of truth.
+    // Quota: drop embedded data-URLs but keep titles/blurbs/links/dates.
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...envelope, state: slimForQuota(envelope.state) }),
+      );
+    } catch {
+      // Best-effort only.
+    }
   }
 }
 
-/** Load draft JSON string (IndexedDB first, then localStorage). */
+/** Load newest draft JSON string (compares IndexedDB vs localStorage by `at`). */
 export async function loadComposerDraftRaw(
   organizationId: string | null,
 ): Promise<string | null> {
+  let idbRaw: string | null = null;
   try {
-    const fromIdb = await idbGet(organizationId);
-    if (fromIdb) return fromIdb;
+    idbRaw = await idbGet(organizationId);
   } catch {
     // fall through
   }
-  return readLocalStorageFallback(organizationId);
+  const lsRaw = readLocalStorageRaw(organizationId);
+
+  if (!idbRaw && !lsRaw) return null;
+  if (idbRaw && !lsRaw) return idbRaw;
+  if (!idbRaw && lsRaw) return lsRaw;
+
+  const idb = parseEnvelope(idbRaw!);
+  const ls = parseEnvelope(lsRaw!);
+  // Prefer the newer envelope; if equal/legacy, prefer IDB (full artwork).
+  if (ls.at > idb.at) return lsRaw;
+  return idbRaw;
 }
 
-/** Persist full draft (including uploaded artwork data URLs) to IndexedDB. */
+/**
+ * Persist full draft (including uploaded artwork URLs / data URLs).
+ * Writes localStorage synchronously first so a mid-navigation unmount cannot
+ * cancel the only copy, then mirrors to IndexedDB for large payloads.
+ */
 export async function saveComposerDraft(
   organizationId: string | null,
   state: HomepageComposerState,
+  savedAt: number = Date.now(),
 ): Promise<void> {
-  const raw = JSON.stringify(state);
+  const envelope: DraftEnvelope = { v: 4, at: savedAt, state };
+  const raw = JSON.stringify(envelope);
+
+  // Sync mirror first — survives cancelled timers / aborted async on navigate.
+  writeLocalStorage(organizationId, envelope);
+
   try {
     await idbSet(organizationId, raw);
-    writeLocalStorageMirror(organizationId, state);
-    return;
   } catch (idbError) {
-    // Last resort: try full localStorage (may fail on large artwork).
+    // localStorage already has a copy; only throw if that copy is missing.
     try {
-      localStorage.setItem(localStorageKey(organizationId), raw);
-      return;
-    } catch {
-      writeLocalStorageMirror(organizationId, state);
+      if (!localStorage.getItem(localStorageKey(organizationId))) {
+        throw idbError instanceof Error
+          ? idbError
+          : new Error(
+              "Could not save draft. Storage may be full — use Export to keep your work.",
+            );
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("Could not save")) {
+        throw err;
+      }
       throw idbError instanceof Error
         ? idbError
         : new Error(
@@ -144,4 +222,11 @@ export async function saveComposerDraft(
           );
     }
   }
+}
+
+/** Parse storage payload to composer state (v4 envelope or legacy raw). */
+export function parseComposerDraftRaw(
+  raw: string,
+): HomepageComposerState | null {
+  return parseEnvelope(raw).state;
 }

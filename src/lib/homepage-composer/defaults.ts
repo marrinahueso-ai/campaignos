@@ -111,7 +111,7 @@ export function defaultEvergreenCards(): HomepageCard[] {
       blurb:
         "Sponsorships help fund student programs, family events, teacher support, and enrichment all year.",
       imageUrl: null,
-      linkUrl: "#",
+      linkUrl: "",
       linkLabel: "Learn More →",
       date: null,
       time: null,
@@ -127,7 +127,7 @@ export function defaultEvergreenCards(): HomepageCard[] {
       blurb:
         "Find your student's teacher-approved list by grade level to make shopping quick and easy.",
       imageUrl: null,
-      linkUrl: "#",
+      linkUrl: "",
       linkLabel: "View Supply List →",
       date: null,
       time: null,
@@ -148,7 +148,7 @@ export function cardFromEvent(event: HomepageComposerEvent): HomepageCard {
     blurb: buildEventBlurb(event),
     imageUrl: event.imageUrl,
     linkUrl: volunteerUrl,
-    linkLabel: volunteerUrl ? "Volunteer →" : "Learn More →",
+    linkLabel: volunteerUrl ? "Volunteer →" : "",
     date: event.date,
     time: event.time,
     startsOn: null,
@@ -262,11 +262,23 @@ export function normalizeComposerState(
     selectedEventIds: Array.isArray(parsed.selectedEventIds)
       ? parsed.selectedEventIds
       : [],
-    cards: parsed.cards.map((card) => {
+    cards: parsed.cards.map((card, i) => {
       const cleanedLink = normalizeHref(card.linkUrl || "");
+      const linkUrl = cleanedLink === "#" ? "" : cleanedLink;
+      const rawLabel =
+        typeof card.linkLabel === "string" ? card.linkLabel.trim() : "";
       return {
-        ...card,
-        linkUrl: cleanedLink === "#" ? "" : cleanedLink,
+        id: card.id || `card-legacy-${i}`,
+        source: card.source === "event" ? "event" : "custom",
+        eventId: card.eventId ?? null,
+        title: card.title || "Untitled card",
+        blurb: card.blurb || "",
+        imageUrl: card.imageUrl ?? null,
+        linkUrl,
+        // Older drafts omit linkLabel; default when a URL exists, else empty.
+        linkLabel: rawLabel || (linkUrl ? "Learn More →" : ""),
+        date: card.date ?? null,
+        time: card.time ?? null,
         startsOn: card.startsOn ?? null,
         expiresOn: card.expiresOn ?? null,
         alwaysOn: Boolean(card.alwaysOn),
