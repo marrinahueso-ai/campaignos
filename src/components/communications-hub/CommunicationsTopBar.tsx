@@ -61,9 +61,10 @@ function MetaConnectionBadge({ connection }: { connection: InboxConnectionStatus
     return (
       <Link
         href="/settings/meta"
-        className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-cos-card px-3 py-1.5 text-xs font-medium text-cos-muted transition-colors hover:text-cos-text"
+        className="inline-flex items-center gap-2 rounded-full border border-[rgba(196,146,46,0.3)] bg-[rgba(196,146,46,0.14)] px-3 py-1.5 text-xs font-semibold text-[#7a5a12] transition-colors hover:border-[rgba(196,146,46,0.45)]"
       >
-        Not connected
+        <span className="h-1.5 w-1.5 rounded-full bg-[#c4922e]" aria-hidden />
+        Meta not connected
       </Link>
     );
   }

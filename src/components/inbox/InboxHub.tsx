@@ -8,10 +8,10 @@ import {
   ChevronDown,
   ChevronRight,
   MessageCircle,
-  MessagesSquare,
   Repeat2,
 } from "lucide-react";
 import { InstagramPlatformIcon } from "@/components/communications-planning-calendar/MetaPlatformIcons";
+import { ConnectMetaEmpty } from "@/components/communications-hub/ConnectMetaEmpty";
 import { InboxDirectPostLinkButton } from "@/components/inbox/InboxDirectPostLinkButton";
 import { InboxPlatformIcon } from "@/components/inbox/InboxPlatformIcon";
 import { InboxTaggedPanel } from "@/components/inbox/InboxTaggedPanel";
@@ -132,9 +132,10 @@ function InboxStatusChip({ connection }: { connection: InboxConnectionStatus }) 
     return (
       <Link
         href="/settings/meta"
-        className="inline-flex items-center gap-2 rounded-full border border-[#d8d8d6] bg-white px-3.5 py-1.5 text-xs font-medium text-[#8a8a88] transition-colors hover:border-[#b8b8b6] hover:text-[#1a1a1a]"
+        className="inline-flex items-center gap-2 rounded-full border border-[rgba(196,146,46,0.3)] bg-[rgba(196,146,46,0.14)] px-3.5 py-1.5 text-xs font-medium text-[#7a5a12] transition-colors hover:border-[rgba(196,146,46,0.45)]"
       >
-        Not connected
+        <span className="h-1.5 w-1.5 rounded-full bg-[#c4922e]" aria-hidden />
+        Meta not connected
       </Link>
     );
   }
@@ -407,7 +408,7 @@ export function InboxHub({ data }: InboxHubProps) {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
-  const { connection, threads, messagesByThreadId } = data;
+  const { connection, threads, messagesByThreadId, oauthError } = data;
 
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -513,6 +514,18 @@ export function InboxHub({ data }: InboxHubProps) {
     setPlatformFilter((current) => (current === "instagram" ? "all" : "instagram"));
   }
 
+  if (showConnectionEmptyState) {
+    return (
+      <div className="relative mx-auto w-full max-w-[88rem] px-1 pb-28 pt-2">
+        <ConnectMetaEmpty
+          organizationName={connection.organizationName}
+          returnTo="/communications"
+          oauthError={oauthError}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative mx-auto w-full max-w-[88rem] px-1 pb-28 pt-2">
       <header className="mb-6 flex items-start justify-between gap-6">
@@ -588,18 +601,7 @@ export function InboxHub({ data }: InboxHubProps) {
       </div>
 
       <div className="overflow-hidden rounded-[1.5rem] border border-[#ebebea] bg-white shadow-[0_1px_2px_rgba(26,26,26,0.04)]">
-        {showConnectionEmptyState ? (
-          <EmptyState
-            icon={MessagesSquare}
-            title="Connect Meta to get started"
-            description="Link your Facebook Page and Instagram in Settings. Messages will appear here automatically."
-            action={{
-              label: "Open Meta settings",
-              href: "/settings/meta",
-            }}
-            className="py-16"
-          />
-        ) : showInboxEmptyState ? (
+        {showInboxEmptyState ? (
           <EmptyState
             icon={MessageCircle}
             title={
