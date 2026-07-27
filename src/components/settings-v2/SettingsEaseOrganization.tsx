@@ -238,11 +238,6 @@ export function SettingsEaseOrganization({
           />
           <input
             type="hidden"
-            name="weatherZip"
-            value={organization.weatherZip ?? ""}
-          />
-          <input
-            type="hidden"
             name="schoolYear"
             value={organization.schoolYear ?? ""}
           />
@@ -270,25 +265,70 @@ export function SettingsEaseOrganization({
                 required
                 defaultValue={organization.name}
                 className={fieldControlClassName}
+                autoComplete="organization"
+              />
+            </Field>
+            <Field id="org-street" label="Street address">
+              <input
+                id="org-street"
+                name="addressLine1"
+                type="text"
+                defaultValue={organization.addressLine1 ?? ""}
+                className={fieldControlClassName}
+                autoComplete="address-line1"
+              />
+            </Field>
+            <Field id="org-street-2" label="Apartment, suite, etc.">
+              <input
+                id="org-street-2"
+                name="addressLine2"
+                type="text"
+                defaultValue={organization.addressLine2 ?? ""}
+                className={fieldControlClassName}
+                autoComplete="address-line2"
               />
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field id="org-city" label="Weather city">
+              <Field id="org-addr-city" label="City">
                 <input
-                  id="org-city"
-                  name="weatherCity"
+                  id="org-addr-city"
+                  name="city"
                   type="text"
-                  defaultValue={organization.weatherCity ?? ""}
+                  defaultValue={organization.city ?? ""}
                   className={fieldControlClassName}
+                  autoComplete="address-level2"
                 />
               </Field>
-              <Field id="org-state" label="State">
+              <Field id="org-addr-state" label="State">
                 <input
-                  id="org-state"
-                  name="weatherState"
+                  id="org-addr-state"
+                  name="state"
                   type="text"
-                  defaultValue={organization.weatherState ?? ""}
+                  defaultValue={organization.state ?? ""}
                   className={fieldControlClassName}
+                  autoComplete="address-level1"
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field id="org-postal" label="Postal / ZIP">
+                <input
+                  id="org-postal"
+                  name="postalCode"
+                  type="text"
+                  defaultValue={organization.postalCode ?? ""}
+                  className={fieldControlClassName}
+                  autoComplete="postal-code"
+                />
+              </Field>
+              <Field id="org-country" label="Country">
+                <input
+                  id="org-country"
+                  name="country"
+                  type="text"
+                  defaultValue={organization.country ?? ""}
+                  className={fieldControlClassName}
+                  autoComplete="country-name"
                 />
               </Field>
             </div>
@@ -327,6 +367,43 @@ export function SettingsEaseOrganization({
                 className={fieldControlClassName}
               />
             </Field>
+            <p className="mb-2 mt-1 text-xs font-bold text-[#5c554c]">
+              Weather location
+            </p>
+            <p className="mb-3 text-[12px] leading-snug text-[#7a7166]">
+              Used for live weather on the Dashboard. ZIP is preferred.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Field id="org-weather-city" label="Weather city">
+                <input
+                  id="org-weather-city"
+                  name="weatherCity"
+                  type="text"
+                  defaultValue={organization.weatherCity ?? ""}
+                  className={fieldControlClassName}
+                />
+              </Field>
+              <Field id="org-weather-state" label="Weather state">
+                <input
+                  id="org-weather-state"
+                  name="weatherState"
+                  type="text"
+                  defaultValue={organization.weatherState ?? ""}
+                  className={fieldControlClassName}
+                />
+              </Field>
+              <Field id="org-weather-zip" label="Weather ZIP">
+                <input
+                  id="org-weather-zip"
+                  name="weatherZip"
+                  type="text"
+                  defaultValue={organization.weatherZip ?? ""}
+                  className={fieldControlClassName}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                />
+              </Field>
+            </div>
           </SoftCard>
         </form>
 

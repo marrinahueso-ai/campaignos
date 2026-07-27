@@ -20,6 +20,7 @@ interface MarketingWowLoginFormProps {
   defaultEmail?: string;
   nextPath?: string | null;
   authErrorMessage?: string | null;
+  authNoticeMessage?: string | null;
 }
 
 export function MarketingWowLoginForm({
@@ -27,6 +28,7 @@ export function MarketingWowLoginForm({
   defaultEmail = "",
   nextPath = null,
   authErrorMessage = null,
+  authNoticeMessage = null,
 }: MarketingWowLoginFormProps) {
   const [state, action, pending] = useActionState(
     signInWithPasswordAction,
@@ -56,6 +58,11 @@ export function MarketingWowLoginForm({
 
       {authErrorMessage ? (
         <p className="mw-msg-error">{authErrorMessage}</p>
+      ) : null}
+      {authNoticeMessage ? (
+        <p className="mw-msg-success" role="status">
+          {authNoticeMessage}
+        </p>
       ) : null}
 
       <button

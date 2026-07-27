@@ -10,6 +10,8 @@ export interface SettingsEaseAccountData {
   workspaceName: string;
   roleLabel: string;
   notificationPreferences: AccountNotificationPreferences;
+  /** True when erase must re-check the email/password credential. */
+  eraseRequiresPassword: boolean;
 }
 
 export const DEFAULT_ACCOUNT_NOTIFICATION_PREFERENCES: AccountNotificationPreferences =

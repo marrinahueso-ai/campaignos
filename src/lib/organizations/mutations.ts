@@ -371,6 +371,12 @@ export async function updateOrganizationProfile(input: {
   name: string;
   timezone: string;
   district?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
   weatherCity?: string | null;
   weatherState?: string | null;
   weatherZip?: string | null;
@@ -387,6 +393,12 @@ export async function updateOrganizationProfile(input: {
       name: input.name.trim(),
       timezone: input.timezone.trim(),
       district: input.district?.trim() || null,
+      address_line1: input.addressLine1?.trim() || null,
+      address_line2: input.addressLine2?.trim() || null,
+      city: input.city?.trim() || null,
+      state: input.state?.trim() || null,
+      postal_code: input.postalCode?.trim() || null,
+      country: input.country?.trim() || null,
       weather_city: input.weatherCity?.trim() || null,
       weather_state: input.weatherState?.trim() || null,
       weather_zip: input.weatherZip?.trim() || null,

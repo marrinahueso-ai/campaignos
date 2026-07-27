@@ -5,8 +5,9 @@ import {
   getActiveMembership,
   listActiveMemberships,
 } from "@/lib/auth/membership-queries";
-import { getAuthUser } from "@/lib/auth/queries";
+import { resolveAuthUserDisplayName } from "@/lib/auth/queries";
 import { createClient } from "@/lib/supabase/server";
+import { accountEraseRequiresPassword } from "@/lib/settings-v2/erase-account";
 import {
   normalizeAccountNotificationPreferences,
   type AccountNotificationPreferences,
@@ -17,13 +18,22 @@ export type { SettingsEaseAccountData };
 
 export const getSettingsEaseAccountData = cache(
   async (): Promise<SettingsEaseAccountData | null> => {
-    const [user, membership, memberships] = await Promise.all([
-      getAuthUser(),
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !authUser?.email) {
+      return null;
+    }
+
+    const [membership, memberships] = await Promise.all([
       getActiveMembership(),
       listActiveMemberships(),
     ]);
 
-    if (!user || !membership) {
+    if (!membership) {
       return null;
     }
 
@@ -31,7 +41,6 @@ export const getSettingsEaseAccountData = cache(
       (item) => item.organizationId === membership.organizationId,
     );
 
-    const supabase = await createClient();
     const { data, error } = await supabase
       .from("organization_users")
       .select("notification_preferences, display_name")
@@ -46,15 +55,16 @@ export const getSettingsEaseAccountData = cache(
     }
 
     const row = error?.code === "42703" ? null : data;
+    const authDisplayName = resolveAuthUserDisplayName(authUser.user_metadata);
     const displayName =
       (typeof row?.display_name === "string" && row.display_name.trim()) ||
       membership.user.displayName?.trim() ||
-      user.displayName?.trim() ||
+      authDisplayName?.trim() ||
       "";
 
     return {
       displayName,
-      email: user.email,
+      email: authUser.email,
       workspaceName: activeOrg?.organizationName ?? "—",
       roleLabel:
         membership.user.organizationRoleName ??
@@ -63,6 +73,7 @@ export const getSettingsEaseAccountData = cache(
       notificationPreferences: normalizeAccountNotificationPreferences(
         row?.notification_preferences,
       ),
+      eraseRequiresPassword: accountEraseRequiresPassword(authUser.identities),
     };
   },
 );

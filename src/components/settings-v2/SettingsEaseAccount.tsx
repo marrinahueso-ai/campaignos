@@ -3,10 +3,13 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { SignOutForm } from "@/components/auth/SignOutForm";
 import {
+  eraseAccountAction,
   saveAccountNotificationPreferencesAction,
   updateAccountProfileAction,
+  type AccountEraseFormState,
   type AccountProfileFormState,
 } from "@/lib/settings-v2/account-actions";
+import { ACCOUNT_ERASE_CONFIRMATION } from "@/lib/settings-v2/erase-account";
 import type {
   AccountNotificationPreferences,
   SettingsEaseAccountData,
@@ -18,6 +21,11 @@ interface SettingsEaseAccountProps {
 }
 
 const INITIAL_PROFILE_STATE: AccountProfileFormState = {
+  error: null,
+  success: false,
+};
+
+const INITIAL_ERASE_STATE: AccountEraseFormState = {
   error: null,
   success: false,
 };
@@ -165,9 +173,15 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
     updateAccountProfileAction,
     INITIAL_PROFILE_STATE,
   );
+  const [eraseState, eraseAction, erasePending] = useActionState(
+    eraseAccountAction,
+    INITIAL_ERASE_STATE,
+  );
   const [prefs, setPrefs] = useState(data.notificationPreferences);
   const [prefsError, setPrefsError] = useState<string | null>(null);
   const [prefsPending, startPrefsTransition] = useTransition();
+  const [eraseConfirm, setEraseConfirm] = useState("");
+  const canErase = eraseConfirm.trim() === ACCOUNT_ERASE_CONFIRMATION;
 
   useEffect(() => {
     setPrefs(data.notificationPreferences);
@@ -222,6 +236,14 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
           role="alert"
         >
           {prefsError}
+        </p>
+      ) : null}
+      {eraseState.error ? (
+        <p
+          className="mb-3.5 rounded-[14px] border border-[rgba(166,90,58,0.22)] bg-[rgba(166,90,58,0.12)] px-4 py-3 text-sm font-semibold text-[#a65a3a]"
+          role="alert"
+        >
+          {eraseState.error}
         </p>
       ) : null}
 
@@ -309,6 +331,58 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
               </button>
             </SignOutForm>
           </div>
+        </SoftCard>
+
+        <SoftCard
+          title="Delete / erase account"
+          description="Permanently erase your Hey Ralli login and remove you from every workspace. Workspace content stays with each organization."
+          className="lg:col-span-2 border-[rgba(166,90,58,0.22)]"
+        >
+          <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
+            This cannot be undone. If you are the last admin on a workspace,
+            transfer admin access in Team &amp; Access first.
+          </p>
+          <form action={eraseAction} data-settings-ease="account-erase">
+            {data.eraseRequiresPassword ? (
+              <Field id="acc-erase-password" label="Current password">
+                <input
+                  id="acc-erase-password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={fieldControlClassName}
+                />
+              </Field>
+            ) : (
+              <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
+                Confirm with <strong className="text-[#2a2622]">DELETE</strong>{" "}
+                below — your account uses social sign-in.
+              </p>
+            )}
+            <Field
+              id="acc-erase-confirm"
+              label={`Type ${ACCOUNT_ERASE_CONFIRMATION} to confirm`}
+            >
+              <input
+                id="acc-erase-confirm"
+                name="confirmation"
+                type="text"
+                value={eraseConfirm}
+                onChange={(event) => setEraseConfirm(event.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={ACCOUNT_ERASE_CONFIRMATION}
+                className={fieldControlClassName}
+              />
+            </Field>
+            <button
+              type="submit"
+              disabled={!canErase || erasePending}
+              className={cn(btnDangerClassName, "disabled:cursor-not-allowed disabled:opacity-60")}
+            >
+              {erasePending ? "Erasing…" : "Erase my account"}
+            </button>
+          </form>
         </SoftCard>
       </div>
     </section>

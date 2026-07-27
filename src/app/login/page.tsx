@@ -25,6 +25,7 @@ interface LoginPageProps {
     error?: string;
     next?: string;
     intent?: string;
+    notice?: string;
   }>;
 }
 
@@ -77,6 +78,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const authErrorMessage = marketingAuthErrorMessage(params.error, {
     inviteEmail: invitePreview?.email ?? null,
   });
+  const authNoticeMessage =
+    params.notice === "account_erased"
+      ? "Your account has been erased. You can create a new account anytime."
+      : null;
 
   return (
     <MarketingWowAuthShell
@@ -95,6 +100,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         }
         nextPath={nextPath}
         authErrorMessage={authErrorMessage}
+        authNoticeMessage={authNoticeMessage}
       />
     </MarketingWowAuthShell>
   );

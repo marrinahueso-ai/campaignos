@@ -77,6 +77,46 @@ export function OrganizationProfileForm({
           defaultValue={organization.schoolYear ?? ""}
         />
       </div>
+      <Input
+        name="addressLine1"
+        label="Street address"
+        defaultValue={organization.addressLine1 ?? ""}
+        autoComplete="address-line1"
+      />
+      <Input
+        name="addressLine2"
+        label="Apartment, suite, etc."
+        defaultValue={organization.addressLine2 ?? ""}
+        autoComplete="address-line2"
+      />
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Input
+          name="city"
+          label="City"
+          defaultValue={organization.city ?? ""}
+          autoComplete="address-level2"
+        />
+        <Input
+          name="state"
+          label="State"
+          defaultValue={organization.state ?? ""}
+          autoComplete="address-level1"
+        />
+      </div>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <Input
+          name="postalCode"
+          label="Postal / ZIP"
+          defaultValue={organization.postalCode ?? ""}
+          autoComplete="postal-code"
+        />
+        <Input
+          name="country"
+          label="Country"
+          defaultValue={organization.country ?? ""}
+          autoComplete="country-name"
+        />
+      </div>
       <div className="grid gap-6 sm:grid-cols-3">
         <Input
           name="weatherCity"

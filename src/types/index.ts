@@ -108,6 +108,18 @@ export interface Organization {
   id: string;
   name: string;
   district: string | null;
+  /** Street address line 1 (organization mailing / physical profile). */
+  addressLine1: string | null;
+  /** Street address line 2 (suite, building). */
+  addressLine2: string | null;
+  /** City for organization mailing / physical address. */
+  city: string | null;
+  /** State / province / region for organization mailing / physical address. */
+  state: string | null;
+  /** Postal / ZIP for organization mailing / physical address. */
+  postalCode: string | null;
+  /** Country for organization mailing / physical address. */
+  country: string | null;
   /** City for live Today weather (preferred over district parsing). */
   weatherCity: string | null;
   /** US state for live Today weather. */
@@ -141,6 +153,12 @@ export interface OrganizationRow {
   id: string;
   name: string;
   district: string | null;
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
   weather_city?: string | null;
   weather_state?: string | null;
   weather_zip?: string | null;
