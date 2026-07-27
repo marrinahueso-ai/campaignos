@@ -1,8 +1,8 @@
 # Meta connection — one-click for every surface
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
-**Last updated:** July 23, 2026  
-**Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md)
+**Last updated:** July 27, 2026  
+**Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) (includes **consent screen ↔ scope** map)
 
 ---
 
@@ -40,9 +40,9 @@ Same mental model for Canva and Monday: one Connect CTA per provider, `returnTo`
 
 ## Today
 
-- Combined Meta scopes: `META_COMBINED_OAUTH_SCOPE_LIST` in `src/lib/meta-publishing/oauth-scopes.ts`.
+- Combined Meta scopes: `META_COMBINED_OAUTH_SCOPE_LIST` in `src/lib/meta-publishing/oauth-scopes.ts` — **15 scopes**; live Facebook access-request wording mapped in [meta-app-review-use-cases.md § Consent screen](../ops/meta-app-review-use-cases.md#consent-screen--scopes-what-facebook-shows-at-connect).
 - Shared helpers: `src/lib/integrations/oauth.ts` (`safeOAuthReturnTo`, `buildOAuthStartPath`, `buildIntegrationSettingsPath`).
-- Settings → Meta is the manage home; Insights / Inbox Connect CTAs hit the **same** `/api/meta/oauth/start` (no `flow=` fork).
+- Settings → Meta is the manage home; Insights / Communications Connect CTAs hit the **same** `/api/meta/oauth/start` (no `flow=` fork).
 - Canva / Monday panels and Artwork Canva connect use the same start-path helper.
 - Connection rows: `organization_meta_connections`, `organization_canva_connections`, `organization_monday_connections`.
 - Google Calendar Sign-in is **live and wired** through review → calendar / dashboard, plus daily cron (see [google-calendar.md](./google-calendar.md)); ICS + upload remain alternate streams. Gmail still deferred.
