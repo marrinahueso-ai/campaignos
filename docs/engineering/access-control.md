@@ -138,14 +138,14 @@ Applied remotely (history may show split entries: `membership_scoped_rls` + `mem
 ### Phase C3 — Storage membership RLS
 
 **Full write-up:** [storage-rls.md](./storage-rls.md)  
-**Migration:** `supabase/migrations/067_storage_membership_rls.sql`
+**Migrations:** `067_storage_membership_rls.sql`, plus later `organization-stickers` and `developer-agreements` policies
 
 | Scope | Behavior |
 |-------|----------|
-| Path key | First folder = `organization_id` or `event_id` (matches app upload builders) |
+| Path key | First folder = `organization_id` or `event_id` (matches app upload builders); agreements use path prefixes |
 | Roles | `authenticated` only; anon Storage API denied |
-| Private buckets | Full membership gate (vendor-documents, calendar-uploads, training-library) |
-| Public buckets | Same API gate; `public = true` kept so existing `/object/public/` URLs still work |
+| Private buckets | Membership gate: vendor-documents, calendar-uploads, training-library; agreements: own-signature paths |
+| Public buckets | Same API gate; `public = true` kept (`event-assets`, `campaign-files`, `school-assets`, `organization-stickers`) |
 
 **Contract tests:** `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts`
 

@@ -1,11 +1,14 @@
 # Storage RLS — Phase C3
 
-**Status:** Applied on Supabase project `zyllfqieeihshnwpakiv`  
-**Last updated:** July 18, 2026  
-**Migration:** `supabase/migrations/067_storage_membership_rls.sql`  
-**Depends on:** Phase C helpers (`private.is_active_org_member`, `private.can_access_event`)
+**Status:** Living  
+**Owner:** Engineering  
+**Last updated:** 2026-07-26  
+**Related:** [access-control.md](./access-control.md) · [multi-tenant-isolation.md](../security/multi-tenant-isolation.md) · [developer-agreements.md](./developer-agreements.md)
 
-Companion: [access-control.md](./access-control.md)
+**Supabase project:** `zyllfqieeihshnwpakiv`  
+**Core migration:** `supabase/migrations/067_storage_membership_rls.sql`  
+**Later bucket policies:** `20260723042605_organization_stickers.sql`, `073_developer_agreements.sql`  
+**Depends on:** Phase C helpers (`private.is_active_org_member`, `private.can_access_event`)
 
 ---
 
@@ -13,7 +16,7 @@ Companion: [access-control.md](./access-control.md)
 
 Table RLS (Phases C / C2) stopped cross-org row reads. Storage was still open: any authenticated (and often anon) client could read/write entire buckets if they knew or guessed a path.
 
-Phase C3 locks **Storage API** access (`storage.objects` policies) to the same membership model, using the **first path folder** as the tenancy key.
+Phase C3 locks **Storage API** access (`storage.objects` policies) to the same membership model, using the **first path folder** as the tenancy key (except `developer-agreements`).
 
 ---
 
@@ -21,23 +24,30 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 
 | Bucket | Visibility | First folder | Example path | App builders |
 |--------|------------|--------------|--------------|--------------|
-| `vendor-documents` | private | `organization_id` | `{orgId}/{vendorId}/logo/...` | `src/lib/vendors/storage.ts` |
+| `vendor-documents` | private | `organization_id` | `{orgId}/{vendorId}/logo/...` or `{orgId}/{vendorId}/{eventId?}/…` | `src/lib/vendors/storage.ts` (docs + logos) |
 | `calendar-uploads` | private | `organization_id` | `{orgId}/{timestamp}-file.pdf` | `calendar-import/mutations.ts`, `organizations/mutations.ts` |
 | `training-library` | private | `organization_id` | `{orgId}/{docId}/file.pdf` | `organization-intelligence/mutations.ts` |
-| `school-assets` | **public** | `organization_id` | `{orgId}/pto-logo.png` | `organizations/mutations.ts` |
-| `organization-stickers` | **public** | `organization_id` | `{orgId}/{stickerId}.png` | `src/lib/inbox/organization-stickers.ts` (Meta DM image URLs) |
-| `event-assets` | **public** | `event_id` | `{eventId}/campaign-builder-v2/...` | `event-workspace/storage.ts`, AI / builder uploaders |
+| `school-assets` | **public** | `organization_id` | `{orgId}/pto-logo.png`, `{orgId}/school-logo.png` | `organizations/mutations.ts` |
+| `organization-stickers` | **public** | `organization_id` | `{orgId}/{stickerId}.png` | `src/lib/inbox/sticker-constants.ts` (Meta DM stickers) |
+| `event-assets` | **public** | `event_id` (usual) | `{eventId}/{assetType}/…`, AI concepts under `{eventId}/…/concepts/…` | `event-workspace/storage.ts`, `ai-artwork/storage.ts` |
 | `campaign-files` | **public** | `event_id` | `{eventId}/{timestamp}-file.pdf` | `campaign-files/storage.ts` |
-| `developer-agreements` | private | path prefix (`templates/` or `signatures/{userId}/`) | `templates/…`, `signatures/{userId}/{versionId}.png` | Platform legal templates + drawn e-signatures (`073_developer_agreements.sql`) |
+| `developer-agreements` | private | path prefix (not org/event UUID) | `templates/…`, `signatures/{userId}/…`, `signatures/company/…` | `developer-agreements/actions.ts` + `storage.ts` (`073`) |
 
-**Do not change first-folder conventions without updating `067` helpers/policies.**  
-`developer-agreements` uses its own path policies in `073` (not org-UUID first folder).
+### Path exceptions (still shipped)
+
+| Flow | Bucket | Path | How it works |
+|------|--------|------|----------------|
+| Homepage Composer card art | `event-assets` | `{orgId}/homepage-composer/…` | Org UUID first folder — **does not** match event-scoped RLS. Uploads use **service role** via `uploadArtworkBytes` when admin is configured (`homepage-composer/artwork-actions.ts`). |
+| AI artwork generation | `event-assets` | `{eventId}/…` | Prefer service role for the same reason (user-JWT Storage RLS failures mid-generation). |
+| Developer agreement templates + company countersign + executed packets | `developer-agreements` | `templates/…`, `signatures/company/…`, packet paths | **Service role** only. Authenticated clients may only write `signatures/{auth.uid()}/…`. |
+
+**Do not change first-folder conventions without updating `067` helpers/policies** (and stickers / agreements migrations as needed).
 
 ---
 
 ## Policy model
 
-Helpers (private schema):
+Helpers (private schema, from `067`):
 
 | Function | Meaning |
 |----------|---------|
@@ -45,11 +55,22 @@ Helpers (private schema):
 | `private.can_access_storage_org_path(name)` | Active org member for that folder |
 | `private.can_access_storage_event_path(name)` | `can_access_event` for that folder |
 
-Per bucket: `SELECT` / `INSERT` / `UPDATE` / `DELETE` for role **`authenticated` only**.
+**Org / event buckets:** `SELECT` / `INSERT` / `UPDATE` / `DELETE` for role **`authenticated` only**, same membership predicate on each.
 
-Upsert requires INSERT + SELECT + UPDATE — all three use the same predicate.
+**`developer-agreements`:** path-prefix policies (not `can_access_storage_*`):
+
+| Policy | Ops | Rule |
+|--------|-----|------|
+| `developer_agreements_select` | SELECT | `templates/%` or `signatures/{auth.uid()}/%` |
+| `developer_agreements_insert_own_signature` | INSERT | `signatures/{auth.uid()}/%` |
+| `developer_agreements_update_own_signature` | UPDATE | `signatures/{auth.uid()}/%` |
+| *(none)* | DELETE | No authenticated delete — cleanup via service role if needed |
+
+Upsert requires INSERT + SELECT + UPDATE — all three use the same predicate where granted.
 
 Service role continues to bypass RLS.
+
+**Live count (2026-07-26):** **31** policies on `storage.objects` — 28 membership (`*_active_member` / `*_event_member`) + 3 developer-agreements. Zero anon / “Allow public…” Storage API policies.
 
 ---
 
@@ -66,6 +87,7 @@ Symptoms in Create with AI:
 Mitigations shipped in app code:
 - `protectSessionFromRichnessDowngrade` on session save (do not wipe richer server art)
 - Client recovers from server when generation fails / Preview is empty
+- `uploadArtworkBytes` prefers service role when configured
 
 Hard refresh also restores the saved session for affected events.
 
@@ -79,15 +101,18 @@ Hard refresh also restores the saved session for affected events.
 | Signed URL issuance for private buckets (needs SELECT) | Migrating DB-stored public URLs → signed URLs |
 | Cross-org path guessing via Storage API | Template permission keys (`upload_artwork`, etc.) — still app-layer |
 | Anon Storage API access removed | CDN/public GET on `public = true` buckets |
+| | Aligning Homepage Composer paths with event- or org-scoped RLS (today: service role) |
 
 **Residual risk (documented, intentional for this phase):**  
 Objects in public buckets remain fetchable via `/storage/v1/object/public/...` URLs already stored in the DB. Closing that requires a signed-URL migration, not only RLS.
+
+Public buckets today: `event-assets`, `campaign-files`, `school-assets`, `organization-stickers`.
 
 ---
 
 ## How to re-verify
 
-1. SQL — no open bucket-only policies remain:
+1. SQL — policies match membership / agreements model:
 
 ```sql
 select policyname, cmd, roles::text, qual
@@ -96,13 +121,13 @@ where schemaname = 'storage' and tablename = 'objects'
 order by policyname;
 ```
 
-Expect **24** policies named `*_active_member` / `*_event_member`, all using `can_access_storage_*`. Zero `Allow public…` / anon roles.
+Expect **31** policies: 28 named `*_active_member` / `*_event_member` (using `can_access_storage_*`), plus 3 `developer_agreements_*`. Zero `Allow public…` / anon roles.
 
-2. Authenticated Storage API smoke (2026-07-18):
-   - Test admin: upload to `event-assets/{ownEventId}/…` → **OK**
-   - Test admin: upload to `vendor-documents/{foreignOrgId}/…` → **denied**
-   - Test admin: `createSignedUrl` on existing vendor logo path → **OK**
-   - Playwright: `01`, `05`, `07` → **7/7 pass**
+2. Authenticated Storage API smoke:
+   - Upload to `event-assets/{ownEventId}/…` → **OK**
+   - Upload to `vendor-documents/{foreignOrgId}/…` → **denied**
+   - `createSignedUrl` on existing vendor logo path → **OK**
+   - Stickers: upload to `organization-stickers/{ownOrgId}/…` → **OK**
 
 3. Contract tests: `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts` (via `npm run test:team-access`)
 
@@ -112,6 +137,8 @@ Expect **24** policies named `*_active_member` / `*_event_member`, all using `ca
 
 | Area | Path |
 |------|------|
-| Migration | `supabase/migrations/067_storage_membership_rls.sql` |
+| C3 helpers + org/event policies | `supabase/migrations/067_storage_membership_rls.sql` |
+| Organization stickers bucket + policies | `supabase/migrations/20260723042605_organization_stickers.sql` |
+| Developer agreements bucket + policies | `supabase/migrations/073_developer_agreements.sql` |
 | Contract test | `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts` |
-| Path builders | `src/lib/vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts` |
+| Path builders | `vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts`, `inbox/sticker-constants.ts`, `ai-artwork/storage.ts`, `homepage-composer/artwork-actions.ts`, `developer-agreements/actions.ts` |
