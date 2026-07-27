@@ -8,6 +8,8 @@ interface TeamAccessSettingsContentProps {
   members: OrganizationUser[];
   workspace: OrganizationWorkspaceData;
   workload: TeamAccessWorkloadIndex;
+  /** Auth last_sign_in_at by auth user id (org-scoped server lookup). */
+  lastSignInAtByUserId?: Record<string, string | null>;
   canManage: boolean;
   canEditAccessTemplates: boolean;
   accessTemplates: AccessTemplate[];
@@ -29,6 +31,7 @@ export function TeamAccessSettingsContent({
   members,
   workspace,
   workload,
+  lastSignInAtByUserId,
   canManage,
   canEditAccessTemplates,
   accessTemplates,
@@ -44,6 +47,7 @@ export function TeamAccessSettingsContent({
       members={members}
       workspace={workspace}
       workload={workload}
+      lastSignInAtByUserId={lastSignInAtByUserId}
       canManage={canManage}
       canEditAccessTemplates={canEditAccessTemplates}
       accessTemplates={accessTemplates}

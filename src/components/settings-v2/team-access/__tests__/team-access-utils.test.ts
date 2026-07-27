@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildUnifiedTeamMembers } from "../team-access-utils.ts";
+import {
+  buildUnifiedTeamMembers,
+  formatLastLoggedInLabel,
+  formatLastLoggedInValue,
+} from "../team-access-utils.ts";
 import type { OrganizationWorkspaceData } from "../../../../types/organization-workspace.ts";
 
 const PRESIDENT_ROLE_ID = "291265da-310c-41e6-8ed8-bd386d3bdc5c";
@@ -136,5 +140,16 @@ describe("buildUnifiedTeamMembers committee mapping", () => {
       molly.committees.map((assignment) => assignment.committee.name).sort(),
       ["Bus Driver Breakfast", "Volunteer Badges"],
     );
+  });
+});
+
+describe("formatLastLoggedInLabel", () => {
+  it("formats Auth last_sign_in_at and falls back to Never", () => {
+    assert.equal(formatLastLoggedInLabel(null), "Last logged in: Never");
+    assert.equal(formatLastLoggedInValue(null), "Never");
+    assert.equal(formatLastLoggedInValue("not-a-date"), "—");
+
+    const label = formatLastLoggedInLabel("2026-07-26T20:40:00.000Z");
+    assert.match(label, /^Last logged in: Jul 26, 2026 · \d{1,2}:\d{2} [AP]M$/u);
   });
 });

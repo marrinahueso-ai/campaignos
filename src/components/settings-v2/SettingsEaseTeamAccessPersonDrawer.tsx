@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   canResendTeamInvite,
+  formatLastLoggedInLabel,
+  formatLastLoggedInValue,
   formatMemberEmail,
   peopleEaseRoleLine,
   peopleLoginStatus,
@@ -325,6 +327,8 @@ export function SettingsEaseTeamAccessPersonDrawer({
                   {formatMemberEmail(member)}
                   <br />
                   {loginContactLine(member)}
+                  <br />
+                  {formatLastLoggedInLabel(member.lastActive)}
                 </p>
               </div>
             </div>
@@ -407,6 +411,10 @@ export function SettingsEaseTeamAccessPersonDrawer({
                     ["App access", member.accessLabel || "—"],
                     ["Primary team", resolvePrimaryTeam(member)],
                     ["Reports to", member.reportsTo?.trim() || "—"],
+                    [
+                      "Last logged in",
+                      formatLastLoggedInValue(member.lastActive),
+                    ],
                   ] as const
                 ).map(([label, value]) => (
                   <div
@@ -462,8 +470,7 @@ export function SettingsEaseTeamAccessPersonDrawer({
           {activeTab === "events" ? (
             <div className="animate-[settings-ease-rise_0.25s_ease_both]">
               <p className="mb-3 text-[13px] leading-snug text-[#5c554c]">
-                Link the events this person can work on. Soft toggles — not a
-                spreadsheet.
+                Link the events this person can work on.
               </p>
               {events.length === 0 ? (
                 <p className="m-0 text-[13px] text-[#5c554c]">

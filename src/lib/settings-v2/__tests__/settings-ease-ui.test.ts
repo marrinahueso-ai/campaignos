@@ -231,6 +231,10 @@ describe("settings ease UI contracts", () => {
     assert.match(accountEase, /Signed in on this device/);
     assert.match(accountEase, /SignOutForm/);
     assert.match(accountEase, /Sign out/);
+    assert.match(accountEase, /Delete \/ erase account/);
+    assert.match(accountEase, /eraseAccountAction/);
+    assert.match(accountEase, /data-settings-ease="account-erase"/);
+    assert.match(accountEase, /Erase my account/);
     assert.match(accountEase, /saveAccountNotificationPreferencesAction/);
     assert.match(accountEase, /updateAccountProfileAction/);
     assert.match(accountEase, /font-fraunces/);
@@ -240,6 +244,8 @@ describe("settings ease UI contracts", () => {
 
     assert.match(accountActions, /notification_preferences/);
     assert.match(accountActions, /display_name/);
+    assert.match(accountActions, /eraseAccountAction/);
+    assert.match(accountActions, /auth\.admin\.deleteUser/);
   });
 
   it("wires School year to Ease panels (Phase 3 — nested under Branding)", () => {
@@ -285,6 +291,14 @@ describe("settings ease UI contracts", () => {
       /School profile and workspace preferences\. Voice, logos, and year live/,
     );
     assert.match(organizationEase, /Shown across Hey Ralli for this workspace/);
+    assert.match(organizationEase, /Street address/);
+    assert.match(organizationEase, /name="addressLine1"/);
+    assert.match(organizationEase, /name="city"/);
+    assert.match(organizationEase, /name="state"/);
+    assert.match(organizationEase, /name="postalCode"/);
+    assert.match(organizationEase, /name="country"/);
+    assert.match(organizationEase, /Weather location/);
+    assert.match(organizationEase, /name="weatherZip"/);
     assert.match(organizationEase, /Branding home/);
     assert.match(
       organizationEase,
@@ -310,14 +324,17 @@ describe("settings ease UI contracts", () => {
 
   it("wires Team & Access to Ease panels (Phase 4 — no dense V2 chrome blend)", () => {
     assert.match(teamAccessPage, /TeamAccessSettingsContent/);
+    assert.match(teamAccessPage, /getOrganizationMemberLastSignIns/);
     assert.match(teamAccessPage, /getOrgBillingSnapshot|getSettingsBillingContext/);
     assert.doesNotMatch(teamAccessPage, /SettingsV2PageHeader/);
     assert.match(teamAccessContent, /SettingsEaseTeamAccess/);
+    assert.match(teamAccessContent, /lastSignInAtByUserId/);
     assert.match(teamAccessContent, /canEditAccessTemplates/);
     assert.doesNotMatch(teamAccessContent, /TeamAccessShell/);
     assert.doesNotMatch(teamAccessContent, /SettingsV2PageHeader/);
 
     assert.match(teamAccessEase, /data-settings-ease="team-access"/);
+    assert.match(teamAccessEase, /formatLastLoggedInLabel/);
     assert.match(
       teamAccessEase,
       /People, roles, and what each person can do/,
@@ -365,6 +382,8 @@ describe("settings ease UI contracts", () => {
     assert.match(personDrawer, /onSaveAccessLevel/);
     assert.match(personDrawer, /ACCESS_PERMISSION_KEYS/);
     assert.match(personDrawer, /role="switch"/);
+    assert.match(personDrawer, /formatLastLoggedInLabel/);
+    assert.match(personDrawer, /Last logged in/);
     assert.doesNotMatch(personDrawer, /TeamAccessDrawer/);
     assert.doesNotMatch(personDrawer, /SettingsV2Card/);
     assert.doesNotMatch(personDrawer, /bg-cos-card/);

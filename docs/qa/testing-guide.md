@@ -34,6 +34,7 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Can a test user sign in?
 - Sign out → sign back in? (`16-launch-smoke`)
 - Do Dashboard and Team & Access load?
+- Team & Access People rows / person drawer show **Last logged in** (real Auth timestamp or Never)?
 - Launch nav smoke: Calendar (Import / Google CTAs), Meta settings page, Tasks, Insights, Today/dashboard? (`16-launch-smoke`)
 - Events Home: **View Details** present, no row kebab / CampaignRowActions? (`16-launch-smoke`)
 - `/create-with-ai` shows chooser (Home Page · Social Media · Newsletter); `/create-with-ai/social` lands on Creative Setup with no “Using your brand kit” banner? (`16-launch-smoke`)

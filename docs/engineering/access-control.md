@@ -1,7 +1,7 @@
 # Access control — Phases A–C
 
 **Status:** Phases A–C + C2 + C3 + D (org switcher MVP) complete; Phase E (Stripe / org billing) shipped — see [billing-and-access.md](../ops/billing-and-access.md)  
-**Last updated:** July 25, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Access & multi-tenant onboarding](../security/access-and-onboarding.md) (user-facing join / switch / gates)
 
 This note records what shipped, what we found, and what we fixed for the access-template / tenancy workstream.
@@ -225,6 +225,7 @@ Do **not** commit `.env.local`.
 | EffectiveAccess | `src/lib/access-templates/effective-access.ts`, `effective-access-core.ts`, `defaults.ts`, `types.ts` |
 | Role simulator gate | `src/lib/auth/role-simulator-access.ts`, `role-simulator-env.ts` |
 | Membership / self-deactivate | `src/lib/auth/membership-access.ts`, `membership-mutations.ts`, `membership-queries.ts` |
+| Team last sign-in (Auth) | `src/lib/auth/last-sign-in.ts` (org-scoped `getUserById` → Team & Access People / drawer) |
 | Event access | `src/lib/events/queries.ts`, `campaign-page-queries.ts` |
 | Invite | `src/app/invite/[token]/`, `src/lib/auth/invite-*.ts`, RPC in migration 064 |
 | Templates UI | `src/components/settings-v2/team-access/TeamAccessAccessTemplatesPanel.tsx` |

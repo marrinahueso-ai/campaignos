@@ -1121,6 +1121,7 @@ function finalizeUnifiedMember(
   person: PersonAccumulator,
   workspace: OrganizationWorkspaceData,
   workload?: TeamAccessWorkloadIndex,
+  lastSignInAtByUserId?: Record<string, string | null>,
 ): UnifiedTeamMember {
   const directCommitteeAssignments = [...person.committeeAssignments.values()]
     .filter((assignment) => assignment.roleOnCommittee !== "vp")
@@ -1209,7 +1210,11 @@ function finalizeUnifiedMember(
     status,
     statusLabel: memberStatusLabel(status, isRosterOnly),
     isRosterOnly,
-    lastActive: person.organizationUser?.joinedAt ?? null,
+    lastActive: (() => {
+      const userId = person.organizationUser?.userId?.trim();
+      if (!userId || !lastSignInAtByUserId) return null;
+      return lastSignInAtByUserId[userId] ?? null;
+    })(),
     joinedAt: person.organizationUser?.joinedAt ?? null,
     organizationRoleId: person.organizationRoleId,
     organizationRoleName: person.organizationRoleName,
@@ -1243,11 +1248,19 @@ export function buildUnifiedTeamMembers(
   members: OrganizationUser[],
   workspace: OrganizationWorkspaceData,
   workload?: TeamAccessWorkloadIndex,
+  lastSignInAtByUserId?: Record<string, string | null>,
 ): UnifiedTeamMember[] {
   const people = collectRosterPeople(members, workspace);
 
   return [...people.values()]
-    .map((person) => finalizeUnifiedMember(person, workspace, workload))
+    .map((person) =>
+      finalizeUnifiedMember(
+        person,
+        workspace,
+        workload,
+        lastSignInAtByUserId,
+      ),
+    )
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
@@ -1257,6 +1270,7 @@ export function findUnifiedTeamMemberById(
   members: OrganizationUser[],
   workspace: OrganizationWorkspaceData,
   workload?: TeamAccessWorkloadIndex,
+  lastSignInAtByUserId?: Record<string, string | null>,
 ): UnifiedTeamMember | null {
   const people = collectRosterPeople(members, workspace);
 
@@ -1267,7 +1281,12 @@ export function findUnifiedTeamMemberById(
         ? `roster-member:${person.organizationMemberId}`
         : `roster:${person.dedupeKey}`);
     if (id === memberId) {
-      return finalizeUnifiedMember(person, workspace, workload);
+      return finalizeUnifiedMember(
+        person,
+        workspace,
+        workload,
+        lastSignInAtByUserId,
+      );
     }
   }
 
@@ -1406,6 +1425,40 @@ export function formatMemberEmail(member: UnifiedTeamMember): string {
     return "No email";
   }
   return member.email;
+}
+
+/**
+ * Timestamp portion for Team & Access last-login display.
+ * Null → “Never”; invalid → “—”.
+ */
+export function formatLastLoggedInValue(
+  lastSignInAt: string | null | undefined,
+): string {
+  if (!lastSignInAt) {
+    return "Never";
+  }
+  const date = new Date(lastSignInAt);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+  const datePart = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePart = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${datePart} · ${timePart}`;
+}
+
+/** Quiet line — e.g. “Last logged in: Jul 26, 2026 · 3:40 PM”. */
+export function formatLastLoggedInLabel(
+  lastSignInAt: string | null | undefined,
+): string {
+  return `Last logged in: ${formatLastLoggedInValue(lastSignInAt)}`;
 }
 
 export function formatMemberPhone(member: UnifiedTeamMember): string {

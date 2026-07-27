@@ -4,6 +4,7 @@ import {
   accessHasPermission,
   getEffectiveAccess,
 } from "@/lib/access-templates/effective-access";
+import { getOrganizationMemberLastSignIns } from "@/lib/auth/last-sign-in";
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
@@ -61,6 +62,11 @@ export default async function TeamAccessSettingsPage() {
       getSettingsBillingContext(),
     ]);
 
+  const lastSignInAtByUserId = await getOrganizationMemberLastSignIns(
+    organization.id,
+    members.map((member) => member.userId),
+  );
+
   const workspace =
     workspaceResult ?? buildFallbackOrganizationWorkspaceData();
 
@@ -86,6 +92,7 @@ export default async function TeamAccessSettingsPage() {
       members={members}
       workspace={workspace}
       workload={workload}
+      lastSignInAtByUserId={lastSignInAtByUserId}
       canManage={canManage}
       canEditAccessTemplates={canManagePeople}
       accessTemplates={accessTemplates}

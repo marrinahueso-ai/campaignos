@@ -16,6 +16,7 @@ import {
   activeSeatsEaseSubLabel,
   buildUnifiedTeamMembers,
   canResendTeamInvite,
+  formatLastLoggedInLabel,
   isCurrentUserTeamMember,
   pendingInvitesEaseSubLabel,
   peopleEaseRoleLine,
@@ -73,6 +74,7 @@ interface SettingsEaseTeamAccessProps {
   members: OrganizationUser[];
   workspace: OrganizationWorkspaceData;
   workload: TeamAccessWorkloadIndex;
+  lastSignInAtByUserId?: Record<string, string | null>;
   canManage: boolean;
   canEditAccessTemplates?: boolean;
   accessTemplates: AccessTemplate[];
@@ -209,6 +211,7 @@ export function SettingsEaseTeamAccess({
   members,
   workspace,
   workload,
+  lastSignInAtByUserId,
   canManage,
   canEditAccessTemplates = false,
   accessTemplates,
@@ -242,7 +245,12 @@ export function SettingsEaseTeamAccess({
   );
 
   const unifiedMembers = useMemo(() => {
-    const built = buildUnifiedTeamMembers(members, workspace, workload);
+    const built = buildUnifiedTeamMembers(
+      members,
+      workspace,
+      workload,
+      lastSignInAtByUserId,
+    );
     return built.map((member) => ({
       ...member,
       accessLabel: accessLevelLabel(
@@ -251,7 +259,7 @@ export function SettingsEaseTeamAccess({
         accessLabels,
       ),
     }));
-  }, [members, workspace, workload, accessLabels]);
+  }, [members, workspace, workload, lastSignInAtByUserId, accessLabels]);
 
   const loginPeople = useMemo(() => {
     const source = localMembers ?? unifiedMembers;
@@ -614,8 +622,7 @@ export function SettingsEaseTeamAccess({
               Roles & permissions
             </h3>
             <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-              What each access role can do. Soft summary — not a dense admin
-              matrix.
+              What each access role can do.
             </p>
           </div>
           {canEditAccessTemplates ? (
@@ -776,6 +783,9 @@ export function SettingsEaseTeamAccess({
                     </div>
                     <div className="mt-0.5 truncate text-xs text-[#7a7166]">
                       {peopleEaseRoleLine(member)}
+                    </div>
+                    <div className="mt-0.5 truncate text-xs leading-snug text-[#7a7166]">
+                      {formatLastLoggedInLabel(member.lastActive)}
                     </div>
                     {linkedCount > 0 ? (
                       <div className="mt-1 text-[11px] font-bold text-[#2a7a86]">
