@@ -16,7 +16,7 @@ This is the documentation hub. Start here.
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
 | **QA** | [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
-| **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron |
+| **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron · [Meta App Review use cases](./ops/meta-app-review-use-cases.md) |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
 | **Historical only** | [Archive](./archive/README.md) — do not treat as current |
 | **Maintaining docs** | [Governance](./GOVERNANCE.md) |
@@ -53,6 +53,7 @@ This is the documentation hub. Start here.
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |
+| Meta App Review use cases | [ops/meta-app-review-use-cases.md](./ops/meta-app-review-use-cases.md) |
 | Google Calendar | [integrations/google-calendar.md](./integrations/google-calendar.md) |
 | Access & multi-tenant onboarding | [security/access-and-onboarding.md](./security/access-and-onboarding.md) |
 | Access control (templates / RLS) | [engineering/access-control.md](./engineering/access-control.md) |

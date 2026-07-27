@@ -2,7 +2,7 @@
 
 **Status:** Thin shared OAuth CTA helpers shipped; provider token exchange still per-stack. Goal remains one click → approve use cases → done.  
 **Last updated:** July 23, 2026  
-**Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md)
+**Related:** [Feature list](../product/feature-list.md) · [Event Insights](../product/event-insights.md) · [Meta Calendar DnD](../qa/meta-calendar-dnd.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md)
 
 ---
 
@@ -54,7 +54,7 @@ Synced via Graph Page / IG account + published-post insights (`read_insights`, `
 - **Views** from `page_media_view` / `post_media_view` (unique reach kept separately)
 - **Interactions** from `page_post_engagements` / derived post reactions
 - **Top content by views** carousel from recent Facebook Page posts + Instagram media (and Hey Ralli `meta_publication_slots` when available) with synced post insights (`post_media_view` / `post_total_media_view_unique`, reactions, clicks; comments/shares from the post object); Refresh discovers Page/IG feed media so posts published outside Hey Ralli still appear. Avoid requesting invalid insights names like `post_comments` / `post_shares` — Graph rejects the whole batch (#100).
-- **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) — product UI, empty states, load-vs-sync, and gaps: [event-insights.md](../product/event-insights.md). Reuses synced `social_post_insights` via published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). Org `/insights` hub is unchanged. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred.
+- **Event-scoped Insights** on event detail (`/events/[id]?tab=insights`) — product UI, empty states, load-vs-sync, and gaps: [event-insights.md](../product/event-insights.md). Reuses synced `social_post_insights` via published `meta_publication_slots` for that `event_id` (`getEventInsightsPageData`). Org `/insights` hub is unchanged. Demographics (Age & gender, Top countries), Follows, and Saves remain deferred — App Review answer: [meta-app-review-use-cases.md § Demographics](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer).
 
 ### Inbox reactions (current)
 
@@ -81,7 +81,7 @@ Communications Hub reply toolbar includes a **GIF** control for Messenger / Inst
 
 Not synced yet (shown as honest unavailable copy): organic vs ads split, page visits, follows/unfollows, messaging conversations. Instagram account series are thinner than Facebook (reach + accounts engaged); likes/comments often come from post aggregates.
 
-Still later: shared connection-health contract, App Review / production permission lifecycle, env-vs-org tenancy cleanup, Gmail Connect.
+Still later: shared connection-health contract, production permission lifecycle polish, env-vs-org tenancy cleanup, Gmail Connect. App Review use-case narrative + reviewer walkthrough: [meta-app-review-use-cases.md](../ops/meta-app-review-use-cases.md).
 
 ---
 

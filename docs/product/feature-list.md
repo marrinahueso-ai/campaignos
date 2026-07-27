@@ -263,7 +263,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Empty states: connect Meta · no published posts yet (copy only, no Approvals/Create CTAs) · need sync (Sync now + Org Insights; scope warning when missing)
   - Not on this tab: Age & gender, Top countries, Follows, Saves, organic-vs-ads / follower split, dense Views Total/By-post charts
 - Organic vs ads breakdown, page visits, follows, conversations — **deferred** (org hub)
-- Audience demographics overview (Age & gender, Top countries) — **deferred** (org + event)
+- Audience demographics overview (Age & gender, Top countries) — **deferred** (org + event; not requested in OAuth; classic Page age/gender insight metrics deprecated by Meta — App Review answer: [meta-app-review-use-cases.md](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer))
 - LLM-generated narrative — **deferred**
 - Year-end / board operational analytics — **deferred** (see [blueprints/11_ANALYTICS.md](./blueprints/11_ANALYTICS.md))
 

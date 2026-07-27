@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Engineering  
 **Last updated:** July 26, 2026  
-**Related:** [Feature list](./feature-list.md) · [Meta connection](../integrations/meta.md) · [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md)
+**Related:** [Feature list](./feature-list.md) · [Meta connection](../integrations/meta.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md) · [Ask Ralli Assistant](../engineering/ask-ralli-assistant.md)
 
 Event-scoped Meta performance on the event detail workspace. UI-focused product surface; OAuth and Graph sync details live in [meta.md](../integrations/meta.md).
 
@@ -56,7 +56,7 @@ No comparison / “vs typical” banner on this surface (product override).
 4. Enrich posts with artwork / caption when available
 5. Aggregate KPIs; build views series via `event-comparison.ts` (comparison helpers remain unused by UI)
 
-**No demographics** are loaded or rendered (no Age & gender, Top countries, etc.).
+**No demographics** are loaded or rendered (no Age & gender, Top countries, etc.). Definitive App Review answer (not requested; deferred; Meta deprecated classic age/gender Page metrics): [meta-app-review-use-cases.md § Demographics](../ops/meta-app-review-use-cases.md#5-demographics-age--gender--definitive-answer).
 
 ---
 

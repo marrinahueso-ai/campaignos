@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Product / Engineering  
 **Last updated:** July 26, 2026  
-**Related:** [Security](./README.md) · [Sentry stub](../ops/sentry.md) · [Documentation home](../README.md) · [Feature list](../product/feature-list.md)
+**Related:** [Security](./README.md) · [Sentry stub](../ops/sentry.md) · [Documentation home](../README.md) · [Feature list](../product/feature-list.md) · [Meta App Review use cases](../ops/meta-app-review-use-cases.md)
 
 ## Purpose
 
