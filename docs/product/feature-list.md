@@ -4,21 +4,26 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 25, 2026 — Homepage Composer v1 (events → cards → MTK HTML export)
+**Last updated:** July 26, 2026 — Calendar product demo video + cinematic mockup
 
 ---
 
 ## Marketing & public
-- Landing / home — **shipped**
+- Landing / home — **shipped** (cinematic Hey Ralli WOW homepage: full-bleed hero, product tour, pricing teaser, invite band, cookie consent; mockup reference `public/marketing-home-wow-mockup.html`)
+- Floating marketing nav — **shipped** (bottom pill switcher on home + auth/legal: Home · Log in · Sign up · Forgot · Invite · Privacy · Terms; active forest pill; stays visible when signed in)
+- Interactive product demo mockup — **in progress** (cinematic 5-chapter Ease demo: Event Planning · Calendar DnD · Create with AI · AI Inbox · Approvals; camera zoom/pan + simulated cursor; fictional Riverside Elementary PTA; HTML at [`public/product-demo-ease-mockup.html`](../../public/product-demo-ease-mockup.html); optional “Watch product demo” link on marketing mockup only — do not ship into live `/` until GO)
+- Calendar product demo — **in progress** (recorded Month / Week / **Best times** DnD → Import list Change a Plan → Import Google → Subscribe/RSS → Upload → Home; video [`public/demos/calendar-demo.webm`](../../public/demos/calendar-demo.webm); cinematic Ease mockup [`public/calendar-demo-ease-mockup.html`](../../public/calendar-demo-ease-mockup.html); re-record via `node scripts/capture-calendar-demo.mjs`)
 - Features (`/features`) — **shipped** (“See Hey Ralli in Action”: live Motion demos for Create with AI, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
 - Pricing page ($49 / $79 / $129 · Starter / Professional / Premium + AI Reserve) — **shipped** (catalog features; Stripe Checkout / sign-in → billing CTAs)
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**
+- Public Privacy (`/privacy`) / Terms (`/terms`) + footer legal links — **shipped** (mockup chrome; living notes: [privacy-and-data.md](../security/privacy-and-data.md))
+- Invite landing (`/invite`) — **shipped** (tokenless guidance; real accept stays at `/invite/[token]`)
 
 ## Auth & onboarding
 - Access model (founding code → org, invites, multi-org switcher, roles, gates) — **shipped** (living: [access-and-onboarding.md](../security/access-and-onboarding.md))
-- Sign in / sign up — **shipped**
-- Founding access code + org welcome magic-link email (CTA **Let's get started** → `/auth/callback` → `/onboarding`) — **shipped** (eng: [auth-welcome-email.md](../engineering/auth-welcome-email.md))
+- Sign in (`/login`) / sign up (`/signup`) / forgot password (`/forgot-password` → recovery → `/account/update-password`) — **shipped** (WOW auth chrome; real Supabase password, Google, founding magic-link, invite accept)
+- New-org signup flow — **shipped**: `/signup` plan chooser (Starter / Professional / Premium from catalog) → checkout (`/signup?plan=…`) enters founding access code + email → org welcome magic-link (CTA **Let's get started** → `/auth/callback` → `/onboarding`); founding code waives billing at org bootstrap (mockup: [`marketing-home-wow-mockup.html?view=signup`](../../public/marketing-home-wow-mockup.html); eng: [auth-welcome-email.md](../engineering/auth-welcome-email.md))
 - Secure invite accept (`/invite/[token]`, set password for new accounts; existing accounts sign in with their own credentials — never password-reset) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#critical))
 - Developer agreements gate (NDA + IP, in-app e-sign: full name + email + optional company + drawn signature; scroll-to-enable; signed receipt on panels; Hey Ralli-themed UI; audit log; executed-copy email CTA via app download API with token) — **shipped** (`/account/agreements`; owner manage at `/account/agreements/manage`; eng: [developer-agreements.md](../engineering/developer-agreements.md); QA: [developer-agreements.md](../qa/developer-agreements.md))
 - Owner dashboard (`/ops`) — platform metrics + **Developers signed** counter-sign queue — **shipped** (gated by `HEY_RALLI_OWNER_EMAILS` **and** Owner/`campaign_role=admin` seat); metric tiles use Events summary card colors (`bg-cos-bg-alt`)
@@ -54,6 +59,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Role simulator (dev/test, gated) — **shipped**
 
 ## Dashboard (Today)
+- **Ease redesign mockup** — calm first viewport (greeting + Create with AI / Calendar CTAs + weather chip), quieter View / Edit layout mode, Ease-styled widget cards with soft drag reorder; HTML mockup at `public/dashboard-ease-mockup.html` — **in progress** (do not ship product UI until GO)
 - **Your overview** board: greeting · Add/Edit controls (no section title) · 2-col main (**Up Next**, **Attention**, **Waiting on me** (open steps for events that have not happened yet), **Good news**) + right rail (**Weather**, **Calendar**, **This week**) · cream widget cards · per-user `organization_users.dashboard_layout` jsonb — **shipped**
 - **Add** / **Edit**: checkbox catalog + remove; Done/Apply saves optimistically — **shipped**
 - **Card colors** in Edit (palette + custom): per-user colors on Attention, Waiting on me, Good news, This week, Approvals, Tasks, Volunteers, Insights; text/surfaces auto-contrast; Weather / Up Next / Calendar excluded — **shipped**
@@ -108,8 +114,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Full Meta slot sync after approval — **stub** / incomplete
 
 ## Homepage Composer
-- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork; card on/off dates; full-month + date-slider preview; draft autosave — **partial** (deterministic blurbs; no LLM rewrite yet)
-- Evergreen custom cards + optional link · on date · off date · always-on · artwork upload — **partial**
+- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **partial**
+- Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **partial**
 
 ## Newsletter Composer
 - Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **partial**
@@ -277,20 +283,36 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Stripe billing + trial + plan gates — **shipped** (Phase 5: Checkout/Portal/webhooks live in Production + app trial + Stripe `trial_period_days` / `trialing` sync + 13 feature/capacity gates + canceled-subscription full lockout; Org Insights / `social_analytics` available on Starter–Premium; see [billing-and-access.md](../ops/billing-and-access.md#11-gates-enforced-today))
 
 ## Settings
+- **Ease redesign** — soft cream/Fraunces Settings hub with quiet left nav (Overview · Organization · Branding · Team & Access · Integrations · Billing & Plan · Account); HTML mockup at [`/settings-ease-mockup.html`](../../public/settings-ease-mockup.html) — **complete** (Phases 1–7 + Branding hub shipped; exact mockup fidelity across Settings Ease pages)
+  - Phase 2: Organization — **shipped**
+  - Phase 3: School year — **shipped** (now nested under Branding; `/settings/school-year` still works)
+  - Phase 4: Team & Access — **shipped**
+  - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
+  - Phase 6: Billing & Plan — **shipped**
+  - Phase 7: Account (profile · notifications · sign-out) — **shipped**
+- **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
 - Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**
-- Overview, Organization (branding, timezone, logos, etc.) — **shipped**
+- Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
+- Organization (profile · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
+- School year (active year · subscribe URL save/sync · close & begin next — Ease cream/Fraunces panels; nested under Branding + standalone `/settings/school-year`) — **shipped** (Phase 3)
 - Board roster / committees / responsibility matrix — **shipped**
-- Team & Access (people, templates, invites, person profiles, roster import) — **shipped**
+- Team & Access (seats · people · invites · Import roster · Invite — Ease cream/Fraunces panels; edit/invite modals + roster import wired; person profiles still at `/settings/team-access/people/[id]`) — **shipped** (Phase 4)
+  - **Permissions + person access drawer** (roles & permissions soft pills / chips from real access templates; cream/Fraunces person drawer with Overview · Events · Access — event link toggles, access role, permission switches, Give/Resend access; `?person=` / `?tab=` via local state + `history.replaceState`; Edit roles reuses Access templates editor) — **shipped** (mockup: [`/settings-team-access-ease-mockup.html`](../../public/settings-team-access-ease-mockup.html); full-page person profiles remain as deep links)
+- Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar · Canva · Monday · deferred Gmail/Dropbox/SignUpGenius; Connect/Manage wired) — **shipped** (Phase 5)
+- Meta detail (honest App Review copy · Page/IG chips · Reconnect/Disconnect) — **shipped** (Phase 5; `/settings/meta`)
+- Google Calendar detail (Sign-in · Sync · Open Import · Disconnect · subscribe URL Save feed) — **shipped** (Phase 5; `/settings/integrations/calendar`)
 - Integrations: Google Calendar (Sign-in + ICS + upload — live), Meta, Canva, Monday — **shipped**; Gmail / Dropbox / Constant Contact / SignUpGenius — **deferred**
 - Meta / Canva / Monday / Google Calendar: one Connect CTA → provider consent → done (`src/lib/integrations/oauth.ts`); shared health framework — **partial** (see [meta.md](../integrations/meta.md), [google-calendar.md](../integrations/google-calendar.md))
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
-- Billing & Plan UI — **shipped** (tabbed: Overview · Plan & Pricing · Usage · Payment Method · Billing History at `/settings/billing-plan?tab=…`; catalog + trial/plan status + Checkout/Portal CTAs; Usage tab splits AI credits into a "Period usage" card and an "AI Reserve" card (balance + "Buy more Reserve" CTA), plus capacity usage vs. plan limits, a "usage by member" ranking (who used the most AI credits this period), a "usage by category" breakdown (Artwork Generation vs. Regeneration, Caption Count, Ask Ralli, Task Assistant, Etc.), and a single-line-per-entry recent-activity list that shows the event + milestone for artwork actions; Billing History lists real Stripe invoices with "View invoice" / "Download PDF" links plus the Stripe Portal as a fallback; canceled orgs land on a dedicated `/billing/canceled` resubscribe page instead)
+- Billing & Plan UI — **shipped** (Phase 6 Ease on `/settings/billing-plan`; soft pills Usage · Plans · Payment via `?view=`; real Stripe portal / Checkout / Reserve; canceled orgs still land on `/billing/canceled`)
+- **Billing usage / overage / upgrade** — **shipped** (Ease pass matching [`settings-billing-ease-mockup.html`](../../public/settings-billing-ease-mockup.html): period meters for AI credits · Reserve · seats · Meta posts, **Buy more Reserve** on Period snapshot, category breakdown when data exists, honest soft-warn → Reserve → hard-block copy with no surprise overage charges, Starter / Professional / Premium catalog + Stripe upgrade, Payment card / renewals / invoices / portal; founding/`billing_exempt` keeps unlimited credits + waived copy but does **not** hide plan catalog or manage CTAs)
+- Account (Ease cream/Fraunces: display name save · quiet notification toggles persisted on membership · session + SignOutForm clear-on-signout; approval email dispatch respects “Approval needs attention”) — **shipped** (Phase 7; `/settings/account`)
 - Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
 
 ## Support & shell
 - Report a problem (Sentry) — **shipped**
 - Nav badges, collapsible sidebar — **shipped**
-- Settings sections via header gear menu (no settings left sidebar) — **shipped**
+- Settings soft left nav (Ease) + header gear menu for full section list — **shipped** (Phase 1)
 
 ---
 

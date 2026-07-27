@@ -32,7 +32,7 @@ export default async function SettingsSchoolSetupPage({
 }: SettingsSchoolSetupPageProps) {
   const user = await getAuthUser();
   if (!user) {
-    redirect("/login?intent=setup");
+    redirect("/signup");
   }
 
   const membership = await getActiveMembership();
@@ -43,7 +43,7 @@ export default async function SettingsSchoolSetupPage({
   const params = await searchParams;
 
   if (accessCodeRequired && !hasValidPendingCode && !membership) {
-    redirect("/login?intent=setup&error=code_required");
+    redirect("/signup?error=code_required");
   }
 
   // Founding / no org — Welcome → first event → overlay (no school wizard).

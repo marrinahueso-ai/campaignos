@@ -1,5 +1,4 @@
 import { TeamAccessSettingsContent } from "@/components/settings-v2/TeamAccessSettingsContent";
-import { SettingsV2PageHeader } from "@/components/settings-v2/SettingsV2PageHeader";
 import { getOrganizationAccessTemplates } from "@/lib/access-templates/queries";
 import {
   accessHasPermission,
@@ -8,6 +7,11 @@ import {
 import { getOrganizationUsers } from "@/lib/auth/membership-queries";
 import { getCurrentOrganization } from "@/lib/auth/organization-context";
 import { getAuthUser } from "@/lib/auth/queries";
+import {
+  getOrgBillingSnapshot,
+  orgCapacityLimit,
+} from "@/lib/billing/org-billing";
+import { getSettingsBillingContext } from "@/lib/billing/settings-billing";
 import {
   buildFallbackOrganizationWorkspaceData,
   getOrganizationWorkspaceData,
@@ -19,7 +23,7 @@ import { getCampaignPageEvents } from "@/lib/events/campaign-page-queries";
 import { headers } from "next/headers";
 
 export const metadata = {
-  title: "People & Responsibilities",
+  title: "Team & Access",
 };
 
 export default async function TeamAccessSettingsPage() {
@@ -31,19 +35,21 @@ export default async function TeamAccessSettingsPage() {
 
   if (!organization) {
     return (
-      <div className="space-y-6">
-        <SettingsV2PageHeader
-          title="People & Responsibilities"
-          description="Manage people and assign responsibilities to events. Hey Ralli automatically manages permissions."
-        />
-        <p className="text-sm leading-relaxed text-cos-muted">
+      <section data-settings-ease="team-access">
+        <h1
+          className="m-0 text-[clamp(30px,3.6vw,42px)] font-semibold leading-[1.05] tracking-[-0.02em] text-[#2a2622]"
+          style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+        >
+          Team & Access
+        </h1>
+        <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
           Complete School Setup first, then return here to invite your board.
         </p>
-      </div>
+      </section>
     );
   }
 
-  const [workspaceResult, members, workload, events, headersList, accessTemplates] =
+  const [workspaceResult, members, workload, events, headersList, accessTemplates, billing, billingContext] =
     await Promise.all([
       getOrganizationWorkspaceData(organization.id),
       getOrganizationUsers(organization.id),
@@ -51,6 +57,8 @@ export default async function TeamAccessSettingsPage() {
       getCampaignPageEvents(organization.id),
       headers(),
       getOrganizationAccessTemplates(organization.id),
+      getOrgBillingSnapshot(organization.id),
+      getSettingsBillingContext(),
     ]);
 
   const workspace =
@@ -68,6 +76,10 @@ export default async function TeamAccessSettingsPage() {
     headersList.get("x-forwarded-host") ?? headersList.get("host"),
     headersList.get("x-forwarded-proto"),
   );
+
+  const seatLimit = billing
+    ? orgCapacityLimit(billing, "teamMembers")
+    : 15;
 
   return (
     <TeamAccessSettingsContent
@@ -87,6 +99,8 @@ export default async function TeamAccessSettingsPage() {
         date: event.date,
         status: event.status,
       }))}
+      seatLimit={seatLimit}
+      planLabel={billingContext.planLabel}
     />
   );
 }

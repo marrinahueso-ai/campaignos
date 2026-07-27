@@ -1,12 +1,17 @@
 import "server-only";
 
-import { countActiveOrganizationUsers } from "@/lib/auth/membership-queries";
-import { getActiveMembership } from "@/lib/auth/membership-queries";
+import {
+  countActiveOrganizationUsers,
+  countPendingOrganizationInvites,
+  getActiveMembership,
+} from "@/lib/auth/membership-queries";
 import { isOrganizationBillingExempt } from "@/lib/auth/founding-access";
 import {
   getCanvaConnectionForCurrentOrg,
   isCanvaConnectionConfigured,
 } from "@/lib/canva/connection";
+import { isCanvaIntegrationConfigured } from "@/lib/canva/config";
+import { parseSchoolYearRange } from "@/lib/calendar-import/extract-date-lines";
 import { getCustomInboxAiSources } from "@/lib/organizations/inbox-ai-sources/queries";
 import { getOrganizationIntelligence } from "@/lib/organization-intelligence/queries";
 import { WRITING_STYLES } from "@/lib/organization-intelligence/constants";
@@ -24,10 +29,14 @@ import {
   getGoogleCalendarConnectionForCurrentOrg,
   isGoogleCalendarConnectionConfigured,
 } from "@/lib/google-calendar/connection";
+import { isGoogleCalendarIntegrationConfigured } from "@/lib/google-calendar/config";
+import { planById } from "@/lib/billing/plan-catalog";
 import { getActiveSchoolYear } from "@/lib/school-years/queries";
 import type { IntegrationStatus } from "@/lib/settings-v2/integration-types";
+import type { SettingsEaseBrandingHubData } from "@/lib/settings-v2/settings-ease-branding-section";
 
 export type { IntegrationId, IntegrationStatus } from "@/lib/settings-v2/integration-types";
+export type { SettingsEaseBrandingHubData } from "@/lib/settings-v2/settings-ease-branding-section";
 
 export interface SettingsOverviewData {
   organizationName: string | null;
@@ -46,6 +55,29 @@ export interface SettingsOverviewData {
   playbookCount: number;
 }
 
+/** Ease Overview hub — exact Settings Ease mockup fields. */
+export interface SettingsEaseOverviewData {
+  organizationShortName: string;
+  organizationLocationLine: string;
+  teamCount: number;
+  pendingInviteCount: number;
+  activeIntegrationsCount: number;
+  connectedIntegrationsLabel: string;
+  planLabel: string;
+  planSubLabel: string;
+  metaConnected: boolean;
+  googleCalendarConnected: boolean;
+  canvaConnected: boolean;
+  schoolYearLabel: string;
+  schoolYearStartsLabel: string;
+  schoolYearEndsLabel: string;
+  calendarFeedSaved: boolean;
+  writingStyleLabel: string | null;
+  inboxSourcesCount: number;
+  brandKitReady: boolean;
+  aiBrainStatusLabel: string;
+}
+
 function writingStyleLabel(value: string | null): string | null {
   if (!value) {
     return null;
@@ -53,7 +85,42 @@ function writingStyleLabel(value: string | null): string | null {
   return WRITING_STYLES.find((style) => style.value === value)?.label ?? value;
 }
 
-export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
+function shortenOrganizationName(name: string | null): string {
+  if (!name?.trim()) return "Not set up";
+  return name
+    .trim()
+    .replace(/\s+Elementary\s+/i, " ")
+    .replace(/\s+Middle\s+/i, " ")
+    .replace(/\s+High\s+/i, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function formatSchoolYearDate(month: number, day: number, year: number): string {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function schoolYearDateLabels(label: string | null | undefined): {
+  starts: string;
+  ends: string;
+} {
+  const range = parseSchoolYearRange(label);
+  if (!range) {
+    return { starts: "—", ends: "—" };
+  }
+  return {
+    starts: formatSchoolYearDate(8, 1, range.startYear),
+    ends: formatSchoolYearDate(7, 31, range.endYear),
+  };
+}
+
+async function loadSettingsOverviewBundle() {
   const [
     membership,
     schoolProfile,
@@ -77,9 +144,12 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
     ? await getOrganizationIntelligence(organization.id)
     : null;
 
-  const teamCount = organizationId
-    ? await countActiveOrganizationUsers(organizationId)
-    : 0;
+  const [teamCount, pendingInviteCount] = await Promise.all([
+    organizationId ? countActiveOrganizationUsers(organizationId) : Promise.resolve(0),
+    organizationId
+      ? countPendingOrganizationInvites(organizationId)
+      : Promise.resolve(0),
+  ]);
 
   const customSources = organizationId
     ? await getCustomInboxAiSources(organizationId)
@@ -105,9 +175,19 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
 
   const integrations: IntegrationStatus[] = [
     {
+      id: "meta",
+      name: "Facebook & Instagram",
+      description:
+        "Connect your Facebook Page and linked Instagram account to publish posts, reply in inbox, and pull Insights.",
+      connected: isMetaConnectionConfigured(metaConnection),
+      manageHref: "/settings/meta",
+      available: true,
+    },
+    {
       id: "google-calendar",
       name: "Google Calendar",
-      description: "Sign in with Google, subscribe link, or upload a file",
+      description:
+        "Sign in with Google to sync school events. File upload and import review stay on Calendar → Import.",
       connected:
         isGoogleCalendarConnectionConfigured(googleCalendarConnection) ||
         hasCalendarSubscribeFeed ||
@@ -116,43 +196,43 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       available: true,
     },
     {
-      id: "google-inbox",
-      name: "Google Inbox (Gmail)",
-      description: "Sync Gmail threads and draft email replies",
-      connected: false,
-      manageHref: "/inbox",
-      available: true,
-      comingSoon: true,
-    },
-    {
-      id: "meta",
-      name: "Meta (Facebook & Instagram)",
-      description: "Publish posts, sync DMs, and manage comments",
-      connected: isMetaConnectionConfigured(metaConnection),
-      manageHref: "/settings/meta",
-      available: isMetaIntegrationConfigured(),
-    },
-    {
       id: "canva",
       name: "Canva",
-      description: "Import designs and assets into campaign artwork",
+      description: "Import designs as inspiration images for Creative Setup.",
       connected: isCanvaConnectionConfigured(canvaConnection),
       manageHref: "/settings/canva",
-      // Always list Canva so schools can find Connect; panel explains missing env.
       available: true,
     },
     {
       id: "monday",
       name: "Monday.com",
-      description: "Project and task sync",
+      description: "Optional task sync for boards you already use.",
       connected: Boolean(mondayConnection?.accessToken),
       manageHref: "/settings/monday",
-      available: isMondayIntegrationEnabled() && isMondayIntegrationConfigured(),
+      available: true,
+    },
+    {
+      id: "google-inbox",
+      name: "Gmail",
+      description: "Deferred — not available in soft launch.",
+      connected: false,
+      manageHref: "/settings/integrations",
+      available: true,
+      comingSoon: true,
     },
     {
       id: "dropbox",
       name: "Dropbox",
-      description: "Import files and assets",
+      description: "Deferred — not available in soft launch.",
+      connected: false,
+      manageHref: "/settings/integrations",
+      available: true,
+      comingSoon: true,
+    },
+    {
+      id: "signup-genius",
+      name: "SignUpGenius",
+      description: "Deferred — not available in soft launch.",
       connected: false,
       manageHref: "/settings/integrations",
       available: true,
@@ -167,15 +247,6 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       available: true,
       comingSoon: true,
     },
-    {
-      id: "signup-genius",
-      name: "SignUpGenius",
-      description: "Import volunteer sign-ups and slot assignments",
-      connected: false,
-      manageHref: "/settings/integrations",
-      available: true,
-      comingSoon: true,
-    },
   ];
 
   const activeIntegrations = integrations.filter((item) => item.connected);
@@ -185,6 +256,10 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
 
   let planLabel = isFoundingPartner ? "Founding Partner" : "Professional";
   let planRenewalLabel: string | null = null;
+  let planPriceUsd: number | null = isFoundingPartner
+    ? null
+    : planById("professional").priceUsd;
+  let planRenewsAt: string | null = null;
   if (organization && !isFoundingPartner) {
     try {
       const { getOrgBillingSnapshot, formatTrialRemaining } = await import(
@@ -194,16 +269,26 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
       if (billing?.trialActive) {
         planLabel = "Professional (trial)";
         planRenewalLabel = formatTrialRemaining(billing.trialEndsAt);
+        planPriceUsd = planById("professional").priceUsd;
+        planRenewsAt = billing.trialEndsAt;
       } else if (billing?.trialExpired) {
         planLabel = "Starter (trial ended)";
         planRenewalLabel = "Choose a plan in Billing";
+        planPriceUsd = planById("starter").priceUsd;
       } else if (billing?.subscriptionStatus === "active") {
-        planLabel =
+        const tier =
           billing.planTier === "starter"
-            ? "Starter"
+            ? "starter"
             : billing.planTier === "premium"
+              ? "premium"
+              : "professional";
+        planLabel =
+          tier === "starter"
+            ? "Starter"
+            : tier === "premium"
               ? "Premium ⭐"
               : "Professional";
+        planPriceUsd = planById(tier).priceUsd;
         planRenewalLabel = "Active subscription";
       }
     } catch {
@@ -212,39 +297,253 @@ export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
   }
 
   return {
-    organizationName: organization?.name ?? null,
-    organizationLocation: organization?.district ?? null,
-    timezone: organization?.timezone ?? null,
+    organization,
+    organizationId,
+    schoolProfile,
+    intelligence,
     teamCount,
-    activeIntegrationsCount: activeIntegrations.length,
-    totalIntegrationsCount: integrations.filter((item) => item.available).length,
+    pendingInviteCount,
+    inboxSourcesCount,
+    playbooks,
+    activeSchoolYear,
+    hasCalendarSubscribeFeed,
+    hasCalendarImport,
+    integrations,
+    activeIntegrations,
+    isFoundingPartner,
     planLabel,
     planRenewalLabel,
-    isFoundingPartner,
-    integrations,
-    aiVoiceSnippet: intelligence?.profile?.organizationVoice
-      ? intelligence.profile.organizationVoice.slice(0, 160) +
-        (intelligence.profile.organizationVoice.length > 160 ? "…" : "")
+    planPriceUsd,
+    planRenewsAt,
+    metaConnection,
+    googleCalendarConnection,
+    canvaConnection,
+    mondayConnection,
+  };
+}
+
+export async function getSettingsOverviewData(): Promise<SettingsOverviewData> {
+  const bundle = await loadSettingsOverviewBundle();
+
+  return {
+    organizationName: bundle.organization?.name ?? null,
+    organizationLocation: bundle.organization?.district ?? null,
+    timezone: bundle.organization?.timezone ?? null,
+    teamCount: bundle.teamCount,
+    activeIntegrationsCount: bundle.activeIntegrations.length,
+    totalIntegrationsCount: bundle.integrations.filter((item) => item.available)
+      .length,
+    planLabel: bundle.planLabel,
+    planRenewalLabel: bundle.planRenewalLabel,
+    isFoundingPartner: bundle.isFoundingPartner,
+    integrations: bundle.integrations,
+    aiVoiceSnippet: bundle.intelligence?.profile?.organizationVoice
+      ? bundle.intelligence.profile.organizationVoice.slice(0, 160) +
+        (bundle.intelligence.profile.organizationVoice.length > 160 ? "…" : "")
       : null,
-    writingStyleLabel: writingStyleLabel(intelligence?.profile?.writingStyle ?? null),
-    inboxSourcesCount,
-    playbookCount: playbooks.length,
+    writingStyleLabel: writingStyleLabel(
+      bundle.intelligence?.profile?.writingStyle ?? null,
+    ),
+    inboxSourcesCount: bundle.inboxSourcesCount,
+    playbookCount: bundle.playbooks.length,
+  };
+}
+
+export async function getSettingsEaseOverviewData(): Promise<SettingsEaseOverviewData> {
+  const bundle = await loadSettingsOverviewBundle();
+  const organization = bundle.organization;
+
+  const locationParts = [
+    organization?.weatherCity && organization?.weatherState
+      ? `${organization.weatherCity}, ${organization.weatherState}`
+      : organization?.weatherCity || organization?.district || null,
+    organization?.timezone ?? null,
+  ].filter(Boolean);
+
+  const connectedDisplayNames = bundle.activeIntegrations
+    .filter(
+      (item) =>
+        item.id === "meta" ||
+        item.id === "google-calendar" ||
+        item.id === "canva",
+    )
+    .map((item) =>
+      item.id === "meta"
+        ? "Meta"
+        : item.id === "google-calendar"
+          ? "Google Calendar"
+          : "Canva",
+    );
+  const connectedIntegrationsLabel =
+    connectedDisplayNames.length > 0
+      ? connectedDisplayNames.join(" · ")
+      : "None connected yet";
+
+  const schoolYearLabel =
+    bundle.activeSchoolYear?.label ?? organization?.schoolYear ?? "Not set";
+  const schoolDates = schoolYearDateLabels(schoolYearLabel);
+
+  let planSubLabel = bundle.isFoundingPartner
+    ? "Billing waived"
+    : bundle.planRenewalLabel ?? "Checkout coming soon";
+  if (!bundle.isFoundingPartner && bundle.planPriceUsd != null) {
+    const priceBit = `$${bundle.planPriceUsd}/mo`;
+    if (bundle.planRenewsAt) {
+      const renews = new Date(bundle.planRenewsAt);
+      if (!Number.isNaN(renews.getTime())) {
+        const renewLabel = renews.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        planSubLabel = `Renews ${renewLabel} · ${priceBit}`;
+      } else {
+        planSubLabel = priceBit;
+      }
+    } else if (
+      bundle.planRenewalLabel &&
+      bundle.planRenewalLabel !== "Active subscription"
+    ) {
+      planSubLabel = `${bundle.planRenewalLabel} · ${priceBit}`;
+    } else {
+      planSubLabel = priceBit;
+    }
+  }
+
+  const styleLabel = writingStyleLabel(
+    bundle.intelligence?.profile?.writingStyle ?? null,
+  );
+  const brandAssets = bundle.schoolProfile?.brandAssets ?? null;
+  const brandKitReady = Boolean(
+    brandAssets?.primaryColor?.trim() ||
+      brandAssets?.ptoLogo ||
+      brandAssets?.schoolLogo,
+  );
+  const aiBrainConfigured = Boolean(
+    bundle.intelligence?.profile?.organizationVoice?.trim() ||
+      bundle.intelligence?.profile?.writingStyle?.trim(),
+  );
+  const aiBrainStatusLabel = aiBrainConfigured
+    ? [styleLabel, "set"].filter(Boolean).join(" · ")
+    : "Not set";
+
+  return {
+    organizationShortName: shortenOrganizationName(organization?.name ?? null),
+    organizationLocationLine:
+      locationParts.length > 0 ? locationParts.join(" · ") : "Location not set",
+    teamCount: bundle.teamCount,
+    pendingInviteCount: bundle.pendingInviteCount,
+    activeIntegrationsCount: bundle.activeIntegrations.length,
+    connectedIntegrationsLabel,
+    planLabel: bundle.planLabel,
+    planSubLabel,
+    metaConnected: isMetaConnectionConfigured(bundle.metaConnection),
+    googleCalendarConnected:
+      isGoogleCalendarConnectionConfigured(bundle.googleCalendarConnection) ||
+      bundle.hasCalendarSubscribeFeed ||
+      bundle.hasCalendarImport,
+    canvaConnected: isCanvaConnectionConfigured(bundle.canvaConnection),
+    schoolYearLabel,
+    schoolYearStartsLabel: schoolDates.starts,
+    schoolYearEndsLabel: schoolDates.ends,
+    calendarFeedSaved: bundle.hasCalendarSubscribeFeed,
+    writingStyleLabel: styleLabel,
+    inboxSourcesCount: bundle.inboxSourcesCount,
+    brandKitReady,
+    aiBrainStatusLabel,
+  };
+}
+
+export async function getSettingsEaseBrandingHubData(): Promise<SettingsEaseBrandingHubData> {
+  const bundle = await loadSettingsOverviewBundle();
+  const organization = bundle.organization;
+  const brandAssets = bundle.schoolProfile?.brandAssets ?? null;
+  const styleLabel = writingStyleLabel(
+    bundle.intelligence?.profile?.writingStyle ?? null,
+  );
+  const aiBrainConfigured = Boolean(
+    bundle.intelligence?.profile?.organizationVoice?.trim() ||
+      bundle.intelligence?.profile?.writingStyle?.trim(),
+  );
+  const schoolYearLabel =
+    bundle.activeSchoolYear?.label ?? organization?.schoolYear ?? "Not set";
+  const brandKitReady = Boolean(
+    brandAssets?.primaryColor?.trim() ||
+      brandAssets?.ptoLogo ||
+      brandAssets?.schoolLogo,
+  );
+
+  return {
+    organizationShortName: shortenOrganizationName(organization?.name ?? null),
+    writingStyleLabel: styleLabel,
+    aiBrainConfigured,
+    aiBrainStatusLabel: aiBrainConfigured
+      ? [styleLabel, "set"].filter(Boolean).join(" · ")
+      : "Not set",
+    inboxSourcesCount: bundle.inboxSourcesCount,
+    playbookCount: bundle.playbooks.length,
+    schoolYearLabel,
+    primaryColor: brandAssets?.primaryColor?.trim() || "#2F4A3C",
+    accentColor: brandAssets?.secondaryColor?.trim() || "#C4922E",
+    fontStyle: brandAssets?.fontFamily?.trim() || "Modern",
+    mascotLabel: organization?.mascot?.trim() || "Not set",
+    ptoLogoUploaded: Boolean(brandAssets?.ptoLogo),
+    schoolLogoUploaded: Boolean(brandAssets?.schoolLogo),
+    brandKitReady,
+  };
+}
+
+export interface SettingsEaseIntegrationsData {
+  organizationName: string | null;
+  meta: {
+    connected: boolean;
+    available: boolean;
+  };
+  googleCalendar: {
+    connected: boolean;
+    configured: boolean;
+  };
+  canva: {
+    connected: boolean;
+    configured: boolean;
+  };
+  monday: {
+    connected: boolean;
+    enabled: boolean;
+    configured: boolean;
   };
 }
 
 export async function getIntegrationsSettingsData(): Promise<{
   integrations: IntegrationStatus[];
+  ease: SettingsEaseIntegrationsData;
 }> {
-  const overview = await getSettingsOverviewData();
+  const bundle = await loadSettingsOverviewBundle();
 
-  const integrations = overview.integrations
-    .filter((item) => item.available)
-    .sort((left, right) => {
-      if (left.connected !== right.connected) {
-        return left.connected ? -1 : 1;
-      }
-      return left.name.localeCompare(right.name);
-    });
+  const integrations = bundle.integrations.filter((item) => item.available);
 
-  return { integrations };
+  return {
+    integrations,
+    ease: {
+      organizationName: bundle.organization?.name ?? null,
+      meta: {
+        connected: isMetaConnectionConfigured(bundle.metaConnection),
+        available: isMetaIntegrationConfigured(),
+      },
+      googleCalendar: {
+        connected: isGoogleCalendarConnectionConfigured(
+          bundle.googleCalendarConnection,
+        ),
+        configured: isGoogleCalendarIntegrationConfigured(),
+      },
+      canva: {
+        connected: isCanvaConnectionConfigured(bundle.canvaConnection),
+        configured: isCanvaIntegrationConfigured(),
+      },
+      monday: {
+        connected: Boolean(bundle.mondayConnection?.accessToken),
+        enabled: isMondayIntegrationEnabled(),
+        configured: isMondayIntegrationConfigured(),
+      },
+    },
+  };
 }

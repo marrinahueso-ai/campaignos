@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Engineering](./README.md) · [`supabase/migrations/`](../../supabase/migrations/) · [Access control](./access-control.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [SignUpGenius volunteers](../integrations/signupgenius.md) · [Documentation home](../README.md)
 
 ## Source of truth
@@ -67,6 +67,7 @@ Not exhaustive — skim filenames for the full list:
 | Volunteer SignUpGenius sticky dates | `071` (`included_assignment_dates` on `event_volunteer_sources`) |
 | Value-first onboarding progress | `072` (`organizations.onboarding_state` jsonb — first event + skipped/completed calendar/brand/invite) |
 | Owner AI & APIs usage warehouse | `20260723220241_ai_api_usage_logs.sql` — `ai_usage_log`, `api_usage_log` (RLS on, no JWT policies; service_role only) |
+| Account notification preferences | `20260726150000_organization_users_notification_preferences.sql` — `organization_users.notification_preferences` jsonb (Settings Ease Account toggles) |
 
 ## What belongs in a migration PR
 

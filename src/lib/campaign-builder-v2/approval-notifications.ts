@@ -13,6 +13,10 @@ import {
   absoluteCampaignBuilderPreviewMilestoneHref,
 } from "@/lib/campaign-builder-v2/navigation";
 import { resolveSiteOrigin } from "@/lib/site/url";
+import {
+  isApprovalNeedsAttentionType,
+} from "@/lib/settings-v2/account-notification-prefs";
+import { getAccountNotificationPreferencesForEmail } from "@/lib/settings-v2/account-queries";
 import { escapeHtml, sanitizeHrefUrl } from "@/lib/utils/html";
 import { createClient } from "@/lib/supabase/server";
 
@@ -178,6 +182,30 @@ async function dispatchApprovalEmail(input: {
   scheduledAt?: string | null;
   from?: string | null;
 }): Promise<CampaignApprovalNotificationResult> {
+  if (isApprovalNeedsAttentionType(input.notificationType)) {
+    const prefs = await getAccountNotificationPreferencesForEmail(
+      input.recipientEmail,
+    );
+    if (!prefs.approvalNeedsAttention) {
+      await logApprovalNotification({
+        eventId: input.eventId,
+        notificationType: input.notificationType,
+        recipientEmail: input.recipientEmail,
+        status: "skipped",
+        errorMessage:
+          "Recipient opted out of approval-needs-attention email notifications.",
+        schedulingItemId: input.schedulingItemId,
+        approvalRequestId: input.approvalRequestId,
+      });
+
+      return {
+        success: true,
+        wired: false,
+        message: "Skipped — recipient muted approval email notifications.",
+      };
+    }
+  }
+
   if (!isEmailConfigured()) {
     await logApprovalNotification({
       eventId: input.eventId,

@@ -1,0 +1,107 @@
+import "server-only";
+
+import { cache } from "react";
+import {
+  getActiveMembership,
+  listActiveMemberships,
+} from "@/lib/auth/membership-queries";
+import { getAuthUser } from "@/lib/auth/queries";
+import { createClient } from "@/lib/supabase/server";
+import {
+  normalizeAccountNotificationPreferences,
+  type AccountNotificationPreferences,
+  type SettingsEaseAccountData,
+} from "@/lib/settings-v2/account-notification-prefs";
+
+export type { SettingsEaseAccountData };
+
+export const getSettingsEaseAccountData = cache(
+  async (): Promise<SettingsEaseAccountData | null> => {
+    const [user, membership, memberships] = await Promise.all([
+      getAuthUser(),
+      getActiveMembership(),
+      listActiveMemberships(),
+    ]);
+
+    if (!user || !membership) {
+      return null;
+    }
+
+    const activeOrg = memberships.find(
+      (item) => item.organizationId === membership.organizationId,
+    );
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("organization_users")
+      .select("notification_preferences, display_name")
+      .eq("id", membership.user.id)
+      .maybeSingle();
+
+    if (error && error.code !== "42703") {
+      console.error(
+        "[settings/account] failed to load notification prefs:",
+        error.message,
+      );
+    }
+
+    const row = error?.code === "42703" ? null : data;
+    const displayName =
+      (typeof row?.display_name === "string" && row.display_name.trim()) ||
+      membership.user.displayName?.trim() ||
+      user.displayName?.trim() ||
+      "";
+
+    return {
+      displayName,
+      email: user.email,
+      workspaceName: activeOrg?.organizationName ?? "—",
+      roleLabel:
+        membership.user.organizationRoleName ??
+        membership.user.campaignRole ??
+        "—",
+      notificationPreferences: normalizeAccountNotificationPreferences(
+        row?.notification_preferences,
+      ),
+    };
+  },
+);
+
+/** Look up quiet email prefs for a recipient (approval dispatch). */
+export async function getAccountNotificationPreferencesForEmail(
+  email: string,
+): Promise<AccountNotificationPreferences> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return normalizeAccountNotificationPreferences({});
+  }
+
+  const { createAdminClient, isSupabaseAdminConfigured } = await import(
+    "@/lib/supabase/admin"
+  );
+  if (!isSupabaseAdminConfigured()) {
+    return normalizeAccountNotificationPreferences({});
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("organization_users")
+    .select("notification_preferences")
+    .ilike("email", normalizedEmail)
+    .eq("status", "active")
+    .order("joined_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "42703") {
+      console.error(
+        "[settings/account] failed to load prefs for email:",
+        error.message,
+      );
+    }
+    return normalizeAccountNotificationPreferences({});
+  }
+
+  return normalizeAccountNotificationPreferences(data?.notification_preferences);
+}

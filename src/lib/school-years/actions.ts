@@ -67,6 +67,7 @@ export async function closeSchoolYearAndBeginNextAction(input: {
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/school-year");
   revalidatePath("/settings/school-setup");
   revalidatePath("/school-setup");
   revalidatePath("/calendar");
@@ -92,6 +93,7 @@ export async function saveCalendarSubscribeUrlAction(
   }
 
   revalidatePath("/settings");
+  revalidatePath("/settings/school-year");
   revalidatePath("/settings/integrations");
   revalidatePath("/settings/integrations/calendar");
   revalidatePath("/calendar/import");

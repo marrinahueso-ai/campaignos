@@ -1,9 +1,9 @@
-import { SettingsV2Shell } from "@/components/settings-v2/SettingsV2Shell";
+import { SettingsEaseShell } from "@/components/settings-v2/SettingsEaseShell";
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <SettingsV2Shell>{children}</SettingsV2Shell>;
+  return <SettingsEaseShell>{children}</SettingsEaseShell>;
 }

@@ -217,6 +217,121 @@ export function peopleLoginStatusLabel(status: PeopleLoginStatus): string {
   }
 }
 
+/** Capability hint for Settings Ease Team role lines (mockup: “Full access”). */
+export function peopleEaseAccessCapability(
+  member: Pick<
+    UnifiedTeamMember,
+    "accessLevel" | "accessTemplateId" | "accessLabel" | "isPresident"
+  >,
+): string {
+  const role = member.accessTemplateId ?? member.accessLevel;
+  if (
+    member.isPresident ||
+    role === "admin" ||
+    role === "president" ||
+    role === "developer"
+  ) {
+    return "Full access";
+  }
+  if (role === "vp_communications") {
+    return "Approve & publish";
+  }
+  if (role === "committee_chair" || role === "contributor") {
+    return "Events & people";
+  }
+  if (role === "view_only") {
+    return "Viewer";
+  }
+  const label = member.accessLabel?.trim();
+  if (label === "View Only") return "Viewer";
+  return label || "Access";
+}
+
+/**
+ * Settings Ease People row subtitle — e.g. “Owner · Full access”,
+ * “Invite pending · Viewer”.
+ */
+export function peopleEaseRoleLine(
+  member: Pick<
+    UnifiedTeamMember,
+    | "accessLevel"
+    | "accessTemplateId"
+    | "accessLabel"
+    | "isPresident"
+    | "organizationRoleName"
+    | "orgRoleLabel"
+    | "status"
+    | "isRosterOnly"
+  >,
+): string {
+  const login = peopleLoginStatus(member);
+  const capability = peopleEaseAccessCapability(member);
+  if (login === "invited") {
+    return `Invite pending · ${capability}`;
+  }
+
+  const left =
+    member.organizationRoleName?.trim() ||
+    member.orgRoleLabel?.trim() ||
+    (member.isPresident || member.accessLevel === "admin"
+      ? "Owner"
+      : null) ||
+    member.accessLabel?.trim() ||
+    "Member";
+
+  if (left.toLowerCase() === capability.toLowerCase()) {
+    return left;
+  }
+  return `${left} · ${capability}`;
+}
+
+/** Pending-invites card subcopy from soonest invite expiry. */
+export function pendingInvitesEaseSubLabel(
+  members: Array<
+    Pick<UnifiedTeamMember, "status" | "isRosterOnly" | "raw">
+  >,
+  nowMs: number = Date.now(),
+): string {
+  const invited = members.filter(
+    (member) => peopleLoginStatus(member) === "invited",
+  );
+  if (invited.length === 0) {
+    return "None waiting";
+  }
+
+  const expiries = invited
+    .map((member) => member.raw?.inviteExpiresAt)
+    .filter((value): value is string => Boolean(value))
+    .map((value) => Date.parse(value))
+    .filter((value) => !Number.isNaN(value));
+
+  if (expiries.length === 0) {
+    return "Awaiting acceptance";
+  }
+
+  const soonest = Math.min(...expiries);
+  const days = Math.ceil((soonest - nowMs) / (24 * 60 * 60 * 1000));
+  if (days <= 0) {
+    return "Some invites expired";
+  }
+  if (days === 1) {
+    return "Expires in 1 day";
+  }
+  return `Expires in ${days} days`;
+}
+
+/** Active-seats card subcopy — e.g. “of 15 on Professional”. */
+export function activeSeatsEaseSubLabel(
+  seatLimit: number | null | undefined,
+  planLabel: string,
+): string {
+  const plan = planLabel.replace(/\s*⭐\s*$/u, "").trim() || "your plan";
+  if (seatLimit == null) {
+    return `Unlimited on ${plan}`;
+  }
+  return `of ${seatLimit} on ${plan}`;
+}
+
 /** Secondary access badge under Active — not the primary Login Status. */
 export function peopleAccessBadgeLabel(
   member: Pick<

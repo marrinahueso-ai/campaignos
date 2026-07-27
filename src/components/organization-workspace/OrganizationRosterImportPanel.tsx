@@ -11,7 +11,14 @@ import {
 } from "@/lib/organization-workspace/actions";
 import type { ParsedRosterRole } from "@/lib/organization-workspace/parse-roster";
 
-export function OrganizationRosterImportPanel() {
+interface OrganizationRosterImportPanelProps {
+  /** Skip outer card chrome when embedded in Settings Ease. */
+  embedded?: boolean;
+}
+
+export function OrganizationRosterImportPanel({
+  embedded = false,
+}: OrganizationRosterImportPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [preview, setPreview] = useState<OrganizationRosterPreviewResult | null>(
@@ -55,19 +62,30 @@ export function OrganizationRosterImportPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-cos-border bg-cos-accent-soft/40 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-cos-text">Import roster</h3>
-          <p className="mt-1 max-w-2xl text-sm text-cos-muted">
-            Upload or paste your Position/Committee list. Top-level rows become
-            leadership roles; indented rows become committees under the role
-            above them. Use tabs between name and email.
-          </p>
+    <div
+      className={
+        embedded
+          ? undefined
+          : "rounded-xl border border-cos-border bg-cos-accent-soft/40 p-5"
+      }
+    >
+      {embedded ? null : (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-cos-text">Import roster</h3>
+            <p className="mt-1 max-w-2xl text-sm text-cos-muted">
+              Upload or paste your Position/Committee list. Top-level rows become
+              leadership roles; indented rows become committees under the role
+              above them. Use tabs between name and email.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <form action={handlePreview} className="mt-4 space-y-4">
+      <form
+        action={handlePreview}
+        className={embedded ? "space-y-4" : "mt-4 space-y-4"}
+      >
         <div>
           <label
             htmlFor="rosterFile"

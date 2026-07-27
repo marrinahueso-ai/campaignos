@@ -5,12 +5,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  activeSeatsEaseSubLabel,
   buildPersonEventInvolvements,
   buildUnifiedTeamMembers,
   canResendTeamInvite,
   memberMatchesPeopleSearch,
   memberStatusLabel,
+  pendingInvitesEaseSubLabel,
   peopleAccessBadgeLabel,
+  peopleEaseRoleLine,
   peopleLoginStatus,
   peopleLoginStatusLabel,
   peopleRelatedEventIds,
@@ -350,5 +353,58 @@ describe("Team & Access people simplification", () => {
     assert.equal(peopleResponsibilityLabel("supervising_vp"), "Supervisor");
     // Backend role id strings remain in source for assignment wiring.
     assert.match(shellSource, /committees=\{workspace\.committees\}/);
+  });
+
+  it("16. Settings Ease Team role lines + seat/invite subcopy", () => {
+    assert.equal(
+      peopleEaseRoleLine({
+        accessLevel: "admin",
+        accessTemplateId: null,
+        accessLabel: "Admin",
+        isPresident: true,
+        organizationRoleName: null,
+        orgRoleLabel: "President",
+        status: "active",
+        isRosterOnly: false,
+      }),
+      "President · Full access",
+    );
+    assert.equal(
+      peopleEaseRoleLine({
+        accessLevel: "view_only",
+        accessTemplateId: "view_only",
+        accessLabel: "View Only",
+        isPresident: false,
+        organizationRoleName: null,
+        orgRoleLabel: "Roster contact",
+        status: "invited",
+        isRosterOnly: false,
+      }),
+      "Invite pending · Viewer",
+    );
+    assert.equal(activeSeatsEaseSubLabel(15, "Professional"), "of 15 on Professional");
+    assert.equal(activeSeatsEaseSubLabel(null, "Premium ⭐"), "Unlimited on Premium");
+    assert.equal(pendingInvitesEaseSubLabel([]), "None waiting");
+
+    const inFiveDays = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+    assert.equal(
+      pendingInvitesEaseSubLabel([
+        {
+          status: "invited",
+          isRosterOnly: false,
+          raw: {
+            ...orgUser({
+              id: "invite-1",
+              email: "ava@school.org",
+              displayName: "Ava Patel",
+              campaignRole: "view_only",
+              status: "invited",
+            }),
+            inviteExpiresAt: inFiveDays,
+          },
+        },
+      ]),
+      "Expires in 5 days",
+    );
   });
 });

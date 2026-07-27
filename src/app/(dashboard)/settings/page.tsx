@@ -1,6 +1,6 @@
-import { SettingsOverviewContent } from "@/components/settings-v2/SettingsOverviewContent";
+import { SettingsEaseOverview } from "@/components/settings-v2/SettingsEaseOverview";
 import { SETTINGS_TAB_REDIRECTS } from "@/components/settings-v2/settings-nav-config";
-import { getSettingsOverviewData } from "@/lib/settings-v2/queries";
+import { getSettingsEaseOverviewData } from "@/lib/settings-v2/queries";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -22,7 +22,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     }
   }
 
-  const data = await getSettingsOverviewData();
+  const data = await getSettingsEaseOverviewData();
 
-  return <SettingsOverviewContent data={data} />;
+  return <SettingsEaseOverview data={data} />;
 }

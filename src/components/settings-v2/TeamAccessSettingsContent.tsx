@@ -1,4 +1,4 @@
-import { TeamAccessShell } from "@/components/settings-v2/team-access/TeamAccessShell";
+import { SettingsEaseTeamAccess } from "@/components/settings-v2/SettingsEaseTeamAccess";
 import type { AccessTemplate } from "@/lib/access-templates/types";
 import type { TeamAccessWorkloadIndex } from "@/lib/organization-workspace/team-access-workload";
 import type { OrganizationUser } from "@/types/auth";
@@ -21,6 +21,8 @@ interface TeamAccessSettingsContentProps {
     date?: string | null;
     status?: string | null;
   }>;
+  seatLimit: number | null;
+  planLabel: string;
 }
 
 export function TeamAccessSettingsContent({
@@ -32,12 +34,13 @@ export function TeamAccessSettingsContent({
   accessTemplates,
   showClaimBanner,
   currentUserEmail,
-  siteOrigin,
   canProvisionAccounts,
   events,
+  seatLimit,
+  planLabel,
 }: TeamAccessSettingsContentProps) {
   return (
-    <TeamAccessShell
+    <SettingsEaseTeamAccess
       members={members}
       workspace={workspace}
       workload={workload}
@@ -46,9 +49,10 @@ export function TeamAccessSettingsContent({
       accessTemplates={accessTemplates}
       showClaimBanner={showClaimBanner}
       currentUserEmail={currentUserEmail}
-      siteOrigin={siteOrigin}
       canProvisionAccounts={canProvisionAccounts}
       events={events}
+      seatLimit={seatLimit}
+      planLabel={planLabel}
     />
   );
 }

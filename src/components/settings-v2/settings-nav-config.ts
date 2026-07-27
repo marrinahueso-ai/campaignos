@@ -79,8 +79,10 @@ export const SETTINGS_TAB_REDIRECTS: Record<string, string> = {
   "board-roster": "/settings/team-access",
   "responsibility-matrix": "/settings/team-access",
   general: "/settings",
+  overview: "/settings",
   team: "/settings/team-access",
   organization: "/settings/organization",
+  "school-year": "/settings/school-year",
   meta: "/settings/integrations",
   canva: "/settings/integrations",
   monday: "/settings/integrations",
@@ -91,5 +93,6 @@ export const SETTINGS_TAB_REDIRECTS: Record<string, string> = {
   "posting-schedule": "/settings/organization",
   "school-setup": "/settings/school-setup",
   billing: "/settings/billing-plan",
+  account: "/settings/account",
   advanced: "/settings/advanced",
 };
