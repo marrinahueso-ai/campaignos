@@ -28,13 +28,17 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Developer agreements gate (NDA + IP, in-app e-sign: full name + email + optional company + drawn signature; scroll-to-enable; signed receipt on panels; Hey Ralli-themed UI; audit log; executed-copy email CTA via app download API with token) — **shipped** (`/account/agreements`; owner manage at `/account/agreements/manage`; eng: [developer-agreements.md](../engineering/developer-agreements.md); QA: [developer-agreements.md](../qa/developer-agreements.md))
 - Owner dashboard (`/ops`) — platform metrics + **Developers signed** counter-sign queue — **shipped** (gated by `HEY_RALLI_OWNER_EMAILS` **and** Owner/`campaign_role=admin` seat); metric tiles use Events summary card colors (`bg-cos-bg-alt`)
 - Owner **AI & APIs** (`/ops/ai-apis`) — monitor AI usage, connected API usage, operating costs, customer consumption (tabs: AI APIs · Connected APIs); Owner sidebar group under Ops — **partial** (Phases 0–5 eng + optional one-time OpenAI Usage history import via `OPENAI_ADMIN_KEY`; Edmondson/School B pinned for org view; **shipped** after Owner QA § F; living: [ai-and-apis.md](./ai-and-apis.md); QA: [owner-ai-apis.md](../qa/owner-ai-apis.md))
-- Get started (one boarding flow) — **shipped**:
-  - Routes: `/onboarding` (Welcome) → create first event (`/events/create?onboarding=1`) → **stay on event** with overlay **Calendar → Brand → Team → Meta** (all skippable); also `/onboarding/brand`, `/onboarding/invite`, `/onboarding/meta`
-  - Overlay CTAs: primary action · **Do this later** (advances stepper **in place**, stays on event) · **Stay on event** (dismisses overlay only)
-  - Calendar primary → canonical `/calendar/import`; Brand → `/onboarding/brand`; Invite → `/onboarding/invite`; Meta → `/settings/meta` with `returnTo` back to the event when possible
-  - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); overlay skip still surfaces cards until Later or real completion
+- Get started (one boarding flow) — **shipped** (Ease 4 beats complete):
+  - **Ease page 1 shipped:** Create your first event at `/events/create?onboarding=1` — Fraunces/cream shell, quiet “Setting up {org}” line, single “1 of 3” progress meter (exact from [`onboarding-setup-ease-mockup.html?view=event`](../../public/onboarding-setup-ease-mockup.html)); no legacy Event→Calendar→Brand→Team→Meta bar on this screen
+  - **Ease page 2 shipped:** Calendar + Brand combined optional screen at `/onboarding/essentials` — “2 of 3” meter, per-section Skip + footer Skip for now / Continue (exact from [`onboarding-setup-ease-mockup.html?view=essentials`](../../public/onboarding-setup-ease-mockup.html)); reuses real calendar import / Google OAuth + brand kit save; after Continue/Skip → `/onboarding/connect`
+  - **Ease page 3 shipped:** Team + Meta combined optional screen at `/onboarding/connect` — “3 of 3” meter, per-section Skip invite / Skip Meta + footer Skip for now / Go to {event} (exact from [`onboarding-setup-ease-mockup.html?view=connect`](../../public/onboarding-setup-ease-mockup.html)); reuses real team invite + Meta OAuth; after Continue/Skip → created event with page-4 finale
+  - **Ease page 4 shipped:** Land on created event with dismissible “You’re set — here’s your event” toast (exact from [`onboarding-setup-ease-mockup.html?view=done`](../../public/onboarding-setup-ease-mockup.html)); `?welcome=1` handoff from page 3; sets `promptsFinishedAt` on `organizations.onboarding_state`; no second step plan / no home checklist finale
+  - Org bootstrap glue only when no membership (`/onboarding` quiet name → continue); restart / replay → `/events/create?onboarding=1` (not a separate Welcome step UI)
+  - After first-event save: routes to `/onboarding/essentials` (not the old calendar-only overlay); legacy `?onboarding=calendar|brand|invite|meta` on the event redirects to essentials/connect
+  - Legacy `/onboarding/invite` and `/onboarding/meta` redirect to `/onboarding/connect`
+  - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`
   - Progress on `organizations.onboarding_state` (incl. meta completed/skipped/checklist-dismissed)
-  - Restart / replay Welcome (`RestartOnboardingButton` → `/onboarding?welcome=1`); creating an onboarding event clears stale flags so Calendar → Brand → Team → Meta can replay
+  - Creating an onboarding event clears stale flags so Calendar → Brand → Team → Meta can replay
   - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
 - Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; boarding Continue → invite; Organization → Edit branding uses `?standalone=1` — **shipped**
 - Legacy 6-step SchoolSetupWizard — **retired for members** (legacy query redirects: `?view=wizard`/`?step=school` → org settings; `?step=meta` → integrations; `?step=calendar` → `/calendar/import`; `?step=brand` → brand standalone)
@@ -169,6 +173,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Gmail inbox OAuth — **deferred** (see [google-calendar.md](../integrations/google-calendar.md))
 
 ## Communications Hub (inbox)
+- **Communications Connect Meta Ease** — **shipped** (exact empty from [`communications-hub-ease-mockup.html?view=connect`](../../public/communications-hub-ease-mockup.html): page head + four why cards — Why we connect / What AI does / What we don’t do / Privacy — Connect with Facebook + Meta settings OAuth/`returnTo=/communications`, “Why we ask for Page messaging permissions”; live on `/communications` when Meta is not connected; shared empty also used by Inbox hub chrome; `/inbox` redirects to `/communications`)
+- **Communications Hub Ease mockup** — **in progress (Meta review)** (soft cream/Fraunces shell; view pills **Inbox · Compose focus · Connect Meta**; thread list + conversation + AI draft assist + DM stickers/GIF affordances; honest organic Page Inbox / Instagram DM purpose, approve-then-send, no spam/broadcast theater; fictional Riverside Elementary PTA only; HTML at [`public/communications-hub-ease-mockup.html`](../../public/communications-hub-ease-mockup.html) — Connect Meta empty shipped above; full hub chrome still mockup-only until GO)
 - Unified Meta inbox (DMs, comments, mentions) — **shipped**
 - Inbox SSR soft caps (50 threads, 40 messages/thread, head-count channel tallies, unread badge ≤500 threads) — **shipped** (perf; see [performance-budget.md](../qa/performance-budget.md))
 - Thread workspace, reply, mark read — **shipped**
@@ -289,15 +295,16 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Phase 4: Team & Access — **shipped**
   - Phase 5: Integrations (+ Meta / Calendar detail) — **shipped**
   - Phase 6: Billing & Plan — **shipped**
-  - Phase 7: Account (profile · notifications · sign-out) — **shipped**
+  - Phase 7: Account (profile · notifications · sign-out · erase account) — **shipped**
 - **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
 - Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
-- Organization (profile · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
+- Organization (profile with full mailing address · weather location · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
 - School year (active year · subscribe URL save/sync · close & begin next — Ease cream/Fraunces panels; nested under Branding + standalone `/settings/school-year`) — **shipped** (Phase 3)
 - Board roster / committees / responsibility matrix — **shipped**
 - Team & Access (seats · people · invites · Import roster · Invite — Ease cream/Fraunces panels; edit/invite modals + roster import wired; person profiles still at `/settings/team-access/people/[id]`) — **shipped** (Phase 4)
   - **Permissions + person access drawer** (roles & permissions soft pills / chips from real access templates; cream/Fraunces person drawer with Overview · Events · Access — event link toggles, access role, permission switches, Give/Resend access; `?person=` / `?tab=` via local state + `history.replaceState`; Edit roles reuses Access templates editor) — **shipped** (mockup: [`/settings-team-access-ease-mockup.html`](../../public/settings-team-access-ease-mockup.html); full-page person profiles remain as deep links)
+  - **Last logged in** on People rows + person drawer (Supabase Auth `last_sign_in_at` via org-scoped admin `getUserById`; shows `Never` when null) — **shipped**
 - Integrations hub (Ease cream/Fraunces list: Facebook & Instagram · Google Calendar · Canva · Monday · deferred Gmail/Dropbox/SignUpGenius; Connect/Manage wired) — **shipped** (Phase 5)
 - Meta detail (honest App Review copy · Page/IG chips · Reconnect/Disconnect) — **shipped** (Phase 5; `/settings/meta`)
 - Google Calendar detail (Sign-in · Sync · Open Import · Disconnect · subscribe URL Save feed) — **shipped** (Phase 5; `/settings/integrations/calendar`)
@@ -306,8 +313,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
 - Billing & Plan UI — **shipped** (Phase 6 Ease on `/settings/billing-plan`; soft pills Usage · Plans · Payment via `?view=`; real Stripe portal / Checkout / Reserve; canceled orgs still land on `/billing/canceled`; eng: [stripe-integration.md](../engineering/stripe-integration.md))
 - **Billing usage / overage / upgrade** — **shipped** (Ease pass matching [`settings-billing-ease-mockup.html`](../../public/settings-billing-ease-mockup.html): period meters for AI credits · Reserve · seats · Meta posts, **Buy more Reserve** on Period snapshot, category breakdown when data exists, honest soft-warn → Reserve → hard-block copy with no surprise overage charges, Starter / Professional / Premium catalog + Stripe upgrade, Payment card / renewals / invoices / portal; founding/`billing_exempt` keeps unlimited credits + waived copy but does **not** hide plan catalog or manage CTAs; eng: [stripe-integration.md](../engineering/stripe-integration.md))
-- Account (Ease cream/Fraunces: display name save · quiet notification toggles persisted on membership · session + SignOutForm clear-on-signout; approval email dispatch respects “Approval needs attention”) — **shipped** (Phase 7; `/settings/account`)
-- Advanced: export, 2FA — **stub** / **deferred**; danger-zone delete — **partial**
+- Account (Ease cream/Fraunces: display name save · quiet notification toggles persisted on membership · session + SignOutForm clear-on-signout · Delete/erase account with password or type-DELETE confirm, last-admin guard, Auth user + membership purge; approval email dispatch respects “Approval needs attention”) — **shipped** (Phase 7; `/settings/account`)
+- Advanced: export, 2FA — **stub** / **deferred**; workspace danger-zone delete — **stub** (account erase lives on Account)
 
 ## Support & shell
 - Report a problem (Sentry) — **shipped**
