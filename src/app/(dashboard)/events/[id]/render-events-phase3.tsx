@@ -29,6 +29,7 @@ import type { Event } from "@/types";
 export async function renderEventsPhase3Detail(
   event: Event,
   initialTab: string | null,
+  options?: { showYoureSet?: boolean },
 ) {
   const organization = await getLatestOrganization();
 
@@ -216,6 +217,7 @@ export async function renderEventsPhase3Detail(
       )}
       workspace={initialWorkspace}
       initialTab={initialTab}
+      showYoureSet={Boolean(options?.showYoureSet)}
       committeeId={linkedCommittee?.id ?? null}
       committeeName={linkedCommittee?.name ?? null}
       members={(orgWorkspace?.members ?? []).map((member) => ({

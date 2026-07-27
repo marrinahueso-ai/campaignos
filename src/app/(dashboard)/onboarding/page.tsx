@@ -22,14 +22,19 @@ export default async function OnboardingPage({
   const membership = await getActiveMembership();
   const forceWelcome = params.welcome === "1";
 
-  // Explicit welcome (replay / demo) — do not bounce to dashboard.
-  if (!membership || forceWelcome) {
+  // Org bootstrap glue only — mockup page 1 is Create your first event.
+  if (!membership) {
     return (
       <OnboardingWelcome
         errorMessage={params.error ?? null}
         defaultTimezone="America/Chicago"
       />
     );
+  }
+
+  // Replay / restart with an existing org → event screen (not a Welcome step).
+  if (forceWelcome) {
+    redirect("/events/create?onboarding=1");
   }
 
   const state = await getOrganizationOnboardingState(membership.organizationId);
@@ -39,17 +44,13 @@ export default async function OnboardingPage({
   }
 
   const next = nextOnboardingPrompt(state);
-  if (next && state.firstEventId) {
-    redirect(`/events/${state.firstEventId}?onboarding=${next}`);
+  // Ease page 2 — Calendar + Brand combined.
+  if (next === "calendar" || next === "brand") {
+    redirect("/onboarding/essentials");
   }
-  if (next === "brand") {
-    redirect("/onboarding/brand");
-  }
-  if (next === "invite") {
-    redirect("/onboarding/invite");
-  }
-  if (next === "meta") {
-    redirect("/settings/meta");
+  // Ease page 3 — Team + Meta combined.
+  if (next === "invite" || next === "meta") {
+    redirect("/onboarding/connect");
   }
 
   // Finished prompts — Helpful next steps live on home.

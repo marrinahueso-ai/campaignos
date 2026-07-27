@@ -436,7 +436,7 @@ export function OnboardingBrandForm({
             {success ? (
               <Button
                 type="button"
-                href={standalone ? "/settings/organization" : "/onboarding/invite"}
+                href={standalone ? "/settings/organization" : "/onboarding/connect"}
               >
                 {standalone ? "Back to organization" : "Continue"}
               </Button>

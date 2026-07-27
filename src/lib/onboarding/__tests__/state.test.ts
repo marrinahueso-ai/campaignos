@@ -84,12 +84,20 @@ describe("onboarding state", () => {
     assert.equal(items.find((item) => item.id === "calendar")?.done, false);
     const brand = items.find((item) => item.id === "brand");
     assert.equal(brand?.done, false);
-    assert.equal(brand?.href, "/onboarding/brand");
+    assert.equal(brand?.href, "/onboarding/essentials");
     assert.equal(brand?.title, "Build your brand kit");
     assert.equal(brand?.cta, "Set up now");
+    assert.equal(
+      items.find((item) => item.id === "calendar")?.href,
+      "/onboarding/essentials",
+    );
+    const invite = items.find((item) => item.id === "invite");
+    assert.equal(invite?.done, false);
+    assert.equal(invite?.href, "/onboarding/connect");
+    assert.equal(invite?.cta, "Set up now");
     const meta = items.find((item) => item.id === "meta");
     assert.equal(meta?.done, false);
-    assert.equal(meta?.href, "/settings/meta");
+    assert.equal(meta?.href, "/onboarding/connect");
     assert.equal(meta?.cta, "Set up now");
   });
 

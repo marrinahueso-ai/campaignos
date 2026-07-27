@@ -24,6 +24,7 @@ import type { EventDetailHeroStats } from "@/components/events-phase3/EventDetai
 import {
   EventDetailTabInvalidationProvider,
 } from "@/components/events-phase3/EventDetailTabInvalidation";
+import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
 import {
@@ -233,6 +234,8 @@ interface EventDetailShellProps {
   onManageAssignments?: () => void;
   workspace?: EventDetailWorkspacePanels;
   initialTab?: string | null;
+  /** Ease page-4 finale after Team+Meta — dismissible “You’re set” toast. */
+  showYoureSet?: boolean;
 }
 
 function SkeletonBar({ className }: { className?: string }) {
@@ -412,6 +415,7 @@ export function EventDetailShell({
   onManageAssignments,
   workspace = {},
   initialTab = null,
+  showYoureSet = false,
 }: EventDetailShellProps) {
   const router = useRouter();
   const [tab, setTab] = useState<EventDetailTab>(() => {
@@ -717,6 +721,10 @@ export function EventDetailShell({
         <span className="text-cos-border">›</span>
         <span className="truncate text-cos-text">{event.title}</span>
       </Link>
+
+      {showYoureSet ? (
+        <OnboardingYoureSetToast eventTitle={event.title} />
+      ) : null}
 
       <EventDetailEaseHero
         event={event}

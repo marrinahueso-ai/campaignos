@@ -59,12 +59,14 @@ import { getEventPlanningOverviewData } from "@/lib/event-playbooks/planning-ove
 import { getOrgPostingHeatmap } from "@/lib/posting-analytics/get-org-posting-heatmap";
 import { resolveTodayGreetingName } from "@/lib/today/greeting-name";
 
+import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import type { Event } from "@/types";
 import type { ReactNode } from "react";
 
 export async function renderPlanningHubDetail(
   event: Event,
   _initialTab: string | null,
+  options?: { showYoureSet?: boolean },
 ): Promise<ReactNode> {
   const hasCampaign = shouldAssignPlaybook(event.communicationStrategy);
 
@@ -304,6 +306,9 @@ export async function renderPlanningHubDetail(
 
   return (
     <div className="studio-page pb-12">
+      {options?.showYoureSet ? (
+        <OnboardingYoureSetToast eventTitle={event.title} />
+      ) : null}
       <EventPlanningHub
         event={event}
         ownership={resolvedOwnership}

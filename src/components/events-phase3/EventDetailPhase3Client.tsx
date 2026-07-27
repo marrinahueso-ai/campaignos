@@ -21,6 +21,7 @@ interface EventDetailPhase3ClientProps {
   canManageAssignments: boolean;
   workspace?: EventDetailWorkspacePanels;
   initialTab?: string | null;
+  showYoureSet?: boolean;
   committeeId: string | null;
   committeeName: string | null;
   members: Array<{
@@ -44,6 +45,7 @@ export function EventDetailPhase3Client({
   canManageAssignments,
   workspace = {},
   initialTab = null,
+  showYoureSet = false,
   committeeId,
   committeeName,
   members,
@@ -64,6 +66,7 @@ export function EventDetailPhase3Client({
         onManageAssignments={() => setManageOpen(true)}
         workspace={workspace}
         initialTab={initialTab}
+        showYoureSet={showYoureSet}
       />
       {manageOpen ? (
         <EventManageAssignmentsModal

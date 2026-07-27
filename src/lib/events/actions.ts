@@ -128,7 +128,8 @@ export async function createEvent(
     revalidatePath("/dashboard");
     revalidatePath("/events");
     revalidatePath("/onboarding");
-    redirect(`/events/${event.id}?onboarding=calendar`);
+    // Ease page 2 — combined Calendar + Brand (not the old calendar overlay).
+    redirect("/onboarding/essentials");
   }
 
   revalidatePath("/dashboard");

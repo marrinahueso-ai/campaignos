@@ -1,11 +1,10 @@
-import { EventOnboardingPrompt } from "@/components/onboarding/EventOnboardingPrompt";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isEventsPhase3UiEnabled } from "@/lib/events/events-phase3-flag";
 import { getEventById } from "@/lib/events/queries";
 
 interface EventWorkspacePageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; onboarding?: string }>;
+  searchParams: Promise<{ tab?: string; onboarding?: string; welcome?: string }>;
 }
 
 export async function generateMetadata({ params }: EventWorkspacePageProps) {
@@ -28,33 +27,28 @@ export default async function EventWorkspacePage({
   searchParams,
 }: EventWorkspacePageProps) {
   const { id } = await params;
-  const { tab, onboarding } = await searchParams;
+  const { tab, onboarding, welcome } = await searchParams;
   const event = await getEventById(id);
 
   if (!event) {
     notFound();
   }
 
-  const onboardingStep =
-    onboarding === "calendar" ||
-    onboarding === "brand" ||
-    onboarding === "invite" ||
-    onboarding === "meta"
-      ? onboarding
-      : null;
+  // Ease pages 2–3 replaced overlays — send them to the combined screens.
+  if (onboarding === "calendar" || onboarding === "brand") {
+    redirect("/onboarding/essentials");
+  }
+  if (onboarding === "invite" || onboarding === "meta") {
+    redirect("/onboarding/connect");
+  }
+
+  const showYoureSet = welcome === "1";
 
   if (isEventsPhase3UiEnabled()) {
     const { renderEventsPhase3Detail } = await import("./render-events-phase3");
-    return (
-      <>
-        {renderEventsPhase3Detail(event, tab ?? null)}
-        {onboardingStep ? (
-          <EventOnboardingPrompt step={onboardingStep} />
-        ) : null}
-      </>
-    );
+    return renderEventsPhase3Detail(event, tab ?? null, { showYoureSet });
   }
 
   const { renderPlanningHubDetail } = await import("./render-planning-hub");
-  return renderPlanningHubDetail(event, tab ?? null);
+  return renderPlanningHubDetail(event, tab ?? null, { showYoureSet });
 }

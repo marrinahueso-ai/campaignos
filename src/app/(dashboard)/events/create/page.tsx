@@ -1,5 +1,5 @@
 import { CreateEventForm } from "@/components/events/CreateEventForm";
-import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
+import { OnboardingCreateEventEase } from "@/components/onboarding/OnboardingCreateEventEase";
 import { getLatestOrganization } from "@/lib/organizations/queries";
 import { getPlaybooksForOrganization } from "@/lib/playbooks/queries";
 import { redirect } from "next/navigation";
@@ -31,24 +31,25 @@ export default async function CreateEventPage({
     eventType: playbook.eventType,
   }));
 
+  if (onboarding) {
+    return (
+      <OnboardingCreateEventEase
+        organizationName={organization?.name ?? ""}
+        playbookOptions={playbookOptions}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      {onboarding ? <OnboardingProgress current="event" /> : null}
       <div>
-        <h1 className="text-2xl font-bold text-cos-text">
-          {onboarding ? "Create your first event" : "Create campaign"}
-        </h1>
+        <h1 className="text-2xl font-bold text-cos-text">Create campaign</h1>
         <p className="mt-1 text-sm text-cos-muted">
-          {onboarding
-            ? "Add a title and date — you can refine everything after save."
-            : "Add a new campaign and get its communications ready."}
+          Add a new campaign and get its communications ready.
         </p>
       </div>
 
-      <CreateEventForm
-        playbookOptions={playbookOptions}
-        onboarding={onboarding}
-      />
+      <CreateEventForm playbookOptions={playbookOptions} />
     </div>
   );
 }

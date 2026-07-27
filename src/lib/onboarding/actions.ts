@@ -51,6 +51,8 @@ import {
 function revalidateOnboardingPaths() {
   revalidatePath("/dashboard");
   revalidatePath("/onboarding");
+  revalidatePath("/onboarding/essentials");
+  revalidatePath("/onboarding/connect");
   revalidatePath("/settings/school-setup");
   revalidatePath("/events");
   revalidatePath("/settings/meta");
@@ -58,15 +60,15 @@ function revalidateOnboardingPaths() {
 
 function onboardingPromptDestination(
   step: OnboardingPromptStep,
-  firstEventId?: string | null,
+  _firstEventId?: string | null,
 ): string {
-  if (step === "calendar" && firstEventId) {
-    return `/events/${firstEventId}?onboarding=calendar`;
+  // Ease page 2 — combined Calendar + Brand (replaces calendar/brand overlays).
+  if (step === "calendar" || step === "brand") {
+    return "/onboarding/essentials";
   }
-  if (step === "meta") {
-    return firstEventId
-      ? `/events/${firstEventId}?onboarding=meta`
-      : "/settings/meta";
+  // Ease page 3 — combined Team + Meta (replaces invite/meta overlays).
+  if (step === "invite" || step === "meta") {
+    return "/onboarding/connect";
   }
   return `/onboarding/${step}`;
 }
@@ -115,11 +117,11 @@ function dismissPatchForStep(
   };
 }
 
-/** Clear first-time progress so Welcome → create event can run again (same org). */
+/** Clear first-time progress so Create your first event can run again (same org). */
 export async function restartOnboardingAction() {
   const organization = await getCurrentOrganization();
   if (!organization) {
-    redirect("/onboarding?welcome=1");
+    redirect("/onboarding");
   }
 
   const now = new Date().toISOString();
@@ -129,7 +131,8 @@ export async function restartOnboardingAction() {
   });
 
   revalidateOnboardingPaths();
-  redirect("/onboarding?welcome=1");
+  // Page 1 of Ease first-time setup — Create your first event (not Welcome).
+  redirect("/events/create?onboarding=1");
 }
 
 export async function startValueFirstOnboardingAction(formData: FormData) {
@@ -297,6 +300,218 @@ export async function completeOnboardingCalendarAction() {
   redirect("/calendar/import");
 }
 
+/** Mark calendar complete without leaving the Essentials Ease screen. */
+export async function markOnboardingCalendarCompleteAction(): Promise<{
+  error?: string;
+  ok?: true;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const now = new Date().toISOString();
+  const next = await patchOrganizationOnboardingState(organization.id, {
+    calendarCompletedAt: now,
+  });
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  revalidateOnboardingPaths();
+  revalidatePath("/onboarding/essentials");
+  return { ok: true };
+}
+
+/** Skip one Essentials section in place (no navigation). */
+export async function skipOnboardingEssentialsSectionAction(
+  step: "calendar" | "brand",
+): Promise<{ error?: string; ok?: true }> {
+  const result = await deferOnboardingPromptStep(step);
+  if (result.error) {
+    return { error: result.error };
+  }
+  revalidatePath("/onboarding/essentials");
+  return { ok: true };
+}
+
+/**
+ * Continue / Skip for now from Ease page 2.
+ * Settles any unfinished calendar/brand sections, then advances to
+ * Ease page 3 (Team + Meta) at `/onboarding/connect`.
+ */
+export async function continueFromOnboardingEssentialsAction(): Promise<{
+  error?: string;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const current = await getOrganizationOnboardingState(organization.id);
+  const now = new Date().toISOString();
+  const patch: Partial<{
+    calendarSkippedAt: string;
+    brandSkippedAt: string;
+  }> = {};
+
+  if (!isCalendarSettled(current)) {
+    patch.calendarSkippedAt = now;
+  }
+  if (!isBrandSettled(current)) {
+    patch.brandSkippedAt = now;
+  }
+
+  const next =
+    Object.keys(patch).length > 0
+      ? await patchOrganizationOnboardingState(organization.id, patch)
+      : current;
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  revalidateOnboardingPaths();
+  revalidatePath("/onboarding/essentials");
+
+  const following = nextOnboardingPrompt(next);
+  if (!following) {
+    await patchOrganizationOnboardingState(organization.id, {
+      promptsFinishedAt: now,
+    });
+    redirect(next.firstEventId ? `/events/${next.firstEventId}` : "/dashboard");
+  }
+
+  redirect(onboardingPromptDestination(following, next.firstEventId));
+}
+
+/** Skip one Team/Meta section in place (no navigation). */
+export async function skipOnboardingConnectSectionAction(
+  step: "invite" | "meta",
+): Promise<{ error?: string; ok?: true }> {
+  const result = await deferOnboardingPromptStep(step);
+  if (result.error) {
+    return { error: result.error };
+  }
+  revalidatePath("/onboarding/connect");
+  return { ok: true };
+}
+
+/** Mark Meta complete without leaving the Connect Ease screen (OAuth follows client-side). */
+export async function markOnboardingMetaCompleteAction(): Promise<{
+  error?: string;
+  ok?: true;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const now = new Date().toISOString();
+  const next = await patchOrganizationOnboardingState(organization.id, {
+    metaCompletedAt: now,
+  });
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  revalidateOnboardingPaths();
+  revalidatePath("/onboarding/connect");
+  return { ok: true };
+}
+
+/**
+ * Send invite from Ease page 3 without leaving the screen.
+ * Reuses the same team-invite path as `/onboarding/invite`.
+ */
+export async function sendOnboardingConnectInviteAction(
+  formData: FormData,
+): Promise<{ error?: string; ok?: true }> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const workspace = await getOrganizationWorkspaceData(organization.id);
+  const defaultRoleId =
+    workspace?.roles.find((role) =>
+      /president|admin|owner/i.test(role.name),
+    )?.id ??
+    workspace?.roles[0]?.id ??
+    "";
+
+  if (!formData.get("organizationRoleId") && defaultRoleId) {
+    formData.set("organizationRoleId", defaultRoleId);
+  }
+  if (!formData.get("campaignRole")) {
+    formData.set("campaignRole", "admin");
+  }
+  formData.set("sendEmail", "true");
+
+  const result = await inviteTeamMemberAction(
+    { error: null, success: false },
+    formData,
+  );
+
+  if (!result.success) {
+    return { error: result.error ?? "Unable to send invite." };
+  }
+
+  const patched = await patchOrganizationOnboardingState(organization.id, {
+    inviteCompletedAt: new Date().toISOString(),
+  });
+  if (!patched) {
+    return { error: "Invite sent, but progress could not be saved." };
+  }
+
+  revalidateOnboardingPaths();
+  revalidatePath("/onboarding/connect");
+  return { ok: true };
+}
+
+/**
+ * Continue / Skip for now from Ease page 3.
+ * Settles unfinished invite/meta sections, finishes prompts, lands on the
+ * created event with the page-4 “You’re set” toast (`?welcome=1`).
+ */
+export async function continueFromOnboardingConnectAction(): Promise<{
+  error?: string;
+}> {
+  const organization = await getCurrentOrganization();
+  if (!organization) {
+    return { error: "Workspace not found." };
+  }
+
+  const current = await getOrganizationOnboardingState(organization.id);
+  const now = new Date().toISOString();
+  const patch: Partial<{
+    inviteSkippedAt: string;
+    metaSkippedAt: string;
+    promptsFinishedAt: string;
+  }> = {
+    promptsFinishedAt: now,
+  };
+
+  if (!isInviteSettled(current)) {
+    patch.inviteSkippedAt = now;
+  }
+  if (!isMetaSettled(current)) {
+    patch.metaSkippedAt = now;
+  }
+
+  const next = await patchOrganizationOnboardingState(organization.id, patch);
+  if (!next) {
+    return { error: "Unable to save progress." };
+  }
+
+  revalidateOnboardingPaths();
+  revalidatePath("/onboarding/connect");
+  redirect(
+    next.firstEventId
+      ? `/events/${next.firstEventId}?welcome=1`
+      : "/dashboard",
+  );
+}
+
 /**
  * Mark Meta prompt complete and open Meta connect.
  * Optional returnTo keeps the event overlay journey coherent after OAuth.
@@ -452,10 +667,10 @@ export async function sendOnboardingInviteAction(formData: FormData) {
 
   revalidateOnboardingPaths();
 
-  if (state?.firstEventId && !isMetaSettled(state)) {
-    redirect(`/events/${state.firstEventId}?onboarding=meta`);
+  if (state && !isMetaSettled(state)) {
+    redirect("/onboarding/connect");
   }
-  redirect("/settings/meta");
+  redirect(state?.firstEventId ? `/events/${state.firstEventId}` : "/dashboard");
 }
 
 export async function getOnboardingChecklistForCurrentOrg(): Promise<{
