@@ -316,6 +316,23 @@ export async function countActiveOrganizationUsers(
   return count ?? 0;
 }
 
+export async function countPendingOrganizationInvites(
+  organizationId: string,
+): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("organization_users")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("status", "invited");
+
+  if (error) {
+    return 0;
+  }
+
+  return count ?? 0;
+}
+
 export type AcceptInviteResult = {
   accepted: number;
   /** Present when an invite token was supplied but the signed-in email does not match. */

@@ -23,6 +23,10 @@ const PUBLIC_PATHS = [
   "/pricing",
   "/features",
   "/login",
+  "/signup",
+  "/forgot-password",
+  "/privacy",
+  "/terms",
   "/invite",
   "/auth/callback",
   "/auth/signout",
@@ -153,13 +157,15 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
-  if (user && pathname === "/login") {
+  if (user && (pathname === "/login" || pathname === "/signup")) {
     const loginError = request.nextUrl.searchParams.get("error");
     if (shouldAllowAuthenticatedLoginView(loginError)) {
       return supabaseResponse;
     }
 
-    const setupIntent = request.nextUrl.searchParams.get("intent") === "setup";
+    const setupIntent =
+      pathname === "/signup" ||
+      request.nextUrl.searchParams.get("intent") === "setup";
     const pendingCode = setupIntent
       ? getPendingFoundingAccessCodeFromRequest(request)
       : null;
@@ -241,7 +247,11 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const mustChangePassword =
       user.app_metadata?.must_change_password === true;
-    if (mustChangePassword && pathname !== "/account/change-password") {
+    if (
+      mustChangePassword &&
+      pathname !== "/account/change-password" &&
+      pathname !== "/account/update-password"
+    ) {
       const changeUrl = new URL("/account/change-password", request.nextUrl.origin);
       const redirectResponse = NextResponse.redirect(changeUrl);
       copyCookies(supabaseResponse, redirectResponse);
@@ -251,6 +261,7 @@ export async function updateSession(request: NextRequest) {
     if (
       !mustChangePassword &&
       pathname !== "/account/change-password" &&
+      pathname !== "/account/update-password" &&
       !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH) &&
       !isPublicPath(pathname)
     ) {
@@ -275,6 +286,7 @@ export async function updateSession(request: NextRequest) {
     user &&
     !isPublicPath(pathname) &&
     pathname !== "/account/change-password" &&
+    pathname !== "/account/update-password" &&
     !pathname.startsWith(DEVELOPER_AGREEMENTS_PATH)
   ) {
     const gateRedirectResult = await withTimeout(

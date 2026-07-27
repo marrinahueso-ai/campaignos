@@ -8,8 +8,9 @@ import type { NextResponse } from "next/server";
  * - CAMPAIGNOS_FOUNDING_ACCESS_CODES=CODE1,CODE2
  * - CAMPAIGNOS_REQUIRE_ACCESS_CODE=true  (default: true; set false for local dev only)
  *
- * New school signup validates the code on /login?intent=setup before account creation.
- * The validated code is stored in an httpOnly cookie until school setup completes.
+ * New school signup: choose a plan on /signup, then enter the founding code at
+ * checkout (/signup?plan=…). The validated code is stored in an httpOnly cookie
+ * until organization setup completes (billing waived for matching codes).
  */
 const TRUTHY = new Set(["1", "true", "yes", "on"]);
 const FALSY = new Set(["0", "false", "no", "off"]);

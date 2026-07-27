@@ -708,6 +708,117 @@ export async function signInWithEmailAction(
   return { error: null, success: true, message: successMessage };
 }
 
+/** Request a password-recovery email. Always returns a generic success copy
+ *  so the response cannot be used to probe whether an account exists. */
+export async function requestPasswordResetAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = formData.get("email")?.toString()?.trim() ?? "";
+
+  if (!email) {
+    return { error: "Enter your email address.", success: false };
+  }
+  if (!isPlausibleEmail(email)) {
+    return { error: "Enter a valid email address.", success: false };
+  }
+
+  const ip = await getRequestIp();
+  const [byEmail, byIp] = await Promise.all([
+    checkRateLimit({
+      key: `password-reset:email:${email.toLowerCase()}`,
+      windowSeconds: 15 * 60,
+      max: 5,
+    }),
+    checkRateLimit({
+      key: `password-reset:ip:${ip}`,
+      windowSeconds: 15 * 60,
+      max: 15,
+    }),
+  ]);
+  if (!byEmail.allowed || !byIp.allowed) {
+    const retryAfter = Math.max(byEmail.retryAfterSeconds, byIp.retryAfterSeconds);
+    return {
+      error: rateLimitMessage(retryAfter, "password reset requests"),
+      success: false,
+    };
+  }
+
+  const successMessage =
+    "If that email matches a Hey Ralli account, you’ll get a reset link shortly. Check spam if nothing arrives.";
+
+  const supabase = await createClient();
+  const headersList = await headers();
+  const emailOrigin = resolvePublicEmailAuthOrigin(
+    headersList.get("origin"),
+    headersList.get("x-forwarded-host") ?? headersList.get("host"),
+    headersList.get("x-forwarded-proto"),
+  );
+  const redirectTo = new URL("/auth/callback", emailOrigin);
+  redirectTo.searchParams.set("next", "/account/update-password");
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectTo.toString(),
+  });
+
+  if (error) {
+    if (error.message.includes("redirect")) {
+      return {
+        error: `${error.message} Add ${redirectTo.origin}/auth/callback to Supabase Auth redirect URLs.`,
+        success: false,
+      };
+    }
+    console.error("[auth] resetPasswordForEmail failed:", error.message);
+  }
+
+  return { error: null, success: true, message: successMessage };
+}
+
+/** Set a new password after a recovery email session (no current password). */
+export async function updatePasswordFromRecoveryAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const user = await getAuthUser();
+  if (!user) {
+    return {
+      error: "Open the reset link from your email first, then choose a new password.",
+      success: false,
+    };
+  }
+
+  const rate = await checkRateLimit({
+    key: `recovery-password:${user.id}`,
+    windowSeconds: 60 * 60,
+    max: 10,
+  });
+  if (!rate.allowed) {
+    return {
+      error: rateLimitMessage(rate.retryAfterSeconds, "attempts"),
+      success: false,
+    };
+  }
+
+  const password = formData.get("password")?.toString() ?? "";
+  const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters.", success: false };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message, success: false };
+  }
+
+  await clearMustChangePassword(user.id);
+  redirect(await getAuthenticatedAppPath());
+}
+
 export async function signOutAction(): Promise<void> {
   await clearSimulatedRoleCookie();
   const { clearActiveOrganizationPreference } = await import(

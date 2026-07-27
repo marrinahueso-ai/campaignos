@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { InviteAcceptForm } from "@/components/auth/InviteAcceptForm";
+import { MarketingWowAuthShell } from "@/components/marketing-wow/MarketingWowAuthShell";
+import { MarketingWowInviteForm } from "@/components/marketing-wow/MarketingWowInviteForm";
+import { MarketingWowLegalLinks } from "@/components/marketing-wow/MarketingWowAuthShell";
 import { campaignRoleLabel, isCampaignRole } from "@/lib/auth/campaign-roles";
 import { authUserExistsForEmail } from "@/lib/auth/invite-credentials";
 import { getInvitePreview } from "@/lib/auth/invite-preview";
@@ -23,21 +25,23 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
 
   if (!preview) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#ebe4d9] px-4">
-        <div className="w-full max-w-md rounded-2xl border border-[#ddd4c8] bg-[#f6f2eb] p-8 shadow-sm">
-          <p className="font-serif text-2xl text-[#2a2622]">Invite not found</p>
-          <p className="mt-3 text-sm leading-relaxed text-[#5c554c]">
-            This invite link is invalid or was already used. Ask your admin to
-            resend the invitation.
-          </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-block text-sm font-semibold text-[#2a2622] underline-offset-2 hover:underline"
-          >
+      <MarketingWowAuthShell
+        imageSrc="/images/fall-festival-campaign.png"
+        visualTitle="You’re invited."
+        visualSupport="Join your school’s Hey Ralli workspace with the role your admin chose."
+      >
+        <h1>Invite not found</h1>
+        <p className="sub">
+          This invite link is invalid or was already used. Ask your admin to
+          resend the invitation.
+        </p>
+        <p className="auth-alt">
+          <Link href="/login" className="btn-text">
             Go to sign in
           </Link>
-        </div>
-      </main>
+        </p>
+        <MarketingWowLegalLinks />
+      </MarketingWowAuthShell>
     );
   }
 
@@ -58,20 +62,19 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
     : preview.roleName ?? "team member";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#ebe4d9] px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-[#ddd4c8] bg-[#f6f2eb] p-8 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#5c554c]">
-          Hey Ralli · Team invite
-        </p>
-        <InviteAcceptForm
-          inviteToken={token}
-          email={preview.email}
-          organizationName={preview.organizationName}
-          roleLabel={roleLabel}
-          expired={preview.expired}
-          accountExists={accountExists}
-        />
-      </div>
-    </main>
+    <MarketingWowAuthShell
+      imageSrc="/images/fall-festival-campaign.png"
+      visualTitle="You’re invited."
+      visualSupport="Join your school’s Hey Ralli workspace with the role your admin chose."
+    >
+      <MarketingWowInviteForm
+        inviteToken={token}
+        email={preview.email}
+        organizationName={preview.organizationName}
+        roleLabel={roleLabel}
+        expired={preview.expired}
+        accountExists={accountExists}
+      />
+    </MarketingWowAuthShell>
   );
 }

@@ -151,7 +151,7 @@ export async function startValueFirstOnboardingAction(formData: FormData) {
 
   const pendingCode = await getPendingFoundingAccessCode();
   if (isFoundingAccessCodeRequired() && !pendingCode) {
-    redirect("/login?intent=setup&error=code_required");
+    redirect("/signup?error=code_required");
   }
 
   const foundingAccess = pendingCode
@@ -159,7 +159,7 @@ export async function startValueFirstOnboardingAction(formData: FormData) {
     : resolveFoundingAccess(null, { required: false });
 
   if (pendingCode && !foundingAccess.valid) {
-    redirect("/login?intent=setup&error=code_required");
+    redirect("/signup?error=code_required");
   }
 
   const result = await bootstrapMinimalOrganization({

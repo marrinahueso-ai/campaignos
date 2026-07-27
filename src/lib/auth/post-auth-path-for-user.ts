@@ -48,7 +48,7 @@ export async function resolvePostAuthPathForUser(
   }
 
   if (setupIntent && !hasValidPendingSetup) {
-    return "/login?intent=setup&error=code_required";
+    return "/signup?error=code_required";
   }
 
   if (!hasMembership) {

@@ -1,7 +1,18 @@
 import type { MetadataRoute } from "next";
 import { DEFAULT_SITE_URL } from "@/lib/site/url";
 
-const PUBLIC_PATHS = ["/", "/features", "/about", "/pricing", "/login"];
+const PUBLIC_PATHS = [
+  "/",
+  "/features",
+  "/about",
+  "/pricing",
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/invite",
+  "/privacy",
+  "/terms",
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();

@@ -54,7 +54,7 @@ export async function getAuthenticatedAppPath(
     }
 
     if (isFoundingAccessCodeRequired()) {
-      return "/login?intent=setup&error=code_required";
+      return "/signup?error=code_required";
     }
   }
 

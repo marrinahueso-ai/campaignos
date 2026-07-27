@@ -70,7 +70,12 @@ export async function resolveOrgGateRedirect(
   }
 
   if (accessState === "deactivated") {
-    if (pathname === "/login" || pathname === "/account/change-password") {
+    if (
+      pathname === "/login" ||
+      pathname === "/signup" ||
+      pathname === "/account/change-password" ||
+      pathname === "/account/update-password"
+    ) {
       return null;
     }
     return ACCOUNT_DEACTIVATED_LOGIN_PATH;
@@ -87,12 +92,14 @@ export async function resolveOrgGateRedirect(
   if (
     isOrgSetupPath(pathname) ||
     pathname === "/login" ||
+    pathname === "/signup" ||
     pathname.startsWith("/invite/") ||
     pathname === "/account/change-password" ||
+    pathname === "/account/update-password" ||
     pathname.startsWith("/account/agreements")
   ) {
     return null;
   }
 
-  return "/login?intent=setup&error=org_required";
+  return "/signup?error=org_required";
 }

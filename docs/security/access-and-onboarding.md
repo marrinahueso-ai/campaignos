@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 25, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
@@ -28,7 +28,7 @@ There is **no open self-serve “create org without a code”** path when foundi
 
 | Path | Who | What they do |
 |------|-----|----------------|
-| **Founding / new org** | First admin for a new workspace | `/login?intent=setup` → founding access code → magic-link email → `/onboarding` → bootstrap org (admin seat) |
+| **Founding / new org** | First admin for a new workspace | `/signup` plan chooser → checkout (`/signup?plan=…`) with founding access code + email → magic-link → `/onboarding` → bootstrap org (admin seat; code waives billing) |
 | **Team invite** | Seat provisioned by an org admin | Email / link → `/invite/[token]` → set password (or sign in if account exists) → membership becomes `active` |
 | **Returning sign-in** | Existing auth user with ≥1 active membership | Password, magic link, or OAuth (Google / Facebook) → post-auth routing → app |
 
@@ -38,8 +38,8 @@ Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-acce
 
 ## Brand-new user: founding a workspace
 
-1. User opens **new organization** signup (`/login?intent=setup`).
-2. Enters email + **founding access code** (env-configured; see below).
+1. User opens **new organization** signup (`/signup`) and **chooses a plan** (Starter / Professional / Premium).
+2. Continues to **checkout** (`/signup?plan=…`): enters email + **founding access code** (env-configured; see below).
 3. App stores a validated pending code (httpOnly cookie; magic-link also carries a signed `fac` param for email clients).
 4. Resend sends **organization-welcome** with CTA **Let's get started** → `/auth/callback?setup=1` → `/onboarding`  
    (Fallback: Supabase Auth OTP email if Resend / service role missing — see [auth-welcome-email.md](../engineering/auth-welcome-email.md).)
@@ -49,7 +49,7 @@ Stripe / paid plan gates: **shipped** (live in Production; see [billing-and-acce
    - Seeds playbooks / workspace / active school year / default brand assets
 6. Redirect → create first event (`/events/create?onboarding=1`), then skippable overlay steps (Calendar → Brand → Team → Meta). Progress on `organizations.onboarding_state`.
 
-**If founding code is required and missing/invalid:** stay on setup login (`error=code_required`).  
+**If founding code is required and missing/invalid:** stay on signup checkout (`error=code_required`) — plan selection is not gated by the code.  
 **If user already has an active membership and tries setup:** `/login?error=existing_org` (cannot found a second org via this path while already a member).  
 **Unclear / verify:** product path for one person to *found* a second organization after already belonging to one (switcher supports *joining* multiple orgs via invites).
 

@@ -66,9 +66,9 @@ function planCtaHref(
   workspaceHref: string,
 ): string | undefined {
   if (mode === "signin") {
-    return `/login?next=${encodeURIComponent("/settings/billing-plan?tab=plan")}`;
+    return `/login?next=${encodeURIComponent("/settings/billing-plan?view=plans")}`;
   }
-  if (mode === "billing") return "/settings/billing-plan?tab=plan";
+  if (mode === "billing") return "/settings/billing-plan?view=plans";
   if (mode === "founding") return workspaceHref;
   return undefined;
 }
@@ -83,7 +83,7 @@ export function StudioPricingPage({
   flash = null,
 }: StudioPricingPageProps) {
   const isSignedIn = Boolean(userEmail);
-  const setupHref = `/login?intent=setup&next=${encodeURIComponent(ONBOARDING_PATH)}`;
+  const setupHref = `/signup?next=${encodeURIComponent(ONBOARDING_PATH)}`;
 
   return (
     <StudioMarketingShell userEmail={userEmail} workspaceHref={workspaceHref}>
@@ -278,8 +278,8 @@ export function StudioPricingPage({
                     }
                     href={
                       ctaMode === "signin"
-                        ? `/login?next=${encodeURIComponent("/settings/billing-plan?tab=plan")}`
-                        : "/settings/billing-plan?tab=plan"
+                        ? `/login?next=${encodeURIComponent("/settings/billing-plan?view=plans")}`
+                        : "/settings/billing-plan?view=plans"
                     }
                   />
                 </div>
