@@ -149,7 +149,7 @@ export function EventManageMenu({ event, size = "sm" }: EventManageMenuProps) {
                 <button
                   type="button"
                   role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
                   onClick={() => openConfirm("restore")}
                 >
                   <ArchiveRestore className="h-4 w-4 shrink-0" />
@@ -159,7 +159,7 @@ export function EventManageMenu({ event, size = "sm" }: EventManageMenuProps) {
                 <button
                   type="button"
                   role="menuitem"
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg"
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-cos-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
                   onClick={() => openConfirm("archive")}
                 >
                   <span className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function EventManageMenu({ event, size = "sm" }: EventManageMenuProps) {
               <button
                 type="button"
                 role="menuitem"
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-error-text hover:bg-cos-bg"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-cos-error-text hover:bg-cos-bg focus-visible:bg-cos-bg focus-visible:outline-none"
                 onClick={() => openConfirm("delete")}
               >
                 <Trash2 className="h-4 w-4 shrink-0" />

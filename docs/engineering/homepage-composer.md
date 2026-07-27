@@ -30,12 +30,13 @@ Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageCo
 | `src/components/homepage-composer/SettingsBox.tsx` | Shared settings panel chrome (also used by Newsletter) |
 | `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes |
 | `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields |
-| `src/lib/homepage-composer/draft-storage.ts` | localStorage + IndexedDB envelope v4 |
+| `src/lib/homepage-composer/draft-storage.ts` | localStorage + IndexedDB envelope v4 (via shared store) |
+| `src/lib/composer-draft-storage.ts` | Shared newest-wins draft store (Homepage + Newsletter) |
 | `src/lib/homepage-composer/blurb-actions.ts` | Server action → generate blurb |
 | `src/lib/homepage-composer/generate-blurb.ts` / `generate-blurb-prompt.ts` | Model call, ≤2 sentences, brand voice |
 | `src/lib/homepage-composer/artwork-actions.ts` | Upload compressed data-URL → public URL |
 | `src/lib/homepage-composer/compress-image.ts` | Client compress before upload |
-| `src/lib/homepage-composer/export-html.ts` | Full-page MTK HTML + show/hide script |
+| `src/lib/homepage-composer/export-html.ts` | Full-page MTK HTML + show/hide script; preview may pass `includeDataImages` |
 | `src/lib/homepage-composer/blurbs.ts` / `urls.ts` / `colors.ts` / `emoji.ts` | Formatting helpers |
 | `src/lib/homepage-composer/volunteer-links.ts` | Signup URLs for event cards |
 | `__tests__/` | Draft storage, card fields, blurb prompt contracts |
@@ -59,7 +60,9 @@ Envelope:
 2. Mirror full JSON to IndexedDB (large payloads / artwork URLs).
 3. On LS quota: slim by clearing `data:` card `imageUrl`s in the LS copy only.
 
-**Read path** (`loadComposerDraftRaw`): compare IDB vs LS by `at`; prefer newer; tie → IDB.
+**Read path** (`loadComposerDraftRaw`): compare IDB vs LS by `at`; prefer newer; tie → IDB. If LS wins but quota-slimmed `imageUrl`s to null, merge artwork back from IDB for matching card ids.
+
+**Write races:** IndexedDB puts are skipped when a newer envelope already exists (same-transaction get-then-put), so an older in-flight save cannot clobber a newer draft.
 
 **Flush:** Composer debounces ~350ms; also flushes on `visibilitychange` (hidden), `pagehide`, `beforeunload`, and effect cleanup so navigate-away cannot drop the pending timer.
 
@@ -100,10 +103,11 @@ Artwork upload does **not** burn AI credits (storage only). Create with AI deep 
 
 ## Export HTML
 
-`exportHomepageHtml(state, { asOfDate?, showAllCards? })`:
+`exportHomepageHtml(state, { asOfDate?, showAllCards?, includeDataImages? })`:
 
 - Inline `<style>` + `.ees-*` Membership Toolkit–style markup (hero, announcements, card grid, footer CTA, resources).
-- Card images: **HTTPS only** — `data:` URLs omitted (placeholder square).
+- Card images: Export / Copy use **HTTPS only** (`data:` omitted → placeholder). In-app Preview passes `includeDataImages: true` so unhosted artwork still renders.
+- Preview iframe: remount + imperative `srcdoc` write so Blink/Chrome refreshes when the slider or draft changes (Safari already updated `srcDoc` props).
 - Visibility attrs: `data-starts` / `data-expires` when not `alwaysOn`.
 - Embedded script toggles `display` from “today” (or preview `asOfDate`); `showAllCards` skips hide logic for full-month audit.
 

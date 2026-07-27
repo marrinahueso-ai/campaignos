@@ -25,17 +25,25 @@ function cardAttrs(card: HomepageCard): string {
   return parts.join(" ");
 }
 
-function exportImageUrl(imageUrl: string | null): string | null {
+function exportImageUrl(
+  imageUrl: string | null,
+  options: { includeDataImages?: boolean } = {},
+): string | null {
   if (!imageUrl?.trim()) return null;
   const url = imageUrl.trim();
-  // Never bake base64 into MTK HTML — it makes pages huge and slow.
-  if (url.startsWith("data:")) return null;
+  // Export must stay lean for Membership Toolkit; in-app preview may show data: URLs.
+  if (url.startsWith("data:")) {
+    return options.includeDataImages ? url : null;
+  }
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   return null;
 }
 
-function renderCard(card: HomepageCard): string {
-  const hosted = exportImageUrl(card.imageUrl);
+function renderCard(
+  card: HomepageCard,
+  options: { includeDataImages?: boolean } = {},
+): string {
+  const hosted = exportImageUrl(card.imageUrl, options);
   const img = hosted
     ? `<div class="img-square"><img src="${escapeHtml(hosted)}" alt="${escapeHtml(card.title)}" /></div>`
     : `<div class="img-square img-placeholder"></div>`;
@@ -95,6 +103,11 @@ export type ExportHomepageOptions = {
   asOfDate?: string | null;
   /** Preview: show every card (ignore starts/expires) so managers can audit the full set. */
   showAllCards?: boolean;
+  /**
+   * In-app preview only: allow data: image URLs so artwork shows before upload.
+   * Never enable for Export / Copy HTML.
+   */
+  includeDataImages?: boolean;
 };
 
 /** Full-page Membership Toolkit HTML (header + cards + footer + resources + script). */
@@ -105,6 +118,7 @@ export function exportHomepageHtml(
   const { header, footer, cards, resources } = state;
   const asOf = options.asOfDate?.trim() || null;
   const showAllCards = Boolean(options.showAllCards);
+  const includeDataImages = Boolean(options.includeDataImages);
   const hc = header.colors;
   const fc = footer.colors;
 
@@ -112,7 +126,7 @@ export function exportHomepageHtml(
     cards.length > 0
       ? `<h2 class="ees-section-title">Back-to-School Essentials</h2>
 <div class="ees-image-card-grid">
-${cards.map(renderCard).join("\n")}
+${cards.map((card) => renderCard(card, { includeDataImages })).join("\n")}
 </div>`
       : "";
 

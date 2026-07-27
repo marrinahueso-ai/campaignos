@@ -78,6 +78,7 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 11. Preview matches Export structure (hero, announcements, cards, footer CTA, resources).
 12. Export HTML: no `data:` image URLs; cards with starts/expires carry `data-starts` / `data-expires`; script hides correctly for a chosen “today”.
 13. Copy HTML succeeds; paste into a blank page / Membership Toolkit sandbox looks sane on desktop + narrow width.
+14. **Chrome:** On Preview, drag the date slider — cards must roll on/off live (not stuck on the first paint). Artwork should appear (hosted `https://` or still-pending `data:`). Re-check in Safari for parity.
 
 ### Access / empty
 
@@ -103,4 +104,4 @@ Draft status shows in the chrome (“Saving draft…”, “Draft saved”).
 2. Tweak header + one announcement.  
 3. Add one event card + one custom card; set link label + on/off dates; upload art on one.  
 4. Generate text on the custom card.  
-5. Preview scrubber across dates → Export → confirm hosted images + dates.
+5. Preview scrubber across dates (**in Chrome**) → Export → confirm hosted images + dates.

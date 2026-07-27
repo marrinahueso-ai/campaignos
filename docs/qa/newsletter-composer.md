@@ -53,7 +53,7 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 - Header / story / sponsor / volunteer image upload → hosted HTTPS URLs
 - Desktop + phone preview components
 - HTML export (full document, table layout, ~560px content width)
-- Draft autosave: localStorage + IndexedDB (`newsletter-composer:v1:{org}`)
+- Draft autosave: localStorage + IndexedDB v2 envelope (`newsletter-composer:v2:{org}`; reads v1); newest-wins load; flush on hide/unload
 - Shared SettingsBox chrome with Homepage Composer
 
 **Not shipped here:** in-app email send, AI blurb generate (Homepage-only today), server-side draft sync.
@@ -67,6 +67,7 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 1. `/create-with-ai` → **Newsletter** → `/newsletter-composer`.
 2. Edit subject + leadership message → navigate away → return — draft restored for the org.
 3. Refresh — draft still present.
+3b. **Chrome:** Edit subject → wait for “Draft saved” → hard-refresh — latest subject returns (not an older IndexedDB copy). Re-check Safari for parity.
 
 ### Content steps
 
@@ -93,8 +94,8 @@ Draft status shows while editing (“Saving draft…”, “Draft saved”).
 ## Known limitations
 
 - Soft launch — further polish deferred (Feature list).
-- Drafts are **browser-local**, not cross-device.
-- Newsletter autosave is debounced (~450ms) but does **not** yet mirror Homepage’s aggressive flush on `pagehide` / visibility — prefer waiting for “Draft saved” before closing the tab.
+- Drafts are **browser-local**, not cross-device (Chrome and Safari do not share drafts).
+- Autosave debounces ~450ms and flushes on tab hide / unload (same pattern as Homepage).
 - No AI Generate text / no credit burn on this surface today.
 - **Send** means copy HTML — Hey Ralli does not deliver the email.
 - Sponsor logos are required for display; missing logo blocks a clean sponsor row.

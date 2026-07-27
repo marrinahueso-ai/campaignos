@@ -32,7 +32,8 @@ Steps: `header` → `message` → `stories` → `mustdos` → `footer` → `layo
 | `src/components/newsletter-composer/EmailPreviewPhone.tsx` | Phone / desktop preview shells |
 | `src/lib/newsletter-composer/types.ts` | State, stories, layout blocks, sponsors, socials |
 | `src/lib/newsletter-composer/defaults.ts` | Initial state, layout sync with stories, chip/story helpers |
-| `src/lib/newsletter-composer/draft-storage.ts` | localStorage + IndexedDB (raw state JSON v1) |
+| `src/lib/newsletter-composer/draft-storage.ts` | localStorage + IndexedDB via shared `createComposerDraftStore` (v2 envelope) |
+| `src/lib/composer-draft-storage.ts` | Shared newest-wins draft store (Homepage + Newsletter) |
 | `src/lib/newsletter-composer/artwork-actions.ts` | Upload header / story / sponsor / volunteer art |
 | `src/lib/newsletter-composer/export-html.ts` | Email-safe HTML + preview fragment |
 | `src/lib/homepage-composer/compress-image.ts` | Shared client compress before upload |
@@ -43,15 +44,19 @@ Steps: `header` → `message` → `stories` → `mustdos` → `footer` → `layo
 ## Draft storage
 
 **DB:** IndexedDB `heyralli-newsletter-composer` / store `drafts`  
-**LS key:** `newsletter-composer:v1:{organizationId|local}`
+**LS key:** `newsletter-composer:v2:{organizationId|local}` (reads v1 legacy raw JSON)
 
-Unlike Homepage (v4 envelope with `at`), Newsletter stores **raw** `NewsletterComposerState` JSON.
+Envelope (same pattern as Homepage):
 
-**Write** (`saveComposerDraft`): best-effort `localStorage.setItem`, then IDB put. Quota / IDB failures are swallowed (status may still show saved if LS succeeded).
+```ts
+{ v: 2, at: number, state: NewsletterComposerState }
+```
 
-**Read** (`loadComposerDraftRaw`): prefer IDB; fall back to LS.
+**Write** (`saveComposerDraft`): sync LS first, then IDB put-if-newer (skips stale in-flight writes). Quota may slim `data:` image fields from the LS copy only.
 
-**Autosave:** ~450ms debounce after hydrate. No dedicated `pagehide` / visibility flush (Homepage has a stronger flush path) — keep that in mind when hardening.
+**Read** (`loadComposerDraftRaw`): compare IDB vs LS by `at`; newest wins; tie → IDB. If LS wins but slimmed images, merge artwork back from IDB.
+
+**Autosave:** ~450ms debounce after hydrate; also flushes on `visibilitychange` (hidden), `pagehide`, `beforeunload`, and effect cleanup. Hydrate runs once per `organizationId` (not on every events refetch).
 
 Drafts are **not** stored in Postgres.
 

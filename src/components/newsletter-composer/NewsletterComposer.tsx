@@ -15,6 +15,7 @@ import {
 } from "@/lib/newsletter-composer/defaults";
 import {
   loadComposerDraftRaw,
+  parseComposerDraftRaw,
   saveComposerDraft,
   type DraftSaveStatus,
 } from "@/lib/newsletter-composer/draft-storage";
@@ -147,6 +148,17 @@ export function NewsletterComposer({
   const [monthFilter, setMonthFilter] = useState(currentMonthYyyyMm);
   const dragId = useRef<string | null>(null);
   const headerFileRef = useRef<HTMLInputElement>(null);
+  const organizationNameRef = useRef(organizationName);
+  const organizationIdRef = useRef(organizationId);
+  const eventsRef = useRef(events);
+  const stateRef = useRef(state);
+  const hydratedRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSeqRef = useRef(0);
+  organizationNameRef.current = organizationName;
+  organizationIdRef.current = organizationId;
+  eventsRef.current = events;
+  stateRef.current = state;
 
   const monthOptions = useMemo(
     () =>
@@ -164,37 +176,101 @@ export function NewsletterComposer({
     }
   }, [monthOptions, monthFilter]);
 
+  const flushDraft = useCallback(async () => {
+    if (!hydratedRef.current) return;
+    const seq = ++saveSeqRef.current;
+    const snapshot = stateRef.current;
+    const orgId = organizationIdRef.current;
+    setDraftStatus({ kind: "saving" });
+    try {
+      await saveComposerDraft(orgId, snapshot);
+      if (seq !== saveSeqRef.current) return;
+      setDraftStatus({ kind: "saved", at: Date.now() });
+    } catch {
+      if (seq !== saveSeqRef.current) return;
+      setDraftStatus({ kind: "error", message: "Could not save draft" });
+    }
+  }, []);
+
+  // Load draft once per organization (IndexedDB ↔ localStorage, newest wins).
+  // Do not re-hydrate when events/name change — that wiped in-progress edits.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    setHydrated(false);
+    hydratedRef.current = false;
+
+    void (async () => {
       try {
         const raw = await loadComposerDraftRaw(organizationId);
-        if (cancelled || !raw) return;
-        const parsed = JSON.parse(raw) as unknown;
-        setState(normalizeComposerState(parsed, organizationName, events));
+        if (cancelled) return;
+        if (raw) {
+          const parsed = parseComposerDraftRaw(raw);
+          if (parsed) {
+            setState(
+              normalizeComposerState(
+                parsed,
+                organizationNameRef.current,
+                eventsRef.current,
+              ),
+            );
+          }
+        }
       } catch {
         /* keep initial */
       } finally {
-        if (!cancelled) setHydrated(true);
+        if (!cancelled) {
+          hydratedRef.current = true;
+          setHydrated(true);
+        }
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [organizationId, organizationName, events]);
+  }, [organizationId]);
 
+  // Debounced autosave — localStorage (sync) + IndexedDB.
   useEffect(() => {
     if (!hydrated) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setDraftStatus({ kind: "saving" });
-    const t = window.setTimeout(() => {
-      void saveComposerDraft(organizationId, state)
-        .then(() => setDraftStatus({ kind: "saved", at: Date.now() }))
-        .catch(() =>
-          setDraftStatus({ kind: "error", message: "Could not save draft" }),
-        );
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      void flushDraft();
     }, 450);
-    return () => window.clearTimeout(t);
-  }, [state, hydrated, organizationId]);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+  }, [state, organizationId, hydrated, flushDraft]);
+
+  // Flush pending debounce on unmount / tab hide so navigate-away cannot drop edits.
+  useEffect(() => {
+    const onLeave = () => {
+      if (!hydratedRef.current) return;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      void flushDraft();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") onLeave();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onLeave);
+    window.addEventListener("beforeunload", onLeave);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onLeave);
+      window.removeEventListener("beforeunload", onLeave);
+      onLeave();
+    };
+  }, [flushDraft]);
 
   const patch = useCallback(
     (fn: (prev: NewsletterComposerState) => NewsletterComposerState) => {

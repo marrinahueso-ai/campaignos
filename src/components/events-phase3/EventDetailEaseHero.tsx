@@ -160,10 +160,10 @@ export function EventDetailEaseHero({
           >
             Create with AI
           </Link>
-          <span className="[&_button]:border-[rgba(255,252,247,0.28)] [&_button]:bg-[rgba(255,252,247,0.12)] [&_button]:text-cos-card [&_button]:backdrop-blur-sm">
+          <span className="[&>button]:border-[rgba(255,252,247,0.28)] [&>button]:bg-[rgba(255,252,247,0.12)] [&>button]:text-cos-card [&>button]:backdrop-blur-sm">
             <EditEventDetailsButton event={event} size="sm" />
           </span>
-          <span className="[&_button]:border-[rgba(255,252,247,0.28)] [&_button]:bg-[rgba(255,252,247,0.12)] [&_button]:text-cos-card [&_button]:backdrop-blur-sm">
+          <span className="[&>div>button:first-child]:border-[rgba(255,252,247,0.28)] [&>div>button:first-child]:bg-[rgba(255,252,247,0.12)] [&>div>button:first-child]:text-cos-card [&>div>button:first-child]:backdrop-blur-sm">
             <EventManageMenu event={event} size="sm" />
           </span>
         </div>

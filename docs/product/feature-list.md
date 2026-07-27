@@ -114,11 +114,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Full Meta slot sync after approval — **stub** / incomplete
 
 ## Homepage Composer
-- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred) — living docs: [QA](../qa/homepage-composer.md) · [Engineering](../engineering/homepage-composer.md)
+- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview (Chrome-safe iframe refresh); durable draft autosave (localStorage + IndexedDB, flush on navigate/hide; IDB stale-write guard + artwork merge on load); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred) — living docs: [QA](../qa/homepage-composer.md) · [Engineering](../engineering/homepage-composer.md)
 - Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **shipped** (soft launch)
 
 ## Newsletter Composer
-- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; durable draft autosave (shared newest-wins localStorage + IndexedDB store, flush on navigate/hide) — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**

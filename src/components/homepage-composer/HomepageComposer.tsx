@@ -263,6 +263,7 @@ export function HomepageComposer({
   });
   const artworkInputRef = useRef<HTMLInputElement>(null);
   const artworkCardIdRef = useRef<string | null>(null);
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const organizationNameRef = useRef(organizationName);
   const organizationIdRef = useRef(organizationId);
   const stateRef = useRef(state);
@@ -719,10 +720,34 @@ export function HomepageComposer({
   const previewHtml = useMemo(
     () =>
       isFullMonthPreview
-        ? exportHomepageHtml(state, { showAllCards: true })
-        : exportHomepageHtml(state, { asOfDate: previewDate }),
+        ? exportHomepageHtml(state, {
+            showAllCards: true,
+            includeDataImages: true,
+          })
+        : exportHomepageHtml(state, {
+            asOfDate: previewDate,
+            includeDataImages: true,
+          }),
     [state, previewDate, isFullMonthPreview],
   );
+
+  // Chrome (Blink) often ignores React updates to iframe `srcDoc`; Safari does not.
+  // Remount via key + set the `srcdoc` property so the preview always refreshes.
+  const previewFrameKey = useMemo(() => {
+    let hash = previewHtml.length;
+    const step = Math.max(1, Math.floor(previewHtml.length / 48));
+    for (let i = 0; i < previewHtml.length; i += step) {
+      hash = (Math.imul(hash, 31) + previewHtml.charCodeAt(i)) | 0;
+    }
+    return `${previewDate}:${hash}`;
+  }, [previewHtml, previewDate]);
+
+  useEffect(() => {
+    if (step !== "preview") return;
+    const frame = previewFrameRef.current;
+    if (!frame) return;
+    frame.srcdoc = previewHtml;
+  }, [step, previewHtml, previewFrameKey]);
 
   const copyHtml = async () => {
     setCopyLabel("Preparing…");
@@ -1974,6 +1999,8 @@ export function HomepageComposer({
 
               <div className="overflow-hidden rounded-[22px] border border-cos-border bg-white shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <iframe
+                  key={previewFrameKey}
+                  ref={previewFrameRef}
                   title="Homepage full page preview"
                   srcDoc={previewHtml}
                   className="block w-full border-0 bg-white"
