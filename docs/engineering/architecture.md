@@ -6,7 +6,7 @@
 **Production:** [heyralli.com](https://heyralli.com)  
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Supabase · Tailwind CSS 4 · Vercel · Stripe  
 **Last updated:** July 26, 2026  
-**Related:** [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
+**Related:** [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Access control](./access-control.md) · [Billing & access](../ops/billing-and-access.md) · [Stripe integration](./stripe-integration.md) · [QA architecture overview](../qa/architecture-overview.md) · [Launch checklist](../qa/launch-checklist.md) · [Ask Ralli Assistant](./ask-ralli-assistant.md)
 
 This document describes how the application is structured today. For a QA-oriented overview (workflow, limitations, test focus), see [QA architecture overview](../qa/architecture-overview.md). For Ask Ralli routing, sources, and the QA matrix, see [Ask Ralli Assistant](./ask-ralli-assistant.md). For feature status, see [feature list](../product/feature-list.md).
 
@@ -28,7 +28,7 @@ Public marketing (WOW homepage, pricing, features, auth chrome) sits outside the
 | UI | Tailwind CSS 4, shared `src/components/ui`; Ease shells (cream / Fraunces) on major hubs |
 | Auth / DB / Storage | Supabase (Auth, PostgreSQL + RLS, Storage) |
 | Hosting | Vercel (Production + Preview; Cron) |
-| Billing | Stripe Checkout / Customer Portal / webhooks (`src/lib/billing`) |
+| Billing | Stripe Checkout / Customer Portal / webhooks (`src/lib/billing`) — [stripe-integration.md](./stripe-integration.md) |
 | AI text | OpenAI Chat Completions (`OPENAI_API_KEY`) via `src/lib/ai` (+ credit metering) |
 | AI images | OpenAI Images via `src/lib/ai-artwork` / `artwork-v2` |
 | Social | Meta Graph API (`src/lib/meta-publishing`, `inbox`, `insights`) |
@@ -339,7 +339,8 @@ Historical Release 0.5 notes remain in [archive/RELEASE_0_5.md](../archive/RELEA
 | [qa/meta-calendar-dnd.md](../qa/meta-calendar-dnd.md) | Meta-native Graph schedule + Calendar DnD (no re-approval) |
 | [qa/calendar-import-dedupe.md](../qa/calendar-import-dedupe.md) | School-event import identity / Update vs Duplicate |
 | [access-control.md](./access-control.md) | Membership + permissions |
-| [ops/billing-and-access.md](../ops/billing-and-access.md) | Plans, credits, Stripe, gates |
+| [ops/billing-and-access.md](../ops/billing-and-access.md) | Plans, credits, gates, ops Stripe setup |
+| [stripe-integration.md](./stripe-integration.md) | Checkout / Portal / webhooks / Ease Billing wiring |
 | [developer-agreements.md](./developer-agreements.md) | NDA / IP e-sign gate |
 | [product/vision.md](../product/vision.md) · [blueprints](../product/blueprints/) | Product intent |
 

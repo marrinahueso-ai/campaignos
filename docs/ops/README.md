@@ -11,7 +11,7 @@
 | [support-runbook.md](./support-runbook.md) | Planned stub |
 | [sentry.md](./sentry.md) | Planned stub |
 | [incident-response.md](./incident-response.md) | Planned stub |
-| [billing-and-access.md](./billing-and-access.md) | **Living** (billing, access, AI credits) |
+| [billing-and-access.md](./billing-and-access.md) | **Living** (billing, access, AI credits) · eng wiring: [stripe-integration](../engineering/stripe-integration.md) |
 
 See also: [`vercel.json`](../../vercel.json) · [`.env.local.example`](../../.env.local.example)
 

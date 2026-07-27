@@ -47,6 +47,7 @@ This is the documentation hub. Start here.
 | Feature status | [product/feature-list.md](./product/feature-list.md) |
 | Owner AI & APIs | [product/ai-and-apis.md](./product/ai-and-apis.md) · [qa/owner-ai-apis.md](./qa/owner-ai-apis.md) |
 | Billing, access & AI credits (plans / COGS / net) | [ops/billing-and-access.md](./ops/billing-and-access.md) |
+| Stripe integration (Checkout / Portal / webhooks) | [engineering/stripe-integration.md](./engineering/stripe-integration.md) |
 | Volunteer Master | [product/volunteer-master.md](./product/volunteer-master.md) |
 | Event Insights | [product/event-insights.md](./product/event-insights.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |

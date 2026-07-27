@@ -3,7 +3,7 @@
 **Status:** Living  
 **Owner:** Product  
 **Last updated:** July 26, 2026  
-**Related:** [Ops](./README.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
+**Related:** [Ops](./README.md) · [Stripe integration (eng)](../engineering/stripe-integration.md) · [AI and APIs](../product/ai-and-apis.md) · [Feature list](../product/feature-list.md) · [Env & secrets](./env-and-secrets.md) · [Documentation home](../README.md)
 
 ## Purpose
 

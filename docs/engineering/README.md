@@ -9,6 +9,7 @@
 | [ask-ralli-assistant.md](./ask-ralli-assistant.md) | **Living** — routing, sources, extend guide, QA matrix |
 | [homepage-composer.md](./homepage-composer.md) | **Living** — draft storage, blurb/artwork actions, MTK export · [QA](../qa/homepage-composer.md) |
 | [newsletter-composer.md](./newsletter-composer.md) | **Living** — draft storage, artwork upload, email HTML export · [QA](../qa/newsletter-composer.md) |
+| [stripe-integration.md](./stripe-integration.md) | **Living** — Checkout / Portal / webhooks / Ease Billing wiring · product: [billing-and-access](../ops/billing-and-access.md) |
 | [access-control.md](./access-control.md) | **Living** — templates, RLS, org switcher MVP |
 | User-facing access / onboarding | [../security/access-and-onboarding.md](../security/access-and-onboarding.md) | **Living** |
 | [storage-rls.md](./storage-rls.md) | **Living** |
