@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 26, 2026  
+**Last updated:** July 26, 2026 — launch-prep feature completion refresh  
 **Related:** [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
 
 ## Purpose
@@ -28,9 +28,9 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release) / **Needs y
 
 | Field | Value |
 |-------|--------|
-| Date | July 26, 2026 (docs refresh; prior Playwright batch July 22) |
+| Date | July 26, 2026 (checklist refresh; prior Playwright batch July 22) |
 | Environment | **Production** — https://heyralli.com (+ local Playwright against same Supabase / test seat) |
-| Build / SHA | Prior Production Ready `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv`. Re-deploy after this Features/docs push — update SHA here when Ready. |
+| Build / SHA | Prior Production Ready `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv`. Re-deploy after docs push — update SHA here when Ready. |
 | Org | Edmondson Elementary (Playwright seat); Marrina Owner also on School B |
 | Tester | Playwright (`16` / `18` / `12`) + Owner (human-only rows below) |
 | Overall | **In progress** — launch-prep product work below is **Done**; automatable QA rows mostly Pass; remaining Needs you are OAuth / email / Safari / multi-org Owner / deep CwAI+Volunteers |
@@ -44,12 +44,16 @@ Product work shipped for soft launch (see [feature-list.md](../product/feature-l
 | Marketing WOW homepage + auth/legal | **Done** | `/`, login, signup, forgot, invite, privacy, terms |
 | Signup plan-first (Starter / Pro / Premium) | **Done** | Catalog → founding code checkout path |
 | Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + AI Brain / Inbox / Playbooks / Colors |
+| Header settings gear → `/settings` | **Done** | Direct link (no section dropdown); Ease left nav is the section list |
 | Team Access person drawer | **Done** | Soft pills + Overview / Events / Access drawer (`?person=`) |
 | Billing Ease (Usage · Plans · Payment) | **Done** | AI meters, category breakdown, Stripe invoices / portal / payment summary |
 | Insights Ease + `social_analytics` on all plans | **Done** | Soft-launch / Meta App Review reachability |
 | Vendors Ease (contact-first) | **Done** | Directory shell shipped |
 | Calendar / Events / Tasks / Files / Approvals / Volunteers Ease shells | **Done** | Product UI shipped; depth rows still Needs you where noted |
-| Create with AI chooser + Homepage / Newsletter composers | **Done** | Home Page · Social Media · Newsletter; draft persist + homepage AI blurbs **partial** polish OK for launch |
+| Create with AI landing / chooser | **Done** | `/create-with-ai` — Home Page · Social Media · Newsletter |
+| Create with AI — Social / campaign | **Done** | `/create-with-ai/social` 4-step Campaign Builder (Creative Setup → Review) |
+| Create with AI — Homepage / webpage HTML composer | **Done** | `/homepage-composer`; draft persist + export; AI blurbs polish OK for launch |
+| Create with AI — Newsletter composer | **Done** | `/newsletter-composer`; preview + HTML export + draft autosave |
 | Public Features Create with AI modules band | **Done** | `/features` documents all three modules honestly |
 | Product / calendar demo mockups + calendar `.webm` | **Done** (assets) | Live `/` demo link still **in progress** until GO (feature-list) |
 
@@ -87,6 +91,7 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 | 1.8 | Deactivated / no-membership gate | **Skip** | Optional |
 | 1.9 | Org welcome email CTA **Let's get started** | **Skip** | Optional |
 | 1.10 | Public marketing home + signup plan chooser load | **Done** (shipped) / spot-check optional | WOW `/` + `/signup` plan-first — Owner click once on Production after deploy |
+| 1.11 | Header settings gear opens `/settings` (Ease hub) | **Done** (shipped) / spot-check optional | Direct `/settings` — not the old section dropdown |
 
 ## 2. Organization settings
 
@@ -243,7 +248,7 @@ npm run test:hey-ralli -- \
 - Insights-weighted posting heatmap
 - Full Create-with-AI → Meta published slot sync
 - Live marketing homepage “Watch product demo” link (assets exist; wait for GO)
-- Homepage / Newsletter composer polish beyond export + draft persist
+- Homepage / Newsletter composer polish beyond soft-launch export + draft persist (modules themselves **Done**)
 - ~~Legacy wizard re-entry~~ — retired for members
 
 ---

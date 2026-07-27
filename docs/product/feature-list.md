@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 26, 2026 — Features page Create with AI modules + launch-prep docs
+**Last updated:** July 26, 2026 — Create with AI modules + settings gear + launch checklist
 
 ---
 
@@ -114,11 +114,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Full Meta slot sync after approval — **stub** / incomplete
 
 ## Homepage Composer
-- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **partial**
-- Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **partial**
+- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred)
+- Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **shipped** (soft launch)
 
 ## Newsletter Composer
-- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **partial**
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **shipped** (soft launch; further polish deferred)
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**
@@ -291,7 +291,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Phase 6: Billing & Plan — **shipped**
   - Phase 7: Account (profile · notifications · sign-out) — **shipped**
 - **Branding settings hub** — soft left nav School year → Branding; hub + section pills for AI Brain · AI Inbox · Playbook · Colors & Logos · School Year (nested); wired to `/settings/ai-brain`, `/settings/inbox-ai`, `/settings/playbooks-milestones`, `/onboarding/brand?standalone=1`, and nested Ease school-year panels; route `/settings/branding` (`?section=`); mockup [`/settings-ease-mockup.html?view=branding`](../../public/settings-ease-mockup.html) (alias [`/settings-branding-ease-mockup.html`](../../public/settings-branding-ease-mockup.html)) — **shipped**
-- Header gear dropdown (Overview · Organization · Team & Access · Integrations · AI Brain · Inbox AI · Playbooks · Get started · Billing · Advanced) — **shipped**
+- Header settings gear → `/settings` (Ease hub; section list is Settings left nav, not a header dropdown) — **shipped**
 - Overview (Ease hub summary cards + Connected + Branding snapshot) — **shipped** (Phase 1; Branding card replaces School year card)
 - Organization (profile · preferences · posting — Ease cream/Fraunces panels; Branding home → `/settings/branding`; Save changes + Edit schedule wired) — **shipped** (Phase 2)
 - School year (active year · subscribe URL save/sync · close & begin next — Ease cream/Fraunces panels; nested under Branding + standalone `/settings/school-year`) — **shipped** (Phase 3)
@@ -312,7 +312,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 ## Support & shell
 - Report a problem (Sentry) — **shipped**
 - Nav badges, collapsible sidebar — **shipped**
-- Settings soft left nav (Ease) + header gear menu for full section list — **shipped** (Phase 1)
+- Settings soft left nav (Ease) + header gear deep-link to `/settings` — **shipped** (Phase 1)
 
 ---
 
