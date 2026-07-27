@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Dashboard Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a, select { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 78rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-pulse {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 1; }
+    }
+
+    .view-switch {
+      display: inline-flex; gap: 2px; padding: 3px;
+      border-radius: 999px; background: rgba(255,252,247,0.55);
+      border: 1px solid var(--line); margin-bottom: 16px;
+    }
+    .view-switch button {
+      border: none; background: transparent; border-radius: 999px;
+      padding: 7px 14px; font-size: 13px; font-weight: 700;
+      color: var(--ink-soft); cursor: pointer;
+    }
+    .view-switch button.active {
+      background: var(--white); color: var(--ink); box-shadow: var(--shadow);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px 28px;
+      align-items: end;
+      margin-bottom: 22px;
+      animation: rise .4s ease both;
+    }
+    .hero-copy h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(34px, 4.5vw, 48px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .hero-copy .school {
+      margin: 0 0 8px;
+      font-size: 12px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--sage);
+    }
+    .hero-copy p {
+      margin: 8px 0 0;
+      font-size: 15px;
+      color: var(--ink-soft);
+      max-width: 42ch;
+      line-height: 1.5;
+    }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s, background .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent; padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+    .btn-forest {
+      background: var(--forest); color: var(--cream);
+    }
+    .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+    .weather-chip {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+      min-width: 11.5rem;
+      align-self: start;
+      animation: rise .45s ease both .05s;
+    }
+    .weather-chip .deg {
+      font-family: var(--serif);
+      font-size: 36px; font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1;
+    }
+    .weather-chip .loc {
+      margin-top: 4px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+    }
+    .weather-chip .tip {
+      margin: 10px 0 0;
+      font-size: 12px; color: var(--ink-soft); line-height: 1.4;
+      max-width: 16ch;
+    }
+    .hours {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+    .hours span {
+      flex: 1;
+      text-align: center;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      background: rgba(246,242,235,0.8);
+      border-radius: 10px;
+      padding: 6px 2px;
+    }
+    .hours span b {
+      display: block;
+      font-family: var(--serif);
+      font-size: 13px; color: var(--ink); font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .edit-banner {
+      display: none;
+      align-items: center; justify-content: space-between; gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(47, 74, 60, 0.07);
+      border: 1px solid rgba(47, 74, 60, 0.12);
+      animation: rise .3s ease both;
+    }
+    body.is-edit .edit-banner { display: flex; }
+    .edit-banner p {
+      margin: 0;
+      font-size: 13px; font-weight: 600; color: var(--forest);
+    }
+    .edit-banner .hint {
+      font-weight: 500; color: var(--ink-soft); margin-left: 6px;
+    }
+    .edit-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 0.85fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .col-main, .col-rail {
+      display: flex; flex-direction: column; gap: 14px;
+      min-height: 40px;
+    }
+    .col-rail.drag-over,
+    .col-main.drag-over {
+      outline: 1.5px dashed rgba(47, 74, 60, 0.35);
+      outline-offset: 6px;
+      border-radius: 18px;
+    }
+
+    .widget {
+      --accent: var(--sage);
+      position: relative;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 16px;
+      animation: rise .4s ease both;
+      transition: transform .15s, box-shadow .15s, opacity .15s, border-color .15s;
+    }
+    .widget[data-accent="forest"] { --accent: var(--forest); }
+    .widget[data-accent="mustard"] { --accent: var(--mustard); }
+    .widget[data-accent="teal"] { --accent: var(--teal); }
+    .widget[data-accent="warn"] { --accent: var(--warn); }
+    .widget::before {
+      content: "";
+      position: absolute; left: 0; top: 18px; bottom: 18px;
+      width: 3px; border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 70%, transparent);
+      opacity: 0.85;
+    }
+    .widget:hover { box-shadow: var(--shadow-lg); }
+    .widget.dragging {
+      opacity: 0.45;
+      transform: scale(0.98);
+    }
+    .widget.drag-over {
+      border-color: rgba(47, 74, 60, 0.35);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.08), var(--shadow);
+    }
+    body.is-edit .widget {
+      cursor: grab;
+      border-style: dashed;
+      border-color: rgba(42, 38, 34, 0.14);
+    }
+    body.is-edit .widget:active { cursor: grabbing; }
+    body.is-edit .widget.pinned {
+      cursor: default;
+      border-style: solid;
+      opacity: 0.95;
+    }
+
+    .widget-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; padding-left: 6px;
+    }
+    .widget-head h2 {
+      margin: 0;
+      flex: 1; min-width: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .widget-head .count {
+      font-size: 11px; font-weight: 800;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: color-mix(in srgb, var(--accent) 80%, var(--ink));
+    }
+    .grip {
+      width: 28px; height: 28px; border-radius: 10px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: grab;
+      display: grid; place-items: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s, background .15s;
+    }
+    .grip svg { width: 16px; height: 16px; }
+    body.is-edit .grip {
+      opacity: 0.7; pointer-events: auto;
+    }
+    body.is-edit .grip:hover {
+      opacity: 1; background: rgba(42, 38, 34, 0.05); color: var(--ink);
+    }
+    body.is-edit .widget.pinned .grip {
+      opacity: 0.35; cursor: not-allowed; pointer-events: none;
+    }
+    .remove {
+      width: 28px; height: 28px; border-radius: 999px;
+      border: none; background: transparent;
+      color: var(--muted); cursor: pointer;
+      display: none; place-items: center;
+      font-size: 16px; line-height: 1;
+    }
+    body.is-edit .remove { display: grid; }
+    .remove:hover { background: rgba(166, 90, 58, 0.1); color: var(--warn); }
+    .link-quiet {
+      font-size: 12px; font-weight: 700; color: var(--sage);
+      text-decoration: none; margin-left: auto;
+    }
+    .link-quiet:hover { color: var(--forest); }
+
+    .row {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px;
+      padding: 10px 10px 10px 12px;
+      border-radius: 14px;
+      background: rgba(246, 242, 235, 0.55);
+      margin-bottom: 6px;
+    }
+    .row:last-child { margin-bottom: 0; }
+    .row strong {
+      display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px;
+    }
+    .row span, .row p {
+      margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4;
+    }
+    .row .meta {
+      font-size: 11px; font-weight: 800; color: var(--ink-soft);
+      white-space: nowrap; text-align: right;
+    }
+    .pill {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.1); color: var(--forest);
+    }
+    .pill.warn { background: rgba(166, 90, 58, 0.12); color: var(--warn); }
+    .pill.mustard { background: rgba(196, 146, 46, 0.16); color: #7a5a12; }
+    .pill.teal { background: rgba(42, 122, 134, 0.12); color: var(--teal); }
+
+    .up-next {
+      display: grid; grid-template-columns: 72px 1fr; gap: 14px;
+      padding-left: 6px;
+    }
+    .art {
+      width: 72px; height: 72px; border-radius: 16px;
+      background:
+        linear-gradient(145deg, rgba(47,74,60,0.9), rgba(107,129,113,0.55)),
+        var(--forest);
+      box-shadow: inset 0 0 0 1px rgba(255,252,247,0.12);
+    }
+    .up-next h3 {
+      margin: 0 0 4px;
+      font-family: var(--serif);
+      font-size: 20px; font-weight: 600;
+    }
+    .up-next p { margin: 0; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+    .up-next .cta { margin-top: 10px; }
+
+    .metric {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; padding: 8px 6px 8px 12px;
+      border-bottom: 1px solid rgba(42, 38, 34, 0.06);
+    }
+    .metric:last-child { border-bottom: none; }
+    .metric a {
+      font-size: 14px; font-weight: 600; color: var(--ink);
+      text-decoration: none;
+    }
+    .metric a:hover { color: var(--forest); }
+    .metric b {
+      font-family: var(--serif);
+      font-size: 22px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar {
+      height: 6px; border-radius: 999px;
+      background: rgba(42, 38, 34, 0.08);
+      overflow: hidden; margin-top: 6px;
+    }
+    .bar i {
+      display: block; height: 100%; border-radius: inherit;
+      background: var(--sage);
+    }
+
+    .kpi {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 10px; padding: 6px 6px 6px 12px;
+    }
+    .kpi span { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .kpi b {
+      font-family: var(--serif); font-size: 20px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi em {
+      font-style: normal; font-size: 11px; font-weight: 800;
+      color: var(--forest); margin-left: 6px;
+    }
+    .kpi em.down { color: var(--warn); }
+
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px; padding-left: 6px;
+    }
+    .cal-grid .dow {
+      font-size: 10px; font-weight: 800; color: var(--muted);
+      text-align: center; letter-spacing: 0.04em;
+    }
+    .cal-grid .day {
+      aspect-ratio: 1; border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    }
+    .cal-grid .day.muted { color: rgba(122, 113, 102, 0.45); }
+    .cal-grid .day.today {
+      background: var(--forest); color: var(--cream);
+    }
+    .cal-grid .day.has {
+      box-shadow: inset 0 -2px 0 var(--mustard);
+    }
+
+    .ai-strip {
+      margin-bottom: 16px;
+      padding: 16px 18px;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(120deg, rgba(47,74,60,0.08), rgba(196,146,46,0.08)),
+        var(--white);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      display: flex; flex-wrap: wrap; gap: 12px 18px;
+      align-items: center; justify-content: space-between;
+      animation: rise .4s ease both .08s;
+    }
+    .ai-strip h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+    }
+    .ai-strip p {
+      margin: 4px 0 0;
+      font-size: 13px; color: var(--ink-soft); max-width: 48ch;
+    }
+
+    .catalog {
+      display: none;
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.7);
+      border: 1px dashed rgba(42, 38, 34, 0.16);
+      animation: rise .3s ease both;
+    }
+    body.is-edit .catalog { display: block; }
+    .catalog h3 {
+      margin: 0 0 4px;
+      font-family: var(--serif);
+      font-size: 16px; font-weight: 600;
+    }
+    .catalog p {
+      margin: 0 0 12px;
+      font-size: 12px; color: var(--muted);
+    }
+    .catalog-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .catalog-grid button {
+      border: 1px solid var(--line);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px; font-weight: 700;
+      color: var(--ink-soft); cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .catalog-grid button:hover {
+      color: var(--ink); border-color: rgba(47, 74, 60, 0.28);
+    }
+    .catalog-grid button.on {
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      border-color: rgba(47, 74, 60, 0.2);
+    }
+    .catalog-grid button:disabled {
+      opacity: 0.45; cursor: not-allowed;
+    }
+
+    .note {
+      margin-top: 36px;
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      max-width: 48rem;
+    }
+    .note h3 {
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600; margin: 0 0 8px;
+    }
+    .note p, .note li {
+      margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+    }
+    .note ul { margin: 10px 0 0; padding-left: 1.1rem; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--ink); color: var(--white);
+      padding: 10px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+      box-shadow: var(--shadow-lg);
+      z-index: 50;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+    }
+    .toast.show {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 960px) {
+      .board { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .weather-chip { justify-self: start; }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .topbar, .content { padding-left: 18px; padding-right: 18px; }
+      .hero-copy h1 { font-size: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="Primary">
+      <div class="rail-logo" title="Hey Ralli">R</div>
+      <button type="button" class="active" title="Dashboard" aria-current="page">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      </button>
+      <button type="button" title="Calendar">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      </button>
+      <button type="button" title="Events">
+        <svg viewBox="0 0 24 24"><path d="M8 4h8a2 2 0 0 1 2 2v14l-6-3-6 3V6a2 2 0 0 1 2-2z"/></svg>
+      </button>
+      <button type="button" title="Tasks">
+        <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>
+      </button>
+      <button type="button" title="Insights">
+        <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6"/></svg>
+      </button>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="school-pill">
+          <span class="dot"></span>
+          Edmondson Elementary PTO
+        </div>
+        <div class="school-pill" style="font-weight:500;color:var(--ink-soft)">
+          Marina · President
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="mock-tag">Mockup · Dashboard Ease · not shipped</div>
+
+        <div class="view-switch" role="tablist" aria-label="Layout mode">
+          <button type="button" class="active" data-mode="view">View</button>
+          <button type="button" data-mode="edit">Edit layout</button>
+        </div>
+
+        <header class="hero">
+          <div class="hero-copy">
+            <p class="school">Hey Ralli · Your overview</p>
+            <h1>Good afternoon, Marina</h1>
+            <p>Three things need a light touch — then you’re clear for the weekend carnival push.</p>
+            <div class="hero-actions">
+              <a class="btn btn-forest" href="/create-with-ai">
+                <svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.2 6.2l2.8 2.8M15 15l2.8 2.8M17.8 6.2 15 9M9 15l-2.8 2.8"/></svg>
+                Create with AI
+              </a>
+              <a class="btn btn-secondary" href="/calendar">Open calendar</a>
+              <button type="button" class="btn btn-ghost" id="jump-edit">Edit layout</button>
+            </div>
+          </div>
+          <aside class="weather-chip" aria-label="Weather">
+            <div class="deg">72°</div>
+            <div class="loc">Partly cloudy · Nashville</div>
+            <p class="tip">Mild tonight — great for outdoor carnival setup check.</p>
+            <div class="hours">
+              <span>3p<b>73°</b></span>
+              <span>4p<b>72°</b></span>
+              <span>5p<b>70°</b></span>
+              <span>6p<b>68°</b></span>
+            </div>
+          </aside>
+        </header>
+
+        <div class="ai-strip">
+          <div>
+            <h3>Need a flyer or post?</h3>
+            <p>Jump into Create with AI for carnival artwork, newsletter copy, or a social set — then send to Approvals.</p>
+          </div>
+          <a class="btn btn-primary" href="/create-with-ai">Start creating</a>
+        </div>
+
+        <div class="edit-banner">
+          <p>
+            Editing your board
+            <span class="hint">Drag cards to reorder · Weather stays pinned · Changes save for you only</span>
+          </p>
+          <div class="edit-tools">
+            <button type="button" class="btn btn-secondary" id="reset-layout">Reset</button>
+            <button type="button" class="btn btn-primary" id="done-edit">Done</button>
+          </div>
+        </div>
+
+        <div class="catalog" id="catalog">
+          <h3>Add widgets</h3>
+          <p>Same catalog as today — optional richer tiles stay off until you add them.</p>
+          <div class="catalog-grid" id="catalog-grid"></div>
+        </div>
+
+        <div class="board" id="board">
+          <div class="col-main" id="col-main" data-region="main"></div>
+          <div class="col-rail" id="col-rail" data-region="rail"></div>
+        </div>
+
+        <div class="note">
+          <h3>What this mockup is solving</h3>
+          <p>Keep per-user drag-and-drop widgets — quiet the Edit chrome so the board still feels like Ease, not a dense KPI wall.</p>
+          <ul>
+            <li><strong>First viewport</strong> — school + greeting + Create with AI / Calendar CTAs + weather chip; widgets wait below.</li>
+            <li><strong>View / Edit</strong> — Edit is a soft mode (dashed cards, gentle grips), not heavy chrome. Weather stays pinned.</li>
+            <li><strong>Widgets</strong> — Up Next, Attention, Waiting on me, Good news, Approvals, Tasks this week, Volunteers, Insights (7d pulse), Calendar, This week — grounded in today’s product, not invented ad metrics.</li>
+            <li><strong>Create with AI</strong> — hero + strip shortcut (nav already exists); not a fake dashboard KPI tile.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <template id="tpl-up_next">
+    <div class="up-next">
+      <div class="art" aria-hidden="true"></div>
+      <div>
+        <span class="pill mustard">Approve artwork</span>
+        <h3>Spring Carnival flyer</h3>
+        <p>Square post ready for review · due Thu</p>
+        <div class="cta">
+          <a class="btn btn-secondary" href="/approvals" style="padding:8px 14px;font-size:12px">Review now</a>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-attention">
+    <div class="metric"><a href="/approvals">To review</a><b>2</b></div>
+    <div class="metric"><a href="/volunteers">Need volunteers</a><b>1</b></div>
+    <div class="metric"><a href="/tasks?scope=mine">Tasks this week</a><b>4</b></div>
+  </template>
+
+  <template id="tpl-waiting_me">
+    <div class="row">
+      <div>
+        <strong>Confirm bounce-house delivery</strong>
+        <p>Spring Carnival · open step</p>
+      </div>
+      <div class="meta">Wed</div>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Send volunteer reminder</strong>
+        <p>Book Fair · assigned to you</p>
+      </div>
+      <div class="meta">Fri</div>
+    </div>
+  </template>
+
+  <template id="tpl-good_news">
+    <div class="row">
+      <div>
+        <strong>Carnival flyer approved</strong>
+        <p>Jordan signed off this morning</p>
+      </div>
+      <span class="pill teal">Win</span>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Volunteer shift filled</strong>
+        <p>Ticket table · Sat 10–12</p>
+      </div>
+      <span class="pill">Filled</span>
+    </div>
+  </template>
+
+  <template id="tpl-approvals">
+    <div class="row">
+      <div>
+        <strong>Carnival Instagram set</strong>
+        <p>Assigned to you · 3 creatives</p>
+      </div>
+      <span class="pill warn">Needs you</span>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Book Fair newsletter</strong>
+        <p>Waiting on copy tweak</p>
+      </div>
+      <span class="pill mustard">In review</span>
+    </div>
+  </template>
+
+  <template id="tpl-tasks_week">
+    <div class="row">
+      <div>
+        <strong>Print volunteer badges</strong>
+        <p>Spring Carnival · due Wed</p>
+      </div>
+      <span class="pill mustard">High</span>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Update calendar listing</strong>
+        <p>Book Fair · due Fri</p>
+      </div>
+      <div class="meta">Fri</div>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Confirm DJ playlist</strong>
+        <p>Spring Carnival · due Sat</p>
+      </div>
+      <div class="meta">Sat</div>
+    </div>
+  </template>
+
+  <template id="tpl-volunteers">
+    <div class="row">
+      <div style="flex:1">
+        <strong>Spring Carnival</strong>
+        <p>12 of 18 shifts filled</p>
+        <div class="bar"><i style="width:67%"></i></div>
+      </div>
+      <div class="meta">67%</div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <strong>Book Fair greeters</strong>
+        <p>3 of 6 shifts filled</p>
+        <div class="bar"><i style="width:50%;background:var(--mustard)"></i></div>
+      </div>
+      <div class="meta">50%</div>
+    </div>
+  </template>
+
+  <template id="tpl-insights">
+    <div class="kpi"><span>Reach</span><b>4.2k<em>+8%</em></b></div>
+    <div class="kpi"><span>Engagement</span><b>312<em>+12%</em></b></div>
+    <div class="kpi"><span>Views</span><b>1.8k<em class="down">−3%</em></b></div>
+    <p style="margin:8px 0 0 12px;font-size:12px;color:var(--muted);line-height:1.4">Last 7 days · Meta pulse (same lean query as today)</p>
+  </template>
+
+  <template id="tpl-calendar">
+    <div class="cal-grid" aria-hidden="true">
+      <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+      <div class="day muted">26</div><div class="day muted">27</div><div class="day muted">28</div><div class="day muted">29</div><div class="day muted">30</div><div class="day muted">31</div><div class="day">1</div>
+      <div class="day">2</div><div class="day">3</div><div class="day has">4</div><div class="day">5</div><div class="day today has">6</div><div class="day">7</div><div class="day has">8</div>
+      <div class="day">9</div><div class="day">10</div><div class="day">11</div><div class="day has">12</div><div class="day">13</div><div class="day">14</div><div class="day">15</div>
+    </div>
+  </template>
+
+  <template id="tpl-this_week">
+    <div class="row">
+      <div>
+        <strong>Spring Carnival</strong>
+        <p>Sat · 10am · Front lawn</p>
+      </div>
+      <span class="pill">Event</span>
+    </div>
+    <div class="row">
+      <div>
+        <strong>Book Fair setup</strong>
+        <p>Thu · 3:30pm · Library</p>
+      </div>
+      <span class="pill teal">Setup</span>
+    </div>
+  </template>
+
+  <script>
+    const CATALOG = [
+      { id: "up_next", label: "Up Next", region: "main", accent: "forest", defaultOn: true, phase: 1 },
+      { id: "attention", label: "Attention", region: "main", accent: "warn", defaultOn: true, phase: 1 },
+      { id: "waiting_me", label: "Waiting on me", region: "main", accent: "mustard", defaultOn: true, phase: 1 },
+      { id: "good_news", label: "Good news", region: "main", accent: "teal", defaultOn: true, phase: 1 },
+      { id: "approvals", label: "Approvals", region: "main", accent: "warn", defaultOn: false, phase: 3 },
+      { id: "tasks_week", label: "Tasks this week", region: "main", accent: "mustard", defaultOn: true, phase: 3 },
+      { id: "volunteers", label: "Volunteers", region: "main", accent: "sage", defaultOn: false, phase: 3 },
+      { id: "insights", label: "Insights", region: "main", accent: "teal", defaultOn: false, phase: 3 },
+      { id: "calendar", label: "Calendar", region: "rail", accent: "forest", defaultOn: true, phase: 1 },
+      { id: "this_week", label: "This week", region: "rail", accent: "mustard", defaultOn: true, phase: 1 },
+    ];
+
+    const COUNTS = {
+      attention: "3",
+      waiting_me: "2",
+      approvals: "2",
+      tasks_week: "4",
+      volunteers: "2",
+      this_week: "2",
+    };
+
+    const DEFAULT_LAYOUT = {
+      main: ["up_next", "attention", "waiting_me", "tasks_week", "good_news"],
+      rail: ["calendar", "this_week"],
+    };
+
+    let layout = structuredClone(DEFAULT_LAYOUT);
+    let dragId = null;
+
+    const colMain = document.getElementById("col-main");
+    const colRail = document.getElementById("col-rail");
+    const catalogGrid = document.getElementById("catalog-grid");
+    const toastEl = document.getElementById("toast");
+    let toastTimer;
+
+    function def(id) {
+      return CATALOG.find((w) => w.id === id);
+    }
+
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+    }
+
+    function setMode(mode) {
+      const edit = mode === "edit";
+      document.body.classList.toggle("is-edit", edit);
+      document.querySelectorAll(".view-switch [data-mode]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.mode === mode);
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", mode);
+      history.replaceState(null, "", url);
+      render();
+    }
+
+    function widgetCard(id) {
+      const meta = def(id);
+      if (!meta) return null;
+      const tpl = document.getElementById("tpl-" + id);
+      const el = document.createElement("article");
+      el.className = "widget";
+      el.dataset.id = id;
+      el.dataset.region = meta.region;
+      el.dataset.accent = meta.accent === "sage" ? "forest" : meta.accent;
+      el.draggable = true;
+
+      const count = COUNTS[id]
+        ? `<span class="count">${COUNTS[id]}</span>`
+        : "";
+
+      el.innerHTML = `
+        <div class="widget-head">
+          <button type="button" class="grip" aria-label="Drag to reorder" title="Drag to reorder">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/></svg>
+          </button>
+          <h2>${meta.label}</h2>
+          ${count}
+          <button type="button" class="remove" aria-label="Remove ${meta.label}" title="Remove">×</button>
+        </div>
+        <div class="widget-body"></div>
+      `;
+      if (tpl) {
+        el.querySelector(".widget-body").appendChild(tpl.content.cloneNode(true));
+      }
+      return el;
+    }
+
+    function onBoard(id) {
+      return layout.main.includes(id) || layout.rail.includes(id);
+    }
+
+    function renderCatalog() {
+      catalogGrid.innerHTML = "";
+      CATALOG.forEach((w) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const active = onBoard(w.id);
+        btn.classList.toggle("on", active);
+        btn.innerHTML = `${active ? "✓ " : "+ "}${w.label}${w.phase === 3 ? " · optional" : ""}`;
+        btn.addEventListener("click", () => {
+          if (active) {
+            removeWidget(w.id);
+          } else {
+            addWidget(w.id);
+          }
+        });
+        catalogGrid.appendChild(btn);
+      });
+    }
+
+    function render() {
+      colMain.innerHTML = "";
+      colRail.innerHTML = "";
+      layout.main.forEach((id) => {
+        const card = widgetCard(id);
+        if (card) colMain.appendChild(card);
+      });
+      layout.rail.forEach((id) => {
+        const card = widgetCard(id);
+        if (card) colRail.appendChild(card);
+      });
+      bindDnD();
+      renderCatalog();
+    }
+
+    function addWidget(id) {
+      const meta = def(id);
+      if (!meta || onBoard(id)) return;
+      layout[meta.region].push(id);
+      render();
+      toast(`Added ${meta.label}`);
+    }
+
+    function removeWidget(id) {
+      const meta = def(id);
+      layout.main = layout.main.filter((x) => x !== id);
+      layout.rail = layout.rail.filter((x) => x !== id);
+      render();
+      toast(`Removed ${meta?.label || "widget"}`);
+    }
+
+    function moveWidget(id, targetRegion, beforeId) {
+      const meta = def(id);
+      if (!meta) return;
+      // Keep widget in its natural region (main vs rail) — same as product.
+      const region = meta.region;
+      if (targetRegion && targetRegion !== region) {
+        toast(`${meta.label} stays in the ${region === "main" ? "main" : "side"} column`);
+      }
+      layout.main = layout.main.filter((x) => x !== id);
+      layout.rail = layout.rail.filter((x) => x !== id);
+      const list = layout[region];
+      let idx = list.length;
+      if (beforeId) {
+        const bi = list.indexOf(beforeId);
+        if (bi >= 0) idx = bi;
+      }
+      list.splice(idx, 0, id);
+      render();
+      toast("Layout updated");
+    }
+
+    function bindDnD() {
+      document.querySelectorAll(".widget").forEach((card) => {
+        card.addEventListener("dragstart", (e) => {
+          if (!document.body.classList.contains("is-edit")) {
+            e.preventDefault();
+            return;
+          }
+          dragId = card.dataset.id;
+          card.classList.add("dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", dragId);
+        });
+        card.addEventListener("dragend", () => {
+          card.classList.remove("dragging");
+          dragId = null;
+          document.querySelectorAll(".drag-over").forEach((el) => el.classList.remove("drag-over"));
+        });
+        card.addEventListener("dragover", (e) => {
+          if (!dragId || dragId === card.dataset.id) return;
+          e.preventDefault();
+          card.classList.add("drag-over");
+        });
+        card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+        card.addEventListener("drop", (e) => {
+          e.preventDefault();
+          card.classList.remove("drag-over");
+          const id = e.dataTransfer.getData("text/plain") || dragId;
+          if (!id || id === card.dataset.id) return;
+          moveWidget(id, card.dataset.region, card.dataset.id);
+        });
+        card.querySelector(".remove")?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          removeWidget(card.dataset.id);
+        });
+      });
+
+      [colMain, colRail].forEach((col) => {
+        col.addEventListener("dragover", (e) => {
+          if (!dragId) return;
+          e.preventDefault();
+          col.classList.add("drag-over");
+        });
+        col.addEventListener("dragleave", (e) => {
+          if (!col.contains(e.relatedTarget)) col.classList.remove("drag-over");
+        });
+        col.addEventListener("drop", (e) => {
+          e.preventDefault();
+          col.classList.remove("drag-over");
+          if (e.target.closest(".widget")) return;
+          const id = e.dataTransfer.getData("text/plain") || dragId;
+          if (!id) return;
+          moveWidget(id, col.dataset.region, null);
+        });
+      });
+    }
+
+    document.querySelectorAll(".view-switch [data-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => setMode(btn.dataset.mode));
+    });
+    document.getElementById("jump-edit").addEventListener("click", () => setMode("edit"));
+    document.getElementById("done-edit").addEventListener("click", () => {
+      setMode("view");
+      toast("Layout saved for you");
+    });
+    document.getElementById("reset-layout").addEventListener("click", () => {
+      layout = structuredClone(DEFAULT_LAYOUT);
+      render();
+      toast("Reset to default");
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "edit") setMode("edit");
+    else render();
+  </script>
+</body>
+</html>

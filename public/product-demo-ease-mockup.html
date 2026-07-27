@@ -1,0 +1,1970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Interactive Product Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 24px 60px rgba(42, 38, 34, 0.16);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 70% 45% at 12% -8%, rgba(107, 129, 113, 0.16), transparent 55%),
+        radial-gradient(ellipse 55% 40% at 92% 0%, rgba(196, 146, 46, 0.12), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 100%, rgba(42, 122, 134, 0.08), transparent 55%),
+        var(--cream);
+      overflow: hidden;
+    }
+    button { font: inherit; cursor: pointer; }
+    .theater {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 0;
+      padding: 16px 20px 12px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* —— Header —— */
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px 20px;
+      margin-bottom: 12px;
+      z-index: 5;
+    }
+    .brand-block {
+      display: flex; align-items: center; gap: 12px; min-width: 0;
+    }
+    .brand-mark {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      flex-shrink: 0;
+    }
+    .brand-copy { min-width: 0; }
+    .brand-copy strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 18px; font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .brand-copy span {
+      font-size: 12px; color: var(--muted); font-weight: 600;
+    }
+    .mock-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 11px; font-weight: 700;
+      margin-left: 8px;
+    }
+    .chapters {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      justify-content: flex-end;
+    }
+    .chapter-pill {
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px; font-weight: 700;
+      color: var(--ink-soft);
+      transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
+    }
+    .chapter-pill:hover { background: rgba(255,252,247,0.7); color: var(--ink); }
+    .chapter-pill.active {
+      background: var(--white);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+    }
+    .chapter-pill .num {
+      display: inline-block;
+      width: 1.2em;
+      color: var(--sage);
+      font-variant-numeric: tabular-nums;
+    }
+    .chapter-pill.active .num { color: var(--forest); }
+
+    /* —— Stage / camera —— */
+    .stage-wrap {
+      position: relative;
+      min-height: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #e8e2d8;
+      box-shadow: var(--shadow-lg), 0 0 0 1px var(--line);
+    }
+    .stage-wrap::before {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none; z-index: 4;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 40%, transparent 40%, rgba(42,38,34,0.08) 100%);
+    }
+    .stage-viewport {
+      position: absolute; inset: 0;
+      overflow: hidden;
+      perspective: 1400px;
+    }
+    .camera {
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 1180px; height: 720px;
+      margin-left: -590px; margin-top: -360px;
+      transform-origin: center center;
+      will-change: transform;
+      transition: none;
+    }
+    .app {
+      width: 100%; height: 100%;
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      background: var(--cream);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(28, 36, 48, 0.18);
+      border: 1px solid rgba(42,38,34,0.08);
+    }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px 0; gap: 6px;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft);
+      display: grid; place-items: center; position: relative;
+      transition: background .2s, color .2s, transform .2s;
+    }
+    .rail button.active, .rail button.flash {
+      background: var(--cream-deep); color: var(--ink);
+    }
+    .rail button.flash { transform: scale(1.06); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .rail .badge {
+      position: absolute; top: 6px; right: 6px;
+      width: 16px; height: 16px; border-radius: 999px;
+      background: var(--warn); color: #fff;
+      font-size: 9px; font-weight: 800;
+      display: grid; place-items: center;
+    }
+    .main { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 28px; flex-shrink: 0;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 7px 13px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .user-chip { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .screen {
+      flex: 1; min-height: 0; overflow: hidden;
+      padding: 4px 28px 24px;
+      opacity: 0; pointer-events: none;
+      position: absolute; inset: 52px 0 0 72px;
+      transition: opacity .45s var(--ease);
+    }
+    .screen.active { opacity: 1; pointer-events: auto; position: absolute; }
+    .screen-host { position: relative; flex: 1; min-height: 0; }
+
+    h1.page-title {
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 36px;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0 0 6px;
+    }
+    .lede {
+      margin: 0 0 16px;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 40rem;
+    }
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 10px 16px; font-size: 13px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .15s, background .15s, box-shadow .15s;
+    }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-forest { background: var(--forest); color: var(--cream); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost { background: transparent; color: var(--ink-soft); }
+    .btn.pulse-ring {
+      box-shadow: 0 0 0 0 rgba(47, 74, 60, 0.35);
+      animation: ring 1.2s ease-out;
+    }
+    @keyframes ring {
+      0% { box-shadow: 0 0 0 0 rgba(47, 74, 60, 0.4); }
+      100% { box-shadow: 0 0 0 14px rgba(47, 74, 60, 0); }
+    }
+    .btn.click-flash { transform: scale(0.96); }
+
+    /* Events screen */
+    .pulse-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      margin-bottom: 16px;
+    }
+    .pulse-btn {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 7px 12px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    }
+    .pulse-btn.active {
+      background: var(--white); color: var(--ink);
+      border-color: var(--line); box-shadow: var(--shadow);
+    }
+    .pulse-btn .count { margin-left: 5px; color: var(--muted); }
+    .events-head {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 12px; margin-bottom: 4px;
+    }
+    .event-queue { display: flex; flex-direction: column; gap: 8px; }
+    .event-row {
+      display: grid;
+      grid-template-columns: 52px 1fr auto auto;
+      gap: 12px; align-items: center;
+      padding: 11px 13px;
+      border-radius: 16px;
+      background: rgba(255,252,247,0.65);
+      border: 1px solid transparent;
+      transition: background .25s, border-color .25s, box-shadow .25s, transform .35s var(--ease), opacity .35s;
+    }
+    .event-row.highlight {
+      background: var(--white);
+      border-color: var(--line);
+      box-shadow: var(--shadow);
+      transform: scale(1.02);
+    }
+    .event-row.enter {
+      animation: rise-in .5s var(--ease) both;
+    }
+    .event-row.ghost { opacity: 0; transform: translateY(12px); height: 0; padding: 0; margin: 0; overflow: hidden; border: none; }
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+    .ev-art {
+      width: 52px; height: 52px; border-radius: 13px;
+      background: linear-gradient(145deg, #2f4a3c, #6b8171 55%, #c4922e);
+    }
+    .ev-art.book { background: linear-gradient(145deg, #0b2f5b, #2a7a86 60%, #c4922e); }
+    .ev-art.carnival { background: linear-gradient(145deg, #5a3d2e, #c4922e 55%, #6b8171); }
+    .ev-title { font-size: 14px; font-weight: 700; margin: 0 0 2px; }
+    .ev-sub { margin: 0; font-size: 12px; color: var(--muted); }
+    .ev-status {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+    }
+    .ev-status.ready { background: rgba(47,74,60,0.12); color: var(--forest); }
+    .ev-status.draft { background: rgba(166,90,58,0.12); color: var(--warn); }
+    .ev-who { font-size: 12px; font-weight: 700; color: var(--ink-soft); text-align: right; }
+    .ev-who span { display: block; font-weight: 600; color: var(--muted); margin-top: 2px; }
+
+    .create-sheet {
+      position: absolute; right: 28px; top: 70px; width: 320px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow-lg);
+      padding: 18px;
+      opacity: 0; transform: translateY(16px) scale(0.96);
+      pointer-events: none;
+      transition: opacity .4s var(--ease), transform .4s var(--ease);
+      z-index: 3;
+    }
+    .create-sheet.open {
+      opacity: 1; transform: none; pointer-events: auto;
+    }
+    .create-sheet h3 {
+      font-family: var(--serif); font-size: 20px; font-weight: 600;
+      margin: 0 0 4px; letter-spacing: -0.02em;
+    }
+    .create-sheet p { margin: 0 0 14px; font-size: 12px; color: var(--muted); }
+    .field {
+      margin-bottom: 10px;
+    }
+    .field label {
+      display: block; font-size: 10px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 4px;
+    }
+    .field .value {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px 12px;
+      font-size: 13px; font-weight: 600;
+      background: var(--cream);
+      min-height: 38px;
+    }
+    .field .value.typing::after {
+      content: "▋";
+      animation: blink .8s step-end infinite;
+      color: var(--forest);
+      margin-left: 1px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .milestones {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 14px;
+    }
+    .ms {
+      font-size: 11px; font-weight: 700;
+      padding: 5px 9px; border-radius: 999px;
+      background: var(--cream-deep); color: var(--ink-soft);
+      opacity: 0; transform: scale(0.9);
+      transition: opacity .3s, transform .3s var(--ease);
+    }
+    .ms.on { opacity: 1; transform: none; }
+    .ms.done { background: rgba(47,74,60,0.14); color: var(--forest); }
+
+    /* Calendar */
+    .cal-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; gap: 10px;
+    }
+    .cal-toolbar h2 {
+      font-family: var(--serif); font-size: 22px; font-weight: 600;
+      margin: 0; letter-spacing: -0.02em;
+    }
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .dow {
+      text-align: center; font-size: 10px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); padding: 2px 0 6px;
+    }
+    .day {
+      min-height: 78px;
+      border-radius: 12px;
+      background: rgba(246,242,235,0.55);
+      padding: 6px;
+      position: relative;
+      transition: background .25s, box-shadow .25s;
+    }
+    .day.drop-target {
+      background: rgba(47,74,60,0.1);
+      box-shadow: inset 0 0 0 2px rgba(47,74,60,0.35);
+    }
+    .day-num { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 4px; }
+    .chip {
+      display: block; width: 100%;
+      border: none; text-align: left;
+      border-radius: 8px;
+      padding: 5px 7px;
+      font-size: 10px; font-weight: 700;
+      background: rgba(47,74,60,0.12); color: var(--forest);
+      line-height: 1.25;
+      cursor: grab;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+    }
+    .chip small { display: block; font-weight: 600; opacity: 0.75; font-size: 9px; }
+    .chip.post { background: rgba(42,122,134,0.14); color: #1f5c64; }
+    .chip.dragging {
+      opacity: 0.35;
+    }
+    .chip-ghost {
+      position: absolute;
+      z-index: 18;
+      width: 120px;
+      pointer-events: none;
+      box-shadow: var(--shadow-lg);
+      transform: translate(-50%, -50%) scale(1.08) rotate(-2deg);
+      opacity: 0;
+      left: 0; top: 0;
+    }
+    .chip-ghost.visible { opacity: 1; }
+
+    /* Create with AI */
+    .create-tabs {
+      display: flex; gap: 6px; margin-bottom: 14px;
+    }
+    .create-tab {
+      border: 1px solid transparent; background: transparent;
+      border-radius: 999px; padding: 8px 14px;
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      transition: background .2s, box-shadow .2s, color .2s;
+    }
+    .create-tab.active {
+      background: var(--white); color: var(--ink);
+      border-color: var(--line); box-shadow: var(--shadow);
+    }
+    .create-panel {
+      display: none;
+      animation: rise-in .4s var(--ease) both;
+    }
+    .create-panel.active { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .studio-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .studio-card h3 {
+      font-family: var(--serif); font-size: 18px; font-weight: 600;
+      margin: 0 0 8px; letter-spacing: -0.02em;
+    }
+    .gen-art {
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #1e4a3a, #6b8171 50%, #c4922e);
+      position: relative; overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .gen-art::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255,252,247,0.35) 50%, transparent 65%);
+      transform: translateX(-120%);
+    }
+    .gen-art.generating::after {
+      animation: shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      to { transform: translateX(120%); }
+    }
+    .gen-art .label {
+      position: absolute; left: 10px; bottom: 10px;
+      background: rgba(42,38,34,0.55); color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 4px 8px; border-radius: 999px;
+    }
+    .caption-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px; line-height: 1.5;
+      color: var(--ink-soft);
+      min-height: 88px;
+      background: var(--cream);
+    }
+    .caption-box .typed { color: var(--ink); }
+    .gen-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 10px;
+    }
+    .gen-bar .dots span {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--sage); margin-right: 3px;
+      animation: bounce 1s ease-in-out infinite;
+    }
+    .gen-bar .dots span:nth-child(2) { animation-delay: .15s; }
+    .gen-bar .dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: .4; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .nl-blocks { display: flex; flex-direction: column; gap: 8px; }
+    .nl-block {
+      border-radius: 12px; border: 1px solid var(--line);
+      padding: 10px 12px; background: var(--cream);
+      opacity: 0; transform: translateY(8px);
+      transition: opacity .35s, transform .35s var(--ease);
+    }
+    .nl-block.on { opacity: 1; transform: none; }
+    .nl-block strong { display: block; font-size: 12px; margin-bottom: 2px; }
+    .nl-block span { font-size: 12px; color: var(--muted); }
+    .phone-preview {
+      border-radius: 22px;
+      border: 2px solid var(--ink);
+      padding: 12px 10px;
+      background: #1c2430;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+    .phone-preview .inner {
+      background: var(--cream);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 280px;
+    }
+    .phone-preview .hdr {
+      font-family: var(--serif); font-size: 14px; font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .html-preview {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; line-height: 1.45;
+      background: #1c2430; color: #d8e0d4;
+      border-radius: 14px; padding: 14px;
+      min-height: 220px; overflow: hidden;
+      position: relative;
+    }
+    .html-preview .copied-toast {
+      position: absolute; top: 12px; right: 12px;
+      background: var(--forest); color: var(--cream);
+      font-family: var(--sans); font-size: 11px; font-weight: 700;
+      padding: 6px 10px; border-radius: 999px;
+      opacity: 0; transform: translateY(-6px);
+      transition: opacity .3s, transform .3s;
+    }
+    .html-preview .copied-toast.show {
+      opacity: 1; transform: none;
+    }
+
+    /* Inbox */
+    .inbox-layout {
+      display: grid; grid-template-columns: 280px 1fr; gap: 14px;
+      height: calc(100% - 70px);
+    }
+    .msg-list {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .msg {
+      display: block; width: 100%; text-align: left;
+      border: none; border-bottom: 1px solid var(--line);
+      background: transparent; padding: 12px 14px;
+      transition: background .2s;
+    }
+    .msg.active { background: rgba(47,74,60,0.08); }
+    .msg strong { display: block; font-size: 13px; margin-bottom: 2px; }
+    .msg span { font-size: 12px; color: var(--muted); display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .thread {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .thread-head {
+      padding: 14px 16px; border-bottom: 1px solid var(--line);
+    }
+    .thread-head h3 { margin: 0 0 2px; font-size: 15px; font-weight: 700; }
+    .thread-head p { margin: 0; font-size: 12px; color: var(--muted); }
+    .thread-body { padding: 16px; flex: 1; }
+    .bubble {
+      max-width: 85%;
+      background: var(--cream-deep);
+      border-radius: 16px 16px 16px 4px;
+      padding: 12px 14px;
+      font-size: 13px; line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .ai-draft {
+      border: 1.5px solid rgba(47,74,60,0.25);
+      background: rgba(47,74,60,0.06);
+      border-radius: 16px;
+      padding: 14px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .4s, transform .4s var(--ease);
+    }
+    .ai-draft.show { opacity: 1; transform: none; }
+    .ai-draft .tag {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--forest); margin-bottom: 6px;
+    }
+    .ai-draft p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--ink); }
+    .ai-draft .actions { display: flex; gap: 8px; }
+
+    /* Approvals */
+    .focus {
+      display: grid; grid-template-columns: 220px 1fr; gap: 0;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .focus-art {
+      min-height: 200px;
+      background: linear-gradient(145deg, #1e4a3a, #6b8171 55%, #c4922e);
+      position: relative;
+    }
+    .focus-art .thumb-label {
+      position: absolute; left: 12px; bottom: 12px;
+      background: rgba(42,38,34,0.5); color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 4px 8px; border-radius: 999px;
+    }
+    .focus-body { padding: 18px 20px; }
+    .focus-meta {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      font-size: 12px; color: var(--muted); font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .chip-needs {
+      background: rgba(166,90,58,0.12); color: var(--warn);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+    }
+    .chip-sched {
+      background: rgba(47,74,60,0.12); color: var(--forest);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+    }
+    .focus-body h2 {
+      font-family: var(--serif); font-size: 24px; font-weight: 600;
+      margin: 0 0 4px; letter-spacing: -0.02em;
+    }
+    .focus-body .milestone { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--sage); }
+    .focus-body .caption { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+    .focus-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .appr-drawer {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 360px;
+      background: var(--white);
+      border-left: 1px solid var(--line);
+      box-shadow: -16px 0 40px rgba(42,38,34,0.1);
+      transform: translateX(105%);
+      transition: transform .45s var(--ease);
+      z-index: 5;
+      display: flex; flex-direction: column;
+    }
+    .appr-drawer.open { transform: none; }
+    .appr-drawer .dh {
+      padding: 16px 18px; border-bottom: 1px solid var(--line);
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .appr-drawer .dh h3 { margin: 0; font-size: 16px; font-weight: 700; }
+    .appr-drawer .dart {
+      height: 140px;
+      background: linear-gradient(145deg, #1e4a3a, #6b8171 55%, #c4922e);
+      margin: 14px 18px; border-radius: 14px;
+    }
+    .appr-drawer .dscroll { padding: 0 18px; flex: 1; }
+    .appr-drawer label {
+      display: block; font-size: 10px; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); margin: 0 0 4px;
+    }
+    .appr-drawer p { margin: 0 0 12px; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+    .appr-drawer .dfoot {
+      padding: 14px 18px; border-top: 1px solid var(--line);
+      display: flex; gap: 8px;
+    }
+    .approve-burst {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      background: rgba(246,242,235,0.72);
+      opacity: 0; pointer-events: none;
+      transition: opacity .35s;
+      z-index: 6;
+    }
+    .approve-burst.show { opacity: 1; }
+    .approve-burst .check {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-size: 32px; font-weight: 700;
+      transform: scale(0.6);
+      transition: transform .4s var(--ease);
+      box-shadow: var(--shadow-lg);
+    }
+    .approve-burst.show .check { transform: scale(1); }
+
+    /* Cursor */
+    .cursor {
+      position: absolute;
+      width: 22px; height: 22px;
+      margin-left: -3px; margin-top: -2px;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+      transition: opacity .25s;
+      will-change: transform;
+    }
+    .cursor.visible { opacity: 1; }
+    .cursor.clicking .cursor-ring {
+      animation: click-pop .35s ease-out;
+    }
+    .cursor-ring {
+      position: absolute; left: -6px; top: -6px;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid rgba(47,74,60,0.45);
+      opacity: 0;
+    }
+    @keyframes click-pop {
+      0% { opacity: .8; transform: scale(0.4); }
+      100% { opacity: 0; transform: scale(1.6); }
+    }
+    .cursor svg { display: block; }
+
+    /* Caption + controls */
+    .caption-bar {
+      position: absolute; left: 20px; right: 20px; bottom: 18px;
+      z-index: 8;
+      display: flex; justify-content: center; pointer-events: none;
+    }
+    .caption {
+      background: rgba(42, 38, 34, 0.82);
+      color: #f6f2eb;
+      backdrop-filter: blur(8px);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 13px; font-weight: 600;
+      max-width: 640px;
+      text-align: center;
+      line-height: 1.35;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity .35s, transform .35s var(--ease);
+    }
+    .caption.show { opacity: 1; transform: none; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 0 4px;
+      z-index: 5;
+    }
+    .ctrl-group { display: flex; align-items: center; gap: 6px; }
+    .ctrl-btn {
+      width: 40px; height: 40px; border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--ink);
+      display: grid; place-items: center;
+      box-shadow: var(--shadow);
+      transition: transform .12s, background .15s;
+    }
+    .ctrl-btn:hover { transform: translateY(-1px); }
+    .ctrl-btn.play-main {
+      width: 48px; height: 48px;
+      background: var(--forest); color: var(--cream);
+      border-color: transparent;
+    }
+    .ctrl-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .ctrl-btn.play-main svg { width: 20px; height: 20px; }
+    .scrub {
+      display: flex; flex-direction: column; gap: 6px; min-width: 0;
+    }
+    .scrub-track {
+      position: relative; height: 6px; border-radius: 999px;
+      background: rgba(42,38,34,0.1); cursor: pointer;
+    }
+    .scrub-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 0%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--forest), var(--sage));
+      pointer-events: none;
+    }
+    .scrub-marks {
+      display: flex; justify-content: space-between;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .time-readout {
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      font-variant-numeric: tabular-nums;
+      min-width: 7ch; text-align: right;
+    }
+    .hint {
+      font-size: 11px; color: var(--muted); font-weight: 600;
+      text-align: center; margin-top: 6px;
+    }
+    .hint a { color: var(--forest); font-weight: 700; text-decoration: none; }
+    .hint a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .theater { padding: 12px; height: auto; min-height: 100%; }
+      .stage-wrap { height: min(62vh, 420px); }
+      .chapters { justify-content: flex-start; }
+      .chapter-pill { font-size: 11px; padding: 6px 10px; }
+      .chapter-pill .label-full { display: none; }
+      .camera { width: 980px; height: 640px; margin-left: -490px; margin-top: -320px; }
+      .controls { grid-template-columns: 1fr; justify-items: center; }
+      .scrub { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .camera, .cursor, .chip-ghost, .create-sheet, .appr-drawer,
+      .ai-draft, .caption, .ms, .nl-block, .event-row {
+        transition: none !important; animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="theater">
+    <header class="top">
+      <div class="brand-block">
+        <div class="brand-mark">R</div>
+        <div class="brand-copy">
+          <strong>Hey Ralli <span class="mock-pill">Demo mockup</span></strong>
+          <span>Five core flows · Riverside Elementary PTA</span>
+        </div>
+      </div>
+      <nav class="chapters" aria-label="Demo chapters" id="chapterPills"></nav>
+    </header>
+
+    <div class="stage-wrap" id="stage">
+      <div class="stage-viewport">
+        <div class="camera" id="camera">
+          <div class="app" id="app">
+            <aside class="rail" aria-hidden="true">
+              <div class="rail-logo">R</div>
+              <button type="button" data-nav="home" title="Home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg></button>
+              <button type="button" data-nav="events" title="Events"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+              <button type="button" data-nav="calendar" title="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></button>
+              <button type="button" data-nav="create" title="Create with AI"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg></button>
+              <button type="button" data-nav="inbox" title="Inbox"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>
+              <button type="button" data-nav="approvals" title="Approvals"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span class="badge" id="apprBadge">1</span></button>
+            </aside>
+
+            <div class="main">
+              <header class="topbar">
+                <div class="school-pill"><span class="dot"></span> Riverside Elementary PTA</div>
+                <div class="user-chip">jordan.lee@riversidepta.org</div>
+              </header>
+              <div class="screen-host">
+
+                <!-- 1 Events -->
+                <section class="screen active" data-screen="events" id="screenEvents">
+                  <div class="events-head">
+                    <div>
+                      <h1 class="page-title">Events</h1>
+                      <p class="lede">Plan the year — then open Create with AI, Calendar, and Approvals from one quiet list.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btnNewEvent">+ New event</button>
+                  </div>
+                  <div class="pulse-row">
+                    <button type="button" class="pulse-btn active">Next 60 days <span class="count">4</span></button>
+                    <button type="button" class="pulse-btn">Needs setup <span class="count">1</span></button>
+                    <button type="button" class="pulse-btn">Ready to run <span class="count">2</span></button>
+                  </div>
+                  <div class="event-queue" id="eventQueue">
+                    <div class="event-row" id="evCarnival">
+                      <div class="ev-art carnival"></div>
+                      <div>
+                        <p class="ev-title">Spring Carnival</p>
+                        <p class="ev-sub">Apr 18 · Avery Chen</p>
+                      </div>
+                      <span class="ev-status ready">Ready</span>
+                      <div class="ev-who">Chair<span>Avery</span></div>
+                    </div>
+                    <div class="event-row" id="evBook">
+                      <div class="ev-art book"></div>
+                      <div>
+                        <p class="ev-title">Fall Book Fair</p>
+                        <p class="ev-sub">Oct 12–16 · Sam Rivera</p>
+                      </div>
+                      <span class="ev-status ready">Ready</span>
+                      <div class="ev-who">Comms<span>Sam</span></div>
+                    </div>
+                    <div class="event-row ghost" id="evFestival">
+                      <div class="ev-art"></div>
+                      <div>
+                        <p class="ev-title">Fall Festival</p>
+                        <p class="ev-sub">Oct 24 · Jordan Lee</p>
+                      </div>
+                      <span class="ev-status draft">Draft</span>
+                      <div class="ev-who">You<span>Jordan</span></div>
+                    </div>
+                  </div>
+                  <div class="create-sheet" id="createSheet">
+                    <h3>New event</h3>
+                    <p>Start a plan — milestones arrive with the playbook.</p>
+                    <div class="field">
+                      <label>Event name</label>
+                      <div class="value" id="fieldName"></div>
+                    </div>
+                    <div class="field">
+                      <label>Date</label>
+                      <div class="value" id="fieldDate"></div>
+                    </div>
+                    <div class="milestones" id="milestones">
+                      <span class="ms" data-ms="0">Save the Date</span>
+                      <span class="ms" data-ms="1">Volunteer push</span>
+                      <span class="ms" data-ms="2">Day-of</span>
+                      <span class="ms" data-ms="3">Thank you</span>
+                    </div>
+                    <button type="button" class="btn btn-forest" id="btnCreateEvent" style="width:100%;justify-content:center">Create event</button>
+                  </div>
+                </section>
+
+                <!-- 2 Calendar -->
+                <section class="screen" data-screen="calendar" id="screenCalendar">
+                  <h1 class="page-title">Calendar</h1>
+                  <p class="lede">Drag events and posts into the right day — school events and scheduled social in one glance.</p>
+                  <div class="cal-toolbar">
+                    <h2>October 2026</h2>
+                    <div style="display:flex;gap:6px">
+                      <button type="button" class="btn btn-secondary" style="padding:8px 12px">Month</button>
+                      <button type="button" class="btn btn-ghost" style="padding:8px 12px">Week</button>
+                    </div>
+                  </div>
+                  <div class="month-grid" id="monthGrid">
+                    <div class="dow">Sun</div><div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+                    <!-- week 1 -->
+                    <div class="day muted"><div class="day-num">27</div></div>
+                    <div class="day muted"><div class="day-num">28</div></div>
+                    <div class="day muted"><div class="day-num">29</div></div>
+                    <div class="day muted"><div class="day-num">30</div></div>
+                    <div class="day"><div class="day-num">1</div></div>
+                    <div class="day"><div class="day-num">2</div></div>
+                    <div class="day"><div class="day-num">3</div></div>
+                    <!-- week 2 -->
+                    <div class="day"><div class="day-num">4</div></div>
+                    <div class="day"><div class="day-num">5</div></div>
+                    <div class="day"><div class="day-num">6</div></div>
+                    <div class="day"><div class="day-num">7</div></div>
+                    <div class="day"><div class="day-num">8</div></div>
+                    <div class="day"><div class="day-num">9</div></div>
+                    <div class="day"><div class="day-num">10</div></div>
+                    <!-- week 3 -->
+                    <div class="day"><div class="day-num">11</div></div>
+                    <div class="day" id="day12"><div class="day-num">12</div>
+                      <button type="button" class="chip" id="dragChip"><small>Event</small>Fall Book Fair</button>
+                    </div>
+                    <div class="day"><div class="day-num">13</div></div>
+                    <div class="day"><div class="day-num">14</div>
+                      <button type="button" class="chip post"><small>6pm · Post</small>Fair reminder</button>
+                    </div>
+                    <div class="day"><div class="day-num">15</div></div>
+                    <div class="day"><div class="day-num">16</div></div>
+                    <div class="day"><div class="day-num">17</div></div>
+                    <!-- week 4 -->
+                    <div class="day"><div class="day-num">18</div></div>
+                    <div class="day"><div class="day-num">19</div></div>
+                    <div class="day"><div class="day-num">20</div></div>
+                    <div class="day"><div class="day-num">21</div></div>
+                    <div class="day"><div class="day-num">22</div></div>
+                    <div class="day"><div class="day-num">23</div></div>
+                    <div class="day" id="day24"><div class="day-num">24</div></div>
+                    <!-- week 5 -->
+                    <div class="day"><div class="day-num">25</div></div>
+                    <div class="day"><div class="day-num">26</div></div>
+                    <div class="day"><div class="day-num">27</div></div>
+                    <div class="day"><div class="day-num">28</div></div>
+                    <div class="day"><div class="day-num">29</div></div>
+                    <div class="day"><div class="day-num">30</div></div>
+                    <div class="day"><div class="day-num">31</div></div>
+                  </div>
+                </section>
+
+                <!-- 3 Create -->
+                <section class="screen" data-screen="create" id="screenCreate">
+                  <h1 class="page-title">Create with AI</h1>
+                  <p class="lede">Socials, newsletters, and a homepage — same calm studio, ready for human approval.</p>
+                  <div class="create-tabs" id="createTabs">
+                    <button type="button" class="create-tab active" data-ctab="social">Socials</button>
+                    <button type="button" class="create-tab" data-ctab="newsletter">Newsletter</button>
+                    <button type="button" class="create-tab" data-ctab="webpage">Webpage / HTML</button>
+                  </div>
+                  <div class="create-panel active" data-cpanel="social" id="panelSocial">
+                    <div class="studio-card">
+                      <h3>Fall Festival · Save the Date</h3>
+                      <div class="gen-art" id="genArt"><span class="label">Feed · Square</span></div>
+                      <div class="caption-box" id="captionBox"><span class="typed" id="captionText"></span></div>
+                      <div class="gen-bar">
+                        <button type="button" class="btn btn-forest" id="btnGenerate">Generate</button>
+                        <span class="dots" id="genDots" hidden><span></span><span></span><span></span></span>
+                      </div>
+                    </div>
+                    <div class="studio-card">
+                      <h3>Preview</h3>
+                      <p style="margin:0 0 12px;font-size:13px;color:var(--ink-soft);line-height:1.45">
+                        Artwork + caption land together. Send to Approvals when it feels like Riverside.
+                      </p>
+                      <button type="button" class="btn btn-primary" id="btnSendAppr">Send to Approvals</button>
+                    </div>
+                  </div>
+                  <div class="create-panel" data-cpanel="newsletter" id="panelNewsletter">
+                    <div class="studio-card">
+                      <h3>Family newsletter</h3>
+                      <div class="nl-blocks" id="nlBlocks">
+                        <div class="nl-block" data-nl="0"><strong>Header</strong><span>Riverside Elementary · October scoop</span></div>
+                        <div class="nl-block" data-nl="1"><strong>Lead story</strong><span>Fall Festival is coming — save Oct 24</span></div>
+                        <div class="nl-block" data-nl="2"><strong>Calendar chips</strong><span>Book Fair · Festival · Volunteer night</span></div>
+                        <div class="nl-block" data-nl="3"><strong>CTA</strong><span>Sign up for a shift — two taps</span></div>
+                      </div>
+                      <div class="gen-bar" style="margin-top:14px">
+                        <button type="button" class="btn btn-forest" id="btnComposeNl">Compose</button>
+                      </div>
+                    </div>
+                    <div class="studio-card">
+                      <div class="phone-preview">
+                        <div class="inner">
+                          <div class="hdr">Riverside scoop</div>
+                          <p style="font-size:12px;color:var(--ink-soft);line-height:1.4;margin:0" id="nlPreview">
+                            Tap Compose to draft this month’s family email…
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="create-panel" data-cpanel="webpage" id="panelWebpage">
+                    <div class="studio-card">
+                      <h3>Homepage blurb</h3>
+                      <p style="margin:0 0 12px;font-size:13px;color:var(--ink-soft)">
+                        Generate card copy, then copy HTML for your school site.
+                      </p>
+                      <button type="button" class="btn btn-forest" id="btnGenHtml">Generate HTML</button>
+                      <button type="button" class="btn btn-secondary" id="btnCopyHtml" style="margin-left:6px">Copy HTML</button>
+                    </div>
+                    <div class="studio-card" style="padding:0;overflow:hidden">
+                      <div class="html-preview" id="htmlPreview">
+                        <span class="copied-toast" id="copiedToast">Copied</span>
+                        <div id="htmlCode">&lt;!-- Ready when you are --&gt;</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- 4 Inbox -->
+                <section class="screen" data-screen="inbox" id="screenInbox">
+                  <h1 class="page-title">Inbox</h1>
+                  <p class="lede">Family questions from Meta — draft a warm reply with school context, then you send.</p>
+                  <div class="inbox-layout">
+                    <div class="msg-list">
+                      <button type="button" class="msg" id="msg1">
+                        <strong>Priya N.</strong>
+                        <span>Do you still need volunteers for Fall Festival parking?</span>
+                      </button>
+                      <button type="button" class="msg active" id="msg2">
+                        <strong>Chris M.</strong>
+                        <span>What time does Book Fair open for families on Tuesday?</span>
+                      </button>
+                      <button type="button" class="msg" id="msg3">
+                        <strong>Taylor B.</strong>
+                        <span>Can we bring cash for carnival tickets?</span>
+                      </button>
+                    </div>
+                    <div class="thread">
+                      <div class="thread-head">
+                        <h3>Chris M. · Instagram comment</h3>
+                        <p>Fall Book Fair · Public reply</p>
+                      </div>
+                      <div class="thread-body">
+                        <div class="bubble" id="inboxBubble">
+                          What time does Book Fair open for families on Tuesday?
+                        </div>
+                        <div class="ai-draft" id="aiDraft">
+                          <div class="tag">AI draft reply</div>
+                          <p id="draftText"></p>
+                          <div class="actions">
+                            <button type="button" class="btn btn-forest" id="btnUseDraft">Use draft</button>
+                            <button type="button" class="btn btn-secondary">Edit</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- 5 Approvals -->
+                <section class="screen" data-screen="approvals" id="screenApprovals">
+                  <h1 class="page-title">Approvals</h1>
+                  <p class="lede">One place to say yes — artwork and caption together, then on the calendar.</p>
+                  <div class="pulse-row">
+                    <button type="button" class="pulse-btn active" id="apprNeeds">Needs you <span class="count" id="needsCount">1</span></button>
+                    <button type="button" class="pulse-btn" id="apprSched">Scheduled <span class="count" id="schedCount">3</span></button>
+                  </div>
+                  <article class="focus" id="focusCard">
+                    <div class="focus-art"><span class="thumb-label">Feed</span></div>
+                    <div class="focus-body">
+                      <div class="focus-meta">
+                        <span class="chip-needs" id="focusChip">Needs approval</span>
+                        <span>Instagram · Facebook</span>
+                        <span>·</span>
+                        <span>Oct 10 · 9:00 AM</span>
+                      </div>
+                      <h2>Fall Festival</h2>
+                      <p class="milestone">Save the Date</p>
+                      <p class="caption">
+                        Hayrides, games, and warm cider — mark your calendar for Riverside’s Fall Festival on Oct 24. Families welcome. Volunteer link in bio.
+                      </p>
+                      <div class="focus-actions">
+                        <button type="button" class="btn btn-primary" id="btnApprove">Approve &amp; schedule</button>
+                        <button type="button" class="btn btn-secondary">Request changes</button>
+                      </div>
+                    </div>
+                  </article>
+                  <aside class="appr-drawer" id="apprDrawer">
+                    <div class="dh">
+                      <div>
+                        <h3>Fall Festival</h3>
+                        <div class="focus-meta" style="margin:6px 0 0">
+                          <span class="chip-needs">Needs approval</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="dart"></div>
+                    <div class="dscroll">
+                      <label>Caption</label>
+                      <p>Hayrides, games, and warm cider — mark your calendar for Riverside’s Fall Festival on Oct 24.</p>
+                      <label>Schedule</label>
+                      <p>Oct 10, 2026 · 9:00 AM · Instagram Feed · Facebook Feed</p>
+                    </div>
+                    <div class="dfoot">
+                      <button type="button" class="btn btn-primary" id="btnApproveFinal" style="flex:1;justify-content:center">Approve &amp; schedule</button>
+                    </div>
+                  </aside>
+                  <div class="approve-burst" id="approveBurst"><div class="check">✓</div></div>
+                </section>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="chip chip-ghost" id="chipGhost" aria-hidden="true"><small>Event</small>Fall Book Fair</button>
+      <div class="cursor" id="cursor" aria-hidden="true">
+        <div class="cursor-ring"></div>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M5.5 3.5 18.2 12.1a1 1 0 0 1-.45 1.8l-4.7.6-.2 4.75a1 1 0 0 1-1.85.4L5.5 3.5z" fill="#2a2622" stroke="#fffcf7" stroke-width="1.2"/>
+        </svg>
+      </div>
+
+      <div class="caption-bar">
+        <div class="caption" id="caption"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="controls">
+        <div class="ctrl-group">
+          <button type="button" class="ctrl-btn" id="btnPrev" aria-label="Previous chapter" title="Previous">
+            <svg viewBox="0 0 24 24"><path d="M15 6 9 12l6 6"/></svg>
+          </button>
+          <button type="button" class="ctrl-btn play-main" id="btnPlay" aria-label="Play" title="Play / Pause">
+            <svg viewBox="0 0 24 24" id="iconPlay"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" id="iconPause" hidden><path d="M7 5h3v14H7zm7 0h3v14h-3z"/></svg>
+          </button>
+          <button type="button" class="ctrl-btn" id="btnNext" aria-label="Next chapter" title="Next">
+            <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>
+          </button>
+          <button type="button" class="ctrl-btn" id="btnMute" aria-label="Mute" title="Mute sounds">
+            <svg viewBox="0 0 24 24" id="iconSound" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4h3l4 3V7L7 10H4zm11 1a3 3 0 0 1 0 2m2-4a6 6 0 0 1 0 6"/></svg>
+            <svg viewBox="0 0 24 24" id="iconMuted" hidden fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4h3l4 3V7L7 10H4zm12.5-1.5 4 4m0-4-4 4"/></svg>
+          </button>
+        </div>
+        <div class="scrub">
+          <div class="scrub-track" id="scrubTrack" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+            <div class="scrub-fill" id="scrubFill"></div>
+          </div>
+          <div class="scrub-marks" id="scrubMarks"></div>
+        </div>
+        <div class="time-readout" id="timeReadout">0:00</div>
+      </div>
+      <p class="hint">
+        Click a chapter pill or scrub the timeline ·
+        <a href="/marketing-home-wow-mockup.html">Marketing mockup</a> ·
+        <a href="/calendar-demo-ease-mockup.html">Calendar demo</a> ·
+        <a href="/demos/calendar-demo.webm">Calendar demo video</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const CHAPTERS = [
+        { id: "events", label: "Event Planning", short: "Events", duration: 14, nav: "events", screen: "events" },
+        { id: "calendar", label: "Calendar DnD", short: "Calendar", duration: 12, nav: "calendar", screen: "calendar" },
+        { id: "create", label: "Create with AI", short: "Create", duration: 18, nav: "create", screen: "create" },
+        { id: "inbox", label: "AI Inbox", short: "Inbox", duration: 12, nav: "inbox", screen: "inbox" },
+        { id: "approvals", label: "Approvals", short: "Approvals", duration: 12, nav: "approvals", screen: "approvals" },
+      ];
+      const TOTAL = CHAPTERS.reduce((s, c) => s + c.duration, 0);
+      const offsets = [];
+      let acc = 0;
+      CHAPTERS.forEach((c) => { offsets.push(acc); acc += c.duration; });
+
+      const el = {
+        camera: document.getElementById("camera"),
+        cursor: document.getElementById("cursor"),
+        caption: document.getElementById("caption"),
+        scrubFill: document.getElementById("scrubFill"),
+        scrubTrack: document.getElementById("scrubTrack"),
+        scrubMarks: document.getElementById("scrubMarks"),
+        timeReadout: document.getElementById("timeReadout"),
+        chapterPills: document.getElementById("chapterPills"),
+        btnPlay: document.getElementById("btnPlay"),
+        iconPlay: document.getElementById("iconPlay"),
+        iconPause: document.getElementById("iconPause"),
+        btnPrev: document.getElementById("btnPrev"),
+        btnNext: document.getElementById("btnNext"),
+        btnMute: document.getElementById("btnMute"),
+        iconSound: document.getElementById("iconSound"),
+        iconMuted: document.getElementById("iconMuted"),
+        stage: document.getElementById("stage"),
+      };
+
+      // Build pills + marks
+      CHAPTERS.forEach((c, i) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chapter-pill" + (i === 0 ? " active" : "");
+        b.dataset.chapter = String(i);
+        b.innerHTML = `<span class="num">${i + 1}</span> <span class="label-full">${c.label}</span><span class="label-short" style="display:none">${c.short}</span>`;
+        b.addEventListener("click", () => jumpToChapter(i, true));
+        el.chapterPills.appendChild(b);
+
+        const m = document.createElement("span");
+        m.textContent = c.short;
+        el.scrubMarks.appendChild(m);
+      });
+
+      // Mobile short labels
+      const mq = window.matchMedia("(max-width: 900px)");
+      function applyMobileLabels() {
+        document.querySelectorAll(".label-full").forEach((n) => { n.style.display = mq.matches ? "none" : ""; });
+        document.querySelectorAll(".label-short").forEach((n) => { n.style.display = mq.matches ? "inline" : "none"; });
+      }
+      applyMobileLabels();
+      mq.addEventListener("change", applyMobileLabels);
+
+      let playing = false;
+      let muted = false;
+      let t = 0;
+      let lastTs = 0;
+      let raf = 0;
+      let chapterIndex = 0;
+      let audioCtx = null;
+
+      // Camera state
+      let cam = { x: 0, y: 0, s: 0.72 };
+      let camTarget = { x: 0, y: 0, s: 0.72 };
+      let cursorPos = { x: 400, y: 300 };
+      let cursorTarget = { x: 400, y: 300 };
+      let cursorVisible = false;
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function ensureAudio() {
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {}
+        }
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      }
+
+      function beep(freq = 420, dur = 0.04, type = "sine", gain = 0.03) {
+        if (muted || !audioCtx) return;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = gain;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        o.stop(audioCtx.currentTime + dur);
+      }
+
+      function setCaption(text) {
+        if (!text) {
+          el.caption.classList.remove("show");
+          return;
+        }
+        el.caption.textContent = text;
+        el.caption.classList.add("show");
+      }
+
+      function setNav(id) {
+        document.querySelectorAll(".rail button").forEach((b) => {
+          b.classList.toggle("active", b.dataset.nav === id);
+        });
+      }
+
+      function setScreen(id) {
+        document.querySelectorAll(".screen").forEach((s) => {
+          s.classList.toggle("active", s.dataset.screen === id);
+        });
+      }
+
+      function setChapterUI(i) {
+        chapterIndex = i;
+        document.querySelectorAll(".chapter-pill").forEach((b, idx) => {
+          b.classList.toggle("active", idx === i);
+        });
+        setNav(CHAPTERS[i].nav);
+        setScreen(CHAPTERS[i].screen);
+      }
+
+      function cameraTo(x, y, s) {
+        camTarget = { x, y, s };
+        if (reduceMotion) {
+          cam = { ...camTarget };
+          applyCamera();
+        }
+      }
+
+      function applyCamera() {
+        el.camera.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.s})`;
+      }
+
+      function showCursor(v) {
+        cursorVisible = v;
+        el.cursor.classList.toggle("visible", v);
+      }
+
+      function moveCursor(x, y) {
+        cursorTarget = { x, y };
+        if (reduceMotion) {
+          cursorPos = { ...cursorTarget };
+          applyCursor();
+        }
+      }
+
+      function mapAppToStage(localX, localY) {
+        const rect = el.stage.getBoundingClientRect();
+        const cx = rect.width / 2 + cam.x + (localX - 590) * cam.s;
+        const cy = rect.height / 2 + cam.y + (localY - 360) * cam.s;
+        return { cx, cy };
+      }
+
+      function applyCursor() {
+        const { cx, cy } = mapAppToStage(cursorPos.x, cursorPos.y);
+        el.cursor.style.transform = `translate(${cx}px, ${cy}px)`;
+        const ghost = document.getElementById("chipGhost");
+        if (ghost && ghost.classList.contains("visible")) {
+          ghost.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -60%) scale(1.08) rotate(-2deg)`;
+        }
+      }
+
+      function clickCursor() {
+        el.cursor.classList.remove("clicking");
+        void el.cursor.offsetWidth;
+        el.cursor.classList.add("clicking");
+        beep(520, 0.05, "triangle", 0.025);
+        setTimeout(() => el.cursor.classList.remove("clicking"), 350);
+      }
+
+      function flashBtn(node) {
+        if (!node) return;
+        node.classList.add("click-flash", "pulse-ring");
+        setTimeout(() => node.classList.remove("click-flash"), 180);
+        setTimeout(() => node.classList.remove("pulse-ring"), 1200);
+      }
+
+      function typeInto(node, text, progress) {
+        const n = Math.floor(text.length * Math.min(1, Math.max(0, progress)));
+        node.textContent = text.slice(0, n);
+        node.classList.toggle("typing", progress < 1 && progress > 0);
+      }
+
+      // —— Chapter local time helpers ——
+      function chapterLocal(globalT) {
+        for (let i = CHAPTERS.length - 1; i >= 0; i--) {
+          if (globalT >= offsets[i]) {
+            return { i, local: globalT - offsets[i], chapter: CHAPTERS[i] };
+          }
+        }
+        return { i: 0, local: 0, chapter: CHAPTERS[0] };
+      }
+
+      // State flags so we don't re-trigger one-shots every frame incorrectly —
+      // we drive continuously from local time instead.
+
+      function resetEphemeral() {
+        // Events
+        document.getElementById("createSheet").classList.remove("open");
+        document.getElementById("fieldName").textContent = "";
+        document.getElementById("fieldDate").textContent = "";
+        document.getElementById("fieldName").classList.remove("typing");
+        document.getElementById("fieldDate").classList.remove("typing");
+        document.querySelectorAll("#milestones .ms").forEach((m) => m.classList.remove("on", "done"));
+        const fest = document.getElementById("evFestival");
+        fest.classList.add("ghost");
+        fest.classList.remove("enter", "highlight");
+        document.getElementById("evBook").classList.remove("highlight");
+
+        // Calendar
+        const chip = document.getElementById("dragChip");
+        const ghost = document.getElementById("chipGhost");
+        const day12 = document.getElementById("day12");
+        const day24 = document.getElementById("day24");
+        if (chip.parentElement !== day12) day12.appendChild(chip);
+        chip.classList.remove("dragging");
+        chip.style.display = "";
+        ghost.classList.remove("visible");
+        day12.classList.remove("drop-target");
+        day24.classList.remove("drop-target");
+
+        // Create
+        document.querySelectorAll(".create-tab").forEach((t, i) => t.classList.toggle("active", i === 0));
+        document.querySelectorAll(".create-panel").forEach((p, i) => p.classList.toggle("active", i === 0));
+        document.getElementById("genArt").classList.remove("generating");
+        document.getElementById("captionText").textContent = "";
+        document.getElementById("genDots").hidden = true;
+        document.querySelectorAll("#nlBlocks .nl-block").forEach((b) => b.classList.remove("on"));
+        document.getElementById("nlPreview").textContent = "Tap Compose to draft this month’s family email…";
+        document.getElementById("htmlCode").textContent = "<!-- Ready when you are -->";
+        document.getElementById("copiedToast").classList.remove("show");
+
+        // Inbox
+        document.getElementById("aiDraft").classList.remove("show");
+        document.getElementById("draftText").textContent = "";
+        document.getElementById("msg2").classList.add("active");
+        document.getElementById("msg1").classList.remove("active");
+
+        // Approvals
+        document.getElementById("apprDrawer").classList.remove("open");
+        document.getElementById("approveBurst").classList.remove("show");
+        document.getElementById("focusChip").className = "chip-needs";
+        document.getElementById("focusChip").textContent = "Needs approval";
+        document.getElementById("needsCount").textContent = "1";
+        document.getElementById("schedCount").textContent = "3";
+        document.getElementById("apprBadge").textContent = "1";
+        document.getElementById("apprBadge").style.display = "";
+      }
+
+      let lastChapter = -1;
+      let lastBeats = {};
+
+      function beatOnce(key, condition, fn) {
+        if (condition && !lastBeats[key]) {
+          lastBeats[key] = true;
+          fn();
+        }
+        if (!condition) lastBeats[key] = false;
+      }
+
+      function renderAt(globalT) {
+        const { i, local, chapter } = chapterLocal(globalT);
+        if (i !== lastChapter) {
+          resetEphemeral();
+          setChapterUI(i);
+          lastChapter = i;
+          lastBeats = {};
+          beep(320 + i * 40, 0.06, "sine", 0.02);
+        }
+
+        // Default wide view
+        cameraTo(0, 0, mq.matches ? 0.55 : 0.72);
+        showCursor(false);
+        setCaption("");
+
+        if (chapter.id === "events") renderEvents(local);
+        else if (chapter.id === "calendar") renderCalendar(local);
+        else if (chapter.id === "create") renderCreate(local);
+        else if (chapter.id === "inbox") renderInbox(local);
+        else if (chapter.id === "approvals") renderApprovals(local);
+
+        // Scrub UI
+        const pct = (globalT / TOTAL) * 100;
+        el.scrubFill.style.width = pct + "%";
+        el.scrubTrack.setAttribute("aria-valuenow", String(Math.round(pct)));
+        el.timeReadout.textContent = fmt(globalT) + " / " + fmt(TOTAL);
+      }
+
+      function renderEvents(local) {
+        setCaption("Event Planning — start Fall Festival and seed milestones");
+        const sheet = document.getElementById("createSheet");
+        const btnNew = document.getElementById("btnNewEvent");
+        const btnCreate = document.getElementById("btnCreateEvent");
+        const fest = document.getElementById("evFestival");
+
+        if (local < 1.2) {
+          cameraTo(40, 20, 0.78);
+          showCursor(true);
+          moveCursor(980, 130);
+        } else if (local < 2.2) {
+          cameraTo(180, -40, 1.15);
+          showCursor(true);
+          moveCursor(1000, 118);
+          beatOnce("ev-click-new", local > 1.8, () => {
+            clickCursor();
+            flashBtn(btnNew);
+            sheet.classList.add("open");
+          });
+          if (local > 1.9) sheet.classList.add("open");
+        } else if (local < 6.5) {
+          sheet.classList.add("open");
+          cameraTo(220, -10, 1.25);
+          showCursor(true);
+          moveCursor(980, 260);
+          const name = "Fall Festival";
+          const date = "October 24, 2026";
+          typeInto(document.getElementById("fieldName"), name, (local - 2.2) / 1.8);
+          typeInto(document.getElementById("fieldDate"), date, (local - 4.0) / 1.5);
+          if (local > 5.5) {
+            document.querySelectorAll("#milestones .ms").forEach((m, idx) => {
+              if (local > 5.5 + idx * 0.25) m.classList.add("on");
+            });
+          }
+        } else if (local < 8.5) {
+          sheet.classList.add("open");
+          document.getElementById("fieldName").textContent = "Fall Festival";
+          document.getElementById("fieldDate").textContent = "October 24, 2026";
+          document.querySelectorAll("#milestones .ms").forEach((m) => m.classList.add("on"));
+          cameraTo(220, 40, 1.3);
+          showCursor(true);
+          moveCursor(1000, 420);
+          beatOnce("ev-create", local > 7.5, () => {
+            clickCursor();
+            flashBtn(btnCreate);
+            beep(660, 0.08, "sine", 0.03);
+          });
+        } else {
+          sheet.classList.remove("open");
+          fest.classList.remove("ghost");
+          fest.classList.add("enter", "highlight");
+          document.querySelectorAll("#milestones .ms").forEach((m) => m.classList.add("done"));
+          cameraTo(-80, 80, 1.1);
+          showCursor(true);
+          moveCursor(420, 380);
+          setCaption("Fall Festival is on the board — ready for calendar, create, and approvals");
+        }
+      }
+
+      function renderCalendar(local) {
+        setCaption("Calendar — drag Book Fair onto Festival week to reorganize");
+        const chip = document.getElementById("dragChip");
+        const ghost = document.getElementById("chipGhost");
+        const day12 = document.getElementById("day12");
+        const day24 = document.getElementById("day24");
+
+        // Chip position in camera space (approx for Oct 12 cell)
+        const start = { x: 420, y: 380 };
+        const end = { x: 820, y: 520 };
+
+        if (local < 2) {
+          cameraTo(0, 40, 0.85);
+          showCursor(true);
+          moveCursor(start.x - 40, start.y - 40);
+        } else if (local < 3.2) {
+          cameraTo(-40, 60, 1.2);
+          showCursor(true);
+          moveCursor(start.x, start.y);
+          beatOnce("cal-grab", local > 2.8, () => {
+            clickCursor();
+            chip.classList.add("dragging");
+            ghost.classList.add("visible");
+            beep(380, 0.04, "triangle", 0.02);
+          });
+          if (local > 2.9) {
+            chip.classList.add("dragging");
+            ghost.classList.add("visible");
+          }
+        } else if (local < 7.5) {
+          chip.classList.add("dragging");
+          ghost.classList.add("visible");
+          const p = (local - 3.2) / 4.3;
+          const x = start.x + (end.x - start.x) * easeInOut(p);
+          const y = start.y + (end.y - start.y) * easeInOut(p) - Math.sin(p * Math.PI) * 30;
+          showCursor(true);
+          moveCursor(x, y);
+          cameraTo(-60 + p * 80, 40 + p * 40, 1.25);
+          day24.classList.toggle("drop-target", p > 0.7);
+        } else if (local < 9.5) {
+          ghost.classList.remove("visible");
+          chip.classList.remove("dragging");
+          if (chip.parentElement !== day24) day24.appendChild(chip);
+          day24.classList.add("drop-target");
+          cameraTo(80, 80, 1.2);
+          showCursor(true);
+          moveCursor(end.x, end.y);
+          beatOnce("cal-drop", local > 7.6, () => {
+            clickCursor();
+            beep(580, 0.07, "sine", 0.03);
+          });
+          setCaption("Dropped on Oct 24 — Festival week stays coherent");
+        } else {
+          if (chip.parentElement !== day24) day24.appendChild(chip);
+          day24.classList.remove("drop-target");
+          cameraTo(0, 40, 0.9);
+          showCursor(false);
+          setCaption("Events and scheduled posts share one calm month grid");
+        }
+      }
+
+      function setCreateTab(name) {
+        document.querySelectorAll(".create-tab").forEach((t) => {
+          t.classList.toggle("active", t.dataset.ctab === name);
+        });
+        document.querySelectorAll(".create-panel").forEach((p) => {
+          p.classList.toggle("active", p.dataset.cpanel === name);
+        });
+      }
+
+      function renderCreate(local) {
+        // Beats: 0-6 social, 6-12 newsletter, 12-18 webpage
+        if (local < 6) {
+          setCreateTab("social");
+          setCaption("Create with AI · Socials — generate artwork and caption");
+          const art = document.getElementById("genArt");
+          const caption = "Hayrides, games, and warm cider — save Oct 24 for Riverside’s Fall Festival. Families welcome!";
+          if (local < 1.5) {
+            cameraTo(20, 0, 0.85);
+            showCursor(true);
+            moveCursor(280, 480);
+          } else if (local < 4.2) {
+            cameraTo(-60, 20, 1.15);
+            art.classList.add("generating");
+            document.getElementById("genDots").hidden = false;
+            showCursor(true);
+            moveCursor(260, 490);
+            beatOnce("gen-click", local > 1.7, () => {
+              clickCursor();
+              flashBtn(document.getElementById("btnGenerate"));
+            });
+            typeInto(document.getElementById("captionText"), caption, (local - 2.2) / 1.8);
+          } else {
+            art.classList.remove("generating");
+            document.getElementById("genDots").hidden = true;
+            document.getElementById("captionText").textContent = caption;
+            cameraTo(120, 10, 1.1);
+            showCursor(true);
+            moveCursor(780, 360);
+            beatOnce("send-appr", local > 5.2, () => {
+              clickCursor();
+              flashBtn(document.getElementById("btnSendAppr"));
+            });
+            setCaption("Social set ready — send to Approvals when it feels like home");
+          }
+        } else if (local < 12) {
+          setCreateTab("newsletter");
+          setCaption("Create with AI · Newsletter — compose the family scoop");
+          const l = local - 6;
+          if (l < 1.2) {
+            cameraTo(0, -20, 0.9);
+            showCursor(true);
+            moveCursor(420, 175);
+            beatOnce("tab-nl", l > 0.6, () => {
+              clickCursor();
+            });
+          } else if (l < 4.5) {
+            cameraTo(-40, 30, 1.1);
+            showCursor(true);
+            moveCursor(280, 460);
+            beatOnce("compose-nl", l > 1.5, () => {
+              clickCursor();
+              flashBtn(document.getElementById("btnComposeNl"));
+            });
+            document.querySelectorAll("#nlBlocks .nl-block").forEach((b, idx) => {
+              if (l > 1.8 + idx * 0.45) b.classList.add("on");
+            });
+            if (l > 3.5) {
+              document.getElementById("nlPreview").textContent =
+                "Fall Festival is around the corner — save Oct 24. Book Fair runs Oct 12–16. Grab a volunteer shift in two taps.";
+            }
+          } else {
+            document.querySelectorAll("#nlBlocks .nl-block").forEach((b) => b.classList.add("on"));
+            cameraTo(140, 20, 1.15);
+            showCursor(false);
+            setCaption("Phone preview fills as sections land — export HTML when ready");
+          }
+        } else {
+          setCreateTab("webpage");
+          setCaption("Create with AI · Webpage — generate blurb HTML and copy");
+          const l = local - 12;
+          const html = `<section class="hr-card">\n  <h2>Fall Festival</h2>\n  <p>Oct 24 · Hayrides, games, cider.</p>\n  <a href="#">Volunteer</a>\n</section>`;
+          if (l < 1) {
+            cameraTo(0, 0, 0.9);
+            showCursor(true);
+            moveCursor(560, 175);
+            beatOnce("tab-web", l > 0.4, () => clickCursor());
+          } else if (l < 3.5) {
+            cameraTo(-40, 40, 1.15);
+            showCursor(true);
+            moveCursor(260, 280);
+            beatOnce("gen-html", l > 1.3, () => {
+              clickCursor();
+              flashBtn(document.getElementById("btnGenHtml"));
+            });
+            const p = Math.min(1, (l - 1.5) / 1.6);
+            document.getElementById("htmlCode").textContent = html.slice(0, Math.floor(html.length * p));
+          } else {
+            document.getElementById("htmlCode").textContent = html;
+            cameraTo(160, 40, 1.2);
+            showCursor(true);
+            moveCursor(400, 280);
+            beatOnce("copy-html", l > 4.2, () => {
+              clickCursor();
+              flashBtn(document.getElementById("btnCopyHtml"));
+              document.getElementById("copiedToast").classList.add("show");
+              beep(700, 0.06, "sine", 0.03);
+            });
+            if (l > 4.3) document.getElementById("copiedToast").classList.add("show");
+            setCaption("Copy HTML for the school site — Membership Toolkit style export");
+          }
+        }
+      }
+
+      function renderInbox(local) {
+        setCaption("AI Inbox — read the family question, draft a warm reply");
+        const draft = "Hi Chris — Book Fair opens for families at 8:30 AM on Tuesday. Early volunteer shift starts at 7:45. See you there!";
+        const ai = document.getElementById("aiDraft");
+
+        if (local < 2) {
+          cameraTo(-40, 20, 0.9);
+          showCursor(true);
+          moveCursor(220, 280);
+          beatOnce("inbox-select", local > 1.2, () => {
+            clickCursor();
+            document.getElementById("msg2").classList.add("active");
+          });
+        } else if (local < 3.5) {
+          cameraTo(80, 30, 1.15);
+          showCursor(true);
+          moveCursor(620, 260);
+          setCaption("Message opens — Inbox AI drafts from school sources");
+        } else if (local < 8.5) {
+          ai.classList.add("show");
+          cameraTo(120, 60, 1.25);
+          showCursor(false);
+          typeInto(document.getElementById("draftText"), draft, (local - 3.5) / 3.5);
+          setCaption("Draft reply appears — you stay in control");
+        } else {
+          ai.classList.add("show");
+          document.getElementById("draftText").textContent = draft;
+          cameraTo(140, 100, 1.3);
+          showCursor(true);
+          moveCursor(620, 480);
+          beatOnce("use-draft", local > 9.5, () => {
+            clickCursor();
+            flashBtn(document.getElementById("btnUseDraft"));
+            beep(620, 0.07, "sine", 0.03);
+          });
+          setCaption("Use draft — edit if needed, then send from Meta inbox");
+        }
+      }
+
+      function renderApprovals(local) {
+        setCaption("Approvals — review artwork + caption, then approve & schedule");
+        const drawer = document.getElementById("apprDrawer");
+        const burst = document.getElementById("approveBurst");
+
+        if (local < 2.5) {
+          cameraTo(0, 30, 0.9);
+          showCursor(true);
+          moveCursor(720, 420);
+        } else if (local < 5.5) {
+          cameraTo(40, 20, 1.15);
+          showCursor(true);
+          moveCursor(700, 430);
+          beatOnce("open-appr", local > 3.2, () => {
+            clickCursor();
+            flashBtn(document.getElementById("btnApprove"));
+            drawer.classList.add("open");
+          });
+          if (local > 3.3) drawer.classList.add("open");
+          setCaption("Full review — caption, schedule, channels");
+        } else if (local < 8.5) {
+          drawer.classList.add("open");
+          cameraTo(200, 40, 1.3);
+          showCursor(true);
+          moveCursor(1000, 620);
+          beatOnce("approve-final", local > 7.2, () => {
+            clickCursor();
+            flashBtn(document.getElementById("btnApproveFinal"));
+            beep(740, 0.1, "sine", 0.035);
+          });
+        } else {
+          drawer.classList.remove("open");
+          burst.classList.add("show");
+          document.getElementById("focusChip").className = "chip-sched";
+          document.getElementById("focusChip").textContent = "Scheduled";
+          document.getElementById("needsCount").textContent = "0";
+          document.getElementById("schedCount").textContent = "4";
+          document.getElementById("apprBadge").style.display = "none";
+          cameraTo(0, 20, 1.05);
+          showCursor(false);
+          setCaption("Approved — now on the calendar for Oct 10 at 9:00 AM");
+        }
+      }
+
+      function easeInOut(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      }
+
+      function fmt(sec) {
+        const s = Math.max(0, Math.floor(sec));
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return m + ":" + String(r).padStart(2, "0");
+      }
+
+      function jumpToChapter(i, autoplay) {
+        t = offsets[i];
+        lastChapter = -1;
+        renderAt(t);
+        softUpdate();
+        if (autoplay && !playing) play();
+      }
+
+      function play() {
+        ensureAudio();
+        playing = true;
+        el.iconPlay.hidden = true;
+        el.iconPause.hidden = false;
+        el.btnPlay.setAttribute("aria-label", "Pause");
+        lastTs = 0;
+        raf = requestAnimationFrame(tick);
+      }
+
+      function pause() {
+        playing = false;
+        el.iconPlay.hidden = false;
+        el.iconPause.hidden = true;
+        el.btnPlay.setAttribute("aria-label", "Play");
+        if (raf) cancelAnimationFrame(raf);
+      }
+
+      function tick(ts) {
+        if (!playing) return;
+        if (!lastTs) lastTs = ts;
+        const dt = Math.min(0.05, (ts - lastTs) / 1000);
+        lastTs = ts;
+        t += dt;
+        if (t >= TOTAL) {
+          t = TOTAL;
+          renderAt(t);
+          pause();
+          setCaption("Demo complete — replay any chapter from the pills above");
+          return;
+        }
+        // Smooth camera + cursor
+        const lerp = reduceMotion ? 1 : 0.12;
+        cam.x += (camTarget.x - cam.x) * lerp;
+        cam.y += (camTarget.y - cam.y) * lerp;
+        cam.s += (camTarget.s - cam.s) * lerp;
+        cursorPos.x += (cursorTarget.x - cursorPos.x) * (reduceMotion ? 1 : 0.18);
+        cursorPos.y += (cursorTarget.y - cursorPos.y) * (reduceMotion ? 1 : 0.18);
+        renderAt(t);
+        applyCamera();
+        applyCursor();
+        raf = requestAnimationFrame(tick);
+      }
+
+      // Also lerp when paused after scrub
+      function softUpdate() {
+        const lerp = reduceMotion ? 1 : 0.2;
+        cam.x += (camTarget.x - cam.x) * lerp;
+        cam.y += (camTarget.y - cam.y) * lerp;
+        cam.s += (camTarget.s - cam.s) * lerp;
+        cursorPos.x += (cursorTarget.x - cursorPos.x) * lerp;
+        cursorPos.y += (cursorTarget.y - cursorPos.y) * lerp;
+        applyCamera();
+        applyCursor();
+        if (!playing) {
+          const still =
+            Math.abs(cam.x - camTarget.x) > 0.2 ||
+            Math.abs(cam.s - camTarget.s) > 0.002 ||
+            Math.abs(cursorPos.x - cursorTarget.x) > 0.5;
+          if (still) requestAnimationFrame(softUpdate);
+        }
+      }
+
+      el.btnPlay.addEventListener("click", () => {
+        ensureAudio();
+        if (playing) pause();
+        else {
+          if (t >= TOTAL) t = 0;
+          play();
+        }
+      });
+      el.btnPrev.addEventListener("click", () => {
+        const { i } = chapterLocal(t);
+        jumpToChapter(Math.max(0, i - 1), playing);
+      });
+      el.btnNext.addEventListener("click", () => {
+        const { i } = chapterLocal(t);
+        jumpToChapter(Math.min(CHAPTERS.length - 1, i + 1), playing);
+      });
+      el.btnMute.addEventListener("click", () => {
+        muted = !muted;
+        el.iconSound.hidden = muted;
+        el.iconMuted.hidden = !muted;
+      });
+
+      function scrubTo(clientX) {
+        const rect = el.scrubTrack.getBoundingClientRect();
+        const p = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+        t = p * TOTAL;
+        lastChapter = -1;
+        renderAt(t);
+        softUpdate();
+      }
+      el.scrubTrack.addEventListener("pointerdown", (e) => {
+        el.scrubTrack.setPointerCapture(e.pointerId);
+        scrubTo(e.clientX);
+      });
+      el.scrubTrack.addEventListener("pointermove", (e) => {
+        if (el.scrubTrack.hasPointerCapture(e.pointerId)) scrubTo(e.clientX);
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          e.preventDefault();
+          el.btnPlay.click();
+        } else if (e.code === "ArrowRight") el.btnNext.click();
+        else if (e.code === "ArrowLeft") el.btnPrev.click();
+        else if (e.code === "KeyM") el.btnMute.click();
+      });
+
+      // Intro pose
+      resetEphemeral();
+      setChapterUI(0);
+      cameraTo(0, 0, mq.matches ? 0.55 : 0.72);
+      cam = { ...camTarget };
+      applyCamera();
+      renderAt(0);
+      setCaption("Press Play — five Hey Ralli flows, one calm demo");
+      showCursor(true);
+      moveCursor(520, 300);
+      cursorPos = { ...cursorTarget };
+      applyCursor();
+
+      // Autostart shortly so motion is obvious
+      setTimeout(() => {
+        if (!playing) play();
+      }, 900);
+    })();
+  </script>
+</body>
+</html>

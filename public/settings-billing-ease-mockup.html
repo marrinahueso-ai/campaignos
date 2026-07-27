@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Billing Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a, select { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 84rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes bar-fill {
+      from { width: 0; }
+    }
+
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .settings-nav {
+      position: sticky;
+      top: 20px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      animation: rise .35s ease both;
+    }
+    .settings-nav .nav-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      padding: 8px 12px 6px;
+    }
+    .settings-nav a, .settings-nav span.nav-item {
+      width: 100%;
+      display: flex; align-items: center; gap: 10px;
+      border: none; background: transparent;
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--ink-soft);
+      font-size: 13px; font-weight: 600;
+      text-decoration: none;
+      cursor: default;
+    }
+    .settings-nav a:hover { background: rgba(235, 228, 217, 0.7); color: var(--ink); cursor: pointer; }
+    .settings-nav .nav-item.active {
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .settings-nav .nav-ico {
+      width: 28px; height: 28px; border-radius: 9px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.08);
+      color: var(--forest);
+      flex-shrink: 0;
+    }
+    .settings-nav .nav-item.active .nav-ico {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .settings-nav svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .settings-nav .nav-divider {
+      height: 1px; background: var(--line); margin: 8px 6px;
+    }
+
+    .panel[hidden] { display: none !important; }
+    .panel { animation: rise .35s ease both; }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3.6vw, 42px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 52ch;
+      line-height: 1.45;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .view-pills {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 18px;
+    }
+    .view-pill {
+      border: 1.5px solid var(--line);
+      background: rgba(246, 242, 235, 0.7);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s, transform .12s;
+    }
+    .view-pill:hover { transform: translateY(-1px); color: var(--ink); }
+    .view-pill.active {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: var(--cream);
+    }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent; padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+    .btn-mustard {
+      background: rgba(196, 146, 46, 0.16);
+      color: #7a5a12;
+      border: 1.5px solid rgba(196, 146, 46, 0.28);
+    }
+
+    .soft-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+    .soft-card h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .soft-card .card-desc {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    .card-head {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .plan-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 800;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      margin-bottom: 10px;
+    }
+    .plan-price {
+      font-family: var(--serif);
+      font-size: 36px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .plan-price span {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .form-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 16px;
+    }
+
+    .usage-bars { display: flex; flex-direction: column; gap: 14px; }
+    .usage-top {
+      display: flex; justify-content: space-between; gap: 12px;
+      font-size: 13px; font-weight: 700; color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .usage-top .nums { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink-soft); }
+    .bar {
+      height: 8px; border-radius: 999px; background: var(--cream-deep); overflow: hidden;
+    }
+    .bar i {
+      display: block; height: 100%; border-radius: 999px;
+      background: var(--forest);
+      animation: bar-fill .7s ease both;
+    }
+    .bar i.mustard { background: var(--mustard); }
+    .bar i.warn { background: var(--warn); }
+    .usage-hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .callout {
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      border: 1px solid transparent;
+      animation: rise .4s ease both;
+    }
+    .callout.warn {
+      background: rgba(196, 146, 46, 0.12);
+      border-color: rgba(196, 146, 46, 0.28);
+    }
+    .callout.calm {
+      background: rgba(47, 74, 60, 0.07);
+      border-color: rgba(47, 74, 60, 0.14);
+    }
+    .callout h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .callout p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+    .callout .actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 12px;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .step {
+      background: rgba(246, 242, 235, 0.7);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .step .n {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--forest);
+      line-height: 1;
+    }
+    .step h5 {
+      margin: 8px 0 4px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .step p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+    }
+
+    .meter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .meter-card .stat {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 8px 0 4px;
+      line-height: 1;
+    }
+    .meter-card .stat small {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .reserve-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .reserve-sku {
+      background: rgba(246, 242, 235, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: left;
+    }
+    .reserve-sku .name { font-size: 13px; font-weight: 800; }
+    .reserve-sku .price {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      margin: 6px 0 2px;
+    }
+    .reserve-sku .credits { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .plan-card {
+      background: rgba(246, 242, 235, 0.55);
+      border: 1.5px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .plan-card.highlight {
+      background: var(--white);
+      border-color: rgba(47, 74, 60, 0.35);
+      box-shadow: var(--shadow);
+    }
+    .plan-card .badge {
+      position: absolute;
+      top: -10px; left: 16px;
+      background: var(--forest);
+      color: var(--cream);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .plan-card .name {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .plan-card .price {
+      font-family: var(--serif);
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 8px 0 0;
+      line-height: 1;
+    }
+    .plan-card .price span {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .plan-card .desc {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+      flex: 1;
+    }
+    .plan-card ul {
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .plan-card li {
+      font-size: 12px;
+      color: var(--ink-soft);
+      padding-left: 18px;
+      position: relative;
+      line-height: 1.35;
+    }
+    .plan-card li::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 5px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--forest);
+      opacity: 0.55;
+    }
+    .plan-card .cta { margin-top: 16px; }
+    .plan-card .cta .btn { width: 100%; justify-content: center; }
+    .current-chip {
+      display: inline-flex;
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--forest);
+      background: rgba(47, 74, 60, 0.1);
+      padding: 5px 10px;
+      border-radius: 999px;
+    }
+
+    .compare-note {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .detail-row {
+      display: flex; flex-wrap: wrap; gap: 6px 16px;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .label { color: var(--muted); }
+    .detail-row .value { font-weight: 600; color: var(--ink); text-align: right; }
+
+    .invoice-list { list-style: none; margin: 0; padding: 0; }
+    .invoice-list li {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: center; justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .invoice-list li:last-child { border-bottom: none; }
+    .invoice-list .title { font-size: 14px; font-weight: 700; }
+    .invoice-list .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .status-pill {
+      display: inline-flex; align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px; font-weight: 800;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+    }
+
+    .note {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.7);
+      border: 1px dashed rgba(42, 38, 34, 0.16);
+    }
+    .note h3 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .note p, .note li {
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+    .note ul { margin: 8px 0 0; padding-left: 18px; }
+    .note code {
+      font-size: 12px;
+      background: rgba(42, 38, 34, 0.06);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+    .category-list { display: flex; flex-direction: column; gap: 0; }
+    .category-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .category-row:last-child { border-bottom: none; }
+    .category-row .label { color: var(--ink-soft); font-weight: 600; }
+    .category-row .val { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); }
+
+    @media (max-width: 980px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+      .settings-nav .nav-label, .settings-nav .nav-divider { display: none; }
+      .settings-nav a, .settings-nav span.nav-item { width: auto; }
+      .hero-grid, .meter-grid, .plan-grid, .reserve-grid, .steps {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="App rail">
+      <div class="rail-logo">R</div>
+      <button type="button" aria-label="Dashboard" title="Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      </button>
+      <button type="button" class="active" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="school-pill"><span class="dot"></span> Riverside Elementary PTO</div>
+        <div class="school-pill" style="font-weight:600;color:var(--ink-soft)">Jordan · Owner</div>
+      </div>
+
+      <div class="content">
+        <div class="mock-tag">Ease mockup · Billing usage / overage / upgrade · not shipped</div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings sections">
+            <div class="nav-label">Settings</div>
+            <a href="/settings-ease-mockup.html?view=overview">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 11h7V4H4zm9 9h7v-7h-7zM4 20h7v-5H4zm9-9h7V4h-7z"/></svg></span>
+              Overview
+            </a>
+            <a href="/settings-ease-mockup.html?view=organization">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>
+              Organization
+            </a>
+            <a href="/settings-ease-mockup.html?view=branding">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3c-2.8 3.6-6 6.2-6 10a6 6 0 0 0 12 0c0-3.8-3.2-6.4-6-10z"/><path d="M10 17.5c.4 1.2 1.2 2 2 2s1.6-.8 2-2"/></svg></span>
+              Branding
+            </a>
+            <a href="/settings-team-access-ease-mockup.html">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a3 3 0 0 1 0 5.74"/></svg></span>
+              Team &amp; Access
+            </a>
+            <a href="/settings-ease-mockup.html?view=integrations">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg></span>
+              Integrations
+            </a>
+            <div class="nav-divider"></div>
+            <span class="nav-item active" aria-current="page">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+              Billing &amp; Plan
+            </span>
+            <a href="/settings-ease-mockup.html?view=account">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg></span>
+              Account
+            </a>
+          </nav>
+
+          <div>
+            <div class="page-head">
+              <div>
+                <h1>Billing &amp; Plan</h1>
+                <p>Usage this period, what happens when you run low, and a calm path to upgrade — real catalog numbers, no metric theater.</p>
+              </div>
+              <div class="head-actions">
+                <button type="button" class="btn btn-secondary" data-jump="payment">Open Stripe portal</button>
+              </div>
+            </div>
+
+            <div class="view-pills" role="tablist" aria-label="Billing views">
+              <button type="button" class="view-pill active" data-view="usage" role="tab" aria-selected="true">Usage</button>
+              <button type="button" class="view-pill" data-view="plans" role="tab" aria-selected="false">Plans</button>
+              <button type="button" class="view-pill" data-view="payment" role="tab" aria-selected="false">Payment</button>
+            </div>
+
+            <!-- USAGE -->
+            <section class="panel" data-panel="usage">
+              <div class="callout warn">
+                <h4>Soft warn — AI credits getting low</h4>
+                <p>
+                  Professional soft-warns around <strong>120 credits left</strong> (or 10% of the monthly allowance).
+                  This is a heads-up only — nothing is billed extra. When period credits and Reserve can’t cover the next action, AI generation pauses until you buy Reserve or upgrade.
+                </p>
+                <div class="actions">
+                  <button type="button" class="btn btn-mustard" data-jump="plans">Compare plans</button>
+                  <button type="button" class="btn btn-secondary" data-scroll="reserve">Buy AI Reserve</button>
+                </div>
+              </div>
+
+              <div class="hero-grid">
+                <div class="soft-card">
+                  <div class="plan-badge">Current plan</div>
+                  <div class="plan-price">$79 <span>/ month</span></div>
+                  <p class="card-desc" style="margin-top:10px">Professional · Renews Aug 12, 2026</p>
+                  <p class="card-desc">1,200 AI credits / month · 15 team seats · 40 Meta posts / month</p>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-primary" data-jump="plans">Upgrade plan</button>
+                    <button type="button" class="btn btn-ghost" data-jump="payment">View invoices</button>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Period snapshot</h3>
+                      <p class="card-desc">July 2026 UTC · resets Aug 1</p>
+                    </div>
+                  </div>
+                  <div class="usage-bars">
+                    <div>
+                      <div class="usage-top"><span>AI credits</span><span class="nums">1,095 / 1,200</span></div>
+                      <div class="bar"><i class="warn" style="width:91%"></i></div>
+                      <p class="usage-hint">105 left · soft warn active</p>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>AI Reserve</span><span class="nums">2,400 left</span></div>
+                      <div class="bar"><i class="mustard" style="width:13%"></i></div>
+                      <p class="usage-hint">Rolls over · burns after monthly credits</p>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>Active seats</span><span class="nums">8 / 15</span></div>
+                      <div class="bar"><i style="width:53%"></i></div>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>Meta posts this month</span><span class="nums">22 / 40</span></div>
+                      <div class="bar"><i style="width:55%"></i></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="soft-card" style="margin-bottom:14px">
+                <div class="card-head">
+                  <div>
+                    <h3>When you hit the limit</h3>
+                    <p class="card-desc">Honest rules — no surprise overage invoices.</p>
+                  </div>
+                </div>
+                <div class="callout calm" style="margin-bottom:0">
+                  <h4>No soft overage billing</h4>
+                  <p>
+                    Hey Ralli does <strong>not</strong> auto-charge for going over. Monthly plan credits reset on the 1st (UTC) with no rollover.
+                    Burn order is <strong>period allowance → Reserve</strong>. If both can’t cover the action cost, Create with AI / Ask Ralli / artwork pause with a clear CTA to Billing — that’s the hard stop.
+                  </p>
+                </div>
+                <div class="steps">
+                  <div class="step">
+                    <div class="n">1</div>
+                    <h5>Soft warn</h5>
+                    <p>Sidebar + Billing note when remaining period credits get low. Keep working — Reserve still covers you.</p>
+                  </div>
+                  <div class="step">
+                    <div class="n">2</div>
+                    <h5>Reserve covers peaks</h5>
+                    <p>Prepaid Reserve stacks and rolls over. Buy $250 / $500 / $1,000 packs anytime.</p>
+                  </div>
+                  <div class="step">
+                    <div class="n">3</div>
+                    <h5>Or upgrade</h5>
+                    <p>Premium adds 2,500 credits/mo plus $250 Reserve (18k) included each year — best for busy PTOs.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="meter-grid">
+                <div class="soft-card meter-card">
+                  <div class="card-head" style="margin-bottom:8px">
+                    <div>
+                      <h3>Usage by category</h3>
+                      <p class="card-desc">Credit-weighted this period — not raw action counts.</p>
+                    </div>
+                  </div>
+                  <div class="category-list">
+                    <div class="category-row"><span class="label">Artwork generation</span><span class="val">640</span></div>
+                    <div class="category-row"><span class="label">Artwork regeneration</span><span class="val">192</span></div>
+                    <div class="category-row"><span class="label">Captions</span><span class="val">84</span></div>
+                    <div class="category-row"><span class="label">Ask Ralli</span><span class="val">71</span></div>
+                    <div class="category-row"><span class="label">Inbox AI</span><span class="val">48</span></div>
+                    <div class="category-row"><span class="label">Calendar import · tasks · briefs</span><span class="val">60</span></div>
+                  </div>
+                  <p class="usage-hint" style="margin-top:10px">Artwork = 8 credits · text AI = 1 credit. Failed AI = 0.</p>
+                </div>
+
+                <div class="soft-card meter-card">
+                  <div class="card-head" style="margin-bottom:8px">
+                    <div>
+                      <h3>Capacity limits</h3>
+                      <p class="card-desc">Hard caps from the Professional plan — invite / publish blocked at the limit, not billed over.</p>
+                    </div>
+                  </div>
+                  <div class="usage-bars">
+                    <div>
+                      <div class="usage-top"><span>Team members</span><span class="nums">8 / 15</span></div>
+                      <div class="bar"><i style="width:53%"></i></div>
+                      <p class="usage-hint">Invite blocked at 15 — upgrade for unlimited seats (Premium)</p>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>Committee chairs</span><span class="nums">3 / 8</span></div>
+                      <div class="bar"><i style="width:38%"></i></div>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>Events / school year</span><span class="nums">Unlimited</span></div>
+                      <div class="bar"><i style="width:28%"></i></div>
+                      <p class="usage-hint">Starter caps at 15 events / year</p>
+                    </div>
+                    <div>
+                      <div class="usage-top"><span>Social accounts</span><span class="nums">1 / 1</span></div>
+                      <div class="bar"><i style="width:100%"></i></div>
+                      <p class="usage-hint">Premium unlocks unlimited Meta accounts</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="soft-card" id="reserve">
+                <div class="card-head">
+                  <div>
+                    <h3>AI Reserve</h3>
+                    <p class="card-desc">Prepaid peak buffer. Rolls over and stacks. Not a monthly overage line item.</p>
+                  </div>
+                  <span class="plan-badge" style="margin:0">2,400 credits left</span>
+                </div>
+                <div class="reserve-grid">
+                  <div class="reserve-sku">
+                    <div class="name">AI Reserve</div>
+                    <div class="price">$250</div>
+                    <div class="credits">18,000 credits · one-time</div>
+                    <button type="button" class="btn btn-secondary">Buy Reserve</button>
+                  </div>
+                  <div class="reserve-sku">
+                    <div class="name">AI Reserve ⭐</div>
+                    <div class="price">$500</div>
+                    <div class="credits">40,000 credits · one-time</div>
+                    <button type="button" class="btn btn-secondary">Buy Reserve ⭐</button>
+                  </div>
+                  <div class="reserve-sku">
+                    <div class="name">AI Reserve Max</div>
+                    <div class="price">$1,000</div>
+                    <div class="credits">85,000 credits · one-time</div>
+                    <button type="button" class="btn btn-secondary">Buy Max</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- PLANS -->
+            <section class="panel" data-panel="plans" hidden>
+              <div class="soft-card" style="margin-bottom:14px">
+                <div class="card-head" style="margin-bottom:8px">
+                  <div>
+                    <h3>Compare plans</h3>
+                    <p class="card-desc">Locked catalog — Starter $49 · Professional $79 · Premium $129. Drive most active PTOs to Premium.</p>
+                  </div>
+                </div>
+                <div class="plan-grid">
+                  <article class="plan-card">
+                    <h4 class="name">Starter</h4>
+                    <div class="price">$49 <span>/ mo</span></div>
+                    <p class="desc">A capped school year to try the workflow.</p>
+                    <ul>
+                      <li>400 AI credits / month</li>
+                      <li>Calendar, events, Create with AI</li>
+                      <li>15 events / school year · 5 seats</li>
+                      <li>Meta publishing — 10 posts / month</li>
+                      <li>Basic approvals &amp; standard analytics</li>
+                    </ul>
+                    <div class="cta">
+                      <button type="button" class="btn btn-secondary">Downgrade</button>
+                    </div>
+                  </article>
+
+                  <article class="plan-card">
+                    <h4 class="name">Professional</h4>
+                    <div class="price">$79 <span>/ mo</span></div>
+                    <p class="desc">Run the school year — capacity feels snug on a busy calendar.</p>
+                    <ul>
+                      <li>1,200 AI credits / month</li>
+                      <li>Ask Ralli · Volunteer Center · Communication Hub</li>
+                      <li>Unlimited events · 15 team seats</li>
+                      <li>Meta publishing — 40 posts / month</li>
+                      <li>Approvals, custom roles, change requests</li>
+                    </ul>
+                    <div class="cta">
+                      <button type="button" class="btn btn-secondary" disabled>Current plan</button>
+                    </div>
+                    <span class="current-chip">You’re here</span>
+                  </article>
+
+                  <article class="plan-card highlight">
+                    <span class="badge">Best for most schools</span>
+                    <h4 class="name">Premium ⭐</h4>
+                    <div class="price">$129 <span>/ mo</span></div>
+                    <p class="desc">Recommended destination — AI headroom, Inbox, Custom Dashboard.</p>
+                    <ul>
+                      <li>2,500 AI credits / month</li>
+                      <li>Includes $250 AI Reserve (18k) / year</li>
+                      <li>AI Inbox replies · Custom Dashboard</li>
+                      <li>Unlimited Meta posts, seats, social accounts</li>
+                      <li>Priority support</li>
+                    </ul>
+                    <div class="cta">
+                      <button type="button" class="btn btn-primary">Upgrade to Premium</button>
+                    </div>
+                  </article>
+                </div>
+                <p class="compare-note">
+                  New orgs get a <strong>14-day trial</strong> (Professional features + 600 credit pool). Card collected at Checkout; billing starts when the trial ends.
+                  Founding / exempt orgs stay unlimited with billing waived — no plan change required.
+                </p>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Why upgrade from Professional?</h3>
+                    <p class="card-desc">Typical busy elementary PTO burns ~900 credits/month; peak months tip over 1,200.</p>
+                  </div>
+                </div>
+                <div class="steps">
+                  <div class="step">
+                    <div class="n">+</div>
+                    <h5>2× credit headroom</h5>
+                    <p>2,500 / mo vs 1,200 — fewer mid-year Reserve top-ups for artwork-heavy seasons.</p>
+                  </div>
+                  <div class="step">
+                    <div class="n">+</div>
+                    <h5>$250 Reserve included</h5>
+                    <p>18,000 rollover credits each year on Premium — covers peak months without a separate purchase.</p>
+                  </div>
+                  <div class="step">
+                    <div class="n">+</div>
+                    <h5>Room to grow</h5>
+                    <p>Unlimited seats, Meta posts, and social accounts — plus AI Inbox and Custom Dashboard.</p>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-primary">Upgrade to Premium — $129/mo</button>
+                  <button type="button" class="btn btn-ghost" data-jump="usage">Back to usage</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- PAYMENT -->
+            <section class="panel" data-panel="payment" hidden>
+              <div class="stack">
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Payment method</h3>
+                      <p class="card-desc">Managed securely in Stripe. Updates open the Customer Portal.</p>
+                    </div>
+                    <button type="button" class="btn btn-secondary">Update</button>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Card</span>
+                    <span class="value">Visa ···· 4242</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Billing email</span>
+                    <span class="value">treasurer@riversidepta.example</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Next renewal</span>
+                    <span class="value">Aug 12, 2026 · $79.00</span>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Invoices</h3>
+                      <p class="card-desc">Real Stripe invoices for this organization.</p>
+                    </div>
+                    <button type="button" class="btn btn-ghost">Open Stripe portal</button>
+                  </div>
+                  <ul class="invoice-list">
+                    <li>
+                      <div>
+                        <div class="title">INV-2026-0712 · $79.00</div>
+                        <div class="meta">Jul 12, 2026 · Professional</div>
+                      </div>
+                      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <span class="status-pill">Paid</span>
+                        <button type="button" class="btn btn-ghost">View</button>
+                        <button type="button" class="btn btn-secondary">PDF</button>
+                      </div>
+                    </li>
+                    <li>
+                      <div>
+                        <div class="title">INV-2026-0612 · $79.00</div>
+                        <div class="meta">Jun 12, 2026 · Professional</div>
+                      </div>
+                      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <span class="status-pill">Paid</span>
+                        <button type="button" class="btn btn-ghost">View</button>
+                        <button type="button" class="btn btn-secondary">PDF</button>
+                      </div>
+                    </li>
+                    <li>
+                      <div>
+                        <div class="title">INV-2026-0512 · $250.00</div>
+                        <div class="meta">May 12, 2026 · AI Reserve (one-time)</div>
+                      </div>
+                      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <span class="status-pill">Paid</span>
+                        <button type="button" class="btn btn-ghost">View</button>
+                        <button type="button" class="btn btn-secondary">PDF</button>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Manage subscription</h3>
+                      <p class="card-desc">Cancel, change card, or download tax invoices in Stripe. Canceled paid orgs lock to resubscribe until Checkout succeeds again.</p>
+                    </div>
+                  </div>
+                  <div class="form-actions" style="margin-top:0">
+                    <button type="button" class="btn btn-secondary">Open Stripe portal</button>
+                    <button type="button" class="btn btn-primary" data-jump="plans">Change plan</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div class="note">
+              <h3>What this mockup is solving</h3>
+              <p>
+                Phase 6 Billing Ease already ships a calm overview. This focused pass clarifies <strong>usage meters</strong>,
+                <strong>honest overage rules</strong> (soft warn → Reserve → hard block — never surprise overage charges),
+                and a clear <strong>Starter → Professional → Premium</strong> upgrade path with real catalog numbers.
+              </p>
+              <ul>
+                <li>View toggles via <code>?view=usage|plans|payment</code></li>
+                <li>Aligned with <code>docs/ops/billing-and-access.md</code> + <code>plan-catalog.ts</code></li>
+                <li><strong>Do not ship product UI until GO.</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const panels = Array.from(document.querySelectorAll("[data-panel]"));
+      const pills = Array.from(document.querySelectorAll(".view-pill"));
+      const views = ["usage", "plans", "payment"];
+
+      function setView(view, push) {
+        const next = views.includes(view) ? view : "usage";
+        panels.forEach((panel) => {
+          panel.hidden = panel.getAttribute("data-panel") !== next;
+        });
+        pills.forEach((pill) => {
+          const on = pill.getAttribute("data-view") === next;
+          pill.classList.toggle("active", on);
+          pill.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        if (push) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("view", next);
+          history.replaceState({}, "", url);
+        }
+      }
+
+      pills.forEach((pill) => {
+        pill.addEventListener("click", () => setView(pill.getAttribute("data-view"), true));
+      });
+
+      document.querySelectorAll("[data-jump]").forEach((el) => {
+        el.addEventListener("click", () => setView(el.getAttribute("data-jump"), true));
+      });
+
+      document.querySelectorAll("[data-scroll]").forEach((el) => {
+        el.addEventListener("click", () => {
+          setView("usage", true);
+          const target = document.getElementById(el.getAttribute("data-scroll"));
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      const initial = new URLSearchParams(window.location.search).get("view") || "usage";
+      setView(initial, false);
+    })();
+  </script>
+</body>
+</html>

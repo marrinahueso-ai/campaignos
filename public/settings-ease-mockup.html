@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Settings Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+      --fb: #1877f2;
+      --ig: #c13584;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a, select, textarea { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 84rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .settings-nav {
+      position: sticky;
+      top: 20px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      animation: rise .35s ease both;
+    }
+    .settings-nav .nav-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      padding: 8px 12px 6px;
+    }
+    .settings-nav button {
+      width: 100%;
+      display: flex; align-items: center; gap: 10px;
+      border: none; background: transparent;
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--ink-soft);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .settings-nav button:hover { background: rgba(235, 228, 217, 0.7); color: var(--ink); }
+    .settings-nav button.active {
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .settings-nav button .nav-ico {
+      width: 28px; height: 28px; border-radius: 9px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.08);
+      color: var(--forest);
+      flex-shrink: 0;
+    }
+    .settings-nav button.active .nav-ico {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .settings-nav button svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+    .settings-nav .nav-divider {
+      height: 1px; background: var(--line); margin: 8px 6px;
+    }
+
+    .panel[hidden] { display: none !important; }
+    .panel { animation: rise .35s ease both; }
+
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3.6vw, 42px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      line-height: 1.45;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent; padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+    .btn-danger {
+      background: rgba(166, 90, 58, 0.12);
+      color: var(--warn);
+      border: 1.5px solid rgba(166, 90, 58, 0.22);
+    }
+    .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .summary-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .12s, box-shadow .15s;
+    }
+    .summary-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .summary-card .eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .summary-card .value {
+      margin-top: 8px;
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .summary-card .sub {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+    .summary-card .link {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--forest);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card-grid.one { grid-template-columns: 1fr; }
+    .soft-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+    .soft-card h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .soft-card .card-desc {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+    }
+    .card-head {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .detail-row {
+      display: flex; flex-wrap: wrap; gap: 6px 16px;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .label { color: var(--muted); }
+    .detail-row .value { font-weight: 600; color: var(--ink); text-align: right; }
+
+    .field {
+      display: flex; flex-direction: column; gap: 6px;
+      margin-bottom: 14px;
+    }
+    .field label {
+      font-size: 12px; font-weight: 700; color: var(--ink-soft);
+    }
+    .field input, .field select, .field textarea {
+      border: 1.5px solid var(--line);
+      background: rgba(246, 242, 235, 0.55);
+      border-radius: 14px;
+      padding: 11px 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .12s, background .12s, box-shadow .12s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: rgba(47, 74, 60, 0.35);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(47, 74, 60, 0.08);
+    }
+    .field textarea { min-height: 88px; resize: vertical; }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 4px;
+    }
+
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 700;
+    }
+    .status-pill.ok {
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+    }
+    .status-pill.off {
+      background: rgba(122, 113, 102, 0.12);
+      color: var(--muted);
+    }
+    .status-pill.warn {
+      background: rgba(196, 146, 46, 0.16);
+      color: #7a5a12;
+    }
+    .status-pill .pulse {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+
+    .integration-list { display: flex; flex-direction: column; }
+    .integration-row {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: center; justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .integration-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .integration-row:first-child { padding-top: 0; }
+    .integration-meta {
+      display: flex; gap: 12px; align-items: flex-start; min-width: 0;
+    }
+    .integration-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: grid; place-items: center;
+      font-weight: 800; font-size: 13px;
+      flex-shrink: 0;
+      color: var(--cream);
+    }
+    .integration-logo.meta {
+      background: linear-gradient(135deg, var(--fb), var(--ig));
+    }
+    .integration-logo.gcal { background: var(--teal); }
+    .integration-logo.canva { background: #7b61ff; }
+    .integration-logo.monday { background: #ff3d57; }
+    .integration-logo.soon { background: var(--cream-deep); color: var(--muted); }
+    .integration-meta h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .integration-meta p {
+      margin: 3px 0 0;
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+      max-width: 42ch;
+    }
+    .integration-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+
+    .member-list { display: flex; flex-direction: column; gap: 8px; }
+    .member-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(246, 242, 235, 0.55);
+      border: 1px solid transparent;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .avatar.mustard { background: var(--mustard); color: var(--ink); }
+    .avatar.teal { background: var(--teal); }
+    .member-row .name { font-size: 14px; font-weight: 700; }
+    .member-row .role { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .member-row .spacer { flex: 1; }
+
+    .plan-hero {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .plan-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .plan-price {
+      font-family: var(--serif);
+      font-size: 36px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .plan-price span {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .usage-bars { display: flex; flex-direction: column; gap: 14px; }
+    .usage-item .usage-top {
+      display: flex; justify-content: space-between;
+      font-size: 13px; font-weight: 600; margin-bottom: 6px;
+    }
+    .usage-item .bar {
+      height: 8px; border-radius: 999px;
+      background: var(--cream-deep); overflow: hidden;
+    }
+    .usage-item .bar > i {
+      display: block; height: 100%; border-radius: 999px;
+      background: var(--forest);
+    }
+
+    .connect-hero {
+      background:
+        linear-gradient(135deg, rgba(47, 74, 60, 0.06), transparent 55%),
+        var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+    .connect-hero h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .connect-hero p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      line-height: 1.5;
+    }
+    .honest-list {
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .honest-list li {
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+    }
+    .honest-list li::before {
+      content: "";
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--sage);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .platform-chips {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-top: 16px;
+    }
+    .platform-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px; font-weight: 700;
+      background: rgba(255, 252, 247, 0.9);
+      border: 1px solid var(--line);
+      color: var(--ink-soft);
+    }
+    .platform-chip .swatch {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .platform-chip .swatch.fb { background: var(--fb); }
+    .platform-chip .swatch.ig { background: var(--ig); }
+
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row h4 { margin: 0; font-size: 14px; font-weight: 700; }
+    .toggle-row p { margin: 3px 0 0; font-size: 12px; color: var(--ink-soft); max-width: 40ch; }
+    .toggle {
+      width: 44px; height: 26px; border-radius: 999px;
+      background: var(--cream-deep);
+      border: 1px solid var(--line);
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .15s;
+    }
+    .toggle.on { background: var(--forest); border-color: var(--forest); }
+    .toggle::after {
+      content: "";
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--white);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: transform .15s;
+    }
+    .toggle.on::after { transform: translateX(18px); }
+
+    .year-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(47, 74, 60, 0.08);
+      border: 1px solid rgba(47, 74, 60, 0.14);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px; font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 14px;
+    }
+
+    .view-pills {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 18px;
+    }
+    .view-pill {
+      border: 1.5px solid var(--line);
+      background: rgba(246, 242, 235, 0.7);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s, transform .12s;
+    }
+    .view-pill:hover { transform: translateY(-1px); color: var(--ink); }
+    .view-pill.active {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: var(--cream);
+    }
+
+    .branding-section[hidden] { display: none !important; }
+    .branding-section { animation: rise .35s ease both; }
+
+    .hub-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .hub-tile {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .12s, box-shadow .15s;
+      width: 100%;
+      color: inherit;
+    }
+    .hub-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .hub-tile .tile-ico {
+      width: 36px; height: 36px; border-radius: 12px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.1);
+      color: var(--forest);
+      margin-bottom: 12px;
+    }
+    .hub-tile .tile-ico svg {
+      width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8;
+    }
+    .hub-tile h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .hub-tile p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    .hub-tile .tile-meta {
+      margin-top: 14px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      justify-content: space-between;
+    }
+    .hub-tile .tile-link {
+      font-size: 13px; font-weight: 700; color: var(--forest);
+    }
+    .swatch-row { display: inline-flex; gap: 6px; align-items: center; }
+    .swatch-row span {
+      width: 14px; height: 14px; border-radius: 4px;
+      border: 1px solid rgba(42, 38, 34, 0.12);
+    }
+    .logo-slot {
+      width: 56px; height: 56px; border-radius: 14px;
+      background: rgba(246, 242, 235, 0.9);
+      border: 1.5px dashed rgba(42, 38, 34, 0.16);
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 800; color: var(--muted);
+    }
+    .logo-slot.filled {
+      border-style: solid;
+      background: var(--forest);
+      color: var(--cream);
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+    .playbook-row {
+      display: flex; flex-wrap: wrap; gap: 10px 16px;
+      align-items: center; justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .playbook-row:last-child { border-bottom: none; }
+    .playbook-row h4 { margin: 0; font-size: 14px; font-weight: 700; }
+    .playbook-row p { margin: 3px 0 0; font-size: 12px; color: var(--ink-soft); }
+
+    .note {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      background: rgba(255, 252, 247, 0.7);
+      border: 1px solid var(--line);
+    }
+    .note h3 {
+      margin: 0 0 6px;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .note p, .note li {
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    .note ul { margin: 8px 0 0; padding-left: 18px; }
+    .note strong { color: var(--ink); font-weight: 700; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: none; background: transparent;
+      color: var(--ink-soft); font-size: 13px; font-weight: 700;
+      cursor: pointer; padding: 0; margin-bottom: 10px;
+    }
+    .back-link:hover { color: var(--ink); }
+    .back-link svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    @media (max-width: 980px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav {
+        position: static;
+        display: flex; flex-wrap: wrap; gap: 4px;
+        padding: 8px;
+      }
+      .settings-nav .nav-label,
+      .settings-nav .nav-divider { display: none; }
+      .settings-nav button {
+        width: auto;
+        padding: 8px 12px;
+      }
+      .settings-nav button .nav-ico { display: none; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .card-grid, .plan-hero, .field-row, .hub-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="App navigation">
+      <div class="rail-logo">R</div>
+      <button type="button" title="Dashboard" aria-label="Dashboard">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      </button>
+      <button type="button" title="Calendar" aria-label="Calendar">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      </button>
+      <button type="button" title="Events" aria-label="Events">
+        <svg viewBox="0 0 24 24"><path d="M8 7h8M8 12h8M8 17h5"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+      </button>
+      <button type="button" title="Insights" aria-label="Insights">
+        <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M8 15v-4M12 15V8M16 15v-6"/></svg>
+      </button>
+      <button type="button" class="active" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></svg>
+      </button>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="school-pill"><span class="dot"></span> Riverside Elementary PTA</div>
+        <div class="school-pill">2025–26</div>
+      </div>
+
+      <div class="content">
+        <div class="mock-tag">Ease mockup · Settings · not shipped</div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings sections">
+            <div class="nav-label">Workspace</div>
+            <button type="button" class="active" data-view="overview">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></span>
+              Overview
+            </button>
+            <button type="button" data-view="organization">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span>
+              Organization
+            </button>
+            <button type="button" data-view="branding">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3c-2.8 3.6-6 6.2-6 10a6 6 0 0 0 12 0c0-3.8-3.2-6.4-6-10z"/><path d="M10 17.5c.4 1.2 1.2 2 2 2s1.6-.8 2-2"/></svg></span>
+              Branding
+            </button>
+            <button type="button" data-view="team">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a3 3 0 0 1 0 5.74"/></svg></span>
+              Team &amp; Access
+            </button>
+            <div class="nav-divider"></div>
+            <div class="nav-label">Connections</div>
+            <button type="button" data-view="integrations">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M8 12h8M12 8v8"/><circle cx="12" cy="12" r="9"/></svg></span>
+              Integrations
+            </button>
+            <button type="button" data-view="billing">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+              Billing &amp; Plan
+            </button>
+            <div class="nav-divider"></div>
+            <div class="nav-label">You</div>
+            <button type="button" data-view="account">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 19a7 7 0 0 1 14 0"/></svg></span>
+              Account
+            </button>
+          </nav>
+
+          <div class="settings-panels">
+            <!-- Overview -->
+            <section class="panel" data-panel="overview">
+              <div class="page-head">
+                <div>
+                  <h1>Settings</h1>
+                  <p>Organization, team, connections, and billing — kept calm and easy to find.</p>
+                </div>
+              </div>
+
+              <div class="summary-grid">
+                <button type="button" class="summary-card" data-view-jump="organization">
+                  <div class="eyebrow">Organization</div>
+                  <div class="value">Riverside PTA</div>
+                  <div class="sub">Nashville, TN · America/Chicago</div>
+                  <div class="link">View profile →</div>
+                </button>
+                <button type="button" class="summary-card" data-view-jump="team">
+                  <div class="eyebrow">Team</div>
+                  <div class="value">8 active</div>
+                  <div class="sub">2 invites pending</div>
+                  <div class="link">Manage team →</div>
+                </button>
+                <button type="button" class="summary-card" data-view-jump="integrations">
+                  <div class="eyebrow">Integrations</div>
+                  <div class="value">2 connected</div>
+                  <div class="sub">Meta · Google Calendar</div>
+                  <div class="link">Manage connections →</div>
+                </button>
+                <button type="button" class="summary-card" data-view-jump="billing">
+                  <div class="eyebrow">Plan</div>
+                  <div class="value">Professional</div>
+                  <div class="sub">Renews Aug 12 · $79/mo</div>
+                  <div class="link">Manage billing →</div>
+                </button>
+              </div>
+
+              <div class="card-grid">
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Connected</h3>
+                      <p class="card-desc">Tools ready for this school year.</p>
+                    </div>
+                    <button type="button" class="btn btn-ghost" data-view-jump="integrations">View all</button>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Facebook &amp; Instagram</span>
+                    <span class="value"><span class="status-pill ok"><span class="pulse"></span> Connected</span></span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Google Calendar</span>
+                    <span class="value"><span class="status-pill ok"><span class="pulse"></span> Syncing</span></span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Canva</span>
+                    <span class="value"><span class="status-pill off">Not connected</span></span>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Branding</h3>
+                      <p class="card-desc">Voice, inbox sources, playbooks, brand kit, school year.</p>
+                    </div>
+                    <button type="button" class="btn btn-ghost" data-view-jump="branding" data-section-jump="hub">Open</button>
+                  </div>
+                  <div class="year-chip">Active year · 2025–26</div>
+                  <div class="detail-row">
+                    <span class="label">AI Brain</span>
+                    <span class="value">Warm · Friendly</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Inbox sources</span>
+                    <span class="value">4 active</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Brand kit</span>
+                    <span class="value">Colors · logos set</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Organization -->
+            <section class="panel" data-panel="organization" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Organization</h1>
+                  <p>School profile and workspace preferences. Voice, logos, and year live under Branding.</p>
+                </div>
+                <div class="head-actions">
+                  <button type="button" class="btn btn-secondary" data-view-jump="branding" data-section-jump="colors-logos">Open Branding</button>
+                  <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+              </div>
+
+              <div class="card-grid">
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Profile</h3>
+                      <p class="card-desc">Shown across Hey Ralli for this workspace.</p>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="org-name">Organization name</label>
+                    <input id="org-name" type="text" value="Riverside Elementary PTA" />
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="org-city">Weather city</label>
+                      <input id="org-city" type="text" value="Nashville" />
+                    </div>
+                    <div class="field">
+                      <label for="org-state">State</label>
+                      <input id="org-state" type="text" value="TN" />
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="org-tz">Timezone</label>
+                      <select id="org-tz">
+                        <option selected>America/Chicago</option>
+                        <option>America/New_York</option>
+                        <option>America/Los_Angeles</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="org-type">Type</label>
+                      <input id="org-type" type="text" value="PTO" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="org-web">Website</label>
+                    <input id="org-web" type="url" value="https://riversidepta.example" />
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Preferences</h3>
+                      <p class="card-desc">Language and school details.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Language</span>
+                    <span class="value">English (US)</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Principal</span>
+                    <span class="value">Dr. Elena Vargas</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Mascot</span>
+                    <span class="value">Rivers the Otter</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Active school year</span>
+                    <span class="value">2025–26 · managed in Branding</span>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Branding home</h3>
+                      <p class="card-desc">Colors, logos, AI voice, inbox sources, playbooks, and school year moved here.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Brand kit</span>
+                    <span class="value">Primary · accent · logos</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">AI Brain</span>
+                    <span class="value">Org voice · writing style</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Inbox AI</span>
+                    <span class="value">Reply sources · FAQ pages</span>
+                  </div>
+                  <div class="form-actions" style="margin-top:14px">
+                    <button type="button" class="btn btn-secondary" data-view-jump="branding" data-section-jump="hub">Open Branding</button>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Posting preferences</h3>
+                      <p class="card-desc">Default windows for Meta publishing.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Preferred days</span>
+                    <span class="value">Tue · Wed · Thu</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Preferred time</span>
+                    <span class="value">7:30 AM local</span>
+                  </div>
+                  <div class="form-actions" style="margin-top:14px">
+                    <button type="button" class="btn btn-secondary">Edit schedule</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Branding hub (was School year) -->
+            <section class="panel" data-panel="branding" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Branding</h1>
+                  <p>How Riverside sounds, looks, and plans the year — voice, inbox sources, playbooks, brand kit, and school year in one calm home.</p>
+                </div>
+              </div>
+
+              <div class="view-pills" role="tablist" aria-label="Branding sections">
+                <button type="button" class="view-pill active" data-branding-section="hub" role="tab" aria-selected="true">Hub</button>
+                <button type="button" class="view-pill" data-branding-section="ai-brain" role="tab" aria-selected="false">AI Brain</button>
+                <button type="button" class="view-pill" data-branding-section="ai-inbox" role="tab" aria-selected="false">AI Inbox</button>
+                <button type="button" class="view-pill" data-branding-section="playbook" role="tab" aria-selected="false">Playbook</button>
+                <button type="button" class="view-pill" data-branding-section="colors-logos" role="tab" aria-selected="false">Colors &amp; Logos</button>
+                <button type="button" class="view-pill" data-branding-section="school-year" role="tab" aria-selected="false">School Year</button>
+              </div>
+
+              <!-- Hub -->
+              <div class="branding-section" data-branding-panel="hub">
+                <div class="hub-grid">
+                  <button type="button" class="hub-tile" data-section-jump="ai-brain">
+                    <div class="tile-ico"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V7a4 4 0 0 1 4-4z"/><path d="M9.5 12h.01M14.5 12h.01"/></svg></div>
+                    <h3>AI Brain</h3>
+                    <p>Org voice, writing style, and training docs that shape drafts, captions, and replies.</p>
+                    <div class="tile-meta">
+                      <span class="status-pill ok">Friendly · set</span>
+                      <span class="tile-link">Configure →</span>
+                    </div>
+                  </button>
+                  <button type="button" class="hub-tile" data-section-jump="ai-inbox">
+                    <div class="tile-ico"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg></div>
+                    <h3>AI Inbox</h3>
+                    <p>Named sources and links so Inbox AI can match questions to the right school page.</p>
+                    <div class="tile-meta">
+                      <span class="status-pill ok">4 sources</span>
+                      <span class="tile-link">Manage sources →</span>
+                    </div>
+                  </button>
+                  <button type="button" class="hub-tile" data-section-jump="playbook">
+                    <div class="tile-ico"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3z"/><path d="M5 4v16a3 3 0 0 1 3-3h14"/></svg></div>
+                    <h3>Playbook</h3>
+                    <p>Communication playbooks and countdown plans assigned by event type.</p>
+                    <div class="tile-meta">
+                      <span class="status-pill ok">6 playbooks</span>
+                      <span class="tile-link">Open library →</span>
+                    </div>
+                  </button>
+                  <button type="button" class="hub-tile" data-section-jump="colors-logos">
+                    <div class="tile-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg></div>
+                    <h3>Branding Colors and Logos</h3>
+                    <p>Brand kit — PTO + school logos, colors, mascot. Same surface as onboarding Edit branding.</p>
+                    <div class="tile-meta">
+                      <span class="swatch-row"><span style="background:#2f4a3c"></span><span style="background:#c4922e"></span></span>
+                      <span class="tile-link">Edit brand kit →</span>
+                    </div>
+                  </button>
+                  <button type="button" class="hub-tile" data-section-jump="school-year" style="grid-column: 1 / -1">
+                    <div class="tile-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>
+                    <h3>School Year</h3>
+                    <p>Active year scopes calendar, events, and import review — still here, nested under Branding.</p>
+                    <div class="tile-meta">
+                      <span class="year-chip" style="margin:0">Active · 2025–26</span>
+                      <span class="tile-link">Manage year →</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- AI Brain -->
+              <div class="branding-section" data-branding-panel="ai-brain" hidden>
+                <div class="card-grid">
+                  <div class="soft-card" style="grid-column: 1 / -1">
+                    <div class="card-head">
+                      <div>
+                        <h3>How AI Brain works</h3>
+                        <p class="card-desc">Maps to shipped <code>/settings/ai-brain</code> — voice, style, and training docs for drafts (not integrations).</p>
+                      </div>
+                      <span class="status-pill ok"><span class="pulse"></span> Configured</span>
+                    </div>
+                    <p class="card-desc">
+                      Changes here affect campaign drafts, inbox AI replies, and creative suggestions — the same org intelligence profile product already stores.
+                    </p>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Organization voice</h3>
+                        <p class="card-desc">Personality behind every generated message.</p>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label for="brain-voice">Voice</label>
+                      <textarea id="brain-voice">Warm, inclusive, and parent-friendly. We celebrate community and always thank volunteers.</textarea>
+                    </div>
+                    <div class="field">
+                      <label for="brain-style">Writing style</label>
+                      <select id="brain-style">
+                        <option selected>Friendly</option>
+                        <option>Professional</option>
+                        <option>Playful</option>
+                        <option>Concise</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="brain-audience">Audience defaults</label>
+                      <textarea id="brain-audience">All families and staff — inclusive language, school-appropriate tone.</textarea>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Communication preferences</h3>
+                        <p class="card-desc">Rules Hey Ralli follows when drafting.</p>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label for="brain-prefs">Preferences</label>
+                      <textarea id="brain-prefs">Lead with dates and locations. Always mention volunteer opportunities. Avoid fundraising promises.</textarea>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Default CTA</span>
+                      <span class="value">Soft ask · RSVP</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Emoji usage</span>
+                      <span class="value">Moderate</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Training docs</span>
+                      <span class="value">3 uploaded</span>
+                    </div>
+                    <div class="form-actions" style="margin-top:14px">
+                      <button type="button" class="btn btn-primary">Save voice</button>
+                      <button type="button" class="btn btn-ghost">Open training library</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Inbox -->
+              <div class="branding-section" data-branding-panel="ai-inbox" hidden>
+                <div class="card-grid">
+                  <div class="soft-card" style="grid-column: 1 / -1">
+                    <div class="card-head">
+                      <div>
+                        <h3>Inbox AI sources</h3>
+                        <p class="card-desc">Maps to shipped <code>/settings/inbox-ai</code> — named pages and links for reply drafting.</p>
+                      </div>
+                      <button type="button" class="btn btn-primary">Add source</button>
+                    </div>
+                    <p class="card-desc" style="margin-bottom:14px">
+                      Hey Ralli matches incoming messages to these sources and drafts replies using your AI Brain voice. No invented FAQ engine — just the sources product already syncs.
+                    </p>
+                    <div class="detail-row">
+                      <span class="label">School website</span>
+                      <span class="value"><span class="status-pill ok">Active</span> riversidepta.example</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Volunteer FAQ</span>
+                      <span class="value"><span class="status-pill ok">Active</span> /volunteer</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Spirit wear store</span>
+                      <span class="value"><span class="status-pill ok">Active</span> Custom link</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Lunch menu</span>
+                      <span class="value"><span class="status-pill off">No URL</span></span>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Health</h3>
+                        <p class="card-desc">Same health readout as Inbox AI settings.</p>
+                      </div>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Sources score</span>
+                      <span class="value" style="font-family:var(--serif);font-size:22px">4/10</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Last sync</span>
+                      <span class="value">Background sync active</span>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>How Inbox AI works</h3>
+                        <p class="card-desc">Honest product behavior.</p>
+                      </div>
+                    </div>
+                    <ul class="honest-list">
+                      <li>Matches messages to connected source URLs</li>
+                      <li>Drafts in AI Brain voice — not a separate persona</li>
+                      <li>Requires Professional+ for AI Inbox replies (plan gate)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Playbook -->
+              <div class="branding-section" data-branding-panel="playbook" hidden>
+                <div class="card-grid one">
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Playbooks</h3>
+                        <p class="card-desc">Maps to shipped <code>/settings/playbooks-milestones</code> — countdown communication plans by event type.</p>
+                      </div>
+                      <button type="button" class="btn btn-primary">Create playbook</button>
+                    </div>
+                    <div class="playbook-row">
+                      <div>
+                        <h4>Fall Festival</h4>
+                        <p>Event type · 8 milestones · Meta + email beats</p>
+                      </div>
+                      <span class="status-pill ok">Org copy</span>
+                    </div>
+                    <div class="playbook-row">
+                      <div>
+                        <h4>Book Fair</h4>
+                        <p>Event type · 5 milestones · volunteer push</p>
+                      </div>
+                      <span class="status-pill ok">Org copy</span>
+                    </div>
+                    <div class="playbook-row">
+                      <div>
+                        <h4>Spirit Night</h4>
+                        <p>System template · fork to edit</p>
+                      </div>
+                      <span class="status-pill warn">Template</span>
+                    </div>
+                    <div class="playbook-row">
+                      <div>
+                        <h4>Auction / Gala</h4>
+                        <p>Event type · 12 milestones</p>
+                      </div>
+                      <span class="status-pill ok">Org copy</span>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Milestones</h3>
+                        <p class="card-desc">Honest: templates live on playbooks; schedules edit inside campaigns.</p>
+                      </div>
+                    </div>
+                    <p class="card-desc" style="margin-bottom:14px">
+                      Milestone templates are managed inside each campaign. Create or duplicate a playbook above to define default countdown steps — same as today’s Playbooks / Milestones settings.
+                    </p>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-secondary">Browse campaigns</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Colors & Logos -->
+              <div class="branding-section" data-branding-panel="colors-logos" hidden>
+                <div class="card-grid">
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Brand kit</h3>
+                        <p class="card-desc">Maps to shipped <code>/onboarding/brand?standalone=1</code> — Edit branding from Organization today.</p>
+                      </div>
+                      <button type="button" class="btn btn-primary">Edit branding</button>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Primary</span>
+                      <span class="value" style="display:inline-flex;align-items:center;gap:8px">
+                        <span style="width:14px;height:14px;border-radius:4px;background:#2f4a3c"></span>
+                        #2F4A3C
+                      </span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Accent</span>
+                      <span class="value" style="display:inline-flex;align-items:center;gap:8px">
+                        <span style="width:14px;height:14px;border-radius:4px;background:#c4922e"></span>
+                        #C4922E
+                      </span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Font style</span>
+                      <span class="value">Modern</span>
+                    </div>
+                    <div class="detail-row">
+                      <span class="label">Mascot</span>
+                      <span class="value">Rivers the Otter</span>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Logos</h3>
+                        <p class="card-desc">PTO + school marks used when creators opt into brand kit.</p>
+                      </div>
+                    </div>
+                    <div class="field-row">
+                      <div>
+                        <div class="field" style="margin-bottom:8px"><label>PTO logo</label></div>
+                        <div class="logo-slot filled">R</div>
+                        <p class="card-desc" style="margin-top:8px">Uploaded</p>
+                      </div>
+                      <div>
+                        <div class="field" style="margin-bottom:8px"><label>School logo</label></div>
+                        <div class="logo-slot filled">E</div>
+                        <p class="card-desc" style="margin-top:8px">Uploaded</p>
+                      </div>
+                    </div>
+                    <p class="card-desc" style="margin-top:14px">
+                      Artwork guidance: logo / brand colors are explicit opt-in in Create with AI — the kit is not auto-applied.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- School Year (nested) -->
+              <div class="branding-section" data-branding-panel="school-year" hidden>
+                <div class="card-grid">
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Active year</h3>
+                        <p class="card-desc">Maps to shipped <code>/settings/school-year</code> — still the same year controls, nested here.</p>
+                      </div>
+                      <span class="status-pill ok"><span class="pulse"></span> Active</span>
+                    </div>
+                    <div class="year-chip">2025–26</div>
+                    <div class="field-row">
+                      <div class="field">
+                        <label for="sy-start">Start date</label>
+                        <input id="sy-start" type="text" value="Aug 1, 2025" />
+                      </div>
+                      <div class="field">
+                        <label for="sy-end">End date</label>
+                        <input id="sy-end" type="text" value="Jul 31, 2026" />
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label for="sy-feed">Calendar subscribe URL</label>
+                      <input id="sy-feed" type="url" value="https://calendar.google.com/calendar/ical/riverside…/basic.ics" />
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-primary">Save</button>
+                      <button type="button" class="btn btn-secondary">Sync subscribe feed</button>
+                    </div>
+                  </div>
+                  <div class="soft-card">
+                    <div class="card-head">
+                      <div>
+                        <h3>Close &amp; begin next</h3>
+                        <p class="card-desc">Archive this year when you’re ready for the next one.</p>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label for="next-year">Next year label</label>
+                      <input id="next-year" type="text" placeholder="2026–27" />
+                    </div>
+                    <p class="card-desc" style="margin-bottom:14px">
+                      Closing keeps past events for reference. Upload the new calendar after you begin the next year.
+                    </p>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-secondary">Close year &amp; begin next</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Team -->
+            <section class="panel" data-panel="team" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Team &amp; Access</h1>
+                  <p>People with login access, roles, and invites.</p>
+                </div>
+                <div class="head-actions">
+                  <button type="button" class="btn btn-secondary">Import roster</button>
+                  <button type="button" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Invite
+                  </button>
+                </div>
+              </div>
+
+              <div class="soft-card" style="margin-bottom:14px;border-color:rgba(196,146,46,0.28);background:rgba(196,146,46,0.08)">
+                <div class="card-head" style="margin-bottom:0">
+                  <div>
+                    <h3 style="font-size:18px">Permissions + person access drawer</h3>
+                    <p class="card-desc">
+                      Target UX (roles / what they can do + per-person pop-out to link events &amp; give access) lives in a focused mockup — do not treat this Phase 4 people-only panel as final.
+                    </p>
+                  </div>
+                  <a class="btn btn-primary" href="/settings-team-access-ease-mockup.html?person=jordan&amp;tab=events">Open target mockup</a>
+                </div>
+              </div>
+
+              <div class="card-grid" style="margin-bottom:14px">
+                <div class="soft-card">
+                  <div class="eyebrow" style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Active seats</div>
+                  <div style="font-family:var(--serif);font-size:32px;font-weight:600;margin-top:6px">8</div>
+                  <p class="card-desc">of 15 on Professional</p>
+                </div>
+                <div class="soft-card">
+                  <div class="eyebrow" style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Pending invites</div>
+                  <div style="font-family:var(--serif);font-size:32px;font-weight:600;margin-top:6px">2</div>
+                  <p class="card-desc">Expires in 5 days</p>
+                </div>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>People</h3>
+                    <p class="card-desc">Login users for this organization.</p>
+                  </div>
+                </div>
+                <div class="member-list">
+                  <div class="member-row">
+                    <div class="avatar">MR</div>
+                    <div>
+                      <div class="name">Jordan Lee</div>
+                      <div class="role">Owner · Full access</div>
+                    </div>
+                    <div class="spacer"></div>
+                    <span class="status-pill ok">You</span>
+                  </div>
+                  <div class="member-row">
+                    <div class="avatar mustard">JL</div>
+                    <div>
+                      <div class="name">Jordan Lee</div>
+                      <div class="role">Communications · Approve &amp; publish</div>
+                    </div>
+                    <div class="spacer"></div>
+                    <button type="button" class="btn btn-ghost">Edit</button>
+                  </div>
+                  <div class="member-row">
+                    <div class="avatar teal">SK</div>
+                    <div>
+                      <div class="name">Sam Kim</div>
+                      <div class="role">Volunteer lead · Events &amp; people</div>
+                    </div>
+                    <div class="spacer"></div>
+                    <button type="button" class="btn btn-ghost">Edit</button>
+                  </div>
+                  <div class="member-row">
+                    <div class="avatar" style="background:var(--sage)">AP</div>
+                    <div>
+                      <div class="name">Ava Patel</div>
+                      <div class="role">Invite pending · Viewer</div>
+                    </div>
+                    <div class="spacer"></div>
+                    <span class="status-pill warn">Pending</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Integrations -->
+            <section class="panel" data-panel="integrations" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Integrations</h1>
+                  <p>Connect once per tool — approve what Facebook or Google shows, then Hey Ralli uses that connection across the app.</p>
+                </div>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Available</h3>
+                    <p class="card-desc">2 connected · Meta review–friendly labels</p>
+                  </div>
+                </div>
+                <div class="integration-list">
+                  <div class="integration-row">
+                    <div class="integration-meta">
+                      <div class="integration-logo meta">M</div>
+                      <div>
+                        <h4>Facebook &amp; Instagram</h4>
+                        <p>Connect your Facebook Page and linked Instagram account to publish posts, reply in inbox, and pull Insights.</p>
+                      </div>
+                    </div>
+                    <div class="integration-actions">
+                      <span class="status-pill ok"><span class="pulse"></span> Connected</span>
+                      <button type="button" class="btn btn-secondary" data-view-jump="meta">Manage</button>
+                    </div>
+                  </div>
+                  <div class="integration-row">
+                    <div class="integration-meta">
+                      <div class="integration-logo gcal">G</div>
+                      <div>
+                        <h4>Google Calendar</h4>
+                        <p>Sign in with Google to sync school events. File upload and import review stay on Calendar → Import.</p>
+                      </div>
+                    </div>
+                    <div class="integration-actions">
+                      <span class="status-pill ok"><span class="pulse"></span> Connected</span>
+                      <button type="button" class="btn btn-secondary" data-view-jump="calendar">Manage</button>
+                    </div>
+                  </div>
+                  <div class="integration-row">
+                    <div class="integration-meta">
+                      <div class="integration-logo canva">C</div>
+                      <div>
+                        <h4>Canva</h4>
+                        <p>Import designs as inspiration images for Creative Setup.</p>
+                      </div>
+                    </div>
+                    <div class="integration-actions">
+                      <span class="status-pill off">Not connected</span>
+                      <button type="button" class="btn btn-primary">Connect Canva</button>
+                    </div>
+                  </div>
+                  <div class="integration-row">
+                    <div class="integration-meta">
+                      <div class="integration-logo monday">Mo</div>
+                      <div>
+                        <h4>Monday.com</h4>
+                        <p>Optional task sync for boards you already use.</p>
+                      </div>
+                    </div>
+                    <div class="integration-actions">
+                      <span class="status-pill off">Not connected</span>
+                      <button type="button" class="btn btn-secondary">Connect</button>
+                    </div>
+                  </div>
+                  <div class="integration-row">
+                    <div class="integration-meta">
+                      <div class="integration-logo soon">···</div>
+                      <div>
+                        <h4>Gmail · Dropbox · SignUpGenius</h4>
+                        <p>Deferred — not available in soft launch.</p>
+                      </div>
+                    </div>
+                    <div class="integration-actions">
+                      <button type="button" class="btn btn-secondary" disabled>Coming soon</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Meta detail -->
+            <section class="panel" data-panel="meta" hidden>
+              <button type="button" class="back-link" data-view-jump="integrations">
+                <svg viewBox="0 0 24 24"><path d="M15 18 9 12l6-6"/></svg>
+                Integrations
+              </button>
+              <div class="page-head">
+                <div>
+                  <h1>Facebook &amp; Instagram</h1>
+                  <p>Connect once for Riverside Elementary PTA. Approve the list Facebook shows — that’s it.</p>
+                </div>
+                <div class="head-actions">
+                  <span class="status-pill ok"><span class="pulse"></span> Connected</span>
+                </div>
+              </div>
+
+              <div class="connect-hero">
+                <h2>Connected for this organization</h2>
+                <p>Publishing, Communications Hub inbox, and Insights use this Page connection. Organic posts only — no paid ads in Hey Ralli.</p>
+                <div class="platform-chips">
+                  <span class="platform-chip"><span class="swatch fb"></span> Riverside Elementary PTA</span>
+                  <span class="platform-chip"><span class="swatch ig"></span> @riversidepta</span>
+                </div>
+                <ul class="honest-list">
+                  <li>Publish and schedule posts to your Facebook Page and linked Instagram account</li>
+                  <li>Read and reply to Page/Instagram comments and DMs in Communications Hub</li>
+                  <li>Pull Page Insights metrics for Org Insights (views, reach, interactions)</li>
+                </ul>
+                <div class="form-actions" style="margin-top:18px">
+                  <button type="button" class="btn btn-secondary">Reconnect</button>
+                  <button type="button" class="btn btn-ghost">Disconnect</button>
+                </div>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>What Facebook will ask</h3>
+                    <p class="card-desc">Clear purpose copy for Meta App Review.</p>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Pages</span>
+                  <span class="value">Manage and publish content</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Instagram</span>
+                  <span class="value">Manage messaging &amp; content</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Insights</span>
+                  <span class="value">Read performance metrics</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Calendar detail -->
+            <section class="panel" data-panel="calendar" hidden>
+              <button type="button" class="back-link" data-view-jump="integrations">
+                <svg viewBox="0 0 24 24"><path d="M15 18 9 12l6-6"/></svg>
+                Integrations
+              </button>
+              <div class="page-head">
+                <div>
+                  <h1>Google Calendar</h1>
+                  <p>Sign in to sync events. Upload a file and review New / Duplicate / Update / Conflict on Calendar → Import.</p>
+                </div>
+                <div class="head-actions">
+                  <span class="status-pill ok"><span class="pulse"></span> Connected</span>
+                </div>
+              </div>
+
+              <div class="connect-hero">
+                <h2>Signed in with Google</h2>
+                <p>pta@riversidepta.example · daily sync keeps the school year calendar fresh.</p>
+                <ul class="honest-list">
+                  <li>One-click Google Sign-in → approve calendar access → sync into review</li>
+                  <li>Subscribe URL and ICS/file upload remain available on Calendar → Import</li>
+                  <li>Needs an active school year before sync can land events</li>
+                </ul>
+                <div class="form-actions" style="margin-top:18px">
+                  <button type="button" class="btn btn-primary">Sync calendar</button>
+                  <button type="button" class="btn btn-secondary">Open Import</button>
+                  <button type="button" class="btn btn-ghost">Disconnect</button>
+                </div>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Subscribe feed</h3>
+                    <p class="card-desc">Optional ICS link saved on the active school year.</p>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="cal-sub">Calendar subscribe URL</label>
+                  <input id="cal-sub" type="url" value="https://calendar.google.com/calendar/ical/riverside…/basic.ics" />
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary">Save feed</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Billing -->
+            <section class="panel" data-panel="billing" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Billing &amp; Plan</h1>
+                  <p>Subscription, AI credits, and payment for this organization.</p>
+                </div>
+                <div class="head-actions">
+                  <button type="button" class="btn btn-secondary">Open Stripe portal</button>
+                </div>
+              </div>
+
+              <div class="plan-hero">
+                <div class="soft-card">
+                  <div class="plan-badge">Current plan</div>
+                  <div class="plan-price">$79 <span>/ month</span></div>
+                  <p class="card-desc" style="margin-top:10px">Professional · Renews Aug 12, 2026</p>
+                  <div class="form-actions" style="margin-top:16px">
+                    <button type="button" class="btn btn-primary">Change plan</button>
+                    <button type="button" class="btn btn-ghost">View invoices</button>
+                  </div>
+                </div>
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Usage this period</h3>
+                      <p class="card-desc">Resets with your billing cycle.</p>
+                    </div>
+                  </div>
+                  <div class="usage-bars">
+                    <div class="usage-item">
+                      <div class="usage-top"><span>AI credits</span><span>420 / 800</span></div>
+                      <div class="bar"><i style="width:52%"></i></div>
+                    </div>
+                    <div class="usage-item">
+                      <div class="usage-top"><span>Active seats</span><span>8 / 15</span></div>
+                      <div class="bar"><i style="width:53%"></i></div>
+                    </div>
+                    <div class="usage-item">
+                      <div class="usage-top"><span>AI Reserve</span><span>120 left</span></div>
+                      <div class="bar"><i style="width:30%;background:var(--mustard)"></i></div>
+                    </div>
+                  </div>
+                  <div class="form-actions" style="margin-top:16px">
+                    <button type="button" class="btn btn-secondary">Buy more Reserve</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="soft-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Payment method</h3>
+                    <p class="card-desc">Managed securely in Stripe.</p>
+                  </div>
+                  <button type="button" class="btn btn-secondary">Update</button>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Card</span>
+                  <span class="value">Visa ···· 4242</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Billing email</span>
+                  <span class="value">treasurer@riversidepta.example</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Account -->
+            <section class="panel" data-panel="account" hidden>
+              <div class="page-head">
+                <div>
+                  <h1>Account</h1>
+                  <p>Your profile for this workspace, quiet notifications, and sign-out.</p>
+                </div>
+              </div>
+
+              <div class="card-grid">
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Your profile</h3>
+                      <p class="card-desc">How you appear to teammates.</p>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="acc-name">Display name</label>
+                    <input id="acc-name" type="text" value="Jordan Lee" />
+                  </div>
+                  <div class="field">
+                    <label for="acc-email">Email</label>
+                    <input id="acc-email" type="email" value="jordan@riversidepta.example" />
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-primary">Save</button>
+                  </div>
+                </div>
+
+                <div class="soft-card">
+                  <div class="card-head">
+                    <div>
+                      <h3>Notifications</h3>
+                      <p class="card-desc">Optional — keep these quiet if you only want in-app cues.</p>
+                    </div>
+                  </div>
+                  <div class="toggle-row">
+                    <div>
+                      <h4>Approval needs attention</h4>
+                      <p>When something is waiting on you to approve or revise.</p>
+                    </div>
+                    <button type="button" class="toggle on" aria-pressed="true" aria-label="Toggle approval notifications"></button>
+                  </div>
+                  <div class="toggle-row">
+                    <div>
+                      <h4>Inbox follow-ups</h4>
+                      <p>Digest when starred threads need a reply.</p>
+                    </div>
+                    <button type="button" class="toggle on" aria-pressed="true" aria-label="Toggle inbox notifications"></button>
+                  </div>
+                  <div class="toggle-row">
+                    <div>
+                      <h4>Weekly summary email</h4>
+                      <p>One calm note on Mondays — what’s up next.</p>
+                    </div>
+                    <button type="button" class="toggle" aria-pressed="false" aria-label="Toggle weekly summary"></button>
+                  </div>
+                </div>
+
+                <div class="soft-card" style="grid-column: 1 / -1">
+                  <div class="card-head">
+                    <div>
+                      <h3>Session</h3>
+                      <p class="card-desc">Signed in on this device.</p>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Workspace</span>
+                    <span class="value">Riverside Elementary PTA</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="label">Role</span>
+                    <span class="value">Owner</span>
+                  </div>
+                  <div class="form-actions" style="margin-top:14px">
+                    <button type="button" class="btn btn-danger">Sign out</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div class="note">
+              <h3>What this mockup is solving</h3>
+              <p>School year becomes <strong>Branding</strong> — a calm hub for AI Brain, AI Inbox, Playbook, brand kit (colors &amp; logos), and School Year nested underneath. Organization keeps profile/preferences; brand assets move here so they aren’t duplicated.</p>
+              <ul>
+                <li><strong>Soft left nav</strong> — <code>?view=</code> (overview · organization · branding · team · integrations · meta · calendar · billing · account).</li>
+                <li><strong>Branding sections</strong> — <code>?view=branding&amp;section=</code> (hub · ai-brain · ai-inbox · playbook · colors-logos · school-year). Legacy <code>?view=school-year</code> opens Branding → School Year.</li>
+                <li><strong>Honest placeholders</strong> — wired to shipped routes (<code>/settings/ai-brain</code>, <code>/settings/inbox-ai</code>, <code>/settings/playbooks-milestones</code>, <code>/onboarding/brand</code>, <code>/settings/school-year</code>).</li>
+                <li><strong>Do not ship product UI until GO.</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VIEWS = [
+      "overview",
+      "organization",
+      "branding",
+      "team",
+      "integrations",
+      "meta",
+      "calendar",
+      "billing",
+      "account",
+    ];
+    const BRANDING_SECTIONS = [
+      "hub",
+      "ai-brain",
+      "ai-inbox",
+      "playbook",
+      "colors-logos",
+      "school-year",
+    ];
+    const navBtns = [...document.querySelectorAll(".settings-nav [data-view]")];
+    const panels = [...document.querySelectorAll("[data-panel]")];
+    const brandingPills = [...document.querySelectorAll("[data-branding-section]")];
+    const brandingPanels = [...document.querySelectorAll("[data-branding-panel]")];
+    let currentView = "overview";
+    let currentSection = "hub";
+
+    function setBrandingSection(section, { scroll = false } = {}) {
+      if (!BRANDING_SECTIONS.includes(section)) section = "hub";
+      currentSection = section;
+      brandingPills.forEach((pill) => {
+        const active = pill.dataset.brandingSection === section;
+        pill.classList.toggle("active", active);
+        pill.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      brandingPanels.forEach((panel) => {
+        panel.hidden = panel.dataset.brandingPanel !== section;
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", "branding");
+      if (section === "hub") url.searchParams.delete("section");
+      else url.searchParams.set("section", section);
+      history.replaceState(null, "", url);
+      if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function setView(id, { section } = {}) {
+      if (id === "school-year") {
+        id = "branding";
+        section = section || "school-year";
+      }
+      if (!VIEWS.includes(id)) id = "overview";
+      currentView = id;
+      navBtns.forEach((btn) => {
+        const isMetaOrCal = id === "meta" || id === "calendar";
+        const active =
+          btn.dataset.view === id ||
+          (isMetaOrCal && btn.dataset.view === "integrations");
+        btn.classList.toggle("active", active);
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== id;
+      });
+      const url = new URL(window.location.href);
+      if (id === "overview") {
+        url.searchParams.delete("view");
+        url.searchParams.delete("section");
+      } else {
+        url.searchParams.set("view", id);
+        if (id !== "branding") url.searchParams.delete("section");
+      }
+      history.replaceState(null, "", url);
+      if (id === "branding") {
+        setBrandingSection(section || currentSection || "hub");
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    navBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.view === "branding") setView("branding", { section: "hub" });
+        else setView(btn.dataset.view);
+      });
+    });
+    document.querySelectorAll("[data-view-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setView(btn.dataset.viewJump, { section: btn.dataset.sectionJump });
+      });
+    });
+    document.querySelectorAll("[data-section-jump]").forEach((btn) => {
+      if (btn.dataset.viewJump) return;
+      btn.addEventListener("click", () => {
+        if (currentView !== "branding") setView("branding", { section: btn.dataset.sectionJump });
+        else setBrandingSection(btn.dataset.sectionJump, { scroll: true });
+      });
+    });
+    brandingPills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        setBrandingSection(pill.dataset.brandingSection, { scroll: true });
+      });
+    });
+
+    document.querySelectorAll(".toggle").forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const on = toggle.classList.toggle("on");
+        toggle.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    let initial = params.get("view");
+    let initialSection = params.get("section");
+    if (initial === "school-year") {
+      initial = "branding";
+      initialSection = initialSection || "school-year";
+    }
+    if (VIEWS.includes(initial)) setView(initial, { section: initialSection || undefined });
+  </script>
+</body>
+</html>

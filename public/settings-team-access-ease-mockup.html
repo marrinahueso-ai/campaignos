@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Team &amp; Access Ease Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --warn: #a65a3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, a, select { font: inherit; }
+    .app { display: grid; grid-template-columns: 72px 1fr; min-height: 100vh; }
+    .rail {
+      background: #f3f0ea;
+      border-right: 1px solid var(--line);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 18px 0; gap: 6px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .rail-logo {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-weight: 700; font-size: 18px;
+      margin-bottom: 14px;
+    }
+    .rail button {
+      width: 44px; height: 44px; border: none; background: transparent;
+      border-radius: 12px; color: var(--ink-soft); cursor: pointer;
+      display: grid; place-items: center;
+    }
+    .rail button.active, .rail button:hover { background: var(--cream-deep); color: var(--ink); }
+    .rail button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+    .main { min-width: 0; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 32px; gap: 12px;
+    }
+    .school-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 999px;
+      padding: 8px 14px; font-size: 14px; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); }
+    .content { padding: 4px 32px 80px; max-width: 84rem; }
+    .mock-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 6px 12px; border-radius: 999px;
+      background: rgba(196, 146, 46, 0.14);
+      border: 1px solid rgba(196, 146, 46, 0.28);
+      color: #7a5a12; font-size: 12px; font-weight: 700;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes slide-in {
+      from { transform: translateX(18px); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+
+    .settings-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .settings-nav {
+      position: sticky;
+      top: 20px;
+      background: rgba(255, 252, 247, 0.65);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      animation: rise .35s ease both;
+    }
+    .settings-nav .nav-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+      padding: 8px 12px 6px;
+    }
+    .settings-nav button {
+      width: 100%;
+      display: flex; align-items: center; gap: 10px;
+      border: none; background: transparent;
+      border-radius: 14px;
+      padding: 10px 12px;
+      text-align: left;
+      color: var(--ink-soft);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .settings-nav button:hover { background: rgba(235, 228, 217, 0.7); color: var(--ink); }
+    .settings-nav button.active {
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+    }
+    .settings-nav button .nav-ico {
+      width: 28px; height: 28px; border-radius: 9px;
+      display: grid; place-items: center;
+      background: rgba(47, 74, 60, 0.08);
+      color: var(--forest);
+      flex-shrink: 0;
+    }
+    .settings-nav button.active .nav-ico {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .settings-nav button svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+    .panel { animation: rise .35s ease both; }
+    .page-head {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      align-items: flex-end; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .page-head h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(30px, 3.6vw, 42px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+    .page-head p {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--ink-soft);
+      max-width: 48ch;
+      line-height: 1.45;
+    }
+    .head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .btn {
+      border: none; border-radius: 999px;
+      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: transform .12s;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--ink); color: var(--white); }
+    .btn-secondary {
+      background: var(--white); color: var(--ink);
+      border: 1.5px solid var(--line);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--ink-soft);
+      border: 1.5px solid transparent; padding: 8px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink); }
+    .btn-sm { padding: 8px 14px; font-size: 12px; }
+    .btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+
+    .soft-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .stat-value {
+      font-family: var(--serif);
+      font-size: 32px; font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-top: 6px; line-height: 1;
+    }
+    .card-desc {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.4;
+    }
+    .card-head {
+      display: flex; flex-wrap: wrap; gap: 10px;
+      align-items: flex-start; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .card-head h3 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .role-pills {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .role-pill {
+      border: 1.5px solid var(--line);
+      background: rgba(246, 242, 235, 0.7);
+      color: var(--ink-soft);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s, transform .12s;
+    }
+    .role-pill:hover { transform: translateY(-1px); color: var(--ink); }
+    .role-pill.active {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: var(--cream);
+    }
+    .role-pill .count {
+      display: inline-flex;
+      margin-left: 6px;
+      opacity: 0.72;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .perm-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(246, 242, 235, 0.55);
+      border: 1px solid transparent;
+    }
+    .perm-chip.on {
+      background: rgba(47, 74, 60, 0.08);
+      border-color: rgba(47, 74, 60, 0.12);
+    }
+    .perm-chip .dot-check {
+      width: 22px; height: 22px; border-radius: 999px;
+      display: grid; place-items: center;
+      flex-shrink: 0;
+      font-size: 12px; font-weight: 800;
+    }
+    .perm-chip.on .dot-check {
+      background: var(--forest);
+      color: var(--cream);
+    }
+    .perm-chip:not(.on) .dot-check {
+      background: rgba(122, 113, 102, 0.14);
+      color: var(--muted);
+    }
+    .perm-chip .label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .perm-chip:not(.on) .label { color: var(--muted); font-weight: 600; }
+    .perm-chip .hint {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .member-list { display: flex; flex-direction: column; gap: 8px; }
+    .member-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(246, 242, 235, 0.55);
+      border: 1px solid transparent;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, transform .12s;
+    }
+    .member-row:hover {
+      background: rgba(246, 242, 235, 0.95);
+      border-color: rgba(47, 74, 60, 0.14);
+      transform: translateY(-1px);
+    }
+    .member-row:focus-visible {
+      outline: 2px solid var(--forest);
+      outline-offset: 2px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 12px;
+      background: var(--forest); color: var(--cream);
+      display: grid; place-items: center;
+      font-size: 12px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .avatar.mustard { background: var(--mustard); color: var(--ink); }
+    .avatar.teal { background: var(--teal); }
+    .avatar.sage { background: var(--sage); }
+    .member-row .name { font-size: 14px; font-weight: 700; }
+    .member-row .role { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .member-row .spacer { flex: 1; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 700;
+    }
+    .status-pill.ok { background: rgba(47, 74, 60, 0.1); color: var(--forest); }
+    .status-pill.warn { background: rgba(196, 146, 46, 0.16); color: #7a5a12; }
+    .event-mini {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--teal);
+      font-weight: 700;
+    }
+
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Drawer */
+    .scrim {
+      position: fixed; inset: 0;
+      background: rgba(42, 38, 34, 0.28);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+      z-index: 40;
+    }
+    .scrim.open { opacity: 1; pointer-events: auto; }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(460px, 100%);
+      background: var(--cream);
+      box-shadow: var(--shadow-lg);
+      transform: translateX(100%);
+      transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+      z-index: 50;
+      display: flex; flex-direction: column;
+      border-left: 1px solid var(--line);
+    }
+    .drawer.open { transform: none; }
+    .drawer-head {
+      padding: 22px 22px 0;
+      animation: slide-in .28s ease both;
+    }
+    .drawer-head-top {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    }
+    .drawer-x {
+      border: 1px solid var(--line); background: var(--white); border-radius: 999px;
+      width: 36px; height: 36px; cursor: pointer; color: var(--ink-soft);
+      display: grid; place-items: center;
+    }
+    .person-hero {
+      display: flex; gap: 14px; align-items: flex-start;
+      margin-top: 4px;
+    }
+    .person-hero .avatar {
+      width: 56px; height: 56px; border-radius: 16px; font-size: 16px;
+    }
+    .person-hero h2 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .person-hero .meta {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .person-hero .contact {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .drawer-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 16px 0 0;
+    }
+    .drawer-tabs {
+      display: flex; gap: 4px;
+      margin-top: 18px;
+      padding-bottom: 0;
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+    }
+    .drawer-tabs button {
+      border: none; background: transparent;
+      padding: 10px 12px;
+      font-size: 13px; font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .drawer-tabs button.active {
+      color: var(--ink);
+      border-bottom-color: var(--forest);
+    }
+    .drawer-scroll {
+      padding: 18px 22px 28px;
+      overflow: auto;
+      flex: 1;
+    }
+    .drawer-panel[hidden] { display: none !important; }
+    .drawer-panel { animation: rise .25s ease both; }
+
+    .quiet-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .quiet-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+    .quiet-row dt { color: var(--muted); font-weight: 600; }
+    .quiet-row dd { margin: 0; font-weight: 700; text-align: right; }
+
+    .event-pick {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .event-chip {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%;
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1.5px solid var(--line);
+      background: var(--white);
+      cursor: pointer;
+      transition: border-color .12s, background .12s, transform .12s;
+    }
+    .event-chip:hover { transform: translateY(-1px); }
+    .event-chip.on {
+      border-color: rgba(47, 74, 60, 0.35);
+      background: rgba(47, 74, 60, 0.07);
+    }
+    .event-chip .check {
+      width: 22px; height: 22px; border-radius: 999px;
+      border: 1.5px solid var(--line);
+      display: grid; place-items: center;
+      font-size: 11px; font-weight: 800;
+      color: transparent;
+      flex-shrink: 0;
+    }
+    .event-chip.on .check {
+      background: var(--forest);
+      border-color: var(--forest);
+      color: var(--cream);
+    }
+    .event-chip .title { font-size: 13px; font-weight: 700; }
+    .event-chip .when { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .access-select {
+      width: 100%;
+      border: 1.5px solid var(--line);
+      background: var(--white);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-top: 6px;
+    }
+    .toggle-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: var(--white);
+      border: 1px solid var(--line);
+    }
+    .toggle-row .t-label { font-size: 13px; font-weight: 700; }
+    .toggle-row .t-hint { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+    .switch {
+      width: 44px; height: 26px; border-radius: 999px;
+      background: rgba(122, 113, 102, 0.28);
+      border: none; padding: 2px; cursor: pointer;
+      position: relative; flex-shrink: 0;
+      transition: background .15s;
+    }
+    .switch.on { background: var(--forest); }
+    .switch span {
+      display: block; width: 22px; height: 22px; border-radius: 999px;
+      background: var(--white); box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      transition: transform .15s;
+    }
+    .switch.on span { transform: translateX(18px); }
+
+    .drawer-foot {
+      padding: 14px 22px 22px;
+      display: flex; flex-wrap: wrap; gap: 8px;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.75);
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(47, 74, 60, 0.06);
+      border: 1px solid rgba(47, 74, 60, 0.12);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+    .note strong { color: var(--forest); }
+
+    @media (max-width: 960px) {
+      .settings-layout { grid-template-columns: 1fr; }
+      .settings-nav { position: static; display: flex; gap: 6px; overflow-x: auto; }
+      .settings-nav .nav-label { display: none; }
+      .settings-nav button { width: auto; white-space: nowrap; }
+      .card-grid, .perm-grid { grid-template-columns: 1fr; }
+      .content, .topbar { padding-left: 18px; padding-right: 18px; }
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="App nav">
+      <div class="rail-logo">R</div>
+      <button type="button" aria-label="Dashboard"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg></button>
+      <button type="button" aria-label="Calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+      <button type="button" aria-label="Events"><svg viewBox="0 0 24 24"><path d="M8 7V5m8 2V5M5 10h14M6 4h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></button>
+      <button type="button" class="active" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="school-pill"><span class="dot"></span> Riverside Elementary PTO</div>
+        <span class="mock-tag">Mockup · permissions + person access drawer</span>
+      </div>
+
+      <div class="content">
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings">
+            <div class="nav-label">Settings</div>
+            <button type="button">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/></svg></span>
+              Overview
+            </button>
+            <button type="button">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h13"/></svg></span>
+              Organization
+            </button>
+            <button type="button" onclick="location.href='/settings-ease-mockup.html?view=branding'">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3c-2.8 3.6-6 6.2-6 10a6 6 0 0 0 12 0c0-3.8-3.2-6.4-6-10z"/><path d="M10 17.5c.4 1.2 1.2 2 2 2s1.6-.8 2-2"/></svg></span>
+              Branding
+            </button>
+            <button type="button" class="active">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="3"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+              Team &amp; Access
+            </button>
+            <button type="button">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
+              Integrations
+            </button>
+            <button type="button">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4zM8 7V5h8v2"/></svg></span>
+              Billing &amp; Plan
+            </button>
+            <button type="button">
+              <span class="nav-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+              Account
+            </button>
+          </nav>
+
+          <section class="panel">
+            <div class="page-head">
+              <div>
+                <h1>Team &amp; Access</h1>
+                <p>People, roles, and what each person can do — link events and adjust access in one quiet pop-out.</p>
+              </div>
+              <div class="head-actions">
+                <button type="button" class="btn btn-secondary">Import roster</button>
+                <button type="button" class="btn btn-primary">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                  Invite
+                </button>
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="soft-card">
+                <div class="eyebrow">Active seats</div>
+                <div class="stat-value">8</div>
+                <p class="card-desc">of 15 on Professional</p>
+              </div>
+              <div class="soft-card">
+                <div class="eyebrow">Pending invites</div>
+                <div class="stat-value">2</div>
+                <p class="card-desc">Expires in 5 days</p>
+              </div>
+            </div>
+
+            <!-- Permissions / roles (missing from Phase 4 Ease chrome) -->
+            <div class="soft-card" style="margin-bottom:14px">
+              <div class="card-head">
+                <div>
+                  <h3>Roles &amp; permissions</h3>
+                  <p class="card-desc">What each access role can do. Soft summary — not a dense admin matrix.</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm">Edit roles</button>
+              </div>
+              <div class="role-pills" id="role-pills" role="tablist" aria-label="Access roles">
+                <button type="button" class="role-pill active" data-role="owner" role="tab" aria-selected="true">Owner <span class="count">1</span></button>
+                <button type="button" class="role-pill" data-role="comms" role="tab" aria-selected="false">Approve &amp; publish <span class="count">2</span></button>
+                <button type="button" class="role-pill" data-role="events" role="tab" aria-selected="false">Events &amp; people <span class="count">3</span></button>
+                <button type="button" class="role-pill" data-role="viewer" role="tab" aria-selected="false">Viewer <span class="count">2</span></button>
+              </div>
+              <div id="role-detail">
+                <p class="card-desc" style="margin-bottom:12px" id="role-blurb">Full workspace control — billing, invites, and every event.</p>
+                <div class="perm-grid" id="perm-grid"></div>
+              </div>
+            </div>
+
+            <div class="soft-card">
+              <div class="card-head">
+                <div>
+                  <h3>People</h3>
+                  <p class="card-desc">Open anyone to link events and give access.</p>
+                </div>
+              </div>
+              <div class="member-list" id="member-list">
+                <div class="member-row" data-person="jordan" role="button" tabindex="0">
+                  <div class="avatar">JL</div>
+                  <div>
+                    <div class="name">Jordan Lee</div>
+                    <div class="role">Owner · Full access</div>
+                  </div>
+                  <div class="spacer"></div>
+                  <span class="status-pill ok">You</span>
+                </div>
+                <div class="member-row" data-person="alex" role="button" tabindex="0">
+                  <div class="avatar mustard">AC</div>
+                  <div>
+                    <div class="name">Alex Chen</div>
+                    <div class="role">Communications · Approve &amp; publish</div>
+                    <div class="event-mini">2 events linked</div>
+                  </div>
+                  <div class="spacer"></div>
+                  <span class="btn btn-ghost btn-sm">Open</span>
+                </div>
+                <div class="member-row" data-person="sam" role="button" tabindex="0">
+                  <div class="avatar teal">SK</div>
+                  <div>
+                    <div class="name">Sam Kim</div>
+                    <div class="role">Volunteer lead · Events &amp; people</div>
+                    <div class="event-mini">1 event linked</div>
+                  </div>
+                  <div class="spacer"></div>
+                  <span class="btn btn-ghost btn-sm">Open</span>
+                </div>
+                <div class="member-row" data-person="ava" role="button" tabindex="0">
+                  <div class="avatar sage">AP</div>
+                  <div>
+                    <div class="name">Ava Patel</div>
+                    <div class="role">Invite pending · Viewer</div>
+                  </div>
+                  <div class="spacer"></div>
+                  <span class="status-pill warn">Pending</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="note">
+              <strong>Target for GO.</strong> Phase 4 Ease shipped seats + people + invite/edit modals only.
+              Pre-Ease still has Access templates + person profile pages (and an unused member drawer).
+              This mockup is the cream/Fraunces direction: permissions on the page + a person pop-out for events and access.
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <aside class="drawer" id="drawer" aria-hidden="true" role="dialog" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div class="drawer-head-top">
+        <div class="person-hero">
+          <div class="avatar mustard" id="drawer-avatar">AC</div>
+          <div>
+            <h2 id="drawer-title">Alex Chen</h2>
+            <p class="meta" id="drawer-role">Communications · Approve &amp; publish</p>
+            <p class="contact" id="drawer-contact">alex@riversidepta.example<br />Login enabled</p>
+          </div>
+        </div>
+        <button type="button" class="drawer-x" id="close-drawer" aria-label="Close">✕</button>
+      </div>
+      <div class="drawer-actions">
+        <button type="button" class="btn btn-secondary btn-sm">Edit profile</button>
+        <button type="button" class="btn btn-primary btn-sm" id="give-access-btn">Give access</button>
+      </div>
+      <div class="drawer-tabs" role="tablist">
+        <button type="button" class="active" data-tab="overview" role="tab">Overview</button>
+        <button type="button" data-tab="events" role="tab">Events <span id="events-count">(2)</span></button>
+        <button type="button" data-tab="access" role="tab">Access</button>
+      </div>
+    </div>
+    <div class="drawer-scroll">
+      <div class="drawer-panel" data-panel="overview">
+        <div class="quiet-list">
+          <div class="quiet-row"><dt>Organization title</dt><dd id="ov-title">VP Communications</dd></div>
+          <div class="quiet-row"><dt>App access</dt><dd id="ov-access">Approve &amp; publish</dd></div>
+          <div class="quiet-row"><dt>Primary team</dt><dd id="ov-team">Communications</dd></div>
+          <div class="quiet-row"><dt>Reports to</dt><dd id="ov-reports">Jordan Lee</dd></div>
+        </div>
+        <p class="card-desc" style="margin-top:16px;margin-bottom:10px">Linked events</p>
+        <div class="event-pick" id="overview-events"></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px" data-goto-tab="events">Manage event links →</button>
+      </div>
+
+      <div class="drawer-panel" data-panel="events" hidden>
+        <p class="card-desc" style="margin-bottom:12px">Link the events this person can work on. Soft toggles — not a spreadsheet.</p>
+        <div class="event-pick" id="event-pick"></div>
+      </div>
+
+      <div class="drawer-panel" data-panel="access" hidden>
+        <label class="eyebrow" for="access-role">Access role</label>
+        <select class="access-select" id="access-role">
+          <option value="owner">Owner — full access</option>
+          <option value="comms" selected>Approve &amp; publish</option>
+          <option value="events">Events &amp; people</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <p class="card-desc" style="margin-top:10px">Permissions for this role. Changes apply after Save.</p>
+        <div class="toggle-list" id="access-toggles"></div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="btn btn-primary" id="save-drawer">Save changes</button>
+      <button type="button" class="btn btn-secondary" id="close-drawer-foot">Done</button>
+    </div>
+  </aside>
+
+  <script>
+    const ROLES = {
+      owner: {
+        blurb: "Full workspace control — billing, invites, and every event.",
+        perms: [
+          { label: "See all events", on: true },
+          { label: "Draft & edit", on: true },
+          { label: "Approve communications", on: true },
+          { label: "Publish / social", on: true },
+          { label: "Manage people", on: true },
+          { label: "Manage billing", on: true },
+        ],
+      },
+      comms: {
+        blurb: "Draft, approve, and publish — usually for communications leads.",
+        perms: [
+          { label: "See all events", on: true },
+          { label: "Draft & edit", on: true },
+          { label: "Approve communications", on: true },
+          { label: "Publish / social", on: true },
+          { label: "Manage people", on: false },
+          { label: "Manage billing", on: false },
+        ],
+      },
+      events: {
+        blurb: "Work on assigned events and help with people — not billing.",
+        perms: [
+          { label: "See all events", on: false, hint: "Assigned events only" },
+          { label: "Draft & edit", on: true },
+          { label: "Approve communications", on: false },
+          { label: "Publish / social", on: false },
+          { label: "Manage people", on: true },
+          { label: "Manage billing", on: false },
+        ],
+      },
+      viewer: {
+        blurb: "Read-only view of campaigns and reports.",
+        perms: [
+          { label: "See all events", on: true },
+          { label: "Draft & edit", on: false },
+          { label: "Approve communications", on: false },
+          { label: "Publish / social", on: false },
+          { label: "Manage people", on: false },
+          { label: "Manage billing", on: false },
+        ],
+      },
+    };
+
+    const EVENTS = [
+      { id: "fun-run", title: "Spring Fun Run", when: "Apr 12 · Active" },
+      { id: "book-fair", title: "Book Fair", when: "May 3 · Planning" },
+      { id: "auction", title: "Spring Auction", when: "May 30 · Draft" },
+      { id: "staff", title: "Staff Appreciation", when: "Jun 8 · Planning" },
+    ];
+
+    const PEOPLE = {
+      jordan: {
+        name: "Jordan Lee",
+        initials: "JL",
+        tone: "",
+        roleLine: "Owner · Full access",
+        contact: "jordan@riversidepta.example<br />Login enabled",
+        title: "President",
+        access: "Owner",
+        team: "Board",
+        reports: "—",
+        accessRole: "owner",
+        events: ["fun-run", "book-fair", "auction", "staff"],
+        pending: false,
+      },
+      alex: {
+        name: "Alex Chen",
+        initials: "AC",
+        tone: "mustard",
+        roleLine: "Communications · Approve &amp; publish",
+        contact: "alex@riversidepta.example<br />Login enabled",
+        title: "VP Communications",
+        access: "Approve &amp; publish",
+        team: "Communications",
+        reports: "Jordan Lee",
+        accessRole: "comms",
+        events: ["fun-run", "book-fair"],
+        pending: false,
+      },
+      sam: {
+        name: "Sam Kim",
+        initials: "SK",
+        tone: "teal",
+        roleLine: "Volunteer lead · Events &amp; people",
+        contact: "sam@riversidepta.example<br />Login enabled",
+        title: "Volunteer Lead",
+        access: "Events &amp; people",
+        team: "Volunteers",
+        reports: "Jordan Lee",
+        accessRole: "events",
+        events: ["fun-run"],
+        pending: false,
+      },
+      ava: {
+        name: "Ava Patel",
+        initials: "AP",
+        tone: "sage",
+        roleLine: "Invite pending · Viewer",
+        contact: "ava@riversidepta.example<br />Invite pending",
+        title: "Committee member",
+        access: "Viewer",
+        team: "Hospitality",
+        reports: "Sam Kim",
+        accessRole: "viewer",
+        events: [],
+        pending: true,
+      },
+    };
+
+    const permGrid = document.getElementById("perm-grid");
+    const roleBlurb = document.getElementById("role-blurb");
+    const rolePills = document.getElementById("role-pills");
+
+    function renderRole(roleId) {
+      const role = ROLES[roleId];
+      roleBlurb.textContent = role.blurb;
+      permGrid.innerHTML = role.perms.map((p) => `
+        <div class="perm-chip ${p.on ? "on" : ""}">
+          <span class="dot-check">${p.on ? "✓" : "–"}</span>
+          <span>
+            <span class="label">${p.label}</span>
+            ${p.hint ? `<span class="hint">${p.hint}</span>` : ""}
+          </span>
+        </div>
+      `).join("");
+    }
+
+    rolePills.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-role]");
+      if (!btn) return;
+      rolePills.querySelectorAll(".role-pill").forEach((el) => {
+        el.classList.toggle("active", el === btn);
+        el.setAttribute("aria-selected", el === btn ? "true" : "false");
+      });
+      renderRole(btn.dataset.role);
+    });
+    renderRole("owner");
+
+    const scrim = document.getElementById("scrim");
+    const drawer = document.getElementById("drawer");
+    const eventPick = document.getElementById("event-pick");
+    const overviewEvents = document.getElementById("overview-events");
+    const accessToggles = document.getElementById("access-toggles");
+    const accessRole = document.getElementById("access-role");
+    const giveAccessBtn = document.getElementById("give-access-btn");
+    let currentPerson = "jordan";
+    let linked = new Set(PEOPLE.jordan.events);
+
+    function setTab(tabId) {
+      drawer.querySelectorAll(".drawer-tabs button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === tabId);
+      });
+      drawer.querySelectorAll(".drawer-panel").forEach((p) => {
+        p.hidden = p.dataset.panel !== tabId;
+      });
+    }
+
+    function renderEvents() {
+      const count = linked.size;
+      document.getElementById("events-count").textContent = `(${count})`;
+      const chips = EVENTS.map((ev) => {
+        const on = linked.has(ev.id);
+        return `
+          <button type="button" class="event-chip ${on ? "on" : ""}" data-event="${ev.id}">
+            <span class="check">✓</span>
+            <span>
+              <div class="title">${ev.title}</div>
+              <div class="when">${ev.when}</div>
+            </span>
+          </button>
+        `;
+      }).join("");
+      eventPick.innerHTML = chips;
+      const linkedList = EVENTS.filter((ev) => linked.has(ev.id));
+      overviewEvents.innerHTML = linkedList.length
+        ? linkedList.map((ev) => `
+            <div class="event-chip on" style="cursor:default">
+              <span class="check">✓</span>
+              <span>
+                <div class="title">${ev.title}</div>
+                <div class="when">${ev.when}</div>
+              </span>
+            </div>
+          `).join("")
+        : `<p class="card-desc">No events linked yet.</p>`;
+    }
+
+    function renderAccessToggles(roleId) {
+      const role = ROLES[roleId] || ROLES.comms;
+      accessToggles.innerHTML = role.perms.map((p, i) => `
+        <div class="toggle-row">
+          <div>
+            <div class="t-label">${p.label}</div>
+            ${p.hint ? `<div class="t-hint">${p.hint}</div>` : `<div class="t-hint">From access role</div>`}
+          </div>
+          <button type="button" class="switch ${p.on ? "on" : ""}" data-toggle="${i}" aria-pressed="${p.on}" aria-label="${p.label}">
+            <span></span>
+          </button>
+        </div>
+      `).join("");
+    }
+
+    function openPerson(id, tab = "overview") {
+      const person = PEOPLE[id];
+      if (!person) return;
+      currentPerson = id;
+      linked = new Set(person.events);
+      document.getElementById("drawer-title").textContent = person.name;
+      document.getElementById("drawer-role").innerHTML = person.roleLine;
+      document.getElementById("drawer-contact").innerHTML = person.contact;
+      const avatar = document.getElementById("drawer-avatar");
+      avatar.textContent = person.initials;
+      avatar.className = "avatar " + (person.tone || "");
+      document.getElementById("ov-title").textContent = person.title;
+      document.getElementById("ov-access").innerHTML = person.access;
+      document.getElementById("ov-team").textContent = person.team;
+      document.getElementById("ov-reports").textContent = person.reports;
+      accessRole.value = person.accessRole;
+      giveAccessBtn.style.display = person.pending ? "inline-flex" : "none";
+      giveAccessBtn.textContent = person.pending ? "Resend invite" : "Give access";
+      renderEvents();
+      renderAccessToggles(person.accessRole);
+      setTab(tab);
+      scrim.hidden = false;
+      requestAnimationFrame(() => {
+        scrim.classList.add("open");
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      });
+      const url = new URL(window.location.href);
+      url.searchParams.set("person", id);
+      if (tab !== "overview") url.searchParams.set("tab", tab);
+      else url.searchParams.delete("tab");
+      history.replaceState(null, "", url);
+    }
+
+    function closeDrawer() {
+      scrim.classList.remove("open");
+      drawer.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
+      setTimeout(() => { scrim.hidden = true; }, 200);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("person");
+      url.searchParams.delete("tab");
+      history.replaceState(null, "", url);
+    }
+
+    const memberList = document.getElementById("member-list");
+    memberList.addEventListener("click", (e) => {
+      const row = e.target.closest("[data-person]");
+      if (row) openPerson(row.dataset.person);
+    });
+    memberList.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const row = e.target.closest("[data-person]");
+      if (!row) return;
+      e.preventDefault();
+      openPerson(row.dataset.person);
+    });
+
+    drawer.querySelector(".drawer-tabs").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-tab]");
+      if (!btn) return;
+      setTab(btn.dataset.tab);
+      const url = new URL(window.location.href);
+      if (btn.dataset.tab !== "overview") url.searchParams.set("tab", btn.dataset.tab);
+      else url.searchParams.delete("tab");
+      history.replaceState(null, "", url);
+    });
+
+    drawer.addEventListener("click", (e) => {
+      const goto = e.target.closest("[data-goto-tab]");
+      if (goto) setTab(goto.dataset.gotoTab);
+
+      const chip = e.target.closest("#event-pick [data-event]");
+      if (chip) {
+        const id = chip.dataset.event;
+        if (linked.has(id)) linked.delete(id);
+        else linked.add(id);
+        renderEvents();
+      }
+
+      const sw = e.target.closest(".switch");
+      if (sw) {
+        sw.classList.toggle("on");
+        sw.setAttribute("aria-pressed", sw.classList.contains("on") ? "true" : "false");
+      }
+    });
+
+    accessRole.addEventListener("change", () => {
+      renderAccessToggles(accessRole.value);
+    });
+
+    document.getElementById("close-drawer").addEventListener("click", closeDrawer);
+    document.getElementById("close-drawer-foot").addEventListener("click", closeDrawer);
+    document.getElementById("save-drawer").addEventListener("click", closeDrawer);
+    scrim.addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawer.classList.contains("open")) closeDrawer();
+    });
+
+    // Deep-link: open person drawer so shared URL shows the target UX
+    const params = new URLSearchParams(window.location.search);
+    const person = params.get("person") || "jordan";
+    const tab = params.get("tab") || "events";
+    openPerson(person, tab === "access" || tab === "events" || tab === "overview" ? tab : "events");
+  </script>
+</body>
+</html>

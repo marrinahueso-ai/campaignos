@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Branding Settings Ease Mockup</title>
+  <meta http-equiv="refresh" content="0; url=/settings-ease-mockup.html?view=branding" />
+  <link rel="canonical" href="/settings-ease-mockup.html?view=branding" />
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get("section");
+    const target = new URL("/settings-ease-mockup.html", window.location.origin);
+    target.searchParams.set("view", "branding");
+    if (section) target.searchParams.set("section", section);
+    window.location.replace(target.pathname + target.search);
+  </script>
+</head>
+<body>
+  <p style="font-family: system-ui, sans-serif; padding: 2rem;">
+    Redirecting to
+    <a href="/settings-ease-mockup.html?view=branding">Settings Ease · Branding</a>…
+  </p>
+</body>
+</html>
