@@ -36,7 +36,7 @@ It opens Hey Ralli like a real person would and checks critical workflows, for e
 - Do Dashboard and Team & Access load?
 - Launch nav smoke: Calendar (Import / Google CTAs), Meta settings page, Tasks, Insights, Today/dashboard? (`16-launch-smoke`)
 - Events Home: **View Details** present, no row kebab / CampaignRowActions? (`16-launch-smoke`)
-- `/create-with-ai` lands on Creative Setup (not choose-event hub); no “Using your brand kit” banner; logo/color controls present? (`16-launch-smoke`)
+- `/create-with-ai` shows chooser (Home Page · Social Media · Newsletter); `/create-with-ai/social` lands on Creative Setup with no “Using your brand kit” banner? (`16-launch-smoke`)
 - Does Create with AI load (event builder path)?
 - Create with AI Creative Setup wiring (playbook, Overall inspiration comment, logo/colors/voice, Your Selections persistence)? (`13-create-with-ai-artwork-inputs`) — see [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md)
 - (Optional) Unsigned developer agreements gate? (`17-developer-agreements-gate`, needs `HEY_RALLI_QA_UNSIGNED_*`)

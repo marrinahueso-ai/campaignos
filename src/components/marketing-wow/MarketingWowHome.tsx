@@ -101,8 +101,9 @@ export function MarketingWowHome({
               <li>
                 <strong>Create with AI</strong>
                 <p>
-                  Artwork, captions, and playbooks that sound like your school —
-                  ready for human approval.
+                  Home Page HTML, family newsletters, and social campaigns —
+                  artwork and copy that sound like your school, ready for human
+                  approval.
                 </p>
               </li>
               <li>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { CreateWithAiModulesSection } from "@/components/marketing/features-in-action/CreateWithAiModulesSection";
 import { MarketingPublicDemo } from "@/components/marketing/features-in-action/MarketingPublicDemo";
 import { ProductStorySection } from "@/components/marketing/features-in-action/ProductStorySection";
 import { StudioMarketingShell } from "@/components/marketing/StudioMarketingShell";
@@ -53,6 +54,8 @@ export function StudioFeaturesPage({
           </div>
         </div>
       </section>
+
+      <CreateWithAiModulesSection />
 
       {FEATURES_IN_ACTION_STORIES.map((story, index) => (
         <ProductStorySection

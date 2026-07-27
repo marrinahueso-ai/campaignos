@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 26, 2026 — Calendar product demo video + cinematic mockup
+**Last updated:** July 26, 2026 — Features page Create with AI modules + launch-prep docs
 
 ---
 
@@ -13,7 +13,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Floating marketing nav — **shipped** (bottom pill switcher on home + auth/legal: Home · Log in · Sign up · Forgot · Invite · Privacy · Terms; active forest pill; stays visible when signed in)
 - Interactive product demo mockup — **in progress** (cinematic 5-chapter Ease demo: Event Planning · Calendar DnD · Create with AI · AI Inbox · Approvals; camera zoom/pan + simulated cursor; fictional Riverside Elementary PTA; HTML at [`public/product-demo-ease-mockup.html`](../../public/product-demo-ease-mockup.html); optional “Watch product demo” link on marketing mockup only — do not ship into live `/` until GO)
 - Calendar product demo — **in progress** (recorded Month / Week / **Best times** DnD → Import list Change a Plan → Import Google → Subscribe/RSS → Upload → Home; video [`public/demos/calendar-demo.webm`](../../public/demos/calendar-demo.webm); cinematic Ease mockup [`public/calendar-demo-ease-mockup.html`](../../public/calendar-demo-ease-mockup.html); re-record via `node scripts/capture-calendar-demo.mjs`)
-- Features (`/features`) — **shipped** (“See Hey Ralli in Action”: live Motion demos for Create with AI, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
+- Features (`/features`) — **shipped** (“See Hey Ralli in Action”: Create with AI modules band — Home Page · Social Media · Newsletter — plus live Motion demos for Social campaigns, Calendar / Plan Your Year, Approvals, Volunteer Master, Communications Hub / Meta inbox, Ask Ralli; private harness at `/dev/motion-engine`)
 - Pricing page ($49 / $79 / $129 · Starter / Professional / Premium + AI Reserve) — **shipped** (catalog features; Stripe Checkout / sign-in → billing CTAs)
 - About — **shipped**
 - Email deep links (`/go/...`) — **shipped**

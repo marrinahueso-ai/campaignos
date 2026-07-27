@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 25, 2026  
+**Last updated:** July 26, 2026  
 **Related:** [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
 
 ## Purpose
@@ -28,18 +28,36 @@ Mark each row: **Pass** / **Fail** / **Skip** (N/A for this release) / **Needs y
 
 | Field | Value |
 |-------|--------|
-| Date | July 22, 2026 |
+| Date | July 26, 2026 (docs refresh; prior Playwright batch July 22) |
 | Environment | **Production** — https://heyralli.com (+ local Playwright against same Supabase / test seat) |
-| Build / SHA | Production ● Ready — `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv` (aliases heyralli.com; includes Create with AI inspiration-first + brand-kit banner removal). Local git HEAD `7097270` (`AI update`) |
+| Build / SHA | Prior Production Ready `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv`. Re-deploy after this Features/docs push — update SHA here when Ready. |
 | Org | Edmondson Elementary (Playwright seat); Marrina Owner also on School B |
 | Tester | Playwright (`16` / `18` / `12`) + Owner (human-only rows below) |
-| Overall | **In progress** — automatable rows mostly Pass; remaining Needs you are OAuth / email / Safari / multi-org Owner / deep CwAI+Volunteers |
+| Overall | **In progress** — launch-prep product work below is **Done**; automatable QA rows mostly Pass; remaining Needs you are OAuth / email / Safari / multi-org Owner / deep CwAI+Volunteers |
+
+### Launch-prep engineering (July 26) — Done
+
+Product work shipped for soft launch (see [feature-list.md](../product/feature-list.md)). These are **not** a substitute for Owner OAuth/email rows below.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Marketing WOW homepage + auth/legal | **Done** | `/`, login, signup, forgot, invite, privacy, terms |
+| Signup plan-first (Starter / Pro / Premium) | **Done** | Catalog → founding code checkout path |
+| Settings Ease Phases 1–7 + Branding hub | **Done** | Overview → Account; Branding nests school year + AI Brain / Inbox / Playbooks / Colors |
+| Team Access person drawer | **Done** | Soft pills + Overview / Events / Access drawer (`?person=`) |
+| Billing Ease (Usage · Plans · Payment) | **Done** | AI meters, category breakdown, Stripe invoices / portal / payment summary |
+| Insights Ease + `social_analytics` on all plans | **Done** | Soft-launch / Meta App Review reachability |
+| Vendors Ease (contact-first) | **Done** | Directory shell shipped |
+| Calendar / Events / Tasks / Files / Approvals / Volunteers Ease shells | **Done** | Product UI shipped; depth rows still Needs you where noted |
+| Create with AI chooser + Homepage / Newsletter composers | **Done** | Home Page · Social Media · Newsletter; draft persist + homepage AI blurbs **partial** polish OK for launch |
+| Public Features Create with AI modules band | **Done** | `/features` documents all three modules honestly |
+| Product / calendar demo mockups + calendar `.webm` | **Done** (assets) | Live `/` demo link still **in progress** until GO (feature-list) |
 
 ### Playwright batch (July 22, 2026 evening)
 
 | Suite | Result |
 |-------|--------|
-| `16-launch-smoke` | **5 passed** |
+| `16-launch-smoke` | **5 passed** (includes Create with AI chooser + Social Creative Setup) |
 | `18-launch-checklist` | **5 passed**, **3 skipped** (org switcher + Team Access people/templates — developer test seat lacks multi-org / profile links) |
 | `12-ask-ralli-assistant` | **5 passed** |
 
@@ -68,13 +86,14 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 | 1.7 | Organization settings: no boarding wizard; Brand `?standalone=1` | **Pass (Playwright)** | `18-launch-checklist` |
 | 1.8 | Deactivated / no-membership gate | **Skip** | Optional |
 | 1.9 | Org welcome email CTA **Let's get started** | **Skip** | Optional |
+| 1.10 | Public marketing home + signup plan chooser load | **Done** (shipped) / spot-check optional | WOW `/` + `/signup` plan-first — Owner click once on Production after deploy |
 
 ## 2. Organization settings
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 2.1 | `/settings/organization` loads profile, branding summary, preferences | **Pass (Playwright)** | `18` |
-| 2.2 | Edit profile / branding reaches a real editor | **Pass (Playwright)** | Brand → `/onboarding/brand?standalone=1` |
+| 2.1 | `/settings/organization` loads profile, branding summary, preferences | **Pass (Playwright)** | `18` — Settings Ease Organization |
+| 2.2 | Edit profile / branding reaches a real editor | **Pass (Playwright)** | Brand → `/onboarding/brand?standalone=1`; Branding hub at `/settings/branding` **Done** |
 | 2.3 | Posting schedule / preferred windows save and survive refresh | **Needs you** or **Skip** | Not in smoke — Skip if unchanged this release |
 | 2.4 | Board roster / people link opens Team & Access | **Pass (Playwright)** | `02-dashboard-and-team` + `18` opens `/settings/team-access` |
 | 2.5 | Hardcoded / placeholder fields accurate or labeled | **Skip** | Soft-launch cosmetic |
@@ -83,8 +102,8 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 3.1 | `/settings/team-access` lists people; invite / add roster works | **Pass (Playwright)** load / **Needs you** invite | Page loads (`02` / `18`). Invite/add = Owner click if needed |
-| 3.2 | Person profile opens (Overview / Events / Access / Activity) | **Skip (Playwright)** / **Needs you** | No people profile links for developer test seat — Owner open one person once |
+| 3.1 | `/settings/team-access` lists people; invite / add roster works | **Pass (Playwright)** load / **Needs you** invite | Ease shell + drawer **Done**. Invite/add = Owner click if needed |
+| 3.2 | Person profile / drawer opens (Overview / Events / Access) | **Skip (Playwright)** / **Needs you** | Drawer shipped; no people links for developer test seat — Owner open one person once |
 | 3.3 | Access templates viewed/edited by admin | **Skip (Playwright)** / **Needs you** | Templates tab not visible to developer seat — Owner spot-check |
 | 3.4 | Responsibility role defaults editable where shipped | **Skip** | Person-level edit deferred |
 | 3.5 | Send-for-approval emails → Team Access approver | **Needs you** | Resend — human inbox |
@@ -104,17 +123,20 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 5.1 | Create with AI → Creative Setup; no brand-kit banner | **Pass (Playwright)** | `16-launch-smoke` |
-| 5.2 | Creative Setup → Milestones → Preview → Review | **Pass (Playwright)** partial | `13` wiring; full walk Needs you if generating |
-| 5.3 | Artwork + captions generate | **Needs you** or run `13b` | Longer / AI credits |
-| 5.4 | Milestone delete stays deleted | **Needs you** or existing unit/smoke | |
-| 5.5 | Send for approval / notify | **Needs you** | Email + Approvals — or `09` |
+| 5.1 | `/create-with-ai` chooser: Home Page · Social Media · Newsletter | **Pass (Playwright)** | `16-launch-smoke` |
+| 5.2 | Social → Creative Setup; no brand-kit banner | **Pass (Playwright)** | `16` `/create-with-ai/social` |
+| 5.3 | Creative Setup → Milestones → Preview → Review | **Pass (Playwright)** partial | `13` wiring; full walk Needs you if generating |
+| 5.4 | Artwork + captions generate | **Needs you** or run `13b` | Longer / AI credits |
+| 5.5 | Milestone delete stays deleted | **Needs you** or existing unit/smoke | |
+| 5.6 | Send for approval / notify | **Needs you** | Email + Approvals — or `09` |
+| 5.7 | Homepage Composer opens from chooser; draft + export path | **Done** (shipped) / **Needs you** depth | Persist + AI blurb **partial**; Owner spot-check HTML copy once |
+| 5.8 | Newsletter Composer opens from chooser; preview + export | **Done** (shipped) / **Needs you** depth | Owner spot-check once if newsletter in handoff |
 
 ## 6. Approvals & publishing
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 6.1 | Approvals hub shows pending / changes / scheduled / published | **Pass (Playwright)** | `18` + `05` |
+| 6.1 | Approvals hub shows pending / changes / scheduled / published | **Pass (Playwright)** | `18` + `05` — Ease shell **Done** |
 | 6.2 | Approve / request changes / resubmit | **Needs you** or `09` | |
 | 6.3 | Change-requested / re-approval emails | **Needs you** | Resend |
 | 6.4 | Meta connected: Approve schedules FB feed | **Needs you** | Meta OAuth |
@@ -124,10 +146,10 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 7.1 | Settings → Meta Connect OAuth | **Needs you** | Page load Pass via `16` — not OAuth |
+| 7.1 | Settings → Meta Connect OAuth | **Needs you** | Page load Pass via `16` — not OAuth; Ease Meta detail **Done** |
 | 7.2 | Inbox loads threads when connected | **Needs you** | |
 | 7.3 | Insights Connect/Sync / Refresh | **Pass (Playwright)** partial | `11` / `16` load; Sync = Needs you |
-| 7.4 | Insights useful when no Meta metrics | **Pass (Playwright)** | Empty/ops content OK |
+| 7.4 | Insights useful when no Meta metrics | **Pass (Playwright)** | Empty/ops content OK — Ease + entitlement unlock **Done** |
 
 ## 8. Volunteers (SignUpGenius)
 
@@ -139,7 +161,7 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 9.1 | Tasks list loads; create/complete a task | **Pass (Playwright)** load | `18` + `10` — New Task visible; create/complete UI varies |
+| 9.1 | Tasks list loads; create/complete a task | **Pass (Playwright)** load | `18` + `10` — New Task visible; Ease shell **Done** |
 | 9.2 | Event Tasks tab empty by default | **Skip** | Soft-launch |
 | 9.3 | Today / dashboard without errors | **Pass (Playwright)** | `16` |
 
@@ -155,7 +177,7 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 11.1 | `/settings/billing-plan` loads | **Pass (Playwright)** | `18` |
+| 11.1 | `/settings/billing-plan` loads | **Pass (Playwright)** | `18` — Ease Usage / Plans / Payment **Done** |
 | 11.2 | Founding Partner / plan copy accurate | **Pass (Playwright)** load | Spot-check copy optional |
 | 11.3 | No false payment failed / broken Stripe CTAs | **Pass (Playwright)** | `18` |
 | 11.4 | Checkout / Portal / webhook plan sync | **Needs you** | See [billing-and-access.md](../ops/billing-and-access.md) |
@@ -164,14 +186,15 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| 12.1 | Vercel Production Ready | **Pass** | `dpl_8fPQMpm9hpbfq4H94RFPt22SP1Vv` → heyralli.com |
+| 12.1 | Vercel Production Ready | **Pass** (prior) / re-verify after Features deploy | Update SHA in session log when Ready |
 | 12.2 | Login | **Pass (Playwright)** | `16` |
 | 12.3 | Calendar (Import / Google entry) | **Pass (Playwright)** | `16` — not OAuth |
 | 12.4 | Meta settings | **Pass (Playwright)** | `16` — not OAuth |
 | 12.5 | Tasks | **Pass (Playwright)** | `16` / `18` / `10` |
 | 12.6 | Insights | **Pass (Playwright)** | `16` / `11` |
-| 12.7 | Create-with-AI path if AI changed | **Pass (Playwright)** | `16` §5.1 after inspiration-first change |
-| 12.8 | Migrations applied | **Pass** | Remote developer-agreement + onboarding migrations |
+| 12.7 | Create-with-AI path if AI changed | **Pass (Playwright)** | `16` chooser + Social Creative Setup |
+| 12.8 | Migrations applied | **Pass** | Remote developer-agreement + onboarding migrations; account notification prefs migration if not yet on remote — confirm before blaming UI |
+| 12.9 | Public `/features` shows Create with AI modules | **Done** (this change) | Spot-check Home Page · Social Media · Newsletter band after Production Ready |
 
 ---
 
@@ -180,14 +203,15 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 Do these as Owner on **https://heyralli.com** (or Skip if out of scope for this handoff):
 
 1. **Org switcher** — Edmondson ↔ School B (1.2)  
-2. **Team Access** — open one person profile + Access templates (3.2–3.3)  
+2. **Team Access** — open one person drawer/profile + Access templates (3.2–3.3)  
 3. **Meta OAuth** — Connect/reconnect if validating Inbox/publish (7.1+)  
 4. **Google Calendar OAuth** — if validating live import (4.1 deep)  
 5. **Resend** — approval or agreement emails in inbox (3.5 / 6.3 / agreements)  
 6. **Safari** — executed agreement HTML download renders (agreements)  
-7. **Optional depth** — CwAI generate (`13b` or manual), Volunteers, Calendar DnD  
+7. **Optional depth** — CwAI generate (`13b` or manual), Homepage/Newsletter export, Volunteers, Calendar DnD  
+8. **Billing** — Checkout / Portal / webhook once if plan changes this release (11.4)  
 
-Everything else above is **Pass (Playwright)** or **Skip**.
+Everything else above is **Pass (Playwright)**, **Done** (shipped), or **Skip**.
 
 ---
 
@@ -195,7 +219,7 @@ Everything else above is **Pass (Playwright)** or **Skip**.
 
 | Suite / spec | Area |
 |--------------|------|
-| `16-launch-smoke` | Sign-out/in, nav pages, Events Home, Create with AI landing, `/ops` |
+| `16-launch-smoke` | Sign-out/in, nav pages, Events Home, Create with AI chooser + Social Creative Setup, `/ops` |
 | `18-launch-checklist` | Org Brand standalone, Approvals, billing, calendar import, Tasks |
 | `17-developer-agreements-gate` | Unsigned gate (`HEY_RALLI_QA_UNSIGNED_*`) |
 | `15-onboarding-value-first` | Get started / overlay |
@@ -218,6 +242,8 @@ npm run test:hey-ralli -- \
 - Insights demographics / LLM narrative / year-end board report
 - Insights-weighted posting heatmap
 - Full Create-with-AI → Meta published slot sync
+- Live marketing homepage “Watch product demo” link (assets exist; wait for GO)
+- Homepage / Newsletter composer polish beyond export + draft persist
 - ~~Legacy wizard re-entry~~ — retired for members
 
 ---

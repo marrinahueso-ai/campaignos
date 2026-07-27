@@ -21,23 +21,67 @@ export interface FeaturesInActionStory {
   benefits: string[];
 }
 
+/** Create with AI chooser modules — naming matches `/create-with-ai`. */
+export interface CreateWithAiModule {
+  id: "homepage" | "social" | "newsletter";
+  title: string;
+  summary: string;
+  details: string[];
+}
+
 export const FEATURES_IN_ACTION_HERO = {
   eyebrow: "See Hey Ralli in Action",
   title: "One event. Every message, task, and detail in one place.",
   description:
-    "Hey Ralli helps school and community teams plan the year, create event campaigns, move approvals, see volunteer gaps, answer Meta messages, and know what to do next.",
+    "Hey Ralli helps school and community teams plan the year, create with AI (homepage HTML, family newsletters, and social campaigns), move approvals, see volunteer gaps, answer Meta messages, and know what to do next.",
   primaryCta: "Get Started",
-  secondaryCta: "Explore the Workflow",
-  workflowAnchor: "create-with-ai",
+  secondaryCta: "Explore Create with AI",
+  workflowAnchor: "create-with-ai-modules",
 } as const;
+
+export const CREATE_WITH_AI_MODULES: CreateWithAiModule[] = [
+  {
+    id: "homepage",
+    title: "Home Page",
+    summary:
+      "Build Membership Toolkit–style webpage HTML from your events — blurbs, artwork, on/off dates, and a live preview.",
+    details: [
+      "Pick events and evergreen cards for the month",
+      "Generate short card blurbs with AI when you want a draft",
+      "Preview, then copy HTML for your school site toolkit",
+    ],
+  },
+  {
+    id: "social",
+    title: "Social Media",
+    summary:
+      "Turn one school event into coordinated feed and story artwork, captions, and milestones ready for approval.",
+    details: [
+      "Creative Setup → Milestones → Preview → Review",
+      "Brand-aware artwork and captions from the event record",
+      "Send for approval, then schedule or publish to Meta",
+    ],
+  },
+  {
+    id: "newsletter",
+    title: "Newsletter",
+    summary:
+      "Compose a scoop-style family email from your calendar — header, message, stories, sponsors, and socials.",
+    details: [
+      "Pull stories and calendar chips from your events",
+      "Desktop and phone preview while you edit",
+      "Export HTML when the issue is ready to send",
+    ],
+  },
+];
 
 export const FEATURES_IN_ACTION_STORIES: FeaturesInActionStory[] = [
   {
     id: "create-with-ai",
     demoId: "create-ai",
-    eyebrow: "Create with AI",
-    heading: "Turn one event into a complete campaign.",
-    body: "Start from the event your team already entered. Hey Ralli drafts coordinated artwork, captions, and communication milestones so the campaign is ready to send for approval.",
+    eyebrow: "Create with AI · Social Media",
+    heading: "Turn one event into a complete social campaign.",
+    body: "From Create with AI, open Social Media and start from the event your team already entered. Hey Ralli drafts coordinated artwork, captions, and communication milestones so the campaign is ready to send for approval — alongside Home Page and Newsletter composers on the same hub.",
     benefits: [
       "Build artwork and messaging from one event workspace",
       "Keep captions and milestone timing aligned to the event",
@@ -112,6 +156,6 @@ export const FEATURES_CREATE_WITH_AI_STORY = FEATURES_IN_ACTION_STORIES[0];
 export const FEATURES_IN_ACTION_FINAL_CTA = {
   eyebrow: "Ready when you are",
   title: "Plan the event. Hey Ralli helps with everything around it.",
-  body: "Give your team one place to organize the year, create the campaign, move approvals, and keep every event moving forward.",
+  body: "Give your team one place to organize the year, create homepage HTML, newsletters, and social campaigns, move approvals, and keep every event moving forward.",
   cta: "Get Started",
 } as const;
