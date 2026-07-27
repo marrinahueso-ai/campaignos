@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 26, 2026  
+**Last updated:** July 27, 2026  
 **Related:** [Access control (templates / RLS)](../engineering/access-control.md) · [Developer agreements](../engineering/developer-agreements.md) · [Welcome email](../engineering/auth-welcome-email.md) · [Feature list](../product/feature-list.md) · [Owner AI & APIs](../product/ai-and-apis.md) · [Architecture](../engineering/architecture.md)
 
 How a person gets into **Hey Ralli** (CampaignOS), joins an organization (tenant), switches tenants, and what blocks access.
@@ -94,6 +94,18 @@ Permissions and event visibility are resolved for the **active** org via Effecti
 
 ---
 
+## Auth session lifetime (Option A — July 2026)
+
+Product decision: keep the current model — **no** Remember-me control and **no** idle auto-logout.
+
+| Behavior | Truth |
+|----------|--------|
+| Cookie lifetime | Supabase auth cookies use a **30-day sliding `maxAge`** via [`getSupabaseCookieOptions()`](../../src/lib/supabase/cookie-options.ts); refreshed on active use. |
+| Idle timeout | **None** — no short inactivity logout. |
+| Settings UI | Honesty-only copy on Account / Advanced → Security (not a configurable control). Use **Sign out** on shared computers. |
+
+---
+
 ## Roles and what they unlock
 
 Two layers:
@@ -129,7 +141,7 @@ Ordered roughly as middleware / post-auth apply them:
 | Gate | Who | Effect |
 |------|-----|--------|
 | Unauthenticated | Anyone | Public routes only; else login. |
-| Must change password | Invite/provisioned seats with `must_change_password` | Forced `/account/change-password`. |
+| Must change password | Invite/provisioned seats with `must_change_password` | Forced `/account/change-password` (same `changePasswordAction` as voluntary Settings → Account; OAuth-only Google accounts have no password form). |
 | **Developer agreements** | Active membership with `campaign_role` in a doc’s `required_for_roles` (default **`developer`**) and unsigned current version | Hard redirect to `/account/agreements`. Details: [developer-agreements.md](../engineering/developer-agreements.md). |
 | No active membership | Auth user, not deactivated | Org setup paths allowed; else `/login?intent=setup&error=org_required` (or onboarding if valid pending founding code). |
 | Deactivated | Any deactivated memberships, no active | `/login?error=account_deactivated`. |

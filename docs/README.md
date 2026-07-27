@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 26, 2026  
+**Last updated:** July 27, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -14,7 +14,7 @@ This is the documentation hub. Start here.
 | You are… | Open first |
 |----------|------------|
 | **New engineer** | [Architecture](./engineering/architecture.md) → [Feature list](./product/feature-list.md) → [Access & multi-tenant onboarding](./security/access-and-onboarding.md) → [Local setup](./getting-started/local-setup.md) |
-| **QA** | [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
+| **QA** | [Product completion master](./qa/product-completion-master.md) → [Launch checklist](./qa/launch-checklist.md) → [QA architecture overview](./qa/architecture-overview.md) → [Testing guide](./qa/testing-guide.md) → [Feature list](./product/feature-list.md) |
 | **Integrations** | [Meta](./integrations/meta.md) · [Google Calendar](./integrations/google-calendar.md) · [SignUpGenius](./integrations/signupgenius.md) |
 | **Ops / deploy** | [Ops](./ops/README.md) → deploy · env · cron · [Meta App Review use cases](./ops/meta-app-review-use-cases.md) |
 | **Product / design** | [Feature list](./product/feature-list.md) · [Product blueprints](./product/blueprints/) |
@@ -50,6 +50,7 @@ This is the documentation hub. Start here.
 | Stripe integration (Checkout / Portal / webhooks) | [engineering/stripe-integration.md](./engineering/stripe-integration.md) |
 | Volunteer Master | [product/volunteer-master.md](./product/volunteer-master.md) |
 | Event Insights | [product/event-insights.md](./product/event-insights.md) |
+| Product completion master | [qa/product-completion-master.md](./qa/product-completion-master.md) |
 | Launch QA checklist | [qa/launch-checklist.md](./qa/launch-checklist.md) |
 | QA overview | [qa/architecture-overview.md](./qa/architecture-overview.md) |
 | Meta Connect | [integrations/meta.md](./integrations/meta.md) |

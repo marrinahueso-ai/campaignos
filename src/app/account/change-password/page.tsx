@@ -31,17 +31,18 @@ export default function ChangePasswordPage() {
             Choose a new password
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-[#5c554c]">
-            Your admin created a temporary password. Set your own before
-            continuing.
+            Enter your current password, then choose a new one you&apos;ll use
+            to sign in. If an admin shared a temporary password, use that as
+            your current password.
           </p>
         </div>
 
         <form action={action} className="space-y-4">
           <Input
             name="currentPassword"
-            label="Current (temporary) password"
+            label="Current password"
             type="password"
-            placeholder="Enter the password your admin gave you"
+            placeholder="Enter your current password"
             required
             autoComplete="current-password"
           />

@@ -46,7 +46,16 @@ export function AdvancedSettingsContent({
       >
         <ul className="space-y-3 text-sm text-cos-muted">
           <li>Two-factor authentication — coming soon</li>
-          <li>Session timeout — 30 days (default)</li>
+          <li>
+            You stay signed in for up to{" "}
+            <strong className="text-cos-text">30 days</strong> of use. We
+            refresh your session while you&apos;re active. There is{" "}
+            <strong className="text-cos-text">
+              no automatic logout after a short period of inactivity
+            </strong>
+            . Use <strong className="text-cos-text">Sign out</strong> on
+            shared computers.
+          </li>
           <li>API access — not enabled</li>
         </ul>
       </SettingsV2Card>

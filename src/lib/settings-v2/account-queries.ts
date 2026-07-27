@@ -74,6 +74,7 @@ export const getSettingsEaseAccountData = cache(
         row?.notification_preferences,
       ),
       eraseRequiresPassword: accountEraseRequiresPassword(authUser.identities),
+      canChangePassword: accountEraseRequiresPassword(authUser.identities),
     };
   },
 );

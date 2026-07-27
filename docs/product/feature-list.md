@@ -4,7 +4,7 @@ Product brand: **Hey Ralli**.
 **Status:** Living  
 **Owner:** Product / Engineering  
 Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.  
-**Last updated:** July 26, 2026 — Create with AI modules + settings gear + launch checklist
+**Last updated:** July 27, 2026 — Settings session honesty (Option A) + Account change password
 
 ---
 
@@ -42,7 +42,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
 - Brand kit (canonical): `/onboarding/brand` — PTO + school logos, additional brand-kit logos, colors, mascot, live preview; boarding Continue → invite; Organization → Edit branding uses `?standalone=1` — **shipped**
 - Legacy 6-step SchoolSetupWizard — **retired for members** (legacy query redirects: `?view=wizard`/`?step=school` → org settings; `?step=meta` → integrations; `?step=calendar` → `/calendar/import`; `?step=brand` → brand standalone)
-- Change password (requires re-entering the current/temporary password before setting a new one) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking))
+- Change password (voluntary on Settings → Account; forced gate at `/account/change-password`; requires current password re-auth; OAuth-only Google accounts see an honest “sign in with Google” note — no broken form) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking))
 - Deactivated-account handling — **shipped**
 
 ## Multi-org & tenancy
@@ -313,8 +313,8 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - OAuth provider tokens (Meta/Canva/Monday/Google Calendar) encrypted at rest (AES-256-GCM, backward-compatible with pre-existing plaintext rows) — **shipped** (security: [audit-remediation.md](../security/audit-remediation.md#low--info-cleanup-not-launch-blocking); ops: [env-and-secrets.md](../ops/env-and-secrets.md#oauth-token-encryption-at-rest))
 - Billing & Plan UI — **shipped** (Phase 6 Ease on `/settings/billing-plan`; soft pills Usage · Plans · Payment via `?view=`; real Stripe portal / Checkout / Reserve; canceled orgs still land on `/billing/canceled`; eng: [stripe-integration.md](../engineering/stripe-integration.md))
 - **Billing usage / overage / upgrade** — **shipped** (Ease pass matching [`settings-billing-ease-mockup.html`](../../public/settings-billing-ease-mockup.html): period meters for AI credits · Reserve · seats · Meta posts, **Buy more Reserve** on Period snapshot, category breakdown when data exists, honest soft-warn → Reserve → hard-block copy with no surprise overage charges, Starter / Professional / Premium catalog + Stripe upgrade, Payment card / renewals / invoices / portal; founding/`billing_exempt` keeps unlimited credits + waived copy but does **not** hide plan catalog or manage CTAs; eng: [stripe-integration.md](../engineering/stripe-integration.md))
-- Account (Ease cream/Fraunces: display name save · quiet notification toggles persisted on membership · session + SignOutForm clear-on-signout · Delete/erase account with password or type-DELETE confirm, last-admin guard, Auth user + membership purge; approval email dispatch respects “Approval needs attention”) — **shipped** (Phase 7; `/settings/account`)
-- Advanced: export, 2FA — **stub** / **deferred**; workspace danger-zone delete — **stub** (account erase lives on Account)
+- Account (Ease cream/Fraunces: display name save · Change password (email/password) or Google sign-in note · quiet notification toggles persisted on membership · session honesty copy — 30-day sliding, no idle auto-logout (Option A) + SignOutForm clear-on-signout · Delete/erase account with password or type-DELETE confirm, last-admin guard, Auth user + membership purge; approval email dispatch respects “Approval needs attention”) — **shipped** (Phase 7; `/settings/account`)
+- Advanced: export, 2FA — **stub** / **deferred**; Security session copy matches Option A (honesty-only, not configurable); workspace danger-zone delete — **stub** (account erase lives on Account)
 
 ## Support & shell
 - Report a problem (Sentry) — **shipped**

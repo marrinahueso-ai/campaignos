@@ -12,6 +12,8 @@ export interface SettingsEaseAccountData {
   notificationPreferences: AccountNotificationPreferences;
   /** True when erase must re-check the email/password credential. */
   eraseRequiresPassword: boolean;
+  /** False for OAuth-only (e.g. Google) accounts with no password credential. */
+  canChangePassword: boolean;
 }
 
 export const DEFAULT_ACCOUNT_NOTIFICATION_PREFERENCES: AccountNotificationPreferences =

@@ -470,9 +470,25 @@ export async function changePasswordAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const user = await getAuthUser();
-  if (!user) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user?.email) {
     return { error: "Sign in first.", success: false };
+  }
+
+  // OAuth-only accounts (e.g. Google) have no password credential to rotate.
+  const hasEmailPassword = (user.identities ?? []).some(
+    (identity) => identity?.provider === "email",
+  );
+  if ((user.identities?.length ?? 0) > 0 && !hasEmailPassword) {
+    return {
+      error:
+        "This account signs in with Google. There is no password to change.",
+      success: false,
+    };
   }
 
   const passwordChangeRateLimit = await checkRateLimit({
@@ -490,6 +506,9 @@ export async function changePasswordAction(
   const currentPassword = formData.get("currentPassword")?.toString() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
+  // Settings → Account stays on the page with a success banner; the forced
+  // `/account/change-password` gate still redirects into the app.
+  const stayOnPage = formData.get("context")?.toString() === "settings";
 
   if (!currentPassword) {
     return { error: "Enter your current password.", success: false };
@@ -500,8 +519,6 @@ export async function changePasswordAction(
   if (password !== confirmPassword) {
     return { error: "Passwords do not match.", success: false };
   }
-
-  const supabase = await createClient();
 
   // Re-authenticate before allowing the change: `updateUser` only needs a
   // live session, so anyone who rides an already-authenticated session
@@ -522,6 +539,9 @@ export async function changePasswordAction(
   }
 
   await clearMustChangePassword(user.id);
+  if (stayOnPage) {
+    return { error: null, success: true };
+  }
   redirect(await getAuthenticatedAppPath());
 }
 

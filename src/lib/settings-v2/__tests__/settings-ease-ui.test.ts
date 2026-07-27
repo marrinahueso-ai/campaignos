@@ -214,11 +214,18 @@ describe("settings ease UI contracts", () => {
     assert.match(accountEase, /data-settings-ease="account"/);
     assert.match(
       accountEase,
-      /Your profile for this workspace, quiet notifications, and sign-out/,
+      /Your profile for this workspace, password, quiet notifications, and/,
     );
     assert.match(accountEase, /Your profile/);
     assert.match(accountEase, /How you appear to teammates/);
     assert.match(accountEase, /Display name/);
+    assert.match(accountEase, /Change password/);
+    assert.match(accountEase, /changePasswordAction/);
+    assert.match(accountEase, /data-settings-ease="account-change-password"/);
+    assert.match(accountEase, /canChangePassword/);
+    assert.match(accountEase, /You sign in with/);
+    assert.match(accountEase, /Google/);
+    assert.match(accountEase, /Update password/);
     assert.match(accountEase, /Notifications/);
     assert.match(
       accountEase,
@@ -228,7 +235,12 @@ describe("settings ease UI contracts", () => {
     assert.match(accountEase, /Inbox follow-ups/);
     assert.match(accountEase, /Weekly summary email/);
     assert.match(accountEase, /Session/);
-    assert.match(accountEase, /Signed in on this device/);
+    assert.match(accountEase, /How long you stay signed in on this device/);
+    assert.match(accountEase, /30 days/);
+    assert.match(
+      accountEase,
+      /no automatic logout after a short period of inactivity/,
+    );
     assert.match(accountEase, /SignOutForm/);
     assert.match(accountEase, /Sign out/);
     assert.match(accountEase, /Delete \/ erase account/);

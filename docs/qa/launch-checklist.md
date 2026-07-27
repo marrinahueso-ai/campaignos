@@ -2,8 +2,14 @@
 
 **Status:** Living  
 **Owner:** Product / QA  
-**Last updated:** July 26, 2026 — launch-prep feature completion refresh  
-**Related:** [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
+**Last updated:** July 27, 2026 — Ease onboarding note + master checklist pointer  
+**Related:** [Product completion master](./product-completion-master.md) · [QA hub](./README.md) · [Pre-handoff readiness](./pre-handoff-readiness.md) · [Architecture overview](./architecture-overview.md) · [Testing guide](./testing-guide.md) · [Feature list](../product/feature-list.md) · [Deploy checklist](../ops/deploy-and-rollback.md)
+
+## Phase 1 master map
+
+For founder/PM **coverage tracking** (auth → launch → go/no-go), use **[product-completion-master.md](./product-completion-master.md)**. This file stays the executable soft-launch **Pass / Fail** matrix.
+
+**First-time setup (current product):** Ease 4-beat — Create event → `/onboarding/essentials` (Calendar + Brand) → `/onboarding/connect` (Team + Meta) → land on event with You’re set (`?welcome=1`). The Welcome → overlay Calendar→Brand→Team→Meta rows below are the **legacy smoke path** (Playwright `15`); re-verify against Ease routes before treating onboarding as launch-signed.
 
 ## Purpose
 
@@ -69,11 +75,13 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 
 ### Archived — local onboarding smoke (July 22, 2026 — localhost)
 
+Legacy path (pre–Ease 4-beat). Current product: Event → Essentials → Connect → You’re set — see [product-completion-master.md](./product-completion-master.md).
+
 | Step | Result | Notes |
 |------|--------|-------|
-| Welcome → Create my first event | Pass (local `15-onboarding`) | |
-| Overlay Calendar → Brand → Team → Meta | Pass (local) | |
-| Helpful next steps + Restart | Pass (local) | |
+| Welcome → Create my first event | Pass (local `15-onboarding`) | Superseded by Ease create-event |
+| Overlay Calendar → Brand → Team → Meta | Pass (local) | Superseded by Essentials + Connect |
+| Helpful next steps + Restart | Pass (local) | Re-verify Restart → Ease |
 
 ---
 
@@ -83,10 +91,10 @@ Slice A ([pre-handoff-readiness.md](./pre-handoff-readiness.md)): **Ready to han
 |---|--------|--------|-------|
 | 1.1 | Sign in / sign out works | **Pass (Playwright)** | `16-launch-smoke` |
 | 1.2 | Org switcher works when user has >1 membership | **Skip (Playwright)** / **Needs you** | Test seat is single-org. Owner: Edmondson ↔ School B once |
-| 1.3 | `/onboarding` Welcome → Create my first event | **Pass (Playwright)** | `15-onboarding-value-first` (local). Skip deep re-run if org already boarded |
-| 1.4 | Event overlay Calendar → Brand → Team → Meta | **Pass (Playwright)** | `15-onboarding-value-first` |
-| 1.5 | Deep links: Calendar import / Brand / Invite / Meta | **Pass (Playwright)** partial | Import + Meta load (`18` / `16`); Brand standalone (`18`). Invite UI optional |
-| 1.6 | Helpful next steps / Restart | **Pass (Playwright)** | `15-onboarding-value-first` |
+| 1.3 | Ease: Create first event (`/events/create?onboarding=1`) | **Needs you** (re-verify) | Legacy `15` Pass on Welcome path. Current: Ease page 1 |
+| 1.4 | Ease: Essentials → Connect → You’re set on event | **Needs you** (re-verify) | `/onboarding/essentials` → `/onboarding/connect` → `?welcome=1`. Legacy overlay path archived in session log |
+| 1.5 | Deep links: Calendar import / Brand / Invite / Meta | **Pass (Playwright)** partial | Import + Meta load (`18` / `16`); Brand standalone (`18`). Invite via Connect |
+| 1.6 | Restart / Get started re-entry | **Needs you** (re-verify) | Restart → create event; confirm vs Ease 4-beat |
 | 1.7 | Organization settings: no boarding wizard; Brand `?standalone=1` | **Pass (Playwright)** | `18-launch-checklist` |
 | 1.8 | Deactivated / no-membership gate | **Skip** | Optional |
 | 1.9 | Org welcome email CTA **Let's get started** | **Skip** | Optional |

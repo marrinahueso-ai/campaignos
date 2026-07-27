@@ -3,6 +3,10 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { SignOutForm } from "@/components/auth/SignOutForm";
 import {
+  changePasswordAction,
+  type AuthActionState,
+} from "@/lib/auth/actions";
+import {
   eraseAccountAction,
   saveAccountNotificationPreferencesAction,
   updateAccountProfileAction,
@@ -26,6 +30,11 @@ const INITIAL_PROFILE_STATE: AccountProfileFormState = {
 };
 
 const INITIAL_ERASE_STATE: AccountEraseFormState = {
+  error: null,
+  success: false,
+};
+
+const INITIAL_PASSWORD_STATE: AuthActionState = {
   error: null,
   success: false,
 };
@@ -177,6 +186,10 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
     eraseAccountAction,
     INITIAL_ERASE_STATE,
   );
+  const [passwordState, passwordAction, passwordPending] = useActionState(
+    changePasswordAction,
+    INITIAL_PASSWORD_STATE,
+  );
   const [prefs, setPrefs] = useState(data.notificationPreferences);
   const [prefsError, setPrefsError] = useState<string | null>(null);
   const [prefsPending, startPrefsTransition] = useTransition();
@@ -210,7 +223,8 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
           Account
         </h1>
         <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-          Your profile for this workspace, quiet notifications, and sign-out.
+          Your profile for this workspace, password, quiet notifications, and
+          sign-out.
         </p>
       </div>
 
@@ -228,6 +242,22 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
           role="status"
         >
           Profile saved.
+        </p>
+      ) : null}
+      {passwordState.error ? (
+        <p
+          className="mb-3.5 rounded-[14px] border border-[rgba(166,90,58,0.22)] bg-[rgba(166,90,58,0.12)] px-4 py-3 text-sm font-semibold text-[#a65a3a]"
+          role="alert"
+        >
+          {passwordState.error}
+        </p>
+      ) : null}
+      {passwordState.success ? (
+        <p
+          className="mb-3.5 rounded-[14px] border border-[rgba(47,74,60,0.18)] bg-[rgba(47,74,60,0.08)] px-4 py-3 text-sm font-semibold text-[#2f4a3c]"
+          role="status"
+        >
+          Password updated.
         </p>
       ) : null}
       {prefsError ? (
@@ -318,10 +348,85 @@ export function SettingsEaseAccount({ data }: SettingsEaseAccountProps) {
         </SoftCard>
 
         <SoftCard
-          title="Session"
-          description="Signed in on this device."
+          title="Change password"
+          description={
+            data.canChangePassword
+              ? "Update the password you use to sign in."
+              : "How you sign in to Hey Ralli."
+          }
           className="lg:col-span-2"
         >
+          {data.canChangePassword ? (
+            <form
+              action={passwordAction}
+              data-settings-ease="account-change-password"
+            >
+              <input type="hidden" name="context" value="settings" />
+              <Field id="acc-current-password" label="Current password">
+                <input
+                  id="acc-current-password"
+                  name="currentPassword"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  className={fieldControlClassName}
+                />
+              </Field>
+              <Field id="acc-new-password" label="New password">
+                <input
+                  id="acc-new-password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                  className={fieldControlClassName}
+                />
+              </Field>
+              <Field id="acc-confirm-password" label="Confirm new password">
+                <input
+                  id="acc-confirm-password"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className={fieldControlClassName}
+                />
+              </Field>
+              <button
+                type="submit"
+                disabled={passwordPending}
+                className={btnPrimaryClassName}
+              >
+                {passwordPending ? "Saving…" : "Update password"}
+              </button>
+            </form>
+          ) : (
+            <p className="mb-0 text-[13px] leading-snug text-[#5c554c]">
+              You sign in with <strong className="text-[#2a2622]">Google</strong>
+              . There is no password on this account to change — continue using
+              Google when you sign in.
+            </p>
+          )}
+        </SoftCard>
+
+        <SoftCard
+          title="Session"
+          description="How long you stay signed in on this device."
+          className="lg:col-span-2"
+        >
+          <p className="mb-3.5 text-[13px] leading-snug text-[#5c554c]">
+            You stay signed in for up to{" "}
+            <strong className="text-[#2a2622]">30 days</strong> of use. We
+            refresh your session while you&apos;re active. There is{" "}
+            <strong className="text-[#2a2622]">
+              no automatic logout after a short period of inactivity
+            </strong>
+            . Use <strong className="text-[#2a2622]">Sign out</strong> on
+            shared computers.
+          </p>
           <DetailRow label="Workspace" value={data.workspaceName} />
           <DetailRow label="Role" value={data.roleLabel} />
           <div className="mt-3.5">
