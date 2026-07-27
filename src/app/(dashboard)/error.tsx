@@ -2,23 +2,14 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-
-function isStaleChunkError(error: Error): boolean {
-  const message = `${error.name} ${error.message}`;
-  return (
-    /ChunkLoadError/i.test(message) ||
-    /Loading chunk [\d]+ failed/i.test(message) ||
-    /Failed to fetch dynamically imported module/i.test(message) ||
-    /error loading dynamically imported module/i.test(message) ||
-    /undefined is not an object \(evaluating ['"]e\[r\]\.call['"]\)/i.test(
-      message,
-    )
-  );
-}
+import {
+  isDeploySkewError,
+  reloadOnceForDeploySkew,
+} from "@/lib/next/deploy-skew";
 
 /**
- * After a production deploy, Safari/Chrome can keep old webpack chunks in
- * memory. Navigating then throws `e[r].call` / ChunkLoadError. Reload once
+ * After a production deploy, Safari/Chrome can keep old webpack chunks or
+ * Server Action IDs in memory. Navigating / clicking then throws. Reload once
  * to pick up the new build.
  */
 export default function DashboardError({
@@ -28,17 +19,27 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const deploySkew = isDeploySkewError(error);
+
   useEffect(() => {
-    if (!isStaleChunkError(error)) return;
-    const key = "heyralli-chunk-reload";
-    try {
-      if (sessionStorage.getItem(key) === "1") return;
-      sessionStorage.setItem(key, "1");
-      window.location.reload();
-    } catch {
-      window.location.reload();
-    }
-  }, [error]);
+    if (!deploySkew) return;
+    reloadOnceForDeploySkew();
+  }, [deploySkew]);
+
+  if (deploySkew) {
+    return (
+      <div className="studio-page flex min-h-[50vh] flex-col items-center justify-center gap-4 p-8 text-center">
+        <h1 className="font-display text-2xl text-cos-text">Updating…</h1>
+        <p className="max-w-md text-sm text-cos-muted">
+          A newer version of the app is available. Refreshing this page to load
+          it.
+        </p>
+        <Button type="button" onClick={() => window.location.reload()}>
+          Refresh now
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="studio-page flex min-h-[50vh] flex-col items-center justify-center gap-4 p-8 text-center">
