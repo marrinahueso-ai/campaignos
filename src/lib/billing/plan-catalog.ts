@@ -100,6 +100,12 @@ export const PAID_PLANS: readonly PlanCatalogEntry[] = [
   },
 ] as const;
 
+export function isPaidPlanId(value: string | null | undefined): value is PaidPlanId {
+  return (
+    value === "starter" || value === "professional" || value === "premium"
+  );
+}
+
 export function planById(id: PaidPlanId): PlanCatalogEntry {
   const plan = PAID_PLANS.find((entry) => entry.id === id);
   if (!plan) {

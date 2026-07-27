@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { PLAN_MONTHLY_CREDITS } from "../../ai/credit-constants.ts";
 import {
   BILLING_TRIAL,
+  isPaidPlanId,
   PAID_PLANS,
   PRE_STRIPE_DEFAULT_PLAN_ID,
   planById,
@@ -34,5 +35,12 @@ describe("plan catalog", () => {
   it("documents 14-day trial with 600 credits", () => {
     assert.equal(BILLING_TRIAL.days, 14);
     assert.equal(BILLING_TRIAL.credits, 600);
+  });
+
+  it("narrows signup plan query ids", () => {
+    assert.equal(isPaidPlanId("starter"), true);
+    assert.equal(isPaidPlanId("premium"), true);
+    assert.equal(isPaidPlanId("founding"), false);
+    assert.equal(isPaidPlanId("nope"), false);
   });
 });

@@ -70,6 +70,8 @@ export function featureFromAiActionType(actionType: string): string {
       return "event_brief";
     case "generate_creative_brief":
       return "creative_brief";
+    case "homepage_composer_blurb":
+      return "homepage_composer_blurb";
     case "orchestrate_artwork":
       return "artwork_orchestration";
     case "generate_artwork":

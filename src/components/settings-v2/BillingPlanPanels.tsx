@@ -40,7 +40,7 @@ interface PanelProps {
   hasStripeCustomer?: boolean;
 }
 
-const PLAN_CHECKOUT_RETURN_PATH = "/settings/billing-plan?tab=plan";
+const PLAN_CHECKOUT_RETURN_PATH = "/settings/billing-plan?view=plans";
 
 export function BillingPlanPricingPanel({
   isFoundingPartner = false,

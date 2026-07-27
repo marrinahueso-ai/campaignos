@@ -20,6 +20,7 @@ export type AiUsageCategoryKey =
   | "draft_communication"
   | "generate_event_brief"
   | "generate_creative_brief"
+  | "homepage_composer_blurb"
   | "other";
 
 /**
@@ -41,6 +42,7 @@ export const AI_USAGE_CATEGORY_LABELS: Record<AiUsageCategoryKey, string> = {
   draft_communication: "Communication Draft",
   generate_event_brief: "Event Brief",
   generate_creative_brief: "Creative Brief",
+  homepage_composer_blurb: "Homepage Blurb",
   other: "Etc",
 };
 
@@ -57,6 +59,7 @@ export const AI_USAGE_CATEGORY_ORDER: AiUsageCategoryKey[] = [
   "draft_communication",
   "generate_event_brief",
   "generate_creative_brief",
+  "homepage_composer_blurb",
   "other",
 ];
 
@@ -72,6 +75,7 @@ const DIRECT_CATEGORY_MAP: Partial<Record<string, AiUsageCategoryKey>> = {
   draft_communication: "draft_communication",
   generate_event_brief: "generate_event_brief",
   generate_creative_brief: "generate_creative_brief",
+  homepage_composer_blurb: "homepage_composer_blurb",
 };
 
 export function isRegenerationMetadata(metadata: unknown): boolean {

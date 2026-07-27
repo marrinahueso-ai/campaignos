@@ -44,21 +44,23 @@ export async function getSettingsBillingContext(): Promise<SettingsBillingContex
       ? billing.planTier
       : null;
 
-  const planLabel = isFoundingPartner
-    ? "Founding Partner"
-    : billing?.trialActive
-      ? billing.subscriptionStatus === "trialing" && currentPlanId
-        ? `${planLabelForTier(currentPlanId)} (trial)`
-        : "Professional (trial)"
-      : billing?.trialExpired
-        ? "Starter (trial ended)"
-        : planLabelForTier(
-            billing?.planTier === "starter" ||
-              billing?.planTier === "professional" ||
-              billing?.planTier === "premium"
-              ? billing.planTier
-              : "professional",
-          );
+  // Founding/exempt keeps unlimited credits + waived billing, but the label
+  // still reflects the org's catalog tier so Billing Ease can show full plan chrome.
+  const catalogTier =
+    billing?.planTier === "starter" ||
+    billing?.planTier === "professional" ||
+    billing?.planTier === "premium"
+      ? billing.planTier
+      : "professional";
+  const planLabel = billing?.trialActive
+    ? billing.subscriptionStatus === "trialing" && currentPlanId
+      ? `${planLabelForTier(currentPlanId)} (trial)`
+      : "Professional (trial)"
+    : billing?.trialExpired
+      ? "Starter (trial ended)"
+      : isFoundingPartner
+        ? `${planLabelForTier(catalogTier)} (founding)`
+        : planLabelForTier(catalogTier);
 
   return {
     organization,

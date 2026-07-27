@@ -22,6 +22,7 @@ export type AiActionType =
   | "meta_social_caption"
   | "generate_event_brief"
   | "generate_creative_brief"
+  | "homepage_composer_blurb"
   | "orchestrate_artwork"
   | "generate_artwork"
   /** Phase 2+ call sites — accepted by logAiUsage today. */

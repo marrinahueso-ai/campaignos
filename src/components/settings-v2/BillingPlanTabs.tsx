@@ -6,26 +6,21 @@ export type BillingPlanTab =
   | "plan"
   | "usage"
   | "payment"
-  | "history";
+  | "history"
+  | "plans";
 
 const TABS: { id: BillingPlanTab; label: string; href: string }[] = [
-  { id: "overview", label: "Overview", href: "/settings/billing-plan" },
-  { id: "plan", label: "Plan & Pricing", href: "/settings/billing-plan?tab=plan" },
-  { id: "usage", label: "Usage", href: "/settings/billing-plan?tab=usage" },
-  { id: "payment", label: "Payment Method", href: "/settings/billing-plan?tab=payment" },
-  { id: "history", label: "Billing History", href: "/settings/billing-plan?tab=history" },
+  { id: "usage", label: "Usage", href: "/settings/billing-plan?view=usage" },
+  { id: "plans", label: "Plans", href: "/settings/billing-plan?view=plans" },
+  { id: "payment", label: "Payment", href: "/settings/billing-plan?view=payment" },
 ];
 
+/** @deprecated Prefer billingEaseViewFromParam — kept for legacy ?tab= links. */
 export function billingPlanTabFromParam(value: string | undefined): BillingPlanTab {
-  if (
-    value === "plan" ||
-    value === "usage" ||
-    value === "payment" ||
-    value === "history"
-  ) {
-    return value;
-  }
-  return "overview";
+  if (value === "plans" || value === "plan") return "plans";
+  if (value === "payment" || value === "history") return "payment";
+  if (value === "usage" || value === "overview") return "usage";
+  return "usage";
 }
 
 export function BillingPlanTabs({ active }: { active: BillingPlanTab }) {

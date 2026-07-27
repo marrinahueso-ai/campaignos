@@ -160,13 +160,15 @@ export async function logAiUsage(input: AiUsageLogInput): Promise<void> {
       ? "Event brief"
       : input.actionType === "generate_creative_brief"
         ? "Creative brief"
-        : input.actionType === "orchestrate_artwork"
-          ? "Artwork orchestration"
-          : input.actionType === "generate_artwork"
-            ? "Campaign artwork"
-            : input.actionType === "meta_social_caption"
-              ? "Meta social caption"
-              : channelLabel(input.channel);
+        : input.actionType === "homepage_composer_blurb"
+          ? "Homepage blurb"
+          : input.actionType === "orchestrate_artwork"
+            ? "Artwork orchestration"
+            : input.actionType === "generate_artwork"
+              ? "Campaign artwork"
+              : input.actionType === "meta_social_caption"
+                ? "Meta social caption"
+                : channelLabel(input.channel);
   const tokenSummary = formatTokenSummary(input);
   const status = input.success ? "success" : "failure";
 
@@ -179,21 +181,25 @@ export async function logAiUsage(input: AiUsageLogInput): Promise<void> {
         ? input.success
           ? `AI-enhanced creative brief (${input.model}, ${tokenSummary}).`
           : `Creative brief generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
-        : input.actionType === "orchestrate_artwork"
+        : input.actionType === "homepage_composer_blurb"
           ? input.success
-            ? `Artwork prompt orchestration (${input.model}, ${tokenSummary}).`
-            : `Artwork orchestration did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
-          : input.actionType === "generate_artwork"
+            ? `AI-generated homepage card blurb (${input.model}, ${tokenSummary}).`
+            : `Homepage blurb generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
+          : input.actionType === "orchestrate_artwork"
             ? input.success
-              ? `AI-generated campaign artwork (${input.model}).`
-              : `Artwork generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
-            : input.actionType === "meta_social_caption"
+              ? `Artwork prompt orchestration (${input.model}, ${tokenSummary}).`
+              : `Artwork orchestration did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
+            : input.actionType === "generate_artwork"
               ? input.success
-                ? `AI-generated Meta social caption (${input.model}, ${tokenSummary}).`
-                : `Meta social caption did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
-              : input.success
-                ? `AI-assisted draft for ${label} (${input.model}, ${tokenSummary}).`
-                : `AI draft attempt for ${label} did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim();
+                ? `AI-generated campaign artwork (${input.model}).`
+                : `Artwork generation did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
+              : input.actionType === "meta_social_caption"
+                ? input.success
+                  ? `AI-generated Meta social caption (${input.model}, ${tokenSummary}).`
+                  : `Meta social caption did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim()
+                : input.success
+                  ? `AI-assisted draft for ${label} (${input.model}, ${tokenSummary}).`
+                  : `AI draft attempt for ${label} did not complete (${input.model}). ${input.errorMessage ?? ""}`.trim();
 
   console.info("[ai-usage]", {
     eventId: input.eventId,
@@ -228,21 +234,25 @@ export async function logAiUsage(input: AiUsageLogInput): Promise<void> {
           ? input.success
             ? "Creative brief generated"
             : "Creative brief attempt"
-          : input.actionType === "orchestrate_artwork"
+          : input.actionType === "homepage_composer_blurb"
             ? input.success
-              ? "Artwork orchestration completed"
-              : "Artwork orchestration attempt"
-            : input.actionType === "generate_artwork"
+              ? "Homepage blurb generated"
+              : "Homepage blurb attempt"
+            : input.actionType === "orchestrate_artwork"
               ? input.success
-                ? "Artwork concepts generated"
-                : "Artwork generation attempt"
-              : input.actionType === "meta_social_caption"
+                ? "Artwork orchestration completed"
+                : "Artwork orchestration attempt"
+              : input.actionType === "generate_artwork"
                 ? input.success
-                  ? "Meta social caption generated"
-                  : "Meta social caption attempt"
-                : input.success
-                  ? "First draft ready"
-                  : "Draft attempt";
+                  ? "Artwork concepts generated"
+                  : "Artwork generation attempt"
+                : input.actionType === "meta_social_caption"
+                  ? input.success
+                    ? "Meta social caption generated"
+                    : "Meta social caption attempt"
+                  : input.success
+                    ? "First draft ready"
+                    : "Draft attempt";
 
     const { error } = await supabase.from("activity_log").insert({
       event_id: input.eventId,
