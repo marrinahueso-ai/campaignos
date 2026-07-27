@@ -37,7 +37,8 @@ Phase C3 locks **Storage API** access (`storage.objects` policies) to the same m
 
 | Flow | Bucket | Path | How it works |
 |------|--------|------|----------------|
-| Homepage Composer card art | `event-assets` | `{orgId}/homepage-composer/…` | Org UUID first folder — **does not** match event-scoped RLS. Uploads use **service role** via `uploadArtworkBytes` when admin is configured (`homepage-composer/artwork-actions.ts`). |
+| Homepage Composer card art | `event-assets` | `{orgId}/homepage-composer/…` | Org UUID first folder — **does not** match event-scoped RLS. Uploads use **service role** via `uploadArtworkBytes` when admin is configured (`homepage-composer/artwork-actions.ts`). See [homepage-composer.md](./homepage-composer.md). |
+| Newsletter Composer art | `event-assets` | `{orgId}/newsletter-composer/…` | Same org-first / service-role pattern (`newsletter-composer/artwork-actions.ts`). See [newsletter-composer.md](./newsletter-composer.md). |
 | AI artwork generation | `event-assets` | `{eventId}/…` | Prefer service role for the same reason (user-JWT Storage RLS failures mid-generation). |
 | Developer agreement templates + company countersign + executed packets | `developer-agreements` | `templates/…`, `signatures/company/…`, packet paths | **Service role** only. Authenticated clients may only write `signatures/{auth.uid()}/…`. |
 
@@ -141,4 +142,4 @@ Expect **31** policies: 28 named `*_active_member` / `*_event_member` (using `ca
 | Organization stickers bucket + policies | `supabase/migrations/20260723042605_organization_stickers.sql` |
 | Developer agreements bucket + policies | `supabase/migrations/073_developer_agreements.sql` |
 | Contract test | `src/lib/auth/__tests__/storage-rls-phase-c3.test.ts` |
-| Path builders | `vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts`, `inbox/sticker-constants.ts`, `ai-artwork/storage.ts`, `homepage-composer/artwork-actions.ts`, `developer-agreements/actions.ts` |
+| Path builders | `vendors/storage.ts`, `event-workspace/storage.ts`, `campaign-files/storage.ts`, `inbox/sticker-constants.ts`, `ai-artwork/storage.ts`, `homepage-composer/artwork-actions.ts`, `newsletter-composer/artwork-actions.ts`, `developer-agreements/actions.ts` |

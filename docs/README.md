@@ -2,7 +2,7 @@
 
 **Status:** Living index  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 26, 2026  
 **Production:** [heyralli.com](https://heyralli.com)
 
 This is the documentation hub. Start here.
@@ -61,6 +61,8 @@ This is the documentation hub. Start here.
 | Developer agreements | [engineering/developer-agreements.md](./engineering/developer-agreements.md) |
 | Artwork → approvals findings | [qa/artwork-approval-findings.md](./qa/artwork-approval-findings.md) |
 | Create with AI artwork inputs | [qa/create-with-ai-artwork-inputs.md](./qa/create-with-ai-artwork-inputs.md) |
+| Homepage Composer | [qa/homepage-composer.md](./qa/homepage-composer.md) · [engineering/homepage-composer.md](./engineering/homepage-composer.md) |
+| Newsletter Composer | [qa/newsletter-composer.md](./qa/newsletter-composer.md) · [engineering/newsletter-composer.md](./engineering/newsletter-composer.md) |
 | Calendar import dedupe (school events) | [qa/calendar-import-dedupe.md](./qa/calendar-import-dedupe.md) |
 | Meta Calendar DnD / native schedule | [qa/meta-calendar-dnd.md](./qa/meta-calendar-dnd.md) |
 | Testing (Sentry / Playwright) | [qa/testing-guide.md](./qa/testing-guide.md) |

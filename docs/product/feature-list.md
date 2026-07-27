@@ -100,7 +100,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Same fill-rate color bands as Volunteer Master on Overall Filled and per-assignment progress
 
 ## Create with AI (Campaign Builder)
-- Nav `/create-with-ai` — chooser landing (Home Page · Social Media · Newsletter); Social opens `/create-with-ai/social` → Creative Setup for a default event; Newsletter opens `/newsletter-composer`; empty/access hub when no events or no permission — **shipped**
+- Nav `/create-with-ai` — chooser landing (Home Page · Social Media · Newsletter); Social opens `/create-with-ai/social` → Creative Setup for a default event; Home Page opens `/homepage-composer` ([QA](../qa/homepage-composer.md)); Newsletter opens `/newsletter-composer` ([QA](../qa/newsletter-composer.md)); empty/access hub when no events or no permission — **shipped**
 - Inspiration / creative setup, logos, milestones — **shipped**
 - Artwork guidance from Creative Setup: Overall inspiration comment + per-image comments (not legacy Notes to AI); logo / brand colors / voice toggles are explicit opt-in only (org brand kit is not auto-surfaced or auto-applied) — see [create-with-ai-artwork-inputs.md](../qa/create-with-ai-artwork-inputs.md) — **shipped** (QA matrix + Playwright wiring)
 - Generate artwork + captions per milestone — **shipped**
@@ -114,11 +114,11 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Full Meta slot sync after approval — **stub** / incomplete
 
 ## Homepage Composer
-- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred)
+- Route `/homepage-composer` via Create with AI → Home Page (no separate sidebar item); full-page Membership Toolkit export; SettingsBox layout; emoji pickers; announcements; month/year event filter; hosted 1:1 artwork with upload + Create-with-AI deep link icons; card on/off dates; full-month + date-slider preview; durable draft autosave (localStorage + IndexedDB, flush on navigate/hide); subtle AI **Generate text** on card description (≤2 sentences, credits via `homepage_composer_blurb`) — **shipped** (soft launch; further blurb/copy polish deferred) — living docs: [QA](../qa/homepage-composer.md) · [Engineering](../engineering/homepage-composer.md)
 - Evergreen custom cards + optional link URL · editable link name (`linkLabel`) · card face date (`date`, distinct from on/off visibility) · on date · off date · always-on · artwork upload — **shipped** (soft launch)
 
 ## Newsletter Composer
-- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **shipped** (soft launch; further polish deferred)
+- Route `/newsletter-composer` via Create with AI → Newsletter (no separate sidebar item); scoop-style family email (header, message, stories, calendar chips, sponsors, socials); desktop + phone preview; HTML export; draft autosave — **shipped** (soft launch; further polish deferred) — living docs: [QA](../qa/newsletter-composer.md) · [Engineering](../engineering/newsletter-composer.md)
 
 ## Artwork & creative
 - AI artwork generation (feed + story), approve/deny/adjust — **shipped**

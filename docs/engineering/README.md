@@ -1,12 +1,14 @@
 # Engineering
 
 **Purpose:** System structure, database, access control, auth emails.  
-**Last updated:** July 22, 2026
+**Last updated:** July 26, 2026
 
 | Doc | Status |
 |-----|--------|
 | [architecture.md](./architecture.md) | **Living** |
 | [ask-ralli-assistant.md](./ask-ralli-assistant.md) | **Living** — routing, sources, extend guide, QA matrix |
+| [homepage-composer.md](./homepage-composer.md) | **Living** — draft storage, blurb/artwork actions, MTK export · [QA](../qa/homepage-composer.md) |
+| [newsletter-composer.md](./newsletter-composer.md) | **Living** — draft storage, artwork upload, email HTML export · [QA](../qa/newsletter-composer.md) |
 | [access-control.md](./access-control.md) | **Living** — templates, RLS, org switcher MVP |
 | User-facing access / onboarding | [../security/access-and-onboarding.md](../security/access-and-onboarding.md) | **Living** |
 | [storage-rls.md](./storage-rls.md) | **Living** |

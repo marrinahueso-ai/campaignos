@@ -1,7 +1,7 @@
 # QA
 
 **Purpose:** How to test Hey Ralli, QA architecture orientation, investigation notes.  
-**Last updated:** July 23, 2026
+**Last updated:** July 26, 2026
 
 | Doc | Status |
 |-----|--------|
@@ -12,6 +12,8 @@
 | [testing-guide.md](./testing-guide.md) | **Living** |
 | [performance-budget.md](./performance-budget.md) | **Living** — ≤2s page/save budget; `npm run test:hey-ralli:perf` |
 | [create-with-ai-artwork-inputs.md](./create-with-ai-artwork-inputs.md) | **Living** — Creative Setup → artwork input matrix; Playwright `13` / `13b` |
+| [homepage-composer.md](./homepage-composer.md) | **Living** — Homepage Composer workflow, acceptance, limitations · [eng](../engineering/homepage-composer.md) |
+| [newsletter-composer.md](./newsletter-composer.md) | **Living** — Newsletter Composer workflow, acceptance, limitations · [eng](../engineering/newsletter-composer.md) |
 | [meta-calendar-dnd.md](./meta-calendar-dnd.md) | **Living** — Meta native Graph schedule on Approve + Calendar DnD reschedule (no re-approval); not school-event import |
 | [calendar-import-dedupe.md](./calendar-import-dedupe.md) | **Living** — ICS/Google/AI school-event import keys, Update vs Duplicate; Playwright `14-calendar-import-dedupe` |
 | [developer-agreements.md](./developer-agreements.md) | **Living** — Developer agreements gate, e-sign, countersign, executed download API, Owner ops / access gates (manual A1–A19) |
