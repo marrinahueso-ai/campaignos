@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Create with AI Flyer Ease Mockup</title>
+  <meta name="description" content="Mockup: Create with AI Flyer — pick a template, add inspiration + optional brand kit and copy; AI fills the template without redesigning it." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.14), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.11), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 100%, rgba(42, 122, 134, 0.07), transparent 55%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, textarea, a { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+    button { cursor: pointer; border: none; background: none; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes soft-in {
+      from { opacity: 0; transform: scale(0.985); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+    @keyframes fill-slot {
+      from { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+      to { opacity: 1; transform: none; filter: none; }
+    }
+
+    .shell { max-width: 1120px; margin: 0 auto; padding: 20px 20px 72px; }
+
+    .top {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 16px; margin-bottom: 28px; animation: rise 0.5s var(--ease) both;
+    }
+    .top h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .top .lede { margin: 8px 0 0; max-width: 36rem; color: var(--ink-soft); font-size: 0.98rem; line-height: 1.5; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+      border-radius: 999px; border: 1px dashed rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.7); font-size: 12px; font-weight: 600; color: var(--muted);
+    }
+
+    .pills {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px;
+      animation: rise 0.55s var(--ease) 0.05s both;
+    }
+    .pill {
+      padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.75); font-size: 13px; font-weight: 600; color: var(--ink-soft);
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .pill:hover { border-color: rgba(47, 74, 60, 0.35); }
+    .pill[aria-current="true"] {
+      background: var(--forest); color: #fff; border-color: var(--forest);
+    }
+
+    .panel {
+      background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 22px 22px 24px;
+      animation: soft-in 0.45s var(--ease) both;
+    }
+    .panel h2 {
+      margin: 0 0 6px; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
+    }
+    .panel .sub { margin: 0 0 18px; color: var(--muted); font-size: 0.92rem; line-height: 1.45; max-width: 40rem; }
+
+    .rule {
+      display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin-bottom: 18px;
+      border-radius: 14px; background: rgba(47, 74, 60, 0.07); border: 1px solid rgba(47, 74, 60, 0.12);
+      font-size: 0.88rem; line-height: 1.45; color: var(--ink-soft);
+    }
+    .rule strong { color: var(--forest); }
+
+    /* Chooser */
+    .choices {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    }
+    @media (min-width: 900px) {
+      .choices { grid-template-columns: repeat(4, 1fr); }
+    }
+    .choice {
+      text-align: left; border-radius: 18px; border: 1px solid var(--line);
+      background: var(--cream); overflow: hidden; transition: transform 0.25s var(--ease), box-shadow 0.25s;
+    }
+    .choice:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .choice.featured { border-color: rgba(196, 146, 46, 0.45); box-shadow: 0 0 0 2px rgba(196, 146, 46, 0.15); }
+    .choice-art { height: 110px; position: relative; overflow: hidden; }
+    .choice-body { padding: 12px 14px 14px; }
+    .choice-body h3 { margin: 0 0 4px; font-size: 1rem; font-family: var(--serif); font-weight: 600; }
+    .choice-body p { margin: 0; font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .new-tag {
+      position: absolute; top: 10px; left: 10px; z-index: 2;
+      padding: 4px 9px; border-radius: 999px; background: var(--mustard); color: #fff;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    /* Filter chips */
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    }
+    .filter-chip {
+      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--cream); font-size: 12px; font-weight: 700; color: var(--ink-soft);
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .filter-chip:hover { border-color: rgba(47, 74, 60, 0.35); }
+    .filter-chip[aria-pressed="true"] {
+      background: var(--forest); color: #fff; border-color: var(--forest);
+    }
+
+    /* Templates */
+    .tpl-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (min-width: 720px) {
+      .tpl-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1000px) {
+      .tpl-grid { grid-template-columns: repeat(5, 1fr); }
+    }
+    .tpl {
+      position: relative; text-align: left; border-radius: 16px; border: 2px solid transparent;
+      background: var(--cream); padding: 10px; transition: border-color 0.2s, transform 0.2s;
+    }
+    .tpl:hover { transform: translateY(-2px); }
+    .tpl[aria-pressed="true"] { border-color: var(--forest); background: #fff; box-shadow: var(--shadow); }
+    .tpl-preview {
+      aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; position: relative;
+      border: 1px solid var(--line); background: #ddd;
+    }
+    .tpl-preview[data-ratio="1/1"] { aspect-ratio: 1 / 1; }
+    .tpl-preview[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-height: 200px; margin: 0 auto; width: auto; }
+    .tpl-label {
+      margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: var(--ink); line-height: 1.25;
+    }
+    .tpl-audience {
+      margin-top: 3px; font-size: 0.68rem; font-weight: 700; color: var(--forest);
+    }
+    .tpl-channels {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px;
+    }
+    .tpl.custom-tpl {
+      border-style: dashed; border-color: rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.95);
+    }
+    .tpl.custom-tpl[aria-pressed="true"] {
+      border-style: solid; border-color: var(--forest);
+    }
+    .tpl-preview.custom-preview {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; background:
+        linear-gradient(145deg, rgba(47, 74, 60, 0.08), rgba(196, 146, 46, 0.1)),
+        var(--cream);
+      color: var(--ink-soft); font-size: 0.72rem; font-weight: 600; text-align: center;
+      padding: 12px;
+    }
+    .tpl-preview.custom-preview .up-icon {
+      width: 36px; height: 36px; border-radius: 12px; background: var(--white);
+      border: 1px solid var(--line); display: grid; place-items: center; font-size: 1.1rem;
+    }
+    .custom-upload {
+      border: 1.5px dashed rgba(42, 38, 34, 0.22); border-radius: 16px;
+      background: var(--cream); padding: 16px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .custom-upload:hover { border-color: rgba(47, 74, 60, 0.4); }
+    .custom-upload.has {
+      padding: 0; border-style: solid; overflow: hidden; aspect-ratio: 3/4;
+      max-height: 220px; background-size: cover; background-position: center;
+    }
+    .custom-upload .hint { font-size: 0.82rem; color: var(--muted); margin: 6px 0 0; }
+    .custom-mode-note {
+      display: none; margin-bottom: 14px; padding: 12px 14px; border-radius: 14px;
+      background: rgba(42, 122, 134, 0.08); border: 1px solid rgba(42, 122, 134, 0.15);
+      font-size: 0.86rem; line-height: 1.45; color: var(--ink-soft);
+    }
+    .custom-mode-note strong { color: var(--teal); }
+    body.is-custom-flyer .custom-mode-note { display: block; }
+    body.is-custom-flyer #inspFieldLabel::after {
+      content: " (optional — only if you want a new photo)";
+      font-weight: 500; color: var(--muted);
+    }
+    .fly.custom { position: relative; background: #c8c2b8; }
+    .fly.custom .hero { flex: 1; }
+    .fly.custom .edit-overlay {
+      position: absolute; left: 8%; right: 8%; bottom: 10%; z-index: 2;
+      display: flex; flex-direction: column; gap: 4px; padding: 10px 12px;
+      border-radius: 12px; background: rgba(255, 252, 247, 0.92);
+      border: 1px solid rgba(42, 38, 34, 0.12); color: var(--ink);
+      box-shadow: 0 8px 20px rgba(28, 36, 48, 0.12);
+    }
+    .fly.custom .edit-overlay .h { font-size: 11px; color: var(--ink); }
+    .fly.custom .edit-overlay .b { font-size: 8px; opacity: 0.85; color: var(--ink-soft); }
+    .fly.custom .edit-overlay .cta { background: var(--forest); color: #fff; font-size: 7px; }
+    .fly.custom .edit-badge {
+      position: absolute; top: 8px; left: 8px; z-index: 2;
+      padding: 3px 8px; border-radius: 999px; background: rgba(42, 122, 134, 0.92);
+      color: #fff; font-size: 7px; font-weight: 700; letter-spacing: 0.03em;
+    }
+    .ch-tag {
+      font-size: 9px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 999px; background: rgba(42, 38, 34, 0.06); color: var(--muted);
+    }
+    .ch-tag.qr { background: rgba(42, 122, 134, 0.12); color: var(--teal); }
+    .ch-tag.print { background: rgba(47, 74, 60, 0.1); color: var(--forest); }
+    .ch-tag.online { background: rgba(196, 146, 46, 0.14); color: #8a6818; }
+
+    /* Fake QR */
+    .qr {
+      flex-shrink: 0;
+      background:
+        linear-gradient(#111 50%, transparent 50%) 0 0 / 25% 25%,
+        linear-gradient(#111 50%, transparent 50%) 50% 0 / 25% 25%,
+        linear-gradient(#111 50%, transparent 50%) 0 50% / 25% 25%,
+        linear-gradient(#111 50%, transparent 50%) 75% 25% / 25% 25%,
+        linear-gradient(#111 50%, transparent 50%) 25% 75% / 25% 25%,
+        linear-gradient(#111 50%, transparent 50%) 75% 75% / 25% 25%,
+        #fff;
+      border: 1px solid #222;
+      box-shadow: inset 0 0 0 2px #fff;
+      image-rendering: pixelated;
+    }
+    .qr::before {
+      content: "";
+      display: block;
+      width: 100%; height: 100%;
+      background:
+        linear-gradient(#111,#111) 0 0 / 30% 30%,
+        linear-gradient(#111,#111) 100% 0 / 30% 30%,
+        linear-gradient(#111,#111) 0 100% / 30% 30%,
+        linear-gradient(#fff,#fff) 8% 8% / 14% 14%,
+        linear-gradient(#fff,#fff) calc(100% - 22%) 8% / 14% 14%,
+        linear-gradient(#fff,#fff) 8% calc(100% - 22%) / 14% 14%,
+        repeating-conic-gradient(#111 0% 25%, #fff 0% 50%) 50% 50% / 20% 20%;
+      background-repeat: no-repeat;
+    }
+
+    /* Flyer template visuals (fixed layouts) */
+    .fly {
+      width: 100%; height: 100%; display: flex; flex-direction: column; color: #fff;
+      font-size: 8px; line-height: 1.2; position: relative; overflow: hidden;
+    }
+    .fly .hero { flex: 1; position: relative; min-height: 0; }
+    .fly .hero-img {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      filter: saturate(1.05);
+    }
+    .fly .band {
+      padding: 7px 9px; display: flex; flex-direction: column; gap: 2px;
+    }
+    .fly .logo-dot {
+      width: 14px; height: 14px; border-radius: 5px; background: rgba(255,255,255,0.9);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .fly .h { font-family: var(--serif); font-weight: 700; font-size: 11px; letter-spacing: -0.02em; }
+    .fly .b { opacity: 0.92; font-size: 7px; }
+    .fly .cta {
+      align-self: flex-start; margin-top: 3px; padding: 2px 7px; border-radius: 999px;
+      background: rgba(255,255,255,0.95); color: var(--ink); font-weight: 700; font-size: 6.5px;
+    }
+    .fly .row { display: flex; gap: 6px; align-items: flex-end; }
+    .fly .row > .txt { flex: 1; min-width: 0; }
+    .fly .eyebrow {
+      font-size: 6px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85;
+    }
+    .fly .agenda {
+      margin-top: 3px; padding-top: 3px; border-top: 1px solid rgba(255,255,255,0.25);
+      font-size: 6.5px; opacity: 0.9; line-height: 1.35;
+    }
+    .fly .agenda div { display: flex; justify-content: space-between; gap: 4px; }
+
+    /* 1 · Community festival poster */
+    .fly.festival .band { background: var(--forest); }
+    .fly.festival .hero { flex: 1.35; }
+    .fly.festival .date-chip {
+      position: absolute; top: 8px; right: 8px; z-index: 1;
+      background: var(--mustard); color: #fff; padding: 4px 6px; border-radius: 8px;
+      font-weight: 800; font-size: 7px; text-align: center; line-height: 1.15;
+    }
+
+    /* 2 · Church gathering */
+    .fly.church {
+      background: #f7f3ec; color: #2c2824; flex-direction: column;
+    }
+    .fly.church .hero {
+      flex: 0.85; margin: 10px 10px 0; border-radius: 8px; overflow: hidden;
+    }
+    .fly.church .band {
+      background: transparent; color: #2c2824; align-items: center; text-align: center;
+      padding: 8px 12px 10px;
+    }
+    .fly.church .h { font-weight: 600; font-size: 12px; color: #3a2f28; }
+    .fly.church .b { color: #6a5f55; opacity: 1; }
+    .fly.church .cta { background: #4a3f36; color: #f7f3ec; align-self: center; }
+    .fly.church .orn {
+      width: 28px; height: 1px; background: #c4a574; margin: 2px auto;
+    }
+    .fly.church .row { width: 100%; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+    .fly.church .qr { width: 28px; height: 28px; }
+
+    /* 3 · Youth sports tryouts */
+    .fly.sports {
+      background: #0d1b2a; color: #fff;
+    }
+    .fly.sports .hero { flex: 1; }
+    .fly.sports .hero::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 35%, #0d1b2a 95%);
+    }
+    .fly.sports .band {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+      background: transparent; padding: 10px;
+    }
+    .fly.sports .stripe {
+      position: absolute; top: 0; left: 0; right: 0; height: 6px; z-index: 2;
+      background: repeating-linear-gradient(90deg, #e85d04 0 12px, #fff 12px 16px, #0d1b2a 16px 28px);
+    }
+    .fly.sports .h {
+      font-family: var(--sans); font-weight: 800; font-size: 13px; text-transform: uppercase;
+      letter-spacing: 0.02em; text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .fly.sports .cta { background: #e85d04; color: #fff; border-radius: 4px; }
+
+    /* 4 · HOA meeting notice */
+    .fly.hoa {
+      background: #fff; color: var(--ink); flex-direction: column;
+    }
+    .fly.hoa .topbar {
+      background: #1e3a5f; color: #fff; padding: 8px 10px; display: flex; gap: 8px; align-items: center;
+    }
+    .fly.hoa .topbar .h { font-size: 10px; font-family: var(--sans); font-weight: 800; }
+    .fly.hoa .hero { flex: 0.7; margin: 8px; border-radius: 6px; overflow: hidden; }
+    .fly.hoa .band {
+      background: transparent; color: var(--ink); padding: 0 10px 10px; flex: 1;
+    }
+    .fly.hoa .b { opacity: 1; color: var(--ink-soft); }
+    .fly.hoa .agenda { border-top-color: rgba(30, 58, 95, 0.2); color: var(--ink); }
+    .fly.hoa .cta { background: #1e3a5f; color: #fff; }
+    .fly.hoa .qr { width: 26px; height: 26px; }
+
+    /* 5 · Social square */
+    .fly.square {
+      background: #2a7a86;
+    }
+    .fly.square .hero { flex: 1.2; }
+    .fly.square .band {
+      background: #fff; color: var(--ink); flex-direction: row; align-items: center; gap: 8px;
+    }
+    .fly.square .band > .txt { flex: 1; }
+    .fly.square .h { font-size: 10px; color: var(--ink); }
+    .fly.square .b { color: var(--muted); opacity: 1; }
+    .fly.square .cta { background: var(--teal); color: #fff; margin-top: 0; }
+
+    /* 6 · Story / reel tall */
+    .fly.story {
+      background: #111;
+    }
+    .fly.story .hero { flex: 1; }
+    .fly.story .hero::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 30%, rgba(0,0,0,0.75) 100%);
+    }
+    .fly.story .band {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+      background: transparent; padding: 12px 10px 14px;
+    }
+    .fly.story .safe {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 36%; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.35); z-index: 2;
+    }
+    .fly.story .h { font-size: 14px; }
+    .fly.story .cta { background: #fff; color: #111; }
+
+    /* 7 · Fundraiser large QR */
+    .fly.fundraiser {
+      background: linear-gradient(160deg, #5c2d2d, #8b3a3a);
+      color: #fff;
+    }
+    .fly.fundraiser .hero { flex: 0.9; margin: 8px; border-radius: 8px; overflow: hidden; }
+    .fly.fundraiser .band {
+      background: transparent; align-items: center; text-align: center; padding: 6px 10px 10px;
+    }
+    .fly.fundraiser .h { font-size: 12px; }
+    .fly.fundraiser .qr {
+      width: 48px; height: 48px; margin: 4px auto 2px; border-width: 2px;
+    }
+    .fly.fundraiser .cta { background: #f0c36a; color: #3a2210; align-self: center; }
+
+    /* 8 · Volunteer signup */
+    .fly.volunteer {
+      background: #eef4ef; color: var(--ink); flex-direction: row;
+    }
+    .fly.volunteer .hero { flex: 1; min-width: 0; }
+    .fly.volunteer .band {
+      flex: 1.05; background: #2f4a3c; color: #fff; justify-content: center; gap: 4px;
+    }
+    .fly.volunteer .qr { width: 30px; height: 30px; margin-top: 4px; }
+    .fly.volunteer .cta { background: #c4922e; color: #fff; }
+
+    /* 9 · Open house / welcome */
+    .fly.openhouse {
+      background: #faf6f0; color: var(--ink);
+    }
+    .fly.openhouse .hero {
+      flex: 1.1; clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+    }
+    .fly.openhouse .band {
+      background: transparent; color: var(--ink); margin-top: -14px; position: relative; z-index: 1;
+      padding: 0 10px 10px;
+    }
+    .fly.openhouse .welcome-card {
+      background: #fff; border: 1px solid rgba(42,38,34,0.1); border-radius: 10px;
+      padding: 8px; box-shadow: 0 6px 16px rgba(42,38,34,0.08);
+    }
+    .fly.openhouse .h { color: var(--forest); font-size: 11px; }
+    .fly.openhouse .b { color: var(--ink-soft); opacity: 1; }
+    .fly.openhouse .cta { background: var(--mustard); color: #fff; }
+
+    /* 10 · Game day handout */
+    .fly.gameday {
+      background: #102a43; color: #fff;
+    }
+    .fly.gameday .vs-bar {
+      display: flex; align-items: stretch; background: #243b53; min-height: 42%;
+    }
+    .fly.gameday .vs-side {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; padding: 8px 4px; position: relative; overflow: hidden;
+    }
+    .fly.gameday .vs-side .hero-img { opacity: 0.35; }
+    .fly.gameday .vs-mid {
+      width: 28px; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 11px; background: #e85d04; z-index: 1;
+    }
+    .fly.gameday .team {
+      position: relative; z-index: 1; font-weight: 800; font-size: 9px; text-transform: uppercase;
+    }
+    .fly.gameday .band {
+      background: #0b1c2c; flex-direction: row; align-items: center; gap: 8px; flex: 1;
+    }
+    .fly.gameday .band > .txt { flex: 1; }
+    .fly.gameday .cta { background: #e85d04; color: #fff; border-radius: 4px; margin-top: 0; }
+
+    /* Inputs step */
+    .layout-2 {
+      display: grid; gap: 18px;
+    }
+    @media (min-width: 860px) {
+      .layout-2 { grid-template-columns: 1fr 1.05fr; align-items: start; }
+    }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 0.78rem; font-weight: 700; color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+    .field textarea, .field input[type="text"], .field input[type="url"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--cream); padding: 10px 12px; resize: vertical; min-height: 0;
+    }
+    .field textarea { min-height: 72px; }
+    .field .hint-inline {
+      margin: 5px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.35;
+    }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--cream);
+    }
+    .toggle-row p { margin: 2px 0 0; font-size: 0.78rem; color: var(--muted); }
+    .switch {
+      width: 44px; height: 26px; border-radius: 999px; background: #cfc6ba; position: relative;
+      flex-shrink: 0; transition: background 0.2s;
+    }
+    .switch::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+      border-radius: 50%; background: #fff; transition: transform 0.2s var(--ease);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .switch[aria-checked="true"] { background: var(--forest); }
+    .switch[aria-checked="true"]::after { transform: translateX(18px); }
+
+    .insp {
+      border: 1.5px dashed rgba(42, 38, 34, 0.2); border-radius: 16px;
+      background: var(--cream); padding: 14px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .insp:hover { border-color: rgba(47, 74, 60, 0.4); }
+    .insp.has {
+      padding: 0; border-style: solid; overflow: hidden; aspect-ratio: 16/10;
+      background-size: cover; background-position: center;
+    }
+    .insp .hint { font-size: 0.85rem; color: var(--muted); margin: 8px 0 0; }
+    .insp-thumbs { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+    .insp-thumbs button {
+      width: 52px; height: 40px; border-radius: 8px; border: 2px solid transparent;
+      background-size: cover; background-position: center;
+    }
+    .insp-thumbs button[aria-pressed="true"] { border-color: var(--forest); }
+
+    .brand-chip {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
+      padding: 6px 10px; border-radius: 999px; background: rgba(255,252,247,0.9);
+      border: 1px solid var(--line); font-size: 0.75rem; font-weight: 600;
+    }
+    .swatch { width: 12px; height: 12px; border-radius: 4px; }
+
+    .actions {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 11px 18px; border-radius: 999px; font-weight: 700; font-size: 0.9rem;
+      transition: transform 0.15s, background 0.15s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--ink); color: #fff; }
+    .btn-primary:hover { background: #1a1714; }
+    .btn-secondary {
+      background: transparent; color: var(--ink); border: 1px solid rgba(42, 38, 34, 0.22);
+    }
+    .btn-secondary:hover { background: rgba(255,252,247,0.8); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .selected-tpl-mini {
+      border-radius: 14px; border: 1px solid var(--line); overflow: hidden;
+      aspect-ratio: 3/4; max-width: 200px; margin: 0 auto;
+      background: #eee;
+    }
+    .selected-tpl-mini[data-ratio="1/1"] { aspect-ratio: 1 / 1; }
+    .selected-tpl-mini[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 140px; }
+
+    /* Result */
+    .result-grid {
+      display: grid; gap: 20px;
+    }
+    @media (min-width: 860px) {
+      .result-grid { grid-template-columns: 1fr 1.15fr; align-items: start; }
+    }
+    .big-flyer {
+      border-radius: 18px; overflow: hidden; border: 1px solid var(--line);
+      box-shadow: var(--shadow-lg); aspect-ratio: 3/4; max-width: 360px; margin: 0 auto;
+      animation: soft-in 0.5s var(--ease) both; background: #eee;
+    }
+    .big-flyer[data-ratio="1/1"] { aspect-ratio: 1 / 1; max-width: 340px; }
+    .big-flyer[data-ratio="9/16"] { aspect-ratio: 9 / 16; max-width: 260px; }
+    .big-flyer .fly { font-size: 11px; }
+    .big-flyer .fly .h { font-size: 20px; }
+    .big-flyer .fly .b { font-size: 11px; }
+    .big-flyer .fly .cta { font-size: 10px; padding: 6px 12px; }
+    .big-flyer .fly .logo-dot { width: 28px; height: 28px; border-radius: 8px; }
+    .big-flyer .fly .eyebrow { font-size: 10px; }
+    .big-flyer .fly .agenda { font-size: 11px; }
+    .big-flyer .fly.church .qr { width: 52px; height: 52px; }
+    .big-flyer .fly.hoa .qr { width: 48px; height: 48px; }
+    .big-flyer .fly.fundraiser .qr { width: 88px; height: 88px; }
+    .big-flyer .fly.volunteer .qr { width: 56px; height: 56px; }
+    .big-flyer .fly.sports .h { font-size: 24px; }
+    .big-flyer .fly.story .h { font-size: 26px; }
+    .big-flyer .fly.gameday .team { font-size: 16px; }
+    .big-flyer .fly.gameday .vs-mid { font-size: 18px; width: 40px; }
+    .big-flyer .filled .h,
+    .big-flyer .filled .b,
+    .big-flyer .filled .cta,
+    .big-flyer .filled .logo-dot,
+    .big-flyer .filled .hero-img,
+    .big-flyer .filled .qr {
+      animation: fill-slot 0.55s var(--ease) both;
+    }
+    .big-flyer .filled .b { animation-delay: 0.08s; }
+    .big-flyer .filled .cta { animation-delay: 0.14s; }
+    .big-flyer .filled .logo-dot { animation-delay: 0.04s; }
+    .big-flyer .filled .qr { animation-delay: 0.18s; }
+
+    .gen-state {
+      padding: 28px; text-align: center; color: var(--muted); font-size: 0.9rem;
+    }
+    .gen-bar {
+      height: 6px; border-radius: 999px; margin: 14px auto 0; max-width: 180px;
+      background: linear-gradient(90deg, var(--sage), var(--mustard), var(--teal), var(--sage));
+      background-size: 200% 100%; animation: shimmer 1.2s linear infinite;
+    }
+
+    .slots {
+      list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;
+    }
+    .slots li {
+      display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+      border-radius: 12px; background: var(--cream); border: 1px solid var(--line);
+      font-size: 0.82rem; line-height: 1.4;
+    }
+    .slots .k {
+      flex-shrink: 0; font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--forest); min-width: 4.5rem;
+    }
+
+    .foot-note {
+      margin-top: 28px; text-align: center; font-size: 0.78rem; color: var(--muted);
+    }
+    .foot-note a { color: var(--teal); font-weight: 600; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="top">
+      <div>
+        <h1>Create with AI</h1>
+        <p class="lede" id="pageLede">
+          Pick what you want to make for Riverside Community Association — homepage, social, newsletter, or a flyer that stays inside a template.
+        </p>
+      </div>
+      <span class="badge">Preview mockup · not shipped</span>
+    </header>
+
+    <nav class="pills" aria-label="Mockup views">
+      <button type="button" class="pill" data-view="chooser" aria-current="true">Chooser</button>
+      <button type="button" class="pill" data-view="templates">1 · Templates</button>
+      <button type="button" class="pill" data-view="inputs">2 · Inspiration</button>
+      <button type="button" class="pill" data-view="result">3 · Generate</button>
+    </nav>
+
+    <!-- CHOOSER -->
+    <section class="panel" data-panel="chooser">
+      <h2>What do you want to make?</h2>
+      <p class="sub">Flyer joins Home Page, Social Media, and Newsletter. Same Create with AI home — new module.</p>
+      <div class="choices">
+        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
+          <div class="choice-art" style="background:linear-gradient(145deg,#2f4a3c,#6b8171,#b8c9bc)"></div>
+          <div class="choice-body"><h3>Home Page</h3><p>Membership toolkit HTML</p></div>
+        </button>
+        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
+          <div class="choice-art" style="background:linear-gradient(155deg,#c4922e,#e0b65a,#f5e6c2)"></div>
+          <div class="choice-body"><h3>Social Media</h3><p>Campaign posts & captions</p></div>
+        </button>
+        <button type="button" class="choice" disabled style="opacity:0.7;cursor:default">
+          <div class="choice-art" style="background:linear-gradient(155deg,#0b2f5b,#2f9fb3,#7fd0df)"></div>
+          <div class="choice-body"><h3>Newsletter</h3><p>Family email scoop</p></div>
+        </button>
+        <button type="button" class="choice featured" id="openFlyer">
+          <span class="new-tag">New</span>
+          <div class="choice-art" style="background:linear-gradient(160deg,#1e3a32 0%,#2a7a86 45%,#e8d5a8 100%)">
+            <div style="position:absolute;inset:18px 28px;border-radius:10px;background:rgba(255,252,247,0.95);box-shadow:0 10px 24px rgba(0,0,0,0.15);display:flex;flex-direction:column;overflow:hidden">
+              <div style="flex:1;background:linear-gradient(145deg,#6b8171,#d4a84b)"></div>
+              <div style="padding:6px 8px;background:#2f4a3c;height:28px"></div>
+            </div>
+          </div>
+          <div class="choice-body">
+            <h3>Flyer</h3>
+            <p>Print &amp; online layouts — AI fills your template</p>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- TEMPLATES -->
+    <section class="panel" data-panel="templates" hidden>
+      <h2>Choose a flyer template</h2>
+      <p class="sub">AI will place your image, brand colors, and copy into this layout — it won’t invent a new design.</p>
+      <div class="rule">
+        <strong>Template lock.</strong>
+        <span>Pick a Hey Ralli layout — or upload last year’s flyer and only update dates and text. AI won’t invent a new design either way.</span>
+      </div>
+      <div class="filters" id="tplFilters" aria-label="Filter templates"></div>
+      <div class="tpl-grid" id="tplGrid"></div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" data-goto="chooser">Back</button>
+        <button type="button" class="btn btn-primary" id="toInputs" disabled>Continue with template</button>
+      </div>
+    </section>
+
+    <!-- INPUTS -->
+    <section class="panel" data-panel="inputs" hidden>
+      <h2 id="inputsTitle">Inspiration & copy</h2>
+      <p class="sub" id="inputsSub">Give AI what to put in the template — not a new layout.</p>
+      <div class="custom-mode-note">
+        <strong>Updating your flyer.</strong>
+        Upload a previous year’s PDF or image as the template. Change dates, descriptions, and CTAs below — we’ll keep the layout and refresh the text (and optional new photo).
+      </div>
+      <div class="layout-2">
+        <div>
+          <div class="field" id="customTemplateField" hidden>
+            <label>Your template file <span style="font-weight:500;color:var(--muted)">(last year’s flyer)</span></label>
+            <div class="custom-upload" id="customUpload" role="button" tabindex="0">
+              <div id="customUploadEmpty">
+                <strong>Upload flyer template</strong>
+                <p class="hint">PDF, PNG, or JPG from a past year. This is the layout — not the inspiration photo.</p>
+              </div>
+            </div>
+            <input type="file" id="customFile" accept="image/*,.pdf" hidden />
+          </div>
+          <div class="field">
+            <label id="inspFieldLabel">Inspiration image</label>
+            <div class="insp" id="inspDrop" role="button" tabindex="0">
+              <div id="inspEmpty">
+                <strong>Add a photo</strong>
+                <p class="hint">Upload or pick a sample. This fills the template’s photo slot.</p>
+                <div class="insp-thumbs" id="inspThumbs"></div>
+              </div>
+            </div>
+          </div>
+          <div class="toggle-row" id="brandToggleRow">
+            <div>
+              <strong>Use brand kit</strong>
+              <p>Logo + colors from your organization branding</p>
+              <div class="brand-chip" id="brandChip" hidden>
+                <span class="swatch" style="background:#2f4a3c"></span>
+                <span class="swatch" style="background:#c4922e"></span>
+                <span class="swatch" style="background:#2a7a86"></span>
+                Riverside Community Association
+              </div>
+            </div>
+            <button type="button" class="switch" id="brandToggle" role="switch" aria-checked="true" aria-label="Use brand kit"></button>
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Selected template</label>
+            <div class="selected-tpl-mini" id="miniTpl"></div>
+          </div>
+          <div class="field">
+            <label>Headline <span style="font-weight:500;color:var(--muted)">(optional — AI can draft)</span></label>
+            <input type="text" id="headline" placeholder="e.g. Fall Festival · Sat Oct 12" value="Fall Festival · Sat Oct 12" />
+          </div>
+          <div class="field">
+            <label>Supporting copy <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+            <textarea id="bodyCopy" placeholder="Games, food trucks, and community fun…">Games, food trucks, and community fun on the lawn. Free for members · $5 guests.</textarea>
+          </div>
+          <div class="field">
+            <label>Call to action</label>
+            <input type="text" id="ctaCopy" value="Join us →" />
+          </div>
+          <div class="field" id="qrField" hidden>
+            <label>Link for QR code <span style="font-weight:500;color:var(--muted)">(optional)</span></label>
+            <input type="url" id="qrLink" placeholder="https://riverside.example/details" value="https://riverside.example/fall-festival" />
+            <p class="hint-inline">Encoded into this template’s QR slot — details page, signup form, or giving link.</p>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" data-goto="templates">Back</button>
+        <button type="button" class="btn btn-primary" id="toGenerate">Generate inside template</button>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section class="panel" data-panel="result" hidden>
+      <h2>Your flyer</h2>
+      <p class="sub">Same template structure — photo, brand, and copy filled into fixed slots.</p>
+      <div class="rule">
+        <strong>AI stayed in the template.</strong>
+        <span>No new columns, fonts, or layout. Regenerate refreshes slot content only. Add more templates later without changing this rule.</span>
+      </div>
+      <div class="result-grid">
+        <div>
+          <div class="big-flyer" id="resultFlyer">
+            <div class="gen-state" id="genState">
+              Filling template slots…
+              <div class="gen-bar" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 10px;font-family:var(--serif);font-size:1.15rem;">What went into the slots</h3>
+          <ul class="slots" id="slotList"></ul>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" id="regen">Regenerate content</button>
+            <button type="button" class="btn btn-secondary" data-goto="templates">Change template</button>
+            <button type="button" class="btn btn-primary">Download PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="foot-note">
+      Mockup only · <a href="/create-with-ai">Live Create with AI</a> (Flyer not shipped) ·
+      Views: <code>?view=chooser|templates|inputs|result</code>
+    </p>
+  </div>
+
+  <script>
+    const SAMPLE_CUSTOM_TEMPLATE =
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80&auto=format&fit=crop";
+
+    const CUSTOM_TEMPLATE = {
+      id: "custom",
+      name: "Upload your own template",
+      audience: "Any",
+      audiences: ["any", "school", "church", "sports", "hoa"],
+      channels: ["print", "online", "custom"],
+      ratio: "3/4",
+      cls: "custom",
+      hasQr: false,
+      isCustom: true,
+      defaults: {
+        headline: "Fall Festival · Sat Oct 12",
+        body: "Update the date, time, and short description — keep everything else.",
+        cta: "See details →",
+      },
+    };
+
+    const TEMPLATES = [
+      CUSTOM_TEMPLATE,
+      {
+        id: "festival",
+        name: "Community festival poster",
+        audience: "School",
+        audiences: ["school", "any"],
+        channels: ["print"],
+        ratio: "3/4",
+        cls: "festival",
+        hasQr: false,
+        defaults: {
+          headline: "Fall Festival · Sat Oct 12",
+          body: "Games, food trucks, and community fun on the lawn. Free for members · $5 guests.",
+          cta: "Join us →",
+        },
+      },
+      {
+        id: "church",
+        name: "Sunday gathering invite",
+        audience: "Church",
+        audiences: ["church"],
+        channels: ["print", "qr"],
+        ratio: "3/4",
+        cls: "church",
+        hasQr: true,
+        defaults: {
+          headline: "Join Us This Sunday",
+          body: "Worship · Fellowship · Kids welcome · 10:00 AM",
+          cta: "Plan your visit",
+          qr: "https://riverside.example/sunday",
+        },
+      },
+      {
+        id: "sports",
+        name: "Youth sports tryouts",
+        audience: "Sports",
+        audiences: ["sports"],
+        channels: ["print"],
+        ratio: "3/4",
+        cls: "sports",
+        hasQr: false,
+        defaults: {
+          headline: "Spring Tryouts",
+          body: "Ages 8–14 · Sat Mar 8 · Riverside Field · Bring cleats & water",
+          cta: "Register today",
+        },
+      },
+      {
+        id: "hoa",
+        name: "HOA meeting notice",
+        audience: "HOA",
+        audiences: ["hoa"],
+        channels: ["print", "qr"],
+        ratio: "3/4",
+        cls: "hoa",
+        hasQr: true,
+        defaults: {
+          headline: "Monthly Board Meeting",
+          body: "Tue Oct 14 · 7:00 PM · Clubhouse · Members welcome",
+          cta: "View packet",
+          qr: "https://riverside.example/hoa-packet",
+        },
+      },
+      {
+        id: "square",
+        name: "Social square post",
+        audience: "Any",
+        audiences: ["any", "school", "church", "sports", "hoa"],
+        channels: ["online"],
+        ratio: "1/1",
+        cls: "square",
+        hasQr: false,
+        defaults: {
+          headline: "This Saturday!",
+          body: "Fall Festival on the community lawn — food, music, neighbors.",
+          cta: "Save the date",
+        },
+      },
+      {
+        id: "story",
+        name: "Story / reel tall",
+        audience: "Any",
+        audiences: ["any", "school", "church", "sports", "hoa"],
+        channels: ["online"],
+        ratio: "9/16",
+        cls: "story",
+        hasQr: false,
+        defaults: {
+          headline: "Don’t miss Fall Fest",
+          body: "Sat Oct 12 · Lawn · Bring the family",
+          cta: "Swipe up for details",
+        },
+      },
+      {
+        id: "fundraiser",
+        name: "Fundraiser with large QR",
+        audience: "Any",
+        audiences: ["any", "school", "church", "sports", "hoa"],
+        channels: ["print", "qr"],
+        ratio: "3/4",
+        cls: "fundraiser",
+        hasQr: true,
+        defaults: {
+          headline: "Give to Our Campaign",
+          body: "Help fund the new playground. Every gift counts.",
+          cta: "Scan to give",
+          qr: "https://riverside.example/give",
+        },
+      },
+      {
+        id: "volunteer",
+        name: "Volunteer signup",
+        audience: "School",
+        audiences: ["school", "church", "any"],
+        channels: ["print", "qr"],
+        ratio: "3/4",
+        cls: "volunteer",
+        hasQr: true,
+        defaults: {
+          headline: "We Need Volunteers",
+          body: "Shifts for setup, games, and cleanup. Sign up in 60 seconds.",
+          cta: "Sign up",
+          qr: "https://riverside.example/volunteer",
+        },
+      },
+      {
+        id: "openhouse",
+        name: "Open house welcome",
+        audience: "HOA",
+        audiences: ["hoa", "school", "any"],
+        channels: ["print"],
+        ratio: "3/4",
+        cls: "openhouse",
+        hasQr: false,
+        defaults: {
+          headline: "You’re Invited — Open House",
+          body: "Tour the clubhouse, meet neighbors, and learn about membership.",
+          cta: "RSVP welcome",
+        },
+      },
+      {
+        id: "gameday",
+        name: "Game day handout",
+        audience: "Sports",
+        audiences: ["sports"],
+        channels: ["print", "online"],
+        ratio: "3/4",
+        cls: "gameday",
+        hasQr: false,
+        defaults: {
+          headline: "Home Game Saturday",
+          body: "Riverside vs Oak Creek · 2:00 PM · Stadium Field · Free admission",
+          cta: "Cheer us on",
+        },
+      },
+    ];
+
+    const FILTERS = [
+      { id: "all", label: "All" },
+      { id: "custom", label: "Custom" },
+      { id: "print", label: "Print" },
+      { id: "online", label: "Online" },
+      { id: "qr", label: "QR" },
+      { id: "school", label: "School" },
+      { id: "church", label: "Church" },
+      { id: "sports", label: "Sports" },
+      { id: "hoa", label: "HOA" },
+    ];
+
+    const SAMPLES = [
+      { id: "lawn", url: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800&q=80&auto=format&fit=crop", label: "Festival lawn" },
+      { id: "crowd", url: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80&auto=format&fit=crop", label: "Community crowd" },
+      { id: "fair", url: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80&auto=format&fit=crop", label: "Fair lights" },
+    ];
+
+    const state = {
+      view: "chooser",
+      templateId: null,
+      filter: "all",
+      imageUrl: SAMPLES[0].url,
+      customTemplateUrl: SAMPLE_CUSTOM_TEMPLATE,
+      brand: true,
+      generating: false,
+    };
+
+    const panels = [...document.querySelectorAll("[data-panel]")];
+    const pills = [...document.querySelectorAll(".pill[data-view]")];
+
+    function getTpl(id) {
+      return TEMPLATES.find((t) => t.id === id) || TEMPLATES[1];
+    }
+
+    function isCustomTpl(id) {
+      return (id || state.templateId) === "custom";
+    }
+
+    function matchesFilter(t, filter) {
+      if (filter === "all") return true;
+      if (filter === "custom") return !!t.isCustom;
+      if (t.isCustom) return false;
+      if (filter === "print" || filter === "online" || filter === "qr") {
+        return t.channels.includes(filter);
+      }
+      return t.audiences.includes(filter);
+    }
+
+    function syncCustomModeUI() {
+      const custom = isCustomTpl();
+      document.body.classList.toggle("is-custom-flyer", custom);
+      document.getElementById("customTemplateField").hidden = !custom;
+      document.getElementById("inputsTitle").textContent = custom
+        ? "Update your flyer"
+        : "Inspiration & copy";
+      document.getElementById("inputsSub").textContent = custom
+        ? "Keep last year’s layout. Change dates, descriptions, and CTAs — optional new photo."
+        : "Give AI what to put in the template — not a new layout.";
+      updateCustomUploadUI();
+    }
+
+    function updateCustomUploadUI() {
+      const el = document.getElementById("customUpload");
+      const empty = document.getElementById("customUploadEmpty");
+      if (!el) return;
+      if (state.customTemplateUrl) {
+        el.classList.add("has");
+        el.style.backgroundImage = `url('${state.customTemplateUrl}')`;
+        empty.hidden = true;
+      } else {
+        el.classList.remove("has");
+        el.style.backgroundImage = "";
+        empty.hidden = false;
+      }
+    }
+
+    function logoHTML() {
+      if (!state.brand) return "";
+      return `<div class="logo-dot" style="background:linear-gradient(135deg,#2f4a3c,#c4922e)" title="Brand logo"></div>`;
+    }
+
+    function heroBg(img) {
+      const isUrl = typeof img === "string" && img.startsWith("http");
+      return isUrl ? `background-image:url('${img}')` : `background:${img}`;
+    }
+
+    function flyerHTML(tplId, opts = {}) {
+      const tpl = getTpl(tplId);
+      const img = opts.imageUrl || "linear-gradient(145deg,#6b8171,#d4a84b)";
+      const bg = heroBg(img);
+      const h = opts.headline || tpl.defaults.headline || "Headline";
+      const b = opts.body || tpl.defaults.body || "Supporting line";
+      const cta = opts.cta || tpl.defaults.cta || "Learn more";
+      const filled = opts.filled ? " filled" : "";
+      const logo = logoHTML();
+
+      if (tpl.isCustom || tpl.cls === "custom") {
+        const base = opts.templateUrl || state.customTemplateUrl || SAMPLE_CUSTOM_TEMPLATE;
+        const baseBg = heroBg(base);
+        return `
+          <div class="fly custom${filled}">
+            <div class="hero"><div class="hero-img" style="${baseBg}"></div></div>
+            <div class="edit-badge">Text updated · layout kept</div>
+            <div class="edit-overlay">
+              ${logo}
+              <div class="h">${escapeHtml(h)}</div>
+              <div class="b">${escapeHtml(b)}</div>
+              <div class="cta">${escapeHtml(cta)}</div>
+            </div>
+          </div>`;
+      }
+
+      switch (tpl.cls) {
+        case "festival":
+          return `
+            <div class="fly festival${filled}">
+              <div class="hero">
+                <div class="hero-img" style="${bg}"></div>
+                <div class="date-chip">OCT<br>12</div>
+              </div>
+              <div class="band" style="${state.brand ? "background:#2f4a3c" : ""}">
+                ${logo}
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "church":
+          return `
+            <div class="fly church${filled}">
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                ${logo}
+                <div class="eyebrow">Riverside Community</div>
+                <div class="orn"></div>
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="row">
+                  <div class="qr" aria-hidden="true"></div>
+                  <div class="cta">${escapeHtml(cta)}</div>
+                </div>
+              </div>
+            </div>`;
+        case "sports":
+          return `
+            <div class="fly sports${filled}">
+              <div class="stripe"></div>
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                <div class="eyebrow">Youth athletics</div>
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "hoa":
+          return `
+            <div class="fly hoa${filled}">
+              <div class="topbar">
+                ${logo}
+                <div>
+                  <div class="eyebrow" style="opacity:0.8">Official notice</div>
+                  <div class="h">${escapeHtml(h)}</div>
+                </div>
+              </div>
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="agenda">
+                  <div><span>1. Call to order</span><span>7:00</span></div>
+                  <div><span>2. Budget update</span><span>7:15</span></div>
+                  <div><span>3. Open forum</span><span>7:45</span></div>
+                </div>
+                <div class="row" style="margin-top:6px">
+                  <div class="txt"><div class="cta">${escapeHtml(cta)}</div></div>
+                  <div class="qr" aria-hidden="true"></div>
+                </div>
+              </div>
+            </div>`;
+        case "square":
+          return `
+            <div class="fly square${filled}">
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                ${logo}
+                <div class="txt">
+                  <div class="h">${escapeHtml(h)}</div>
+                  <div class="b">${escapeHtml(b)}</div>
+                </div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "story":
+          return `
+            <div class="fly story${filled}">
+              <div class="safe"></div>
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                ${logo}
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "fundraiser":
+          return `
+            <div class="fly fundraiser${filled}">
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                ${logo}
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="qr" aria-hidden="true"></div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "volunteer":
+          return `
+            <div class="fly volunteer${filled}">
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band" style="${state.brand ? "background:#2f4a3c" : ""}">
+                ${logo}
+                <div class="eyebrow">Help needed</div>
+                <div class="h">${escapeHtml(h)}</div>
+                <div class="b">${escapeHtml(b)}</div>
+                <div class="qr" aria-hidden="true"></div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        case "openhouse":
+          return `
+            <div class="fly openhouse${filled}">
+              <div class="hero"><div class="hero-img" style="${bg}"></div></div>
+              <div class="band">
+                <div class="welcome-card">
+                  ${logo}
+                  <div class="eyebrow">Welcome</div>
+                  <div class="h">${escapeHtml(h)}</div>
+                  <div class="b">${escapeHtml(b)}</div>
+                  <div class="cta">${escapeHtml(cta)}</div>
+                </div>
+              </div>
+            </div>`;
+        case "gameday":
+          return `
+            <div class="fly gameday${filled}">
+              <div class="vs-bar">
+                <div class="vs-side">
+                  <div class="hero-img" style="${bg}"></div>
+                  <div class="team">Home</div>
+                </div>
+                <div class="vs-mid">VS</div>
+                <div class="vs-side">
+                  <div class="hero-img" style="${bg};filter:saturate(0.7) brightness(0.85)"></div>
+                  <div class="team">Away</div>
+                </div>
+              </div>
+              <div class="band">
+                ${logo}
+                <div class="txt">
+                  <div class="h">${escapeHtml(h)}</div>
+                  <div class="b">${escapeHtml(b)}</div>
+                </div>
+                <div class="cta">${escapeHtml(cta)}</div>
+              </div>
+            </div>`;
+        default:
+          return `<div class="fly festival${filled}"><div class="hero"><div class="hero-img" style="${bg}"></div></div><div class="band"><div class="h">${escapeHtml(h)}</div></div></div>`;
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function channelTags(t) {
+      return t.channels.map((c) => {
+        const label = c === "qr" ? "QR" : c.charAt(0).toUpperCase() + c.slice(1);
+        return `<span class="ch-tag ${c}">${label}</span>`;
+      }).join("");
+    }
+
+    function applyTemplateDefaults(tpl) {
+      if (!tpl) return;
+      document.getElementById("headline").value = tpl.defaults.headline || "";
+      document.getElementById("bodyCopy").value = tpl.defaults.body || "";
+      document.getElementById("ctaCopy").value = tpl.defaults.cta || "Join us →";
+      document.getElementById("qrLink").value = tpl.defaults.qr || "https://riverside.example/details";
+    }
+
+    function updateQrFieldVisibility() {
+      const tpl = state.templateId ? getTpl(state.templateId) : null;
+      document.getElementById("qrField").hidden = !(tpl && tpl.hasQr);
+    }
+
+    function setView(view) {
+      state.view = view;
+      panels.forEach((p) => { p.hidden = p.dataset.panel !== view; });
+      pills.forEach((p) => { p.setAttribute("aria-current", p.dataset.view === view ? "true" : "false"); });
+      const url = new URL(location.href);
+      url.searchParams.set("view", view);
+      history.replaceState(null, "", url);
+      if (view === "inputs") {
+        syncCustomModeUI();
+        updateQrFieldVisibility();
+        renderMini();
+      }
+      if (view === "result") runGenerate();
+      const ledes = {
+        chooser: "Pick what you want to make for Riverside Community Association — homepage, social, newsletter, or a flyer that stays inside a template.",
+        templates: "Start with a template. AI fills slots — it does not redesign the flyer.",
+        inputs: "Inspiration image, optional brand kit, and copy feed the template slots.",
+        result: "Generated inside your chosen template. Swap templates anytime; AI never leaves the layout.",
+      };
+      document.getElementById("pageLede").textContent = ledes[view] || ledes.chooser;
+    }
+
+    function renderFilters() {
+      const el = document.getElementById("tplFilters");
+      el.innerHTML = FILTERS.map((f) => `
+        <button type="button" class="filter-chip" data-filter="${f.id}" aria-pressed="${state.filter === f.id}">${f.label}</button>
+      `).join("");
+      el.querySelectorAll(".filter-chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.filter = btn.dataset.filter;
+          renderFilters();
+          renderTemplates();
+        });
+      });
+    }
+
+    function renderTemplates() {
+      const grid = document.getElementById("tplGrid");
+      const list = TEMPLATES.filter((t) => matchesFilter(t, state.filter));
+      if (!list.length) {
+        grid.innerHTML = `<p style="grid-column:1/-1;color:var(--muted);font-size:0.9rem;margin:8px 0">No templates match this filter.</p>`;
+        return;
+      }
+      grid.innerHTML = list.map((t) => {
+        if (t.isCustom) {
+          const preview = state.customTemplateUrl
+            ? `<div class="tpl-preview" data-ratio="3/4" style="background-image:url('${state.customTemplateUrl}');background-size:cover;background-position:center"></div>`
+            : `<div class="tpl-preview custom-preview" data-ratio="3/4"><span class="up-icon" aria-hidden="true">↑</span><span>Upload PDF or image<br>from a past year</span></div>`;
+          return `
+            <button type="button" class="tpl custom-tpl" data-tpl="custom" aria-pressed="${state.templateId === "custom"}">
+              ${preview}
+              <div class="tpl-label">${escapeHtml(t.name)}</div>
+              <div class="tpl-audience">Reuse last year’s design</div>
+              <div class="tpl-channels"><span class="ch-tag print">Print</span><span class="ch-tag online">Online</span><span class="ch-tag">Custom</span></div>
+            </button>`;
+        }
+        return `
+        <button type="button" class="tpl" data-tpl="${t.id}" aria-pressed="${state.templateId === t.id}">
+          <div class="tpl-preview" data-ratio="${t.ratio}">${flyerHTML(t.id, {
+            imageUrl: state.imageUrl,
+            headline: t.defaults.headline.split("·")[0].trim().slice(0, 28),
+            body: t.defaults.body.slice(0, 48),
+            cta: t.defaults.cta,
+          })}</div>
+          <div class="tpl-label">${escapeHtml(t.name)}</div>
+          <div class="tpl-audience">${escapeHtml(t.audience)}</div>
+          <div class="tpl-channels">${channelTags(t)}</div>
+        </button>`;
+      }).join("");
+      grid.querySelectorAll(".tpl").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const next = getTpl(btn.dataset.tpl);
+          const changed = state.templateId !== next.id;
+          state.templateId = next.id;
+          document.getElementById("toInputs").disabled = false;
+          if (changed) applyTemplateDefaults(next);
+          syncCustomModeUI();
+          renderTemplates();
+        });
+      });
+    }
+
+    function renderThumbs() {
+      const el = document.getElementById("inspThumbs");
+      el.innerHTML = SAMPLES.map((s) => `
+        <button type="button" data-img="${s.id}" aria-pressed="${state.imageUrl === s.url}" aria-label="${s.label}"
+          style="background-image:url('${s.url}')"></button>
+      `).join("");
+      el.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const sample = SAMPLES.find((s) => s.id === btn.dataset.img);
+          state.imageUrl = sample.url;
+          updateInspUI();
+          renderThumbs();
+        });
+      });
+    }
+
+    function updateInspUI() {
+      const drop = document.getElementById("inspDrop");
+      const empty = document.getElementById("inspEmpty");
+      if (state.imageUrl) {
+        drop.classList.add("has");
+        drop.style.backgroundImage = `url('${state.imageUrl}')`;
+        empty.hidden = true;
+      }
+    }
+
+    function renderMini() {
+      const mini = document.getElementById("miniTpl");
+      if (!state.templateId) return;
+      const tpl = getTpl(state.templateId);
+      mini.dataset.ratio = tpl.ratio;
+      mini.innerHTML = flyerHTML(state.templateId, {
+        imageUrl: state.imageUrl,
+        templateUrl: state.customTemplateUrl,
+        headline: document.getElementById("headline").value || "Headline",
+        body: document.getElementById("bodyCopy").value || "Copy",
+        cta: document.getElementById("ctaCopy").value || "CTA",
+      });
+      document.getElementById("brandChip").hidden = !state.brand;
+      updateQrFieldVisibility();
+      syncCustomModeUI();
+    }
+
+    function runGenerate() {
+      const wrap = document.getElementById("resultFlyer");
+      const list = document.getElementById("slotList");
+      const tpl = getTpl(state.templateId);
+      wrap.dataset.ratio = tpl.ratio;
+      const genMsg = tpl.isCustom
+        ? "Updating dates & copy on your uploaded template…"
+        : "Placing photo, brand, and copy into locked slots…";
+      wrap.innerHTML = `<div class="gen-state">${genMsg}<div class="gen-bar"></div></div>`;
+      list.innerHTML = "";
+      const headline = document.getElementById("headline").value.trim() || tpl.defaults.headline;
+      const body = document.getElementById("bodyCopy").value.trim() || tpl.defaults.body;
+      const cta = document.getElementById("ctaCopy").value.trim() || tpl.defaults.cta;
+      const qrLink = document.getElementById("qrLink").value.trim() || tpl.defaults.qr || "https://riverside.example/details";
+
+      setTimeout(() => {
+        wrap.innerHTML = flyerHTML(tpl.id, {
+          imageUrl: state.imageUrl,
+          templateUrl: state.customTemplateUrl,
+          headline,
+          body,
+          cta,
+          filled: true,
+        });
+        const slots = tpl.isCustom
+          ? [
+              `<li><span class="k">Template</span><span>Your uploaded flyer — layout kept</span></li>`,
+              `<li><span class="k">Source</span><span>Previous year file (PDF/image)</span></li>`,
+              `<li><span class="k">Photo</span><span>${state.imageUrl && state.imageUrl !== SAMPLES[0].url ? "Optional new inspiration applied where needed" : "Kept from your uploaded template"}</span></li>`,
+              `<li><span class="k">Headline</span><span>${escapeHtml(headline)}</span></li>`,
+              `<li><span class="k">Body</span><span>${escapeHtml(body)}</span></li>`,
+              `<li><span class="k">CTA</span><span>${escapeHtml(cta)}</span></li>`,
+              `<li><span class="k">AI rule</span><span>Update dates &amp; text only — do not redesign</span></li>`,
+            ]
+          : [
+              `<li><span class="k">Template</span><span>${escapeHtml(tpl.name)} — layout unchanged</span></li>`,
+              `<li><span class="k">Format</span><span>${tpl.ratio === "1/1" ? "Square 1:1 (online)" : tpl.ratio === "9/16" ? "Story 9:16 (online)" : "Letter 3:4 (print)"} · ${tpl.channels.map((c) => c.toUpperCase()).join(" · ")}</span></li>`,
+              `<li><span class="k">Photo</span><span>Inspiration image → photo slot</span></li>`,
+              `<li><span class="k">Brand</span><span>${state.brand ? "Logo + kit colors applied where the layout allows" : "Brand kit off — template default colors"}</span></li>`,
+              `<li><span class="k">Headline</span><span>${escapeHtml(headline)}</span></li>`,
+              `<li><span class="k">Body</span><span>${escapeHtml(body)}</span></li>`,
+              `<li><span class="k">CTA</span><span>${escapeHtml(cta)}</span></li>`,
+            ];
+        if (tpl.hasQr) {
+          slots.push(`<li><span class="k">QR</span><span>Encoded link → ${escapeHtml(qrLink)}</span></li>`);
+        }
+        list.innerHTML = slots.join("");
+      }, 900);
+    }
+
+    // Wire
+    pills.forEach((p) => p.addEventListener("click", () => {
+      if ((p.dataset.view === "inputs" || p.dataset.view === "result") && !state.templateId) {
+        state.templateId = "festival";
+        applyTemplateDefaults(getTpl("festival"));
+        document.getElementById("toInputs").disabled = false;
+        renderTemplates();
+      }
+      setView(p.dataset.view);
+    }));
+    document.querySelectorAll("[data-goto]").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.goto));
+    });
+    document.getElementById("openFlyer").addEventListener("click", () => setView("templates"));
+    document.getElementById("toInputs").addEventListener("click", () => setView("inputs"));
+    document.getElementById("toGenerate").addEventListener("click", () => setView("result"));
+    document.getElementById("regen").addEventListener("click", () => runGenerate());
+
+    const brandToggle = document.getElementById("brandToggle");
+    brandToggle.addEventListener("click", () => {
+      state.brand = !state.brand;
+      brandToggle.setAttribute("aria-checked", state.brand ? "true" : "false");
+      renderMini();
+    });
+
+    ["headline", "bodyCopy", "ctaCopy", "qrLink"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", renderMini);
+    });
+
+    const customUpload = document.getElementById("customUpload");
+    const customFile = document.getElementById("customFile");
+    customUpload.addEventListener("click", () => customFile.click());
+    customUpload.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        customFile.click();
+      }
+    });
+    customFile.addEventListener("change", () => {
+      const file = customFile.files && customFile.files[0];
+      if (!file) return;
+      if (file.type === "application/pdf") {
+        // Mock: PDF preview uses sample flyer art; product would rasterize page 1.
+        state.customTemplateUrl = SAMPLE_CUSTOM_TEMPLATE;
+        updateCustomUploadUI();
+        renderMini();
+        renderTemplates();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.customTemplateUrl = String(reader.result || SAMPLE_CUSTOM_TEMPLATE);
+        updateCustomUploadUI();
+        renderMini();
+        renderTemplates();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    renderFilters();
+    renderTemplates();
+    renderThumbs();
+    updateInspUI();
+    syncCustomModeUI();
+
+    const params = new URLSearchParams(location.search);
+    const initial = params.get("view") || "chooser";
+    if (["templates", "inputs", "result"].includes(initial) && !state.templateId) {
+      state.templateId = "festival";
+      applyTemplateDefaults(getTpl("festival"));
+      document.getElementById("toInputs").disabled = false;
+      renderTemplates();
+    }
+    setView(["chooser", "templates", "inputs", "result"].includes(initial) ? initial : "chooser");
+  </script>
+</body>
+</html>
