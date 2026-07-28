@@ -1,0 +1,109 @@
+/**
+ * Volunteer Website Page Composer (Level 1).
+ * Section fields map to future Level 2 blocks (hero, howto, opportunities, footer).
+ */
+
+export type VolunteerComposerStep =
+  | "header"
+  | "footer"
+  | "opportunities"
+  | "preview"
+  | "export";
+
+/** Foreshadowed Level 2 block kinds — not editable as blocks in Level 1. */
+export type VolunteerPageBlockKind =
+  | "hero"
+  | "intro"
+  | "howto"
+  | "opportunities"
+  | "cta"
+  | "footer";
+
+export type VolunteerComposerEvent = {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string | null;
+  imageUrl: string | null;
+  volunteerSignupUrl: string;
+};
+
+export type VolunteerButton = {
+  label: string;
+  url: string;
+};
+
+export type VolunteerHeaderColors = {
+  backgroundStart: string;
+  backgroundEnd: string;
+  textColor: string;
+  buttonBackground: string;
+  buttonText: string;
+};
+
+export type VolunteerFooterColors = {
+  background: string;
+  textColor: string;
+  buttonBackground: string;
+  buttonText: string;
+};
+
+export type VolunteerHeaderConfig = {
+  organizationLabel: string;
+  title: string;
+  intro: string;
+  buttonCount: 1 | 2;
+  button1: VolunteerButton;
+  button2: VolunteerButton;
+  /** Three how-it-works lines (strong — detail). */
+  howToSteps: [string, string, string];
+  colors: VolunteerHeaderColors;
+};
+
+export type VolunteerFooterConfig = {
+  ctaTitle: string;
+  ctaBody: string;
+  buttonCount: 1 | 2;
+  button1: VolunteerButton;
+  button2: VolunteerButton;
+  colors: VolunteerFooterColors;
+};
+
+export type VolunteerOpportunitySource = "event" | "custom";
+
+export type VolunteerOpportunity = {
+  id: string;
+  source: VolunteerOpportunitySource;
+  eventId: string | null;
+  emoji: string;
+  title: string;
+  blurb: string;
+  /** Display date/time line on the card (e.g. "Aug 5 · 5:00 PM"). */
+  whenLabel: string;
+  signupUrl: string;
+  alwaysOn: boolean;
+  /** YYYY-MM-DD — show as open starting this day */
+  startsOn: string | null;
+  /** YYYY-MM-DD — open through this day */
+  expiresOn: string | null;
+};
+
+export type VolunteerComposerState = {
+  header: VolunteerHeaderConfig;
+  footer: VolunteerFooterConfig;
+  opportunitiesSectionTitle: string;
+  opportunitiesSectionSub: string;
+  selectedEventIds: string[];
+  opportunities: VolunteerOpportunity[];
+};
+
+export type OpportunityVisibilityKey = "open" | "soon" | "closed";
+
+export type OpportunityVisibility = {
+  key: OpportunityVisibilityKey;
+  label: string;
+  /** Still render the card (volunteer preview keeps Closed/Coming soon visible). */
+  show: boolean;
+  dimmed: boolean;
+};

@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Volunteer Website Page Builder Mockup</title>
+  <meta name="description" content="Mockup: Level 1 Volunteer With Us composer — same step framework as Homepage / Social / Newsletter, with on/off dates, SignUpGenius links, and foreshadowed building blocks." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --danger: #a65a3a;
+      --pv-hero-start: #1a4a6e;
+      --pv-hero-end: #2a7a86;
+      --pv-cta: #2f4a3c;
+      --pv-cta-text: #fffcf7;
+      --pv-text: #fffcf7;
+      --pv-footer-bg: #2f4a3c;
+      --pv-footer-text: #fffcf7;
+      --pv-footer-btn: #f7c948;
+      --pv-footer-btn-text: #1c2430;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.14), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.11), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 50% 100%, rgba(42, 122, 134, 0.07), transparent 55%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, textarea, select, a { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+    button { cursor: pointer; border: none; background: none; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes pulse-hint {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(196, 146, 46, 0.35); }
+      50% { box-shadow: 0 0 0 4px rgba(196, 146, 46, 0.12); }
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 12px 16px 64px;
+    }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px;
+      margin-bottom: 14px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.8); font-size: 12px; font-weight: 600; color: var(--muted);
+      animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner strong { color: var(--forest); font-weight: 700; }
+    .mock-banner a { color: var(--teal); font-weight: 700; text-decoration: none; }
+    .mock-banner a:hover { text-decoration: underline; }
+    .mock-links { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+    .arch-note {
+      margin-top: 6px; font-size: 11px; font-weight: 500; line-height: 1.4; color: var(--ink-soft);
+    }
+
+    .back {
+      display: inline-block; margin-bottom: 6px;
+      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
+    }
+    .back:hover { color: var(--ink); }
+
+    .top-row {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+      gap: 10px 16px; margin-bottom: 14px;
+      animation: rise 0.45s var(--ease) 0.04s both;
+    }
+    .top-row h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.7rem, 3vw, 2.35rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .lede {
+      margin: 6px 0 0; max-width: 36rem; font-size: 13px; line-height: 1.45; color: var(--ink-soft);
+    }
+    .slug-pill {
+      display: inline-flex; margin-left: 8px; vertical-align: middle;
+      font-size: 11px; font-weight: 700; color: var(--teal);
+      padding: 3px 9px; border-radius: 999px; background: rgba(42, 122, 134, 0.1);
+    }
+    .draft-status {
+      font-size: 11px; font-weight: 700; color: var(--sage); white-space: nowrap;
+    }
+
+    .blocks-strip {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      margin-bottom: 14px; padding: 10px 12px;
+      border-radius: 14px; border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.55);
+      animation: rise 0.45s var(--ease) 0.06s both;
+    }
+    .blocks-strip .label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-right: 2px;
+    }
+    .block-chip {
+      padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      border: 1px dashed rgba(42, 38, 34, 0.18); background: var(--cream-deep);
+      color: var(--muted); opacity: 0.85; cursor: not-allowed;
+    }
+    .blocks-strip .hint {
+      margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ink-soft);
+    }
+
+    .composer {
+      display: grid; gap: 14px;
+      grid-template-columns: 200px minmax(0, 1fr);
+      align-items: start;
+      animation: rise 0.5s var(--ease) 0.08s both;
+    }
+    @media (max-width: 900px) {
+      .composer { grid-template-columns: 1fr; }
+    }
+
+    .steps {
+      position: sticky; top: 12px;
+      border-radius: 18px; background: rgba(235, 228, 217, 0.85);
+      padding: 10px; border: 1px solid var(--line);
+    }
+    .steps h4 {
+      margin: 0 0 8px; padding: 0 8px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .step-btn {
+      width: 100%; text-align: left; padding: 9px 11px; border-radius: 12px;
+      margin-bottom: 3px; font-size: 13px; font-weight: 700; color: var(--ink);
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .step-btn small {
+      display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted);
+    }
+    .step-btn:hover:not(.active) { background: rgba(255, 255, 255, 0.45); }
+    .step-btn.active {
+      background: var(--white); box-shadow: var(--shadow);
+    }
+
+    .panel { min-width: 0; }
+    .panel-head {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+      gap: 10px; margin-bottom: 12px;
+    }
+    .panel-head h2 {
+      margin: 0; font-family: var(--serif); font-size: 1.55rem; font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .panel-head p {
+      margin: 4px 0 0; max-width: 32rem; font-size: 13px; line-height: 1.4; color: var(--ink-soft);
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 9px 14px; border-radius: 12px; font-size: 13px; font-weight: 700;
+      border: 1px solid transparent; transition: filter 0.15s, border-color 0.15s;
+    }
+    .btn-primary { background: var(--forest); color: var(--cream); }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-secondary { background: var(--white); border-color: var(--line); color: var(--ink); }
+    .btn-secondary:hover { border-color: var(--sage); }
+    .btn-ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+    .btn-danger {
+      background: transparent; color: var(--danger); border: 1px solid rgba(166, 90, 58, 0.25);
+      padding: 6px 10px; font-size: 12px; border-radius: 10px;
+    }
+    .btn-danger:hover { background: rgba(166, 90, 58, 0.08); }
+    .btn.sm { padding: 7px 11px; font-size: 12px; border-radius: 10px; }
+    .btn.block { width: 100%; }
+
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+
+    .settings-box {
+      border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 14px 16px;
+    }
+    .settings-box .box-head {
+      display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px;
+      margin-bottom: 4px;
+    }
+    .settings-box h3 {
+      margin: 0; font-family: var(--serif); font-size: 1.15rem; font-weight: 600;
+    }
+    .block-tag {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--teal); padding: 3px 8px; border-radius: 999px;
+      background: rgba(42, 122, 134, 0.1); border: 1px dashed rgba(42, 122, 134, 0.28);
+    }
+    .settings-box .desc {
+      margin: 0 0 12px; font-size: 12px; line-height: 1.4; color: var(--ink-soft);
+    }
+
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label, .field-label {
+      display: block; margin-bottom: 5px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+    }
+    .field input, .field textarea, .field select,
+    .role-card input[type="text"], .role-card input[type="url"], .role-card input[type="date"] {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--cream); padding: 10px 12px; color: var(--ink);
+    }
+    .field textarea { min-height: 72px; resize: vertical; line-height: 1.4; }
+    .field input:focus, .field textarea:focus, .field select:focus,
+    .role-card input:focus {
+      outline: 2px solid rgba(42, 122, 134, 0.35); outline-offset: 1px;
+    }
+
+    .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (min-width: 700px) { .color-grid { grid-template-columns: repeat(3, 1fr); } }
+    .color-field {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--cream);
+    }
+    .color-field input[type="color"] {
+      width: 36px; height: 36px; padding: 0; border: none; border-radius: 8px;
+      background: transparent; cursor: pointer;
+    }
+    .color-field span { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+
+    .hero-live {
+      overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+    }
+    .hero-live .bar {
+      border-bottom: 1px solid var(--line); padding: 7px 12px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .hero-live .hero {
+      padding: 22px 18px; text-align: center;
+      background: linear-gradient(135deg, var(--pv-hero-start), var(--pv-hero-end));
+      color: var(--pv-text);
+    }
+    .hero-live .hero .eyebrow {
+      margin: 0 0 6px; font-size: 10px; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85;
+    }
+    .hero-live .hero h3 {
+      margin: 0; font-family: var(--serif); font-size: 1.45rem; font-weight: 600;
+    }
+    .hero-live .hero p {
+      margin: 10px auto 0; max-width: 28rem; font-size: 13px; line-height: 1.45; opacity: 0.95;
+    }
+
+    .callout {
+      border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.4;
+      background: rgba(196, 146, 46, 0.28); color: var(--ink);
+    }
+    .callout strong { font-weight: 800; }
+    .win-callout {
+      border-radius: 14px; border: 1px solid rgba(196, 146, 46, 0.35);
+      background: rgba(196, 146, 46, 0.14); padding: 11px 12px;
+      font-size: 12px; line-height: 1.45; color: var(--ink-soft);
+    }
+    .win-callout strong { color: var(--ink); }
+    .win-callout.pulse { animation: pulse-hint 1.8s ease-in-out 2; }
+
+    .opps-layout {
+      display: grid; gap: 12px;
+      grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    }
+    @media (max-width: 820px) {
+      .opps-layout { grid-template-columns: 1fr; }
+    }
+
+    .event-pick {
+      border-radius: 18px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 12px;
+    }
+    .event-pick h3 {
+      margin: 0 0 8px; font-family: var(--serif); font-size: 1.05rem; font-weight: 600;
+    }
+    .event-item {
+      width: 100%; text-align: left; padding: 9px 10px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--cream); margin-bottom: 6px;
+      font-size: 12px; font-weight: 600;
+    }
+    .event-item:hover { border-color: var(--sage); }
+    .event-item .when { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted); }
+    .event-item.added { opacity: 0.55; cursor: default; }
+
+    .role-card {
+      border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+      background: var(--cream); margin-bottom: 10px;
+    }
+    .role-card-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .role-card-head .idx {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .vis-badge {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.03em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: rgba(47, 74, 60, 0.12); color: var(--forest);
+    }
+    .vis-badge.soon { background: rgba(196, 146, 46, 0.2); color: #8a6418; }
+    .vis-badge.closed { background: rgba(122, 113, 102, 0.16); color: var(--muted); }
+    .role-row {
+      display: grid; grid-template-columns: 44px 1fr; gap: 8px; margin-bottom: 8px;
+    }
+    .emoji-input {
+      width: 44px; height: 42px; text-align: center; font-size: 18px;
+      border: 1px solid var(--line); border-radius: 10px; background: var(--white);
+      padding: 0;
+    }
+    .role-card .field { margin-bottom: 8px; }
+    .role-card .field:last-child { margin-bottom: 0; }
+    .role-card input[type="text"], .role-card input[type="url"], .role-card input[type="date"] {
+      background: var(--white); padding: 9px 10px; font-size: 13px; border-radius: 10px;
+    }
+    .role-card .url-field.changed {
+      border-color: var(--mustard); background: #fffdf6;
+    }
+    .dates-row {
+      display: grid; gap: 8px; margin-top: 8px; padding: 10px;
+      border-radius: 12px; background: rgba(255, 252, 247, 0.75);
+      grid-template-columns: auto 1fr 1fr;
+      align-items: end;
+    }
+    @media (max-width: 640px) {
+      .dates-row { grid-template-columns: 1fr; }
+    }
+    .always-on {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; padding-bottom: 6px;
+    }
+    .always-on input { width: auto; accent-color: var(--forest); }
+    .dates-row input[type="date"]:disabled { opacity: 0.4; }
+
+    .empty-roles {
+      padding: 20px; text-align: center; font-size: 13px; color: var(--muted);
+      border: 1px dashed var(--line); border-radius: 12px; background: var(--cream);
+    }
+
+    .preview-toolbar {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 14px; border-radius: 18px 18px 0 0;
+      border: 1px solid var(--line); border-bottom: none;
+      background: var(--white);
+    }
+    .preview-toolbar .label {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .device-toggle, .seg-toggle {
+      display: inline-flex; padding: 3px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--cream); gap: 2px;
+    }
+    .device-toggle button, .seg-toggle button {
+      padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+      color: var(--ink-soft);
+    }
+    .device-toggle button.active, .seg-toggle button.active {
+      background: var(--forest); color: var(--cream);
+    }
+    .seg-row {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 12px;
+    }
+    .seg-row .seg-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    .filter-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 8px;
+    }
+    .filter-row label span {
+      display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+    }
+    .filter-row select {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--white); padding: 8px 10px; font-size: 13px; font-weight: 600;
+    }
+    .event-pick-actions {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;
+    }
+    .event-check {
+      display: flex; align-items: flex-start; gap: 10px; width: 100%;
+      text-align: left; padding: 9px 10px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--cream); margin-bottom: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .event-check:hover { border-color: var(--sage); }
+    .event-check input { margin-top: 2px; accent-color: var(--forest); width: auto; }
+    .event-check .when { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--muted); }
+    .hero-btns {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 14px;
+    }
+    .hero-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 9px 16px; border-radius: 999px; font-size: 12px; font-weight: 800;
+      text-decoration: none;
+      background: var(--pv-cta); color: var(--pv-cta-text);
+    }
+
+    /* Homepage Composer preview date scrubber — match structure & chrome */
+    .preview-asof {
+      margin: 12px 0;
+      border-radius: 18px;
+      background: #ebe4d9;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .preview-asof-head {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .preview-asof-head strong {
+      font-size: 14px; font-weight: 700; color: var(--ink);
+    }
+    .preview-asof-right {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    }
+    .asof-icon-btn {
+      width: 36px; height: 36px; border-radius: 12px;
+      border: 1px solid var(--line); background: var(--white);
+      display: inline-grid; place-items: center; color: var(--ink-soft);
+    }
+    .asof-icon-btn:hover { border-color: var(--sage); color: var(--ink); }
+    .asof-icon-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .asof-badge {
+      border-radius: 12px; border: 1px solid var(--line);
+      background: var(--white); padding: 8px 12px;
+      font-size: 14px; font-weight: 700; color: var(--ink);
+      white-space: nowrap;
+    }
+    .asof-slider {
+      display: block; width: 100%; margin-top: 12px;
+      accent-color: #6b8171;
+    }
+    .preview-asof-meta {
+      margin-top: 8px;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 12px; color: var(--muted);
+    }
+    .preview-asof-meta .asof-links {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    }
+    .preview-asof-meta .asof-links button {
+      font-size: 12px; font-weight: 700; color: #6b8171;
+    }
+    .preview-asof-meta .asof-links button:hover { color: var(--forest); }
+    .preview-stage {
+      border: 1px solid var(--line); border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(235, 228, 217, 0.5), transparent 40%),
+        var(--cream-deep);
+      padding: 18px 16px 22px;
+      display: grid; place-items: start center;
+      overflow: auto;
+    }
+
+    .preview-frame {
+      width: 100%; max-width: 720px;
+      border-radius: 16px; border: 1px solid var(--line);
+      background: #fff; box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: max-width 0.35s var(--ease), border-radius 0.35s var(--ease);
+    }
+    .preview-frame.mobile {
+      max-width: 375px;
+      border-radius: 28px;
+      border-width: 8px;
+      border-color: #2a2622;
+    }
+
+    .pv-page { color: #2a2622; background: #faf8f4; }
+    .pv-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px; background: #fff; border-bottom: 1px solid rgba(42,38,34,0.08);
+      font-size: 12px; font-weight: 700;
+    }
+    .pv-nav .brand { color: var(--pv-hero-start); }
+    .pv-nav .muted { color: #7a7166; font-weight: 600; font-size: 11px; }
+
+    .pv-hero {
+      padding: 36px 22px 32px; text-align: center;
+      background: linear-gradient(135deg, var(--pv-hero-start), var(--pv-hero-end));
+      color: var(--pv-text);
+    }
+    .pv-hero .eyebrow {
+      margin: 0 0 8px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85;
+    }
+    .pv-hero h2 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    }
+    .pv-hero p {
+      margin: 12px auto 0; max-width: 28rem; font-size: 14px; line-height: 1.5; opacity: 0.95;
+    }
+
+    .pv-howto {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      padding: 18px 16px; background: #fff; border-bottom: 1px solid rgba(42,38,34,0.08);
+    }
+    .preview-frame.mobile .pv-howto { grid-template-columns: 1fr; }
+    .pv-step { text-align: center; padding: 10px 8px; }
+    .pv-step .num {
+      display: inline-grid; place-items: center;
+      width: 26px; height: 26px; border-radius: 999px;
+      background: rgba(42, 122, 134, 0.12); color: var(--teal);
+      font-size: 12px; font-weight: 800; margin-bottom: 6px;
+    }
+    .pv-step strong { display: block; font-size: 12px; margin-bottom: 2px; }
+    .pv-step span { font-size: 11px; color: #7a7166; line-height: 1.35; }
+
+    .pv-section { padding: 22px 16px 8px; }
+    .pv-section h3 {
+      margin: 0 0 6px; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+      text-align: center;
+    }
+    .pv-section .sub {
+      margin: 0 auto 16px; max-width: 26rem; text-align: center;
+      font-size: 12px; color: #5c554c; line-height: 1.45;
+    }
+
+    .pv-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      padding: 0 16px 20px;
+    }
+    .preview-frame.mobile .pv-grid { grid-template-columns: 1fr; }
+
+    .pv-card {
+      border-radius: 14px; border: 1px solid rgba(42,38,34,0.1);
+      background: #fff; padding: 14px 14px 12px;
+      display: flex; flex-direction: column; gap: 6px;
+      box-shadow: 0 4px 14px rgba(28, 36, 48, 0.04);
+    }
+    .pv-card.dimmed { opacity: 0.55; filter: grayscale(0.25); }
+    .pv-card .status {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase;
+    }
+    .pv-card .status.open { color: #2f4a3c; }
+    .pv-card .status.soon { color: #8a6418; }
+    .pv-card .status.closed { color: #7a7166; }
+    .pv-card .title-row { display: flex; align-items: flex-start; gap: 8px; }
+    .pv-card .emoji { font-size: 22px; line-height: 1; }
+    .pv-card h4 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.25; }
+    .pv-card .blurb { margin: 0; font-size: 12px; color: #5c554c; line-height: 1.4; flex: 1; }
+    .pv-card .meta { font-size: 11px; font-weight: 600; color: #2a7a86; }
+    .pv-card .window {
+      font-size: 10px; font-weight: 600; color: #7a7166;
+    }
+    .pv-card .cta {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 6px; padding: 9px 12px; border-radius: 999px;
+      background: var(--pv-cta); color: var(--pv-cta-text);
+      font-size: 12px; font-weight: 700; text-decoration: none;
+    }
+    .pv-card .cta.disabled {
+      background: #e8e2d8; color: #7a7166; pointer-events: none;
+    }
+    .pv-card .href-hint {
+      font-size: 9px; color: #9a9186; word-break: break-all;
+      font-family: ui-monospace, Menlo, monospace; line-height: 1.3;
+    }
+
+    .footer-live {
+      overflow: hidden; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow);
+    }
+    .footer-live .bar {
+      border-bottom: 1px solid var(--line); padding: 7px 12px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .footer-live .band {
+      padding: 28px 20px; text-align: center;
+      background: var(--pv-footer-bg); color: var(--pv-footer-text);
+    }
+    .footer-live .band h3 {
+      margin: 0; font-family: var(--serif); font-size: 1.45rem; font-weight: 600;
+    }
+    .footer-live .band p {
+      margin: 10px auto 0; max-width: 28rem; font-size: 13px; line-height: 1.45; opacity: 0.92;
+    }
+    .footer-btns {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 16px;
+    }
+    .footer-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 800;
+      text-decoration: none;
+      background: var(--pv-footer-btn); color: var(--pv-footer-btn-text);
+    }
+    .footer-btn:hover { filter: brightness(1.05); }
+    .btn-url-hint {
+      margin-top: 8px; font-size: 10px; font-weight: 600; opacity: 0.7;
+      font-family: ui-monospace, Menlo, monospace; word-break: break-all;
+    }
+    .field-grid-2 {
+      display: grid; gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 640px) {
+      .field-grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .pv-thanks {
+      margin: 4px 16px 20px; padding: 22px 16px; border-radius: 14px;
+      background: var(--pv-footer-bg); color: var(--pv-footer-text);
+      text-align: center;
+    }
+    .pv-thanks h3 { margin: 0 0 6px; font-family: var(--serif); font-size: 1.15rem; color: inherit; }
+    .pv-thanks p { margin: 0; font-size: 12px; line-height: 1.45; opacity: 0.92; color: inherit; }
+    .pv-thanks .footer-btns { margin-top: 14px; }
+    .pv-thanks .footer-btn {
+      font-size: 12px; padding: 9px 14px;
+    }
+    .pv-thanks .btn-url-hint { color: inherit; }
+    .pv-footer {
+      padding: 14px 16px 18px; text-align: center;
+      font-size: 11px; color: var(--muted); background: #f0ebe3;
+      border-top: 1px solid rgba(42,38,34,0.08);
+    }
+
+    .export-box {
+      border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 18px;
+      max-width: 52rem;
+    }
+    .export-box ul {
+      margin: 0; padding-left: 1.1rem; font-size: 13px; line-height: 1.55;
+    }
+    .export-box pre {
+      margin: 14px 0 0; max-height: 280px; overflow: auto;
+      border-radius: 14px; background: #1c2430; color: #d9e0d6;
+      padding: 14px; font-size: 11px; line-height: 1.45;
+    }
+    .note {
+      margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--ink-soft);
+    }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 10px 16px; border-radius: 999px; background: var(--forest); color: var(--cream);
+      font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+      z-index: 40; max-width: min(90vw, 420px); text-align: center;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="mock-banner">
+      <div>
+        <span>
+          <strong>Mockup</strong> — Level 1 template (Volunteer With Us) on the same composer step framework as Homepage / Social / Newsletter.
+        </span>
+        <p class="arch-note">
+          Architecture: Level 1 fixed template today → sections map to future <strong>building blocks</strong>
+          (Hero · Intro · Opportunity list · How it works · CTA · Footer). Level 2 block editor comes later — steps stay the primary UX.
+        </p>
+      </div>
+      <div class="mock-links">
+        <a href="/create-with-ai-website-pages-mockup.html">← Website pages (L1 / L2)</a>
+        <a href="/homepage-composer">Homepage Composer (app)</a>
+      </div>
+    </div>
+
+    <a class="back" href="/create-with-ai-website-pages-mockup.html">← Create with AI</a>
+
+    <div class="top-row">
+      <div>
+        <h1>
+          Volunteer With Us
+          <span class="slug-pill">/volunteerwithus</span>
+        </h1>
+        <p class="lede">
+          Level 1 volunteer page for Membership Toolkit — header, opportunities with SignUpGenius links &amp; on/off dates, footer, preview, and full-page HTML export.
+        </p>
+      </div>
+      <p class="draft-status" id="draftStatus">Draft auto-saves as you edit</p>
+    </div>
+
+    <div class="blocks-strip" aria-label="Future building blocks">
+      <span class="label">Blocks (coming)</span>
+      <span class="block-chip" title="Level 2 — not editable yet">Hero</span>
+      <span class="block-chip" title="Level 2 — not editable yet">Intro</span>
+      <span class="block-chip" title="Level 2 — not editable yet">Opportunity list</span>
+      <span class="block-chip" title="Level 2 — not editable yet">How it works</span>
+      <span class="block-chip" title="Level 2 — not editable yet">CTA</span>
+      <span class="block-chip" title="Level 2 — not editable yet">Footer</span>
+      <span class="hint">Foreshadow only · steps edit these today</span>
+    </div>
+
+    <div class="composer">
+      <aside class="steps" aria-label="Composer steps">
+        <h4>Steps</h4>
+        <button type="button" class="step-btn active" data-step="header">
+          1 · Header
+          <small>Design once</small>
+        </button>
+        <button type="button" class="step-btn" data-step="footer">
+          2 · Footer
+          <small>Design once</small>
+        </button>
+        <button type="button" class="step-btn" data-step="opportunities">
+          3 · Opportunities
+          <small>Change monthly</small>
+        </button>
+        <button type="button" class="step-btn" data-step="preview">
+          4 · Preview
+          <small>Full page</small>
+        </button>
+        <button type="button" class="step-btn" data-step="export">
+          5 · Export
+          <small>Full page HTML</small>
+        </button>
+      </aside>
+
+      <div class="panel">
+        <!-- 1 Header -->
+        <section class="step-panel" data-panel="header">
+          <div class="panel-head">
+            <div>
+              <h2>Design your header</h2>
+              <p>Colors, welcome copy, and how-to strip — same “design once” idea as Homepage Header.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" data-goto="footer">Save → Footer</button>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="hero-live">
+              <div class="bar">Live hero preview</div>
+              <div class="hero" id="heroLive">
+                <p class="eyebrow" data-bind="orgName">Lincoln Elementary PTO</p>
+                <h3 data-bind="pageTitle">Volunteer With Us</h3>
+                <p data-bind="pageIntro">Whether you have an hour to give or can help throughout the year, every volunteer makes a difference.</p>
+                <div class="hero-btns" id="headerLiveBtns"></div>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Page intro</h3>
+                <span class="block-tag">Block · Hero / Intro</span>
+              </div>
+              <p class="desc">Maps to future Hero + Intro blocks. Locked order in Level 1.</p>
+              <div class="field">
+                <label for="orgName">Organization</label>
+                <input id="orgName" type="text" value="Lincoln Elementary PTO" />
+              </div>
+              <div class="field">
+                <label for="pageTitle">Page title</label>
+                <input id="pageTitle" type="text" value="Volunteer With Us" />
+              </div>
+              <div class="field">
+                <label for="pageIntro">Intro blurb</label>
+                <textarea id="pageIntro">Whether you have an hour to give or can help throughout the year, every volunteer makes a difference. Browse the opportunities below and choose the one that works best for your schedule.</textarea>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Header buttons</h3>
+                <span class="block-tag">Block · Hero</span>
+              </div>
+              <p class="desc">Choose 1 or 2 hero CTAs — same idea as Homepage header buttons.</p>
+              <div class="seg-row">
+                <span class="seg-label">How many buttons?</span>
+                <div class="seg-toggle" role="group" aria-label="Header button count" id="headerBtnCount">
+                  <button type="button" data-count="1">1 button</button>
+                  <button type="button" class="active" data-count="2">2 buttons</button>
+                </div>
+              </div>
+              <div class="field-grid-2" id="headerBtn1Fields">
+                <div class="field">
+                  <label for="headerBtn1Label">Button 1 label</label>
+                  <input id="headerBtn1Label" type="text" value="Browse opportunities" />
+                </div>
+                <div class="field">
+                  <label for="headerBtn1Url">Button 1 URL</label>
+                  <input id="headerBtn1Url" type="url" value="#opportunities" placeholder="https://… or #anchor" />
+                </div>
+              </div>
+              <div class="field-grid-2" id="headerBtn2Fields" style="margin-top:12px;">
+                <div class="field">
+                  <label for="headerBtn2Label">Button 2 label</label>
+                  <input id="headerBtn2Label" type="text" value="Contact volunteer chair" />
+                </div>
+                <div class="field">
+                  <label for="headerBtn2Url">Button 2 URL</label>
+                  <input id="headerBtn2Url" type="url" value="mailto:volunteers@lincolnelempto.org" />
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Brand colors</h3>
+                <span class="block-tag">Block · Theme</span>
+              </div>
+              <p class="desc">Hero gradient and Sign up button — same pattern as Homepage header colors.</p>
+              <div class="color-grid">
+                <label class="color-field">
+                  <input type="color" id="colorHeroStart" value="#1a4a6e" />
+                  <span>Hero start</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorHeroEnd" value="#2a7a86" />
+                  <span>Hero end</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorText" value="#fffcf7" />
+                  <span>Hero text</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorCta" value="#2f4a3c" />
+                  <span>CTA button</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorCtaText" value="#fffcf7" />
+                  <span>CTA text</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>How it works</h3>
+                <span class="block-tag">Block · How it works</span>
+              </div>
+              <p class="desc">Three fixed steps under the hero. Level 1 keeps this strip; Level 2 could reorder or remove it.</p>
+              <div class="field">
+                <label for="howto1">Step 1</label>
+                <input id="howto1" type="text" value="Choose an opportunity — browse events and programs below." />
+              </div>
+              <div class="field">
+                <label for="howto2">Step 2</label>
+                <input id="howto2" type="text" value="View available times — open a card to see positions and slots." />
+              </div>
+              <div class="field">
+                <label for="howto3">Step 3</label>
+                <input id="howto3" type="text" value="Complete your sign-up — add your name on SignUpGenius." />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 Footer -->
+        <section class="step-panel" data-panel="footer" hidden>
+          <div class="panel-head">
+            <div>
+              <h2>Design your footer</h2>
+              <p>CTA band colors, copy, and buttons — same “design once” slot as Homepage Footer.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-secondary" data-goto="header">← Header</button>
+              <button type="button" class="btn btn-primary" data-goto="opportunities">Save → Opportunities</button>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="footer-live">
+              <div class="bar">Live footer preview</div>
+              <div class="band" id="footerLive">
+                <h3 data-bind="footerThanks">Thank you for giving your time to Lincoln Elementary families.</h3>
+                <p data-bind="footerContact">Questions? Email volunteers@lincolnelempto.org</p>
+                <div class="footer-btns" id="footerLiveBtns"></div>
+                <p class="btn-url-hint" id="footerLiveHints"></p>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Footer design</h3>
+                <span class="block-tag">Block · CTA / Footer</span>
+              </div>
+              <p class="desc">Background, text, and button colors — mirrors Homepage Footer design.</p>
+              <div class="color-grid">
+                <label class="color-field">
+                  <input type="color" id="colorFooterBg" value="#2f4a3c" />
+                  <span>Footer background</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorFooterText" value="#fffcf7" />
+                  <span>Footer text</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorFooterBtn" value="#f7c948" />
+                  <span>Footer button</span>
+                </label>
+                <label class="color-field">
+                  <input type="color" id="colorFooterBtnText" value="#1c2430" />
+                  <span>Button text</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Footer copy</h3>
+                <span class="block-tag">Block · CTA</span>
+              </div>
+              <p class="desc">Thank-you title and body under the opportunity grid.</p>
+              <div class="field">
+                <label for="footerThanks">CTA title</label>
+                <input id="footerThanks" type="text" value="Thank you for giving your time to Lincoln Elementary families." />
+              </div>
+              <div class="field">
+                <label for="footerContact">CTA body / contact</label>
+                <textarea id="footerContact">Questions? Email volunteers@lincolnelempto.org — we’re glad you’re here.</textarea>
+              </div>
+            </div>
+
+            <div class="settings-box">
+              <div class="box-head">
+                <h3>Footer buttons</h3>
+                <span class="block-tag">Block · CTA</span>
+              </div>
+              <p class="desc">Choose 1 or 2 footer CTAs — label + URL for each.</p>
+              <div class="seg-row">
+                <span class="seg-label">How many buttons?</span>
+                <div class="seg-toggle" role="group" aria-label="Footer button count" id="footerBtnCount">
+                  <button type="button" class="active" data-count="1">1 button</button>
+                  <button type="button" data-count="2">2 buttons</button>
+                </div>
+              </div>
+              <div class="field-grid-2" id="footerBtn1Fields">
+                <div class="field">
+                  <label for="footerBtn1Label">Button 1 label</label>
+                  <input id="footerBtn1Label" type="text" value="Email volunteer chair" />
+                </div>
+                <div class="field">
+                  <label for="footerBtn1Url">Button 1 URL</label>
+                  <input id="footerBtn1Url" type="url" value="mailto:volunteers@lincolnelempto.org" placeholder="https://… or mailto:…" />
+                </div>
+              </div>
+              <div class="field-grid-2" id="footerBtn2Fields" style="margin-top:12px;" hidden>
+                <div class="field">
+                  <label for="footerBtn2Label">Button 2 label</label>
+                  <input id="footerBtn2Label" type="text" value="Join our Facebook group" />
+                </div>
+                <div class="field">
+                  <label for="footerBtn2Url">Button 2 URL</label>
+                  <input id="footerBtn2Url" type="url" value="https://www.facebook.com/" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 Opportunities (= Homepage Cards) -->
+        <section class="step-panel" data-panel="opportunities" hidden>
+          <div class="panel-head">
+            <div>
+              <h2>Volunteer opportunities</h2>
+              <p>Pick events, edit SignUpGenius links, and set on/off dates — same visibility model as Homepage cards.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-secondary" data-goto="footer">← Footer</button>
+              <button type="button" class="btn btn-secondary sm" id="btn-add-role">+ Add other role</button>
+              <button type="button" class="btn btn-primary" data-goto="preview">Preview →</button>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div class="callout">
+              <strong>On / off dates:</strong> card shows starting at local midnight on the on date, stays through the off date, then hides the next morning. Use Always on for evergreen roles. Preview step has a date slider like Homepage.
+            </div>
+
+            <div class="win-callout" id="winCallout">
+              <strong>Pain-point win:</strong> When SignUpGenius rotates a signup URL, change it here once. No hunting through Membership Toolkit HTML.
+              <button type="button" class="btn btn-ghost sm" id="btn-demo-link" style="margin-left:8px;">Demo: link changed</button>
+            </div>
+
+            <div class="opps-layout">
+              <div class="event-pick">
+                <h3>From your events</h3>
+                <p style="margin:0 0 4px;font-size:12px;color:var(--ink-soft);">Check events to add opportunity cards — same picker feel as Homepage Composer.</p>
+                <div class="filter-row">
+                  <label>
+                    <span>Month</span>
+                    <select id="eventFilterMonth" aria-label="Filter events by month"></select>
+                  </label>
+                  <label>
+                    <span>Year</span>
+                    <select id="eventFilterYear" aria-label="Filter events by year"></select>
+                  </label>
+                </div>
+                <div class="event-pick-actions">
+                  <button type="button" class="btn btn-ghost sm" id="btn-clear-opps" title="Remove every opportunity card for a fresh month">
+                    Clear all opportunities
+                  </button>
+                </div>
+                <div id="eventPicker"></div>
+              </div>
+
+              <div class="settings-box" style="padding-top:12px;">
+                <div class="box-head">
+                  <h3>Opportunity list</h3>
+                  <span class="block-tag">Block · Opportunity list</span>
+                </div>
+                <p class="desc">Each card = one role. Edit blurbs, signup URLs, and visibility window.</p>
+                <div id="rolesEditor"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 Preview -->
+        <section class="step-panel" data-panel="preview" hidden>
+          <div class="panel-head">
+            <div>
+              <h2>Preview</h2>
+              <p>Full page parents will see. Drag the date slider to watch opportunities roll on, stay open, or close — same idea as Homepage.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-secondary" data-goto="opportunities">← Opportunities</button>
+              <button type="button" class="btn btn-primary" data-goto="export">Looks good → Export</button>
+            </div>
+          </div>
+
+          <!-- Homepage Composer–matching date scrubber -->
+          <div class="preview-asof" aria-label="Preview as parent on date">
+            <div class="preview-asof-head">
+              <strong id="asOfTitle">View as parent on</strong>
+              <div class="preview-asof-right">
+                <span id="asofFullMonthActions" class="preview-asof-right" hidden>
+                  <button type="button" class="asof-icon-btn" id="btnOpenShare" title="Open page" aria-label="Open page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
+                  </button>
+                  <button type="button" class="asof-icon-btn" id="btnSavePdf" title="Save as PDF" aria-label="Save as PDF">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                  </button>
+                </span>
+                <span class="asof-badge" id="asOfBadge">Jul 27, 2026</span>
+              </div>
+            </div>
+            <input type="range" class="asof-slider" id="asOfSlider" min="0" max="0" value="0" aria-label="Preview date slider" />
+            <div class="preview-asof-meta">
+              <span id="asOfMeta">0 opportunities visible · footer</span>
+              <div class="asof-links">
+                <button type="button" id="btnFullMonth">Full month</button>
+                <button type="button" id="btnJumpToday">Jump to today</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview-toolbar">
+            <span class="label">Live page preview</span>
+            <div class="device-toggle" role="group" aria-label="Preview size">
+              <button type="button" class="active" data-device="desktop">Desktop</button>
+              <button type="button" data-device="mobile">Mobile</button>
+            </div>
+          </div>
+          <div class="preview-stage">
+            <div class="preview-frame desktop" id="previewFrame">
+              <div class="pv-page" id="previewPage"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 Export -->
+        <section class="step-panel" data-panel="export" hidden>
+          <div class="panel-head">
+            <div>
+              <h2>Copy full page code</h2>
+              <p>Complete Membership Toolkit HTML for <code>/volunteerwithus</code> — same export promise as Homepage.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-secondary" data-goto="preview">← Preview</button>
+              <button type="button" class="btn btn-primary" id="btn-export">Copy HTML</button>
+            </div>
+          </div>
+
+          <div class="export-box">
+            <ul>
+              <li>✓ Full page (not cards only)</li>
+              <li>✓ Header colors, how-to strip, 1–2 hero CTAs</li>
+              <li>✓ Opportunities with editable SignUpGenius URLs</li>
+              <li>✓ On / off dates (same visibility rules as Homepage cards)</li>
+              <li>✓ Month/Year event filter + Clear all opportunities</li>
+              <li>✓ Footer colors, copy, and 1–2 CTA buttons with URLs</li>
+              <li>✓ Level 1 sections structured to become blocks later</li>
+            </ul>
+            <pre id="exportPreview"></pre>
+            <p class="note"><strong>Level 1:</strong> You cannot delete “Opportunities” or invent a new layout here — that keeps MTK consistent. Level 2 would let you stack Hero · Opportunity list · CTA as blocks.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const STEPS = ["header", "footer", "opportunities", "preview", "export"];
+    const EMOJIS = ["🎒", "🍎", "🏷️", "📦", "🎉", "📚", "🧹", "🤝", "📣", "🍪"];
+    const FULL_MONTH = "full-month";
+
+    /** Sample calendar events (Homepage-style picker) */
+    const CALENDAR_EVENTS = [
+      { id: "e0", name: "Summer Fun Day", date: "2025-07-18", emoji: "☀️", blurb: "Past-year sample for Year filter." },
+      { id: "e1a", name: "Back to School Fair", date: "2026-08-05", emoji: "🎒", blurb: "Help welcome families at Back to School Fair." },
+      { id: "e1b", name: "School Supply Sorting", date: "2026-08-04", emoji: "📦", blurb: "Sort and deliver school supply kits." },
+      { id: "e1c", name: "Teacher Appreciation Drop-off", date: "2026-08-05", emoji: "🍎", blurb: "Collect gifts for teachers and staff." },
+      { id: "e2", name: "Fall Festival", date: "2026-10-10", emoji: "🎃", blurb: "Booth captains, setup crew, and greeters for Fall Festival." },
+      { id: "e3", name: "Book Fair Helpers", date: "2026-11-03", emoji: "📚", blurb: "Help run the book fair during school hours." },
+      { id: "e4", name: "Winter Wonderland", date: "2026-12-12", emoji: "❄️", blurb: "Shift volunteers for our winter family night." },
+      { id: "e5", name: "Spring Carnival", date: "2026-04-12", emoji: "🌸", blurb: "Games, food, and greeters for Spring Carnival." },
+      { id: "e6", name: "July Ice Cream Social", date: "2026-07-22", emoji: "🍦", blurb: "Scoopers and setup for summer social." },
+    ];
+
+    const MONTH_NAMES = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ];
+
+    let eventFilterMonth = 7; // 1–12 (July — matches “today” demo)
+    let eventFilterYear = 2026;
+    let headerBtnCount = 2;
+    let footerBtnCount = 1;
+
+    /**
+     * @typedef {{
+     *   id: string,
+     *   emoji: string,
+     *   name: string,
+     *   blurb: string,
+     *   when: string,
+     *   url: string,
+     *   alwaysOn: boolean,
+     *   startsOn: string|null,
+     *   expiresOn: string|null,
+     *   fromEventId?: string
+     * }} Role
+     */
+
+    /** @type {Role[]} */
+    let roles = [
+      {
+        id: "r1",
+        emoji: "🎒",
+        name: "Back to School Fair",
+        blurb: "Help welcome families and support our annual Back to School Fair.",
+        when: "August 5",
+        url: "https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-backtoschool",
+        alwaysOn: false,
+        startsOn: "2026-07-01",
+        expiresOn: "2026-08-10",
+      },
+      {
+        id: "r2",
+        emoji: "🍎",
+        name: "Teacher Appreciation",
+        blurb: "Help celebrate and support our Lincoln teachers and staff.",
+        when: "Drop-off at Back to School Fair",
+        url: "https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-teacherappr",
+        alwaysOn: true,
+        startsOn: null,
+        expiresOn: null,
+      },
+      {
+        id: "r3",
+        emoji: "🏷️",
+        name: "Badge Making Sessions",
+        blurb: "Approved volunteers can reserve a badge-making appointment.",
+        when: "Available year-round",
+        url: "https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-badges",
+        alwaysOn: true,
+        startsOn: null,
+        expiresOn: null,
+      },
+      {
+        id: "r4",
+        emoji: "📦",
+        name: "School Supply Sorting",
+        blurb: "Sort and deliver school supply kits to each teacher’s classroom.",
+        when: "August 4",
+        url: "https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-supplies",
+        alwaysOn: false,
+        startsOn: "2026-07-20",
+        expiresOn: "2026-08-05",
+      },
+      {
+        id: "r5",
+        emoji: "🎉",
+        name: "Fall Festival Setup",
+        blurb: "New sign-up opening soon — check back as we confirm shifts.",
+        when: "October 2026",
+        url: "",
+        alwaysOn: false,
+        startsOn: "2026-09-01",
+        expiresOn: "2026-10-15",
+      },
+      {
+        id: "r6",
+        emoji: "🌸",
+        name: "Spring Carnival (past)",
+        blurb: "Sample closed opportunity — off date already passed.",
+        when: "April 12",
+        url: "https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-spring",
+        alwaysOn: false,
+        startsOn: "2026-03-01",
+        expiresOn: "2026-04-20",
+      },
+    ];
+
+    let nextId = 7;
+    let currentStep = "header";
+    /** Mirrors Homepage previewDate — full-month first in slider, then date ticks */
+    let asOf = "2026-07-27";
+    let toastTimer;
+    const toastEl = document.getElementById("toast");
+    const TODAY_DEMO = "2026-07-27";
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2400);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function addDaysYmd(ymd, days) {
+      const [y, m, d] = ymd.split("-").map((p) => parseInt(p, 10));
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + days);
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    }
+
+    function formatSliderLabel(ymd) {
+      if (ymd === FULL_MONTH) return "Full month · all cards";
+      const [y, m, d] = ymd.split("-").map((p) => parseInt(p, 10));
+      return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+      });
+    }
+
+    function formatPreviewSliderLabel(value) {
+      return formatSliderLabel(value);
+    }
+
+    function formatBadgeDate(ymd) {
+      if (!ymd || ymd.length < 10) return "—";
+      return `${ymd.slice(5, 7)}-${ymd.slice(8, 10)}`;
+    }
+
+    /** Homepage-style visibility: alwaysOn, startsOn, expiresOn vs asOf */
+    function visibilityFor(role, asOfDate) {
+      if (asOfDate === FULL_MONTH) {
+        return { key: role.url.trim() ? "open" : "soon", label: role.url.trim() ? "Open" : "Coming soon", show: true, dimmed: false };
+      }
+      if (role.alwaysOn) {
+        return { key: role.url.trim() ? "open" : "soon", label: role.url.trim() ? "Open" : "Coming soon", show: true, dimmed: !role.url.trim() };
+      }
+      if (role.startsOn && asOfDate < role.startsOn) {
+        return { key: "soon", label: "Coming soon", show: true, dimmed: true };
+      }
+      if (role.expiresOn && asOfDate > role.expiresOn) {
+        return { key: "closed", label: "Closed", show: true, dimmed: true };
+      }
+      return { key: role.url.trim() ? "open" : "soon", label: role.url.trim() ? "Open" : "Coming soon", show: true, dimmed: !role.url.trim() };
+    }
+
+    function windowLabel(role) {
+      if (role.alwaysOn) return "Always on";
+      const on = role.startsOn ? formatBadgeDate(role.startsOn) : "—";
+      const off = role.expiresOn ? formatBadgeDate(role.expiresOn) : "—";
+      return `On ${on} → Off ${off}`;
+    }
+
+    function applyColors() {
+      const root = document.documentElement;
+      root.style.setProperty("--pv-hero-start", document.getElementById("colorHeroStart").value);
+      root.style.setProperty("--pv-hero-end", document.getElementById("colorHeroEnd").value);
+      root.style.setProperty("--pv-text", document.getElementById("colorText").value);
+      root.style.setProperty("--pv-cta", document.getElementById("colorCta").value);
+      root.style.setProperty("--pv-cta-text", document.getElementById("colorCtaText").value);
+      root.style.setProperty("--pv-footer-bg", document.getElementById("colorFooterBg").value);
+      root.style.setProperty("--pv-footer-text", document.getElementById("colorFooterText").value);
+      root.style.setProperty("--pv-footer-btn", document.getElementById("colorFooterBtn").value);
+      root.style.setProperty("--pv-footer-btn-text", document.getElementById("colorFooterBtnText").value);
+    }
+
+    function collectButtons(prefix, count) {
+      const buttons = [];
+      const max = count === 2 ? 2 : 1;
+      for (let i = 1; i <= max; i++) {
+        const label = val(`${prefix}Btn${i}Label`).trim();
+        const url = val(`${prefix}Btn${i}Url`).trim();
+        if (label) buttons.push({ label, url: url || "#" });
+      }
+      return buttons;
+    }
+
+    function headerButtons() {
+      return collectButtons("header", headerBtnCount);
+    }
+
+    function footerButtons() {
+      return collectButtons("footer", footerBtnCount);
+    }
+
+    function syncBtnCountUI(which) {
+      const count = which === "header" ? headerBtnCount : footerBtnCount;
+      const toggle = document.getElementById(`${which}BtnCount`);
+      toggle.querySelectorAll("button").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.count) === count);
+      });
+      const fields2 = document.getElementById(`${which}Btn2Fields`);
+      if (fields2) fields2.hidden = count !== 2;
+    }
+
+    function setBtnCount(which, count) {
+      if (which === "header") headerBtnCount = count;
+      else footerBtnCount = count;
+      syncBtnCountUI(which);
+      updateHeroLive();
+      updateFooterLive();
+      if (currentStep === "preview") renderPreview();
+      if (currentStep === "export") renderExportPreview();
+    }
+
+    function updateFooterLive() {
+      applyColors();
+      const live = document.getElementById("footerLive");
+      if (!live) return;
+      live.querySelector('[data-bind="footerThanks"]').textContent =
+        val("footerThanks").trim() || "Thank you";
+      live.querySelector('[data-bind="footerContact"]').textContent =
+        val("footerContact").trim();
+      const btns = footerButtons();
+      document.getElementById("footerLiveBtns").innerHTML = btns.map((b) =>
+        `<a class="footer-btn" href="${escapeHtml(b.url)}" title="${escapeHtml(b.url)}" ${b.url.startsWith("http") || b.url.startsWith("mailto:") ? 'target="_blank" rel="noopener"' : ""}>${escapeHtml(b.label)}</a>`
+      ).join("");
+      document.getElementById("footerLiveHints").textContent = btns.length
+        ? btns.map((b) => `${b.label}: ${b.url}`).join(" · ")
+        : "Add a button label to show CTAs";
+    }
+
+    function initEventFilters() {
+      const years = [...new Set(CALENDAR_EVENTS.map((e) => e.date.slice(0, 4)))].sort();
+      if (!years.includes(String(eventFilterYear))) years.push(String(eventFilterYear));
+      years.sort();
+      const yearSel = document.getElementById("eventFilterYear");
+      yearSel.innerHTML = years.map((y) =>
+        `<option value="${y}" ${Number(y) === eventFilterYear ? "selected" : ""}>${y}</option>`
+      ).join("");
+      const monthSel = document.getElementById("eventFilterMonth");
+      monthSel.innerHTML = MONTH_NAMES.map((name, i) =>
+        `<option value="${i + 1}" ${i + 1 === eventFilterMonth ? "selected" : ""}>${name}</option>`
+      ).join("");
+      yearSel.onchange = () => {
+        eventFilterYear = Number(yearSel.value);
+        renderEventPicker();
+      };
+      monthSel.onchange = () => {
+        eventFilterMonth = Number(monthSel.value);
+        renderEventPicker();
+      };
+    }
+
+    function filteredCalendarEvents() {
+      const prefix = `${eventFilterYear}-${String(eventFilterMonth).padStart(2, "0")}`;
+      return CALENDAR_EVENTS.filter((e) => e.date.startsWith(prefix));
+    }
+
+    function clearAllOpportunities() {
+      roles = [];
+      renderEventPicker();
+      renderRolesEditor();
+      if (currentStep === "preview") renderPreview();
+      showToast("Cleared all opportunities — pick a new month");
+    }
+
+    function val(id) {
+      return document.getElementById(id).value;
+    }
+
+    function setStep(step) {
+      if (!STEPS.includes(step)) return;
+      currentStep = step;
+      document.querySelectorAll(".step-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.step === step);
+      });
+      document.querySelectorAll(".step-panel").forEach((panel) => {
+        panel.hidden = panel.dataset.panel !== step;
+      });
+      if (step === "footer") {
+        updateFooterLive();
+      }
+      if (step === "opportunities") {
+        renderEventPicker();
+        renderRolesEditor();
+      }
+      if (step === "preview") {
+        buildAsOfControls();
+        renderPreview();
+      }
+      if (step === "export") {
+        renderExportPreview();
+      }
+      updateHeroLive();
+      updateFooterLive();
+      document.getElementById("draftStatus").textContent = "Draft saved";
+      setTimeout(() => {
+        if (document.getElementById("draftStatus").textContent === "Draft saved") {
+          document.getElementById("draftStatus").textContent = "Draft auto-saves as you edit";
+        }
+      }, 1600);
+    }
+
+    function updateHeroLive() {
+      applyColors();
+      const live = document.getElementById("heroLive");
+      live.querySelector('[data-bind="orgName"]').textContent = val("orgName").trim() || "Your PTO";
+      live.querySelector('[data-bind="pageTitle"]').textContent = val("pageTitle").trim() || "Volunteer With Us";
+      live.querySelector('[data-bind="pageIntro"]').textContent = val("pageIntro").trim();
+      const btns = headerButtons();
+      const host = document.getElementById("headerLiveBtns");
+      if (host) {
+        host.innerHTML = btns.map((b) =>
+          `<a class="hero-btn" href="${escapeHtml(b.url)}" title="${escapeHtml(b.url)}">${escapeHtml(b.label)}</a>`
+        ).join("");
+      }
+    }
+
+    function renderEventPicker() {
+      const host = document.getElementById("eventPicker");
+      const filtered = filteredCalendarEvents();
+      const monthLabel = `${MONTH_NAMES[eventFilterMonth - 1]} ${eventFilterYear}`;
+      if (filtered.length === 0) {
+        host.innerHTML = `<p style="margin:0;font-size:12px;color:var(--muted);">No events in ${escapeHtml(monthLabel)}.</p>`;
+        return;
+      }
+      host.innerHTML = filtered.map((ev) => {
+        const checked = roles.some((r) => r.fromEventId === ev.id);
+        return `
+          <label class="event-check">
+            <input type="checkbox" data-toggle-event="${ev.id}" ${checked ? "checked" : ""} />
+            <span>
+              ${escapeHtml(ev.emoji)} ${escapeHtml(ev.name)}
+              <span class="when">${escapeHtml(formatSliderLabel(ev.date))}</span>
+            </span>
+          </label>
+        `;
+      }).join("");
+
+      host.querySelectorAll("[data-toggle-event]").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const ev = CALENDAR_EVENTS.find((e) => e.id === cb.dataset.toggleEvent);
+          if (!ev) return;
+          if (cb.checked) {
+            if (roles.some((r) => r.fromEventId === ev.id)) return;
+            roles.push({
+              id: "r" + nextId++,
+              emoji: ev.emoji,
+              name: ev.name,
+              blurb: ev.blurb,
+              when: formatSliderLabel(ev.date),
+              url: "https://www.signupgenius.com/go/",
+              alwaysOn: false,
+              startsOn: addDaysYmd(ev.date, -21),
+              expiresOn: ev.date,
+              fromEventId: ev.id,
+            });
+            showToast(`Added ${ev.name}`);
+          } else {
+            roles = roles.filter((r) => r.fromEventId !== ev.id);
+            showToast(`Removed ${ev.name}`);
+          }
+          renderEventPicker();
+          renderRolesEditor();
+        });
+      });
+    }
+
+    function renderRolesEditor() {
+      const host = document.getElementById("rolesEditor");
+      if (roles.length === 0) {
+        host.innerHTML = '<div class="empty-roles">No roles yet — add from events or create a custom role.</div>';
+        return;
+      }
+
+      host.innerHTML = roles.map((role, i) => {
+        const vis = visibilityFor(role, asOf === FULL_MONTH ? "2026-07-27" : asOf);
+        return `
+        <div class="role-card" data-id="${role.id}">
+          <div class="role-card-head">
+            <span class="idx">Role ${i + 1} · ${escapeHtml(windowLabel(role))}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="vis-badge ${vis.key}">● ${vis.label}</span>
+              <button type="button" class="btn-danger" data-remove="${role.id}">Remove</button>
+            </div>
+          </div>
+          <div class="role-row">
+            <input class="emoji-input" type="text" maxlength="4" data-field="emoji" data-id="${role.id}" value="${escapeHtml(role.emoji)}" aria-label="Emoji" />
+            <input type="text" data-field="name" data-id="${role.id}" value="${escapeHtml(role.name)}" placeholder="Role name" aria-label="Role name" />
+          </div>
+          <div class="field">
+            <label>Short description</label>
+            <input type="text" data-field="blurb" data-id="${role.id}" value="${escapeHtml(role.blurb)}" />
+          </div>
+          <div class="field">
+            <label>When / note (card face)</label>
+            <input type="text" data-field="when" data-id="${role.id}" value="${escapeHtml(role.when)}" />
+          </div>
+          <div class="field">
+            <label>SignUpGenius / signup URL</label>
+            <input type="url" class="url-field" data-field="url" data-id="${role.id}" value="${escapeHtml(role.url)}" placeholder="https://www.signupgenius.com/go/…" />
+          </div>
+          <p style="margin:0 0 4px;font-size:10px;color:var(--muted);line-height:1.35;">
+            When / note appears on the card face. <strong>On / Off</strong> below only control when the card is visible (Homepage parity).
+          </p>
+          <div class="dates-row">
+            <label class="always-on">
+              <input type="checkbox" data-always="${role.id}" ${role.alwaysOn ? "checked" : ""} />
+              Always on
+            </label>
+            <label>
+              <span class="field-label">On date</span>
+              <input type="date" data-field="startsOn" data-id="${role.id}" value="${role.startsOn || ""}" ${role.alwaysOn ? "disabled" : ""} />
+            </label>
+            <label>
+              <span class="field-label">Off date</span>
+              <input type="date" data-field="expiresOn" data-id="${role.id}" value="${role.expiresOn || ""}" ${role.alwaysOn ? "disabled" : ""} />
+            </label>
+          </div>
+        </div>
+      `;
+      }).join("");
+
+      host.querySelectorAll("[data-field]").forEach((input) => {
+        input.addEventListener("input", () => {
+          const id = input.dataset.id;
+          const field = input.dataset.field;
+          const role = roles.find((r) => r.id === id);
+          if (!role) return;
+          if (field === "startsOn" || field === "expiresOn") {
+            role[field] = input.value || null;
+            role.alwaysOn = false;
+          } else {
+            role[field] = input.value;
+          }
+          if (field === "url") {
+            input.classList.add("changed");
+            document.getElementById("winCallout").classList.add("pulse");
+          }
+          document.getElementById("draftStatus").textContent = "Saving draft…";
+          renderRolesEditor();
+          if (currentStep === "preview") renderPreview();
+        });
+      });
+
+      host.querySelectorAll("[data-always]").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          const role = roles.find((r) => r.id === cb.dataset.always);
+          if (!role) return;
+          role.alwaysOn = cb.checked;
+          if (cb.checked) {
+            role.startsOn = null;
+            role.expiresOn = null;
+          }
+          renderRolesEditor();
+          if (currentStep === "preview") renderPreview();
+        });
+      });
+
+      host.querySelectorAll("[data-remove]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          roles = roles.filter((r) => r.id !== btn.dataset.remove);
+          renderEventPicker();
+          renderRolesEditor();
+          showToast("Role removed");
+        });
+      });
+    }
+
+    /** Homepage buildPreviewSliderDates — today + on/off boundaries (+ pads if sparse) */
+    function buildPreviewSliderDates() {
+      const set = new Set([TODAY_DEMO]);
+      for (const role of roles) {
+        if (role.startsOn) {
+          set.add(role.startsOn);
+          set.add(addDaysYmd(role.startsOn, -1));
+        }
+        if (role.expiresOn) {
+          set.add(role.expiresOn);
+          set.add(addDaysYmd(role.expiresOn, 1));
+        }
+      }
+      if (set.size < 4) {
+        set.add(addDaysYmd(TODAY_DEMO, 7));
+        set.add(addDaysYmd(TODAY_DEMO, 14));
+        set.add(addDaysYmd(TODAY_DEMO, 21));
+      }
+      return [FULL_MONTH, ...[...set].sort()];
+    }
+
+    function visibleOpportunityCount() {
+      return roles.filter((r) => {
+        const vis = visibilityFor(r, asOf);
+        return vis.show && vis.key === "open";
+      }).length;
+    }
+
+    function setAsOf(next) {
+      asOf = next;
+      buildAsOfControls();
+      renderPreview();
+    }
+
+    function buildAsOfControls() {
+      const sliderDates = buildPreviewSliderDates();
+      if (!sliderDates.includes(asOf)) asOf = FULL_MONTH;
+
+      const isFull = asOf === FULL_MONTH;
+      document.getElementById("asOfTitle").textContent = isFull
+        ? "Full month check"
+        : "View as parent on";
+      document.getElementById("asOfBadge").textContent = formatPreviewSliderLabel(asOf);
+      document.getElementById("asofFullMonthActions").hidden = !isFull;
+
+      const openCount = isFull
+        ? roles.length
+        : visibleOpportunityCount();
+      const noun = openCount === 1 ? "opportunity" : "opportunities";
+      document.getElementById("asOfMeta").textContent = isFull
+        ? `${roles.length} opportunit${roles.length === 1 ? "y" : "ies"} on the page · slide to see rotation`
+        : `${openCount} ${noun} open · footer`;
+
+      const btnFull = document.getElementById("btnFullMonth");
+      btnFull.hidden = isFull;
+
+      const slider = document.getElementById("asOfSlider");
+      slider.max = String(Math.max(sliderDates.length - 1, 0));
+      let idx = sliderDates.findIndex((d) => d === asOf);
+      if (idx < 0) {
+        idx = Math.max(
+          0,
+          sliderDates.findIndex((d) => d !== FULL_MONTH && d >= asOf),
+        );
+      }
+      slider.value = String(idx);
+      slider.oninput = () => {
+        const next = sliderDates[Number(slider.value)];
+        if (next) setAsOf(next);
+      };
+    }
+
+    function howtoParts() {
+      return [val("howto1"), val("howto2"), val("howto3")].map((raw, i) => {
+        const parts = raw.split("—");
+        const strong = (parts[0] || `Step ${i + 1}`).trim();
+        const span = (parts.slice(1).join("—") || raw).trim();
+        return { strong, span: parts.length > 1 ? span : "" };
+      });
+    }
+
+    function renderPreview() {
+      applyColors();
+      updateHeroLive();
+      const org = val("orgName").trim() || "Your PTO";
+      const title = val("pageTitle").trim() || "Volunteer With Us";
+      const intro = val("pageIntro").trim();
+      const thanks = val("footerThanks").trim();
+      const contact = val("footerContact").trim();
+      const ftBtns = footerButtons();
+      const steps = howtoParts();
+
+      const viewDate = asOf === FULL_MONTH ? FULL_MONTH : asOf;
+      const cards = roles.length === 0
+        ? `<div class="empty-roles" style="grid-column:1/-1;margin:0 16px 20px;">Add volunteer roles in Opportunities to see cards here.</div>`
+        : roles.map((role) => {
+            const vis = visibilityFor(role, viewDate);
+            if (!vis.show) return "";
+            const canSignup = vis.key === "open" && role.url.trim();
+            const href = role.url.trim() || "#";
+            const ctaLabel =
+              vis.key === "closed" ? "Sign-up closed" :
+              vis.key === "soon" || !role.url.trim() ? "Sign up coming soon" :
+              "Sign up →";
+            const shortHref = role.url.trim()
+              ? escapeHtml(role.url.trim().replace(/^https?:\/\//, "").slice(0, 48)) + (role.url.length > 56 ? "…" : "")
+              : "No link yet";
+            return `
+              <article class="pv-card ${vis.dimmed ? "dimmed" : ""}">
+                <span class="status ${vis.key}">● ${vis.label}</span>
+                <div class="title-row">
+                  <span class="emoji" aria-hidden="true">${escapeHtml(role.emoji || "🤝")}</span>
+                  <h4>${escapeHtml(role.name || "Untitled role")}</h4>
+                </div>
+                <p class="blurb">${escapeHtml(role.blurb)}</p>
+                <p class="meta">${escapeHtml(role.when)}</p>
+                <p class="window">${escapeHtml(windowLabel(role))}</p>
+                <a class="cta ${canSignup ? "" : "disabled"}" href="${escapeHtml(href)}" ${canSignup ? 'target="_blank" rel="noopener"' : 'tabindex="-1" aria-disabled="true"'}>${ctaLabel}</a>
+                <p class="href-hint" title="${escapeHtml(role.url)}">${shortHref}</p>
+              </article>
+            `;
+          }).join("");
+
+      document.getElementById("previewPage").innerHTML = `
+        <div class="pv-nav">
+          <span class="brand">${escapeHtml(org)}</span>
+          <span class="muted">Volunteer</span>
+        </div>
+        <header class="pv-hero">
+          <p class="eyebrow">${escapeHtml(org)}</p>
+          <h2>${escapeHtml(title)}</h2>
+          ${intro ? `<p>${escapeHtml(intro)}</p>` : ""}
+          ${(() => {
+            const hBtns = headerButtons();
+            return hBtns.length ? `<div class="hero-btns">${hBtns.map((b) =>
+              `<a class="hero-btn" href="${escapeHtml(b.url)}" title="${escapeHtml(b.url)}">${escapeHtml(b.label)}</a>`
+            ).join("")}</div>` : "";
+          })()}
+        </header>
+        <div class="pv-howto">
+          ${steps.map((s, i) => `
+            <div class="pv-step">
+              <span class="num">${i + 1}</span>
+              <strong>${escapeHtml(s.strong)}</strong>
+              ${s.span ? `<span>${escapeHtml(s.span)}</span>` : ""}
+            </div>
+          `).join("")}
+        </div>
+        <div class="pv-section">
+          <h3>Current volunteer opportunities</h3>
+          <p class="sub">New opportunities are added throughout the school year. Select an open role to sign up.</p>
+        </div>
+        <div class="pv-grid">${cards}</div>
+        ${(thanks || contact || ftBtns.length) ? `
+          <div class="pv-thanks">
+            ${thanks ? `<h3>${escapeHtml(thanks)}</h3>` : ""}
+            ${contact ? `<p>${escapeHtml(contact)}</p>` : ""}
+            ${ftBtns.length ? `
+              <div class="footer-btns">
+                ${ftBtns.map((b) =>
+                  `<a class="footer-btn" href="${escapeHtml(b.url)}" title="${escapeHtml(b.url)}" ${b.url.startsWith("http") || b.url.startsWith("mailto:") ? 'target="_blank" rel="noopener"' : ""}>${escapeHtml(b.label)}</a>`
+                ).join("")}
+              </div>
+              <p class="btn-url-hint">${ftBtns.map((b) => escapeHtml(b.url)).join(" · ")}</p>
+            ` : ""}
+          </div>
+        ` : ""}
+        <footer class="pv-footer">
+          ${escapeHtml(org)} · Sample preview · Export pastes full HTML into Membership Toolkit
+        </footer>
+      `;
+    }
+
+    function renderExportPreview() {
+      const org = val("orgName").trim() || "Your PTO";
+      const snippet = `<!-- Volunteer With Us · Level 1 export for /volunteerwithus -->
+<!-- Blocks foreshadowed: Hero, Intro, How it works, Opportunity list, CTA, Footer -->
+<section class="volunteer-hero" style="background:linear-gradient(135deg,${val("colorHeroStart")},${val("colorHeroEnd")})">
+  <h1>${escapeHtml(val("pageTitle"))}</h1>
+  <p>${escapeHtml(val("pageIntro").slice(0, 120))}…</p>
+</section>
+<section class="volunteer-opportunities">
+${roles.map((r) => `  <article class="opp"${r.alwaysOn ? "" : ` data-starts="${r.startsOn || ""}" data-expires="${r.expiresOn || ""}"`}>
+    <h3>${escapeHtml(r.emoji)} ${escapeHtml(r.name)}</h3>
+    <a href="${escapeHtml(r.url || "#")}">Sign up</a>
+    <!-- visibility: ${r.alwaysOn ? "Always on" : `${r.startsOn || "—"} → ${r.expiresOn || "—"}`} -->
+  </article>`).join("\n")}
+</section>
+<section class="volunteer-footer" style="background:${val("colorFooterBg")};color:${val("colorFooterText")}">
+  <h2>${escapeHtml(val("footerThanks"))}</h2>
+  <p>${escapeHtml(val("footerContact"))}</p>
+${footerButtons().map((b) => `  <a class="footer-btn" href="${escapeHtml(b.url)}" style="background:${val("colorFooterBtn")};color:${val("colorFooterBtnText")}">${escapeHtml(b.label)}</a>`).join("\n")}
+</section>
+<footer>${escapeHtml(org)}</footer>`;
+      document.getElementById("exportPreview").textContent = snippet;
+    }
+
+    // Bindings
+    document.querySelectorAll(".step-btn").forEach((btn) => {
+      btn.addEventListener("click", () => setStep(btn.dataset.step));
+    });
+    document.querySelectorAll("[data-goto]").forEach((btn) => {
+      btn.addEventListener("click", () => setStep(btn.dataset.goto));
+    });
+
+    ["orgName", "pageTitle", "pageIntro", "howto1", "howto2", "howto3",
+      "footerThanks", "footerContact",
+      "headerBtn1Label", "headerBtn1Url", "headerBtn2Label", "headerBtn2Url",
+      "footerBtn1Label", "footerBtn1Url", "footerBtn2Label", "footerBtn2Url",
+      "colorHeroStart", "colorHeroEnd", "colorText", "colorCta", "colorCtaText",
+      "colorFooterBg", "colorFooterText", "colorFooterBtn", "colorFooterBtnText",
+    ].forEach((id) => {
+      document.getElementById(id).addEventListener("input", () => {
+        updateHeroLive();
+        updateFooterLive();
+        if (currentStep === "preview") renderPreview();
+        if (currentStep === "export") renderExportPreview();
+        document.getElementById("draftStatus").textContent = "Saving draft…";
+      });
+    });
+
+    document.querySelectorAll("#headerBtnCount button").forEach((btn) => {
+      btn.addEventListener("click", () => setBtnCount("header", Number(btn.dataset.count)));
+    });
+    document.querySelectorAll("#footerBtnCount button").forEach((btn) => {
+      btn.addEventListener("click", () => setBtnCount("footer", Number(btn.dataset.count)));
+    });
+
+    document.getElementById("btn-clear-opps").addEventListener("click", () => {
+      clearAllOpportunities();
+    });
+
+    document.getElementById("btnFullMonth").addEventListener("click", () => {
+      setAsOf(FULL_MONTH);
+    });
+    document.getElementById("btnJumpToday").addEventListener("click", () => {
+      const sliderDates = buildPreviewSliderDates();
+      const nearest =
+        sliderDates.find((x) => x !== FULL_MONTH && x >= TODAY_DEMO) ??
+        sliderDates.find((x) => x !== FULL_MONTH) ??
+        TODAY_DEMO;
+      setAsOf(nearest);
+    });
+    document.getElementById("btnOpenShare").addEventListener("click", () => {
+      showToast("Would open full-month share page (Homepage parity)");
+    });
+    document.getElementById("btnSavePdf").addEventListener("click", () => {
+      showToast("Would save full-month preview as PDF");
+    });
+
+    document.getElementById("btn-add-role").addEventListener("click", () => {
+      const emoji = EMOJIS[roles.length % EMOJIS.length];
+      roles.push({
+        id: "r" + nextId++,
+        emoji,
+        name: "New volunteer role",
+        blurb: "Describe what helpers will do.",
+        when: "Date TBD",
+        url: "https://www.signupgenius.com/go/",
+        alwaysOn: false,
+        startsOn: "2026-07-27",
+        expiresOn: "2026-08-31",
+      });
+      renderRolesEditor();
+      showToast("Role added");
+    });
+
+    document.querySelectorAll(".device-toggle button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".device-toggle button").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const frame = document.getElementById("previewFrame");
+        frame.classList.toggle("mobile", btn.dataset.device === "mobile");
+        frame.classList.toggle("desktop", btn.dataset.device === "desktop");
+      });
+    });
+
+    document.getElementById("btn-export").addEventListener("click", () => {
+      renderExportPreview();
+      showToast("Would copy full MTK HTML for /volunteerwithus");
+    });
+
+    document.getElementById("btn-demo-link").addEventListener("click", () => {
+      setStep("opportunities");
+      const target = roles.find((r) => r.url) || roles[0];
+      if (!target) return;
+      const stamp = Date.now().toString(36).slice(-5);
+      target.url = `https://www.signupgenius.com/go/10C0C4AAAAA2FA0FEC43-${stamp}`;
+      renderRolesEditor();
+      const urlInput = document.querySelector(`.role-card[data-id="${target.id}"] .url-field`);
+      if (urlInput) {
+        urlInput.classList.add("changed");
+        urlInput.focus();
+        urlInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      document.getElementById("winCallout").classList.add("pulse");
+      showToast("SignUpGenius link updated — preview hrefs refresh on Preview step");
+    });
+
+    initEventFilters();
+    syncBtnCountUI("header");
+    syncBtnCountUI("footer");
+    updateHeroLive();
+    updateFooterLive();
+    setStep("header");
+  </script>
+</body>
+</html>

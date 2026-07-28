@@ -8,40 +8,38 @@ type CreateWithAiLandingProps = {
   socialHref: string;
 };
 
-function HomepageArt() {
+function WebsitePagesArt() {
   return (
     <div className="cwai-art cwai-art-home relative h-[11.5rem] overflow-hidden rounded-[20px]">
       <div className="absolute inset-0 bg-[linear-gradient(145deg,#2f4a3c_0%,#6b8171_48%,#b8c9bc_100%)]" />
       <div className="cwai-drift absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[#f6f2eb]/20 blur-2xl" />
       <div className="cwai-drift-slow absolute -bottom-10 left-6 h-28 w-28 rounded-full bg-[#d4a84b]/25 blur-2xl" />
 
-      {/* Mini site canvas */}
-      <div className="cwai-stage absolute inset-x-5 top-5 bottom-4 rounded-[14px] bg-[#fffcf7]/95 p-2.5 shadow-[0_12px_28px_rgba(28,36,48,0.18)] ring-1 ring-white/50">
-        <div className="h-9 overflow-hidden rounded-[10px] bg-[linear-gradient(120deg,#0b2f5b,#2f9fb3)] px-3 py-1.5">
-          <div className="h-1.5 w-16 rounded-full bg-white/70" />
-          <div className="mt-1.5 h-1 w-24 rounded-full bg-white/40" />
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
-          {[0, 1, 2].map((i) => (
+      {/* Mini page library */}
+      <div className="cwai-stage absolute inset-x-4 top-5 bottom-4 grid grid-cols-2 gap-1.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="cwai-tile rounded-[10px] border border-white/30 bg-[#fffcf7]/92 p-1.5 shadow-[0_8px_18px_rgba(28,36,48,0.14)]"
+            style={{ animationDelay: `${i * 100}ms` }}
+          >
             <div
-              key={i}
-              className="cwai-tile aspect-square rounded-[8px] border border-[#d9e8ec] bg-white p-1"
-              style={{ animationDelay: `${i * 120}ms` }}
-            >
-              <div
-                className="h-full rounded-[5px]"
-                style={{
-                  background:
-                    i === 0
-                      ? "linear-gradient(145deg,#f7c948,#ffe08a)"
-                      : i === 1
-                        ? "linear-gradient(145deg,#2f9fb3,#7fd0df)"
-                        : "linear-gradient(145deg,#6b8171,#a8bfb0)",
-                }}
-              />
-            </div>
-          ))}
-        </div>
+              className="mb-1 h-5 rounded-[6px]"
+              style={{
+                background:
+                  i === 0
+                    ? "linear-gradient(120deg,#0b2f5b,#2f9fb3)"
+                    : i === 1
+                      ? "linear-gradient(120deg,#1a4a6e,#2a7a86)"
+                      : i === 2
+                        ? "linear-gradient(120deg,#c4922e,#e0b65a)"
+                        : "linear-gradient(145deg,#ebe4d9,#f6f2eb)",
+              }}
+            />
+            <div className="h-1 w-[70%] rounded-full bg-[#ebe4d9]" />
+            <div className="mt-1 h-1 w-[45%] rounded-full bg-[#d9e8ec]" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -108,13 +106,13 @@ function NewsletterArt() {
 
 const CHOICES = [
   {
-    id: "homepage" as const,
-    title: "Home Page",
+    id: "website-pages" as const,
+    title: "Website pages",
     description:
-      "Pick events, write blurbs, set on/off dates, preview, and copy Membership Toolkit HTML.",
-    cta: "Start Homepage Composer →",
-    href: "/homepage-composer",
-    Art: HomepageArt,
+      "Homepage, Volunteer, and more Membership Toolkit templates — Level 1 composers with HTML export.",
+    cta: "Open pages library →",
+    href: "/create-with-ai/website-pages",
+    Art: WebsitePagesArt,
     enabled: true as const,
   },
   {
@@ -208,8 +206,8 @@ export function CreateWithAiLanding({
         </h1>
         <p className="text-sm leading-relaxed text-cos-muted sm:text-base">
           Pick what you want to make
-          {organizationName ? ` for ${organizationName}` : ""} — homepage,
-          social, or newsletter.
+          {organizationName ? ` for ${organizationName}` : ""} — website
+          pages, social, or newsletter.
         </p>
       </header>
 

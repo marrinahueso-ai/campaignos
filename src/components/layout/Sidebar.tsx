@@ -119,7 +119,7 @@ function resolveCampaignBuilderHref(
   _pathname: string,
   _lastEventId: string | null,
 ): string {
-  // Always land on the Create with AI chooser (Home Page / Social / Newsletter).
+  // Always land on the Create with AI chooser (Website pages / Social / Newsletter).
   return "/create-with-ai";
 }
 
@@ -147,6 +147,8 @@ function isCampaignBuilderActive(pathname: string, _hash: string): boolean {
     pathname.startsWith("/create-with-ai/") ||
     pathname === "/homepage-composer" ||
     pathname.startsWith("/homepage-composer/") ||
+    pathname === "/volunteer-composer" ||
+    pathname.startsWith("/volunteer-composer/") ||
     pathname === "/newsletter-composer" ||
     pathname.startsWith("/newsletter-composer/") ||
     extractCampaignBuilderEventId(pathname) !== null

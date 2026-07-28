@@ -897,10 +897,10 @@ export function HomepageComposer({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <Link
-            href="/create-with-ai"
+            href="/create-with-ai/website-pages"
             className="mb-1 inline-block text-xs font-medium text-cos-muted hover:text-cos-text sm:text-sm"
           >
-            ← Create with AI
+            ← Website pages
           </Link>
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
             <div className="min-w-0">
