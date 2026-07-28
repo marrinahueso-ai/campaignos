@@ -220,6 +220,8 @@ export const previewPlanningHubData: EventPlaybookHubData = {
 
 export const previewFilesPageData: FilesPageData = {
   tablesAvailable: true,
+  foldersAvailable: false,
+  foldersByEventId: {},
   files: [],
   events: [
     {

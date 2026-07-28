@@ -53,6 +53,7 @@ export function mapCampaignFileRow(row: CampaignFileRow): CampaignFile {
   return {
     id: row.id,
     eventId: row.event_id,
+    folderId: row.folder_id ?? null,
     name: row.name,
     url: row.url,
     storagePath: row.storage_path,
@@ -73,6 +74,7 @@ export function createDefaultFilesFilterState(
 ): FilesFilterState {
   return {
     search: "",
+    folderId: "all",
     eventId: eventId ?? "all",
     fileType: "all",
     category: "all",
@@ -92,6 +94,17 @@ export function filterCampaignFiles(
   const search = filters.search.trim().toLowerCase();
 
   return files.filter((file) => {
+    if (filters.folderId === "unfiled" && file.folderId) {
+      return false;
+    }
+    if (
+      filters.folderId !== "all" &&
+      filters.folderId !== "unfiled" &&
+      file.folderId !== filters.folderId
+    ) {
+      return false;
+    }
+
     if (filters.eventId !== "all" && file.eventId !== filters.eventId) {
       return false;
     }

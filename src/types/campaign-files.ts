@@ -22,9 +22,31 @@ export type CampaignFileType = "pdf" | "docx" | "xlsx" | "png" | "jpg" | "other"
 
 export type CampaignFileStatus = "active" | "pending" | "archived";
 
+export interface CampaignFileFolderRow {
+  id: string;
+  event_id: string;
+  organization_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CampaignFileFolder {
+  id: string;
+  eventId: string;
+  organizationId: string;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  fileCount?: number;
+}
+
 export interface CampaignFileRow {
   id: string;
   event_id: string;
+  folder_id: string | null;
   name: string;
   url: string | null;
   storage_path: string | null;
@@ -42,6 +64,7 @@ export interface CampaignFileRow {
 export interface CampaignFile {
   id: string;
   eventId: string;
+  folderId: string | null;
   name: string;
   url: string | null;
   storagePath: string | null;
@@ -64,8 +87,13 @@ export interface CampaignFileEventSummary {
   fileCount: number;
 }
 
+export type FilesFolderFilter = "all" | "unfiled" | string;
+
 export interface FilesPageData {
   tablesAvailable: boolean;
+  foldersAvailable: boolean;
+  /** Event-scoped folders keyed by event id. */
+  foldersByEventId: Record<string, CampaignFileFolder[]>;
   files: CampaignFile[];
   events: CampaignFileEventSummary[];
   eventList: Event[];
@@ -91,6 +119,7 @@ export type FilesSortDirection = "asc" | "desc";
 
 export interface FilesFilterState {
   search: string;
+  folderId: FilesFolderFilter;
   eventId: string | "all";
   fileType: CampaignFileType | "all";
   category: CampaignFileCategory | "all";

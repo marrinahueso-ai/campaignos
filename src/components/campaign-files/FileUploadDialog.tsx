@@ -176,7 +176,7 @@ export function FileUploadDialog({
                   : "Add files"}
             </h2>
             <p className="mt-1 text-sm text-[#5c554c]">
-              Pick the event and label — then we’ll add everything there.
+              Pick the event and category — then we&apos;ll add everything there.
             </p>
           </div>
           <button
@@ -212,7 +212,7 @@ export function FileUploadDialog({
 
           <label className="block space-y-1.5">
             <span className="text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-              Label
+              Category
             </span>
             <select
               value={category}

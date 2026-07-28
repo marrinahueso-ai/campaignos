@@ -7,6 +7,11 @@ import {
 } from "@/lib/campaign-files/constants";
 import { mapCampaignFileRow } from "@/lib/campaign-files/filters";
 import { resolveFilesOrgQueryScope } from "@/lib/campaign-files/org-scope";
+import {
+  areFileFoldersAvailable,
+  getFileFoldersForEvent,
+  getFileFoldersForEvents,
+} from "@/lib/campaign-files/folder-queries";
 import { getEventArtworkMap } from "@/lib/event-workspace/get-event-artwork";
 import {
   areEventPlaybookTablesAvailable,
@@ -217,6 +222,8 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
 
   const empty: FilesPageData = {
     tablesAvailable,
+    foldersAvailable: false,
+    foldersByEventId: {},
     files: [],
     events: [],
     eventList: [],
@@ -246,6 +253,22 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
   const scopedEventId =
     eventId && orgEventIdSet.has(eventId) ? eventId : undefined;
 
+  const folderCounts = new Map<string, number>();
+  for (const file of files) {
+    if (file.folderId) {
+      folderCounts.set(file.folderId, (folderCounts.get(file.folderId) ?? 0) + 1);
+    }
+  }
+
+  const eventIdsForFolders = scopedEventId
+    ? [scopedEventId]
+    : Array.from(new Set(files.map((file) => file.eventId)));
+
+  const [foldersAvailable, foldersByEventId] = await Promise.all([
+    areFileFoldersAvailable(),
+    getFileFoldersForEvents(eventIdsForFolders, folderCounts),
+  ]);
+
   const eventIds = scopedEventId
     ? [scopedEventId]
     : Array.from(new Set(files.map((file) => file.eventId)));
@@ -266,6 +289,8 @@ export async function getFilesPageData(eventId?: string): Promise<FilesPageData>
 
   return {
     tablesAvailable,
+    foldersAvailable,
+    foldersByEventId,
     files,
     events,
     eventList,
@@ -288,6 +313,8 @@ export async function getFilesPageDataForEvent(
   if (!tablesAvailable) {
     return {
       tablesAvailable,
+      foldersAvailable: false,
+      foldersByEventId: {},
       files: [],
       events: [],
       eventList: [],
@@ -302,8 +329,22 @@ export async function getFilesPageDataForEvent(
   const files = loaded.files;
   const artworkMap = await getEventArtworkMap([event.id]);
 
+  const folderCounts = new Map<string, number>();
+  for (const file of files) {
+    if (file.folderId) {
+      folderCounts.set(file.folderId, (folderCounts.get(file.folderId) ?? 0) + 1);
+    }
+  }
+
+  const [foldersAvailable, folders] = await Promise.all([
+    areFileFoldersAvailable(),
+    getFileFoldersForEvent(event.id, folderCounts),
+  ]);
+
   return {
     tablesAvailable,
+    foldersAvailable,
+    foldersByEventId: { [event.id]: folders },
     files,
     events: [
       {

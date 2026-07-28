@@ -75,9 +75,6 @@ export function FilesEaseShell({
   const searchParams = useSearchParams();
   const dragDepthRef = useRef(0);
 
-  // Local chrome state for instant clicks — URL synced via history.replaceState
-  // (router.replace would refetch the whole RSC Files page and feel laggy),
-  // same pattern as TasksEaseShell.
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [sortMode, setSortMode] = useState<FilesSortField>(() =>
     parseSort(searchParams.get("sort")),
@@ -85,9 +82,6 @@ export function FilesEaseShell({
   const [eventFilter, setEventFilter] = useState<string | null>(
     () => searchParams.get("event") ?? initialEventId ?? null,
   );
-  // Read-only in Ease v1 — reuses whatever custom colors were set in the
-  // legacy "Files organized by event" carousel, falling back to the same
-  // rotating accent palette Tasks Ease uses.
   const layout = useMemo<FilesLayout>(
     () =>
       normalizeFilesLayout(
@@ -97,13 +91,20 @@ export function FilesEaseShell({
     [initialEventLayout, data.events],
   );
   const [nameOverrides, setNameOverrides] = useState<Record<string, string>>({});
+  const [folderOverrides, setFolderOverrides] = useState<
+    Record<string, string | null>
+  >({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pendingUploadFiles, setPendingUploadFiles] = useState<File[]>([]);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
 
   const syncUrl = useCallback(
-    (next: { event: string | null; sort: FilesSortField; q: string }) => {
+    (next: {
+      event: string | null;
+      sort: FilesSortField;
+      q: string;
+    }) => {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
       if (!next.event) params.delete("event");
@@ -112,12 +113,16 @@ export function FilesEaseShell({
       else params.set("sort", next.sort);
       if (!next.q) params.delete("q");
       else params.set("q", next.q);
-      const query = params.toString();
-      const href = query ? `/files?${query}` : "/files";
+      const queryString = params.toString();
+      const href = queryString ? `/files?${queryString}` : "/files";
       window.history.replaceState(window.history.state, "", href);
     },
     [],
   );
+
+  function handleFoldersChanged() {
+    window.location.reload();
+  }
 
   function handleEventFilterChange(next: string | null) {
     setEventFilter(next);
@@ -138,8 +143,8 @@ export function FilesEaseShell({
     setNameOverrides((current) => ({ ...current, [fileId]: name }));
   }
 
-  function handleDeleted(fileId: string) {
-    setDeletedIds((current) => new Set(current).add(fileId));
+  function handleMoved(fileId: string, folderId: string | null) {
+    setFolderOverrides((current) => ({ ...current, [fileId]: folderId }));
   }
 
   function openUploadWithFiles(files: File[]) {
@@ -184,6 +189,10 @@ export function FilesEaseShell({
     if (files.length > 0) openUploadWithFiles(files);
   }
 
+  function handleDeleted(fileId: string) {
+    setDeletedIds((current) => new Set(current).add(fileId));
+  }
+
   const eventTitles = useMemo(() => {
     const map = new Map<string, string>();
     for (const event of data.events) map.set(event.eventId, event.title);
@@ -195,13 +204,18 @@ export function FilesEaseShell({
     if (deletedIds.size > 0) {
       files = files.filter((file) => !deletedIds.has(file.id));
     }
-    if (Object.keys(nameOverrides).length === 0) return files;
-    return files.map((file) =>
-      nameOverrides[file.id] !== undefined
-        ? { ...file, name: nameOverrides[file.id]! }
-        : file,
-    );
-  }, [data.files, deletedIds, nameOverrides]);
+    files = files.map((file) => {
+      let next = file;
+      if (nameOverrides[file.id] !== undefined) {
+        next = { ...next, name: nameOverrides[file.id]! };
+      }
+      if (folderOverrides[file.id] !== undefined) {
+        next = { ...next, folderId: folderOverrides[file.id]! };
+      }
+      return next;
+    });
+    return files;
+  }, [data.files, deletedIds, nameOverrides, folderOverrides]);
 
   const filteredSortedFiles = useMemo<CampaignFile[]>(() => {
     const filters = {
@@ -213,8 +227,6 @@ export function FilesEaseShell({
     return sortCampaignFiles(filtered, sortMode, direction, eventTitles);
   }, [filesWithOverrides, eventFilter, query, sortMode, eventTitles]);
 
-  // Stable index (not the filtered position) so an event's fallback accent
-  // color never shifts as the user searches or filters.
   const eventIndexById = useMemo(() => {
     const map = new Map<string, number>();
     data.events.forEach((event, index) => map.set(event.eventId, index));
@@ -245,6 +257,8 @@ export function FilesEaseShell({
         eventHref: eventFilesHref(event.eventId),
         accentColor: accentColorFor(event.eventId),
         files: byEvent.get(event.eventId) ?? [],
+        folders: data.foldersByEventId[event.eventId] ?? [],
+        foldersAvailable: data.foldersAvailable,
       }))
       .sort(
         (a, b) =>
@@ -252,7 +266,14 @@ export function FilesEaseShell({
           a.eventTitle.localeCompare(b.eventTitle),
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredSortedFiles, data.events, layout.colors, eventIndexById]);
+  }, [
+    filteredSortedFiles,
+    data.events,
+    data.foldersByEventId,
+    data.foldersAvailable,
+    layout.colors,
+    eventIndexById,
+  ]);
 
   const { comingUp: comingUpEvents, earlier: earlierEvents } = useMemo(
     () => splitComingUpEvents(data.events),
@@ -284,14 +305,15 @@ export function FilesEaseShell({
           <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] tracking-[-0.02em] text-cos-text">
             Files
           </h1>
-          <p className="mt-1.5 max-w-[48ch] text-sm leading-relaxed text-cos-muted">
-            Everything your team has uploaded — grouped by event, same library
-            that lives on each event’s Files tab.
+          <p className="mt-1.5 max-w-[52ch] text-sm leading-relaxed text-cos-muted">
+            Your organization&apos;s shared file library — browse by campaign,
+            organize files into folders on each event, and upload from here or
+            any campaign&apos;s Files tab.
           </p>
           {data.listCapped ? (
             <p className="mt-1.5 text-sm text-cos-muted" role="status">
               Showing the {data.listCap?.toLocaleString() ?? "recent"} newest
-              files. Narrow by event or search for an older file.
+              files. Narrow by campaign or search for an older file.
             </p>
           ) : null}
         </header>
@@ -313,7 +335,7 @@ export function FilesEaseShell({
               type="search"
               value={query}
               onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Search by file or event name…"
+              placeholder="Search by file or campaign name…"
               autoComplete="off"
               className="w-full border-none bg-transparent text-sm font-semibold text-cos-text outline-none placeholder:font-medium placeholder:text-cos-muted"
             />
@@ -322,17 +344,17 @@ export function FilesEaseShell({
           {data.events.length > 0 ? (
             <label className="inline-flex min-w-[12rem] items-center gap-2">
               <span className="text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
-                Event
+                Campaign
               </span>
               <select
                 value={eventFilter ?? ""}
                 onChange={(event) =>
                   handleEventFilterChange(event.target.value || null)
                 }
-                aria-label="Filter by event"
+                aria-label="Filter by campaign"
                 className="appearance-none rounded-full border-0 bg-[rgba(47,74,60,0.12)] px-3.5 py-2 text-xs font-bold text-[#2f4a3c] outline-none"
               >
-                <option value="">All events ({data.files.length})</option>
+                <option value="">All campaigns ({data.files.length})</option>
                 {comingUpEvents.length > 0 ? (
                   <optgroup label="Coming up">
                     {comingUpEvents.map((event) => (
@@ -343,7 +365,7 @@ export function FilesEaseShell({
                   </optgroup>
                 ) : null}
                 {earlierEvents.length > 0 ? (
-                  <optgroup label="More events">
+                  <optgroup label="More campaigns">
                     {earlierEvents.map((event) => (
                       <option key={event.eventId} value={event.eventId}>
                         {event.title} ({event.fileCount})
@@ -389,7 +411,7 @@ export function FilesEaseShell({
             isDraggingFiles && "border-[#6b8171] bg-[rgba(107,129,113,0.08)] text-cos-text",
           )}
         >
-          Drop files here — then choose the event and label.
+          Drop files here — then choose the campaign and category.
         </div>
 
         <div className="pt-1">
@@ -397,8 +419,10 @@ export function FilesEaseShell({
             eventGroups={eventGroups}
             onRenamed={handleRenamed}
             onDeleted={handleDeleted}
+            onMoved={handleMoved}
+            onFoldersChanged={handleFoldersChanged}
             emptyTitle="No files match"
-            emptyBody="Try another search, clear the event filter, or drop files to upload."
+            emptyBody="Try another search, pick a different campaign, or drop files to upload."
           />
         </div>
       </div>
