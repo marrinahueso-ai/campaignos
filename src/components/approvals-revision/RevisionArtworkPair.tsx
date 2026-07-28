@@ -40,20 +40,26 @@ function ArtSlot({
 }) {
   const isStory = view === "story";
   const emptyLabel = isStory ? "No story artwork yet" : "No feed artwork yet";
+  const label = isStory ? "Story · 9:16" : "Feed · 1:1";
 
   return (
-    <div className="rev-art-slot">
-      <div className="rev-art-slot-label">
-        {isStory ? "Story · 9:16" : "Feed · 1:1"}
-      </div>
+    <div
+      className="rev-art-slot"
+      data-revision-art={view}
+      data-has-art={url ? "true" : "false"}
+    >
+      <div className="rev-art-slot-label">{label}</div>
       <div
         className={[
           "rev-art",
           isStory ? "is-story" : "is-feed",
+          !url ? "is-empty" : "",
           animating ? "is-regen" : "",
         ]
           .filter(Boolean)
           .join(" ")}
+        role="img"
+        aria-label={url ? `${label} preview` : `${label}: ${emptyLabel}`}
       >
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -63,10 +69,8 @@ function ArtSlot({
         {!url ? (
           <div className="rev-art-fallback">
             <strong>{title}</strong>
-            <span>{subtitle || emptyLabel}</span>
-            {subtitle ? (
-              <span className="rev-art-empty-hint">{emptyLabel}</span>
-            ) : null}
+            {subtitle ? <span>{subtitle}</span> : null}
+            <span className="rev-art-empty-hint">{emptyLabel}</span>
           </div>
         ) : null}
       </div>
@@ -76,6 +80,7 @@ function ArtSlot({
 
 /**
  * Side-by-side feed (1:1) + story (9:16) preview for Revision workspace.
+ * Always renders both slots — never hide story when URL is missing.
  */
 export function RevisionArtworkPair({
   feedUrl,
@@ -87,7 +92,7 @@ export function RevisionArtworkPair({
   showEditHints = false,
 }: RevisionArtworkPairProps) {
   return (
-    <div className="rev-art-pair-wrap">
+    <div className="rev-art-pair-wrap" data-revision-artwork-pair>
       <div className="rev-label">Preview</div>
       <div className="rev-art-pair">
         <ArtSlot

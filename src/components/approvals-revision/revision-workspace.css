@@ -212,6 +212,17 @@
   max-width: 180px;
 }
 
+.rev-art.is-empty {
+  border-style: dashed;
+  place-items: center;
+  background: linear-gradient(
+    145deg,
+    rgba(26, 58, 74, 0.88),
+    rgba(47, 107, 90, 0.82) 55%,
+    rgba(196, 146, 46, 0.75)
+  );
+}
+
 .rev-art img {
   position: absolute;
   inset: 0;
@@ -243,12 +254,12 @@
 
 .rev-art-empty-hint {
   display: block;
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 10px !important;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  opacity: 0.75 !important;
+  opacity: 0.92 !important;
 }
 
 .rev-art-caption {

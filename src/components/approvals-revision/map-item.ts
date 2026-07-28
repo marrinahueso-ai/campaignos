@@ -11,9 +11,35 @@ import {
 } from "@/lib/approvals-revision/revision-notes";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 
-function platformChip(item: UnifiedApprovalItem): string {
-  const feed = Boolean(item.preview.feedArtworkUrl);
-  const story = Boolean(item.preview.storyArtworkUrl);
+/**
+ * Resolve feed + story URLs for Revision dual preview.
+ * Always returns both keys. When only a legacy thumbnail exists, it fills the
+ * feed (1:1) slot so creators still see artwork; story stays null and the UI
+ * shows an empty “No story artwork yet” slot.
+ */
+export function resolveRevisionArtworkUrls(item: UnifiedApprovalItem): {
+  feedArtworkUrl: string | null;
+  storyArtworkUrl: string | null;
+  previewImageUrl: string | null;
+} {
+  const feed = item.preview.feedArtworkUrl?.trim() || null;
+  const story = item.preview.storyArtworkUrl?.trim() || null;
+  const thumb = item.thumbnailUrl?.trim() || null;
+  const feedArtworkUrl = feed || (!story ? thumb : null);
+  const storyArtworkUrl = story;
+  return {
+    feedArtworkUrl,
+    storyArtworkUrl,
+    previewImageUrl: feedArtworkUrl || storyArtworkUrl || thumb,
+  };
+}
+
+function platformChip(
+  item: UnifiedApprovalItem,
+  artwork: { feedArtworkUrl: string | null; storyArtworkUrl: string | null },
+): string {
+  const feed = Boolean(artwork.feedArtworkUrl);
+  const story = Boolean(artwork.storyArtworkUrl);
   if (feed && story) return "Social · Feed + Story";
   if (feed && !story) return "Social · Feed";
   if (story && !feed) return "Social · Story";
@@ -43,10 +69,7 @@ export function mapApprovalItemToRevision(
   item: UnifiedApprovalItem,
   mode: RevisionMode,
 ): RevisionWorkspaceModel {
-  const imageUrl =
-    item.preview.feedArtworkUrl ||
-    item.preview.storyArtworkUrl ||
-    item.thumbnailUrl;
+  const artwork = resolveRevisionArtworkUrls(item);
   const parsedNotes = parseRevisionNotes(item.notes);
   const noteBody =
     parsedNotes.comment ||
@@ -99,7 +122,7 @@ export function mapApprovalItemToRevision(
     itemId: item.id,
     mode,
     contentType: "social",
-    typeChip: platformChip(item),
+    typeChip: platformChip(item, artwork),
     statusChip:
       mode === "creator" ? "Changes requested" : "Needs your review",
     statusKind: mode === "creator" ? "changes" : "review",
@@ -107,11 +130,11 @@ export function mapApprovalItemToRevision(
     title: mode === "creator" ? "Revision workspace" : "Request changes",
     previewTitle: item.campaignName,
     previewSubtitle: item.scheduleLabel || item.milestoneName,
-    previewImageUrl: imageUrl,
+    previewImageUrl: artwork.previewImageUrl,
     previewFootnote: "",
     captionText: item.preview.captionText,
-    feedArtworkUrl: item.preview.feedArtworkUrl,
-    storyArtworkUrl: item.preview.storyArtworkUrl,
+    feedArtworkUrl: artwork.feedArtworkUrl,
+    storyArtworkUrl: artwork.storyArtworkUrl,
     scheduleAt: item.scheduleAt,
     scheduleDate,
     scheduleTime,
