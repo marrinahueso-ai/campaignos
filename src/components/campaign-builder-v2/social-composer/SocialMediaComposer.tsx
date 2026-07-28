@@ -243,15 +243,17 @@ export function SocialMediaComposer({
       <div className="app">
         <div className="main-col">
           <div className="content">
-            <Link href="/create-with-ai" className="back">
-              ← Create with AI
-            </Link>
-            <h1 className="serif">Social Media Composer</h1>
-            <p className="lede">
-              Same studio feel as Homepage &amp; Newsletter — logos from Setup,
-              drag-and-drop inspiration, playbooks that map milestones, then
-              edit &amp; re-approve after generate.
-            </p>
+            <div className="smc-intro">
+              <Link href="/create-with-ai" className="back">
+                ← Create with AI
+              </Link>
+              <h1 className="serif">Social Media Composer</h1>
+              <p className="lede">
+                Same studio feel as Homepage &amp; Newsletter — logos from Setup,
+                drag-and-drop inspiration, playbooks that map milestones, then
+                edit &amp; re-approve after generate.
+              </p>
+            </div>
 
             <div className="layout">
               <nav className="steps" aria-label="Composer steps">
