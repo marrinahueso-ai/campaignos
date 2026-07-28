@@ -297,10 +297,10 @@ ${howTo
 .vol-btn{display:inline-block;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:12px 22px;border-radius:999px;font-weight:bold;text-decoration:none!important;margin:6px;transition:transform .2s ease}
 .vol-btn:hover{transform:translateY(-2px)}
 .vol-howto{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 28px}
-.vol-step{background:#f6f2eb;border:1px solid #e4ddd2;border-radius:16px;padding:16px;text-align:left}
-.vol-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:${hc.backgroundEnd};color:#fff;font-size:13px;font-weight:700;line-height:1;margin-bottom:8px;text-align:center}
-.vol-step strong{display:block;font-size:15px;margin-bottom:4px;color:#2a2622}
-.vol-step-detail{display:block;font-size:13px;line-height:1.45;color:#5c554c}
+.vol-step{background:#f6f2eb;border:1px solid #e4ddd2;border-radius:16px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.vol-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:${hc.backgroundEnd};color:#fff;font-size:13px;font-weight:700;line-height:1;margin:0 auto 8px;text-align:center}
+.vol-step strong{display:block;font-size:15px;margin-bottom:4px;color:#2a2622;text-align:center}
+.vol-step-detail{display:block;font-size:13px;line-height:1.45;color:#5c554c;text-align:center}
 .vol-section-title{color:#2f4a3c;font-size:26px;margin:8px 0 6px;text-align:center}
 .vol-section-sub{text-align:center;color:#5c554c;font-size:14px;margin:0 0 18px;line-height:1.5}
 .vol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}

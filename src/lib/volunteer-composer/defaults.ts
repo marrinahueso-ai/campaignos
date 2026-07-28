@@ -41,7 +41,7 @@ export function defaultHowToSteps(): [string, string, string] {
   return [
     "Choose an opportunity — Browse events and programs below.",
     "View available times — Open a card to see positions and slots.",
-    "Complete your sign-up — Add your name on SignUpGenius.",
+    "Complete your sign-up — Add your name on the signup form.",
   ];
 }
 
@@ -142,6 +142,14 @@ function capitalizeHowToLine(line: string): string {
   return `${strong} — ${capped}`;
 }
 
+/** Soften vendor names in default how-to detail for parent-facing pages. */
+function softenHowToVendorCopy(line: string): string {
+  return line.replace(
+    /\bAdd your name on SignUpGenius\.?/i,
+    "Add your name on the signup form.",
+  );
+}
+
 export function buildInitialState(
   events: VolunteerComposerEvent[],
   organizationName?: string | null,
@@ -224,7 +232,9 @@ export function normalizeComposerState(
       : {};
 
   const howTo = Array.isArray(headerRaw.howToSteps)
-    ? headerRaw.howToSteps.map((s) => capitalizeHowToLine(String(s ?? "")))
+    ? headerRaw.howToSteps.map((s) =>
+        capitalizeHowToLine(softenHowToVendorCopy(String(s ?? ""))),
+      )
     : base.header.howToSteps;
   while (howTo.length < 3) howTo.push("");
 
