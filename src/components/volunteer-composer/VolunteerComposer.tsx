@@ -333,7 +333,6 @@ export function VolunteerComposer({
     () =>
       exportVolunteerHtml(state, {
         asOfDate: previewDate,
-        includeWindowMemos: true,
         includeDataImages: true,
       }),
     [state, previewDate],
@@ -424,14 +423,11 @@ export function VolunteerComposer({
             <div className="min-w-0">
               <h1 className="font-display text-3xl text-cos-text sm:text-4xl">
                 Volunteer With Us
-                <span className="ml-2 inline-flex align-middle rounded-full bg-[rgba(42,122,134,0.1)] px-2.5 py-0.5 text-[11px] font-bold text-[#2a7a86]">
-                  /volunteerwithus
-                </span>
               </h1>
               <p className="mt-0.5 max-w-xl text-sm leading-snug text-cos-muted">
-                Full page for Membership Toolkit — header, volunteer
-                opportunities with SignUpGenius links &amp; on/off dates, footer,
-                preview, and HTML export.
+                Build your Volunteer page — header, opportunities with
+                SignUpGenius links &amp; on/off dates, footer, preview, and HTML
+                export for your website.
               </p>
             </div>
             <p
@@ -1293,7 +1289,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Copy full page code"
-                body="Complete HTML for /volunteerwithus — paste into Membership Toolkit Custom HTML."
+                body="Complete Volunteer page HTML — paste into your website’s custom HTML block."
                 actions={
                   <>
                     <Button
@@ -1311,11 +1307,11 @@ export function VolunteerComposer({
               />
               <div className="max-w-4xl rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <ul className="space-y-2 text-sm text-cos-text">
-                  <li>✓ Full Volunteer With Us page</li>
+                  <li>✓ Full Volunteer page</li>
                   <li>✓ Header &amp; footer colors with 1–2 buttons each</li>
-                  <li>✓ Opportunities with artwork, SignUpGenius links &amp; on/off dates</li>
-                  <li>✓ Open / Coming soon / Closed based on the date</li>
-                  <li>✓ Paste into Membership Toolkit → Custom HTML</li>
+                  <li>✓ Opportunities with artwork &amp; SignUpGenius links</li>
+                  <li>✓ Roles roll on/off by date (closed roles hide)</li>
+                  <li>✓ Paste into your website → Custom HTML</li>
                 </ul>
                 <pre className="mt-4 max-h-[420px] overflow-auto rounded-[14px] bg-cos-dark p-4 text-xs leading-relaxed text-[#d9e0d6]">
                   {exportHtml}

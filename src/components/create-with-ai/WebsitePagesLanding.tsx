@@ -83,7 +83,7 @@ const PAGES = [
   {
     id: "homepage" as const,
     title: "Homepage",
-    slug: "/ (home)",
+    slug: "Homepage",
     description:
       "Header, event cards, footer, and helpful resources — pick events, blurbs, on/off dates, preview, and export.",
     meta: ["Homepage template", "Live"],
@@ -95,9 +95,9 @@ const PAGES = [
   {
     id: "volunteer" as const,
     title: "Volunteer",
-    slug: "/volunteerwithus",
+    slug: "Volunteer page",
     description:
-      "Volunteer With Us page — opportunities with SignUpGenius links, on/off dates, parent preview, and full HTML export.",
+      "Volunteer With Us — opportunities with SignUpGenius links, on/off dates, parent preview, and full HTML export for your website.",
     meta: ["Volunteer template", "Live"],
     cta: "Open Volunteer Composer →",
     href: "/volunteer-composer",
@@ -107,9 +107,9 @@ const PAGES = [
   {
     id: "sponsorship" as const,
     title: "Sponsorship Calendar",
-    slug: "/sponsorship",
+    slug: "Sponsorship page",
     description:
-      "Tiers, partner cards, and become-a-sponsor CTA — coming next for Membership Toolkit.",
+      "Tiers, partner cards, and become-a-sponsor CTA — coming next.",
     meta: ["Sponsorship template", "Coming soon"],
     cta: "Coming soon",
     href: null,
@@ -168,7 +168,7 @@ export function WebsitePagesLanding({
           Website pages
         </h1>
         <p className="text-sm leading-relaxed text-cos-muted sm:text-base">
-          Membership Toolkit page templates
+          Website page templates
           {organizationName ? ` for ${organizationName}` : ""}. Edit, preview,
           and export a full page for your site.
         </p>

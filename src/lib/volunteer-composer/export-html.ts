@@ -5,7 +5,6 @@ import type {
   VolunteerOpportunity,
 } from "@/lib/volunteer-composer/types";
 import {
-  opportunityCtaLabel,
   opportunityVisibility,
   PREVIEW_FULL_MONTH,
 } from "@/lib/volunteer-composer/visibility";
@@ -23,6 +22,7 @@ function formatBadgeDate(ymd: string | null): string {
   return `${ymd.slice(5, 7)}-${ymd.slice(8, 10)}`;
 }
 
+/** Builder / audit helper — not shown on parent preview or live export. */
 export function formatOpportunityWindow(role: VolunteerOpportunity): string {
   if (role.alwaysOn) return "Always on";
   const on = role.startsOn ? formatBadgeDate(role.startsOn) : "—";
@@ -94,24 +94,25 @@ function renderOpportunityFace(
 ): string {
   const hosted = exportImageUrl(role.imageUrl, options);
   if (hosted) {
-    return `<span class="vol-thumb"><img src="${escapeHtml(hosted)}" alt="" /></span>`;
+    return `<div class="vol-art"><img src="${escapeHtml(hosted)}" alt="${escapeHtml(role.title || "Volunteer opportunity")}" /></div>`;
   }
-  return `<span class="vol-emoji" aria-hidden="true">${escapeHtml(role.emoji || "🤝")}</span>`;
+  return `<div class="vol-art vol-art-fallback" aria-hidden="true"><span class="vol-emoji">${escapeHtml(role.emoji || "🤝")}</span></div>`;
 }
 
 function renderOpportunityCard(
   role: VolunteerOpportunity,
-  asOf: string,
-  options: { includeWindowMemo?: boolean; includeDataImages?: boolean },
+  asOf: string | null,
+  options: { includeDataImages?: boolean },
 ): string {
-  const vis = opportunityVisibility(role, asOf);
+  const visKey = asOf ?? PREVIEW_FULL_MONTH;
+  const vis = opportunityVisibility(role, visKey);
   if (!vis.show) return "";
+
   const canSignup = vis.key === "open" && Boolean(role.signupUrl.trim());
-  const href = role.signupUrl.trim()
-    ? normalizeHref(role.signupUrl)
-    : "#";
-  const cta = opportunityCtaLabel(vis);
-  const attrs: string[] = ['class="vol-card' + (vis.dimmed ? " dimmed" : "") + '"'];
+  const href = canSignup ? normalizeHref(role.signupUrl) : "#";
+  const attrs: string[] = [
+    'class="vol-card' + (vis.dimmed ? " dimmed" : "") + '"',
+  ];
   if (!role.alwaysOn && role.startsOn) {
     attrs.push(`data-starts="${escapeHtml(role.startsOn)}"`);
   }
@@ -123,37 +124,38 @@ function renderOpportunityCard(
     attrs.push(`data-signup="${escapeHtml(normalizeHref(role.signupUrl))}"`);
   }
 
-  const windowMemo = options.includeWindowMemo
-    ? `<p class="vol-window">${escapeHtml(formatOpportunityWindow(role))}</p>`
+  const cta = canSignup
+    ? `<a class="vol-cta" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Sign up →</a>`
     : "";
 
   return `<article ${attrs.join(" ")}>
+${renderOpportunityFace(role, options)}
+<div class="vol-card-body">
 <span class="vol-status ${vis.key}">● ${escapeHtml(vis.label)}</span>
-<div class="vol-title-row">${renderOpportunityFace(role, options)}<h3>${escapeHtml(role.title || "Untitled role")}</h3></div>
+<h3>${escapeHtml(role.title || "Untitled role")}</h3>
 <p class="vol-blurb">${escapeHtml(role.blurb)}</p>
 ${role.whenLabel.trim() ? `<p class="vol-when">${escapeHtml(role.whenLabel)}</p>` : ""}
-${windowMemo}
-<a class="vol-cta${canSignup ? "" : " disabled"}" href="${escapeHtml(href)}"${canSignup ? ' target="_blank" rel="noopener noreferrer"' : ' tabindex="-1" aria-disabled="true"'}>${escapeHtml(cta)}</a>
+${cta}
+</div>
 </article>`;
 }
 
 export type ExportVolunteerOptions = {
-  /** YYYY-MM-DD or full-month — preview scrubber. */
+  /** YYYY-MM-DD or full-month — preview scrubber. Omit for live “today” export. */
   asOfDate?: string | null;
-  /** Preview audit: show window memos under cards. */
-  includeWindowMemos?: boolean;
-  /** Allow data: image URLs in preview (not for MTK paste). */
+  /** Allow data: image URLs in preview (not for paste export). */
   includeDataImages?: boolean;
 };
 
-/** Full-page HTML for Membership Toolkit /volunteerwithus. */
+/** Full-page Volunteer HTML for preview and website paste. */
 export function exportVolunteerHtml(
   state: VolunteerComposerState,
   options: ExportVolunteerOptions = {},
 ): string {
   const { header, footer } = state;
-  const asOf = options.asOfDate?.trim() || PREVIEW_FULL_MONTH;
-  const includeWindowMemos = Boolean(options.includeWindowMemos);
+  const asOfRaw = options.asOfDate?.trim() || null;
+  const showAllCards = asOfRaw === PREVIEW_FULL_MONTH;
+  const asOf = showAllCards ? PREVIEW_FULL_MONTH : asOfRaw;
   const includeDataImages = Boolean(options.includeDataImages);
   const hc = header.colors;
   const fc = footer.colors;
@@ -170,17 +172,20 @@ export function exportVolunteerHtml(
   );
   const howTo = header.howToSteps.map(parseHowTo);
 
+  const cardHtml = state.opportunities
+    .map((role) =>
+      renderOpportunityCard(role, asOf, {
+        includeDataImages,
+      }),
+    )
+    .filter(Boolean)
+    .join("\n");
+
   const cards =
     state.opportunities.length === 0
       ? `<p class="vol-empty">Volunteer opportunities will appear here soon.</p>`
-      : state.opportunities
-          .map((role) =>
-            renderOpportunityCard(role, asOf, {
-              includeWindowMemo: includeWindowMemos,
-              includeDataImages,
-            }),
-          )
-          .join("\n");
+      : cardHtml ||
+        `<p class="vol-empty">No open volunteer opportunities right now. Check back soon.</p>`;
 
   const howToBlock = `<div class="vol-howto">
 ${howTo
@@ -193,7 +198,95 @@ ${howTo
   const sectionTitle = state.opportunitiesSectionTitle.trim();
   const sectionSub = state.opportunitiesSectionSub.trim();
 
-  return `<!-- Volunteer With Us · full page for /volunteerwithus -->
+  const dateScript = showAllCards
+    ? `/* Full-month preview — show every opportunity */
+  var cards=document.querySelectorAll(".vol-card");
+  for(var i=0;i<cards.length;i++){
+    var el=cards[i];
+    var status=el.querySelector(".vol-status");
+    var body=el.querySelector(".vol-card-body");
+    var signup=el.getAttribute("data-signup")||"";
+    var key=signup?"open":"soon";
+    el.classList.toggle("dimmed", key!=="open");
+    el.style.display="";
+    if(status){
+      status.className="vol-status "+key;
+      status.textContent="● "+(key==="open"?"Open":"Coming soon");
+    }
+    var cta=el.querySelector(".vol-cta");
+    if(key==="open"&&signup){
+      if(!cta&&body){
+        cta=document.createElement("a");
+        cta.className="vol-cta";
+        body.appendChild(cta);
+      }
+      if(cta){
+        cta.textContent="Sign up →";
+        cta.setAttribute("href",signup);
+        cta.setAttribute("target","_blank");
+        cta.setAttribute("rel","noopener noreferrer");
+      }
+    } else if(cta){
+      cta.remove();
+    }
+  }`
+    : `function parseYmd(s){
+    var p=String(s||"").split("-");
+    if(p.length!==3)return null;
+    var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  var today=${
+    asOfRaw ? `parseYmd(${JSON.stringify(asOfRaw)})||new Date()` : "new Date()"
+  };
+  if(today) today.setHours(0,0,0,0);
+  var cards=document.querySelectorAll(".vol-card");
+  for(var i=0;i<cards.length;i++){
+    var el=cards[i];
+    var status=el.querySelector(".vol-status");
+    var body=el.querySelector(".vol-card-body");
+    var always=el.getAttribute("data-always-on")==="1";
+    var starts=el.getAttribute("data-starts");
+    var expires=el.getAttribute("data-expires");
+    var signup=el.getAttribute("data-signup")||"";
+    var key="open";
+    if(!always){
+      if(starts){
+        var startDate=parseYmd(starts);
+        if(startDate && today < startDate){ el.style.display="none"; continue; }
+      }
+      if(expires){
+        var expireDate=parseYmd(expires);
+        if(expireDate && today > expireDate){ el.style.display="none"; continue; }
+      }
+    }
+    key=signup?"open":"soon";
+    el.style.display="";
+    el.classList.toggle("dimmed", key!=="open");
+    if(status){
+      status.className="vol-status "+key;
+      status.textContent="● "+(key==="open"?"Open":"Coming soon");
+    }
+    var cta=el.querySelector(".vol-cta");
+    if(key==="open"&&signup){
+      if(!cta&&body){
+        cta=document.createElement("a");
+        cta.className="vol-cta";
+        body.appendChild(cta);
+      }
+      if(cta){
+        cta.textContent="Sign up →";
+        cta.setAttribute("href",signup);
+        cta.setAttribute("target","_blank");
+        cta.setAttribute("rel","noopener noreferrer");
+      }
+    } else if(cta){
+      cta.remove();
+    }
+  }`;
+
+  return `<!-- Volunteer With Us page -->
 <style><!--
 .vol-wrap{max-width:1100px;margin:0 auto;padding:20px;font-family:Arial,sans-serif;color:#2a2622}
 .vol-hero{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd});color:${hc.textColor};padding:40px 30px;border-radius:22px;text-align:center;margin-bottom:18px}
@@ -210,23 +303,22 @@ ${howTo
 .vol-step-detail{display:block;font-size:13px;line-height:1.45;color:#5c554c}
 .vol-section-title{color:#2f4a3c;font-size:26px;margin:8px 0 6px;text-align:center}
 .vol-section-sub{text-align:center;color:#5c554c;font-size:14px;margin:0 0 18px;line-height:1.5}
-.vol-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.vol-card{background:#fff;border:2px solid #d9e8ec;border-radius:16px;padding:18px;box-shadow:0 4px 12px rgba(0,0,0,.06);display:flex;flex-direction:column}
-.vol-card.dimmed{opacity:.72}
+.vol-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-items:stretch}
+.vol-card{background:#fff;border:2px solid #d9e8ec;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);display:flex;flex-direction:column;height:100%;transition:transform .25s ease,box-shadow .25s ease}
+.vol-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(47,74,60,.18)}
+.vol-card.dimmed{opacity:.85}
+.vol-art{width:100%;aspect-ratio:1/1;background:#eef8fa;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.vol-art img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.vol-art-fallback{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd})}
+.vol-emoji{font-size:64px;line-height:1}
+.vol-card-body{padding:16px 18px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;flex:1}
 .vol-status{font-size:12px;font-weight:700;margin-bottom:8px}
 .vol-status.open{color:#2f4a3c}
 .vol-status.soon{color:#7a7166}
-.vol-status.closed{color:#a65a3a}
-.vol-title-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.vol-emoji{font-size:22px;line-height:1;flex-shrink:0}
-.vol-thumb{display:block;width:48px;height:48px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#ebe4d9;border:1px solid #d9e8ec}
-.vol-thumb img{display:block;width:100%;height:100%;object-fit:cover}
-.vol-card h3{margin:0;font-size:18px;color:#0b2f5b;line-height:1.25}
-.vol-blurb{font-size:14px;line-height:1.45;color:#333;margin:0 0 8px;flex:1}
-.vol-when,.vol-window{margin:0 0 6px;font-size:13px;font-weight:600;color:#0b6f89}
-.vol-window{color:#6b7c8a;font-size:11px}
-.vol-cta{display:inline-block;margin-top:10px;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:10px 16px;border-radius:999px;font-weight:bold;text-decoration:none!important;font-size:14px;align-self:flex-start}
-.vol-cta.disabled{background:#cfc8bc;color:#5c554c!important;pointer-events:none}
+.vol-card h3{margin:0 0 8px;font-size:19px;color:#0b2f5b;line-height:1.25;text-align:center}
+.vol-blurb{font-size:14px;line-height:1.45;color:#333;margin:0 0 10px;flex:1;text-align:center}
+.vol-when{margin:0 0 12px;font-size:14px;font-weight:700;color:#0b6f89;text-align:center}
+.vol-cta{display:inline-block;margin-top:auto;background:${hc.buttonBackground};color:${hc.buttonText}!important;padding:10px 18px;border-radius:999px;font-weight:bold;text-decoration:none!important;font-size:14px}
 .vol-empty{grid-column:1/-1;text-align:center;color:#7a7166;padding:24px;background:#f6f2eb;border-radius:14px}
 .vol-cta-band{margin-top:28px;background:${fc.background};color:${fc.textColor};border-radius:20px;padding:28px;text-align:center}
 .vol-cta-band h2{margin:0 0 10px;color:${fc.textColor};font-size:24px}
@@ -261,55 +353,7 @@ ${renderButtons(footerBtns, "vol-btns")}
 </div>
 <script>
 (function(){
-  function parseYmd(s){
-    var p=String(s||"").split("-");
-    if(p.length!==3)return null;
-    var d=new Date(parseInt(p[0],10),parseInt(p[1],10)-1,parseInt(p[2],10));
-    d.setHours(0,0,0,0);
-    return d;
-  }
-  var asOf=${
-    asOf === PREVIEW_FULL_MONTH
-      ? "null"
-      : `parseYmd(${JSON.stringify(asOf)})`
-  };
-  var today=asOf||new Date();
-  if(today) today.setHours(0,0,0,0);
-  var cards=document.querySelectorAll(".vol-card");
-  for(var i=0;i<cards.length;i++){
-    var el=cards[i];
-    var status=el.querySelector(".vol-status");
-    var cta=el.querySelector(".vol-cta");
-    var always=el.getAttribute("data-always-on")==="1";
-    var starts=el.getAttribute("data-starts");
-    var expires=el.getAttribute("data-expires");
-    var signup=el.getAttribute("data-signup")||"";
-    var key="open";
-    if(!asOf){
-      key=signup?"open":"soon";
-    } else if(always){
-      key=signup?"open":"soon";
-    } else if(starts && today < parseYmd(starts)){
-      key="soon";
-    } else if(expires && today > parseYmd(expires)){
-      key="closed";
-    } else {
-      key=signup?"open":"soon";
-    }
-    el.classList.toggle("dimmed", key!=="open");
-    if(status){
-      status.className="vol-status "+key;
-      status.textContent="● "+(key==="open"?"Open":key==="closed"?"Closed":"Coming soon");
-    }
-    if(cta){
-      var can=key==="open"&&signup;
-      cta.textContent=key==="closed"?"Sign-up closed":key==="soon"||!signup?"Sign up coming soon":"Sign up →";
-      cta.classList.toggle("disabled", !can);
-      cta.setAttribute("href", can?signup:"#");
-      if(can){ cta.setAttribute("target","_blank"); cta.setAttribute("rel","noopener noreferrer"); }
-      else { cta.removeAttribute("target"); cta.setAttribute("aria-disabled","true"); }
-    }
-  }
+  ${dateScript}
 })();
 </script>`;
 }

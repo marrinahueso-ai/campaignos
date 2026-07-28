@@ -6,8 +6,9 @@ import type {
 export const PREVIEW_FULL_MONTH = "full-month";
 
 /**
- * Homepage-style window, but cards stay visible with Open / Coming soon / Closed
- * status for the as-of date (mockup parity).
+ * Homepage-style window: roles outside the on/off range are hidden (roll off).
+ * Full-month preview keeps every role for manager audit.
+ * In-window roles without a signup URL stay visible as Coming soon (no CTA).
  */
 export function opportunityVisibility(
   role: VolunteerOpportunity,
@@ -20,7 +21,7 @@ export function opportunityVisibility(
       key: hasUrl ? "open" : "soon",
       label: hasUrl ? "Open" : "Coming soon",
       show: true,
-      dimmed: false,
+      dimmed: !hasUrl,
     };
   }
 
@@ -37,7 +38,7 @@ export function opportunityVisibility(
     return {
       key: "soon",
       label: "Coming soon",
-      show: true,
+      show: false,
       dimmed: true,
     };
   }
@@ -46,7 +47,7 @@ export function opportunityVisibility(
     return {
       key: "closed",
       label: "Closed",
-      show: true,
+      show: false,
       dimmed: true,
     };
   }

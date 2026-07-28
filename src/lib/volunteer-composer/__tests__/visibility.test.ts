@@ -32,24 +32,25 @@ function role(partial: Partial<VolunteerOpportunity>): VolunteerOpportunity {
 }
 
 describe("volunteer composer visibility", () => {
-  it("marks Coming soon before on-date", () => {
+  it("hides Coming soon before on-date", () => {
     const vis = opportunityVisibility(role({}), "2026-07-27");
     assert.equal(vis.key, "soon");
     assert.equal(vis.label, "Coming soon");
-    assert.equal(vis.show, true);
-    assert.equal(vis.dimmed, true);
+    assert.equal(vis.show, false);
   });
 
   it("marks Open inside the window when a signup URL exists", () => {
     const vis = opportunityVisibility(role({}), "2026-08-05");
     assert.equal(vis.key, "open");
+    assert.equal(vis.show, true);
     assert.equal(vis.dimmed, false);
   });
 
-  it("marks Closed after off-date", () => {
+  it("hides Closed after off-date", () => {
     const vis = opportunityVisibility(role({}), "2026-08-11");
     assert.equal(vis.key, "closed");
     assert.equal(vis.label, "Closed");
+    assert.equal(vis.show, false);
   });
 
   it("keeps always-on roles open on full month", () => {
@@ -58,6 +59,7 @@ describe("volunteer composer visibility", () => {
       PREVIEW_FULL_MONTH,
     );
     assert.equal(vis.key, "open");
+    assert.equal(vis.show, true);
     assert.equal(vis.dimmed, false);
   });
 });
@@ -103,7 +105,7 @@ describe("volunteer composer defaults + export", () => {
     assert.equal(normalized.header.buttonCount, 2);
   });
 
-  it("exports Membership Toolkit HTML with opportunity anchors and artwork", () => {
+  it("exports Volunteer HTML with opportunity anchors and prominent artwork", () => {
     const state = buildInitialState(
       [
         {
@@ -124,8 +126,47 @@ describe("volunteer composer defaults + export", () => {
     assert.match(html, /signupgenius\.com\/go\/fair/);
     assert.match(html, /data-expires="2026-08-08"/);
     assert.match(html, /cdn\.example\/fair\.png/);
-    assert.match(html, /class="vol-thumb"/);
-    assert.match(html, /inline-flex;align-items:center;justify-content:center/);
+    assert.match(html, /class="vol-art"/);
+    assert.match(html, /vol-card-body/);
+    assert.match(html, /aspect-ratio:1\/1/);
+    assert.match(html, /text-align:center/);
     assert.match(html, /Browse events and programs below/);
+    assert.doesNotMatch(html, /volunteerwithus/i);
+    assert.doesNotMatch(html, /Membership Toolkit/i);
+    assert.doesNotMatch(html, /On .+ → Off/);
+    assert.doesNotMatch(html, /vol-window/);
+  });
+
+  it("hides closed roles from as-of export and omits on/off chrome", () => {
+    const state = buildInitialState([], "Test Org");
+    state.opportunities = [
+      role({
+        id: "open",
+        title: "Open role",
+        startsOn: "2026-08-01",
+        expiresOn: "2026-08-10",
+        imageUrl: "https://cdn.example/open.png",
+      }),
+      role({
+        id: "closed",
+        title: "Closed role",
+        startsOn: "2026-07-01",
+        expiresOn: "2026-07-15",
+        imageUrl: "https://cdn.example/closed.png",
+      }),
+      role({
+        id: "soon",
+        title: "Future role",
+        startsOn: "2026-09-01",
+        expiresOn: "2026-09-10",
+        imageUrl: "https://cdn.example/soon.png",
+      }),
+    ];
+    const html = exportVolunteerHtml(state, { asOfDate: "2026-08-05" });
+    assert.match(html, /Open role/);
+    assert.doesNotMatch(html, /Closed role/);
+    assert.doesNotMatch(html, /Future role/);
+    assert.doesNotMatch(html, /On .+ → Off/);
+    assert.doesNotMatch(html, /Sign-up closed/);
   });
 });

@@ -96,7 +96,7 @@ export type OpportunityVisibilityKey = "open" | "soon" | "closed";
 export type OpportunityVisibility = {
   key: OpportunityVisibilityKey;
   label: string;
-  /** Still render the card (volunteer preview keeps Closed/Coming soon visible). */
+  /** False when outside the on/off window — card rolls off preview/export. */
   show: boolean;
   dimmed: boolean;
 };
