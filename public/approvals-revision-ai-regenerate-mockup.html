@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Revision AI regenerate mockup</title>
+  <meta name="description" content="Mockup: Creator Revision workspace — instruct AI from change-request comments, regenerate artwork or caption in-shell, then send for re-approval." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --amber: #b07a1a;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    [hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    @keyframes shimmer-art {
+      0% { filter: brightness(1); }
+      40% { filter: brightness(1.15) saturate(1.1); }
+      100% { filter: brightness(1); }
+    }
+
+    .shell { max-width: 1120px; margin: 0 auto; padding: 18px 18px 88px; }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 18px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.75); font-size: 12px; font-weight: 600; color: var(--muted);
+      animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner strong { color: var(--forest); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tabs button {
+      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--white); font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    }
+    .tabs button.active {
+      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    }
+
+    .panel { animation: rise 0.35s var(--ease) both; }
+    h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.7rem, 3vw, 2.35rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    }
+    .lede { margin: 8px 0 0; max-width: 42rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--forest); color: var(--cream); }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-secondary { background: var(--white); border-color: var(--line); }
+    .btn-secondary:hover { border-color: var(--sage); }
+    .btn-ai {
+      background: rgba(42, 122, 134, 0.12); color: var(--teal);
+      border-color: rgba(42, 122, 134, 0.28);
+    }
+    .btn-ai:hover { background: rgba(42, 122, 134, 0.18); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+    .card {
+      margin-top: 20px; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 18px;
+    }
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px;
+    }
+    .type-chip {
+      display: inline-flex; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: rgba(42, 122, 134, 0.12); color: var(--teal);
+    }
+    .status-chip {
+      display: inline-flex; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; background: rgba(176, 122, 26, 0.16); color: var(--amber);
+    }
+    .meta-title { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+    .split {
+      display: grid; gap: 16px; grid-template-columns: 1.05fr 0.95fr;
+    }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+
+    .label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+
+    .art-preview {
+      position: relative; border-radius: 16px; border: 1px solid var(--line); overflow: hidden;
+      background: linear-gradient(145deg, #1a3a4a, #2f6b5a 55%, #c4922e);
+      aspect-ratio: 1; max-width: 280px; margin: 0 auto 10px;
+      display: grid; place-items: end center; padding: 16px; color: #fff; text-align: center;
+      transition: background 0.6s var(--ease);
+    }
+    .art-preview.is-regen {
+      animation: shimmer-art 1.1s var(--ease);
+      background: linear-gradient(145deg, #2a4a3c, #c4922e 50%, #2a7a86);
+    }
+    .art-preview strong { font-family: var(--serif); font-size: 1.35rem; display: block; }
+    .art-preview span { font-size: 12px; opacity: 0.9; }
+    .art-badge {
+      position: absolute; top: 10px; left: 10px;
+      padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 800;
+      background: rgba(255,252,247,0.92); color: var(--forest);
+    }
+    .caption-box {
+      border-radius: 12px; border: 1px solid var(--line); background: var(--cream);
+      padding: 10px 12px; font-size: 13px; line-height: 1.45; color: var(--ink-soft);
+      max-width: 280px; margin: 0 auto;
+    }
+    .caption-box.is-regen { animation: pulse-soft 0.9s ease; border-color: rgba(42, 122, 134, 0.35); }
+
+    .note-box {
+      border-radius: 14px; border: 1px solid rgba(176, 122, 26, 0.28);
+      background: rgba(196, 146, 46, 0.12); padding: 12px 14px; margin-bottom: 12px;
+    }
+    .note-box .who { font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 4px; }
+    .note-box p { margin: 0; font-size: 14px; line-height: 1.45; }
+
+    .ai-panel {
+      border-radius: 14px; border: 1px solid rgba(42, 122, 134, 0.22);
+      background: rgba(42, 122, 134, 0.06); padding: 12px 14px; margin-bottom: 14px;
+    }
+    .ai-panel .label { color: var(--teal); }
+    .ai-panel textarea {
+      width: 100%; min-height: 72px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--white); padding: 10px 12px; resize: vertical; margin-bottom: 10px;
+    }
+    .ai-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ai-hint { margin: 8px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .checklist { list-style: none; margin: 0 0 14px; padding: 0; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--cream); margin-bottom: 8px; font-size: 13px;
+    }
+    .checklist li.done { background: rgba(47, 74, 60, 0.08); border-color: rgba(47, 74, 60, 0.2); }
+    .check {
+      width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line);
+      background: var(--white); flex-shrink: 0; display: grid; place-items: center;
+      font-size: 12px; font-weight: 800; color: var(--forest);
+    }
+    .checklist li.done .check { background: var(--forest); color: var(--cream); border-color: var(--forest); }
+    .check-body { flex: 1; min-width: 0; }
+    .check-body small { display: block; color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .hint { width: 100%; font-size: 12px; color: var(--muted); margin: 0; line-height: 1.45; }
+
+    .flow {
+      margin-top: 18px; display: grid; gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    @media (max-width: 720px) { .flow { grid-template-columns: 1fr 1fr; } }
+    .flow-step {
+      border-radius: 14px; border: 1px solid var(--line); background: var(--white);
+      padding: 12px; box-shadow: var(--shadow); font-size: 12px; color: var(--ink-soft); line-height: 1.4;
+    }
+    .flow-step strong {
+      display: block; font-family: var(--serif); font-size: 15px; color: var(--ink); margin-bottom: 4px;
+    }
+    .flow-step .n {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal);
+      margin-bottom: 4px;
+    }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 10px 16px; border-radius: 999px; background: var(--forest); color: var(--cream);
+      font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 40;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="mock-banner">
+      <span><strong>Mockup only</strong> — Creator Revision: AI instructions from change comments → regenerate artwork or caption in-shell → send for re-approval.</span>
+      <div class="tabs">
+        <button type="button" class="active" data-view="creator">Creator revision + AI</button>
+        <button type="button" data-view="flow">How it fits</button>
+      </div>
+    </div>
+
+    <section class="panel" id="view-creator">
+      <h1>Revision workspace</h1>
+      <p class="lede">
+        Approver comments become AI instructions. Regenerate <strong>artwork</strong> or <strong>caption</strong> here — no bounce to Create with AI Preview just to fix and resubmit.
+      </p>
+
+      <div class="card">
+        <div class="meta-row">
+          <span class="type-chip">Social · Feed</span>
+          <span class="status-chip">Changes requested</span>
+          <span class="meta-title">Fall Festival · Milestone 2</span>
+        </div>
+
+        <div class="split">
+          <div>
+            <div class="label">Preview</div>
+            <div class="art-preview" id="art">
+              <span class="art-badge" id="art-badge" hidden>AI updated</span>
+              <div>
+                <strong id="art-title">Fall Festival</strong>
+                <span id="art-sub">Sat Aug 5 · Sign up →</span>
+              </div>
+            </div>
+            <div class="caption-box" id="caption">
+              Join us for Fall Festival on Aug 5! Volunteers welcome — sign up today.
+            </div>
+          </div>
+
+          <div>
+            <div class="label">What they asked for</div>
+            <div class="note-box">
+              <div class="who">Jamie · VP Communications · Jul 27</div>
+              <p id="approver-note">Can we warm up the headline and move the date to Aug 12? Logo feels small.</p>
+            </div>
+
+            <div class="ai-panel">
+              <div class="label">Instruct AI (from their note)</div>
+              <textarea id="ai-instructions" aria-label="AI instructions">Warm up the headline, enlarge the logo, and show Aug 12 on the artwork.</textarea>
+              <div class="ai-actions">
+                <button type="button" class="btn btn-ai" id="btn-regen-art">✦ Regenerate artwork</button>
+                <button type="button" class="btn btn-ai" id="btn-regen-caption">✦ Regenerate caption</button>
+                <button type="button" class="btn btn-secondary" id="btn-use-note">Use note as-is</button>
+              </div>
+              <p class="ai-hint">
+                Prefilled from the change request. Tweak the instruction, then regenerate artwork and/or caption. Credits apply like Create with AI regenerate.
+              </p>
+            </div>
+
+            <ul class="checklist">
+              <li class="done" id="row-art">
+                <span class="check">✓</span>
+                <div class="check-body"><strong>Artwork</strong><small>Regenerated from AI instructions</small></div>
+              </li>
+              <li id="row-caption">
+                <span class="check" id="cap-check"></span>
+                <div class="check-body"><strong>Caption</strong><small>Optional — regenerate to match new date</small></div>
+              </li>
+              <li class="done">
+                <span class="check">✓</span>
+                <div class="check-body"><strong>Date</strong><small>Aug 5 → Aug 12 (set on artwork / schedule)</small></div>
+              </li>
+            </ul>
+
+            <div class="actions">
+              <button type="button" class="btn btn-primary" id="btn-resubmit">Send for re-approval</button>
+              <button type="button" class="btn btn-secondary" data-toast="Back to Approvals">Back to Approvals</button>
+              <p class="hint">After AI updates look right → Send for re-approval. Same shell for future Newsletter / Flyer / Homepage revisions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="view-flow" hidden>
+      <h1>Same Revision shell · AI in the middle</h1>
+      <p class="lede">Doesn’t replace Approvals. Adds regenerate steps inside the creator window we already shipped.</p>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="n">1</div>
+          <strong>Changes requested</strong>
+          Approver note + tags land in Revision.
+        </div>
+        <div class="flow-step">
+          <div class="n">2</div>
+          <strong>Instruct AI</strong>
+          Note prefills instructions; creator can edit.
+        </div>
+        <div class="flow-step">
+          <div class="n">3</div>
+          <strong>Regenerate</strong>
+          Artwork and/or caption update in preview.
+        </div>
+        <div class="flow-step">
+          <div class="n">4</div>
+          <strong>Re-approve</strong>
+          Send for re-approval — back to Needs you.
+        </div>
+      </div>
+      <div class="card">
+        <p class="lede" style="margin:0;">
+          <strong>Not in this mock:</strong> bouncing to Create with AI Preview only to hit Regenerate, then hunting for Send for re-approval.
+          <br /><br />
+          <strong>Build next:</strong> wire ✦ Regenerate artwork / caption to existing Create with AI regenerate + credits, using the instruction box as the prompt delta from the approver note.
+        </p>
+        <button type="button" class="btn btn-primary" style="margin-top:14px;" data-view-go="creator">Back to interactive mock →</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const toastEl = document.getElementById("toast");
+    let toastTimer;
+    let busy = false;
+
+    const NOTE = "Can we warm up the headline and move the date to Aug 12? Logo feels small.";
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    function setView(name) {
+      document.getElementById("view-creator").hidden = name !== "creator";
+      document.getElementById("view-flow").hidden = name !== "flow";
+      document.querySelectorAll(".tabs button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.view === name);
+      });
+    }
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.view));
+    });
+    document.querySelectorAll("[data-view-go]").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.viewGo));
+    });
+    document.querySelectorAll("[data-toast]").forEach((el) => {
+      el.addEventListener("click", () => showToast(el.dataset.toast));
+    });
+
+    document.getElementById("btn-use-note").addEventListener("click", () => {
+      document.getElementById("ai-instructions").value =
+        "Warm up the headline, enlarge the logo, and show Aug 12 on the artwork.";
+      showToast("Instructions reset from approver note");
+    });
+
+    document.getElementById("btn-regen-art").addEventListener("click", () => {
+      if (busy) return;
+      busy = true;
+      const btn = document.getElementById("btn-regen-art");
+      btn.disabled = true;
+      btn.textContent = "✦ Generating…";
+      showToast("Would spend AI credits · regenerate artwork from instructions");
+      setTimeout(() => {
+        const art = document.getElementById("art");
+        art.classList.add("is-regen");
+        document.getElementById("art-badge").hidden = false;
+        document.getElementById("art-title").textContent = "Fall Festival";
+        document.getElementById("art-sub").textContent = "Sat Aug 12 · Sign up →";
+        document.getElementById("row-art").classList.add("done");
+        document.querySelector("#row-art .check-body small").textContent =
+          "Regenerated from AI instructions";
+        btn.disabled = false;
+        btn.textContent = "✦ Regenerate artwork";
+        busy = false;
+        setTimeout(() => art.classList.remove("is-regen"), 1200);
+      }, 1100);
+    });
+
+    document.getElementById("btn-regen-caption").addEventListener("click", () => {
+      if (busy) return;
+      busy = true;
+      const btn = document.getElementById("btn-regen-caption");
+      btn.disabled = true;
+      btn.textContent = "✦ Writing…";
+      showToast("Would regenerate caption from instructions + event context");
+      setTimeout(() => {
+        const cap = document.getElementById("caption");
+        cap.classList.add("is-regen");
+        cap.textContent =
+          "Join us for Fall Festival on August 12! Warm vibes, big logo energy — volunteers welcome. Sign up today →";
+        document.getElementById("row-caption").classList.add("done");
+        document.getElementById("cap-check").textContent = "✓";
+        document.querySelector("#row-caption .check-body small").textContent =
+          "Caption regenerated to match Aug 12";
+        btn.disabled = false;
+        btn.textContent = "✦ Regenerate caption";
+        busy = false;
+        setTimeout(() => cap.classList.remove("is-regen"), 900);
+      }, 900);
+    });
+
+    document.getElementById("btn-resubmit").addEventListener("click", () => {
+      showToast("Send for re-approval — already wired in product; AI regen wires next");
+    });
+
+    // Prefill from note on load
+    document.getElementById("ai-instructions").value =
+      "Warm up the headline, enlarge the logo, and show Aug 12 on the artwork.";
+    void NOTE;
+  </script>
+</body>
+</html>

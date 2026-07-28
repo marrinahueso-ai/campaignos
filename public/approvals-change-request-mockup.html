@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hey Ralli · Change request flow mockup</title>
+  <meta name="description" content="Mockup: clearer change-request loop after artwork is sent for approval — works today for social, grows to newsletters, flyers, homepages, and website pages." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #f6f2eb;
+      --cream-deep: #ebe4d9;
+      --ink: #2a2622;
+      --ink-soft: #5c554c;
+      --muted: #7a7166;
+      --forest: #2f4a3c;
+      --sage: #6b8171;
+      --mustard: #c4922e;
+      --teal: #2a7a86;
+      --white: #fffcf7;
+      --line: rgba(42, 38, 34, 0.1);
+      --shadow: 0 8px 28px rgba(28, 36, 48, 0.06);
+      --shadow-lg: 0 20px 48px rgba(42, 38, 34, 0.12);
+      --radius: 22px;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", system-ui, sans-serif;
+      --danger: #a65a3a;
+      --amber: #b07a1a;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(107, 129, 113, 0.12), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 90% 0%, rgba(196, 146, 46, 0.1), transparent 50%),
+        var(--cream);
+      min-height: 100vh;
+    }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    [hidden] { display: none !important; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .shell { max-width: 1120px; margin: 0 auto; padding: 18px 18px 88px; }
+
+    .mock-banner {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+      margin-bottom: 18px; padding: 10px 14px;
+      border-radius: 14px; border: 1px dashed rgba(42, 38, 34, 0.22);
+      background: rgba(255, 252, 247, 0.75); font-size: 12px; font-weight: 600; color: var(--muted);
+      animation: rise 0.4s var(--ease) both;
+    }
+    .mock-banner strong { color: var(--forest); }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tabs button {
+      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--white); font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    }
+    .tabs button.active {
+      background: var(--forest); color: var(--cream); border-color: var(--forest);
+    }
+
+    .panel { animation: rise 0.35s var(--ease) both; }
+    h1 {
+      margin: 0; font-family: var(--serif); font-size: clamp(1.7rem, 3vw, 2.35rem);
+      font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    }
+    .lede { margin: 8px 0 0; max-width: 40rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--forest); color: var(--cream); }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-secondary { background: var(--white); border-color: var(--line); }
+    .btn-secondary:hover { border-color: var(--sage); }
+    .btn-danger-soft {
+      background: rgba(166, 90, 58, 0.1); color: var(--danger); border-color: rgba(166, 90, 58, 0.25);
+    }
+    .btn-amber {
+      background: rgba(176, 122, 26, 0.14); color: var(--amber); border-color: rgba(176, 122, 26, 0.3);
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+    .split {
+      display: grid; gap: 16px; margin-top: 22px;
+      grid-template-columns: 1.05fr 0.95fr;
+    }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+
+    .card {
+      border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 18px;
+    }
+    .card h2 {
+      margin: 0 0 4px; font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+    }
+    .card .sub { margin: 0 0 14px; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+
+    .clunky {
+      border-style: dashed; opacity: 0.92;
+      background: repeating-linear-gradient(
+        -45deg,
+        var(--white),
+        var(--white) 10px,
+        rgba(235, 228, 217, 0.45) 10px,
+        rgba(235, 228, 217, 0.45) 20px
+      );
+    }
+    .clunky .badge-warn {
+      display: inline-flex; margin-bottom: 10px; padding: 3px 9px; border-radius: 999px;
+      background: rgba(166, 90, 58, 0.12); color: var(--danger);
+      font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+
+    .type-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: rgba(42, 122, 134, 0.12); color: var(--teal);
+    }
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: rgba(176, 122, 26, 0.16); color: var(--amber);
+    }
+    .meta-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px;
+    }
+
+    .art-preview {
+      border-radius: 16px; border: 1px solid var(--line); overflow: hidden;
+      background: linear-gradient(145deg, #1a3a4a, #2f6b5a 55%, #c4922e);
+      aspect-ratio: 1; max-width: 280px; margin: 0 auto 14px;
+      display: grid; place-items: end center; padding: 16px; color: #fff; text-align: center;
+    }
+    .art-preview strong { font-family: var(--serif); font-size: 1.35rem; display: block; }
+    .art-preview span { font-size: 12px; opacity: 0.9; }
+
+    .note-box {
+      border-radius: 14px; border: 1px solid rgba(176, 122, 26, 0.28);
+      background: rgba(196, 146, 46, 0.12); padding: 12px 14px; margin-bottom: 14px;
+    }
+    .note-box .who { font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 4px; }
+    .note-box p { margin: 0; font-size: 14px; line-height: 1.45; }
+
+    .checklist { list-style: none; margin: 0 0 16px; padding: 0; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--cream); margin-bottom: 8px; font-size: 13px;
+    }
+    .checklist li.done { background: rgba(47, 74, 60, 0.08); border-color: rgba(47, 74, 60, 0.2); }
+    .checklist .check {
+      width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line);
+      background: var(--white); flex-shrink: 0; margin-top: 1px;
+      display: grid; place-items: center; font-size: 12px; font-weight: 800; color: var(--forest);
+    }
+    .checklist li.done .check { background: var(--forest); color: var(--cream); border-color: var(--forest); }
+    .checklist .act { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--teal); white-space: nowrap; }
+    .checklist li.done .act { color: var(--sage); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .actions .hint { width: 100%; font-size: 12px; color: var(--muted); margin: 0; }
+
+    .timeline {
+      margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-soft);
+    }
+    .timeline li {
+      position: relative; padding: 0 0 14px 18px;
+      border-left: 2px solid var(--cream-deep);
+    }
+    .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+    .timeline li::before {
+      content: ""; position: absolute; left: -5px; top: 4px;
+      width: 8px; height: 8px; border-radius: 50%; background: var(--sage);
+    }
+    .timeline li strong { color: var(--ink); font-weight: 700; }
+
+    /* Approver compose */
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block; margin-bottom: 5px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted);
+    }
+    .field textarea {
+      width: 100%; min-height: 88px; border-radius: 12px; border: 1px solid var(--line);
+      background: var(--cream); padding: 10px 12px; resize: vertical;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button {
+      padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--white); font-size: 12px; font-weight: 600; color: var(--ink-soft);
+    }
+    .chips button.on {
+      background: rgba(176, 122, 26, 0.16); border-color: rgba(176, 122, 26, 0.4); color: var(--amber);
+    }
+
+    /* Growth grid */
+    .type-grid {
+      display: grid; gap: 12px; margin-top: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .type-card {
+      text-align: left; border-radius: 16px; border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 14px;
+      transition: transform 0.15s var(--ease);
+    }
+    .type-card:hover { transform: translateY(-2px); }
+    .type-card.active { border-color: var(--forest); box-shadow: 0 0 0 2px rgba(47, 74, 60, 0.12); }
+    .type-card .kind { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--teal); }
+    .type-card h3 { margin: 6px 0 4px; font-family: var(--serif); font-size: 1.05rem; }
+    .type-card p { margin: 0; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+
+    .same-shell {
+      margin-top: 18px; border-radius: var(--radius); border: 1px solid var(--line);
+      background: var(--white); box-shadow: var(--shadow); padding: 16px;
+    }
+    .same-shell h3 { margin: 0 0 8px; font-family: var(--serif); font-size: 1.15rem; }
+    .same-shell ol { margin: 0; padding-left: 1.2rem; font-size: 13px; color: var(--ink-soft); line-height: 1.55; }
+    .same-shell li { margin-bottom: 4px; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 10px 16px; border-radius: 999px; background: var(--forest); color: var(--cream);
+      font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 40;
+    }
+    .toast.show { opacity: 1; }
+
+    .compare-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="mock-banner">
+      <span><strong>Mockup only</strong> — Change request after approval send. One revision shell for social today; same pattern for newsletter, flyer, homepage, website pages later.</span>
+      <div class="tabs" role="tablist">
+        <button type="button" class="active" data-view="problem">1 · Today (clunky)</button>
+        <button type="button" data-view="creator">2 · Creator revision</button>
+        <button type="button" data-view="approver">3 · Approver request</button>
+        <button type="button" data-view="grow">4 · Grows with us</button>
+      </div>
+    </div>
+
+    <!-- 1 Problem -->
+    <section class="panel" id="view-problem">
+      <h1>Change request feels split</h1>
+      <p class="lede">Artwork is pending → approver requests changes → note lives in Approvals, but Edit Artwork / Change Date / <strong>Send for re-approval</strong> live in Create with AI. Easy to lose the thread.</p>
+      <div class="split">
+        <div class="card clunky">
+          <span class="badge-warn">Today · Approvals</span>
+          <h2>Changes tab</h2>
+          <p class="sub">“Needs edits” · Open full review · note visible · links bounce you out.</p>
+          <div class="note-box">
+            <div class="who">Approver note</div>
+            <p>Can we warm up the headline and move the date to Aug 12? Logo feels small.</p>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" data-toast="Opens drawer — still no Send for re-approval here">Open full review</button>
+            <button type="button" class="btn btn-amber" data-toast="Leaves Approvals → Create with AI Preview">Edit artwork →</button>
+          </div>
+          <p class="sub" style="margin-top:14px;margin-bottom:0;">Clunky: footer empty for creators; re-approve only after hunting Preview.</p>
+        </div>
+        <div class="card clunky">
+          <span class="badge-warn">Today · Create with AI</span>
+          <h2>Preview banner</h2>
+          <p class="sub">Separate surface · same note · three CTAs · easy to edit without resending.</p>
+          <div class="art-preview" style="max-width:200px;">
+            <div><strong>Fall Festival</strong><span>Feed · Aug 5</span></div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" data-toast="Edit artwork modal">Edit Artwork</button>
+            <button type="button" class="btn btn-secondary" data-toast="Change date">Change Date</button>
+            <button type="button" class="btn btn-primary" data-toast="Send for re-approval">Send for re-approval</button>
+          </div>
+        </div>
+      </div>
+      <p class="lede" style="margin-top:20px;">Proposed: one <strong>Revision</strong> workspace — same shell whether you open from Approvals or Create with AI — checklist from the approver note, then one clear resubmit.</p>
+      <button type="button" class="btn btn-primary" style="margin-top:14px;" data-view-go="creator">See proposed creator flow →</button>
+    </section>
+
+    <!-- 2 Creator -->
+    <section class="panel" id="view-creator" hidden>
+      <h1>Revision workspace</h1>
+      <p class="lede">After changes are requested, creator lands here (from email, Approvals, or Create with AI). One place to see the note, tick off edits, and resubmit.</p>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="meta-row">
+          <span class="type-chip">Social · Feed</span>
+          <span class="status-chip">Changes requested</span>
+          <span style="font-size:12px;color:var(--muted);font-weight:600;">Fall Festival · Milestone 2</span>
+        </div>
+        <div class="split" style="margin-top:0;">
+          <div>
+            <div class="compare-label">Preview</div>
+            <div class="art-preview">
+              <div><strong>Fall Festival</strong><span>Sat Aug 12 · Sign up →</span></div>
+            </div>
+            <p style="margin:0;font-size:12px;color:var(--muted);text-align:center;">Latest artwork · caption under preview in real app</p>
+          </div>
+          <div>
+            <div class="compare-label">What they asked for</div>
+            <div class="note-box">
+              <div class="who">Jamie · VP Communications · Jul 27</div>
+              <p>Can we warm up the headline and move the date to Aug 12? Logo feels small.</p>
+            </div>
+            <ul class="checklist" id="rev-check">
+              <li class="done" data-item="art">
+                <span class="check">✓</span>
+                <div><strong>Artwork</strong><br /><span style="color:var(--ink-soft);font-size:12px;">Headline + logo size</span></div>
+                <button type="button" class="act" data-toast="Opens edit artwork (same shell)">Edit</button>
+              </li>
+              <li class="done" data-item="date">
+                <span class="check">✓</span>
+                <div><strong>Date</strong><br /><span style="color:var(--ink-soft);font-size:12px;">Aug 5 → Aug 12</span></div>
+                <button type="button" class="act" data-toast="Inline date picker">Edit</button>
+              </li>
+              <li data-item="caption">
+                <span class="check"></span>
+                <div><strong>Caption</strong><br /><span style="color:var(--ink-soft);font-size:12px;">Optional — match new date</span></div>
+                <button type="button" class="act" data-toast="Inline caption edit">Edit</button>
+              </li>
+            </ul>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" id="btn-resubmit" data-toast="Would return to Approvals as awaiting review + email approver">Send for re-approval</button>
+              <button type="button" class="btn btn-secondary" data-toast="Back to Approvals Changes list">Back to Approvals</button>
+              <p class="hint">Primary action stays here — no second trip to Preview just to resubmit. Checklist can be suggested from note tags (Artwork / Date / Caption).</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
+          <div class="compare-label">Timeline</div>
+          <ul class="timeline">
+            <li><strong>Sent for approval</strong> · You · Jul 26</li>
+            <li><strong>Changes requested</strong> · Jamie · Jul 27 — note above</li>
+            <li><strong>Edits in progress</strong> · You · now</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 Approver -->
+    <section class="panel" id="view-approver" hidden>
+      <h1>Request changes (approver)</h1>
+      <p class="lede">Same revision shell. Approver adds a short note and optional tags so the creator checklist writes itself.</p>
+      <div class="card" style="margin-top:20px;">
+        <div class="meta-row">
+          <span class="type-chip">Social · Feed</span>
+          <span class="status-chip" style="background:rgba(42,122,134,0.12);color:var(--teal);">Needs your review</span>
+        </div>
+        <div class="split" style="margin-top:0;">
+          <div>
+            <div class="art-preview">
+              <div><strong>Fall Festival</strong><span>Sat Aug 5 · Sign up →</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>What should change?</label>
+              <textarea id="approver-note">Can we warm up the headline and move the date to Aug 12? Logo feels small.</textarea>
+            </div>
+            <div class="field">
+              <label>Tag what needs work (helps their checklist)</label>
+              <div class="chips" id="tag-chips">
+                <button type="button" class="on" data-tag="Artwork">Artwork</button>
+                <button type="button" class="on" data-tag="Date">Date</button>
+                <button type="button" data-tag="Caption">Caption</button>
+                <button type="button" data-tag="Copy">Copy</button>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn btn-danger-soft" data-toast="Item → Changes requested · creator gets email + Revision workspace">Request changes</button>
+              <button type="button" class="btn btn-primary" data-toast="Approve & schedule (unchanged)">Approve &amp; schedule</button>
+              <p class="hint">Tags are optional but recommended — they become the creator’s revision checklist. Works the same when content type is Newsletter or Homepage later.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 Grow -->
+    <section class="panel" id="view-grow" hidden>
+      <h1>One revision shell · many content types</h1>
+      <p class="lede">Approvals stays the inbox. The revision card only swaps the preview + checklist fields by type — process stays identical as you add newsletters, flyers, homepages, and website pages.</p>
+
+      <div class="type-grid" id="type-grid">
+        <button type="button" class="type-card active" data-type="social">
+          <div class="kind">Today</div>
+          <h3>Social post</h3>
+          <p>Artwork · caption · date · channel</p>
+        </button>
+        <button type="button" class="type-card" data-type="newsletter">
+          <div class="kind">Next</div>
+          <h3>Newsletter</h3>
+          <p>Subject · stories · preview HTML</p>
+        </button>
+        <button type="button" class="type-card" data-type="flyer">
+          <div class="kind">Next</div>
+          <h3>Flyer</h3>
+          <p>Template slots · print/online</p>
+        </button>
+        <button type="button" class="type-card" data-type="homepage">
+          <div class="kind">Later</div>
+          <h3>Homepage</h3>
+          <p>Share snapshot · cards section</p>
+        </button>
+        <button type="button" class="type-card" data-type="website">
+          <div class="kind">Later</div>
+          <h3>Website page</h3>
+          <p>Volunteer / Resources MTK HTML</p>
+        </button>
+      </div>
+
+      <div class="same-shell" id="grow-shell">
+        <div class="meta-row">
+          <span class="type-chip" id="grow-chip">Social · Feed</span>
+          <span class="status-chip">Changes requested</span>
+        </div>
+        <h3 id="grow-title">Fall Festival — feed artwork</h3>
+        <p class="sub" id="grow-sub" style="margin-top:0;">Checklist fields change; steps don’t.</p>
+        <ol>
+          <li><strong>Approver</strong> requests changes + tags</li>
+          <li><strong>Creator</strong> opens Revision (same URL pattern: Approvals → item)</li>
+          <li>Tick off type-specific edits</li>
+          <li><strong>Send for re-approval</strong> — back to Needs you</li>
+        </ol>
+        <ul class="checklist" id="grow-check" style="margin-top:14px;"></ul>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h2>What stays stable as we grow</h2>
+        <p class="sub">Don’t invent a new change-request UX per composer.</p>
+        <ul style="margin:0;padding-left:1.2rem;font-size:13px;color:var(--ink-soft);line-height:1.55;">
+          <li><strong>Approvals</strong> = inbox (Needs you · Changes · Scheduled · Posted)</li>
+          <li><strong>Revision workspace</strong> = note + checklist + preview + resubmit</li>
+          <li><strong>Content adapter</strong> = social artwork today; newsletter HTML / flyer slots / homepage share / website page later</li>
+          <li><strong>share_status / approval_item_id</strong> on homepage shares (and future pages) plugs into the same Changes lane</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const views = ["problem", "creator", "approver", "grow"];
+    const toastEl = document.getElementById("toast");
+    let toastTimer;
+
+    const growData = {
+      social: {
+        chip: "Social · Feed",
+        title: "Fall Festival — feed artwork",
+        sub: "Checklist: Artwork · Date · Caption",
+        items: [
+          ["Artwork", "Headline + logo"],
+          ["Date", "Publish / milestone date"],
+          ["Caption", "Match new details"],
+        ],
+      },
+      newsletter: {
+        chip: "Newsletter",
+        title: "August family scoop",
+        sub: "Checklist: Subject · Stories · Preview",
+        items: [
+          ["Subject", "Line in inbox"],
+          ["Stories", "Body sections"],
+          ["Preview", "Desktop / phone HTML"],
+        ],
+      },
+      flyer: {
+        chip: "Flyer",
+        title: "Back to School Fair flyer",
+        sub: "Checklist: Template slots · Dates · QR",
+        items: [
+          ["Artwork slots", "Dates / headline on template"],
+          ["Print size", "Letter vs story"],
+          ["QR / link", "Signup URL"],
+        ],
+      },
+      homepage: {
+        chip: "Homepage",
+        title: "September homepage share",
+        sub: "Checklist: Cards · Section title · Visibility",
+        items: [
+          ["Cards", "Blurbs / artwork"],
+          ["Section title", "Heading above grid"],
+          ["On/off windows", "Visibility dates"],
+        ],
+      },
+      website: {
+        chip: "Website page · Volunteer",
+        title: "Volunteer With Us (MTK)",
+        sub: "Checklist: Opportunities · Signup links · Export",
+        items: [
+          ["Opportunity cards", "Open / Coming soon"],
+          ["Signup links", "New SignUpGenius URLs"],
+          ["Export HTML", "Ready for MTK paste"],
+        ],
+      },
+    };
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+    }
+
+    function setView(name) {
+      views.forEach((v) => {
+        const el = document.getElementById("view-" + v);
+        if (el) el.hidden = v !== name;
+      });
+      document.querySelectorAll(".tabs button").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.view === name);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderGrow(type) {
+      const d = growData[type] || growData.social;
+      document.getElementById("grow-chip").textContent = d.chip;
+      document.getElementById("grow-title").textContent = d.title;
+      document.getElementById("grow-sub").textContent = d.sub;
+      document.getElementById("grow-check").innerHTML = d.items.map(([t, s], i) => `
+        <li class="${i === 0 ? "done" : ""}">
+          <span class="check">${i === 0 ? "✓" : ""}</span>
+          <div><strong>${t}</strong><br /><span style="color:var(--ink-soft);font-size:12px;">${s}</span></div>
+          <span class="act">Edit</span>
+        </li>
+      `).join("");
+      document.querySelectorAll("#type-grid .type-card").forEach((c) => {
+        c.classList.toggle("active", c.dataset.type === type);
+      });
+    }
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.view));
+    });
+    document.querySelectorAll("[data-view-go]").forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.viewGo));
+    });
+    document.querySelectorAll("[data-toast]").forEach((el) => {
+      el.addEventListener("click", () => showToast(el.dataset.toast));
+    });
+
+    document.querySelectorAll("#tag-chips button").forEach((btn) => {
+      btn.addEventListener("click", () => btn.classList.toggle("on"));
+    });
+
+    document.querySelectorAll("#rev-check li").forEach((li) => {
+      li.addEventListener("click", (e) => {
+        if (e.target.closest(".act")) return;
+        li.classList.toggle("done");
+        const box = li.querySelector(".check");
+        box.textContent = li.classList.contains("done") ? "✓" : "";
+      });
+    });
+
+    document.querySelectorAll("#type-grid .type-card").forEach((card) => {
+      card.addEventListener("click", () => renderGrow(card.dataset.type));
+    });
+
+    renderGrow("social");
+    setView("problem");
+  </script>
+</body>
+</html>
