@@ -2,6 +2,10 @@
 
 import Image from "next/image";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
+import {
+  approvalOutcomeChip,
+  canRetryFailedApproval,
+} from "@/lib/approvals-scheduling/outcome-display";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -26,41 +30,6 @@ function platformLabel(item: UnifiedApprovalItem): string {
           : "Email",
     )
     .join(" · ");
-}
-
-function statusChip(item: UnifiedApprovalItem): {
-  label: string;
-  className: string;
-} {
-  switch (item.workflowStatus) {
-    case "assigned_to_me":
-    case "in_queue":
-      return {
-        label: "Needs approval",
-        className: "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]",
-      };
-    case "changes_requested":
-      return {
-        label: "Changes requested",
-        className: "bg-[rgba(166,90,58,0.14)] text-[#a65a3a]",
-      };
-    case "scheduled":
-      return {
-        label: "Scheduled",
-        className: "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
-      };
-    case "posted":
-    case "published":
-      return {
-        label: "Published",
-        className: "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]",
-      };
-    default:
-      return {
-        label: item.statusDetail || "In review",
-        className: "bg-cos-bg-alt text-cos-muted",
-      };
-  }
 }
 
 function ArtTile({
@@ -103,13 +72,21 @@ export function ApprovalsFocusCard({
   item,
   canViewAll,
   onReview,
+  onRequestChanges,
+  onRetry,
+  isRetrying = false,
 }: {
   item: UnifiedApprovalItem;
   canViewAll: boolean;
   onReview: (item: UnifiedApprovalItem) => void;
+  /** Opens the Revision shell (approver mode) — not the legacy drawer. */
+  onRequestChanges?: (item: UnifiedApprovalItem) => void;
+  onRetry?: (item: UnifiedApprovalItem) => void;
+  isRetrying?: boolean;
 }) {
-  const chip = statusChip(item);
+  const chip = approvalOutcomeChip(item);
   const canAct = canActOnUnifiedItem(item, canViewAll);
+  const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const caption =
     item.preview.captionText?.trim() ||
     item.preview.storyCaptionSnippet?.trim() ||
@@ -121,7 +98,13 @@ export function ApprovalsFocusCard({
       <ArtTile
         item={item}
         className="min-h-[200px] md:min-h-[260px]"
-        label={item.preview.feedArtworkUrl ? "Feed" : item.preview.storyArtworkUrl ? "Story" : undefined}
+        label={
+          item.preview.feedArtworkUrl
+            ? "Feed"
+            : item.preview.storyArtworkUrl
+              ? "Story"
+              : undefined
+        }
       />
       <div className="flex flex-col gap-3.5 p-6 sm:p-7">
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
@@ -150,10 +133,31 @@ export function ApprovalsFocusCard({
           </p>
         </div>
         <p className="line-clamp-3 text-sm leading-relaxed text-cos-muted">
-          {caption}
+          {item.workflowStatus === "failed"
+            ? item.publishError || caption
+            : caption}
         </p>
         <div className="mt-auto flex flex-wrap gap-2 pt-2">
-          {canAct ? (
+          {showRetry ? (
+            <button
+              type="button"
+              disabled={isRetrying}
+              onClick={() => onRetry?.(item)}
+              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
+            >
+              {isRetrying ? "Retrying…" : "Retry"}
+            </button>
+          ) : null}
+          {item.workflowStatus === "changes_requested" ? (
+            <button
+              type="button"
+              onClick={() => onReview(item)}
+              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714]"
+            >
+              Open revision
+            </button>
+          ) : null}
+          {canAct && item.workflowStatus !== "changes_requested" ? (
             <>
               <button
                 type="button"
@@ -164,20 +168,26 @@ export function ApprovalsFocusCard({
               </button>
               <button
                 type="button"
-                onClick={() => onReview(item)}
+                onClick={() =>
+                  onRequestChanges
+                    ? onRequestChanges(item)
+                    : onReview(item)
+                }
                 className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-text transition hover:-translate-y-px"
               >
                 Request changes
               </button>
             </>
           ) : null}
-          <button
-            type="button"
-            onClick={() => onReview(item)}
-            className="rounded-full px-3 py-2.5 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
-          >
-            Open full review
-          </button>
+          {item.workflowStatus !== "changes_requested" ? (
+            <button
+              type="button"
+              onClick={() => onReview(item)}
+              className="rounded-full px-3 py-2.5 text-[13px] font-bold text-cos-muted transition hover:text-cos-text"
+            >
+              Open full review
+            </button>
+          ) : null}
         </div>
       </div>
     </article>
@@ -187,44 +197,69 @@ export function ApprovalsFocusCard({
 export function ApprovalsQueueRow({
   item,
   onReview,
+  onRetry,
+  isRetrying = false,
 }: {
   item: UnifiedApprovalItem;
   onReview: (item: UnifiedApprovalItem) => void;
+  onRetry?: (item: UnifiedApprovalItem) => void;
+  isRetrying?: boolean;
 }) {
-  const chip = statusChip(item);
+  const chip = approvalOutcomeChip(item);
+  const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
+
   return (
-    <button
-      type="button"
-      onClick={() => onReview(item)}
-      className="grid w-full grid-cols-[48px_1fr_auto] items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 text-left transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)] sm:grid-cols-[56px_1fr_auto_auto]"
+    <div
+      className={cn(
+        "grid w-full items-center gap-3.5 rounded-2xl border border-transparent bg-[rgba(255,252,247,0.55)] px-3.5 py-3 transition hover:border-cos-border hover:bg-cos-card hover:shadow-[0_8px_28px_rgba(28,36,48,0.06)]",
+        showRetry
+          ? "grid-cols-[48px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto_auto]"
+          : "grid-cols-[48px_1fr_auto] sm:grid-cols-[56px_1fr_auto_auto]",
+      )}
     >
-      <ArtTile item={item} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-cos-text">
-          {item.campaignName}
-        </p>
-        <p className="truncate text-xs text-cos-muted">
-          {item.milestoneName}
-          {item.platforms.length > 0 ? ` · ${platformLabel(item)}` : ""}
-        </p>
-      </div>
-      <span
-        className={cn(
-          "hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase sm:inline-flex",
-          chip.className,
-        )}
+      <button
+        type="button"
+        onClick={() => onReview(item)}
+        className="col-span-2 grid grid-cols-[48px_1fr] items-center gap-3.5 text-left sm:col-span-3 sm:grid-cols-[56px_1fr_auto_auto] sm:gap-3.5"
       >
-        {chip.label}
-      </span>
-      <div className="text-right text-xs font-bold whitespace-nowrap text-cos-muted">
-        {item.scheduleLabel || item.nextActionTime || "—"}
-        {item.nextAction ? (
-          <span className="mt-0.5 block font-semibold text-cos-muted/80">
-            {item.nextAction}
-          </span>
-        ) : null}
-      </div>
-    </button>
+        <ArtTile item={item} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-cos-text">
+            {item.campaignName}
+          </p>
+          <p className="truncate text-xs text-cos-muted">
+            {item.milestoneName}
+            {item.platforms.length > 0 ? ` · ${platformLabel(item)}` : ""}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "hidden rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-[0.04em] uppercase sm:inline-flex",
+            chip.className,
+          )}
+        >
+          {chip.label}
+        </span>
+        <div className="hidden text-right text-xs font-bold whitespace-nowrap text-cos-muted sm:block">
+          {item.scheduleLabel || item.nextActionTime || "—"}
+          {item.nextAction ? (
+            <span className="mt-0.5 block font-semibold text-cos-muted/80">
+              {item.nextAction}
+            </span>
+          ) : null}
+        </div>
+      </button>
+      {showRetry ? (
+        <button
+          type="button"
+          disabled={isRetrying}
+          onClick={() => onRetry?.(item)}
+          className="rounded-full bg-cos-text px-3 py-2 text-[12px] font-bold text-cos-card transition hover:-translate-y-px disabled:opacity-50"
+        >
+          {isRetrying ? "…" : "Retry"}
+        </button>
+      ) : null}
+    </div>
   );
 }
 

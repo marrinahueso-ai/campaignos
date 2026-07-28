@@ -116,6 +116,8 @@ function buildItem(
     communicationItemId: null,
     schedulingItemId: "sched-1",
     campaignMilestoneId: "ms-1",
+    metaRelativeDay: null,
+    publishError: null,
     channel: null,
     notes: null,
     preview: {
@@ -330,7 +332,10 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
       "utf8",
     );
     assert.match(source, /warning\?: string/);
-    assert.match(source, /Approved, but Meta feed scheduling failed:/);
+    assert.match(
+      source,
+      /Approved, but we couldn’t schedule your Facebook post:/,
+    );
     assert.match(source, /console\.error\(/);
     assert.match(source, /return \{ success: true, warning: metaWarning \}/);
     assert.match(
@@ -455,8 +460,11 @@ describe("Approval Routing — ReviewDrawer preview identity", () => {
       ),
       "utf8",
     );
-    assert.match(drawer, /MilestoneContentPreview/);
-    assert.match(drawer, /preview=\{item\.preview\}/);
-    assert.match(drawer, /milestoneName=\{item\.milestoneName\}/);
+    assert.match(drawer, /ArtworkLightboxThumbnail/);
+    assert.match(drawer, /item\.preview\.feedArtworkUrl/);
+    assert.match(drawer, /item\.preview\.captionText/);
+    assert.match(drawer, /\{item\.milestoneName\}/);
+    assert.match(drawer, /onRetry/);
+    assert.match(drawer, /Retry/);
   });
 });

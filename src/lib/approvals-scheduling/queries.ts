@@ -9,6 +9,10 @@ import {
   dedupeUnifiedApprovalItems,
   isSchedulingRowAssignedToActor,
 } from "@/lib/approvals-scheduling/approval-visibility";
+import {
+  applyMetaSlotOutcomesToApprovalItem,
+  loadMetaSlotOutcomesForEvents,
+} from "@/lib/approvals-scheduling/publish-outcome-sync";
 import { summarizeCounts } from "@/lib/approvals-scheduling/status";
 import type {
   ApprovalSchedulingItemRow,
@@ -384,10 +388,18 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
     );
   }
 
-  const items = dedupeUnifiedApprovalItems([
+  const deduped = dedupeUnifiedApprovalItems([
     ...classicItems,
     ...cb2Items,
-  ]).sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
+  ]);
+
+  // Lean Meta slot overlay so Failed / Posted show without full bundle sync.
+  const slotOutcomes = await loadMetaSlotOutcomesForEvents(
+    deduped.map((item) => item.eventId),
+  );
+  const items = deduped
+    .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
+    .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 
   const counts = summarizeCounts(items);
   const campaigns = [
@@ -404,6 +416,7 @@ const resolveUnifiedApprovalsData = cache(async function resolveUnifiedApprovals
       scheduled: counts.scheduled,
       posted: counts.posted,
       published: counts.published,
+      failed: counts.failed,
       changesRequested: counts.changes_requested,
     },
     campaigns,
@@ -723,9 +736,11 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
     });
   }
 
-  const items = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items]).sort(
-    (left, right) => right.requestedAt.localeCompare(left.requestedAt),
-  );
+  const slotOutcomes = await loadMetaSlotOutcomesForEvents([eventId]);
+
+  const items = dedupeUnifiedApprovalItems([...classicItems, ...cb2Items])
+    .map((item) => applyMetaSlotOutcomesToApprovalItem(item, slotOutcomes))
+    .sort((left, right) => right.requestedAt.localeCompare(left.requestedAt));
 
   const counts = summarizeCounts(items);
   const campaigns = [
@@ -752,6 +767,7 @@ export async function getUnifiedApprovalsSchedulingDataForEvent(
       scheduled: counts.scheduled,
       posted: counts.posted,
       published: counts.published,
+      failed: counts.failed,
       changesRequested: counts.changes_requested,
     },
     campaigns,

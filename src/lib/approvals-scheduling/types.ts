@@ -6,7 +6,8 @@ export type UnifiedWorkflowStatus =
   | "changes_requested"
   | "scheduled"
   | "posted"
-  | "published";
+  | "published"
+  | "failed";
 
 export type UnifiedTabId =
   | "all"
@@ -15,6 +16,7 @@ export type UnifiedTabId =
   | "scheduled"
   | "posted"
   | "published"
+  | "failed"
   | "changes_requested";
 
 export type UnifiedViewScope = "assigned_to_me" | "all";
@@ -78,6 +80,10 @@ export interface UnifiedApprovalItem {
   schedulingItemId: string | null;
   /** Create with AI milestone id — used for Edit Artwork deep links. */
   campaignMilestoneId: string | null;
+  /** Meta publish day when known — used for Retry / Publish Now. */
+  metaRelativeDay: number | null;
+  /** Customer-facing publish error when status is failed. */
+  publishError: string | null;
   channel: CommunicationChannel | null;
   notes: string | null;
   preview: UnifiedApprovalPreview;
@@ -91,6 +97,7 @@ export interface UnifiedApprovalSummaryCounts {
   scheduled: number;
   posted: number;
   published: number;
+  failed: number;
   changesRequested: number;
 }
 

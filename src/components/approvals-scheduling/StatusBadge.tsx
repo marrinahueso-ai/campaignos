@@ -22,11 +22,15 @@ const STATUS_STYLES: Record<
     className: "bg-[#e4edf8] text-[#3d5f85]",
   },
   published: {
-    label: "PUBLISHED",
+    label: "POSTED",
     className: "bg-[#dce8dc] text-[#2f4f31]",
   },
+  failed: {
+    label: "FAILED",
+    className: "bg-[#f8e3e3] text-[#8b3f3f]",
+  },
   in_queue: {
-    label: "IN QUEUE",
+    label: "WAITING",
     className: "bg-[#efe8dc] text-[#6b5e45]",
   },
 };

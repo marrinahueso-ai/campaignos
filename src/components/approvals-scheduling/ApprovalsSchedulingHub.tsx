@@ -1,7 +1,9 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { revisionPath } from "@/components/approvals-revision/map-item";
 import {
   ApprovalFlowGuide,
   ReviewDrawer,
@@ -16,8 +18,13 @@ import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDeta
 import {
   approveUnifiedItemAction,
   enrichUnifiedApprovalItemPreviewAction,
-  requestUnifiedChangesAction,
+  retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
+import {
+  isDraftOutcome,
+  isFailedOutcome,
+  isPostedOutcome,
+} from "@/lib/approvals-scheduling/outcome-display";
 import {
   canActOnUnifiedItem,
   filterItemsByViewScope,
@@ -35,7 +42,13 @@ import type {
 } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
 
-type EaseFilter = "needs" | "scheduled" | "published" | "changes";
+type EaseFilter =
+  | "needs"
+  | "scheduled"
+  | "drafts"
+  | "posted"
+  | "failed"
+  | "changes";
 
 interface ApprovalsSchedulingHubProps extends UnifiedApprovalsPageData {
   initialEventFilter?: string | null;
@@ -54,11 +67,13 @@ function matchesEaseFilter(filter: EaseFilter, item: UnifiedApprovalItem): boole
         item.workflowStatus === "in_queue"
       );
     case "scheduled":
-      return item.workflowStatus === "scheduled";
-    case "published":
-      return (
-        item.workflowStatus === "published" || item.workflowStatus === "posted"
-      );
+      return item.workflowStatus === "scheduled" && !isDraftOutcome(item);
+    case "drafts":
+      return isDraftOutcome(item);
+    case "posted":
+      return isPostedOutcome(item);
+    case "failed":
+      return isFailedOutcome(item);
     case "changes":
       return item.workflowStatus === "changes_requested";
     default:
@@ -77,6 +92,7 @@ export function ApprovalsSchedulingHub({
   embedded = false,
   initialSummaryLayout: _initialSummaryLayout,
 }: ApprovalsSchedulingHubProps) {
+  const router = useRouter();
   const refreshApprovalsTab = useEventTabMutationRefresh("approvals");
   const lockedId = lockedEventId?.trim() || null;
   const [activeFilter, setActiveFilter] = useState<EaseFilter>("needs");
@@ -90,6 +106,7 @@ export function ApprovalsSchedulingHub({
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(null);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const eventScopedItems = useMemo(() => {
@@ -120,10 +137,18 @@ export function ApprovalsSchedulingHub({
 
   const pulseCounts = useMemo(() => {
     const counts = summarizeCounts(baseFiltered);
+    const drafts = baseFiltered.filter(isDraftOutcome).length;
+    const posted = baseFiltered.filter(isPostedOutcome).length;
+    const failed = counts.failed;
+    const scheduled = baseFiltered.filter(
+      (item) => item.workflowStatus === "scheduled" && !isDraftOutcome(item),
+    ).length;
     return {
       needs: counts.assigned_to_me + counts.in_queue,
-      scheduled: counts.scheduled,
-      published: counts.published + counts.posted,
+      scheduled,
+      drafts,
+      posted,
+      failed,
       changes: counts.changes_requested,
     };
   }, [baseFiltered]);
@@ -134,10 +159,14 @@ export function ApprovalsSchedulingHub({
   );
 
   const focusItem = scopedItems[0] ?? null;
+  const usesFocusCard =
+    activeFilter === "needs" ||
+    activeFilter === "failed" ||
+    activeFilter === "changes";
   const queueItems =
-    activeFilter === "needs" && focusItem
+    usesFocusCard && focusItem
       ? scopedItems.slice(1)
-      : activeFilter === "needs"
+      : usesFocusCard
         ? []
         : scopedItems;
 
@@ -145,7 +174,21 @@ export function ApprovalsSchedulingHub({
     ? canActOnUnifiedItem(reviewItem, canViewAll)
     : false;
 
+  /** Changes-requested → new Revision shell (creator). Do not use legacy drawer. */
+  function openRevisionCreator(item: UnifiedApprovalItem) {
+    router.push(revisionPath(item.id, "creator"));
+  }
+
+  /** Request changes → new Revision shell (approver). Do not merge into drawer. */
+  function openRevisionApprover(item: UnifiedApprovalItem) {
+    router.push(revisionPath(item.id, "approver"));
+  }
+
   function openReview(item: UnifiedApprovalItem) {
+    if (item.workflowStatus === "changes_requested") {
+      openRevisionCreator(item);
+      return;
+    }
     setReviewItem(item);
     setComment("");
     if (!unifiedItemNeedsPreviewEnrichment(item)) {
@@ -184,51 +227,43 @@ export function ApprovalsSchedulingHub({
         return;
       }
 
-      setActionError(result.error ?? "Unable to approve.");
+      setActionError(result.error ?? "Couldn’t approve that. Try again.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleRequestChanges() {
-    if (!reviewItem) {
-      return;
-    }
-
-    if (!comment.trim()) {
-      setActionError("Enter a comment before requesting changes.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  async function handleRetry(item: UnifiedApprovalItem) {
+    setRetryingId(item.id);
+    setActionError(null);
     try {
-      const result = await requestUnifiedChangesAction({
-        eventId: reviewItem.eventId,
-        communicationItemId: reviewItem.communicationItemId,
-        schedulingItemId: reviewItem.schedulingItemId,
-        comment,
-        creatorEmail: undefined,
-        campaignName: reviewItem.campaignName,
-        milestoneName: reviewItem.milestoneName,
+      const result = await retryFailedUnifiedApprovalAction({
+        eventId: item.eventId,
+        schedulingItemId: item.schedulingItemId,
+        milestoneName: item.milestoneName,
+        campaignMilestoneId: item.campaignMilestoneId,
+        communicationItemId: item.communicationItemId,
+        metaRelativeDay: item.metaRelativeDay,
       });
-
-      if (result.success) {
-        setReviewItem(null);
-        setComment("");
-        await refreshApprovalsTab();
+      if (!result.success) {
+        setActionError(result.error ?? "Couldn’t post to your Page. Try again.");
         return;
       }
-
-      setActionError(result.error ?? "Unable to request changes.");
+      if (reviewItem?.id === item.id) {
+        setReviewItem(null);
+      }
+      await refreshApprovalsTab();
     } finally {
-      setIsSubmitting(false);
+      setRetryingId(null);
     }
   }
 
   const pulseTabs: Array<{ id: EaseFilter; label: string; count: number }> = [
     { id: "needs", label: "Needs you", count: pulseCounts.needs },
     { id: "scheduled", label: "Scheduled", count: pulseCounts.scheduled },
-    { id: "published", label: "Published", count: pulseCounts.published },
+    { id: "drafts", label: "Drafts", count: pulseCounts.drafts },
+    { id: "posted", label: "Posted", count: pulseCounts.posted },
+    { id: "failed", label: "Failed", count: pulseCounts.failed },
     { id: "changes", label: "Changes", count: pulseCounts.changes },
   ];
 
@@ -239,15 +274,23 @@ export function ApprovalsSchedulingHub({
     },
     scheduled: {
       title: "Nothing scheduled yet",
-      body: "Approved posts land here with their publish time until they go live.",
+      body: "Approved posts land here with their publish time until they go live on your Page.",
     },
-    published: {
-      title: "Nothing published in this view",
-      body: "Live posts appear here after they go out.",
+    drafts: {
+      title: "No drafts saved",
+      body: "Posts you saved as drafts stay here so your team can copy or post them later — they won’t go live on their own.",
+    },
+    posted: {
+      title: "Nothing posted yet",
+      body: "Posts that went live on your Page show up here.",
+    },
+    failed: {
+      title: "Nothing failed to post",
+      body: "If a post doesn’t go through, it lands here so you can retry.",
     },
     changes: {
       title: "Nothing to fix right now",
-      body: "When an approver sends something back, it lands here with their note.",
+      body: "When someone on your team sends something back, it lands here with their note.",
     },
   };
 
@@ -344,10 +387,10 @@ export function ApprovalsSchedulingHub({
                     setViewScope(event.target.value as UnifiedViewScope)
                   }
                   className="min-w-[150px] rounded-full border border-cos-border bg-cos-card px-3.5 py-2 text-[13px] text-cos-text"
-                  aria-label="View scope"
+                  aria-label="Show"
                 >
                   <option value="assigned_to_me">Assigned to me</option>
-                  <option value="all">All</option>
+                  <option value="all">Everyone</option>
                 </select>
               ) : null}
 
@@ -401,9 +444,13 @@ export function ApprovalsSchedulingHub({
             ? "Waiting on your review"
             : activeFilter === "scheduled"
               ? "On the calendar"
-              : activeFilter === "published"
-                ? "Already live"
-                : "Needs edits"}
+              : activeFilter === "drafts"
+                ? "Saved as drafts"
+                : activeFilter === "posted"
+                  ? "Already live"
+                  : activeFilter === "failed"
+                    ? "Needs a retry"
+                    : "Needs edits"}
         </p>
 
         {scopedItems.length === 0 ? (
@@ -420,6 +467,30 @@ export function ApprovalsSchedulingHub({
                 item={focusItem}
                 canViewAll={canViewAll}
                 onReview={openReview}
+                onRequestChanges={openRevisionApprover}
+                onRetry={handleRetry}
+                isRetrying={retryingId === focusItem.id}
+              />
+            ) : null}
+
+            {activeFilter === "failed" && focusItem ? (
+              <ApprovalsFocusCard
+                item={focusItem}
+                canViewAll={canViewAll}
+                onReview={openReview}
+                onRequestChanges={openRevisionApprover}
+                onRetry={handleRetry}
+                isRetrying={retryingId === focusItem.id}
+              />
+            ) : null}
+
+            {activeFilter === "changes" && focusItem ? (
+              <ApprovalsFocusCard
+                item={focusItem}
+                canViewAll={canViewAll}
+                onReview={openRevisionCreator}
+                onRetry={handleRetry}
+                isRetrying={retryingId === focusItem.id}
               />
             ) : null}
 
@@ -430,11 +501,23 @@ export function ApprovalsSchedulingHub({
                     Also waiting
                   </p>
                 ) : null}
+                {activeFilter === "failed" && focusItem ? (
+                  <p className="pt-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                    Also failed
+                  </p>
+                ) : null}
+                {activeFilter === "changes" && focusItem ? (
+                  <p className="pt-3 text-[11px] font-extrabold tracking-[0.08em] text-cos-muted uppercase">
+                    Also needs edits
+                  </p>
+                ) : null}
                 {queueItems.map((item) => (
                   <ApprovalsQueueRow
                     key={item.id}
                     item={item}
                     onReview={openReview}
+                    onRetry={handleRetry}
+                    isRetrying={retryingId === item.id}
                   />
                 ))}
               </div>
@@ -452,8 +535,16 @@ export function ApprovalsSchedulingHub({
         comment={comment}
         onCommentChange={setComment}
         onApprove={handleApprove}
-        onRequestChanges={handleRequestChanges}
-        isSubmitting={isSubmitting}
+        onRequestChanges={() => {
+          if (!reviewItem) return;
+          // Change-request UX lives only on the Revision shell — not the drawer.
+          openRevisionApprover(reviewItem);
+          setReviewItem(null);
+        }}
+        onRetry={
+          reviewItem ? () => void handleRetry(reviewItem) : undefined
+        }
+        isSubmitting={isSubmitting || retryingId === reviewItem?.id}
         canAct={canActOnReviewItem}
       />
     </div>

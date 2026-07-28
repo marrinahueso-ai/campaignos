@@ -28,6 +28,7 @@ import {
   requestCommunicationChangesAction,
 } from "@/lib/event-workspace/actions";
 import { publishMetaMilestoneBundle } from "@/lib/meta-publishing/publish-milestone";
+import { retryFailedMetaBundleAction } from "@/lib/meta-publishing/actions";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/dates";
 import {
@@ -35,11 +36,13 @@ import {
   resolveRowManualEmailSendAt,
   resolveRowMetaScheduleIntent,
 } from "@/lib/approvals-scheduling/approval-visibility";
+import { syncSchedulingItemsForMetaPublishOutcome } from "@/lib/approvals-scheduling/publish-outcome-sync";
 import type {
   ApprovalSchedulingItemRow,
   UnifiedApprovalItem,
   UnifiedWorkflowStatus,
 } from "@/lib/approvals-scheduling/types";
+import { milestoneNameMatchKey } from "@/lib/campaign-builder-v2/milestone-names";
 
 export type UnifiedApprovalActionResult = {
   success: boolean;
@@ -132,6 +135,7 @@ async function updateSchedulingItemStatus(
       resolved_at:
         workflowStatus === "published" ||
         workflowStatus === "scheduled" ||
+        workflowStatus === "failed" ||
         workflowStatus === "changes_requested"
           ? now
           : null,
@@ -225,14 +229,20 @@ export async function approveUnifiedItemAction(input: {
       input.communicationItemId,
     );
     if (!result.success) {
-      return { success: false, error: result.error ?? "Unable to approve." };
+      return {
+        success: false,
+        error: result.error ?? "Couldn’t approve that. Try again.",
+      };
     }
   }
 
   if (input.schedulingItemId) {
     const row = await loadSchedulingItem(input.schedulingItemId);
     if (!row) {
-      return { success: false, error: "Scheduling item not found." };
+      return {
+        success: false,
+        error: "We couldn’t find this approval. Refresh and try again.",
+      };
     }
 
     if (
@@ -243,12 +253,12 @@ export async function approveUnifiedItemAction(input: {
     ) {
       return {
         success: false,
-        error: "Assign an approver before approving this item.",
+        error: "Choose who approves this in Team Access first.",
       };
     }
 
-    const nextStatus: UnifiedWorkflowStatus =
-      row.delivery_method === "draft-only" ? "published" : "scheduled";
+    // Draft-only stays pre-publish (Draft), not Posted.
+    const nextStatus: UnifiedWorkflowStatus = "scheduled";
 
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
@@ -256,11 +266,13 @@ export async function approveUnifiedItemAction(input: {
     );
 
     if (!updated) {
-      return { success: false, error: "Unable to update scheduling item." };
+      return {
+        success: false,
+        error: "Couldn’t save that approval. Try again.",
+      };
     }
 
-    const sessionOutcome: SchedulingSessionOutcome =
-      nextStatus === "published" ? "published" : "scheduled";
+    const sessionOutcome: SchedulingSessionOutcome = "scheduled";
     await syncCampaignBuilderSessionAfterSchedulingOutcome({
       eventId: input.eventId,
       campaignMilestoneId: row.campaign_milestone_id,
@@ -299,7 +311,7 @@ export async function approveUnifiedItemAction(input: {
         immediatePublish: publishNow,
       });
       if (metaResult.error) {
-        metaWarning = `Approved, but Meta feed scheduling failed: ${metaResult.error}`;
+        metaWarning = `Approved, but we couldn’t schedule your Facebook post: ${metaResult.error}`;
         console.error(
           "Meta feed schedule after CB2 approve failed:",
           metaResult.error,
@@ -311,13 +323,25 @@ export async function approveUnifiedItemAction(input: {
           immediate: true,
         });
         if (!publishResult.success) {
-          metaWarning = `Approved, but Publish Now failed: ${
-            publishResult.error ?? "Meta publish failed."
-          }`;
+          metaWarning =
+            publishResult.error?.trim() ||
+            "Approved, but we couldn’t post to your Page. Open the Failed tab to try again.";
           console.error(
             "Immediate Meta publish after CB2 approve failed:",
             publishResult.error,
           );
+          await updateSchedulingItemStatus(
+            input.schedulingItemId,
+            "failed",
+            metaWarning,
+          );
+          await syncSchedulingItemsForMetaPublishOutcome({
+            eventId: input.eventId,
+            relativeDay: metaResult.relativeDay,
+            milestoneTitle: row.milestone_name,
+            outcome: "failed",
+            errorMessage: metaWarning,
+          });
         } else {
           const published = await updateSchedulingItemStatus(
             input.schedulingItemId,
@@ -331,6 +355,12 @@ export async function approveUnifiedItemAction(input: {
               outcome: "published",
             });
           }
+          await syncSchedulingItemsForMetaPublishOutcome({
+            eventId: input.eventId,
+            relativeDay: metaResult.relativeDay,
+            milestoneTitle: row.milestone_name,
+            outcome: "published",
+          });
         }
       }
     }
@@ -370,7 +400,7 @@ export async function approveUnifiedItemAction(input: {
             recipientEmail: manualRecipient,
             scheduleLabel: emailSendAt
               ? formatDateTime(emailSendAt)
-              : "Manual upload",
+              : "Post kit",
             schedulingItemId: input.schedulingItemId,
             storyArtworkUrl: row.story_artwork_url,
             storyCaption: row.story_caption,
@@ -393,7 +423,7 @@ export async function approveUnifiedItemAction(input: {
               })
               .eq("id", input.schedulingItemId);
           } else {
-            const emailWarning = `Approved, but manual upload email did not send: ${sendResult.message}`;
+            const emailWarning = `Approved, but we couldn’t email the post kit: ${sendResult.message}`;
             metaWarning = metaWarning
               ? `${metaWarning} ${emailWarning}`
               : emailWarning;
@@ -435,14 +465,26 @@ export async function requestUnifiedChangesAction(input: {
   communicationItemId?: string | null;
   schedulingItemId?: string | null;
   comment: string;
+  /** Optional Revision tags — become the creator checklist. */
+  tags?: string[] | null;
   creatorEmail?: string | null;
   campaignName?: string | null;
   milestoneName?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
   const comment = input.comment.trim();
   if (!comment) {
-    return { success: false, error: "A comment is required when requesting changes." };
+    return {
+      success: false,
+      error: "Add a short note so your teammate knows what to fix.",
+    };
   }
+
+  const { encodeRevisionNotes } = await import(
+    "@/lib/approvals-revision/revision-notes"
+  );
+  type Tag = import("@/components/approvals-revision/types").RevisionTag;
+  const tags = (input.tags ?? []).filter(Boolean) as Tag[];
+  const storedNotes = encodeRevisionNotes(comment, tags);
 
   const { getCurrentOrganization } = await import("@/lib/auth/organization-context");
   const organization = await getCurrentOrganization();
@@ -464,7 +506,10 @@ export async function requestUnifiedChangesAction(input: {
       comment,
     );
     if (!result.success) {
-      return { success: false, error: result.error ?? "Unable to request changes." };
+      return {
+        success: false,
+        error: result.error ?? "Couldn’t send those changes. Try again.",
+      };
     }
   }
 
@@ -476,10 +521,13 @@ export async function requestUnifiedChangesAction(input: {
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
       "changes_requested",
-      comment,
+      storedNotes,
     );
     if (!updated) {
-      return { success: false, error: "Unable to update scheduling item." };
+      return {
+        success: false,
+        error: "Couldn’t save those changes. Try again.",
+      };
     }
 
     if (schedulingRow) {
@@ -516,6 +564,158 @@ export async function requestUnifiedChangesAction(input: {
   }
 
   revalidatePath("/approvals");
+  revalidatePath("/approvals/revision");
+  revalidatePath(`/events/${input.eventId}/campaign-builder`);
+  return { success: true };
+}
+
+/**
+ * Creator resubmit from Revision workspace after changes_requested.
+ * Returns the item to the approver queue and emails them.
+ */
+export async function resubmitUnifiedApprovalAction(input: {
+  eventId: string;
+  schedulingItemId: string;
+  campaignName: string;
+  milestoneName: string;
+  feedArtworkUrl?: string | null;
+  storyArtworkUrl?: string | null;
+  captionText?: string | null;
+  storyCaption?: string | null;
+  scheduleAt?: string | null;
+}): Promise<UnifiedApprovalActionResult> {
+  const schedulingRow = (await loadSchedulingItem(
+    input.schedulingItemId,
+  )) as ApprovalSchedulingItemRow | null;
+
+  if (!schedulingRow) {
+    return { success: false, error: "Couldn’t find that approval item." };
+  }
+
+  if (schedulingRow.event_id !== input.eventId) {
+    return { success: false, error: "That approval doesn’t match this event." };
+  }
+
+  if (schedulingRow.workflow_status !== "changes_requested") {
+    return {
+      success: false,
+      error: "This item isn’t waiting on edits anymore.",
+    };
+  }
+
+  const {
+    mergeRevisionResubmitFields,
+    patchPreviewFromRevision,
+    snapshotFromSchedulingRow,
+  } = await import("@/lib/approvals-revision/sync-revision-snapshot");
+
+  const mergedSnapshot = mergeRevisionResubmitFields(
+    snapshotFromSchedulingRow(schedulingRow),
+    {
+      feedArtworkUrl: input.feedArtworkUrl,
+      storyArtworkUrl: input.storyArtworkUrl,
+      captionText: input.captionText,
+      storyCaption: input.storyCaption,
+      scheduleAt: input.scheduleAt,
+    },
+  );
+
+  const workflowStatus: UnifiedWorkflowStatus = schedulingRow.assigned_user_id
+    ? "assigned_to_me"
+    : "in_queue";
+  const now = new Date().toISOString();
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("approval_scheduling_items")
+    .update({
+      workflow_status: workflowStatus,
+      notes: null,
+      resolved_at: null,
+      requested_at: now,
+      updated_at: now,
+      feed_artwork_url: mergedSnapshot.feedArtworkUrl,
+      story_artwork_url: mergedSnapshot.storyArtworkUrl,
+      caption_text: mergedSnapshot.captionText,
+      story_caption: mergedSnapshot.storyCaption,
+      schedule_at: mergedSnapshot.scheduleAt,
+    })
+    .eq("id", input.schedulingItemId);
+
+  if (error) {
+    return {
+      success: false,
+      error: "Couldn’t send for re-approval. Try again.",
+    };
+  }
+
+  // Merge revision edits into Create with AI session, then stamp awaiting approval.
+  const session = await loadCampaignBuilderSession(input.eventId);
+  if (session && schedulingRow.campaign_milestone_id) {
+    const { previewAfterResendForApproval } = await import(
+      "@/lib/campaign-builder-v2/milestone-status"
+    );
+    const previewContents = session.previewContents.map((preview) => {
+      if (preview.milestoneId !== schedulingRow.campaign_milestone_id) {
+        return preview;
+      }
+      const patched = patchPreviewFromRevision({
+        preview,
+        snapshot: mergedSnapshot,
+      });
+      return {
+        ...patched,
+        ...previewAfterResendForApproval(patched, now),
+      };
+    });
+    await saveCampaignBuilderSessionAction({
+      ...session,
+      previewContents,
+    });
+  }
+
+  const { getCurrentOrganization } = await import(
+    "@/lib/auth/organization-context"
+  );
+  const organization = await getCurrentOrganization();
+  let recipientEmail: string | null = null;
+  if (organization) {
+    const users = await getOrganizationUsers(organization.id);
+    if (schedulingRow.assigned_user_id) {
+      recipientEmail =
+        users.find((u) => u.id === schedulingRow.assigned_user_id)?.email ??
+        null;
+    }
+    if (!recipientEmail && schedulingRow.assigned_organization_role_id) {
+      recipientEmail =
+        users.find(
+          (u) =>
+            u.status === "active" &&
+            u.organizationRoleId ===
+              schedulingRow.assigned_organization_role_id,
+        )?.email ?? null;
+    }
+  }
+
+  if (recipientEmail) {
+    const { sendApprovalResubmittedEmail } = await import(
+      "@/lib/campaign-builder-v2/approval-notifications"
+    );
+    await sendApprovalResubmittedEmail({
+      eventId: input.eventId,
+      campaignName: input.campaignName,
+      milestoneName: input.milestoneName,
+      recipientEmail,
+      schedulingItemId: input.schedulingItemId,
+      feedArtworkUrl: mergedSnapshot.feedArtworkUrl,
+      storyArtworkUrl: mergedSnapshot.storyArtworkUrl,
+      captionText: mergedSnapshot.captionText,
+      storyCaption: mergedSnapshot.storyCaption,
+    });
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath("/approvals/revision");
   revalidatePath(`/events/${input.eventId}/campaign-builder`);
   return { success: true };
 }
@@ -527,7 +727,10 @@ export async function reassignUnifiedItemAction(input: {
   // Intentional: maps the former admin/president/vp_communications gate.
   // manage_people would drop VP Communications, who historically could reassign.
   if (!(await hasPermission("approve_comms"))) {
-    return { success: false, error: "Only admins can reassign approvals." };
+    return {
+      success: false,
+      error: "Only organization admins can reassign approvals.",
+    };
   }
 
   const supabase = await createClient();
@@ -541,7 +744,10 @@ export async function reassignUnifiedItemAction(input: {
     .eq("id", input.schedulingItemId);
 
   if (error) {
-    return { success: false, error: "Unable to reassign item." };
+    return {
+      success: false,
+      error: "Couldn’t reassign that. Try again.",
+    };
   }
 
   revalidatePath("/approvals");
@@ -565,6 +771,111 @@ export async function getReassignableUsersAction(): Promise<
       email: user.email,
       roleName: user.organizationRoleName,
     }));
+}
+
+async function resolveMetaRelativeDayForApproval(input: {
+  eventId: string;
+  milestoneName: string;
+  communicationItemId: string | null;
+  metaRelativeDay: number | null;
+}): Promise<number | null> {
+  if (typeof input.metaRelativeDay === "number") {
+    return input.metaRelativeDay;
+  }
+
+  const supabase = await createClient();
+  const { data: slots } = await supabase
+    .from("meta_publication_slots")
+    .select("relative_day, milestone_title, communication_item_id, status")
+    .eq("event_id", input.eventId)
+    .in("status", ["failed", "approved", "scheduled", "draft", "posting"]);
+
+  if (!slots?.length) {
+    return null;
+  }
+
+  const targetKey = milestoneNameMatchKey(input.milestoneName);
+  const match =
+    slots.find(
+      (slot) =>
+        input.communicationItemId &&
+        slot.communication_item_id === input.communicationItemId,
+    ) ??
+    slots.find(
+      (slot) =>
+        milestoneNameMatchKey(String(slot.milestone_title ?? "")) === targetKey,
+    );
+
+  return typeof match?.relative_day === "number" ? match.relative_day : null;
+}
+
+/** Retry a failed Meta publish from Approvals (Posted / Failed outcomes). */
+export async function retryFailedUnifiedApprovalAction(input: {
+  eventId: string;
+  schedulingItemId: string | null;
+  milestoneName: string;
+  campaignMilestoneId: string | null;
+  communicationItemId: string | null;
+  metaRelativeDay: number | null;
+}): Promise<UnifiedApprovalActionResult> {
+  if (!(await hasPermission("publish_social"))) {
+    return {
+      success: false,
+      error: "You don’t have permission to post to your Page.",
+    };
+  }
+
+  const relativeDay = await resolveMetaRelativeDayForApproval({
+    eventId: input.eventId,
+    milestoneName: input.milestoneName,
+    communicationItemId: input.communicationItemId,
+    metaRelativeDay: input.metaRelativeDay,
+  });
+
+  if (relativeDay === null) {
+    return {
+      success: false,
+      error: "We couldn’t find this post to retry. Open the campaign and try Publish again.",
+    };
+  }
+
+  const result = await retryFailedMetaBundleAction(input.eventId, relativeDay);
+
+  if (!result.success) {
+    const message =
+      result.error?.trim() || "Couldn’t post to your Page. Try again.";
+    if (input.schedulingItemId) {
+      await updateSchedulingItemStatus(input.schedulingItemId, "failed", message);
+    }
+    await syncSchedulingItemsForMetaPublishOutcome({
+      eventId: input.eventId,
+      relativeDay,
+      milestoneTitle: input.milestoneName,
+      outcome: "failed",
+      errorMessage: message,
+    });
+    return { success: false, error: message };
+  }
+
+  if (input.schedulingItemId) {
+    await updateSchedulingItemStatus(input.schedulingItemId, "published");
+    await syncCampaignBuilderSessionAfterSchedulingOutcome({
+      eventId: input.eventId,
+      campaignMilestoneId: input.campaignMilestoneId,
+      milestoneName: input.milestoneName,
+      outcome: "published",
+    });
+  }
+  await syncSchedulingItemsForMetaPublishOutcome({
+    eventId: input.eventId,
+    relativeDay,
+    milestoneTitle: input.milestoneName,
+    outcome: "published",
+  });
+
+  revalidatePath("/approvals");
+  revalidatePath(`/events/${input.eventId}`);
+  return { success: true };
 }
 
 /**

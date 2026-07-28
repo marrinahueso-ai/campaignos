@@ -12,12 +12,13 @@ import type {
 } from "@/lib/approvals-scheduling/types";
 
 const WORKFLOW_STATUS_SORT_ORDER: Record<UnifiedWorkflowStatus, number> = {
-  in_queue: 0,
-  assigned_to_me: 1,
-  changes_requested: 2,
-  scheduled: 3,
-  posted: 4,
-  published: 5,
+  failed: 0,
+  in_queue: 1,
+  assigned_to_me: 2,
+  changes_requested: 3,
+  scheduled: 4,
+  posted: 5,
+  published: 6,
 };
 
 const WORKFLOW_STATUS_SEARCH_LABELS: Record<UnifiedWorkflowStatus, string> = {
@@ -27,6 +28,7 @@ const WORKFLOW_STATUS_SEARCH_LABELS: Record<UnifiedWorkflowStatus, string> = {
   scheduled: "scheduled",
   posted: "posted",
   published: "published",
+  failed: "failed",
 };
 
 function deliverySearchLabel(method: UnifiedDeliveryMethod | null): string {
@@ -37,9 +39,9 @@ function deliverySearchLabel(method: UnifiedDeliveryMethod | null): string {
     case "schedule":
       return "scheduled";
     case "manual-email":
-      return "manual email";
+      return "email post kit manual email";
     case "draft-only":
-      return "draft only";
+      return "draft drafts";
     default:
       return "";
   }
@@ -278,7 +280,8 @@ export function deriveSchedulingWorkflowStatus(
   if (
     row.workflow_status === "scheduled" ||
     row.workflow_status === "posted" ||
-    row.workflow_status === "published"
+    row.workflow_status === "published" ||
+    row.workflow_status === "failed"
   ) {
     return row.workflow_status;
   }
@@ -339,13 +342,15 @@ export function statusDetailForItem(
     case "scheduled":
       return "Ready to publish";
     case "posted":
-      return "Waiting on platform";
+      return "On its way out";
     case "published":
-      return "Live on all platforms";
+      return "Live on your Page";
+    case "failed":
+      return "Couldn’t post — retry when ready";
     case "in_queue":
     default:
       if (needsApproverAssignment) {
-        return "Needs approver assigned";
+        return "Needs someone to approve";
       }
       if (scheduleAt) {
         return formatFutureRelativeTime(scheduleAt, now);
@@ -368,12 +373,14 @@ export function nextActionForStatus(
     case "posted":
       return "Publishing";
     case "published":
-      return "Completed";
+      return "Posted";
+    case "failed":
+      return "Retry";
     case "in_queue":
     default:
       return needsApproverAssignment
-        ? "Needs approver assigned"
-        : "Awaiting assignment";
+        ? "Choose an approver"
+        : "Waiting for an approver";
   }
 }
 
@@ -394,6 +401,7 @@ export function summarizeCounts(
     scheduled: items.filter((item) => item.workflowStatus === "scheduled").length,
     posted: items.filter((item) => item.workflowStatus === "posted").length,
     published: items.filter((item) => item.workflowStatus === "published").length,
+    failed: items.filter((item) => item.workflowStatus === "failed").length,
     changes_requested: items.filter((item) => item.workflowStatus === "changes_requested")
       .length,
   };

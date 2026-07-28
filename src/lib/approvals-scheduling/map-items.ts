@@ -52,15 +52,15 @@ function deliveryLabel(method: UnifiedDeliveryMethod | null): string {
   switch (method) {
     case "publish-now":
     case "auto-publish":
-      return "Publish Now";
+      return "Publish now";
     case "schedule":
       return "Scheduled";
     case "manual-email":
-      return "Manual email";
+      return "Email post kit";
     case "draft-only":
-      return "Draft only";
+      return "Draft";
     default:
-      return "Publish Now";
+      return "Publish now";
   }
 }
 
@@ -128,6 +128,8 @@ export function mapClassicApprovalItem(
     communicationItemId: item.communicationItemId,
     schedulingItemId: null,
     campaignMilestoneId: null,
+    metaRelativeDay: null,
+    publishError: null,
     channel: item.channel,
     notes: item.notes,
     preview: {
@@ -210,6 +212,8 @@ export function mapPlanningPublishingItem(
     communicationItemId: item.communicationItemId,
     schedulingItemId: null,
     campaignMilestoneId: null,
+    metaRelativeDay: null,
+    publishError: null,
     channel: item.channel,
     notes: null,
     preview: {
@@ -293,6 +297,11 @@ export function mapSchedulingItemRow(
     communicationItemId: row.communication_item_id,
     schedulingItemId: row.id,
     campaignMilestoneId: row.campaign_milestone_id ?? null,
+    metaRelativeDay: null,
+    publishError:
+      workflowStatus === "failed"
+        ? row.notes?.trim() || "Couldn’t post to your Page. Try again."
+        : null,
     channel: null,
     notes: row.notes,
     preview: {

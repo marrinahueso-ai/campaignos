@@ -21,6 +21,10 @@ import {
   changeRequestDisplayComment,
   hasStaleContentNote,
 } from "@/lib/dev-tools/clear-generated-content";
+import {
+  approvalOutcomeChip,
+  canRetryFailedApproval,
+} from "@/lib/approvals-scheduling/outcome-display";
 import { formatDateTime } from "@/lib/utils/dates";
 import type { UnifiedApprovalItem } from "@/lib/approvals-scheduling/types";
 import { cn } from "@/lib/utils/cn";
@@ -33,6 +37,7 @@ interface ReviewDrawerProps {
   onCommentChange: (value: string) => void;
   onApprove: () => void;
   onRequestChanges: () => void;
+  onRetry?: () => void;
   isSubmitting: boolean;
   canAct: boolean;
 }
@@ -61,41 +66,6 @@ function HistoryList({ entries }: { entries: UnifiedApprovalHistoryEntry[] }) {
   );
 }
 
-function statusChip(item: UnifiedApprovalItem): {
-  label: string;
-  className: string;
-} {
-  switch (item.workflowStatus) {
-    case "assigned_to_me":
-    case "in_queue":
-      return {
-        label: "Needs approval",
-        className: "bg-[rgba(47,74,60,0.12)] text-[#2f4a3c]",
-      };
-    case "changes_requested":
-      return {
-        label: "Changes requested",
-        className: "bg-[rgba(166,90,58,0.14)] text-[#a65a3a]",
-      };
-    case "scheduled":
-      return {
-        label: "Scheduled",
-        className: "bg-[rgba(196,146,46,0.16)] text-[#7a5a12]",
-      };
-    case "posted":
-    case "published":
-      return {
-        label: "Published",
-        className: "bg-[rgba(42,122,134,0.12)] text-[#2a7a86]",
-      };
-    default:
-      return {
-        label: item.statusDetail || "In review",
-        className: "bg-cos-bg-alt text-cos-muted",
-      };
-  }
-}
-
 function platformLabel(item: UnifiedApprovalItem): string {
   if (item.platforms.length === 0) {
     return "Social";
@@ -119,6 +89,7 @@ export function ReviewDrawer({
   onCommentChange,
   onApprove,
   onRequestChanges,
+  onRetry,
   isSubmitting,
   canAct,
 }: ReviewDrawerProps) {
@@ -140,7 +111,8 @@ export function ReviewDrawer({
       ? campaignBuilderEditArtworkHref(item.eventId, item.campaignMilestoneId)
       : null;
 
-  const chip = statusChip(item);
+  const chip = approvalOutcomeChip(item);
+  const showRetry = canRetryFailedApproval(item) && Boolean(onRetry);
   const caption =
     item.preview.captionText?.trim() ||
     item.preview.storyCaptionSnippet?.trim() ||
@@ -160,9 +132,9 @@ export function ReviewDrawer({
     item.scheduleLabel,
     platformLabel(item),
     item.deliveryMethod === "manual-email"
-      ? "Manual email"
+      ? "Email post kit"
       : item.deliveryMethod === "draft-only"
-        ? "Draft only"
+        ? "Draft"
         : null,
   ]
     .filter(Boolean)
@@ -204,7 +176,7 @@ export function ReviewDrawer({
               </span>
               {hasStaleContentNote(item.notes) ? (
                 <span className="inline-flex rounded-full bg-[#f8e3e3] px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#8b3f3f] uppercase">
-                  Needs regeneration
+                  Content may be outdated
                 </span>
               ) : null}
             </div>
@@ -343,7 +315,7 @@ export function ReviewDrawer({
           {item.approvalHistory.length > 0 ? (
             <div>
               <p className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase">
-                History
+                Approval timeline
               </p>
               <div className="mt-2">
                 <HistoryList entries={item.approvalHistory} />
@@ -357,14 +329,14 @@ export function ReviewDrawer({
                 className="text-[11px] font-extrabold tracking-[0.06em] text-cos-muted uppercase"
                 htmlFor="review-comment"
               >
-                Note to creator (optional)
+                Note to your teammate (optional)
               </label>
               <textarea
                 id="review-comment"
                 value={comment}
                 onChange={(event) => onCommentChange(event.target.value)}
                 rows={3}
-                placeholder="If you’re requesting changes, say what to fix…"
+                placeholder="If you’re asking for changes, say what to fix…"
                 className="mt-2 w-full resize-y rounded-[14px] border border-cos-border bg-cos-card px-3 py-3 text-sm text-cos-text placeholder:text-cos-muted focus:border-cos-accent focus:outline-none"
               />
             </div>
@@ -372,6 +344,16 @@ export function ReviewDrawer({
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-cos-border bg-[rgba(255,252,247,0.7)] px-5 py-4 sm:px-6">
+          {showRetry ? (
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={onRetry}
+              className="rounded-full bg-cos-text px-4 py-2.5 text-[13px] font-bold text-cos-card transition hover:-translate-y-px hover:bg-[#1a1714] disabled:opacity-50"
+            >
+              {isSubmitting ? "Retrying…" : "Retry"}
+            </button>
+          ) : null}
           {canAct ? (
             <>
               <button
@@ -399,8 +381,14 @@ export function ReviewDrawer({
               disabled
               className="rounded-full border-[1.5px] border-cos-border bg-cos-card px-4 py-2.5 text-[13px] font-bold text-cos-muted"
             >
-              Already approved
+              {item.deliveryMethod === "draft-only"
+                ? "Saved as draft"
+                : "Already approved"}
             </button>
+          ) : item.workflowStatus === "failed" && !showRetry ? (
+            <p className="text-sm text-cos-muted">
+              {item.publishError || "Couldn’t post to your Page."}
+            </p>
           ) : null}
         </div>
       </aside>
@@ -431,12 +419,12 @@ export function DeliveryIcons({
       </div>
       <span className="text-xs text-cos-muted">
         {deliveryMethod === "manual-email"
-          ? "Manual email"
+          ? "Email post kit"
           : deliveryMethod === "draft-only"
-            ? "Draft only"
+            ? "Draft"
             : deliveryMethod === "schedule"
               ? "Scheduled"
-              : "Publish Now"}
+              : "Publish now"}
       </span>
     </div>
   );
@@ -479,35 +467,35 @@ export function ApprovalFlowGuide() {
   const steps = [
     {
       icon: Send,
-      title: "Creator submits",
-      description: "Campaign is sent for approval",
+      title: "Someone on your team sends it",
+      description: "A campaign is ready for review",
     },
     {
       icon: User,
-      title: "Assigned to approver",
-      description: "You'll get a notification",
+      title: "It lands with an approver",
+      description: "We’ll email them and show a badge on Approvals",
     },
     {
       icon: CheckCircle2,
       title: "Review & approve",
-      description: "Approve, request changes, or comment",
+      description: "Approve, ask for a tweak, or leave a note",
     },
     {
       icon: Calendar,
-      title: "Scheduled or delivered",
-      description: "Content is published or emailed",
+      title: "Scheduled or sent",
+      description: "It goes live on your Page or arrives as a post kit",
     },
     {
       icon: CheckCircle2,
       title: "Live & complete",
-      description: "Track performance in Insights",
+      description: "See how it performed in Insights",
     },
   ];
 
   return (
     <section className="rounded-[22px] border border-cos-border bg-cos-card/80 px-6 py-6">
       <h2 className="font-display text-2xl text-cos-text">
-        How the approval flow works
+        How approvals work
       </h2>
       <div className="mt-6 grid gap-4 lg:grid-cols-5">
         {steps.map((step, index) => {

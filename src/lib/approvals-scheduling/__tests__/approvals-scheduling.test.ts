@@ -42,6 +42,8 @@ function buildItem(
     communicationItemId: "comm-1",
     schedulingItemId: null,
     campaignMilestoneId: null,
+    metaRelativeDay: null,
+    publishError: null,
     channel: "facebook",
     notes: null,
     preview: {
@@ -76,11 +78,13 @@ describe("summarizeCounts", () => {
       buildItem({ id: "2", workflowStatus: "assigned_to_me" }),
       buildItem({ id: "3", workflowStatus: "assigned_to_me" }),
       buildItem({ id: "4", workflowStatus: "published" }),
+      buildItem({ id: "5", workflowStatus: "failed" }),
     ]);
 
     assert.equal(counts.in_queue, 1);
     assert.equal(counts.assigned_to_me, 2);
     assert.equal(counts.published, 1);
+    assert.equal(counts.failed, 1);
   });
 });
 
@@ -319,8 +323,8 @@ describe("approval notification hooks", () => {
     assert.match(source, /approval_resubmitted/);
     assert.match(source, /Resubmitted for approval/);
     assert.match(source, /export async function sendChangeRequestedEmail/);
-    assert.match(source, /Edit Artwork/);
-    assert.match(source, /Change Date/);
+    assert.match(source, /Edit artwork/);
+    assert.match(source, /Change date/);
     assert.doesNotMatch(source, /Edit & resend/);
     assert.match(source, /export async function sendContentApprovedEmail/);
     assert.match(source, /export async function sendScheduledDeliveryEmail/);
