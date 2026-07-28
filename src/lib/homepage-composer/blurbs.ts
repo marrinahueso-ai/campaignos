@@ -1,3 +1,5 @@
+import { formatEventTimeForInput } from "@/lib/events/time-input";
+
 /**
  * Short parent-facing blurb from event fields (deterministic seed).
  * Card editor can rewrite via `generateHomepageComposerBlurbAction`.
@@ -26,6 +28,17 @@ export function buildEventBlurb(input: {
   return `Join us for ${input.title}. Details for Explorer families inside.`;
 }
 
+/** Default announcement line when picking from the org event calendar. */
+export function buildAnnouncementTextFromEvent(input: {
+  title: string;
+  date: string;
+  time: string | null;
+}): string {
+  const when = formatEventWhen(input.date, input.time);
+  if (when) return `${input.title} — ${when}`;
+  return input.title.trim() || "Upcoming event";
+}
+
 export function formatEventWhen(
   date: string | null | undefined,
   time: string | null | undefined,
@@ -40,5 +53,6 @@ export function formatEventWhen(
   const month = dt.toLocaleString("en-US", { month: "short" });
   const day = dt.getDate();
   const timeBit = time?.trim();
-  return timeBit ? `${month} ${day} · ${timeBit}` : `${month} ${day}`;
+  const displayTime = timeBit ? formatEventTimeForInput(timeBit) : "";
+  return displayTime ? `${month} ${day} · ${displayTime}` : `${month} ${day}`;
 }

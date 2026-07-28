@@ -3,7 +3,10 @@
 import { EmojiPicker } from "@/components/homepage-composer/EmojiPicker";
 import { SettingsBox } from "@/components/homepage-composer/SettingsBox";
 import { Button } from "@/components/ui/Button";
-import { formatEventWhen } from "@/lib/homepage-composer/blurbs";
+import {
+  buildAnnouncementTextFromEvent,
+  formatEventWhen,
+} from "@/lib/homepage-composer/blurbs";
 import {
   averageHex,
   contrastRatio,
@@ -24,7 +27,9 @@ import {
   saveComposerDraft,
   type DraftSaveStatus,
 } from "@/lib/homepage-composer/draft-storage";
+import { DEFAULT_HOMEPAGE_EMOJI } from "@/lib/homepage-composer/emoji";
 import { exportHomepageHtml } from "@/lib/homepage-composer/export-html";
+import { createHomepageComposerShareAction } from "@/lib/homepage-composer/share-actions";
 import { campaignBuilderHref } from "@/lib/campaign-builder-v2/navigation";
 import { saveEventVolunteerSignupUrlAction } from "@/lib/event-playbooks/planning-actions";
 import type {
@@ -35,8 +40,22 @@ import type {
   HomepageComposerStep,
   HomepageResourceLink,
 } from "@/lib/homepage-composer/types";
+import {
+  fromNativeTimeInputValue,
+  toNativeTimeInputValue,
+} from "@/lib/events/time-input";
 import { cn } from "@/lib/utils/cn";
-import { GripVertical, Loader2, Plus, Sparkles, Trash2, Upload } from "lucide-react";
+import {
+  Calendar,
+  Download,
+  ExternalLink,
+  GripVertical,
+  Loader2,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -243,6 +262,9 @@ export function HomepageComposer({
   const [hydrated, setHydrated] = useState(false);
   const [previewDate, setPreviewDate] = useState(PREVIEW_FULL_MONTH);
   const [copyLabel, setCopyLabel] = useState("Copy full page HTML");
+  const [shareLinkUrl, setShareLinkUrl] = useState<string | null>(null);
+  const [shareLinkBusy, setShareLinkBusy] = useState(false);
+  const [shareLinkError, setShareLinkError] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [eventFilterMonth, setEventFilterMonth] = useState(() =>
     defaultEventFilterMonth(events),
@@ -258,6 +280,8 @@ export function HomepageComposer({
     message: string;
   } | null>(null);
   const [cardSort, setCardSort] = useState<CardSortMode>("custom");
+  const [showAnnouncementEventPicker, setShowAnnouncementEventPicker] =
+    useState(false);
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>({
     kind: "idle",
   });
@@ -525,6 +549,18 @@ export function HomepageComposer({
     }));
   }, []);
 
+  const removeCard = useCallback((id: string) => {
+    setState((prev) => {
+      const card = prev.cards.find((c) => c.id === id);
+      const cards = prev.cards.filter((c) => c.id !== id);
+      const selectedEventIds =
+        card?.source === "event" && card.eventId
+          ? prev.selectedEventIds.filter((eventId) => eventId !== card.eventId)
+          : prev.selectedEventIds;
+      return { ...prev, cards, selectedEventIds };
+    });
+  }, []);
+
   const addResource = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -568,8 +604,25 @@ export function HomepageComposer({
           ...prev.header.announcements,
           {
             id: `ann-${Date.now()}`,
-            emoji: "📅",
+            emoji: DEFAULT_HOMEPAGE_EMOJI,
             text: "New announcement",
+          },
+        ],
+      },
+    }));
+  }, []);
+
+  const addAnnouncementFromEvent = useCallback((event: HomepageComposerEvent) => {
+    setState((prev) => ({
+      ...prev,
+      header: {
+        ...prev.header,
+        announcements: [
+          ...prev.header.announcements,
+          {
+            id: `ann-${Date.now()}`,
+            emoji: DEFAULT_HOMEPAGE_EMOJI,
+            text: buildAnnouncementTextFromEvent(event),
           },
         ],
       },
@@ -743,6 +796,11 @@ export function HomepageComposer({
   }, [previewHtml, previewDate]);
 
   useEffect(() => {
+    setShareLinkUrl(null);
+    setShareLinkError(null);
+  }, [state]);
+
+  useEffect(() => {
     if (step !== "preview") return;
     const frame = previewFrameRef.current;
     if (!frame) return;
@@ -785,6 +843,37 @@ export function HomepageComposer({
     }
   };
 
+  const createFullMonthShareLink = async (): Promise<string | null> => {
+    setShareLinkBusy(true);
+    setShareLinkError(null);
+    try {
+      const result = await createHomepageComposerShareAction({
+        state,
+        previewMode: "full_month",
+        includeVisibilityMemos: true,
+        shareStatus: "shared",
+      });
+      if (!result.success) {
+        setShareLinkError(result.error);
+        return null;
+      }
+      setShareLinkUrl(result.url);
+      return result.url;
+    } catch {
+      setShareLinkError("Could not create share link. Try again.");
+      return null;
+    } finally {
+      setShareLinkBusy(false);
+    }
+  };
+
+  const openFullMonthSharePage = async (options?: { print?: boolean }) => {
+    const url = shareLinkUrl ?? (await createFullMonthShareLink());
+    if (!url) return;
+    const target = options?.print ? `${url}?print=1` : url;
+    window.open(target, "_blank", "noopener,noreferrer");
+  };
+
   const hc = state.header.colors;
   const fc = state.footer.colors;
   const heroTextOk =
@@ -794,7 +883,7 @@ export function HomepageComposer({
   const footerBtnOk = contrastRatio(fc.buttonBackground, fc.buttonText) >= 3;
 
   return (
-    <div className="studio-page space-y-5 pb-10">
+    <div className="studio-page space-y-3 pb-6">
       <input
         ref={artworkInputRef}
         type="file"
@@ -805,40 +894,44 @@ export function HomepageComposer({
         tabIndex={-1}
       />
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           <Link
             href="/create-with-ai"
-            className="mb-2 inline-block text-sm font-medium text-cos-muted hover:text-cos-text"
+            className="mb-1 inline-block text-xs font-medium text-cos-muted hover:text-cos-text sm:text-sm"
           >
             ← Create with AI
           </Link>
-          <h1 className="font-display text-4xl text-cos-text sm:text-5xl">
-            Homepage Composer
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-cos-muted sm:text-base">
-            Full page for Membership Toolkit — header, cards, footer, helpful
-            resources, colors, and on/off dates.
-          </p>
-          <p
-            className={cn(
-              "mt-2 text-xs font-semibold",
-              saveStatus.kind === "error"
-                ? "text-cos-error"
-                : saveStatus.kind === "saved"
-                  ? "text-cos-brand-sage"
-                  : "text-cos-muted",
-            )}
-            aria-live="polite"
-          >
-            {formatSaveStatus(saveStatus)}
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl text-cos-text sm:text-4xl">
+                Homepage Composer
+              </h1>
+              <p className="mt-0.5 max-w-xl text-sm leading-snug text-cos-muted">
+                Full page for Membership Toolkit — header, cards, footer,
+                helpful resources, colors, and on/off dates.
+              </p>
+            </div>
+            <p
+              className={cn(
+                "shrink-0 text-[11px] font-semibold sm:text-xs",
+                saveStatus.kind === "error"
+                  ? "text-cos-error"
+                  : saveStatus.kind === "saved"
+                    ? "text-cos-brand-sage"
+                    : "text-cos-muted",
+              )}
+              aria-live="polite"
+            >
+              {formatSaveStatus(saveStatus)}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="h-fit rounded-[22px] bg-cos-bg-alt p-3.5 lg:sticky lg:top-4">
-          <p className="mb-2 px-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+      <div className="grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4">
+        <aside className="h-fit rounded-[18px] bg-cos-bg-alt p-2.5 lg:sticky lg:top-3">
+          <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
             Steps
           </p>
           {STEPS.map((s, index) => (
@@ -847,26 +940,26 @@ export function HomepageComposer({
               type="button"
               onClick={() => setStep(s.id)}
               className={cn(
-                "mb-1 w-full rounded-[14px] px-3 py-3 text-left text-sm font-semibold text-cos-text transition",
+                "mb-0.5 w-full rounded-[12px] px-2.5 py-2 text-left text-sm font-semibold text-cos-text transition",
                 step === s.id
                   ? "bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]"
                   : "hover:bg-white/45",
               )}
             >
               {index + 1} · {s.label}
-              <small className="mt-0.5 block text-xs font-medium text-cos-muted">
+              <small className="mt-0.5 block text-[11px] font-medium leading-tight text-cos-muted">
                 {s.hint}
               </small>
             </button>
           ))}
         </aside>
 
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-3">
           {step === "header" && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <PanelHead
                 title="Design your header"
-                body="Colors, welcome copy, CTAs, and announcements."
+                body="Colors, welcome copy, CTAs, cards section title, and announcements."
                 actions={
                   <Button type="button" onClick={() => setStep("footer")}>
                     Save → Footer
@@ -875,30 +968,30 @@ export function HomepageComposer({
               />
 
               <div className="overflow-hidden rounded-[22px] border border-cos-border bg-cos-card shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-                <p className="border-b border-cos-border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-cos-muted">
+                <p className="border-b border-cos-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-cos-muted">
                   Live hero preview
                 </p>
                 <div
-                  className="p-6 text-center sm:p-8"
+                  className="p-4 text-center sm:p-5"
                   style={{
                     background: `linear-gradient(135deg, ${hc.backgroundStart}, ${hc.backgroundEnd})`,
                     color: hc.textColor,
                   }}
                 >
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] opacity-80">
+                  <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] opacity-80">
                     {organizationName || "Your PTO"}
                   </p>
-                  <h2 className="font-display text-2xl sm:text-3xl">
+                  <h2 className="font-display text-xl sm:text-2xl">
                     {state.header.title}
                   </h2>
                   {state.header.message.trim() ? (
-                    <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed opacity-95 sm:text-base">
+                    <p className="mx-auto mt-2 max-w-xl text-sm leading-snug opacity-95">
                       {state.header.message}
                     </p>
                   ) : null}
                   {(state.header.button1Label.trim() ||
                     state.header.button2Label.trim()) && (
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                       {state.header.button1Label.trim() ? (
                         <span
                           className="inline-block rounded-full px-5 py-2.5 text-sm font-bold"
@@ -943,6 +1036,7 @@ export function HomepageComposer({
               </div>
 
               <SettingsBox
+                compact
                 title="Background colors"
                 description="Gradient hero, text, buttons, and announcement bar."
               >
@@ -1115,6 +1209,7 @@ export function HomepageComposer({
               </SettingsBox>
 
               <SettingsBox
+                compact
                 title="Title & buttons"
                 description="Welcome copy and primary calls to action."
               >
@@ -1184,20 +1279,123 @@ export function HomepageComposer({
               </SettingsBox>
 
               <SettingsBox
+                compact
+                title="Cards section"
+                description="Large heading above your event cards in preview and export."
+              >
+                <Field
+                  label="Section title"
+                  value={state.cardsSectionTitle}
+                  onChange={(v) =>
+                    setState((p) => ({
+                      ...p,
+                      cardsSectionTitle: v,
+                    }))
+                  }
+                  placeholder="Back-to-School Essentials"
+                />
+              </SettingsBox>
+
+              <SettingsBox
+                compact
                 title="Announcements"
                 description="Emoji + text rows shown below the hero gradient."
                 actions={
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={addAnnouncement}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add announcement
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={addAnnouncement}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add announcement
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() =>
+                        setShowAnnouncementEventPicker((open) => !open)
+                      }
+                      aria-expanded={showAnnouncementEventPicker}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      From calendar
+                    </Button>
+                  </div>
                 }
               >
+                {showAnnouncementEventPicker ? (
+                  <div className="mb-4 rounded-[14px] border border-cos-border bg-cos-bg-alt/80 p-3">
+                    <p className="text-sm font-semibold text-cos-text">
+                      Add from your event calendar
+                    </p>
+                    <p className="mt-1 text-xs text-cos-muted">
+                      Pick an event to create an announcement row — edit the
+                      text and emoji after adding.
+                    </p>
+                    <label className="mt-3 block">
+                      <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.05em] text-cos-muted">
+                        Month
+                      </span>
+                      <select
+                        className="w-full rounded-xl border border-cos-border bg-cos-card px-3 py-2.5 text-sm text-cos-text sm:max-w-xs"
+                        value={eventFilterMonth}
+                        onChange={(e) => setEventFilterMonth(e.target.value)}
+                      >
+                        {monthOptions.map((month) => (
+                          <option key={month} value={month}>
+                            {formatMonthLabel(month)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-3 max-h-48 space-y-2 overflow-auto">
+                      {events.length === 0 ? (
+                        <p className="text-sm text-cos-muted">
+                          No events yet.{" "}
+                          <Link
+                            href="/events/create"
+                            className="font-semibold text-cos-brand-sage underline"
+                          >
+                            Create an event
+                          </Link>
+                          .
+                        </p>
+                      ) : filteredEvents.length === 0 ? (
+                        <p className="text-sm text-cos-muted">
+                          No events in {formatMonthLabel(eventFilterMonth)}.
+                        </p>
+                      ) : (
+                        filteredEvents.map((event) => (
+                          <div
+                            key={event.id}
+                            className="flex items-center justify-between gap-2 rounded-[14px] border border-cos-border bg-cos-card px-3 py-2.5"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-cos-text">
+                                {event.title}
+                              </p>
+                              <p className="text-xs text-cos-muted">
+                                {formatEventWhen(event.date, event.time) ||
+                                  "Date TBD"}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => addAnnouncementFromEvent(event)}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : null}
                 {state.header.announcements.length === 0 ? (
                   <p className="text-sm text-cos-muted">
                     No announcements yet — add one to highlight dates or news.
@@ -1240,7 +1438,7 @@ export function HomepageComposer({
           )}
 
           {step === "footer" && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <PanelHead
                 title="Design your footer"
                 body="Get Involved CTA colors plus Helpful Resources quick links."
@@ -1261,6 +1459,7 @@ export function HomepageComposer({
               />
 
               <SettingsBox
+                compact
                 title="Footer design"
                 description="CTA block colors and copy for the Get Involved section."
               >
@@ -1402,6 +1601,7 @@ export function HomepageComposer({
               </SettingsBox>
 
               <SettingsBox
+                compact
                 title="Helpful Resources"
                 description={
                   activeResources.length > 0
@@ -1525,7 +1725,7 @@ export function HomepageComposer({
           )}
 
           {step === "cards" && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <PanelHead
                 title="Homepage cards"
                 body="Pick events, edit blurbs, and set on/off dates. Cards section hides in export if none are added."
@@ -1552,14 +1752,14 @@ export function HomepageComposer({
                   </>
                 }
               />
-              <div className="rounded-[14px] bg-cos-brand-mustard/35 px-4 py-3 text-sm text-cos-text">
+              <div className="rounded-[12px] bg-cos-brand-mustard/35 px-3 py-2 text-xs leading-snug text-cos-text sm:text-sm">
                 <strong>On / off dates:</strong> card shows starting at local
                 midnight on the on date, stays through the off date, then hides
                 the next morning. Use Always on for evergreen cards.
               </div>
-              <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-                <div className="rounded-[22px] border border-cos-border bg-cos-card p-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
-                  <h3 className="font-display text-xl text-cos-text">
+              <div className="grid gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
+                <div className="rounded-[18px] border border-cos-border bg-cos-card p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                  <h3 className="font-display text-lg text-cos-text">
                     From your events
                   </h3>
                   <label className="mt-3 block">
@@ -1628,7 +1828,7 @@ export function HomepageComposer({
                   </div>
                 </div>
 
-                <div className="rounded-[22px] border border-cos-border bg-cos-bg-alt p-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+                <div className="rounded-[18px] border border-cos-border bg-cos-bg-alt p-3 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="font-display text-xl text-cos-text">
                       On homepage · drag to reorder
@@ -1755,6 +1955,14 @@ export function HomepageComposer({
                                     ? "Always"
                                     : `→ ${formatBadgeDate(card.expiresOn)}`}
                                 </span>
+                                <button
+                                  type="button"
+                                  className="rounded-xl border border-cos-border px-2 py-1.5 text-cos-muted hover:text-cos-error"
+                                  onClick={() => removeCard(card.id)}
+                                  aria-label="Remove card"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
                               <div className="relative">
                                 <textarea
@@ -1822,9 +2030,9 @@ export function HomepageComposer({
                                     : "Optional link URL"
                                 }
                               />
-                              <div className="grid gap-2 sm:grid-cols-2">
+                              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)]">
                                 <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
-                                  Link name
+                                  Link
                                   <input
                                     className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text"
                                     value={card.linkLabel}
@@ -1849,10 +2057,26 @@ export function HomepageComposer({
                                     }
                                   />
                                 </label>
+                                <label className="block text-[11px] font-bold uppercase tracking-wide text-cos-muted">
+                                  Start time
+                                  <input
+                                    type="time"
+                                    className="mt-1 w-full rounded-lg border border-cos-border bg-cos-card px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-cos-text"
+                                    value={toNativeTimeInputValue(card.time)}
+                                    onChange={(e) =>
+                                      updateCard(card.id, {
+                                        time: fromNativeTimeInputValue(
+                                          e.target.value,
+                                        ),
+                                      })
+                                    }
+                                  />
+                                </label>
                               </div>
                               <p className="text-[10px] leading-snug text-cos-muted">
-                                Card date appears on the card face. On / Off
-                                below only control when the card is visible.
+                                Card date and start time appear on the card
+                                face. On / Off below only control when the card
+                                is visible.
                               </p>
                               <div className="grid gap-2 rounded-[12px] bg-cos-bg-alt/80 p-2 sm:grid-cols-[auto_1fr_1fr]">
                                 <label className="flex items-center gap-2 text-xs font-semibold text-cos-text">
@@ -1910,10 +2134,10 @@ export function HomepageComposer({
           )}
 
           {step === "preview" && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body="Exact full page parents will see — header, cards, footer, and quick links. Drag the date slider to watch cards roll on and off."
+                body="Exact full page parents will see — header, cards, footer, and quick links. Drag the date slider to watch cards roll on and off. On full month, open the share page or save as PDF to send for review."
                 actions={
                   <>
                     <Button
@@ -1930,16 +2154,44 @@ export function HomepageComposer({
                 }
               />
 
-              <div className="rounded-[18px] bg-cos-bg-alt px-4 py-4 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
+              <div className="rounded-[18px] bg-cos-bg-alt px-3 py-2.5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <strong className="text-sm text-cos-text">
                     {isFullMonthPreview
                       ? "Full month check"
                       : "View as parent on"}
                   </strong>
-                  <span className="rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm font-semibold text-cos-text">
-                    {formatPreviewSliderLabel(previewDate)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isFullMonthPreview ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-9 w-9 shrink-0 p-0"
+                          disabled={shareLinkBusy}
+                          onClick={() => void openFullMonthSharePage()}
+                          title="Open page"
+                          aria-label="Open page"
+                        >
+                          <ExternalLink className="h-4 w-4" strokeWidth={2} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-9 w-9 shrink-0 p-0"
+                          disabled={shareLinkBusy}
+                          onClick={() => void openFullMonthSharePage({ print: true })}
+                          title="Save as PDF"
+                          aria-label="Save as PDF"
+                        >
+                          <Download className="h-4 w-4" strokeWidth={2} />
+                        </Button>
+                      </>
+                    ) : null}
+                    <span className="rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm font-semibold text-cos-text">
+                      {formatPreviewSliderLabel(previewDate)}
+                    </span>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1956,6 +2208,11 @@ export function HomepageComposer({
                   className="mt-3 w-full accent-[var(--cos-brand-sage)]"
                   aria-label="Preview date slider"
                 />
+                {isFullMonthPreview && shareLinkError ? (
+                  <p className="mt-2 text-xs font-semibold text-cos-error" role="alert">
+                    {shareLinkError}
+                  </p>
+                ) : null}
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-cos-muted">
                   <span>
                     {isFullMonthPreview
@@ -2011,7 +2268,7 @@ export function HomepageComposer({
           )}
 
           {step === "export" && (
-            <section className="space-y-4">
+            <section className="space-y-3">
               <PanelHead
                 title="Copy full page code"
                 body="Complete Membership Toolkit HTML: styles, header, cards, footer, helpful resources, and date script."
@@ -2060,12 +2317,14 @@ function PanelHead({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h2 className="font-display text-3xl text-cos-text">{title}</h2>
-        <p className="mt-1 max-w-xl text-sm text-cos-muted">{body}</p>
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="min-w-0">
+        <h2 className="font-display text-2xl text-cos-text">{title}</h2>
+        <p className="mt-0.5 max-w-xl text-xs leading-snug text-cos-muted sm:text-sm">
+          {body}
+        </p>
       </div>
-      <div className="flex flex-wrap gap-2">{actions}</div>
+      <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
     </div>
   );
 }

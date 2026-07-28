@@ -76,6 +76,10 @@ export function defaultHeader(
   };
 }
 
+export function defaultCardsSectionTitle(): string {
+  return "Back-to-School Essentials";
+}
+
 export function defaultFooter(): HomepageFooterConfig {
   return {
     ctaTitle: "Get Involved at EES",
@@ -172,6 +176,7 @@ export function buildInitialState(
   return {
     header: defaultHeader(organizationName),
     footer: defaultFooter(),
+    cardsSectionTitle: defaultCardsSectionTitle(),
     resources: defaultResources(),
     selectedEventIds: upcoming.map((e) => e.id),
     cards: [...evergreen.slice(0, 1), ...eventCards, ...evergreen.slice(1)],
@@ -239,6 +244,11 @@ export function normalizeComposerState(
       ),
       colors: { ...base.header.colors, ...parsed.header.colors },
     },
+    cardsSectionTitle:
+      typeof parsed.cardsSectionTitle === "string" &&
+      parsed.cardsSectionTitle.trim()
+        ? parsed.cardsSectionTitle
+        : base.cardsSectionTitle,
     footer: {
       ctaTitle: parsed.footer.ctaTitle ?? base.footer.ctaTitle,
       ctaBody: parsed.footer.ctaBody ?? base.footer.ctaBody,

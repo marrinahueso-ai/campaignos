@@ -30,10 +30,12 @@ export default async function HomepageComposerPage() {
   }));
 
   return (
-    <HomepageComposer
-      organizationId={organization?.id ?? null}
-      organizationName={organization?.name ?? null}
-      events={composerEvents}
-    />
+    <div className="-mt-3 lg:-mt-5">
+      <HomepageComposer
+        organizationId={organization?.id ?? null}
+        organizationName={organization?.name ?? null}
+        events={composerEvents}
+      />
+    </div>
   );
 }

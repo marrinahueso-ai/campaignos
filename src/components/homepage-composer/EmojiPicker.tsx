@@ -1,8 +1,18 @@
 "use client";
 
-import { HOMEPAGE_EMOJI_OPTIONS } from "@/lib/homepage-composer/emoji";
 import { cn } from "@/lib/utils/cn";
+import dynamic from "next/dynamic";
+import { Theme, type EmojiClickData } from "emoji-picker-react";
 import { useEffect, useRef, useState } from "react";
+
+const FullEmojiPicker = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[360px] w-[300px] items-center justify-center rounded-xl border border-cos-border bg-white text-xs text-cos-muted">
+      Loading emoji…
+    </div>
+  ),
+});
 
 type EmojiPickerProps = {
   value: string;
@@ -47,30 +57,22 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
         {value || "🔗"}
       </button>
       {open ? (
-        <div className="absolute left-0 z-30 mt-2 w-[240px] rounded-2xl border border-cos-border bg-cos-card p-2 shadow-[0_12px_32px_rgba(28,36,48,0.12)]">
-          <div className="grid grid-cols-6 gap-1.5">
-            {HOMEPAGE_EMOJI_OPTIONS.map((emoji) => {
-              const selected = emoji === value;
-              return (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    onChange(emoji);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-xl text-lg transition",
-                    selected
-                      ? "border-2 border-[#9eb6e8] bg-[#eef3fc]"
-                      : "border-2 border-transparent hover:bg-cos-bg-alt",
-                  )}
-                >
-                  {emoji}
-                </button>
-              );
-            })}
-          </div>
+        <div
+          className="absolute left-0 z-50 mt-2 rounded-2xl border border-cos-border bg-white shadow-[0_12px_32px_rgba(28,36,48,0.12)]"
+          role="dialog"
+          aria-label="Emoji picker"
+        >
+          <FullEmojiPicker
+            onEmojiClick={(emojiData: EmojiClickData) => {
+              onChange(emojiData.emoji);
+              setOpen(false);
+            }}
+            theme={Theme.LIGHT}
+            width={300}
+            height={360}
+            searchPlaceHolder="Search emoji"
+            previewConfig={{ showPreview: false }}
+          />
         </div>
       ) : null}
     </div>

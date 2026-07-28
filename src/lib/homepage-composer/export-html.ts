@@ -14,6 +14,26 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Short manager-facing date: 2026-08-10 → 8/10/26 */
+export function formatVisibilityShortDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map((p) => parseInt(p, 10));
+  if (!y || !m || !d) return ymd;
+  return `${m}/${d}/${String(y).slice(-2)}`;
+}
+
+/** Visibility window memo for download preview only. */
+export function formatCardVisibilityMemo(card: HomepageCard): string {
+  if (card.alwaysOn) return "Always on";
+  const on = card.startsOn ? formatVisibilityShortDate(card.startsOn) : null;
+  const off = card.expiresOn
+    ? formatVisibilityShortDate(card.expiresOn)
+    : null;
+  if (on && off) return `on: ${on} · off: ${off}`;
+  if (on) return `on: ${on} · always on`;
+  if (off) return `off: ${off}`;
+  return "Always on";
+}
+
 function cardAttrs(card: HomepageCard): string {
   const parts: string[] = ['class="ees-image-card"'];
   if (!card.alwaysOn && card.startsOn) {
@@ -41,7 +61,7 @@ function exportImageUrl(
 
 function renderCard(
   card: HomepageCard,
-  options: { includeDataImages?: boolean } = {},
+  options: { includeDataImages?: boolean; includeVisibilityMemos?: boolean } = {},
 ): string {
   const hosted = exportImageUrl(card.imageUrl, options);
   const img = hosted
@@ -52,26 +72,28 @@ function renderCard(
   const cardHref = normalizeHref(card.linkUrl);
   const hasLink = Boolean(card.linkUrl.trim()) && cardHref !== "#";
   const linkLabel = (card.linkLabel ?? "").trim() || "Learn More →";
-  const cta = hasLink
+  const dateSlot = when
+    ? `<span class="ees-when">${escapeHtml(when)}</span>`
+    : "";
+  const linkSlot = hasLink
     ? `<a href="${escapeHtml(cardHref)}"${cardHref.startsWith("http") ? ' target="_blank" rel="noopener noreferrer"' : ""}>${escapeHtml(linkLabel)}</a>`
-    : when
-      ? `<span class="ees-card-note">${escapeHtml(when)}</span>`
-      : "";
+    : "";
+  const cardMeta = `<div class="ees-card-meta">
+<p class="ees-card-meta-date">${dateSlot}</p>
+<p class="ees-card-meta-link">${linkSlot}</p>
+</div>`;
 
-  // With a CTA link, show the card display date above the link.
-  // Without a link, the date is the bottom line (ees-card-note above).
-  const whenLine =
-    hasLink && when
-      ? `<p><span class="ees-when"><strong>${escapeHtml(when)}</strong></span></p>`
-      : "";
+  const visibilityMemo = options.includeVisibilityMemos
+    ? `<p class="ees-visibility-memo">${escapeHtml(formatCardVisibilityMemo(card))}</p>`
+    : "";
 
   return `<div ${cardAttrs(card)}>
 ${img}
 <div class="ees-image-card-content">
 <h3 style="text-align:center;">${escapeHtml(card.title)}</h3>
-<p>${escapeHtml(card.blurb)}</p>
-${whenLine}
-${cta}
+<p class="ees-card-blurb">${escapeHtml(card.blurb)}</p>
+${cardMeta}
+${visibilityMemo}
 </div>
 </div>`;
 }
@@ -108,6 +130,11 @@ export type ExportHomepageOptions = {
    * Never enable for Export / Copy HTML.
    */
   includeDataImages?: boolean;
+  /**
+   * Download / audit preview only: show on/off visibility memo under each card.
+   * Never enable for Membership Toolkit Export / Copy HTML.
+   */
+  includeVisibilityMemos?: boolean;
 };
 
 /** Full-page Membership Toolkit HTML (header + cards + footer + resources + script). */
@@ -115,18 +142,23 @@ export function exportHomepageHtml(
   state: HomepageComposerState,
   options: ExportHomepageOptions = {},
 ): string {
-  const { header, footer, cards, resources } = state;
+  const { header, footer, cards, resources, cardsSectionTitle } = state;
   const asOf = options.asOfDate?.trim() || null;
   const showAllCards = Boolean(options.showAllCards);
   const includeDataImages = Boolean(options.includeDataImages);
+  const includeVisibilityMemos = Boolean(options.includeVisibilityMemos);
   const hc = header.colors;
   const fc = footer.colors;
 
+  const cardsTitle = cardsSectionTitle.trim();
   const cardsBlock =
     cards.length > 0
-      ? `<h2 class="ees-section-title">Back-to-School Essentials</h2>
-<div class="ees-image-card-grid">
-${cards.map((card) => renderCard(card, { includeDataImages })).join("\n")}
+      ? `${cardsTitle ? `<h2 class="ees-section-title">${escapeHtml(cardsTitle)}</h2>\n` : ""}<div class="ees-image-card-grid">
+${cards
+  .map((card) =>
+    renderCard(card, { includeDataImages, includeVisibilityMemos }),
+  )
+  .join("\n")}
 </div>`
       : "";
 
@@ -169,10 +201,17 @@ ${activeAnnouncements
 .ees-image-card .img-placeholder{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd})}
 .ees-image-card-content{padding:15px;text-align:center;display:flex;flex-direction:column;flex:1}
 .ees-image-card-content h3{color:#0b2f5b;margin:0 0 8px;font-size:19px;font-weight:700;line-height:1.2}
-.ees-image-card-content p{color:#333;line-height:1.4;margin:0 0 10px;font-size:14px;flex:1}
-.ees-image-card-content a,.ees-card-note,.ees-when{color:#0b6f89;font-weight:bold;text-decoration:none;font-size:14px;display:inline-block;margin-top:auto;padding-top:8px}
-.ees-image-card-content a:hover{color:${hoverAccent};text-decoration:underline}
-.ees-cta{margin-top:35px;background:${fc.background};border:2px solid ${hc.backgroundEnd};border-radius:20px;padding:30px;text-align:center;color:${fc.textColor}}
+.ees-card-blurb{color:#333;line-height:1.4;margin:0;font-size:14px;flex:1}
+.ees-card-meta{margin-top:auto;padding-top:4px;flex-shrink:0;width:100%}
+.ees-card-meta-date,.ees-card-meta-link{margin:0;min-height:1.35em;line-height:1.35;font-size:14px}
+.ees-card-meta-date{margin-bottom:1px}
+.ees-card-meta-date .ees-when,.ees-card-meta-link a{color:#0b6f89;font-weight:bold;text-decoration:none;display:inline-block}
+.ees-card-meta-link a:hover{color:${hoverAccent};text-decoration:underline}
+${
+  includeVisibilityMemos
+    ? ".ees-visibility-memo{margin:8px 0 0!important;padding-top:6px;border-top:1px dashed #d9e8ec;color:#6b7c8a!important;font-size:11px!important;font-weight:600!important;line-height:1.35;flex:0 0 auto!important}\n"
+    : ""
+}.ees-cta{margin-top:35px;background:${fc.background};border:2px solid ${hc.backgroundEnd};border-radius:20px;padding:30px;text-align:center;color:${fc.textColor}}
 .ees-cta h2{color:${fc.textColor};margin-top:0}
 .ees-cta p{margin-bottom:18px;line-height:1.6;color:${fc.textColor}}
 .ees-cta .ees-btn{background:${fc.buttonBackground};color:${fc.buttonText}!important}

@@ -12,6 +12,7 @@ function sampleState(): HomepageComposerState {
   return {
     header: defaultHeader("Test School"),
     footer: defaultFooter(),
+    cardsSectionTitle: "Back-to-School Essentials",
     resources: [],
     selectedEventIds: ["evt-1"],
     cards: [

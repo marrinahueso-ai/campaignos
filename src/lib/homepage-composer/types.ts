@@ -93,6 +93,8 @@ export type HomepageFooterConfig = {
 export type HomepageComposerState = {
   header: HomepageHeaderConfig;
   footer: HomepageFooterConfig;
+  /** Large heading above the event cards grid in preview/export */
+  cardsSectionTitle: string;
   /** Helpful Resources quick links (emoji + label + url) */
   resources: HomepageResourceLink[];
   /** Selected event ids (from Create with AI / calendar events) */

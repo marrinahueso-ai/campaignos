@@ -44,6 +44,7 @@ const PUBLIC_PATHS = [
   "/api/stripe/webhook",
   "/go/instagram-post",
   "/go/email-primary",
+  "/share/homepage",
 ];
 
 /** Stay well under Vercel Edge middleware's 25s hard kill. */
