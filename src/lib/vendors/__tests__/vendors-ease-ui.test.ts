@@ -167,10 +167,21 @@ describe("vendors ease UI contracts", () => {
     );
   });
 
-  it("shows contact + Profile on the event Vendors tab", () => {
+  it("shows contact + Profile on the event Vendors tab with in-tab link/unlink", () => {
     assert.match(eventPanel, /VendorContactActions/);
     assert.match(eventPanel, />\s*Profile\s*</);
     assert.match(eventPanel, /Who’s working this event/);
+    assert.match(eventPanel, /Add existing/);
+    assert.match(eventPanel, /Add new/);
+    assert.match(eventPanel, /Unlink/);
+    assert.match(eventPanel, /assignVendorToEventAction/);
+    assert.match(eventPanel, /removeVendorFromEventAction/);
+    assert.match(eventPanel, /VendorAddModal/);
+    assert.match(eventPanel, /loadEventVendorDirectoryAction/);
+    assert.match(eventPanel, /defaultEventId=\{eventId\}/);
+    assert.match(eventPanel, /window\.confirm/);
+    // Browse directory must not use event-scoped linked-only filter.
+    assert.match(eventPanel, /directoryHref = "\/vendors"/);
     assert.doesNotMatch(eventPanel, /EaseRow/);
   });
 

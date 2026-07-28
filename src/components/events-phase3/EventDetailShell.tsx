@@ -27,10 +27,7 @@ import {
 import { OnboardingYoureSetToast } from "@/components/onboarding/OnboardingYoureSetToast";
 import { Button } from "@/components/ui/Button";
 import type { HeroArtworkSelection } from "@/lib/event-workspace/select-hero-artwork";
-import {
-  eventVendorsHref,
-  type EventResponsibilityPerson,
-} from "@/lib/events/event-responsibility";
+import type { EventResponsibilityPerson } from "@/lib/events/event-responsibility";
 import {
   loadEventDetailTabAction,
   refreshEventDetailHeroStatsAction,
@@ -898,13 +895,14 @@ export function EventDetailShell({
 
           {tab === "vendors" && loadedTabs.has("vendors") ? (
             <EventDetailVendorsEasePanel
+              eventId={event.id}
               data={
                 panelData.eventVendorsData ?? {
                   vendors: [],
                   canWrite: false,
                 }
               }
-              directoryHref={eventVendorsHref(event.id)}
+              directoryHref="/vendors"
             />
           ) : null}
 

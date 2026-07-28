@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { syncInsightsAction } from "@/lib/insights/actions";
+import { formatMissingInsightsPermissionsMessage } from "@/lib/insights/connection-messages";
 import {
   formatLastSyncTitle,
   formatInsightsNumber,
@@ -150,13 +151,13 @@ export function EventDetailInsightsEasePanel({
     startTransition(async () => {
       const result = await syncInsightsAction();
       if (!result.ok) {
-        setSyncMessage(result.error ?? "Sync failed.");
+        setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
         return;
       }
       setSyncMessage(
         result.postsSynced > 0
-          ? `Synced ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"}.`
-          : "Sync complete.",
+          ? `Updated ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"} from your Page.`
+          : "Your Page numbers are up to date.",
       );
       await refreshInsightsTab();
     });
@@ -167,7 +168,7 @@ export function EventDetailInsightsEasePanel({
       <EmptyCard
         testId="event-insights-empty-connect"
         title="Connect Meta to see Insights"
-        body="Event Insights use the same Meta connection as publishing and the org Insights hub. Connect once to pull organic views, reach, and interactions for this event’s posts. No ads data."
+        body="Event Insights use the same Meta connection as publishing and organization Insights. Connect once to pull organic views, reach, and interactions for this event’s posts. No ads data."
       >
         <div className="mt-[22px] flex flex-wrap items-center justify-center gap-2.5">
           <Link
@@ -201,13 +202,14 @@ export function EventDetailInsightsEasePanel({
     return (
       <EmptyCard
         testId="event-insights-empty-sync"
-        title="Sync insights from Meta"
-        body={`This event has ${data.publishedSlotCount} published post${data.publishedSlotCount === 1 ? "" : "s"}, but metrics haven’t been pulled yet. Sync to load organic views, reach, and interactions.`}
+        title="Refresh your Page numbers"
+        body={`This event has ${data.publishedSlotCount} published post${data.publishedSlotCount === 1 ? "" : "s"}, but numbers haven’t been pulled yet. Refresh to load organic views, reach, and interactions.`}
       >
         {data.connection.missingInsightsScopes.length > 0 ? (
           <p className="mt-3 max-w-md text-xs text-[#a65a3a]">
-            Missing scopes: {data.connection.missingInsightsScopes.join(", ")}.
-            Reconnect Meta, then sync again.
+            {formatMissingInsightsPermissionsMessage(
+              data.connection.missingInsightsScopes,
+            )}
           </p>
         ) : null}
         <div className="mt-[22px] flex flex-wrap items-center justify-center gap-2.5">
@@ -217,7 +219,9 @@ export function EventDetailInsightsEasePanel({
             disabled={isPending || data.syncInProgress}
             className="inline-flex items-center rounded-full bg-[#2a2622] px-[18px] py-[11px] text-[13px] font-bold text-[#fffcf7] transition-transform hover:-translate-y-px disabled:opacity-60"
           >
-            {isPending || data.syncInProgress ? "Syncing…" : "Sync now"}
+            {isPending || data.syncInProgress
+              ? "Refreshing…"
+              : "Refresh your Page numbers"}
           </button>
           {openOrgInsightsSecondary}
         </div>
@@ -236,7 +240,7 @@ export function EventDetailInsightsEasePanel({
       data-testid="event-insights-panel"
     >
       <div className="mb-1.5 text-[11px] font-extrabold tracking-[0.08em] text-[#7a7166] uppercase">
-        Event Insights · organic Meta metrics
+        Event Insights · organic only
       </div>
 
       {/* Mockup `.kpi-strip`: 5 → 3 → 2 columns; no sparklines / deltas on event */}
@@ -267,7 +271,7 @@ export function EventDetailInsightsEasePanel({
             Posts for this event
           </h2>
           <p className="m-0 mt-0.5 text-[13px] text-[#7a7166]">
-            Published slots linked to {eventTitle}
+            Published posts for {eventTitle}
           </p>
         </div>
 
@@ -362,7 +366,7 @@ export function EventDetailInsightsEasePanel({
           title={formatLastSyncTitle(data.lastSyncAt)}
           className="inline-flex items-center rounded-full border-[1.5px] border-[rgba(42,38,34,0.1)] bg-[#fffcf7] px-4 py-2.5 text-[13px] font-bold text-[#2a2622] transition-transform hover:-translate-y-px disabled:opacity-60"
         >
-          {isPending || data.syncInProgress ? "Syncing…" : "Refresh"}
+          {isPending || data.syncInProgress ? "Refreshing…" : "Refresh"}
         </button>
         {openOrgInsightsGhost}
       </div>

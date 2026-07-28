@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { revisionPath } from "@/components/approvals-revision/map-item";
 import { ReviewDrawer } from "@/components/approvals-scheduling/ReviewDrawer";
 import { CalendarActionToast } from "@/components/communications-planning-calendar/CalendarActionToast";
 import {
@@ -19,15 +21,28 @@ import {
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import {
   approveUnifiedItemAction,
-  requestUnifiedChangesAction,
+  retryFailedUnifiedApprovalAction,
 } from "@/lib/approvals-scheduling/actions";
+import {
+  approvalOutcomeChip,
+  canRetryFailedApproval,
+  isDraftOutcome,
+  isFailedOutcome,
+  isPostedOutcome,
+} from "@/lib/approvals-scheduling/outcome-display";
 import { canActOnUnifiedItem } from "@/lib/approvals-scheduling/permissions";
 import type {
   UnifiedApprovalItem,
   UnifiedApprovalsPageData,
 } from "@/lib/approvals-scheduling/types";
 
-type EaseFilter = "needs" | "scheduled" | "published" | "changes";
+type EaseFilter =
+  | "needs"
+  | "scheduled"
+  | "drafts"
+  | "posted"
+  | "failed"
+  | "changes";
 
 function matchesFilter(filter: EaseFilter, item: UnifiedApprovalItem): boolean {
   switch (filter) {
@@ -37,11 +52,13 @@ function matchesFilter(filter: EaseFilter, item: UnifiedApprovalItem): boolean {
         item.workflowStatus === "in_queue"
       );
     case "scheduled":
-      return item.workflowStatus === "scheduled";
-    case "published":
-      return (
-        item.workflowStatus === "published" || item.workflowStatus === "posted"
-      );
+      return item.workflowStatus === "scheduled" && !isDraftOutcome(item);
+    case "drafts":
+      return isDraftOutcome(item);
+    case "posted":
+      return isPostedOutcome(item);
+    case "failed":
+      return isFailedOutcome(item);
     case "changes":
       return item.workflowStatus === "changes_requested";
     default:
@@ -81,6 +98,7 @@ function artUrl(item: UnifiedApprovalItem | null): string {
 function rowTone(
   item: UnifiedApprovalItem,
 ): "needs" | "open" | "done" | "sched" {
+  if (item.workflowStatus === "failed") return "needs";
   if (
     item.workflowStatus === "assigned_to_me" ||
     item.workflowStatus === "in_queue"
@@ -88,30 +106,14 @@ function rowTone(
     return "needs";
   }
   if (item.workflowStatus === "scheduled") return "sched";
-  if (
-    item.workflowStatus === "published" ||
-    item.workflowStatus === "posted"
-  ) {
+  if (isPostedOutcome(item)) {
     return "done";
   }
   return "open";
 }
 
 function rowStatus(item: UnifiedApprovalItem): string {
-  switch (item.workflowStatus) {
-    case "assigned_to_me":
-    case "in_queue":
-      return "Needs you";
-    case "scheduled":
-      return "Scheduled";
-    case "published":
-    case "posted":
-      return "Published";
-    case "changes_requested":
-      return "Changes";
-    default:
-      return item.statusDetail || "In review";
-  }
+  return approvalOutcomeChip(item).label;
 }
 
 export function EventDetailApprovalsEasePanel({
@@ -121,6 +123,7 @@ export function EventDetailApprovalsEasePanel({
 }: Pick<UnifiedApprovalsPageData, "items" | "canViewAll"> & {
   lockedEventId: string;
 }) {
+  const router = useRouter();
   const refresh = useEventTabMutationRefresh("approvals");
   const [activeFilter, setActiveFilter] = useState<EaseFilter>("needs");
   const [reviewItem, setReviewItem] = useState<UnifiedApprovalItem | null>(
@@ -128,6 +131,7 @@ export function EventDetailApprovalsEasePanel({
   );
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const scoped = useMemo(
@@ -140,11 +144,11 @@ export function EventDetailApprovalsEasePanel({
     const scheduled = scoped.filter((i) =>
       matchesFilter("scheduled", i),
     ).length;
-    const published = scoped.filter((i) =>
-      matchesFilter("published", i),
-    ).length;
+    const drafts = scoped.filter((i) => matchesFilter("drafts", i)).length;
+    const posted = scoped.filter((i) => matchesFilter("posted", i)).length;
+    const failed = scoped.filter((i) => matchesFilter("failed", i)).length;
     const changes = scoped.filter((i) => matchesFilter("changes", i)).length;
-    return { needs, scheduled, published, changes };
+    return { needs, scheduled, drafts, posted, failed, changes };
   }, [scoped]);
 
   const filtered = useMemo(
@@ -154,11 +158,15 @@ export function EventDetailApprovalsEasePanel({
 
   const focusItem = filtered[0] ?? null;
   const queueItems =
-    activeFilter === "needs" && focusItem
+    (activeFilter === "needs" || activeFilter === "failed") && focusItem
       ? filtered.slice(1)
-      : filtered.slice(focusItem ? 1 : 0);
+      : filtered.slice(focusItem && activeFilter === "needs" ? 1 : 0);
 
   const openReview = (item: UnifiedApprovalItem) => {
+    if (item.workflowStatus === "changes_requested") {
+      router.push(revisionPath(item.id, "creator"));
+      return;
+    }
     setComment("");
     setReviewItem(item);
   };
@@ -176,7 +184,7 @@ export function EventDetailApprovalsEasePanel({
         milestoneName: reviewItem.milestoneName,
       });
       if (!result.success) {
-        setActionError(result.error ?? "Unable to approve.");
+        setActionError(result.error ?? "Couldn’t approve that. Try again.");
         return;
       }
       setReviewItem(null);
@@ -190,38 +198,45 @@ export function EventDetailApprovalsEasePanel({
     }
   };
 
-  const handleRequestChanges = async () => {
-    if (!reviewItem) return;
-    setIsSubmitting(true);
+  const handleRetry = async (item: UnifiedApprovalItem) => {
+    setRetryingId(item.id);
     setActionError(null);
     try {
-      const result = await requestUnifiedChangesAction({
-        eventId: reviewItem.eventId,
-        communicationItemId: reviewItem.communicationItemId,
-        schedulingItemId: reviewItem.schedulingItemId,
-        comment,
-        campaignName: reviewItem.campaignName,
-        milestoneName: reviewItem.milestoneName,
+      const result = await retryFailedUnifiedApprovalAction({
+        eventId: item.eventId,
+        schedulingItemId: item.schedulingItemId,
+        milestoneName: item.milestoneName,
+        campaignMilestoneId: item.campaignMilestoneId,
+        communicationItemId: item.communicationItemId,
+        metaRelativeDay: item.metaRelativeDay,
       });
       if (!result.success) {
-        setActionError(result.error ?? "Unable to request changes.");
+        setActionError(result.error ?? "Couldn’t post to your Page. Try again.");
         return;
       }
-      setReviewItem(null);
-      setComment("");
+      if (reviewItem?.id === item.id) {
+        setReviewItem(null);
+      }
       await refresh();
     } finally {
-      setIsSubmitting(false);
+      setRetryingId(null);
     }
   };
 
   const caption =
-    focusItem?.preview?.captionText?.trim() ||
-    focusItem?.preview?.storyCaptionSnippet?.trim() ||
-    focusItem?.notes?.trim() ||
-    "Open review to see caption and artwork.";
+    focusItem?.workflowStatus === "failed"
+      ? focusItem.publishError ||
+        focusItem.preview?.captionText?.trim() ||
+        "Open review to retry this post."
+      : focusItem?.preview?.captionText?.trim() ||
+        focusItem?.preview?.storyCaptionSnippet?.trim() ||
+        focusItem?.notes?.trim() ||
+        "Open review to see caption and artwork.";
 
   const focusArt = artUrl(focusItem);
+  const focusChip = focusItem ? approvalOutcomeChip(focusItem) : null;
+  const focusRetry =
+    focusItem != null && canRetryFailedApproval(focusItem);
 
   return (
     <section>
@@ -236,20 +251,45 @@ export function EventDetailApprovalsEasePanel({
         tabs={[
           { id: "needs", label: "Needs you", count: counts.needs },
           { id: "scheduled", label: "Scheduled", count: counts.scheduled },
-          { id: "published", label: "Published", count: counts.published },
+          { id: "drafts", label: "Drafts", count: counts.drafts },
+          { id: "posted", label: "Posted", count: counts.posted },
+          { id: "failed", label: "Failed", count: counts.failed },
           { id: "changes", label: "Changes", count: counts.changes },
         ]}
       />
 
-      <EaseSectionLabel>Needs you next</EaseSectionLabel>
+      <EaseSectionLabel>
+        {activeFilter === "failed"
+          ? "Needs a retry"
+          : activeFilter === "posted"
+            ? "Already live"
+            : activeFilter === "drafts"
+              ? "Saved as drafts"
+              : activeFilter === "scheduled"
+                ? "On the calendar"
+                : activeFilter === "changes"
+                  ? "Needs edits"
+                  : "Needs you next"}
+      </EaseSectionLabel>
 
       {filtered.length === 0 ? (
         <p className="rounded-[18px] border border-cos-border bg-[rgba(255,252,247,0.55)] px-5 py-10 text-center text-sm text-cos-muted">
-          Nothing in this view for this event yet.
+          {activeFilter === "drafts"
+            ? "No drafts for this event yet. Saved drafts stay here so your team can copy or post them later."
+            : activeFilter === "scheduled"
+              ? "Nothing scheduled for this event yet."
+              : activeFilter === "posted"
+                ? "Nothing posted for this event yet."
+                : activeFilter === "failed"
+                  ? "Nothing failed to post for this event."
+                  : activeFilter === "changes"
+                    ? "Nothing waiting for edits on this event."
+                    : "Nothing waiting on you for this event."}
         </p>
       ) : (
         <EaseSplit>
-          {focusItem ? (
+          {focusItem &&
+          (activeFilter === "needs" || activeFilter === "failed") ? (
             <EaseFocusCard
               art={
                 focusArt ? (
@@ -265,7 +305,13 @@ export function EventDetailApprovalsEasePanel({
               }
             >
               <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-cos-muted">
-                <EaseChip tone="forest">Needs approval</EaseChip>
+                <EaseChip
+                  tone={
+                    focusItem.workflowStatus === "failed" ? "warn" : "forest"
+                  }
+                >
+                  {focusChip?.label ?? "Needs approval"}
+                </EaseChip>
                 <span>{placementLabel(focusItem)}</span>
               </div>
               <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] text-cos-text">
@@ -275,32 +321,44 @@ export function EventDetailApprovalsEasePanel({
                 {caption}
               </p>
               <EaseSoftActions>
-                <EaseBtnPrimary onClick={() => openReview(focusItem)}>
-                  Review
-                </EaseBtnPrimary>
+                {focusRetry ? (
+                  <EaseBtnPrimary
+                    onClick={() => void handleRetry(focusItem)}
+                    disabled={retryingId === focusItem.id}
+                  >
+                    {retryingId === focusItem.id ? "Retrying…" : "Retry"}
+                  </EaseBtnPrimary>
+                ) : (
+                  <EaseBtnPrimary onClick={() => openReview(focusItem)}>
+                    Review
+                  </EaseBtnPrimary>
+                )}
                 <EaseBtnSecondary onClick={() => openReview(focusItem)}>
-                  Open Approvals
+                  Open full review
                 </EaseBtnSecondary>
               </EaseSoftActions>
             </EaseFocusCard>
           ) : null}
 
           <EaseQueue>
-            {(queueItems.length > 0 ? queueItems : filtered.slice(1)).map(
-              (item) => (
-                <EaseRow
-                  key={item.id}
-                  title={item.milestoneName || item.campaignName}
-                  meta={`${platformLabel(item)}${
-                    item.scheduleLabel ? ` · ${item.scheduleLabel}` : ""
-                  }`}
-                  status={rowStatus(item)}
-                  statusTone={rowTone(item)}
-                  onClick={() => openReview(item)}
-                />
-              ),
-            )}
-            {queueItems.length === 0 && filtered.length === 1 ? (
+            {(activeFilter === "needs" || activeFilter === "failed"
+              ? queueItems
+              : filtered
+            ).map((item) => (
+              <EaseRow
+                key={item.id}
+                title={item.milestoneName || item.campaignName}
+                meta={`${platformLabel(item)}${
+                  item.scheduleLabel ? ` · ${item.scheduleLabel}` : ""
+                }`}
+                status={rowStatus(item)}
+                statusTone={rowTone(item)}
+                onClick={() => openReview(item)}
+              />
+            ))}
+            {queueItems.length === 0 &&
+            filtered.length === 1 &&
+            (activeFilter === "needs" || activeFilter === "failed") ? (
               <p className="px-1 text-xs text-cos-muted">
                 That’s the only item in this view.
               </p>
@@ -316,8 +374,15 @@ export function EventDetailApprovalsEasePanel({
         comment={comment}
         onCommentChange={setComment}
         onApprove={handleApprove}
-        onRequestChanges={handleRequestChanges}
-        isSubmitting={isSubmitting}
+        onRequestChanges={() => {
+          if (!reviewItem) return;
+          router.push(revisionPath(reviewItem.id, "approver"));
+          setReviewItem(null);
+        }}
+        onRetry={
+          reviewItem ? () => void handleRetry(reviewItem) : undefined
+        }
+        isSubmitting={isSubmitting || retryingId === reviewItem?.id}
         canAct={
           reviewItem
             ? canActOnUnifiedItem(reviewItem, canViewAll)

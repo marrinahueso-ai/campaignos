@@ -15,6 +15,7 @@ import { PlatformIcon } from "@/components/insights/PlatformIcon";
 import { Button } from "@/components/ui/Button";
 import { useEventTabMutationRefresh } from "@/components/events-phase3/EventDetailTabInvalidation";
 import { syncInsightsAction } from "@/lib/insights/actions";
+import { formatMissingInsightsPermissionsMessage } from "@/lib/insights/connection-messages";
 import { formatLastSyncTitle, formatInsightsNumber } from "@/lib/insights/format";
 import {
   buildIntegrationSettingsPath,
@@ -277,13 +278,13 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
     startTransition(async () => {
       const result = await syncInsightsAction();
       if (!result.ok) {
-        setSyncMessage(result.error ?? "Sync failed.");
+        setSyncMessage(result.error ?? "Couldn't refresh your Page numbers.");
         return;
       }
       setSyncMessage(
         result.postsSynced > 0
-          ? `Synced ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"}.`
-          : "Sync complete.",
+          ? `Updated ${result.postsSynced} post${result.postsSynced === 1 ? "" : "s"} from your Page.`
+          : "Your Page numbers are up to date.",
       );
       await refreshInsightsTab();
     });
@@ -299,9 +300,9 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
           Connect Meta to see Insights
         </h2>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-cos-muted">
-          Event Insights use the same Meta connection as publishing and the org
-          Insights hub. Connect once to pull views, reach, and interactions for
-          this event&apos;s posts.
+          Event Insights use the same Meta connection as publishing and
+          organization Insights. Connect once to pull organic views, reach, and
+          interactions for this event&apos;s posts. No ads data.
         </p>
         <Button href={buildMetaOAuthStartPath({ returnTo })} className="mt-6">
           Connect with Facebook
@@ -347,22 +348,26 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
           <RefreshCw className="h-5 w-5" strokeWidth={1.75} />
         </span>
         <h2 className="font-display mt-4 text-2xl text-cos-text">
-          Sync insights from Meta
+          Refresh your Page numbers
         </h2>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-cos-muted">
           This event has {data.publishedSlotCount} published post
-          {data.publishedSlotCount === 1 ? "" : "s"}, but metrics haven&apos;t
-          been pulled yet. Sync to load views, reach, and interactions.
+          {data.publishedSlotCount === 1 ? "" : "s"}, but numbers haven&apos;t
+          been pulled yet. Refresh to load organic views, reach, and
+          interactions.
         </p>
         {data.connection.missingInsightsScopes.length > 0 ? (
           <p className="mt-3 max-w-md text-xs text-cos-warning-text">
-            Missing scopes: {data.connection.missingInsightsScopes.join(", ")}.
-            Reconnect Meta, then sync again.
+            {formatMissingInsightsPermissionsMessage(
+              data.connection.missingInsightsScopes,
+            )}
           </p>
         ) : null}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button onClick={handleSync} disabled={isPending || data.syncInProgress}>
-            {isPending || data.syncInProgress ? "Syncing…" : "Sync now"}
+            {isPending || data.syncInProgress
+              ? "Refreshing…"
+              : "Refresh your Page numbers"}
           </Button>
           <Link
             href="/insights"
@@ -538,7 +543,7 @@ export function EventInsightsTab({ data }: EventInsightsTabProps) {
             className={cn("h-3.5 w-3.5", isPending && "animate-spin")}
             aria-hidden
           />
-          {isPending ? "Syncing…" : "Refresh"}
+          {isPending ? "Refreshing…" : "Refresh"}
         </button>
         <Link href="/insights" className="hover:text-cos-text">
           Org Insights

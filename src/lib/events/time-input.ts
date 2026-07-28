@@ -210,3 +210,40 @@ export function formatEventTimeForInput(time: string | null | undefined): string
     minute: "2-digit",
   });
 }
+
+/** Value for `<input type="time">` from stored event/card time. */
+export function toNativeTimeInputValue(
+  time: string | null | undefined,
+): string {
+  if (!time?.trim()) {
+    return "";
+  }
+
+  const match24 = time.trim().match(TIME_24_PATTERN);
+  if (match24) {
+    const hours = String(Number(match24[1])).padStart(2, "0");
+    return `${hours}:${match24[2]}`;
+  }
+
+  const parsed = parseEventTimeInput(time);
+  if ("error" in parsed || !parsed.time) {
+    return "";
+  }
+
+  const normalized = parsed.time.match(TIME_24_PATTERN);
+  if (!normalized) {
+    return "";
+  }
+
+  const hours = String(Number(normalized[1])).padStart(2, "0");
+  return `${hours}:${normalized[2]}`;
+}
+
+/** Persist native time input (HH:MM) as postgres-style time. */
+export function fromNativeTimeInputValue(value: string): string | null {
+  const parsed = parseEventTimeInput(value);
+  if ("error" in parsed) {
+    return null;
+  }
+  return parsed.time;
+}

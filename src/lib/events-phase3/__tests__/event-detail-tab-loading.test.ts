@@ -178,7 +178,9 @@ describe("event-scoped tab loaders (source contract)", () => {
     assert.match(shell, /Retry/);
     assert.doesNotMatch(shell, /Loading \{label\}/);
     assert.match(shell, /function TabSkeleton/);
-    assert.match(shell, /deferDirectoryLoad/);
+    // Vendors Ease panel lazy-loads directory picker on Add existing / Add new.
+    assert.match(shell, /EventDetailVendorsEasePanel/);
+    assert.match(shell, /directoryHref="\/vendors"/);
   });
 
   it("SSR deep links preload only the selected event-scoped tab", () => {
@@ -194,11 +196,18 @@ describe("event-scoped tab loaders (source contract)", () => {
     const vendorsSection = readSrc(
       "../../../components/vendors/EventVendorsSection.tsx",
     );
+    const vendorsEase = readSrc(
+      "../../../components/events-phase3/EventDetailVendorsEasePanel.tsx",
+    );
     const vendorCard = readSrc("../../../components/vendors/VendorCard.tsx");
     assert.match(vendorsSection, /assignVendorToEventAction/);
     assert.match(vendorsSection, /removeVendorFromEventAction/);
     assert.match(vendorsSection, /onLogoUploaded/);
     assert.match(vendorsSection, /VendorAddModal/);
+    assert.match(vendorsEase, /assignVendorToEventAction/);
+    assert.match(vendorsEase, /removeVendorFromEventAction/);
+    assert.match(vendorsEase, /loadEventVendorDirectoryAction/);
+    assert.match(vendorsEase, /VendorAddModal/);
     assert.match(vendorCard, /VendorLogoMark|uploadVendorLogoAction/);
   });
 });
