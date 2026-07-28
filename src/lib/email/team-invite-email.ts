@@ -38,7 +38,7 @@ export function buildTeamInviteEmail(
   input: TeamInviteEmailInput,
 ): TeamInviteEmailContent {
   const greetingName = input.inviteeName?.trim() || "there";
-  const org = input.organizationName.trim() || "your PTO";
+  const org = input.organizationName.trim() || "your organization";
   const roleLabel = input.accessLevelLabel.trim() || "team member";
   const message = input.personalMessage?.trim() || null;
   const inviter = input.inviterEmail?.trim() || null;

@@ -150,7 +150,8 @@ export function TeamAccessInviteModal({
             </p>
           ) : null}
           <p className="text-sm text-cos-muted">
-            Copyable invite link — they must sign in with the invited email.
+            Share this invite link. They’ll need to sign in with the invited
+            email.
           </p>
           <p className="break-all text-sm font-medium text-cos-text">{inviteUrl}</p>
           <Button type="button" variant="secondary" size="sm" onClick={copyInviteLink}>
@@ -160,11 +161,16 @@ export function TeamAccessInviteModal({
         </div>
       ) : (
         <form id="invite-member-form" action={handleSubmit} className="space-y-4">
+          <p className="rounded-lg border border-[rgba(42,38,34,0.1)] bg-[#f6f2eb] px-3 py-2.5 text-xs leading-snug text-[#5c554c]">
+            Already on Hey Ralli in another organization? Invite the same email
+            — they keep one login and can switch organizations from the header
+            after accepting.
+          </p>
           <Input
             name="email"
             label="Email address"
             type="email"
-            placeholder="name@schoolpto.org"
+            placeholder="name@email.com"
             defaultValue={prefill?.email ?? ""}
             required
           />
@@ -198,7 +204,7 @@ export function TeamAccessInviteModal({
               ))}
             </Select>
             <p className="text-xs text-cos-muted">
-              From Access templates — this assigns their login permissions.
+              Choose what they can do when they sign in.
             </p>
           </div>
           {/* Keep optional board-title id for legacy invite linking; hidden from UI. */}
@@ -218,7 +224,7 @@ export function TeamAccessInviteModal({
               Event assignments (optional)
             </legend>
             <p className="text-xs text-cos-muted">
-              Assign one or more campaigns/events. Editable later from the member record.
+              Link the events they work on. You can change this later.
             </p>
             <div className="max-h-40 space-y-2 overflow-y-auto border border-cos-border p-3">
               {events.length === 0 ? (

@@ -1189,7 +1189,7 @@ export function TeamAccessPersonProfile({
                     ))}
                   </Select>
                   <p className="mt-2 text-xs text-cos-muted">
-                    From Access templates — this assigns their login permissions.
+                    Choose what they can do when they sign in.
                   </p>
                   {accessError ? (
                     <p className="mt-2 text-xs text-red-600">{accessError}</p>

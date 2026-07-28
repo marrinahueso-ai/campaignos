@@ -546,7 +546,8 @@ export function SettingsEaseTeamAccessPersonDrawer({
                 {ACCESS_PERMISSION_KEYS.map((key) => {
                   const on = Boolean(draftPermissions?.[key]);
                   const hint =
-                    ACCESS_PERMISSION_DESCRIPTIONS[key] ?? "From access role";
+                    ACCESS_PERMISSION_DESCRIPTIONS[key] ??
+                    "Included with this role";
                   const locked =
                     (selectedTemplate?.baseRole === "admin" ||
                       selectedTemplate?.baseRole === "president") &&

@@ -63,7 +63,9 @@ export function MarketingWowInviteForm({
         </p>
         <div className="invite-callout" style={{ marginTop: 22 }}>
           An account already exists for <strong>{email}</strong>. Sign in with
-          your existing password or Google — we’ll add this team automatically.
+          your existing password or Google — we&apos;ll add{" "}
+          <strong>{organizationName}</strong> to your account. Switch
+          organizations anytime from the header menu.
         </div>
         <Link
           href={`/login?invite=${encodeURIComponent(inviteToken)}`}

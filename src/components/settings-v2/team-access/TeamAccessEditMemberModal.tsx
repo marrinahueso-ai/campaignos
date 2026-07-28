@@ -124,7 +124,7 @@ export function TeamAccessEditMemberModal({
       const { source } = activeEditContext;
 
       if (!selection && canEditAccessRole) {
-        setError("Choose a role from Access templates.");
+        setError("Choose a role.");
         return;
       }
 
@@ -262,20 +262,20 @@ export function TeamAccessEditMemberModal({
               ))}
             </Select>
             <p className="text-xs text-cos-muted">
-              From Access templates — this sets what they can do when they log
-              in. Rename roles under People → Access templates.
+              Choose what they can do when they sign in. Rename roles with Edit
+              roles on Team & Access.
             </p>
           </div>
         ) : null}
 
         {canEditStatus ? (
-          <Select name="status" label="Login status" defaultValue={defaultStatus}>
+          <Select name="status" label="Sign-in status" defaultValue={defaultStatus}>
             <option value="active">Active</option>
-            <option value="deactivated">Deactivated</option>
+            <option value="deactivated">Inactive</option>
           </Select>
         ) : isSelf && activeEditContext.canEditStatus ? (
           <p className="text-xs leading-relaxed text-cos-muted">
-            You cannot deactivate your own account. Ask another admin if you need
+            You can’t turn off your own sign-in. Ask another admin if you need
             access removed.
           </p>
         ) : null}

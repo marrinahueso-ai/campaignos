@@ -11,6 +11,7 @@ import { TeamAccessAccessTemplatesPanel } from "@/components/settings-v2/team-ac
 import { TeamAccessEditMemberModal } from "@/components/settings-v2/team-access/TeamAccessEditMemberModal";
 import { TeamAccessGiveAppAccessModal } from "@/components/settings-v2/team-access/TeamAccessGiveAppAccessModal";
 import { TeamAccessInviteModal } from "@/components/settings-v2/team-access/TeamAccessInviteModal";
+import { TeamAccessMultiOrgCallout } from "@/components/settings-v2/team-access/TeamAccessMultiOrgCallout";
 import {
   accessLevelLabel,
   activeSeatsEaseSubLabel,
@@ -507,7 +508,7 @@ export function SettingsEaseTeamAccess({
           </h1>
           <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
             People, roles, and what each person can do — link events and adjust
-            access in one quiet pop-out.
+            access from one place.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -543,6 +544,8 @@ export function SettingsEaseTeamAccess({
         </div>
       </div>
 
+      {canManage ? <TeamAccessMultiOrgCallout /> : null}
+
       {showClaimBanner ? (
         <SoftCard className="mb-3.5 border-[rgba(196,146,46,0.28)] bg-[rgba(196,146,46,0.1)]">
           <h3
@@ -552,7 +555,7 @@ export function SettingsEaseTeamAccess({
             Link your account
           </h3>
           <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-            This PTO workspace exists but has no signed-in users yet. Claim
+            This organization exists but has no signed-in users yet. Claim
             admin access as{" "}
             <span className="font-semibold text-[#2a2622]">
               {currentUserEmail}
@@ -596,8 +599,15 @@ export function SettingsEaseTeamAccess({
                 Import roster
               </h3>
               <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-                Upload or paste leadership roles and committees for this
-                organization.
+                Upload or paste leadership roles and teams for this
+                organization.{" "}
+                <a
+                  href="/templates/board-roster-import.xlsx"
+                  download
+                  className="font-semibold text-[#2a2622] underline-offset-2 hover:underline"
+                >
+                  Download Excel template
+                </a>
               </p>
             </div>
             <button
@@ -622,7 +632,7 @@ export function SettingsEaseTeamAccess({
               Roles & permissions
             </h3>
             <p className="mt-1 mb-0 text-[13px] leading-snug text-[#5c554c]">
-              What each access role can do.
+              What each role can do in your organization.
             </p>
           </div>
           {canEditAccessTemplates ? (
@@ -676,7 +686,7 @@ export function SettingsEaseTeamAccess({
               <div>
                 <p className="mb-3 text-[13px] leading-snug text-[#5c554c]">
                   {activeRole.description ||
-                    "Permissions for this access role."}
+                    "Permissions for this role."}
                 </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {SUMMARY_PERMISSION_KEYS.map((key) => {
@@ -747,9 +757,9 @@ export function SettingsEaseTeamAccess({
 
         {loginPeople.length === 0 ? (
           <p className="m-0 text-sm text-[#5c554c]">
-            No login seats yet.{" "}
+            No team members with login yet.{" "}
             {canManage
-              ? "Invite your board or import a roster to get started."
+              ? "Invite your team or import a roster to get started."
               : "Ask an admin to invite you."}
           </p>
         ) : (
@@ -868,7 +878,7 @@ export function SettingsEaseTeamAccess({
                   Edit roles
                 </h2>
                 <p className="mt-1 mb-0 text-[13px] text-[#5c554c]">
-                  Access templates control what each login role can do.
+                  Roles control what each person can do when they sign in.
                 </p>
               </div>
               <button

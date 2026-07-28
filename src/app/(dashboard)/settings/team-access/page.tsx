@@ -44,7 +44,8 @@ export default async function TeamAccessSettingsPage() {
           Team & Access
         </h1>
         <p className="mt-1.5 mb-0 max-w-[48ch] text-sm leading-snug text-[#5c554c]">
-          Complete School Setup first, then return here to invite your board.
+          Finish setting up your organization first, then return here to invite
+          your team.
         </p>
       </section>
     );

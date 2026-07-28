@@ -232,7 +232,7 @@ export function TeamAccessAccessTemplatesPanel({
       <SettingsV2Card className="rounded-2xl p-3 shadow-sm sm:p-4">
         <div className="flex items-center justify-between gap-2 px-2 pb-2">
           <p className="text-xs font-medium tracking-[0.12em] text-cos-muted uppercase">
-            Templates
+            Roles
           </p>
           {canEdit ? (
             <button
@@ -321,10 +321,11 @@ export function TeamAccessAccessTemplatesPanel({
               {selected.displayName}
             </h2>
             <p className="mt-1 text-sm text-cos-muted">
-              Rename for HOAs, churches, sports teams, schools, and more.
+              Rename to match your organization — HOAs, churches, sports teams,
+              schools, and more.
               {selected.isCustom
-                ? " Custom roles can be assigned on invites."
-                : " Built-in access ids stay stable so logins keep working."}
+                ? " Custom roles can be chosen when you invite someone."
+                : " Built-in roles keep working for people already signed in."}
             </p>
           </div>
           {canEdit ? (
@@ -346,7 +347,7 @@ export function TeamAccessAccessTemplatesPanel({
                 disabled={isPending}
                 onClick={handleSave}
               >
-                {isPending ? "Saving…" : "Save template"}
+                {isPending ? "Saving…" : "Save role"}
               </Button>
             </div>
           ) : null}
@@ -360,7 +361,7 @@ export function TeamAccessAccessTemplatesPanel({
             onChange={(event) =>
               updateSelected({ displayName: event.target.value })
             }
-            hint="Shown on People, invites, and Access & Settings."
+            hint="Shown on People, invites, and Team & Access."
           />
           <label className="block space-y-2">
             <span className="block text-sm font-medium text-cos-text">
@@ -379,7 +380,7 @@ export function TeamAccessAccessTemplatesPanel({
           {selected.isCustom ? (
             <label className="block space-y-2">
               <span className="block text-sm font-medium text-cos-text">
-                Login access base
+                Closest built-in role
               </span>
               <select
                 value={selected.baseRole}
@@ -403,8 +404,8 @@ export function TeamAccessAccessTemplatesPanel({
                 ))}
               </select>
               <p className="text-xs text-cos-muted">
-                Controls sign-in powers until permission toggles are fully
-                enforced. Prefer Contributor or View Only for most custom roles.
+                Starting point for this custom role. Prefer Contributor or View
+                Only for most people.
               </p>
             </label>
           ) : null}

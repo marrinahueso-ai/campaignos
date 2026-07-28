@@ -79,7 +79,7 @@ export function TeamAccessGiveAppAccessModal({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!member?.organizationMemberId) {
-      setError("This person is missing a roster record.");
+      setError("Add this person to your team roster first, then try again.");
       return;
     }
 
@@ -114,8 +114,8 @@ export function TeamAccessGiveAppAccessModal({
     <TeamAccessModal
       open={open}
       onClose={handleClose}
-      title="Invite to Login"
-      subtitle={`${member.displayName} — create a login invite without changing roster assignments.`}
+      title="Give access"
+      subtitle={`${member.displayName} — send a sign-in invite. Their team role stays the same.`}
       footer={
         inviteUrl ? (
           <div className="flex justify-end">
@@ -133,7 +133,7 @@ export function TeamAccessGiveAppAccessModal({
               form="give-app-access-form"
               disabled={isPending || !member.organizationMemberId}
             >
-              {isPending ? "Granting…" : "Give app access"}
+              {isPending ? "Sending…" : "Give access"}
             </Button>
           </div>
         )
@@ -150,7 +150,8 @@ export function TeamAccessGiveAppAccessModal({
             </p>
           ) : null}
           <p className="text-sm text-cos-muted">
-            Copyable invite link — they must sign in with the invited email.
+            Share this invite link. They’ll need to sign in with the invited
+            email.
           </p>
           <p className="break-all text-sm font-medium text-cos-text">{inviteUrl}</p>
           <Button type="button" variant="secondary" size="sm" onClick={copyInviteLink}>
@@ -162,8 +163,8 @@ export function TeamAccessGiveAppAccessModal({
         <form id="give-app-access-form" onSubmit={handleSubmit} className="space-y-4">
           {!member.organizationMemberId ? (
             <p className="text-sm text-amber-800" role="alert">
-              This contact is not linked to a roster person yet. Add them to the
-              roster first, then grant app access.
+              This person isn’t on your team roster yet. Add them first, then
+              give them access.
             </p>
           ) : null}
           <Input
@@ -198,7 +199,7 @@ export function TeamAccessGiveAppAccessModal({
               ))}
             </Select>
             <p className="text-xs text-cos-muted">
-              From Access templates — this assigns their login permissions.
+              Choose what they can do when they sign in.
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm text-cos-text">

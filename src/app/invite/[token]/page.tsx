@@ -28,7 +28,7 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
       <MarketingWowAuthShell
         imageSrc="/images/fall-festival-campaign.png"
         visualTitle="You’re invited."
-        visualSupport="Join your school’s Hey Ralli workspace with the role your admin chose."
+        visualSupport="Join this organization on Hey Ralli with the role your admin chose."
       >
         <h1>Invite not found</h1>
         <p className="sub">
@@ -65,7 +65,7 @@ export default async function InviteAcceptPage({ params }: InvitePageProps) {
     <MarketingWowAuthShell
       imageSrc="/images/fall-festival-campaign.png"
       visualTitle="You’re invited."
-      visualSupport="Join your school’s Hey Ralli workspace with the role your admin chose."
+      visualSupport="Join this organization on Hey Ralli with the role your admin chose."
     >
       <MarketingWowInviteForm
         inviteToken={token}

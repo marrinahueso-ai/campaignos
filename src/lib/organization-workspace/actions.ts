@@ -12,9 +12,11 @@ import {
   restoreOrganizationCommittee,
   updateOrganizationCommittee,
 } from "@/lib/organization-workspace/committee-mutations";
+import { mergeCommitteeCoChairs } from "@/lib/organization-workspace/merge-committee-chairs";
 import { parseRosterFromFile } from "@/lib/organization-workspace/parse-roster-file";
 import {
   countRosterImport,
+  parseRosterText,
   type ParsedRosterRole,
 } from "@/lib/organization-workspace/parse-roster";
 import {
@@ -426,11 +428,33 @@ export interface OrganizationRosterPreviewResult {
 export async function previewOrganizationRosterAction(
   formData: FormData,
 ): Promise<OrganizationRosterPreviewResult> {
+  const rosterTextRaw = formData.get("rosterText");
+  if (typeof rosterTextRaw === "string" && rosterTextRaw.trim()) {
+    const roles = mergeCommitteeCoChairs(parseRosterText(rosterTextRaw.trim()));
+    const counts = countRosterImport(roles);
+
+    if (counts.roleCount === 0) {
+      return {
+        error:
+          "No leadership roles found. Use tabs between role and contact, or upload the Excel template.",
+        roles: [],
+        roleCount: 0,
+        committeeCount: 0,
+      };
+    }
+
+    return {
+      error: null,
+      roles,
+      ...counts,
+    };
+  }
+
   const file = formData.get("rosterFile");
 
   if (!(file instanceof File) || file.size === 0) {
     return {
-      error: "Choose a roster file to upload.",
+      error: "Choose a roster file to upload or paste your roster below.",
       roles: [],
       roleCount: 0,
       committeeCount: 0,

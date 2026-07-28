@@ -42,15 +42,15 @@ export const ACCESS_PERMISSION_LABELS: Record<AccessPermissionKey, string> = {
   manage_integrations: "Manage integrations",
 };
 
-/** Short helper copy for the Access templates editor (see vs work). */
+/** Short helper copy for the roles editor (see vs work). */
 export const ACCESS_PERMISSION_DESCRIPTIONS: Partial<
   Record<AccessPermissionKey, string>
 > = {
-  view_all_events: "Event cards appear for every event in the org.",
+  view_all_events: "They can see every event in your organization.",
   view_assigned_events_only:
-    "Hide unassigned events from lists (strict). Implies work is limited to assigned events.",
+    "Only their linked events show in lists. They can only work on those events.",
   access_assigned_events_only:
-    "Open, edit, and mutate only events this person is assigned to. Lists can still show all when “See all events” is on.",
+    "They can open and edit only events they’re linked to. Lists can still show all when “See all events” is on.",
 };
 
 /** System template ids match CampaignRole; custom ids are `custom_*`. */

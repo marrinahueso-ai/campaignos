@@ -34,7 +34,7 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
   {
     id: "admin",
     displayName: "Admin",
-    description: "Full organization control, including people and integrations.",
+    description: "Full organization control, including people and billing.",
     baseRole: "admin",
     isCustom: false,
     permissions: perms({
@@ -52,7 +52,7 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
   {
     id: "president",
     displayName: "President",
-    description: "Organization leadership with people and approval access.",
+    description: "Organization leadership with people, approvals, and billing.",
     baseRole: "president",
     isCustom: false,
     permissions: perms({
@@ -113,7 +113,7 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
   {
     id: "view_only",
     displayName: "View Only",
-    description: "Read access. Safe default for limited login seats.",
+    description: "Can view the organization. Safe default for limited access.",
     baseRole: "view_only",
     isCustom: false,
     permissions: perms({
@@ -124,7 +124,7 @@ export const DEFAULT_ACCESS_TEMPLATES: AccessTemplate[] = [
   {
     id: "developer",
     displayName: "Developer",
-    description: "Internal full-access seat for product support.",
+    description: "Product support seat with broad access (agreements required).",
     baseRole: "developer",
     isCustom: false,
     permissions: perms({

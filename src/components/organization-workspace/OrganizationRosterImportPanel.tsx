@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileUp, Loader2 } from "lucide-react";
+import { Download, FileUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
   applyOrganizationRosterAction,
@@ -10,6 +10,7 @@ import {
   type OrganizationRosterPreviewResult,
 } from "@/lib/organization-workspace/actions";
 import type { ParsedRosterRole } from "@/lib/organization-workspace/parse-roster";
+import { BOARD_ROSTER_IMPORT_TEMPLATE_PATH } from "@/lib/organization-workspace/roster-import-template";
 
 interface OrganizationRosterImportPanelProps {
   /** Skip outer card chrome when embedded in Settings Ease. */
@@ -74,8 +75,8 @@ export function OrganizationRosterImportPanel({
           <div>
             <h3 className="font-semibold text-cos-text">Import roster</h3>
             <p className="mt-1 max-w-2xl text-sm text-cos-muted">
-              Upload or paste your Position/Committee list. Top-level rows become
-              leadership roles; indented rows become committees under the role
+              Upload or paste your leadership and team list. Top-level rows
+              become leadership roles; indented rows become teams under the role
               above them. Use tabs between name and email.
             </p>
           </div>
@@ -86,6 +87,21 @@ export function OrganizationRosterImportPanel({
         action={handlePreview}
         className={embedded ? "space-y-4" : "mt-4 space-y-4"}
       >
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href={BOARD_ROSTER_IMPORT_TEMPLATE_PATH}
+            download
+            className="inline-flex items-center gap-2 rounded-full border border-cos-border bg-white px-4 py-2 text-sm font-medium text-cos-text transition-colors hover:bg-cos-accent-soft"
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            Download Excel template
+          </a>
+          <p className="text-xs text-cos-muted">
+            Columns: Position · Committee / Team · Prior year chair · Current
+            year chair
+          </p>
+        </div>
+
         <div>
           <label
             htmlFor="rosterFile"
@@ -97,11 +113,11 @@ export function OrganizationRosterImportPanel({
             id="rosterFile"
             name="rosterFile"
             type="file"
-            accept=".docx,.csv,.txt,.tsv,.pdf"
+            accept=".xlsx,.xls,.docx,.csv,.txt,.tsv,.pdf"
             className="block w-full text-sm text-cos-muted file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-cos-text hover:file:bg-cos-accent-soft"
           />
           <p className="mt-1 text-xs text-cos-muted">
-            Word (.docx), CSV, TXT, TSV, or PDF
+            Excel (.xlsx) recommended. Word, CSV, TXT, TSV, or PDF also work.
           </p>
         </div>
 
@@ -116,7 +132,7 @@ export function OrganizationRosterImportPanel({
             id="rosterText"
             name="rosterText"
             rows={8}
-            placeholder={`President\tpresident@ptoees.org\n    BooHoo Yahoo Breakfast Chair\tboohoobreakfast@ptoees.org\nVP Events\tevents@ptoees.org\n    Book Fair Chair\tbookfair@ptoees.org`}
+            placeholder={`President\tAlex Morgan\n    Annual Gala\tMorgan Taylor\nVP Events\tSam Rivera\n    Community Festival\tJordan Kim`}
             className="w-full rounded-lg border border-cos-border bg-white px-3 py-2 text-sm text-cos-text shadow-sm focus:border-cos-border focus:outline-none focus:ring-2 focus:ring-cos-border"
           />
         </div>

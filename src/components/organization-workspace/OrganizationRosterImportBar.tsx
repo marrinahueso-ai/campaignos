@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FileUp, Loader2, Trash2, Upload } from "lucide-react";
+import { Download, FileUp, Loader2, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
   applyOrganizationRosterAction,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/organization-workspace/actions";
 import type { ParsedRosterRole } from "@/lib/organization-workspace/parse-roster";
 import { parseCommitteeChairNames } from "@/lib/organization-workspace/merge-committee-chairs";
+import { BOARD_ROSTER_IMPORT_TEMPLATE_PATH } from "@/lib/organization-workspace/roster-import-template";
 
 interface OrganizationRosterImportBarProps {
   committeeCount: number;
@@ -141,11 +142,27 @@ export function OrganizationRosterImportBar({
           </p>
           <p className="mt-2 text-xs text-cos-muted">
             PDF and Word exports also work, but the original .xlsx gives the
-            most accurate grouping.
+            most accurate grouping.{" "}
+            <a
+              href={BOARD_ROSTER_IMPORT_TEMPLATE_PATH}
+              download
+              className="inline-flex items-center gap-1 font-medium text-cos-text underline-offset-2 hover:underline"
+            >
+              <Download className="h-3 w-3" aria-hidden />
+              Download Excel template
+            </a>
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={BOARD_ROSTER_IMPORT_TEMPLATE_PATH}
+            download
+            className="inline-flex items-center gap-2 rounded-lg border border-cos-border bg-white px-3 py-2 text-sm font-medium text-cos-text transition-colors hover:bg-cos-accent-soft"
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            Template
+          </a>
           <input
             ref={fileInputRef}
             type="file"

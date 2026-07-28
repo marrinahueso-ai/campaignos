@@ -356,6 +356,8 @@ describe("settings ease UI contracts", () => {
     assert.match(teamAccessEase, /Roles & permissions/);
     assert.match(teamAccessEase, /Open anyone to link events and give access/);
     assert.match(teamAccessEase, /Import roster/);
+    assert.match(teamAccessEase, /board-roster-import\.xlsx/);
+    assert.match(teamAccessEase, /Download Excel template/);
     assert.match(teamAccessEase, /Invite/);
     assert.match(teamAccessEase, /Edit roles/);
     assert.match(teamAccessEase, /TeamAccessInviteModal/);
@@ -363,6 +365,16 @@ describe("settings ease UI contracts", () => {
     assert.match(teamAccessEase, /TeamAccessAccessTemplatesPanel/);
     assert.match(teamAccessEase, /SettingsEaseTeamAccessPersonDrawer/);
     assert.match(teamAccessEase, /OrganizationRosterImportPanel/);
+    const rosterImportPanel = readSrc(
+      "../../../components/organization-workspace/OrganizationRosterImportPanel.tsx",
+    );
+    assert.match(rosterImportPanel, /BOARD_ROSTER_IMPORT_TEMPLATE_PATH/);
+    assert.match(rosterImportPanel, /\.xlsx/);
+    const rosterActions = readSrc(
+      "../../../lib/organization-workspace/actions.ts",
+    );
+    assert.match(rosterActions, /parseRosterText/);
+    assert.match(rosterActions, /rosterText/);
     assert.match(teamAccessEase, /peopleEaseRoleLine/);
     assert.match(teamAccessEase, /activeSeatsEaseSubLabel/);
     assert.match(teamAccessEase, /pendingInvitesEaseSubLabel/);
@@ -419,8 +431,9 @@ describe("settings ease UI contracts", () => {
     assert.match(integrationsEase, /Google Calendar/);
     assert.match(integrationsEase, /Connect Canva/);
     assert.match(integrationsEase, /Monday\.com/);
-    assert.match(integrationsEase, /Gmail · Dropbox · SignUpGenius/);
-    assert.match(integrationsEase, /Deferred — not available in soft launch/);
+    assert.match(integrationsEase, /Gmail · Dropbox/);
+    assert.doesNotMatch(integrationsEase, /SignUpGenius/);
+    assert.match(integrationsEase, /Not available in soft launch yet/);
     assert.match(integrationsEase, /Coming soon/);
     assert.match(integrationsEase, /font-fraunces/);
     assert.match(integrationsEase, /#fffcf7|#2f4a3c/);

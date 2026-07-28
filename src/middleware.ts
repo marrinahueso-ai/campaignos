@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip Next internals, common static assets, public HTML mockups, and demo videos.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|webm|mp4)$).*)",
+    // Skip Next internals, common static assets, public HTML mockups, templates, and demo videos.
+    "/((?!_next/static|_next/image|favicon.ico|templates/.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|webm|mp4|xlsx|xls|csv)$).*)",
   ],
 };

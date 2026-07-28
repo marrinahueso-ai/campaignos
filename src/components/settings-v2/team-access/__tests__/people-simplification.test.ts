@@ -343,7 +343,7 @@ describe("Team & Access people simplification", () => {
     );
     assert.match(panelSource, /\+ Add role/);
     assert.match(panelSource, /createOrganizationAccessTemplateAction/);
-    assert.match(panelSource, /Save template/);
+    assert.match(panelSource, /Save role/);
   });
 
   it("14-15. Responsibility labels translate without deleting backend roles", () => {
