@@ -2,18 +2,20 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 26, 2026  
+**Last updated:** July 27, 2026  
 **Related:** [Feature list](./feature-list.md) · [SignUpGenius import](../integrations/signupgenius.md) · [Access control](../engineering/access-control.md)
 
-Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer PII**.
+Org-wide volunteer staffing overview at `/volunteers`. Aggregate fill rates and open spots only — **no volunteer names or contact details**.
 
 ---
 
 ## What it is / who it’s for
 
-**Volunteer Master** is the organization-level view of which events need people and how filled SignUpGenius (or planning signup) roles are. It is for chairs, presidents, and ops volunteers who want a single place to scan staffing health without opening every event.
+**Volunteers** (Volunteer Master) is the organization-level view of which events need people and how filled SignUpGenius (or planning signup) roles are. It is for chairs, leads, and ops volunteers who want a single place to scan staffing health without opening every event.
 
-Connect, review, confirm, and refresh still happen on each event’s **Volunteers** tab. This page only **reads** the latest confirmed snapshots and planning signup URLs.
+Connect, **review/verify before import**, confirm, and refresh still happen on each event’s **Volunteers** tab. This page only **reads** the latest confirmed snapshots and planning signup URLs.
+
+**SignUpGenius:** Long-term path is **public URL connect** (not Settings OAuth). Many orgs lack SignUpGenius Pro, which their API/OAuth needs. OAuth may return later as a second option when most customers are on Pro — see [signupgenius.md](../integrations/signupgenius.md).
 
 ---
 
@@ -22,7 +24,7 @@ Connect, review, confirm, and refresh still happen on each event’s **Volunteer
 | Surface | Detail |
 |---------|--------|
 | Sidebar | **Volunteers** → `/volunteers` (`Sidebar.tsx`) |
-| Page title | “Volunteer Master” |
+| Page title | “Volunteers” |
 | Route | `src/app/(dashboard)/volunteers/page.tsx` |
 
 ---
@@ -55,7 +57,7 @@ Ease layout (aligned with Approvals): soft status pills, a focus card for the so
 | **Covered** | Confirmed snapshot, fill rate ≥ 100%, zero underfilled roles |
 | **All** | Full feed |
 
-Org fill % and open-role count sit as quiet health text beside search.
+Organization fill % and open-role count sit as quiet health text beside search.
 
 ### Search
 
@@ -73,9 +75,9 @@ Org fill % and open-role count sit as quiet health text beside search.
 - Fill rate bar + open spots / role count (or Covered)
 - Row links to the event Volunteers tab
 
-### Sync footer
+### Footer
 
-Copy notes that data is synced from SignUpGenius, shows the latest successful sync across feed sources when available, and states that **sync and connect live on each event’s Volunteers tab**.
+Copy notes that numbers come from SignUpGenius, shows the latest successful update across feed sources when available, and states that **connect and refresh live on each event’s Volunteers tab**.
 
 `thisWeekUnderfilled` remains on the page payload for assistants / widgets; the ease UI does not surface a separate This week rail.
 
@@ -108,9 +110,9 @@ Null / incomplete quantities → no band coloring (em dash).
 
 ## Privacy
 
-- **No PII** — names, emails, or individual signups are not shown
+- **No names or contact details** — individual signups are not shown
 - Quantities and role names only from confirmed assignment rows
-- Sync / connect / replace-link remain on the event Volunteers tab
+- Connect / refresh / replace-link remain on the event Volunteers tab
 
 ---
 
@@ -120,8 +122,10 @@ Null / incomplete quantities → no band coloring (em dash).
 |------------------|----------------------|
 | Org-wide scan | Single-event connect, review, confirm, refresh |
 | Reads confirmed snapshots | Writes sources + snapshots |
-| Same fill-rate color bands | Same bands on Overall Filled and per-assignment progress |
+| Same fill-rate color bands | Same bands on Overall Filled and per-role progress |
 | Deep-links into the tab | Living import detail: [signupgenius.md](../integrations/signupgenius.md) |
+
+Ease overview on the event tab shows staffing health + **Refresh numbers**. Pending review uses the full connect/confirm Tab (date allowlist). Empty state can connect from the Ease panel.
 
 ---
 
@@ -131,8 +135,10 @@ Null / incomplete quantities → no band coloring (em dash).
 |------|------|
 | Page route | `src/app/(dashboard)/volunteers/page.tsx` |
 | UI shell | `src/components/volunteers/VolunteersMasterShell.tsx` |
+| Ease list | `src/components/volunteers/VolunteersEaseList.tsx` |
 | Server loader | `src/lib/event-volunteers/org-master.ts` (`getVolunteersMasterPageData`) |
 | Shared filters / bands / KPIs | `src/lib/event-volunteers/org-master-shared.ts` |
 | Nav | `src/components/layout/Sidebar.tsx` |
 | Volunteers deep link | `src/lib/events/event-responsibility.ts` (`eventVolunteersHref`) |
-| Event tab (connect / sync) | `src/components/events-phase3/EventVolunteersTab.tsx` |
+| Event tab (Ease + connect / refresh) | `src/components/events-phase3/EventDetailVolunteersEasePanel.tsx` |
+| Event tab (review / confirm / full overview) | `src/components/events-phase3/EventVolunteersTab.tsx` |

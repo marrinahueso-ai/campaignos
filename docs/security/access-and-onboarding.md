@@ -92,6 +92,24 @@ Admins can **resend** / **cancel** invites and **reinvite** deactivated members.
 
 Permissions and event visibility are resolved for the **active** org via EffectiveAccess ([access-control.md](../engineering/access-control.md)).
 
+### Adding someone to a second organization (admin)
+
+Use this when a person **already has a Hey Ralli account** (including membership in another organization) and should also join **your** organization.
+
+1. Open **Settings → Team & Access** and choose **Invite team member** (requires `manage_people`).
+2. Enter the **same email** they already use to sign in. Role and event assignments apply only to your organization.
+3. They accept via the invite link or email. **Existing accounts:** sign in with that email (password or Google) — the invite is claimed and a second membership is created. **New accounts:** set a password on the invite page.
+4. After acceptance, they use the **organization switcher** in the app header to move between workspaces.
+
+**Constraints:**
+
+- Email on the invite must match the account that accepts it.
+- Permissions, billing seats, and event access are **per organization** — nothing carries over automatically from their other org.
+- You cannot invite someone who is already an **active** member of this org (resend a pending invite instead).
+- Founding a **new** organization while already a member of one is a separate path and is blocked during setup (`existing_org`); multi-org today is **join via invite**, not self-serve second founding.
+
+In-app callout: **Settings → Team & Access** (`TeamAccessMultiOrgCallout`).
+
 ---
 
 ## Auth session lifetime (Option A — July 2026)

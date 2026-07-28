@@ -2,7 +2,7 @@
 
 **Status:** Living  
 **Owner:** Engineering (Hey Ralli)  
-**Last updated:** July 26, 2026  
+**Last updated:** July 27, 2026  
 **Related:** [QA guide](../qa/homepage-composer.md) · [Feature list](../product/feature-list.md) · [Storage RLS](./storage-rls.md) · [Architecture](./architecture.md) · [Billing / AI credits](../ops/billing-and-access.md)
 
 Client-heavy Membership Toolkit homepage builder. Server actions cover AI blurbs and artwork hosting; drafts stay in the browser.
@@ -28,7 +28,7 @@ Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageCo
 |------|------|
 | `src/components/homepage-composer/HomepageComposer.tsx` | Step UI, autosave flush, card CRUD, preview scrubber, export UX |
 | `src/components/homepage-composer/SettingsBox.tsx` | Shared settings panel chrome (also used by Newsletter) |
-| `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes |
+| `src/lib/homepage-composer/types.ts` | State + card/header/footer shapes (`cardsSectionTitle` for cards grid heading) |
 | `src/lib/homepage-composer/defaults.ts` | Initial state, `cardFromEvent`, normalize / migrate fields |
 | `src/lib/homepage-composer/draft-storage.ts` | localStorage + IndexedDB envelope v4 (via shared store) |
 | `src/lib/composer-draft-storage.ts` | Shared newest-wins draft store (Homepage + Newsletter) |
@@ -37,6 +37,10 @@ Steps: `header` → `footer` → `cards` → `preview` → `export` (`HomepageCo
 | `src/lib/homepage-composer/artwork-actions.ts` | Upload compressed data-URL → public URL |
 | `src/lib/homepage-composer/compress-image.ts` | Client compress before upload |
 | `src/lib/homepage-composer/export-html.ts` | Full-page MTK HTML + show/hide script; preview may pass `includeDataImages` |
+| `src/lib/homepage-composer/share-actions.ts` | Create tokenized share snapshot (uploads pending data: artwork first) |
+| `src/lib/homepage-composer/share-queries.ts` | Insert/fetch share rows (service role for public token lookup) |
+| `src/lib/homepage-composer/share-document.ts` | Full HTML document wrapper + print toolbar for share page |
+| `src/app/share/homepage/[token]/page.tsx` | Public share route (`noindex`) |
 | `src/lib/homepage-composer/blurbs.ts` / `urls.ts` / `colors.ts` / `emoji.ts` | Formatting helpers |
 | `src/lib/homepage-composer/volunteer-links.ts` | Signup URLs for event cards |
 | `__tests__/` | Draft storage, card fields, blurb prompt contracts |
@@ -103,13 +107,33 @@ Artwork upload does **not** burn AI credits (storage only). Create with AI deep 
 
 ## Export HTML
 
-`exportHomepageHtml(state, { asOfDate?, showAllCards?, includeDataImages? })`:
+`exportHomepageHtml(state, { asOfDate?, showAllCards?, includeDataImages?, includeVisibilityMemos? })`:
 
 - Inline `<style>` + `.ees-*` Membership Toolkit–style markup (hero, announcements, card grid, footer CTA, resources).
 - Card images: Export / Copy use **HTTPS only** (`data:` omitted → placeholder). In-app Preview passes `includeDataImages: true` so unhosted artwork still renders.
 - Preview iframe: remount + imperative `srcdoc` write so Blink/Chrome refreshes when the slider or draft changes (Safari already updated `srcDoc` props).
 - Visibility attrs: `data-starts` / `data-expires` when not `alwaysOn`.
 - Embedded script toggles `display` from “today” (or preview `asOfDate`); `showAllCards` skips hide logic for full-month audit.
+- Full-month Preview: **Open page** / **Save as PDF** persist a snapshot to `homepage_composer_shares` and open `/share/homepage/[token]` (PDF via browser print on that page). Share pages render per-card visibility memos (`includeVisibilityMemos`, e.g. `on: 8/10/26 · off: 8/15/26` / `Always on`). Memos are share-only — not in live preview or MTK Copy/Export.
+
+---
+
+## Share snapshots (Postgres)
+
+Table: `homepage_composer_shares` (migration `20260727171727_homepage_composer_shares.sql`).
+
+| Column | Purpose |
+|--------|---------|
+| `token` | Unguessable public id (24-byte base64url) |
+| `composer_state` | Normalized `HomepageComposerState` JSON |
+| `preview_mode` | `full_month` \| `as_of_date` |
+| `include_visibility_memos` | Audit memos on share page |
+| `share_status` | `draft` \| `shared` \| `pending_approval` \| `approved` — defaults `shared`; approvals UI later |
+| `approval_item_id` | Nullable FK stub for future Approvals hub link |
+
+RLS: org members CRUD their org’s rows. Public read uses **service role** in `getHomepageComposerShareByToken` (token is the secret). Middleware public path: `/share/homepage`.
+
+Before insert, `prepareHomepageStateForShare` uploads any `data:` card images via `uploadHomepageComposerArtworkAction`.
 
 ---
 

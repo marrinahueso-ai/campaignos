@@ -2,12 +2,16 @@
 
 **Status:** Living  
 **Owner:** Engineering  
-**Last updated:** July 23, 2026  
+**Last updated:** July 27, 2026  
 **Related:** [Feature list](../product/feature-list.md) · [Volunteer Master](../product/volunteer-master.md) · [Database](../engineering/database.md) · [Access control](../engineering/access-control.md)
 
-Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate assignment availability only (no volunteer PII).
+Public SignUpGenius **go** links can be connected on an event’s **Volunteers** tab. Hey Ralli imports aggregate role availability only (no names or contact details).
 
-Org-wide **Volunteer Master** (`/volunteers`) is documented in [volunteer-master.md](../product/volunteer-master.md): KPI cards, fill-rate bands, This week rail, auto-feed rule, and deep links. Sync / connect still happens on each event’s Volunteers tab; the master page reads the latest confirmed snapshots only. The event Volunteers tab uses the same fill-rate color bands for Overall Filled and per-assignment progress (check affordance at 100%). Connected layout is assignments-first: compact Needs Snapshot / Quick Totals / Overall Filled strip above the table, with AI Assistant (and source/sync panels) in a right rail on desktop and stacked below on mobile.
+**Product decision (Jul 27, 2026):** URL connect is the **long-term** path. SignUpGenius **Pro** is required for their API/OAuth, and many orgs do not have Pro — so we do **not** ship Settings OAuth or tease “Coming soon.” When most customers are on Pro, we may add OAuth as a **second** option alongside URL. Until then: one clear flow.
+
+**Always verify before import:** Connect → pending review (date allowlist) → confirm → then numbers land on the event and Master. No silent import past review.
+
+Org-wide **Volunteers** (`/volunteers`) is documented in [volunteer-master.md](../product/volunteer-master.md): Ease focus/queue, fill-rate bands, auto-feed rule, and deep links. Connect / refresh still happens on each event’s Volunteers tab; the master page reads the latest confirmed snapshots only.
 
 ---
 
