@@ -116,6 +116,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
 - Reject generated artwork: subtle thumbs-down icon on Preview (and Edit Artwork regenerated preview) discards that feed/story slot so you can regenerate — **shipped**
 - Artwork Apply hydrate: regenerated artwork sticks after Apply (local backup + hydrate merge so remount / Preview hydrate does not orphan richer in-memory art) — **shipped**
 - 4-step flow (Creative Setup → Milestones → Preview → Review & Approve) — **shipped**
+- Social Media Composer mobile layout (iPhone): vertical STEPS list, tighter milestone rows, safe-area clearance for Report a Problem — **shipped**
 - Review tabs (All / Needs review / Approved / Changes requested) with Pending Review · Approved · Changes requested pills — **shipped**
 - Review Approval workflow sidebar shows org default approver from Team Access (same resolution as send-for-approval); unassigned when none — **shipped**
 - Review footer shows one primary CTA: **Send for approval** when Team Access has a distinct reviewer; **Approve all & schedule** when the approver is missing, unassigned, or yourself — **shipped**
