@@ -136,7 +136,7 @@ export function buildOnboardingChecklist(input: {
     items.push({
       id: "first_event",
       title: "Create your first event",
-      description: "Pick something on the calendar and we’ll help you plan from there.",
+      description: "",
       href: "/onboarding",
       cta: "Set up now",
       done: false,
@@ -147,8 +147,8 @@ export function buildOnboardingChecklist(input: {
   items.push(
     {
       id: "calendar",
-      title: "Bring in your school calendar",
-      description: "Add your year’s dates so nothing important gets missed.",
+      title: "Connect to your calendar",
+      description: "",
       href: calendarDone ? "/calendar?tab=import" : "/onboarding/essentials",
       cta: calendarDone ? "View calendar" : "Set up now",
       done: calendarDone,
@@ -156,8 +156,8 @@ export function buildOnboardingChecklist(input: {
     },
     {
       id: "brand",
-      title: "Build your brand kit",
-      description: "Logos and colors so every campaign feels like your school.",
+      title: "Connect your brand kit",
+      description: "",
       href: brandDone ? "/onboarding/brand" : "/onboarding/essentials",
       cta: brandDone ? "Edit brand kit" : "Set up now",
       done: brandDone,
@@ -166,7 +166,7 @@ export function buildOnboardingChecklist(input: {
     {
       id: "invite",
       title: "Invite a teammate",
-      description: "Bring in another board member when you’re ready to share the work.",
+      description: "",
       href: inviteDone ? "/settings/team-access" : "/onboarding/connect",
       cta: inviteDone ? "View team" : "Set up now",
       done: inviteDone,
@@ -175,7 +175,7 @@ export function buildOnboardingChecklist(input: {
     {
       id: "meta",
       title: "Connect Facebook & Instagram",
-      description: "Link your PTO page so approved posts can publish automatically.",
+      description: "",
       href: metaDone ? "/settings/meta" : "/onboarding/connect",
       cta: metaDone ? "View Meta" : "Set up now",
       done: metaDone,
