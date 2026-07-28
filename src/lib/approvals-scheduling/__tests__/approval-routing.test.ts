@@ -310,7 +310,7 @@ describe("Approval Routing — queue visibility", () => {
 });
 
 describe("Approval Routing — Meta-on-approve and hybrid", () => {
-  it("6. approving a valid feed item calls Meta scheduling once", () => {
+  it("6. approving a valid feed item calls Meta scheduling once (after DB save)", () => {
     const source = readFileSync(
       new URL("../actions.ts", import.meta.url),
       "utf8",
@@ -324,9 +324,16 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
       source,
       /updateSchedulingItemStatus\([\s\S]*?scheduleMetaFeedFromCampaignBuilderApproval/,
     );
+    // Critical path returns after DB write; Meta/email run in after().
+    assert.match(source, /after\(\(\) =>/);
+    assert.match(source, /runApproveSchedulingSideEffects/);
+    assert.match(
+      source,
+      /Return as soon as approval_scheduling_items is saved/,
+    );
   });
 
-  it("7. Meta scheduling failure does not reverse approval; returns/logs a clear warning", () => {
+  it("7. Meta scheduling failure does not reverse approval; logs a clear warning", () => {
     const source = readFileSync(
       new URL("../actions.ts", import.meta.url),
       "utf8",
@@ -337,7 +344,12 @@ describe("Approval Routing — Meta-on-approve and hybrid", () => {
       /Approved, but we couldn’t schedule your Facebook post:/,
     );
     assert.match(source, /console\.error\(/);
-    assert.match(source, /return \{ success: true, warning: metaWarning \}/);
+    // Success returns before Meta finishes; side-effect warning is logged only.
+    assert.match(source, /return \{ success: true \}/);
+    assert.match(
+      source,
+      /Approve side-effect warning \(approval already saved\)/,
+    );
     assert.match(
       source,
       /updateSchedulingItemStatus\([\s\S]*?metaIntent\.wantsMetaFeedSchedule/,

@@ -227,8 +227,8 @@ export function ApprovalsSchedulingHub({
 
       if (result.success) {
         setReviewItem(null);
-        // Hold Meta/email follow-up warnings until celebration dismisses —
-        // never flash them as a red error under the win moment.
+        // Celebrate immediately — Meta/email run after the server returns.
+        // Hold any follow-up warnings until celebration dismisses.
         setCelebration({
           scheduleLabel: approvedItem.scheduleLabel,
           scheduleSubline: approvedItem.scheduleLabel
@@ -236,7 +236,7 @@ export function ApprovalsSchedulingHub({
             : "Approved and ready to post",
           pendingWarning: result.warning?.trim() || null,
         });
-        await refreshApprovalsTab();
+        void refreshApprovalsTab();
         return;
       }
 

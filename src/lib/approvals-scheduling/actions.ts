@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   sendChangeRequestedEmail,
@@ -195,11 +196,10 @@ async function resolveMetaScheduleIntent(row: ApprovalSchedulingItemRow): Promis
   return resolveRowMetaScheduleIntent(row);
 }
 
-async function resolveSchedulingCreatorEmail(
-  schedulingItemId: string,
+async function resolveUserEmailById(
+  userId: string | null | undefined,
 ): Promise<string | null> {
-  const row = await loadSchedulingItem(schedulingItemId);
-  if (!row?.requested_by_user_id) {
+  if (!userId) {
     return null;
   }
 
@@ -207,10 +207,218 @@ async function resolveSchedulingCreatorEmail(
   const { data } = await supabase
     .from("organization_users")
     .select("email")
-    .eq("id", row.requested_by_user_id)
+    .eq("id", userId)
     .maybeSingle();
 
   return data?.email ?? null;
+}
+
+async function resolveSchedulingCreatorEmail(
+  schedulingItemId: string,
+): Promise<string | null> {
+  const row = await loadSchedulingItem(schedulingItemId);
+  return resolveUserEmailById(row?.requested_by_user_id);
+}
+
+/**
+ * Meta Graph + Resend + Create with AI session sync after approval is already
+ * persisted. Runs via after() so Ready to Ralli is not blocked on slow networks.
+ * Failures are logged; Meta/email errors never reverse the saved approval.
+ */
+async function runApproveSchedulingSideEffects(input: {
+  eventId: string;
+  schedulingItemId: string;
+  row: ApprovalSchedulingItemRow;
+  campaignName?: string | null;
+  milestoneName?: string | null;
+  recipientEmail?: string | null;
+}): Promise<void> {
+  const { row, schedulingItemId, eventId } = input;
+  let metaWarning: string | undefined;
+
+  await syncCampaignBuilderSessionAfterSchedulingOutcome({
+    eventId,
+    campaignMilestoneId: row.campaign_milestone_id,
+    milestoneName: row.milestone_name,
+    outcome: "scheduled",
+  });
+
+  const creatorEmail =
+    (await resolveUserEmailById(row.requested_by_user_id)) ??
+    input.recipientEmail ??
+    null;
+
+  const manualRecipient =
+    row.manual_email_to?.trim() || creatorEmail || null;
+  const isManualUploadKit =
+    row.delivery_method === "manual-email" ||
+    Boolean(row.manual_email_to?.trim());
+
+  const metaIntent = await resolveMetaScheduleIntent(row);
+  const publishNow = isPublishNowDelivery(row.delivery_method);
+  if (metaIntent.wantsMetaFeedSchedule) {
+    const feedScheduleAt = publishNow
+      ? new Date().toISOString()
+      : metaIntent.feedScheduleAt;
+    const metaResult = await scheduleMetaFeedFromCampaignBuilderApproval({
+      eventId,
+      milestoneName: row.milestone_name,
+      campaignMilestoneId: row.campaign_milestone_id,
+      feedArtworkUrl: row.feed_artwork_url,
+      storyArtworkUrl: row.story_artwork_url,
+      captionText: row.caption_text,
+      storyCaption: row.story_caption,
+      feedScheduleAt,
+      wantsMetaFeedSchedule: true,
+      storyManual: metaIntent.storyManual,
+      immediatePublish: publishNow,
+    });
+    if (metaResult.error) {
+      metaWarning = `Approved, but we couldn’t schedule your Facebook post: ${metaResult.error}`;
+      console.error(
+        "Meta feed schedule after CB2 approve failed:",
+        metaResult.error,
+      );
+    } else if (publishNow && metaResult.relativeDay !== null) {
+      const publishResult = await publishMetaMilestoneBundle({
+        eventId,
+        relativeDay: metaResult.relativeDay,
+        immediate: true,
+      });
+      if (!publishResult.success) {
+        metaWarning =
+          publishResult.error?.trim() ||
+          "Approved, but we couldn’t post to your Page. Open the Failed tab to try again.";
+        console.error(
+          "Immediate Meta publish after CB2 approve failed:",
+          publishResult.error,
+        );
+        await updateSchedulingItemStatus(
+          schedulingItemId,
+          "failed",
+          metaWarning,
+        );
+        await syncSchedulingItemsForMetaPublishOutcome({
+          eventId,
+          relativeDay: metaResult.relativeDay,
+          milestoneTitle: row.milestone_name,
+          outcome: "failed",
+          errorMessage: metaWarning,
+        });
+      } else {
+        const published = await updateSchedulingItemStatus(
+          schedulingItemId,
+          "published",
+        );
+        if (published) {
+          await syncCampaignBuilderSessionAfterSchedulingOutcome({
+            eventId,
+            campaignMilestoneId: row.campaign_milestone_id,
+            milestoneName: row.milestone_name,
+            outcome: "published",
+          });
+        }
+        await syncSchedulingItemsForMetaPublishOutcome({
+          eventId,
+          relativeDay: metaResult.relativeDay,
+          milestoneTitle: row.milestone_name,
+          outcome: "published",
+        });
+      }
+    }
+  }
+
+  if (input.campaignName && input.milestoneName) {
+    if (creatorEmail) {
+      await sendContentApprovedEmail({
+        eventId,
+        campaignName: input.campaignName,
+        milestoneName: input.milestoneName,
+        recipientEmail: creatorEmail,
+        schedulingItemId,
+        feedArtworkUrl: row.feed_artwork_url,
+        storyArtworkUrl: row.story_artwork_url,
+        captionText: row.caption_text,
+        storyCaption: row.story_caption,
+      });
+    }
+
+    if (isManualUploadKit && manualRecipient) {
+      const emailSendAt = resolveManualEmailSendAt(row);
+      const scheduleAtMs = emailSendAt ? new Date(emailSendAt).getTime() : NaN;
+      const dueNow =
+        !emailSendAt ||
+        Number.isNaN(scheduleAtMs) ||
+        scheduleAtMs <= Date.now();
+      // Resend allows scheduling up to 30 days ahead.
+      const withinResendWindow =
+        !dueNow &&
+        scheduleAtMs - Date.now() <= 30 * 24 * 60 * 60 * 1000;
+
+      if (dueNow || withinResendWindow) {
+        const sendResult = await sendCampaignManualUploadEmail({
+          eventId,
+          campaignName: input.campaignName,
+          milestoneName: input.milestoneName,
+          recipientEmail: manualRecipient,
+          scheduleLabel: emailSendAt
+            ? formatDateTime(emailSendAt)
+            : "Post kit",
+          schedulingItemId,
+          storyArtworkUrl: row.story_artwork_url,
+          storyCaption: row.story_caption,
+          feedCaption: row.caption_text,
+          uploadLink: row.manual_upload_link,
+          scheduledAt: dueNow ? null : emailSendAt,
+        });
+
+        if (sendResult.success) {
+          const supabase = await createClient();
+          await supabase
+            .from("approval_scheduling_items")
+            .update({
+              // Keep schedule/auto-publish when Meta feed was also scheduled.
+              ...deliveryMethodPatchAfterManualKitSend(
+                metaIntent.wantsMetaFeedSchedule,
+              ),
+              manual_upload_email_sent_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", schedulingItemId);
+        } else {
+          const emailWarning = `Approved, but we couldn’t email the post kit: ${sendResult.message}`;
+          metaWarning = metaWarning
+            ? `${metaWarning} ${emailWarning}`
+            : emailWarning;
+          console.error(
+            "Manual upload email after approve failed:",
+            sendResult.message,
+          );
+        }
+      }
+      // Beyond 30 days → daily cron /api/cron/manual-upload-emails
+    } else if (creatorEmail && row.schedule_at) {
+      await sendScheduledDeliveryEmail({
+        eventId,
+        campaignName: input.campaignName,
+        milestoneName: input.milestoneName,
+        recipientEmail: creatorEmail,
+        scheduleLabel: formatDateTime(row.schedule_at),
+        schedulingItemId,
+        feedArtworkUrl: row.feed_artwork_url,
+        storyArtworkUrl: row.story_artwork_url,
+        captionText: row.caption_text,
+        storyCaption: row.story_caption,
+      });
+    }
+  }
+
+  if (metaWarning) {
+    console.error("Approve side-effect warning (approval already saved):", metaWarning);
+  }
+
+  revalidatePath("/approvals");
+  revalidatePath(`/events/${eventId}/campaign-builder`);
 }
 
 export async function approveUnifiedItemAction(input: {
@@ -221,8 +429,6 @@ export async function approveUnifiedItemAction(input: {
   milestoneName?: string | null;
   recipientEmail?: string | null;
 }): Promise<UnifiedApprovalActionResult> {
-  let metaWarning: string | undefined;
-
   if (input.communicationItemId) {
     const result = await approveCommunicationAction(
       input.eventId,
@@ -245,6 +451,14 @@ export async function approveUnifiedItemAction(input: {
       };
     }
 
+    // Tenant guard: never approve a row from another event.
+    if (row.event_id !== input.eventId) {
+      return {
+        success: false,
+        error: "That approval doesn’t match this event.",
+      };
+    }
+
     if (
       !row.assigned_user_id &&
       !(await hasPermission("approve_comms")) &&
@@ -258,11 +472,9 @@ export async function approveUnifiedItemAction(input: {
     }
 
     // Draft-only stays pre-publish (Draft), not Posted.
-    const nextStatus: UnifiedWorkflowStatus = "scheduled";
-
     const updated = await updateSchedulingItemStatus(
       input.schedulingItemId,
-      nextStatus,
+      "scheduled",
     );
 
     if (!updated) {
@@ -272,192 +484,26 @@ export async function approveUnifiedItemAction(input: {
       };
     }
 
-    const sessionOutcome: SchedulingSessionOutcome = "scheduled";
-    await syncCampaignBuilderSessionAfterSchedulingOutcome({
+    // Return as soon as approval_scheduling_items is saved. Meta Graph, Resend,
+    // and Create with AI session sync can take seconds and must not block
+    // Ready to Ralli.
+    const sideEffectInput = {
       eventId: input.eventId,
-      campaignMilestoneId: row.campaign_milestone_id,
-      milestoneName: row.milestone_name,
-      outcome: sessionOutcome,
-    });
-
-    const creatorEmail =
-      (await resolveSchedulingCreatorEmail(input.schedulingItemId)) ??
-      input.recipientEmail ??
-      null;
-
-    const manualRecipient =
-      row.manual_email_to?.trim() || creatorEmail || null;
-    const isManualUploadKit =
-      row.delivery_method === "manual-email" ||
-      Boolean(row.manual_email_to?.trim());
-
-    const metaIntent = await resolveMetaScheduleIntent(row);
-    const publishNow = isPublishNowDelivery(row.delivery_method);
-    if (metaIntent.wantsMetaFeedSchedule) {
-      const feedScheduleAt = publishNow
-        ? new Date().toISOString()
-        : metaIntent.feedScheduleAt;
-      const metaResult = await scheduleMetaFeedFromCampaignBuilderApproval({
-        eventId: input.eventId,
-        milestoneName: row.milestone_name,
-        campaignMilestoneId: row.campaign_milestone_id,
-        feedArtworkUrl: row.feed_artwork_url,
-        storyArtworkUrl: row.story_artwork_url,
-        captionText: row.caption_text,
-        storyCaption: row.story_caption,
-        feedScheduleAt,
-        wantsMetaFeedSchedule: true,
-        storyManual: metaIntent.storyManual,
-        immediatePublish: publishNow,
-      });
-      if (metaResult.error) {
-        metaWarning = `Approved, but we couldn’t schedule your Facebook post: ${metaResult.error}`;
-        console.error(
-          "Meta feed schedule after CB2 approve failed:",
-          metaResult.error,
-        );
-      } else if (publishNow && metaResult.relativeDay !== null) {
-        const publishResult = await publishMetaMilestoneBundle({
-          eventId: input.eventId,
-          relativeDay: metaResult.relativeDay,
-          immediate: true,
-        });
-        if (!publishResult.success) {
-          metaWarning =
-            publishResult.error?.trim() ||
-            "Approved, but we couldn’t post to your Page. Open the Failed tab to try again.";
-          console.error(
-            "Immediate Meta publish after CB2 approve failed:",
-            publishResult.error,
-          );
-          await updateSchedulingItemStatus(
-            input.schedulingItemId,
-            "failed",
-            metaWarning,
-          );
-          await syncSchedulingItemsForMetaPublishOutcome({
-            eventId: input.eventId,
-            relativeDay: metaResult.relativeDay,
-            milestoneTitle: row.milestone_name,
-            outcome: "failed",
-            errorMessage: metaWarning,
-          });
-        } else {
-          const published = await updateSchedulingItemStatus(
-            input.schedulingItemId,
-            "published",
-          );
-          if (published) {
-            await syncCampaignBuilderSessionAfterSchedulingOutcome({
-              eventId: input.eventId,
-              campaignMilestoneId: row.campaign_milestone_id,
-              milestoneName: row.milestone_name,
-              outcome: "published",
-            });
-          }
-          await syncSchedulingItemsForMetaPublishOutcome({
-            eventId: input.eventId,
-            relativeDay: metaResult.relativeDay,
-            milestoneTitle: row.milestone_name,
-            outcome: "published",
-          });
-        }
-      }
-    }
-
-    if (input.campaignName && input.milestoneName) {
-      if (creatorEmail) {
-        await sendContentApprovedEmail({
-          eventId: input.eventId,
-          campaignName: input.campaignName,
-          milestoneName: input.milestoneName,
-          recipientEmail: creatorEmail,
-          schedulingItemId: input.schedulingItemId,
-          feedArtworkUrl: row.feed_artwork_url,
-          storyArtworkUrl: row.story_artwork_url,
-          captionText: row.caption_text,
-          storyCaption: row.story_caption,
-        });
-      }
-
-      if (isManualUploadKit && manualRecipient) {
-        const emailSendAt = resolveManualEmailSendAt(row);
-        const scheduleAtMs = emailSendAt ? new Date(emailSendAt).getTime() : NaN;
-        const dueNow =
-          !emailSendAt ||
-          Number.isNaN(scheduleAtMs) ||
-          scheduleAtMs <= Date.now();
-        // Resend allows scheduling up to 30 days ahead.
-        const withinResendWindow =
-          !dueNow &&
-          scheduleAtMs - Date.now() <= 30 * 24 * 60 * 60 * 1000;
-
-        if (dueNow || withinResendWindow) {
-          const sendResult = await sendCampaignManualUploadEmail({
-            eventId: input.eventId,
-            campaignName: input.campaignName,
-            milestoneName: input.milestoneName,
-            recipientEmail: manualRecipient,
-            scheduleLabel: emailSendAt
-              ? formatDateTime(emailSendAt)
-              : "Post kit",
-            schedulingItemId: input.schedulingItemId,
-            storyArtworkUrl: row.story_artwork_url,
-            storyCaption: row.story_caption,
-            feedCaption: row.caption_text,
-            uploadLink: row.manual_upload_link,
-            scheduledAt: dueNow ? null : emailSendAt,
-          });
-
-          if (sendResult.success) {
-            const supabase = await createClient();
-            await supabase
-              .from("approval_scheduling_items")
-              .update({
-                // Keep schedule/auto-publish when Meta feed was also scheduled.
-                ...deliveryMethodPatchAfterManualKitSend(
-                  metaIntent.wantsMetaFeedSchedule,
-                ),
-                manual_upload_email_sent_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", input.schedulingItemId);
-          } else {
-            const emailWarning = `Approved, but we couldn’t email the post kit: ${sendResult.message}`;
-            metaWarning = metaWarning
-              ? `${metaWarning} ${emailWarning}`
-              : emailWarning;
-            console.error(
-              "Manual upload email after approve failed:",
-              sendResult.message,
-            );
-          }
-        }
-        // Beyond 30 days → daily cron /api/cron/manual-upload-emails
-      } else if (
-        creatorEmail &&
-        row.schedule_at &&
-        nextStatus === "scheduled"
-      ) {
-        await sendScheduledDeliveryEmail({
-          eventId: input.eventId,
-          campaignName: input.campaignName,
-          milestoneName: input.milestoneName,
-          recipientEmail: creatorEmail,
-          scheduleLabel: formatDateTime(row.schedule_at),
-          schedulingItemId: input.schedulingItemId,
-          feedArtworkUrl: row.feed_artwork_url,
-          storyArtworkUrl: row.story_artwork_url,
-          captionText: row.caption_text,
-          storyCaption: row.story_caption,
-        });
-      }
-    }
+      schedulingItemId: input.schedulingItemId,
+      row: row as ApprovalSchedulingItemRow,
+      campaignName: input.campaignName,
+      milestoneName: input.milestoneName,
+      recipientEmail: input.recipientEmail,
+    };
+    after(() =>
+      runApproveSchedulingSideEffects(sideEffectInput).catch((error) => {
+        console.error("Approve scheduling side effects failed:", error);
+      }),
+    );
   }
 
   revalidatePath("/approvals");
-  revalidatePath(`/events/${input.eventId}/campaign-builder`);
-  return { success: true, warning: metaWarning };
+  return { success: true };
 }
 
 export async function requestUnifiedChangesAction(input: {

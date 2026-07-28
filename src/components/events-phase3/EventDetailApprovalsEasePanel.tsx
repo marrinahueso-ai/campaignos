@@ -194,8 +194,8 @@ export function EventDetailApprovalsEasePanel({
         return;
       }
       setReviewItem(null);
-      // Hold Meta/email follow-up warnings until celebration dismisses —
-      // never flash them as a red error under the win moment.
+      // Celebrate immediately — Meta/email run after the server returns.
+      // Hold any follow-up warnings until celebration dismisses.
       setCelebration({
         scheduleLabel: approvedItem.scheduleLabel,
         scheduleSubline: approvedItem.scheduleLabel
@@ -203,7 +203,7 @@ export function EventDetailApprovalsEasePanel({
           : "Approved and ready to post",
         pendingWarning: result.warning?.trim() || null,
       });
-      await refresh();
+      void refresh();
     } finally {
       setIsSubmitting(false);
     }
