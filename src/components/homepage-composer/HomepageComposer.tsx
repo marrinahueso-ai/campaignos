@@ -908,8 +908,8 @@ export function HomepageComposer({
                 Homepage Composer
               </h1>
               <p className="mt-0.5 max-w-xl text-sm leading-snug text-cos-muted">
-                Full page for Membership Toolkit — header, cards, footer,
-                helpful resources, colors, and on/off dates.
+                Build your homepage — header, cards, footer, helpful resources,
+                colors, and on/off dates.
               </p>
             </div>
             <p
@@ -959,7 +959,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your header"
-                body="Colors, welcome copy, CTAs, cards section title, and announcements."
+                body="Colors, welcome copy, buttons, cards section title, and announcements."
                 actions={
                   <Button type="button" onClick={() => setStep("footer")}>
                     Save → Footer
@@ -1441,7 +1441,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your footer"
-                body="Get Involved CTA colors plus Helpful Resources quick links."
+                body="Get Involved colors plus Helpful Resources quick links."
                 actions={
                   <>
                     <Button
@@ -1461,7 +1461,7 @@ export function HomepageComposer({
               <SettingsBox
                 compact
                 title="Footer design"
-                description="CTA block colors and copy for the Get Involved section."
+                description="Colors and copy for the Get Involved section."
               >
                 <div
                   className="mb-4 rounded-[18px] px-6 py-8 text-center"
@@ -1557,7 +1557,7 @@ export function HomepageComposer({
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <Field
-                    label="CTA title"
+                    label="Title"
                     value={state.footer.ctaTitle}
                     onChange={(v) =>
                       setState((p) => ({
@@ -1567,7 +1567,7 @@ export function HomepageComposer({
                     }
                   />
                   <Field
-                    label="CTA button label"
+                    label="Button label"
                     value={state.footer.ctaButtonLabel}
                     onChange={(v) =>
                       setState((p) => ({
@@ -1577,7 +1577,7 @@ export function HomepageComposer({
                     }
                   />
                   <Field
-                    label="CTA body"
+                    label="Body"
                     value={state.footer.ctaBody}
                     onChange={(v) =>
                       setState((p) => ({
@@ -1588,7 +1588,7 @@ export function HomepageComposer({
                     multiline
                   />
                   <Field
-                    label="CTA button URL"
+                    label="Button URL"
                     value={state.footer.ctaButtonUrl}
                     onChange={(v) =>
                       setState((p) => ({
@@ -2158,8 +2158,8 @@ export function HomepageComposer({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <strong className="text-sm text-cos-text">
                     {isFullMonthPreview
-                      ? "Full month check"
-                      : "View as parent on"}
+                      ? "Full month preview"
+                      : "Preview on"}
                   </strong>
                   <div className="flex flex-wrap items-center gap-2">
                     {isFullMonthPreview ? (
@@ -2271,7 +2271,7 @@ export function HomepageComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Copy full page code"
-                body="Complete Membership Toolkit HTML: styles, header, cards, footer, helpful resources, and date script."
+                body="Complete homepage HTML — styles, header, cards, footer, helpful resources, and date script."
                 actions={
                   <>
                     <Button

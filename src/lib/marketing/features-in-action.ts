@@ -44,11 +44,11 @@ export const CREATE_WITH_AI_MODULES: CreateWithAiModule[] = [
     id: "homepage",
     title: "Home Page",
     summary:
-      "Build Membership Toolkit–style webpage HTML from your events — blurbs, artwork, on/off dates, and a live preview.",
+      "Build webpage HTML from your events — blurbs, artwork, on/off dates, and a live preview.",
     details: [
       "Pick events and evergreen cards for the month",
       "Generate short card blurbs with AI when you want a draft",
-      "Preview, then copy HTML for your school site toolkit",
+      "Preview, then copy HTML for your school site",
     ],
   },
   {

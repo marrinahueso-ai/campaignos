@@ -22,7 +22,7 @@ function formatBadgeDate(ymd: string | null): string {
   return `${ymd.slice(5, 7)}-${ymd.slice(8, 10)}`;
 }
 
-/** Builder / audit helper — not shown on parent preview or live export. */
+/** Builder / audit helper — not shown on preview or live export. */
 export function formatOpportunityWindow(role: VolunteerOpportunity): string {
   if (role.alwaysOn) return "Always on";
   const on = role.startsOn ? formatBadgeDate(role.startsOn) : "—";

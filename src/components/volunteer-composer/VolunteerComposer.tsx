@@ -665,9 +665,8 @@ export function VolunteerComposer({
                 Volunteer With Us
               </h1>
               <p className="mt-0.5 max-w-xl text-sm leading-snug text-cos-muted">
-                Build your Volunteer page — header, opportunities with
-                SignUpGenius links &amp; on/off dates, footer, preview, and HTML
-                export for your website.
+                Build your Volunteer page — header, opportunities, signup links,
+                on/off dates, footer, preview, and HTML export for your website.
               </p>
             </div>
             <p
@@ -894,7 +893,7 @@ export function VolunteerComposer({
                     }
                   />
                   <ColorField
-                    label="CTA button"
+                    label="Button"
                     value={hc.buttonBackground}
                     onChange={(hex) => {
                       const buttonBackground = normalizeHex(
@@ -911,7 +910,7 @@ export function VolunteerComposer({
                     }}
                   />
                   <ColorField
-                    label="CTA text"
+                    label="Button text"
                     value={hc.buttonText}
                     onChange={(buttonText) =>
                       patchHeader({ colors: { ...hc, buttonText } })
@@ -1065,12 +1064,12 @@ export function VolunteerComposer({
               >
                 <div className="space-y-3">
                   <Field
-                    label="CTA title"
+                    label="Title"
                     value={state.footer.ctaTitle}
                     onChange={(ctaTitle) => patchFooter({ ctaTitle })}
                   />
                   <Field
-                    label="CTA body / contact"
+                    label="Body / contact"
                     value={state.footer.ctaBody}
                     onChange={(ctaBody) => patchFooter({ ctaBody })}
                     multiline
@@ -1138,7 +1137,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Volunteer opportunities"
-                body="Pick events, edit SignUpGenius links, and set on/off dates so parents only see open roles."
+                body="Pick events, edit signup links, and set on/off dates so only open roles show."
                 actions={
                   <>
                     <Button
@@ -1182,7 +1181,7 @@ export function VolunteerComposer({
                 <strong className="text-cos-text">On / off dates:</strong> each
                 card appears starting on the on date, stays through the off
                 date, then closes the next morning. Use Always on for roles that
-                stay open. Preview includes a date slider to check what parents
+                stay open. Preview includes a date slider to check what visitors
                 will see.
               </div>
 
@@ -1433,7 +1432,7 @@ export function VolunteerComposer({
                                   }
                                 />
                                 <Field
-                                  label="SignUpGenius / link URL"
+                                  label="Signup link"
                                   value={op.signupUrl}
                                   onChange={(signupUrl) =>
                                     patchOpportunity(op.id, { signupUrl })
@@ -1504,7 +1503,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body="Full page parents will see. Drag the date slider to watch opportunities open, stay available, or close."
+                body="Full page preview. Drag the date slider to watch opportunities open, stay available, or close."
                 actions={
                   <>
                     <Button
@@ -1525,8 +1524,8 @@ export function VolunteerComposer({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <strong className="text-sm text-cos-text">
                     {isFullMonthPreview
-                      ? "Full month check"
-                      : "View as parent on"}
+                      ? "Full month preview"
+                      : "Preview on"}
                   </strong>
                   <span className="rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm font-semibold text-cos-text">
                     {formatPreviewSliderLabel(previewDate)}
@@ -1648,7 +1647,7 @@ export function VolunteerComposer({
                 <ul className="space-y-2 text-sm text-cos-text">
                   <li>✓ Full Volunteer page</li>
                   <li>✓ Header &amp; footer colors with 1–2 buttons each</li>
-                  <li>✓ Opportunities with artwork &amp; SignUpGenius links</li>
+                  <li>✓ Opportunities with artwork &amp; signup links</li>
                   <li>✓ Roles roll on/off by date (closed roles hide)</li>
                   <li>✓ Paste into your website → Custom HTML</li>
                 </ul>

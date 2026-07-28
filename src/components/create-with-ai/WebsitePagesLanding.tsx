@@ -83,11 +83,7 @@ const PAGES = [
   {
     id: "homepage" as const,
     title: "Homepage",
-    slug: "Homepage",
-    description:
-      "Header, event cards, footer, and helpful resources — pick events, blurbs, on/off dates, preview, and export.",
-    meta: ["Homepage template", "Live"],
-    cta: "Open Homepage Composer →",
+    status: "Live",
     href: "/homepage-composer",
     Art: HomepageArt,
     enabled: true as const,
@@ -95,23 +91,15 @@ const PAGES = [
   {
     id: "volunteer" as const,
     title: "Volunteer",
-    slug: "Volunteer page",
-    description:
-      "Volunteer With Us — opportunities with SignUpGenius links, on/off dates, parent preview, and full HTML export for your website.",
-    meta: ["Volunteer template", "Live"],
-    cta: "Open Volunteer Composer →",
+    status: "Live",
     href: "/volunteer-composer",
     Art: VolunteerArt,
     enabled: true as const,
   },
   {
     id: "sponsorship" as const,
-    title: "Sponsorship Calendar",
-    slug: "Sponsorship page",
-    description:
-      "Tiers, partner cards, and become-a-sponsor CTA — coming next.",
-    meta: ["Sponsorship template", "Coming soon"],
-    cta: "Coming soon",
+    title: "Sponsorship",
+    status: "Coming soon",
     href: null,
     Art: SponsorshipArt,
     enabled: false as const,
@@ -168,9 +156,8 @@ export function WebsitePagesLanding({
           Website pages
         </h1>
         <p className="text-sm leading-relaxed text-cos-muted sm:text-base">
-          Website page templates
-          {organizationName ? ` for ${organizationName}` : ""}. Edit, preview,
-          and export a full page for your site.
+          Edit, preview, and export pages for your site
+          {organizationName ? ` — ${organizationName}` : ""}.
         </p>
       </header>
 
@@ -180,42 +167,26 @@ export function WebsitePagesLanding({
             <>
               <page.Art />
               <div className="mt-4 flex flex-1 flex-col px-1">
-                {!page.enabled ? (
-                  <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-cos-muted">
-                    Coming soon
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-display text-2xl text-cos-text">
+                    {page.title}
+                  </h2>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                      page.enabled
+                        ? "bg-[#e8f0ec] text-[#2f4a3c]"
+                        : "bg-cos-bg-alt text-cos-muted",
+                    )}
+                  >
+                    {page.status}
                   </span>
-                ) : (
-                  <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f4a3c]">
-                    Ready to edit
-                  </span>
-                )}
-                <h2 className="font-display text-2xl text-cos-text">
-                  {page.title}
-                </h2>
-                <p className="mt-1 text-xs font-semibold text-[#2a7a86]">
-                  {page.slug}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {page.meta.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-cos-bg-alt px-2 py-0.5 text-[11px] font-semibold text-cos-muted"
-                    >
-                      {tag}
-                    </span>
-                  ))}
                 </div>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-cos-muted">
-                  {page.description}
-                </p>
-                <p
-                  className={cn(
-                    "mt-4 text-sm font-semibold transition-colors",
-                    page.enabled ? "text-cos-brand-sage" : "text-cos-muted",
-                  )}
-                >
-                  {page.cta}
-                </p>
+                {page.enabled ? (
+                  <p className="mt-4 text-sm font-semibold text-cos-brand-sage transition-colors group-hover:text-[#2f4a3c]">
+                    Open →
+                  </p>
+                ) : null}
               </div>
             </>
           );
