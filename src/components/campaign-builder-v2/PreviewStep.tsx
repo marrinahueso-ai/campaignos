@@ -27,6 +27,7 @@ import {
   getSharedCaptionText,
   syncCaptionsToPlatforms,
 } from "@/lib/campaign-builder-v2/caption-utils";
+import { removeMilestoneArtworkBackup } from "@/lib/campaign-builder-v2/artwork-backup";
 import {
   allMilestonesGenerated,
   canResendMilestoneForApproval,
@@ -37,6 +38,7 @@ import {
   generationStatusAfterContent,
   inferGenerationStatus,
   isMilestoneContentComplete,
+  milestoneHasArtwork,
   milestoneHasPartialContent,
   preserveApprovalWorkflowStatus,
   previewAfterResendForApproval,
@@ -49,6 +51,7 @@ import {
   enabledArtworkViews,
   isPlaceholderArtworkUrl,
 } from "@/lib/campaign-builder-v2/platform-utils";
+import { rejectArtworkView } from "@/lib/campaign-builder-v2/reject-artwork";
 import { cn } from "@/lib/utils/cn";
 import type {
   ArtworkView,
@@ -152,6 +155,61 @@ export function PreviewStep() {
       // Allow retry from the same icon.
     } finally {
       setDownloadingView(null);
+    }
+  }
+
+  async function handleRejectArtwork(view: ArtworkView) {
+    if (!selectedPreview || !selectedId) {
+      return;
+    }
+
+    const currentStatus = resolveMilestoneGenerationStatus(
+      selectedPreview,
+      selectedMilestone?.platformFormats,
+    );
+    const nextArtwork = rejectArtworkView(selectedPreview.artwork, view);
+    const inferred = generationStatusAfterContent(
+      { ...selectedPreview, artwork: nextArtwork },
+      selectedPreview.enabledFormats,
+    );
+
+    updatePreviewContent(selectedId, {
+      artwork: nextArtwork,
+      generationStatus: preserveApprovalWorkflowStatus(currentStatus, inferred),
+      status: milestoneHasArtwork({
+        ...selectedPreview,
+        artwork: nextArtwork,
+      })
+        ? "needs-review"
+        : "draft",
+    });
+
+    if (
+      !milestoneHasArtwork({
+        ...selectedPreview,
+        artwork: nextArtwork,
+      })
+    ) {
+      removeMilestoneArtworkBackup(session.eventId, selectedId);
+    }
+
+    try {
+      await flushSave();
+      const syncResult = await syncAppliedMilestoneArtworkAction({
+        eventId: session.eventId,
+        milestones: session.milestones,
+        milestoneId: selectedId,
+        artwork: nextArtwork,
+        revalidate: false,
+      });
+      if (!syncResult.success) {
+        console.error(
+          "Failed to sync rejected artwork to event assets:",
+          syncResult.message,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to persist rejected artwork:", error);
     }
   }
 
@@ -585,6 +643,14 @@ export function PreviewStep() {
                               }
                               downloadDisabled={downloadingView === view}
                               downloadLabel={`Download ${viewLabel}`}
+                              onReject={
+                                canDownload
+                                  ? () => {
+                                      void handleRejectArtwork(view);
+                                    }
+                                  : undefined
+                              }
+                              rejectLabel={`Reject ${viewLabel} image`}
                             />
                           </div>
                         );

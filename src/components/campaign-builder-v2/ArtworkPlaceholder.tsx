@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Download, ImageIcon, X } from "lucide-react";
+import { Download, ImageIcon, ThumbsDown, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { isPlaceholderArtworkUrl } from "@/lib/campaign-builder-v2/platform-utils";
 import { cn } from "@/lib/utils/cn";
@@ -20,6 +20,10 @@ interface ArtworkPlaceholderProps {
   onDownload?: () => void;
   downloadDisabled?: boolean;
   downloadLabel?: string;
+  /** Subtle Reject control after generation — discards this image slot. */
+  onReject?: () => void;
+  rejectDisabled?: boolean;
+  rejectLabel?: string;
 }
 
 function isOptimizableImageUrl(url: string): boolean {
@@ -41,9 +45,13 @@ export function ArtworkPlaceholder({
   onDownload,
   downloadDisabled = false,
   downloadLabel = "Download artwork",
+  onReject,
+  rejectDisabled = false,
+  rejectLabel = "Reject this image",
 }: ArtworkPlaceholderProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const hasImage = Boolean(imageUrl && !isPlaceholderArtworkUrl(imageUrl));
+  const hasCornerActions = Boolean(onDownload || onReject);
 
   useEffect(() => {
     if (!lightboxOpen) return;
@@ -99,21 +107,43 @@ export function ArtworkPlaceholder({
           <span className="pointer-events-none absolute bottom-1/2 left-1/2 z-10 -translate-x-1/2 translate-y-2 rounded-full bg-[rgba(28,36,48,0.72)] px-2.5 py-1 text-[10px] font-bold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
             Click to enlarge
           </span>
-          {onDownload ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="absolute right-2 bottom-2 z-10 h-8 w-8 border border-cos-border bg-white/95 p-0 opacity-0 shadow-sm transition group-hover:opacity-100 hover:bg-white focus:opacity-100"
-              disabled={downloadDisabled}
-              onClick={(event) => {
-                event.stopPropagation();
-                onDownload();
-              }}
-              aria-label={downloadLabel}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
+          {hasCornerActions ? (
+            <div className="absolute right-2 bottom-2 z-10 flex items-center gap-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+              {onReject ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 w-8 border border-cos-border bg-white/95 p-0 text-cos-muted shadow-sm hover:bg-white hover:text-cos-text focus:opacity-100"
+                  disabled={rejectDisabled}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onReject();
+                  }}
+                  aria-label={rejectLabel}
+                  title={rejectLabel}
+                >
+                  <ThumbsDown className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </Button>
+              ) : null}
+              {onDownload ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 w-8 border border-cos-border bg-white/95 p-0 shadow-sm hover:bg-white focus:opacity-100"
+                  disabled={downloadDisabled}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDownload();
+                  }}
+                  aria-label={downloadLabel}
+                  title={downloadLabel}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -160,17 +190,35 @@ export function ArtworkPlaceholder({
                 <p className="text-sm font-semibold text-cos-muted">
                   Generated artwork
                 </p>
-                {onDownload ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={onDownload}
-                    disabled={downloadDisabled}
-                  >
-                    <Download className="h-4 w-4" />
-                    Download
-                  </Button>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {onReject ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setLightboxOpen(false);
+                        onReject();
+                      }}
+                      disabled={rejectDisabled}
+                      aria-label={rejectLabel}
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" strokeWidth={1.75} />
+                      Reject
+                    </Button>
+                  ) : null}
+                  {onDownload ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onDownload}
+                      disabled={downloadDisabled}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

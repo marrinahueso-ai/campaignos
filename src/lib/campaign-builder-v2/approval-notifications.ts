@@ -221,7 +221,7 @@ async function dispatchApprovalEmail(input: {
       success: false,
       wired: false,
       message:
-        "Email notifications are not configured (set RESEND_API_KEY). Notification was logged only.",
+        "Email isn’t set up yet — your team was notified in the app only.",
     };
   }
 
@@ -258,7 +258,7 @@ async function dispatchApprovalEmail(input: {
     success: true,
     wired: true,
     message: input.scheduledAt
-      ? "Manual upload email scheduled with Resend."
+      ? "Post kit email scheduled."
       : "Email notification sent.",
   };
 }
@@ -344,16 +344,16 @@ export async function sendChangeRequestedEmail(
   const changeDateHref = editPreviewHref;
   const primaryHref = editArtworkHref ?? changeDateHref ?? reviewHref;
   const primaryLabel = editArtworkHref
-    ? "Edit Artwork"
+    ? "Edit artwork"
     : changeDateHref
-      ? "Change Date"
-      : "View in Create with AI";
+      ? "Change date"
+      : "Open campaign review";
   const secondaryCtaLabel = editArtworkHref
     ? changeDateHref
-      ? "Change Date"
-      : "Open Review step"
+      ? "Change date"
+      : "Open review"
     : changeDateHref
-      ? "Open Review step"
+      ? "Open review"
       : undefined;
   const secondaryCtaHref = editArtworkHref
     ? (changeDateHref ?? reviewHref)
@@ -361,10 +361,10 @@ export async function sendChangeRequestedEmail(
       ? reviewHref
       : undefined;
   const content = contentPreviewFromInput(input);
-  const commentBox = `<div style="margin:16px 0;padding:12px 14px;border:1px solid #f0c4c4;background:#fdf2f2;color:#8b3f3f;font-size:14px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><strong style="display:block;margin-bottom:6px;">Change request</strong>${escapeHtml(input.comment)}</div>`;
+  const commentBox = `<div style="margin:16px 0;padding:12px 14px;border:1px solid #f0c4c4;background:#fdf2f2;color:#8b3f3f;font-size:14px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"><strong style="display:block;margin-bottom:6px;">What to fix</strong>${escapeHtml(input.comment)}</div>`;
   const html = buildApprovalEmailHtml({
     heading: "Changes requested",
-    body: `An approver requested changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}. Use <strong>Edit Artwork</strong> or <strong>Change Date</strong> below, then send for re-approval from Preview or Review — regenerating artwork is optional.${commentBox}`,
+    body: `Someone on your team asked for changes to <strong>${escapeHtml(input.milestoneName)}</strong> in ${escapeHtml(input.campaignName)}. Edit the artwork or date below, then send it back for approval — you don’t have to regenerate artwork unless you want to.${commentBox}`,
     ctaLabel: primaryLabel,
     ctaHref: primaryHref,
     secondaryCtaLabel,
@@ -373,8 +373,8 @@ export async function sendChangeRequestedEmail(
   });
 
   const textLinks = [
-    editArtworkHref ? `Edit Artwork: ${editArtworkHref}` : null,
-    changeDateHref ? `Change Date: ${changeDateHref}` : null,
+    editArtworkHref ? `Edit artwork: ${editArtworkHref}` : null,
+    changeDateHref ? `Change date: ${changeDateHref}` : null,
     !editArtworkHref && !changeDateHref ? `Open ${reviewHref}` : null,
   ]
     .filter(Boolean)

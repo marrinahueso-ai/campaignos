@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/Textarea";
 import { regenerateMilestoneArtworkAction } from "@/lib/campaign-builder-v2/actions";
 import { prepareInspirationImagesForServer } from "@/lib/campaign-builder-v2/inspiration-client";
 import { aspectClassForView } from "@/lib/campaign-builder-v2/platform-utils";
+import { rejectArtworkView } from "@/lib/campaign-builder-v2/reject-artwork";
 import type {
+  ArtworkView,
   CampaignBuilderInspiration,
   CampaignBuilderMilestone,
   MilestoneArtwork,
@@ -106,6 +108,10 @@ export function EditArtworkModal({
 
   function handleApply() {
     onApply(previewArtwork);
+  }
+
+  function handleRejectPreview(view: ArtworkView) {
+    setPreviewArtwork((prev) => rejectArtworkView(prev, view));
   }
 
   async function handleResendForApproval() {
@@ -236,11 +242,23 @@ export function EditArtworkModal({
               <ArtworkPlaceholder
                 aspectClassName={aspectClassForView("feed")}
                 imageUrl={previewArtwork.feedUrl}
+                onReject={
+                  previewArtwork.feedUrl
+                    ? () => handleRejectPreview("feed")
+                    : undefined
+                }
+                rejectLabel="Reject feed image"
               />
               <ArtworkPlaceholder
                 aspectClassName={aspectClassForView("story")}
                 imageUrl={previewArtwork.storyUrl}
                 className="max-h-64"
+                onReject={
+                  previewArtwork.storyUrl
+                    ? () => handleRejectPreview("story")
+                    : undefined
+                }
+                rejectLabel="Reject story image"
               />
             </div>
           </div>

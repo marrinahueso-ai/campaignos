@@ -121,6 +121,45 @@ export function loadArtworkBackup(eventId: string): ArtworkBackupMap | null {
   }
 }
 
+/**
+ * Drop one milestone from the artwork backup after Reject.
+ * Needed when the session no longer has any artwork — persistArtworkBackup
+ * intentionally skips empty writes so mid-hydrate does not wipe a good backup.
+ */
+export function removeMilestoneArtworkBackup(
+  eventId: string,
+  milestoneId: string,
+): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const backup = loadArtworkBackup(eventId);
+    if (!backup || !(milestoneId in backup)) {
+      return true;
+    }
+
+    delete backup[milestoneId];
+    const key = artworkBackupKey(eventId);
+    if (Object.keys(backup).length === 0) {
+      window.localStorage.removeItem(key);
+      lastArtworkBackupJsonByEventId.delete(eventId);
+      return true;
+    }
+
+    const json = JSON.stringify(backup);
+    window.localStorage.setItem(key, json);
+    lastArtworkBackupJsonByEventId.set(eventId, json);
+    return true;
+  } catch {
+    console.error(
+      "Campaign builder: could not remove milestone from artwork backup.",
+    );
+    return false;
+  }
+}
+
 function backupEntryForMilestone(
   backup: ArtworkBackupMap,
   milestone: CampaignBuilderMilestone,
