@@ -85,7 +85,7 @@ describe("onboarding state", () => {
     const brand = items.find((item) => item.id === "brand");
     assert.equal(brand?.done, false);
     assert.equal(brand?.href, "/settings/branding");
-    assert.equal(brand?.title, "Build your brand kit");
+    assert.equal(brand?.title, "Connect your brand kit");
     assert.equal(brand?.cta, "Set up now");
     assert.equal(
       items.find((item) => item.id === "calendar")?.href,

@@ -36,7 +36,7 @@ Status hints: **shipped**, **partial**, **stub**, **deferred**, **removed**.
   - Org bootstrap glue only when no membership (`/onboarding` quiet name → continue); restart / replay → `/events/create?onboarding=1` (not a separate Welcome step UI)
   - After first-event save: routes to `/onboarding/essentials` (not the old calendar-only overlay); legacy `?onboarding=calendar|brand|invite|meta` on the event redirects to essentials/connect
   - Legacy `/onboarding/invite` and `/onboarding/meta` redirect to `/onboarding/connect`
-  - Helpful next steps on **home/dashboard** until done: **Set up now** + **Later**; Settings → Get started shows the same simple cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`
+  - Helpful next steps on **home/dashboard** until done: compact title-only cards (**Connect to your calendar**, brand, invite, Meta) with **Set up now** + **Later**; Settings → Get started shows the same cards (no wizard); checklist invite/meta “Set up now” → `/onboarding/connect`
   - Progress on `organizations.onboarding_state` (incl. meta completed/skipped/checklist-dismissed)
   - Creating an onboarding event clears stale flags so Calendar → Brand → Team → Meta can replay
   - Organization settings: **no** boarding steppers; Brand CTA → `/onboarding/brand?standalone=1` (no Event/Calendar/Team/Meta chrome); Edit profile stays on org settings (never `?view=wizard`); founding with no membership → `/onboarding` (no SchoolSetupWizard)
