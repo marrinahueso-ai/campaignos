@@ -19,6 +19,7 @@ function role(partial: Partial<VolunteerOpportunity>): VolunteerOpportunity {
     source: "custom",
     eventId: null,
     emoji: "🤝",
+    imageUrl: null,
     title: "Helper",
     blurb: "Help out",
     whenLabel: "Aug 5",
@@ -62,17 +63,18 @@ describe("volunteer composer visibility", () => {
 });
 
 describe("volunteer composer defaults + export", () => {
-  it("builds opportunities from events with signup URLs", () => {
+  it("builds opportunities from events with signup URLs and artwork", () => {
     const opp = opportunityFromEvent({
       id: "evt-1",
       title: "Book Fair",
       description: "Help shelve books and greet families at the fair.",
       date: "2026-09-12",
       time: "09:00",
-      imageUrl: null,
+      imageUrl: "https://cdn.example/bookfair.png",
       volunteerSignupUrl: "https://www.signupgenius.com/go/bookfair",
     });
     assert.equal(opp.eventId, "evt-1");
+    assert.equal(opp.imageUrl, "https://cdn.example/bookfair.png");
     assert.equal(opp.signupUrl.includes("signupgenius"), true);
     assert.equal(opp.expiresOn, "2026-09-12");
   });
@@ -97,10 +99,11 @@ describe("volunteer composer defaults + export", () => {
     assert.ok(normalized);
     assert.equal(normalized.header.organizationLabel, "Lincoln PTO");
     assert.equal(normalized.opportunities[0]?.emoji, "🤝");
+    assert.equal(normalized.opportunities[0]?.imageUrl, null);
     assert.equal(normalized.header.buttonCount, 2);
   });
 
-  it("exports Membership Toolkit HTML with opportunity anchors", () => {
+  it("exports Membership Toolkit HTML with opportunity anchors and artwork", () => {
     const state = buildInitialState(
       [
         {
@@ -109,7 +112,7 @@ describe("volunteer composer defaults + export", () => {
           description: "Welcome families.",
           date: "2026-08-08",
           time: null,
-          imageUrl: null,
+          imageUrl: "https://cdn.example/fair.png",
           volunteerSignupUrl: "https://www.signupgenius.com/go/fair",
         },
       ],
@@ -120,5 +123,9 @@ describe("volunteer composer defaults + export", () => {
     assert.match(html, /id="opportunities"/);
     assert.match(html, /signupgenius\.com\/go\/fair/);
     assert.match(html, /data-expires="2026-08-08"/);
+    assert.match(html, /cdn\.example\/fair\.png/);
+    assert.match(html, /class="vol-thumb"/);
+    assert.match(html, /inline-flex;align-items:center;justify-content:center/);
+    assert.match(html, /Browse events and programs below/);
   });
 });

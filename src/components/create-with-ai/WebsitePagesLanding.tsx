@@ -83,7 +83,7 @@ const PAGES = [
   {
     id: "homepage" as const,
     title: "Homepage",
-    slug: "/ (MTK home)",
+    slug: "/ (home)",
     description:
       "Header, event cards, footer, and helpful resources — pick events, blurbs, on/off dates, preview, and export.",
     meta: ["Homepage template", "Live"],
@@ -169,8 +169,8 @@ export function WebsitePagesLanding({
         </h1>
         <p className="text-sm leading-relaxed text-cos-muted sm:text-base">
           Membership Toolkit page templates
-          {organizationName ? ` for ${organizationName}` : ""} — Level 1
-          composers today; block builder later. Each export is one full page.
+          {organizationName ? ` for ${organizationName}` : ""}. Edit, preview,
+          and export a full page for your site.
         </p>
       </header>
 

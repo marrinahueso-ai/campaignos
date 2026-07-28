@@ -39,9 +39,9 @@ export function defaultFooterColors(): VolunteerFooterColors {
 
 export function defaultHowToSteps(): [string, string, string] {
   return [
-    "Choose an opportunity — browse events and programs below.",
-    "View available times — open a card to see positions and slots.",
-    "Complete your sign-up — add your name on SignUpGenius.",
+    "Choose an opportunity — Browse events and programs below.",
+    "View available times — Open a card to see positions and slots.",
+    "Complete your sign-up — Add your name on SignUpGenius.",
   ];
 }
 
@@ -95,6 +95,7 @@ export function opportunityFromEvent(
     source: "event",
     eventId: event.id,
     emoji: DEFAULT_EMOJIS[Math.abs(hashId(event.id)) % DEFAULT_EMOJIS.length]!,
+    imageUrl: event.imageUrl?.trim() || null,
     title: event.title,
     blurb: buildEventBlurb(event),
     whenLabel: formatEventWhen(event.date, event.time),
@@ -113,6 +114,7 @@ export function newCustomOpportunity(index = 0): VolunteerOpportunity {
     source: "custom",
     eventId: null,
     emoji: DEFAULT_EMOJIS[index % DEFAULT_EMOJIS.length]!,
+    imageUrl: null,
     title: "New volunteer role",
     blurb: "Describe what helpers will do.",
     whenLabel: "Date TBD",
@@ -127,6 +129,17 @@ function hashId(id: string): number {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return h;
+}
+
+/** Capitalize the detail after an em dash for customer-facing how-to copy. */
+function capitalizeHowToLine(line: string): string {
+  const parts = line.split("—");
+  if (parts.length < 2) return line;
+  const strong = (parts[0] || "").trimEnd();
+  const detail = parts.slice(1).join("—").trim();
+  if (!detail) return line;
+  const capped = detail.charAt(0).toUpperCase() + detail.slice(1);
+  return `${strong} — ${capped}`;
 }
 
 export function buildInitialState(
@@ -170,6 +183,10 @@ function asOpportunity(raw: unknown): VolunteerOpportunity | null {
     source: o.source === "custom" ? "custom" : "event",
     eventId: o.eventId == null ? null : String(o.eventId),
     emoji: String(o.emoji ?? "🤝") || "🤝",
+    imageUrl:
+      o.imageUrl == null || o.imageUrl === ""
+        ? null
+        : String(o.imageUrl),
     title: String(o.title ?? ""),
     blurb: String(o.blurb ?? ""),
     whenLabel: String(o.whenLabel ?? ""),
@@ -207,7 +224,7 @@ export function normalizeComposerState(
       : {};
 
   const howTo = Array.isArray(headerRaw.howToSteps)
-    ? headerRaw.howToSteps.map((s) => String(s ?? ""))
+    ? headerRaw.howToSteps.map((s) => capitalizeHowToLine(String(s ?? "")))
     : base.header.howToSteps;
   while (howTo.length < 3) howTo.push("");
 

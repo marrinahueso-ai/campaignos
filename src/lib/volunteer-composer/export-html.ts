@@ -40,11 +40,33 @@ function activeButtons(
   return list.filter((b) => b.label.trim());
 }
 
+function capitalizeSentence(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 function parseHowTo(line: string): { strong: string; span: string } {
   const parts = line.split("—");
   const strong = (parts[0] || line).trim();
-  const span = parts.length > 1 ? parts.slice(1).join("—").trim() : "";
+  const span =
+    parts.length > 1
+      ? capitalizeSentence(parts.slice(1).join("—"))
+      : "";
   return { strong, span };
+}
+
+function exportImageUrl(
+  imageUrl: string | null,
+  options: { includeDataImages?: boolean } = {},
+): string | null {
+  if (!imageUrl?.trim()) return null;
+  const url = imageUrl.trim();
+  if (url.startsWith("data:")) {
+    return options.includeDataImages ? url : null;
+  }
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return null;
 }
 
 function renderButtons(
@@ -66,10 +88,21 @@ function renderButtons(
     .join("\n")}</div>`;
 }
 
+function renderOpportunityFace(
+  role: VolunteerOpportunity,
+  options: { includeDataImages?: boolean },
+): string {
+  const hosted = exportImageUrl(role.imageUrl, options);
+  if (hosted) {
+    return `<span class="vol-thumb"><img src="${escapeHtml(hosted)}" alt="" /></span>`;
+  }
+  return `<span class="vol-emoji" aria-hidden="true">${escapeHtml(role.emoji || "🤝")}</span>`;
+}
+
 function renderOpportunityCard(
   role: VolunteerOpportunity,
   asOf: string,
-  options: { includeWindowMemo?: boolean },
+  options: { includeWindowMemo?: boolean; includeDataImages?: boolean },
 ): string {
   const vis = opportunityVisibility(role, asOf);
   if (!vis.show) return "";
@@ -96,7 +129,7 @@ function renderOpportunityCard(
 
   return `<article ${attrs.join(" ")}>
 <span class="vol-status ${vis.key}">● ${escapeHtml(vis.label)}</span>
-<div class="vol-title-row"><span class="vol-emoji" aria-hidden="true">${escapeHtml(role.emoji || "🤝")}</span><h3>${escapeHtml(role.title || "Untitled role")}</h3></div>
+<div class="vol-title-row">${renderOpportunityFace(role, options)}<h3>${escapeHtml(role.title || "Untitled role")}</h3></div>
 <p class="vol-blurb">${escapeHtml(role.blurb)}</p>
 ${role.whenLabel.trim() ? `<p class="vol-when">${escapeHtml(role.whenLabel)}</p>` : ""}
 ${windowMemo}
@@ -109,9 +142,11 @@ export type ExportVolunteerOptions = {
   asOfDate?: string | null;
   /** Preview audit: show window memos under cards. */
   includeWindowMemos?: boolean;
+  /** Allow data: image URLs in preview (not for MTK paste). */
+  includeDataImages?: boolean;
 };
 
-/** Full-page Membership Toolkit HTML for /volunteerwithus. */
+/** Full-page HTML for Membership Toolkit /volunteerwithus. */
 export function exportVolunteerHtml(
   state: VolunteerComposerState,
   options: ExportVolunteerOptions = {},
@@ -119,6 +154,7 @@ export function exportVolunteerHtml(
   const { header, footer } = state;
   const asOf = options.asOfDate?.trim() || PREVIEW_FULL_MONTH;
   const includeWindowMemos = Boolean(options.includeWindowMemos);
+  const includeDataImages = Boolean(options.includeDataImages);
   const hc = header.colors;
   const fc = footer.colors;
   const org = header.organizationLabel.trim() || "Your organization";
@@ -139,14 +175,17 @@ export function exportVolunteerHtml(
       ? `<p class="vol-empty">Volunteer opportunities will appear here soon.</p>`
       : state.opportunities
           .map((role) =>
-            renderOpportunityCard(role, asOf, { includeWindowMemo: includeWindowMemos }),
+            renderOpportunityCard(role, asOf, {
+              includeWindowMemo: includeWindowMemos,
+              includeDataImages,
+            }),
           )
           .join("\n");
 
   const howToBlock = `<div class="vol-howto">
 ${howTo
   .map(
-    (s, i) => `<div class="vol-step"><span class="vol-num">${i + 1}</span><strong>${escapeHtml(s.strong)}</strong>${s.span ? `<span>${escapeHtml(s.span)}</span>` : ""}</div>`,
+    (s, i) => `<div class="vol-step"><span class="vol-num">${i + 1}</span><strong>${escapeHtml(s.strong)}</strong>${s.span ? `<span class="vol-step-detail">${escapeHtml(s.span)}</span>` : ""}</div>`,
   )
   .join("\n")}
 </div>`;
@@ -154,7 +193,7 @@ ${howTo
   const sectionTitle = state.opportunitiesSectionTitle.trim();
   const sectionSub = state.opportunitiesSectionSub.trim();
 
-  return `<!-- Volunteer With Us · Level 1 export · blocks: hero, intro, howto, opportunities, cta, footer -->
+  return `<!-- Volunteer With Us · full page for /volunteerwithus -->
 <style><!--
 .vol-wrap{max-width:1100px;margin:0 auto;padding:20px;font-family:Arial,sans-serif;color:#2a2622}
 .vol-hero{background:linear-gradient(135deg,${hc.backgroundStart},${hc.backgroundEnd});color:${hc.textColor};padding:40px 30px;border-radius:22px;text-align:center;margin-bottom:18px}
@@ -166,9 +205,9 @@ ${howTo
 .vol-btn:hover{transform:translateY(-2px)}
 .vol-howto{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 28px}
 .vol-step{background:#f6f2eb;border:1px solid #e4ddd2;border-radius:16px;padding:16px;text-align:left}
-.vol-num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:999px;background:${hc.backgroundEnd};color:#fff;font-size:13px;font-weight:700;margin-bottom:8px}
+.vol-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:${hc.backgroundEnd};color:#fff;font-size:13px;font-weight:700;line-height:1;margin-bottom:8px;text-align:center}
 .vol-step strong{display:block;font-size:15px;margin-bottom:4px;color:#2a2622}
-.vol-step span{display:block;font-size:13px;line-height:1.45;color:#5c554c}
+.vol-step-detail{display:block;font-size:13px;line-height:1.45;color:#5c554c}
 .vol-section-title{color:#2f4a3c;font-size:26px;margin:8px 0 6px;text-align:center}
 .vol-section-sub{text-align:center;color:#5c554c;font-size:14px;margin:0 0 18px;line-height:1.5}
 .vol-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
@@ -179,7 +218,9 @@ ${howTo
 .vol-status.soon{color:#7a7166}
 .vol-status.closed{color:#a65a3a}
 .vol-title-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.vol-emoji{font-size:22px;line-height:1}
+.vol-emoji{font-size:22px;line-height:1;flex-shrink:0}
+.vol-thumb{display:block;width:48px;height:48px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#ebe4d9;border:1px solid #d9e8ec}
+.vol-thumb img{display:block;width:100%;height:100%;object-fit:cover}
 .vol-card h3{margin:0;font-size:18px;color:#0b2f5b;line-height:1.25}
 .vol-blurb{font-size:14px;line-height:1.45;color:#333;margin:0 0 8px;flex:1}
 .vol-when,.vol-window{margin:0 0 6px;font-size:13px;font-weight:600;color:#0b6f89}

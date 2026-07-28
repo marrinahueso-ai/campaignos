@@ -52,15 +52,6 @@ const STEPS: Array<{ id: VolunteerComposerStep; label: string; hint: string }> =
     { id: "export", label: "Export", hint: "Full page HTML" },
   ];
 
-const BLOCK_CHIPS = [
-  "Hero",
-  "Intro",
-  "Opportunity list",
-  "How it works",
-  "CTA",
-  "Footer",
-] as const;
-
 type Props = {
   organizationId: string | null;
   organizationName: string | null;
@@ -239,6 +230,37 @@ export function VolunteerComposer({
     };
   }, [organizationId]);
 
+  const eventById = useMemo(() => {
+    const map = new Map<string, VolunteerComposerEvent>();
+    for (const event of events) map.set(event.id, event);
+    return map;
+  }, [events]);
+
+  /** Pull event artwork + empty signup URLs into opportunity cards (drafts + new events). */
+  useEffect(() => {
+    if (!hydrated) return;
+    setState((prev) => {
+      let changed = false;
+      const opportunities = prev.opportunities.map((op) => {
+        if (op.source !== "event" || !op.eventId) return op;
+        const event = eventById.get(op.eventId);
+        if (!event) return op;
+        const nextImage = event.imageUrl?.trim() || null;
+        const nextSignup = event.volunteerSignupUrl?.trim() || "";
+        const imageNeedsSync = Boolean(nextImage) && op.imageUrl !== nextImage;
+        const signupNeedsSync = !op.signupUrl.trim() && Boolean(nextSignup);
+        if (!imageNeedsSync && !signupNeedsSync) return op;
+        changed = true;
+        return {
+          ...op,
+          imageUrl: imageNeedsSync ? nextImage : op.imageUrl,
+          signupUrl: signupNeedsSync ? nextSignup : op.signupUrl,
+        };
+      });
+      return changed ? { ...prev, opportunities } : prev;
+    });
+  }, [events, eventById, hydrated]);
+
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -312,6 +334,7 @@ export function VolunteerComposer({
       exportVolunteerHtml(state, {
         asOfDate: previewDate,
         includeWindowMemos: true,
+        includeDataImages: true,
       }),
     [state, previewDate],
   );
@@ -406,9 +429,9 @@ export function VolunteerComposer({
                 </span>
               </h1>
               <p className="mt-0.5 max-w-xl text-sm leading-snug text-cos-muted">
-                Level 1 volunteer page for Membership Toolkit — header,
+                Full page for Membership Toolkit — header, volunteer
                 opportunities with SignUpGenius links &amp; on/off dates, footer,
-                preview, and full-page HTML export.
+                preview, and HTML export.
               </p>
             </div>
             <p
@@ -426,27 +449,6 @@ export function VolunteerComposer({
             </p>
           </div>
         </div>
-      </div>
-
-      <div
-        className="flex flex-wrap items-center gap-2 rounded-[14px] border border-cos-border/80 bg-cos-card/55 px-3 py-2.5"
-        aria-label="Future building blocks"
-      >
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-cos-muted">
-          Blocks (coming)
-        </span>
-        {BLOCK_CHIPS.map((chip) => (
-          <span
-            key={chip}
-            className="cursor-not-allowed rounded-full border border-dashed border-cos-border bg-cos-bg-alt px-2.5 py-1 text-[11px] font-bold text-cos-muted opacity-85"
-            title="Level 2 — not editable yet"
-          >
-            {chip}
-          </span>
-        ))}
-        <span className="ml-auto text-[11px] font-semibold text-cos-muted">
-          Foreshadow only · steps edit these today
-        </span>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-4">
@@ -479,7 +481,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your header"
-                body="Colors, welcome copy, and how-to strip — same “design once” idea as Homepage Header."
+                body="Colors, welcome copy, and how-to steps — design once, then refresh opportunities as needed."
                 actions={
                   <Button type="button" onClick={() => setStep("footer")}>
                     Save → Footer
@@ -533,7 +535,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Page intro"
-                description="Maps to future Hero + Intro blocks. Locked order in Level 1."
+                description="Organization name, page title, and welcome blurb at the top of the page."
               >
                 <div className="space-y-3">
                   <Field
@@ -559,7 +561,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Header buttons"
-                description="Choose 1 or 2 hero CTAs — same idea as Homepage header buttons."
+                description="Choose 1 or 2 buttons under the welcome copy."
               >
                 <SegToggle
                   label="How many buttons?"
@@ -613,7 +615,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Brand colors"
-                description="Hero gradient and Sign up button — same pattern as Homepage header colors."
+                description="Hero gradient and button colors for the top of the page."
               >
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                   <ColorField
@@ -684,7 +686,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="How it works"
-                description="Three fixed steps under the hero. Level 1 keeps this strip; Level 2 could reorder or remove it."
+                description="Three short steps shown under the hero — title, then a brief detail after the dash."
               >
                 <div className="space-y-3">
                   {state.header.howToSteps.map((line, index) => (
@@ -710,7 +712,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Design your footer"
-                body="CTA band colors, copy, and buttons — same “design once” slot as Homepage Footer."
+                body="Thank-you band colors, copy, and buttons — design once for the bottom of the page."
                 actions={
                   <>
                     <Button
@@ -770,7 +772,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Footer design"
-                description="Background, text, and button colors — mirrors Homepage Footer design."
+                description="Background, text, and button colors for the thank-you band."
               >
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <ColorField
@@ -823,7 +825,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Footer copy"
-                description="Thank-you title and body under the opportunity grid."
+                description="Thank-you title and contact note under the opportunity list."
               >
                 <div className="space-y-3">
                   <Field
@@ -842,7 +844,7 @@ export function VolunteerComposer({
 
               <SettingsBox
                 title="Footer buttons"
-                description="Choose 1 or 2 footer CTAs — label + URL for each."
+                description="Choose 1 or 2 buttons — label and URL for each."
               >
                 <SegToggle
                   label="How many buttons?"
@@ -900,7 +902,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Volunteer opportunities"
-                body="Pick events, edit SignUpGenius links, and set on/off dates — same visibility model as Homepage cards."
+                body="Pick events, edit SignUpGenius links, and set on/off dates so parents only see open roles."
                 actions={
                   <>
                     <Button
@@ -909,6 +911,13 @@ export function VolunteerComposer({
                       onClick={() => setStep("footer")}
                     >
                       ← Footer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={clearAllOpportunities}
+                    >
+                      Clear
                     </Button>
                     <Button
                       type="button"
@@ -934,11 +943,11 @@ export function VolunteerComposer({
               />
 
               <div className="rounded-[16px] border border-cos-border bg-[rgba(196,146,46,0.12)] px-3.5 py-3 text-sm leading-snug text-cos-muted">
-                <strong className="text-cos-text">On / off dates:</strong> card
-                shows starting at local midnight on the on date, stays through
-                the off date, then closes the next morning. Use Always on for
-                evergreen roles. Preview has a date slider like Homepage — no
-                date chip grid.
+                <strong className="text-cos-text">On / off dates:</strong> each
+                card appears starting on the on date, stays through the off
+                date, then closes the next morning. Use Always on for roles that
+                stay open. Preview includes a date slider to check what parents
+                will see.
               </div>
 
               <div className="grid gap-3 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
@@ -947,8 +956,8 @@ export function VolunteerComposer({
                     From your events
                   </h3>
                   <p className="mt-1 text-xs text-cos-muted">
-                    Check events to add opportunity cards — same picker feel as
-                    Homepage Composer.
+                    Check events to add opportunity cards. Artwork from the
+                    event shows on each card when available.
                   </p>
                   <label className="mt-3 block">
                     <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.05em] text-cos-muted">
@@ -966,14 +975,6 @@ export function VolunteerComposer({
                       ))}
                     </select>
                   </label>
-                  <button
-                    type="button"
-                    className="mt-3 text-xs font-bold text-cos-brand-sage hover:text-cos-text"
-                    onClick={clearAllOpportunities}
-                    title="Remove every opportunity card for a fresh month"
-                  >
-                    Clear all opportunities
-                  </button>
                   <div className="mt-3 max-h-[420px] space-y-1.5 overflow-auto pr-1">
                     {filteredEvents.length === 0 ? (
                       <p className="text-xs text-cos-muted">
@@ -1018,12 +1019,12 @@ export function VolunteerComposer({
 
                 <SettingsBox
                   title="Opportunity list"
-                  description="Each card = one role. Edit blurbs, signup URLs, and visibility window."
+                  description="Each card is one role. Edit the blurb, signup link, and when it should appear."
                   compact
                 >
                   {state.opportunities.length === 0 ? (
                     <p className="text-sm text-cos-muted">
-                      Select events or add a custom role to get started.
+                      Select events or add another role to get started.
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -1033,13 +1034,22 @@ export function VolunteerComposer({
                           className="rounded-[16px] border border-cos-border bg-cos-bg/50 p-3"
                         >
                           <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <EmojiPicker
-                                value={op.emoji}
-                                onChange={(emoji) =>
-                                  patchOpportunity(op.id, { emoji })
-                                }
-                              />
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              {op.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={op.imageUrl}
+                                  alt=""
+                                  className="h-12 w-12 shrink-0 rounded-[12px] border border-cos-border object-cover"
+                                />
+                              ) : (
+                                <EmojiPicker
+                                  value={op.emoji}
+                                  onChange={(emoji) =>
+                                    patchOpportunity(op.id, { emoji })
+                                  }
+                                />
+                              )}
                               <input
                                 className="min-w-0 flex-1 rounded-xl border border-cos-border bg-cos-card px-3 py-2 text-sm font-semibold"
                                 value={op.title}
@@ -1159,7 +1169,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Preview"
-                body="Full page parents will see. Drag the date slider to watch opportunities roll on, stay open, or close — same idea as Homepage."
+                body="Full page parents will see. Drag the date slider to watch opportunities open, stay available, or close."
                 actions={
                   <>
                     <Button
@@ -1283,7 +1293,7 @@ export function VolunteerComposer({
             <section className="space-y-3">
               <PanelHead
                 title="Copy full page code"
-                body="Complete Membership Toolkit HTML for /volunteerwithus — styles, hero, how-to, opportunities, footer CTA, and date script."
+                body="Complete HTML for /volunteerwithus — paste into Membership Toolkit Custom HTML."
                 actions={
                   <>
                     <Button
@@ -1301,10 +1311,10 @@ export function VolunteerComposer({
               />
               <div className="max-w-4xl rounded-[22px] border border-cos-border bg-cos-card p-5 shadow-[0_8px_28px_rgba(28,36,48,0.06)]">
                 <ul className="space-y-2 text-sm text-cos-text">
-                  <li>✓ Full page (not cards only)</li>
+                  <li>✓ Full Volunteer With Us page</li>
                   <li>✓ Header &amp; footer colors with 1–2 buttons each</li>
-                  <li>✓ Opportunities with SignUpGenius links &amp; on/off dates</li>
-                  <li>✓ Open / Coming soon / Closed by as-of date</li>
+                  <li>✓ Opportunities with artwork, SignUpGenius links &amp; on/off dates</li>
+                  <li>✓ Open / Coming soon / Closed based on the date</li>
                   <li>✓ Paste into Membership Toolkit → Custom HTML</li>
                 </ul>
                 <pre className="mt-4 max-h-[420px] overflow-auto rounded-[14px] bg-cos-dark p-4 text-xs leading-relaxed text-[#d9e0d6]">
@@ -1329,14 +1339,18 @@ function PanelHead({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <div className="min-w-0">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1">
         <h2 className="font-display text-2xl text-cos-text">{title}</h2>
         <p className="mt-0.5 max-w-xl text-xs leading-snug text-cos-muted sm:text-sm">
           {body}
         </p>
       </div>
-      <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

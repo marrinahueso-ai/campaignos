@@ -1,6 +1,6 @@
 /**
- * Volunteer Website Page Composer (Level 1).
- * Section fields map to future Level 2 blocks (hero, howto, opportunities, footer).
+ * Volunteer Website Page Composer.
+ * Builds a Volunteer With Us page: header, opportunities, footer, preview, export.
  */
 
 export type VolunteerComposerStep =
@@ -9,15 +9,6 @@ export type VolunteerComposerStep =
   | "opportunities"
   | "preview"
   | "export";
-
-/** Foreshadowed Level 2 block kinds — not editable as blocks in Level 1. */
-export type VolunteerPageBlockKind =
-  | "hero"
-  | "intro"
-  | "howto"
-  | "opportunities"
-  | "cta"
-  | "footer";
 
 export type VolunteerComposerEvent = {
   id: string;
@@ -77,6 +68,8 @@ export type VolunteerOpportunity = {
   source: VolunteerOpportunitySource;
   eventId: string | null;
   emoji: string;
+  /** Event / uploaded artwork URL for the card face; emoji is fallback. */
+  imageUrl: string | null;
   title: string;
   blurb: string;
   /** Display date/time line on the card (e.g. "Aug 5 · 5:00 PM"). */

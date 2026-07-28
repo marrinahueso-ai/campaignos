@@ -109,7 +109,7 @@ const CHOICES = [
     id: "website-pages" as const,
     title: "Website pages",
     description:
-      "Homepage, Volunteer, and more Membership Toolkit templates — Level 1 composers with HTML export.",
+      "Homepage, Volunteer, and more Membership Toolkit templates — edit, preview, and export full pages.",
     cta: "Open pages library →",
     href: "/create-with-ai/website-pages",
     Art: WebsitePagesArt,
