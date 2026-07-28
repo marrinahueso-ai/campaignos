@@ -84,22 +84,25 @@ const PAGES = [
     id: "homepage" as const,
     title: "Homepage",
     status: "Live",
+    description: "Events, header, and resources for your main site page.",
     href: "/homepage-composer",
     Art: HomepageArt,
     enabled: true as const,
   },
   {
     id: "volunteer" as const,
-    title: "Volunteer",
+    title: "Volunteer page",
     status: "Live",
+    description: "Opportunities families can browse and sign up for.",
     href: "/volunteer-composer",
     Art: VolunteerArt,
     enabled: true as const,
   },
   {
     id: "sponsorship" as const,
-    title: "Sponsorship",
+    title: "Sponsorship page",
     status: "Coming soon",
+    description: "Partner tiers and sponsor highlights — coming next.",
     href: null,
     Art: SponsorshipArt,
     enabled: false as const,
@@ -167,13 +170,13 @@ export function WebsitePagesLanding({
             <>
               <page.Art />
               <div className="mt-4 flex flex-1 flex-col px-1">
-                <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-display text-2xl text-cos-text">
-                    {page.title}
-                  </h2>
+                <h2 className="font-display text-2xl text-cos-text">
+                  {page.title}
+                </h2>
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   <span
                     className={cn(
-                      "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                      "rounded-full px-2 py-0.5 text-[11px] font-semibold",
                       page.enabled
                         ? "bg-[#e8f0ec] text-[#2f4a3c]"
                         : "bg-cos-bg-alt text-cos-muted",
@@ -182,11 +185,9 @@ export function WebsitePagesLanding({
                     {page.status}
                   </span>
                 </div>
-                {page.enabled ? (
-                  <p className="mt-4 text-sm font-semibold text-cos-brand-sage transition-colors group-hover:text-[#2f4a3c]">
-                    Open →
-                  </p>
-                ) : null}
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-cos-muted">
+                  {page.description}
+                </p>
               </div>
             </>
           );
